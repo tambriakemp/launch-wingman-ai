@@ -22,6 +22,7 @@ export type Database = {
           launch_date: string | null
           name: string
           status: string
+          transformation_statement: string | null
           updated_at: string
           user_id: string
         }
@@ -32,6 +33,7 @@ export type Database = {
           launch_date?: string | null
           name: string
           status?: string
+          transformation_statement?: string | null
           updated_at?: string
           user_id: string
         }
@@ -42,6 +44,7 @@ export type Database = {
           launch_date?: string | null
           name?: string
           status?: string
+          transformation_statement?: string | null
           updated_at?: string
           user_id?: string
         }

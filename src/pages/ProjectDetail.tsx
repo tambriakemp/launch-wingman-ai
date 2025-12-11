@@ -19,12 +19,14 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { TransformationBuilder } from "@/components/TransformationBuilder";
 
 interface Project {
   id: string;
   name: string;
   description: string | null;
   status: "planning" | "active" | "completed";
+  transformation_statement: string | null;
 }
 
 const statusVariants = {
@@ -38,8 +40,6 @@ const ProjectDetail = () => {
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [transformationStatement, setTransformationStatement] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -47,7 +47,7 @@ const ProjectDetail = () => {
 
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, description, status")
+        .select("id, name, description, status, transformation_statement")
         .eq("id", id)
         .maybeSingle();
 
@@ -67,15 +67,8 @@ const ProjectDetail = () => {
     fetchProject();
   }, [id, navigate]);
 
-  const handleGenerateStatement = async () => {
-    setIsGenerating(true);
-    // Simulate AI generation (will be replaced with real API call)
-    setTimeout(() => {
-      setTransformationStatement(
-        "Transform from feeling overwhelmed and stuck in your business to confidently launching your signature program with a clear strategy and engaged audience ready to invest."
-      );
-      setIsGenerating(false);
-    }, 2000);
+  const handleStatementSaved = (statement: string) => {
+    setProject((prev) => prev ? { ...prev, transformation_statement: statement } : null);
   };
 
   if (isLoading) {
@@ -146,25 +139,17 @@ const ProjectDetail = () => {
                     <CardDescription>AI-generated statement for your launch</CardDescription>
                   </div>
                 </div>
-                <Button onClick={handleGenerateStatement} disabled={isGenerating}>
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      {transformationStatement ? "Regenerate" : "Generate with AI"}
-                    </>
-                  )}
-                </Button>
+                <TransformationBuilder
+                  projectId={project.id}
+                  currentStatement={project.transformation_statement}
+                  onStatementSaved={handleStatementSaved}
+                />
               </div>
             </CardHeader>
-            {transformationStatement && (
+            {project.transformation_statement && (
               <CardContent>
                 <div className="p-4 bg-accent rounded-lg">
-                  <p className="text-lg text-foreground italic">"{transformationStatement}"</p>
+                  <p className="text-lg text-foreground italic">"{project.transformation_statement}"</p>
                 </div>
               </CardContent>
             )}
