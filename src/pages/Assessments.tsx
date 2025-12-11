@@ -54,13 +54,38 @@ const Assessments = () => {
           </p>
         </motion.div>
 
+        {/* Info Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Card className="bg-muted/50">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Heart className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-foreground mb-1">Why Take These Assessments?</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Understanding where you are now is the first step to growth. These assessments provide honest 
+                    feedback about your current approach and actionable insights to help you build a more sustainable, 
+                    successful coaching business. Your results are saved so you can track your progress over time.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
         <div className="grid gap-6">
           {assessments.map((assessment, index) => (
             <motion.div
               key={assessment.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: 0.2 + index * 0.1 }}
             >
               <Card variant="elevated" className="hover:shadow-lg transition-shadow">
                 <CardHeader>
@@ -109,31 +134,6 @@ const Assessments = () => {
             </motion.div>
           ))}
         </div>
-
-        {/* Info Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card className="bg-muted/50">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Heart className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-foreground mb-1">Why Take These Assessments?</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Understanding where you are now is the first step to growth. These assessments provide honest 
-                    feedback about your current approach and actionable insights to help you build a more sustainable, 
-                    successful coaching business. Your results are saved so you can track your progress over time.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
       </div>
     </DashboardLayout>
   );
