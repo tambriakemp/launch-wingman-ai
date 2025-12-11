@@ -39,6 +39,7 @@ export const TransformationBuilder = ({
     problem: "",
     result: "",
   });
+  const [ownStatement, setOwnStatement] = useState("");
   const [generatedStatement, setGeneratedStatement] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editedStatement, setEditedStatement] = useState("");
@@ -107,9 +108,20 @@ export const TransformationBuilder = ({
     setIsOpen(false);
     setStep("questions");
     setFormData({ audience: "", problem: "", result: "" });
+    setOwnStatement("");
     setGeneratedStatement("");
     setEditedStatement("");
     setIsEditing(false);
+  };
+
+  const handleUseOwnStatement = () => {
+    if (!ownStatement.trim()) {
+      toast.error("Please enter your statement");
+      return;
+    }
+    setGeneratedStatement(ownStatement);
+    setEditedStatement(ownStatement);
+    setStep("preview");
   };
 
   return (
@@ -188,6 +200,27 @@ export const TransformationBuilder = ({
                       </>
                     )}
                   </Button>
+                </div>
+
+                <div className="border-t pt-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ownStatement" className="text-muted-foreground">
+                      Or add your own statement
+                    </Label>
+                    <Textarea
+                      id="ownStatement"
+                      placeholder="I help [specific audience] [overcome specific problem/achieve specific state] so they can [desired result with measurable impact]."
+                      value={ownStatement}
+                      onChange={(e) => setOwnStatement(e.target.value)}
+                      rows={3}
+                      className="resize-none"
+                    />
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <Button variant="outline" onClick={handleUseOwnStatement}>
+                      Use My Statement
+                    </Button>
+                  </div>
                 </div>
               </motion.div>
             )}
