@@ -100,7 +100,7 @@ const Assessments = () => {
 
                   <Button asChild className="w-full sm:w-auto">
                     <Link to={assessment.href}>
-                      Start Assessment
+                      View Assessment
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Link>
                   </Button>
