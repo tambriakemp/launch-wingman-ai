@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -319,6 +320,7 @@ const STORAGE_KEY = "coach_hub_coach_assessment";
 const CoachAssessment = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [checkedStatements, setCheckedStatements] = useState<Record<string, boolean>>({});
   const [setAnswers, setSetAnswers] = useState<Record<string, CoachType>>({});
@@ -412,6 +414,7 @@ const CoachAssessment = () => {
       title: "Assessment Saved",
       description: "Your assessment has been saved successfully.",
     });
+    navigate("/assessments");
   };
 
   const handleScheduleReminder = async () => {
