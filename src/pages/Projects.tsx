@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -24,13 +24,16 @@ import {
   MoreVertical,
   Sparkles,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Project {
   id: string;
   name: string;
-  description: string;
-  launchDate?: string;
+  description: string | null;
+  launch_date: string | null;
   status: "planning" | "active" | "completed";
 }
 
@@ -41,27 +44,70 @@ const statusColors = {
 };
 
 const Projects = () => {
+  const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [newProject, setNewProject] = useState({ name: "", description: "" });
 
-  const handleCreateProject = () => {
+  // Fetch projects on mount
+  useEffect(() => {
+    const fetchProjects = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name, description, launch_date, status")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        toast.error("Failed to load projects");
+        console.error(error);
+      } else {
+        setProjects(data as Project[]);
+      }
+      setIsLoading(false);
+    };
+
+    fetchProjects();
+  }, [user]);
+
+  const handleCreateProject = async () => {
     if (!newProject.name.trim()) {
       toast.error("Please enter a project name");
       return;
     }
 
-    const project: Project = {
-      id: Date.now().toString(),
-      name: newProject.name,
-      description: newProject.description,
-      status: "planning",
-    };
+    if (!user) {
+      toast.error("You must be logged in to create a project");
+      return;
+    }
 
-    setProjects([project, ...projects]);
-    setNewProject({ name: "", description: "" });
-    setIsCreateOpen(false);
-    toast.success("Project created successfully!");
+    setIsCreating(true);
+
+    const { data, error } = await supabase
+      .from("projects")
+      .insert({
+        name: newProject.name.trim(),
+        description: newProject.description.trim() || null,
+        user_id: user.id,
+        status: "planning",
+      })
+      .select("id, name, description, launch_date, status")
+      .single();
+
+    if (error) {
+      toast.error("Failed to create project");
+      console.error(error);
+    } else {
+      setProjects([data as Project, ...projects]);
+      setNewProject({ name: "", description: "" });
+      setIsCreateOpen(false);
+      toast.success("Project created successfully!");
+    }
+
+    setIsCreating(false);
   };
 
   return (
@@ -118,8 +164,12 @@ const Projects = () => {
                 <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleCreateProject}>
-                  <Sparkles className="w-4 h-4" />
+                <Button onClick={handleCreateProject} disabled={isCreating}>
+                  {isCreating ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4" />
+                  )}
                   Create Project
                 </Button>
               </DialogFooter>
@@ -127,8 +177,13 @@ const Projects = () => {
           </Dialog>
         </motion.div>
 
-        {/* Projects Grid */}
-        {projects.length > 0 ? (
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : projects.length > 0 ? (
+          /* Projects Grid */
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map((project, i) => (
               <motion.div
@@ -163,7 +218,7 @@ const Projects = () => {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
-                          <span>No launch date</span>
+                          <span>{project.launch_date || "No launch date"}</span>
                         </div>
                       </div>
                     </CardContent>
