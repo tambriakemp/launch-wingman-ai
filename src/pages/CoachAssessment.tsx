@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AssessmentProgressStepper } from "@/components/AssessmentProgressStepper";
 import {
   Users,
   ArrowRight,
@@ -339,6 +340,23 @@ const CoachAssessment = () => {
     if (saved) {
       setSavedAssessment(JSON.parse(saved));
     }
+    // Also check for in-progress data
+    const progressData = localStorage.getItem(STORAGE_KEY + "_progress");
+    if (progressData) {
+      try {
+        const parsed = JSON.parse(progressData);
+        if (parsed.checkedStatements) setCheckedStatements(parsed.checkedStatements);
+        if (parsed.setAnswers) setSetAnswers(parsed.setAnswers);
+        if (parsed.reflections) setReflections(parsed.reflections);
+        if (parsed.barriers) setBarriers(parsed.barriers);
+        if (parsed.barrierOther) setBarrierOther(parsed.barrierOther);
+        if (parsed.barrierExpansion) setBarrierExpansion(parsed.barrierExpansion);
+        if (parsed.commitment) setCommitment(parsed.commitment);
+        if (parsed.currentStep !== undefined) setCurrentStep(parsed.currentStep);
+      } catch (e) {
+        console.error("Failed to load saved progress", e);
+      }
+    }
   }, []);
 
   // Calculate which coach type has most checks for each set
@@ -384,6 +402,29 @@ const CoachAssessment = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
+  };
+
+  const handleStepClick = (stepIndex: number) => {
+    setCurrentStep(stepIndex);
+  };
+
+  const handleSaveProgress = () => {
+    const progressData = {
+      checkedStatements,
+      setAnswers,
+      reflections,
+      barriers,
+      barrierOther,
+      barrierExpansion,
+      commitment,
+      currentStep,
+      savedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(STORAGE_KEY + "_progress", JSON.stringify(progressData));
+    toast({
+      title: "Progress Saved",
+      description: "Your progress has been saved. You can continue later.",
+    });
   };
 
   const calculatePrimaryApproach = (): CoachType => {
@@ -847,24 +888,13 @@ const CoachAssessment = () => {
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto space-y-6">
-        {/* Progress Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <Badge variant="outline">Part {currentStep + 1} of {setQuestions.length}</Badge>
-            <span className="text-sm text-muted-foreground">{currentPart.part}</span>
-          </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-primary"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-        </motion.div>
+        {/* Progress Stepper */}
+        <AssessmentProgressStepper
+          steps={setQuestions.map((q) => ({ key: q.part, title: q.part.replace("Set ", "").split(":")[0] }))}
+          currentStep={currentStep}
+          onStepClick={handleStepClick}
+          completedSteps={Object.keys(setAnswers).map(key => parseInt(key.replace("part_", "")))}
+        />
 
         {/* Sets */}
         <AnimatePresence mode="wait">
@@ -922,7 +952,7 @@ const CoachAssessment = () => {
         </AnimatePresence>
 
         {/* Navigation */}
-        <div className="flex justify-between">
+        <div className="flex flex-col sm:flex-row justify-between gap-3">
           <Button
             variant="outline"
             onClick={handlePrevPart}
@@ -931,10 +961,16 @@ const CoachAssessment = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Previous
           </Button>
-          <Button onClick={handleNextPart}>
-            {currentStep === setQuestions.length - 1 ? "See Results" : "Next"}
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={handleSaveProgress}>
+              <Save className="w-4 h-4 mr-2" />
+              Save Progress
+            </Button>
+            <Button onClick={handleNextPart}>
+              {currentStep === setQuestions.length - 1 ? "See Results" : "Next"}
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
         </div>
       </div>
     </DashboardLayout>

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { AssessmentProgressStepper } from "@/components/AssessmentProgressStepper";
 import {
   ClipboardCheck,
   ArrowRight,
@@ -292,6 +293,10 @@ const Assessment = () => {
     setAnswers((prev) => ({ ...prev, [questionId]: points }));
   };
 
+  const handleQuestionClick = (questionIndex: number) => {
+    setCurrentQuestion(questionIndex);
+  };
+
   const handleNext = () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
@@ -304,6 +309,20 @@ const Assessment = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(currentQuestion - 1);
     }
+  };
+
+  const handleSaveProgress = () => {
+    const progressData = {
+      answers,
+      reflections,
+      currentQuestion,
+      savedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(progressData));
+    toast({
+      title: "Progress Saved",
+      description: "Your progress has been saved. You can continue later.",
+    });
   };
 
   const handleSave = () => {
@@ -592,19 +611,18 @@ const Assessment = () => {
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto space-y-6">
-        {/* Progress Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <Badge variant="outline">{currentSection}</Badge>
-            <span className="text-sm text-muted-foreground">
-              Question {currentQuestion + 1} of {questions.length}
-            </span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </motion.div>
+        {/* Progress Stepper */}
+        <AssessmentProgressStepper
+          steps={questions.map((q, i) => ({ 
+            key: `q${q.id}`, 
+            title: i === 0 || questions[i - 1]?.section !== q.section 
+              ? q.section.split(" ").slice(0, 2).join(" ") 
+              : `Q${i + 1}` 
+          }))}
+          currentStep={currentQuestion}
+          onStepClick={handleQuestionClick}
+          completedSteps={Object.keys(answers).map(id => questions.findIndex(q => q.id === parseInt(id)))}
+        />
 
         {/* Question Card */}
         <AnimatePresence mode="wait">
@@ -657,7 +675,7 @@ const Assessment = () => {
         </AnimatePresence>
 
         {/* Navigation */}
-        <div className="flex justify-between">
+        <div className="flex flex-col sm:flex-row justify-between gap-3">
           <Button
             variant="outline"
             onClick={handlePrevious}
@@ -666,13 +684,19 @@ const Assessment = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Previous
           </Button>
-          <Button
-            onClick={handleNext}
-            disabled={answers[currentQuestionData.id] === undefined}
-          >
-            {currentQuestion === questions.length - 1 ? "See Results" : "Next"}
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={handleSaveProgress}>
+              <Save className="w-4 h-4 mr-2" />
+              Save Progress
+            </Button>
+            <Button
+              onClick={handleNext}
+              disabled={answers[currentQuestionData.id] === undefined}
+            >
+              {currentQuestion === questions.length - 1 ? "See Results" : "Next"}
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
         </div>
       </div>
     </DashboardLayout>

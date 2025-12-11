@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -12,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { AssessmentProgressStepper } from "@/components/AssessmentProgressStepper";
 import {
   ArrowLeft,
   ArrowRight,
@@ -22,7 +22,10 @@ import {
   Sparkles,
   FileText,
   RefreshCw,
+  Save,
 } from "lucide-react";
+
+const STORAGE_KEY = "coach_hub_why_statement_assessment";
 
 const launchFeelings = [
   "Exhausted",
@@ -195,8 +198,22 @@ const WhyStatementAssessment = () => {
   const [currentPart, setCurrentPart] = useState(0);
   const [data, setData] = useState<AssessmentData>(initialData);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [visitedParts, setVisitedParts] = useState<number[]>([0]);
 
-  const progress = ((currentPart + 1) / parts.length) * 100;
+  // Load saved progress on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.data) setData(parsed.data);
+        if (parsed.currentPart !== undefined) setCurrentPart(parsed.currentPart);
+        if (parsed.visitedParts) setVisitedParts(parsed.visitedParts);
+      } catch (e) {
+        console.error("Failed to load saved progress", e);
+      }
+    }
+  }, []);
 
   const updateData = <K extends keyof AssessmentData>(key: K, value: AssessmentData[K]) => {
     setData((prev) => ({ ...prev, [key]: value }));
@@ -211,9 +228,20 @@ const WhyStatementAssessment = () => {
     }
   };
 
+  const handleStepClick = (stepIndex: number) => {
+    setCurrentPart(stepIndex);
+    if (!visitedParts.includes(stepIndex)) {
+      setVisitedParts((prev) => [...prev, stepIndex]);
+    }
+  };
+
   const handleNext = () => {
     if (currentPart < parts.length - 1) {
-      setCurrentPart(currentPart + 1);
+      const nextPart = currentPart + 1;
+      setCurrentPart(nextPart);
+      if (!visitedParts.includes(nextPart)) {
+        setVisitedParts((prev) => [...prev, nextPart]);
+      }
     } else {
       setIsCompleted(true);
     }
@@ -225,7 +253,28 @@ const WhyStatementAssessment = () => {
     }
   };
 
+  const handleSaveProgress = () => {
+    const progressData = {
+      data,
+      currentPart,
+      visitedParts,
+      savedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(progressData));
+    toast({
+      title: "Progress Saved",
+      description: "Your progress has been saved. You can continue later.",
+    });
+  };
+
   const handleSave = () => {
+    const progressData = {
+      data,
+      currentPart: parts.length - 1,
+      visitedParts: parts.map((_, i) => i),
+      completedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(progressData));
     toast({
       title: "Assessment Saved",
       description: "Your Why Statement worksheet has been saved successfully.",
@@ -234,9 +283,11 @@ const WhyStatementAssessment = () => {
   };
 
   const handleRetake = () => {
+    localStorage.removeItem(STORAGE_KEY);
     setData(initialData);
     setCurrentPart(0);
     setIsCompleted(false);
+    setVisitedParts([0]);
   };
 
   const renderPart1 = () => (
@@ -871,13 +922,12 @@ const WhyStatementAssessment = () => {
         </motion.div>
 
         {!isCompleted && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Part {currentPart + 1} of {parts.length}</span>
-              <span>{Math.round(progress)}% complete</span>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </div>
+          <AssessmentProgressStepper
+            steps={parts.map((p) => ({ key: p.key, title: p.title, icon: p.icon }))}
+            currentStep={currentPart}
+            onStepClick={handleStepClick}
+            completedSteps={visitedParts}
+          />
         )}
 
         <AnimatePresence mode="wait">
@@ -908,7 +958,7 @@ const WhyStatementAssessment = () => {
                 <CardContent>
                   {renderCurrentPart()}
 
-                  <div className="flex justify-between mt-8 pt-6 border-t">
+                  <div className="flex flex-col sm:flex-row justify-between gap-3 mt-8 pt-6 border-t">
                     <Button
                       variant="outline"
                       onClick={handlePrev}
@@ -917,10 +967,16 @@ const WhyStatementAssessment = () => {
                       <ArrowLeft className="w-4 h-4 mr-2" />
                       Previous
                     </Button>
-                    <Button onClick={handleNext}>
-                      {currentPart === parts.length - 1 ? "Complete" : "Next"}
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="secondary" onClick={handleSaveProgress}>
+                        <Save className="w-4 h-4 mr-2" />
+                        Save Progress
+                      </Button>
+                      <Button onClick={handleNext}>
+                        {currentPart === parts.length - 1 ? "Complete" : "Next"}
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
