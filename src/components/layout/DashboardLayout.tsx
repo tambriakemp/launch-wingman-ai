@@ -11,7 +11,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
-  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -19,8 +18,7 @@ import { useState } from "react";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: FolderKanban, label: "Projects", href: "/projects" },
-  { icon: ClipboardCheck, label: "Launch Assessment", href: "/assessment" },
-  { icon: Users, label: "Coach Assessment", href: "/coach-assessment" },
+  { icon: ClipboardCheck, label: "Assessments", href: "/assessments" },
   { icon: Settings, label: "Settings", href: "/settings" },
 ];
 

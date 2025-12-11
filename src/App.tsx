@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
 import Settings from "./pages/Settings";
+import Assessments from "./pages/Assessments";
 import Assessment from "./pages/Assessment";
 import CoachAssessment from "./pages/CoachAssessment";
 import NotFound from "./pages/NotFound";
@@ -59,6 +60,31 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/assessments"
+              element={
+                <ProtectedRoute>
+                  <Assessments />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/assessments/launch"
+              element={
+                <ProtectedRoute>
+                  <Assessment />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/assessments/coach"
+              element={
+                <ProtectedRoute>
+                  <CoachAssessment />
+                </ProtectedRoute>
+              }
+            />
+            {/* Legacy routes redirect */}
             <Route
               path="/assessment"
               element={
