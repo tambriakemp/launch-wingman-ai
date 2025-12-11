@@ -11,6 +11,7 @@ import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
 import Settings from "./pages/Settings";
 import Assessment from "./pages/Assessment";
+import CoachAssessment from "./pages/CoachAssessment";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -63,6 +64,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Assessment />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/coach-assessment"
+              element={
+                <ProtectedRoute>
+                  <CoachAssessment />
                 </ProtectedRoute>
               }
             />
