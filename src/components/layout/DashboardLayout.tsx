@@ -10,6 +10,7 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -17,6 +18,7 @@ import { useState } from "react";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: FolderKanban, label: "Projects", href: "/projects" },
+  { icon: ClipboardCheck, label: "Assessment", href: "/assessment" },
   { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
