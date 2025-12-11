@@ -701,7 +701,7 @@ const WhyStatementAssessment = () => {
               onChange={(e) => updateData("userName", e.target.value)}
               className="w-48"
             />
-            <span className="text-sm font-medium">, commit to working through the complete Maya Method because:</span>
+            <span className="text-sm font-medium">, commit to working through my complete prelaunch or launch strategy.</span>
           </div>
           <p className="text-sm text-muted-foreground italic bg-background p-3 rounded">
             {data.whyBecause && data.whySoThat && data.whyAllowMe
@@ -739,25 +739,14 @@ const WhyStatementAssessment = () => {
 
       <div className="space-y-4">
         <Label className="text-base font-medium">My commitment timeline is:</Label>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label className="text-sm">I will complete this course by:</Label>
-            <Input
-              type="date"
-              value={data.completionDate}
-              onChange={(e) => updateData("completionDate", e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label className="text-sm">I will implement my first complete prelaunch by:</Label>
-            <Input
-              type="date"
-              value={data.firstPrelaunchDate}
-              onChange={(e) => updateData("firstPrelaunchDate", e.target.value)}
-              className="mt-1"
-            />
-          </div>
+        <div>
+          <Label className="text-sm">I will implement my first complete prelaunch by:</Label>
+          <Input
+            type="date"
+            value={data.firstPrelaunchDate}
+            onChange={(e) => updateData("firstPrelaunchDate", e.target.value)}
+            className="mt-1 max-w-xs"
+          />
         </div>
       </div>
     </div>
