@@ -13,6 +13,7 @@ import Settings from "./pages/Settings";
 import Assessments from "./pages/Assessments";
 import Assessment from "./pages/Assessment";
 import CoachAssessment from "./pages/CoachAssessment";
+import WhyStatementAssessment from "./pages/WhyStatementAssessment";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -81,6 +82,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <CoachAssessment />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/assessments/why-statement"
+              element={
+                <ProtectedRoute>
+                  <WhyStatementAssessment />
                 </ProtectedRoute>
               }
             />

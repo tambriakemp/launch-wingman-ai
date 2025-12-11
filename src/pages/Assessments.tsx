@@ -38,6 +38,18 @@ const assessments = [
     bgColor: "bg-secondary/10",
     categories: ["Maya (Community Builder)", "Derek (Direct Seller)", "Lauren (Product-Centric)"],
   },
+  {
+    id: "why-statement",
+    title: "Personal \"Why Statement\" for Mastering Prelaunch",
+    description: "Create a personal Why Statement that will keep you motivated through the learning process and remind you why you're investing in this system.",
+    icon: Heart,
+    href: "/assessments/why-statement",
+    duration: "~20 minutes",
+    questions: 8,
+    color: "text-accent",
+    bgColor: "bg-accent/10",
+    categories: ["Current Reality", "Desired Future", "8 Benefits", "Deeper Why", "Commitment"],
+  },
 ];
 
 const Assessments = () => {
