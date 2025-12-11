@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -266,6 +267,7 @@ const STORAGE_KEY = "coach_hub_launch_assessment";
 
 const Assessment = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [reflections, setReflections] = useState<Record<string, string>>({});
@@ -317,6 +319,7 @@ const Assessment = () => {
       title: "Assessment Saved",
       description: "Your assessment has been saved successfully.",
     });
+    navigate("/assessments");
   };
 
   const handleRetake = () => {
