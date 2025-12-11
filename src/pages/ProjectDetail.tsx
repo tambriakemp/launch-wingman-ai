@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -16,14 +16,56 @@ import {
   Plus,
   Loader2,
   ClipboardCheck,
-  CheckCircle2,
-  XCircle,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface Project {
+  id: string;
+  name: string;
+  description: string | null;
+  status: "planning" | "active" | "completed";
+}
+
+const statusVariants = {
+  planning: { label: "Planning", className: "text-warning border-warning" },
+  active: { label: "Active", className: "text-success border-success" },
+  completed: { label: "Completed", className: "text-muted-foreground border-muted" },
+};
 
 const ProjectDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const [project, setProject] = useState<Project | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [transformationStatement, setTransformationStatement] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    const fetchProject = async () => {
+      if (!id) return;
+
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name, description, status")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error) {
+        toast.error("Failed to load project");
+        console.error(error);
+        navigate("/projects");
+      } else if (!data) {
+        toast.error("Project not found");
+        navigate("/projects");
+      } else {
+        setProject(data as Project);
+      }
+      setIsLoading(false);
+    };
+
+    fetchProject();
+  }, [id, navigate]);
 
   const handleGenerateStatement = async () => {
     setIsGenerating(true);
@@ -35,6 +77,22 @@ const ProjectDetail = () => {
       setIsGenerating(false);
     }, 2000);
   };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!project) {
+    return null;
+  }
+
+  const statusInfo = statusVariants[project.status];
 
   return (
     <DashboardLayout>
@@ -54,13 +112,13 @@ const ProjectDetail = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-foreground">Project {id}</h1>
-                <Badge variant="outline" className="text-warning border-warning">
-                  Planning
+                <h1 className="text-3xl font-bold text-foreground">{project.name}</h1>
+                <Badge variant="outline" className={statusInfo.className}>
+                  {statusInfo.label}
                 </Badge>
               </div>
               <p className="text-muted-foreground">
-                Manage your launch calendar, tasks, and content.
+                {project.description || "Manage your launch calendar, tasks, and content."}
               </p>
             </div>
             <Button variant="outline">
