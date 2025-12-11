@@ -1,1 +1,7 @@
 project_id = "ydhagqgurqhlguxkkppb"
+
+[functions.generate-transformation]
+verify_jwt = false
+
+[functions.send-assessment-reminder]
+verify_jwt = false
