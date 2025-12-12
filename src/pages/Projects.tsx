@@ -846,7 +846,7 @@ const Projects = () => {
                     <CardContent className="mt-auto">
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
+                          <CalendarIcon className="w-4 h-4" />
                           <span>
                             {project.project_type === "prelaunch" 
                               ? (project.launch_events?.[0]?.prelaunch_start 
