@@ -63,6 +63,11 @@ import { useAuth } from "@/contexts/AuthContext";
 
 type ProjectStatus = "active" | "draft" | "archived";
 
+interface LaunchEvent {
+  prelaunch_start: string | null;
+  enrollment_opens: string | null;
+}
+
 interface Project {
   id: string;
   name: string;
@@ -70,6 +75,7 @@ interface Project {
   launch_date: string | null;
   status: ProjectStatus;
   project_type: "launch" | "prelaunch";
+  launch_events: LaunchEvent[];
 }
 
 const statusColors: Record<ProjectStatus, string> = {
@@ -103,7 +109,7 @@ const Projects = () => {
       
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, description, launch_date, status, project_type")
+        .select("id, name, description, launch_date, status, project_type, launch_events(prelaunch_start, enrollment_opens)")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -140,7 +146,7 @@ const Projects = () => {
         status: "active",
         project_type: newProject.eventType,
       })
-      .select("id, name, description, launch_date, status, project_type")
+      .select("id, name, description, launch_date, status, project_type, launch_events(prelaunch_start, enrollment_opens)")
       .single();
 
     if (error) {
@@ -427,7 +433,15 @@ const Projects = () => {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
-                          <span>{project.launch_date || "No launch date"}</span>
+                          <span>
+                            {project.project_type === "prelaunch" 
+                              ? (project.launch_events?.[0]?.prelaunch_start 
+                                  ? `Pre-Launch: ${new Date(project.launch_events[0].prelaunch_start).toLocaleDateString()}`
+                                  : "No pre-launch date")
+                              : (project.launch_events?.[0]?.enrollment_opens 
+                                  ? `Launch: ${new Date(project.launch_events[0].enrollment_opens).toLocaleDateString()}`
+                                  : "No launch date")}
+                          </span>
                         </div>
                       </div>
                     </CardContent>
