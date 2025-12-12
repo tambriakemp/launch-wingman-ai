@@ -53,19 +53,21 @@ interface LaunchEvent {
   rest_weeks?: number | null;
 }
 
+type ProjectStatus = "active" | "draft" | "archived";
+
 interface Project {
   id: string;
   name: string;
   description: string | null;
-  status: "planning" | "active" | "completed";
+  status: ProjectStatus;
   transformation_statement: string | null;
   project_type: "launch" | "prelaunch";
 }
 
-const statusVariants = {
-  planning: { label: "Planning", className: "text-warning border-warning" },
+const statusVariants: Record<ProjectStatus, { label: string; className: string }> = {
   active: { label: "Active", className: "text-success border-success" },
-  completed: { label: "Completed", className: "text-muted-foreground border-muted" },
+  draft: { label: "Draft", className: "text-warning border-warning" },
+  archived: { label: "Archived", className: "text-muted-foreground border-muted" },
 };
 
 const ProjectDetail = () => {
@@ -129,8 +131,8 @@ const ProjectDetail = () => {
     setProject((prev) => prev ? { ...prev, transformation_statement: statement } : null);
   };
 
-  const handleProjectUpdated = (name: string, description: string | null) => {
-    setProject((prev) => prev ? { ...prev, name, description } : null);
+  const handleProjectUpdated = (name: string, description: string | null, status: ProjectStatus) => {
+    setProject((prev) => prev ? { ...prev, name, description, status } : null);
   };
 
   const handleEditEvent = (event: LaunchEvent) => {
@@ -216,6 +218,7 @@ const ProjectDetail = () => {
               projectId={project.id}
               projectName={project.name}
               projectDescription={project.description}
+              projectStatus={project.status}
               onProjectUpdated={handleProjectUpdated}
               trigger={
                 <Button variant="outline">
