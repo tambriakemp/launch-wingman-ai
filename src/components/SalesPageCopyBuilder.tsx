@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Plus, FileText, MoreHorizontal, Pencil, Trash2, Lightbulb, ChevronDown, ChevronUp, Lock } from "lucide-react";
+import { useState } from "react";
+import { Plus, FileText, MoreHorizontal, Pencil, Trash2, Lightbulb, ChevronDown, ChevronUp, Lock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,8 +33,9 @@ import {
 } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import type { Json } from "@/integrations/supabase/types";
 
 const SALES_PAGE_SECTIONS = [
   { id: "heading", label: "Heading", placeholder: "Enter your main headline..." },
@@ -59,13 +60,33 @@ interface SalesPageCopyBuilderProps {
 }
 
 export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) => {
-  const { isSubscribed } = useAuth();
-  const [items, setItems] = useState<SalesPageCopy[]>([]);
+  const { isSubscribed, user } = useAuth();
+  const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<SalesPageCopy | null>(null);
   const [selectedDeliverable, setSelectedDeliverable] = useState<string>("");
   const [sections, setSections] = useState<Record<string, string>>({});
   const [directionsOpen, setDirectionsOpen] = useState(true);
+
+  // Fetch sales page copy from database
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["sales-page-copy", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sales_page_copy")
+        .select("*")
+        .eq("project_id", projectId);
+
+      if (error) throw error;
+      return (data || []).map((item) => ({
+        id: item.id,
+        deliverableId: item.deliverable_id,
+        deliverableName: DELIVERABLE_NAMES[item.deliverable_id] || item.deliverable_id,
+        sections: (item.sections as Record<string, string>) || {},
+      }));
+    },
+    enabled: !!projectId,
+  });
 
   // Free users can only create 1 sales page copy
   const canAddMore = isSubscribed || items.length < 1;
@@ -110,6 +131,56 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
   const getDeliverableName = (id: string) => DELIVERABLE_NAMES[id] || id;
 
+  // Create mutation
+  const createMutation = useMutation({
+    mutationFn: async (data: { deliverableId: string; sections: Record<string, string> }) => {
+      const { error } = await supabase.from("sales_page_copy").insert({
+        project_id: projectId,
+        user_id: user?.id,
+        deliverable_id: data.deliverableId,
+        sections: data.sections as Json,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sales-page-copy", projectId] });
+      toast.success("Sales page copy added");
+    },
+    onError: () => toast.error("Failed to save sales page copy"),
+  });
+
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: async (data: { id: string; deliverableId: string; sections: Record<string, string> }) => {
+      const { error } = await supabase
+        .from("sales_page_copy")
+        .update({
+          deliverable_id: data.deliverableId,
+          sections: data.sections as Json,
+        })
+        .eq("id", data.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sales-page-copy", projectId] });
+      toast.success("Sales page copy updated");
+    },
+    onError: () => toast.error("Failed to update sales page copy"),
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("sales_page_copy").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sales-page-copy", projectId] });
+      toast.success("Sales page copy deleted");
+    },
+    onError: () => toast.error("Failed to delete sales page copy"),
+  });
+
   const handleAdd = () => {
     setEditingItem(null);
     setSelectedDeliverable("");
@@ -125,8 +196,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   };
 
   const handleDelete = (item: SalesPageCopy) => {
-    setItems((prev) => prev.filter((i) => i.id !== item.id));
-    toast.success("Sales page copy deleted");
+    deleteMutation.mutate(item.id);
   };
 
   const handleSave = () => {
@@ -142,14 +212,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     }
 
     if (editingItem) {
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === editingItem.id
-            ? { ...item, deliverableId: selectedDeliverable, deliverableName: getDeliverableName(selectedDeliverable), sections }
-            : item
-        )
-      );
-      toast.success("Sales page copy updated");
+      updateMutation.mutate({ id: editingItem.id, deliverableId: selectedDeliverable, sections });
     } else {
       // Check if copy already exists for this deliverable
       const existing = items.find((i) => i.deliverableId === selectedDeliverable);
@@ -158,14 +221,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
         return;
       }
 
-      const newItem: SalesPageCopy = {
-        id: crypto.randomUUID(),
-        deliverableId: selectedDeliverable,
-        deliverableName: getDeliverableName(selectedDeliverable),
-        sections,
-      };
-      setItems((prev) => [...prev, newItem]);
-      toast.success("Sales page copy added");
+      createMutation.mutate({ deliverableId: selectedDeliverable, sections });
     }
 
     setDialogOpen(false);

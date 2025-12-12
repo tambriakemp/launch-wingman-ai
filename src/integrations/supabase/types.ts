@@ -204,6 +204,88 @@ export type Database = {
         }
         Relationships: []
       }
+      sales_page_copy: {
+        Row: {
+          created_at: string
+          deliverable_id: string
+          id: string
+          project_id: string
+          sections: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deliverable_id: string
+          id?: string
+          project_id: string
+          sections?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deliverable_id?: string
+          id?: string
+          project_id?: string
+          sections?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_page_copy_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_bios: {
+        Row: {
+          bio_content: string
+          created_at: string
+          field_data: Json
+          formula_id: string
+          id: string
+          platform: string
+          project_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio_content: string
+          created_at?: string
+          field_data?: Json
+          formula_id: string
+          id?: string
+          platform: string
+          project_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio_content?: string
+          created_at?: string
+          field_data?: Json
+          formula_id?: string
+          id?: string
+          platform?: string
+          project_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_bios_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subtasks: {
         Row: {
           completed: boolean

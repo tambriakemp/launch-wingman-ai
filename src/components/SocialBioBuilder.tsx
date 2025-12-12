@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Users, MoreHorizontal, Pencil, Trash2, Instagram, Facebook, Twitter, Linkedin, AtSign } from "lucide-react";
+import { Plus, Users, MoreHorizontal, Pencil, Trash2, Instagram, Facebook, Twitter, Linkedin, AtSign, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -21,6 +21,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
+import type { Json } from "@/integrations/supabase/types";
 
 interface SocialBio {
   id: string;
@@ -197,7 +201,8 @@ const bioFormulas = [
 type Step = "platform" | "formula" | "content";
 
 export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
-  const [bios, setBios] = useState<SocialBio[]>([]);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [step, setStep] = useState<Step>("platform");
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
@@ -205,8 +210,82 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
   const [fieldData, setFieldData] = useState<Record<string, string>>({});
   const [editingBio, setEditingBio] = useState<SocialBio | null>(null);
 
+  // Fetch bios from database
+  const { data: bios = [], isLoading } = useQuery({
+    queryKey: ["social-bios", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("social_bios")
+        .select("*")
+        .eq("project_id", projectId);
+
+      if (error) throw error;
+      return (data || []).map((item) => ({
+        id: item.id,
+        platform: item.platform,
+        formula: item.formula_id,
+        content: item.bio_content,
+      }));
+    },
+    enabled: !!projectId,
+  });
+
   const platform = platforms.find((p) => p.id === selectedPlatform);
   const formula = bioFormulas.find((f) => f.id === selectedFormula);
+
+  // Create mutation
+  const createMutation = useMutation({
+    mutationFn: async (data: { platform: string; formulaId: string; content: string; fieldData: Record<string, string> }) => {
+      const { error } = await supabase.from("social_bios").insert({
+        project_id: projectId,
+        user_id: user?.id,
+        platform: data.platform,
+        formula_id: data.formulaId,
+        bio_content: data.content,
+        field_data: data.fieldData as Json,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["social-bios", projectId] });
+      toast.success("Bio created");
+    },
+    onError: () => toast.error("Failed to save bio"),
+  });
+
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: async (data: { id: string; platform: string; formulaId: string; content: string; fieldData: Record<string, string> }) => {
+      const { error } = await supabase
+        .from("social_bios")
+        .update({
+          platform: data.platform,
+          formula_id: data.formulaId,
+          bio_content: data.content,
+          field_data: data.fieldData as Json,
+        })
+        .eq("id", data.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["social-bios", projectId] });
+      toast.success("Bio updated");
+    },
+    onError: () => toast.error("Failed to update bio"),
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("social_bios").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["social-bios", projectId] });
+      toast.success("Bio deleted");
+    },
+    onError: () => toast.error("Failed to delete bio"),
+  });
 
   const handleAdd = () => {
     setEditingBio(null);
@@ -221,15 +300,13 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
     setEditingBio(bio);
     setSelectedPlatform(bio.platform);
     setSelectedFormula(bio.formula);
-    // Parse content back to fields - for edit we just show the final content
     setFieldData({ finalContent: bio.content });
     setStep("content");
     setDialogOpen(true);
   };
 
   const handleDelete = (bio: SocialBio) => {
-    setBios((prev) => prev.filter((b) => b.id !== bio.id));
-    toast.success("Bio deleted");
+    deleteMutation.mutate(bio.id);
   };
 
   const handlePlatformSelect = (platformId: string) => {
@@ -267,23 +344,20 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
     }
 
     if (editingBio) {
-      setBios((prev) =>
-        prev.map((bio) =>
-          bio.id === editingBio.id
-            ? { ...bio, platform: selectedPlatform, formula: selectedFormula, content }
-            : bio
-        )
-      );
-      toast.success("Bio updated");
-    } else {
-      const newBio: SocialBio = {
-        id: crypto.randomUUID(),
+      updateMutation.mutate({
+        id: editingBio.id,
         platform: selectedPlatform,
-        formula: selectedFormula,
+        formulaId: selectedFormula,
         content,
-      };
-      setBios((prev) => [...prev, newBio]);
-      toast.success("Bio created");
+        fieldData,
+      });
+    } else {
+      createMutation.mutate({
+        platform: selectedPlatform,
+        formulaId: selectedFormula,
+        content,
+        fieldData,
+      });
     }
 
     setDialogOpen(false);
