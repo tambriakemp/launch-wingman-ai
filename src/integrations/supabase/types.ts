@@ -232,6 +232,7 @@ export type Database = {
           offer_category: string
           offer_type: string
           price: number | null
+          price_type: string | null
           primary_pain_point: string | null
           problem_statement: string | null
           project_id: string
@@ -255,6 +256,7 @@ export type Database = {
           offer_category: string
           offer_type: string
           price?: number | null
+          price_type?: string | null
           primary_pain_point?: string | null
           problem_statement?: string | null
           project_id: string
@@ -278,6 +280,7 @@ export type Database = {
           offer_category?: string
           offer_type?: string
           price?: number | null
+          price_type?: string | null
           primary_pain_point?: string | null
           problem_statement?: string | null
           project_id?: string
