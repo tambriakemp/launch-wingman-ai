@@ -20,13 +20,52 @@ import {
   ArrowRight,
   Loader2,
   Settings2,
+  Lock,
 } from "lucide-react";
+
+interface Profile {
+  first_name: string | null;
+  last_name: string | null;
+}
 
 const Settings = () => {
   const { user, isSubscribed, subscriptionEnd, checkSubscription } = useAuth();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [searchParams] = useSearchParams();
+  
+  // Profile state
+  const [profile, setProfile] = useState<Profile>({ first_name: null, last_name: null });
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  
+  // Password state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Fetch profile on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (data && !error) {
+        setProfile(data);
+        setFirstName(data.first_name || "");
+        setLastName(data.last_name || "");
+      }
+    };
+    
+    fetchProfile();
+  }, [user]);
 
   // Handle success/cancel redirects from Stripe
   useEffect(() => {
@@ -37,6 +76,72 @@ const Settings = () => {
       toast.info("Checkout canceled.");
     }
   }, [searchParams, checkSubscription]);
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    
+    setIsSavingProfile(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ first_name: firstName, last_name: lastName })
+      .eq('user_id', user.id);
+    
+    setIsSavingProfile(false);
+    
+    if (error) {
+      toast.error("Failed to update profile");
+    } else {
+      setProfile({ first_name: firstName, last_name: lastName });
+      toast.success("Profile updated successfully");
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword || !currentPassword) {
+      toast.error("Please fill in all password fields");
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords don't match");
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    
+    // First verify current password by attempting to sign in
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user?.email || "",
+      password: currentPassword,
+    });
+    
+    if (signInError) {
+      setIsChangingPassword(false);
+      toast.error("Current password is incorrect");
+      return;
+    }
+    
+    // Update to new password
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    
+    setIsChangingPassword(false);
+    
+    if (updateError) {
+      toast.error(updateError.message || "Failed to update password");
+    } else {
+      toast.success("Password updated successfully");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+  };
 
   const handleUpgrade = async () => {
     setIsCheckingOut(true);
@@ -69,6 +174,8 @@ const Settings = () => {
       setIsOpeningPortal(false);
     }
   };
+
+  const hasProfileChanges = firstName !== (profile.first_name || "") || lastName !== (profile.last_name || "");
 
   return (
     <DashboardLayout>
@@ -103,6 +210,28 @@ const Settings = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="Enter your first name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Enter your last name"
+                  />
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -113,8 +242,85 @@ const Settings = () => {
                   className="bg-muted"
                 />
               </div>
-              <Button variant="outline" onClick={() => toast.info("Password reset coming soon!")}>
-                Change Password
+              {hasProfileChanges && (
+                <Button onClick={handleSaveProfile} disabled={isSavingProfile}>
+                  {isSavingProfile ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Profile"
+                  )}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Password Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <Card variant="elevated">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-secondary/50 rounded-xl flex items-center justify-center">
+                  <Lock className="w-5 h-5 text-foreground" />
+                </div>
+                <div>
+                  <CardTitle>Change Password</CardTitle>
+                  <CardDescription>Update your password</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current Password</Label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter current password"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                  />
+                </div>
+              </div>
+              <Button 
+                onClick={handleChangePassword} 
+                disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+              >
+                {isChangingPassword ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Password"
+                )}
               </Button>
             </CardContent>
           </Card>
