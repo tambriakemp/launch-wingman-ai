@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO, isPast, isToday } from "date-fns";
-import { GripVertical, MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, Filter, X } from "lucide-react";
+import { ChevronRight, ChevronDown, MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, Filter, X, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,8 +46,6 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [draggedTask, setDraggedTask] = useState<Task | null>(null);
-  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   
   // Dialog state
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
@@ -62,22 +60,30 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedPhase, setSelectedPhase] = useState<string>("all");
 
-  // Refs for synced scrolling
-  const topScrollRef = useRef<HTMLDivElement>(null);
-  const boardScrollRef = useRef<HTMLDivElement>(null);
+  // Collapsible phase state - includes "unassigned" for tasks with no phase
+  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set([...TASK_PHASES.map(p => p.id), "unassigned"]));
 
-  // Sync scroll between top scrollbar and board
-  const handleTopScroll = () => {
-    if (topScrollRef.current && boardScrollRef.current) {
-      boardScrollRef.current.scrollLeft = topScrollRef.current.scrollLeft;
-    }
+  const togglePhase = (phaseId: string) => {
+    setExpandedPhases(prev => {
+      const next = new Set(prev);
+      if (next.has(phaseId)) {
+        next.delete(phaseId);
+      } else {
+        next.add(phaseId);
+      }
+      return next;
+    });
   };
 
-  const handleBoardScroll = () => {
-    if (topScrollRef.current && boardScrollRef.current) {
-      topScrollRef.current.scrollLeft = boardScrollRef.current.scrollLeft;
-    }
+  const expandAll = () => {
+    setExpandedPhases(new Set([...TASK_PHASES.map(p => p.id), "unassigned"]));
   };
+
+  const collapseAll = () => {
+    setExpandedPhases(new Set());
+  };
+
+  const allExpanded = expandedPhases.size === TASK_PHASES.length + 1;
 
   const fetchTasks = useCallback(async () => {
     if (!projectId) return;
@@ -212,51 +218,6 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
     setDeleteDialogOpen(true);
   };
 
-  const handleDragStart = (e: React.DragEvent, task: Task) => {
-    setDraggedTask(task);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleDragOver = (e: React.DragEvent, columnId: string) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDragOverColumn(columnId);
-  };
-
-  const handleDragLeave = () => {
-    setDragOverColumn(null);
-  };
-
-  const handleDrop = async (e: React.DragEvent, columnId: string) => {
-    e.preventDefault();
-    if (draggedTask && draggedTask.column_id !== columnId) {
-      // Optimistic update
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === draggedTask.id ? { ...task, column_id: columnId } : task
-        )
-      );
-
-      // Update in database
-      const { error } = await supabase
-        .from("tasks")
-        .update({ column_id: columnId })
-        .eq("id", draggedTask.id);
-
-      if (error) {
-        console.error("Error moving task:", error);
-        toast.error("Failed to move task");
-        fetchTasks(); // Revert on error
-      }
-    }
-    setDraggedTask(null);
-    setDragOverColumn(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedTask(null);
-    setDragOverColumn(null);
-  };
 
   const toggleLabelFilter = (labelId: string) => {
     setSelectedLabels(prev =>
@@ -296,8 +257,23 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
     return true;
   });
 
-  const getTasksByColumn = (columnId: string) =>
-    filteredTasks.filter((task) => task.column_id === columnId);
+  const getTasksByPhase = (phaseId: string | null) =>
+    filteredTasks.filter((task) => task.phase === phaseId);
+
+  const getStatusInfo = (columnId: string) => {
+    const column = COLUMNS.find(c => c.id === columnId);
+    return column || { id: "todo", label: "To Do" };
+  };
+
+  const getStatusColor = (columnId: string) => {
+    switch (columnId) {
+      case "done": return "bg-emerald-500";
+      case "in-progress": return "bg-blue-500";
+      case "review": return "bg-purple-500";
+      case "blocked": return "bg-amber-500";
+      default: return "bg-muted-foreground";
+    }
+  };
 
   const getDueDateColor = (dueDateStr: string | null) => {
     if (!dueDateStr) return "text-muted-foreground/50";
@@ -406,6 +382,10 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" className="h-9" onClick={allExpanded ? collapseAll : expandAll}>
+            <ChevronsUpDown className="w-4 h-4 mr-2" />
+            {allExpanded ? "Collapse All" : "Expand All"}
+          </Button>
           <LoadLaunchTasksDialog
             projectId={projectId}
             projectType={projectType}
@@ -419,153 +399,273 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
         </div>
       </div>
 
-      {/* Top scrollbar */}
-      <div 
-        ref={topScrollRef}
-        onScroll={handleTopScroll}
-        className="overflow-x-auto h-3 mb-2"
-      >
-        <div className="h-1" style={{ width: `${COLUMNS.length * 280 + (COLUMNS.length - 1) * 16}px` }} />
-      </div>
-
-      {/* Board - scrollable container */}
-      <div 
-        ref={boardScrollRef}
-        onScroll={handleBoardScroll}
-        className="overflow-x-auto pb-4"
-      >
-        <div className="flex gap-4 min-w-max py-1">
-          {COLUMNS.map((column) => (
-            <div
-              key={column.id}
-              className={cn(
-                "bg-muted/50 rounded-lg p-4 min-h-[300px] w-[280px] flex-shrink-0 transition-colors",
-                dragOverColumn === column.id && "bg-primary/10 ring-2 ring-primary/30"
-              )}
-              onDragOver={(e) => handleDragOver(e, column.id)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, column.id)}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-medium text-foreground text-sm">{column.label}</h4>
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                  {getTasksByColumn(column.id).length}
+      {/* Phase-grouped task list */}
+      <div className="space-y-2">
+        {/* Render phases in order */}
+        {TASK_PHASES.map((phase) => {
+          const phaseTasks = getTasksByPhase(phase.id);
+          const isExpanded = expandedPhases.has(phase.id);
+          
+          return (
+            <div key={phase.id} className="border rounded-lg overflow-hidden bg-card">
+              {/* Phase header */}
+              <button
+                onClick={() => togglePhase(phase.id)}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                )}
+                <Badge className={cn("text-xs", phase.color)}>
+                  {phase.label}
+                </Badge>
+                <span className="text-sm text-muted-foreground ml-auto">
+                  {phaseTasks.length}
                 </span>
-              </div>
-              <div className="space-y-2">
-                {getTasksByColumn(column.id).map((task) => (
+              </button>
+
+              {/* Phase tasks */}
+              <AnimatePresence initial={false}>
+                {isExpanded && phaseTasks.length > 0 && (
                   <motion.div
-                    key={task.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className={cn(
-                      "p-3 bg-card rounded-lg border shadow-sm cursor-pointer hover:shadow-md transition-shadow group",
-                      draggedTask?.id === task.id && "opacity-50"
-                    )}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e as unknown as React.DragEvent, task)}
-                    onDragEnd={handleDragEnd}
-                    onClick={(e) => handleCardClick(task, e)}
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
                   >
-                    <div className="flex items-start gap-2">
-                      <GripVertical 
-                        data-no-click
-                        className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-0.5 flex-shrink-0 cursor-grab active:cursor-grabbing" 
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="text-sm font-medium text-foreground line-clamp-2">{task.title}</span>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button 
-                                data-no-click
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <MoreHorizontal className="w-3 h-3" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingTask(task); setTaskDialogOpen(true); }}>
-                                <Pencil className="w-4 h-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={(e) => { e.stopPropagation(); handleDeleteClick(task); }}
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                        {task.description && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.description}</p>
-                        )}
-                        {/* Phase badge */}
-                        {task.phase && (
-                          <div className="mt-2">
-                            {(() => {
-                              const phaseInfo = getPhaseInfo(task.phase);
-                              if (!phaseInfo) return null;
-                              return (
-                                <Badge
-                                  variant="outline"
-                                  className={cn("text-[10px] px-1.5 py-0", phaseInfo.color)}
-                                >
-                                  {phaseInfo.label}
-                                </Badge>
-                              );
-                            })()}
-                          </div>
-                        )}
-                        {/* Labels */}
-                        {task.labels && task.labels.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {task.labels.map((labelId) => {
-                              const labelInfo = getLabelInfo(labelId);
-                              if (!labelInfo) return null;
-                              return (
-                                <Badge
-                                  key={labelId}
-                                  variant="outline"
-                                  className={cn("text-[10px] px-1.5 py-0", labelInfo.color)}
-                                >
-                                  {labelInfo.label}
-                                </Badge>
-                              );
-                            })}
-                          </div>
-                        )}
-                        {/* Due date */}
-                        <div className={cn("flex items-center gap-1 text-xs mt-2", getDueDateColor(task.due_date))}>
-                          <Calendar className="w-3 h-3" />
-                          <span>{task.due_date ? format(parseISO(task.due_date), "MMM d") : "No date"}</span>
-                        </div>
-                        {/* Subtask indicator - always show icon */}
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1.5">
-                          <ListTodo className="w-3 h-3" />
-                          {task.subtask_count && task.subtask_count > 0 && (
-                            <span>{task.subtask_count} subtask{task.subtask_count > 1 ? 's' : ''}</span>
-                          )}
-                        </div>
+                    <div className="border-t">
+                      {/* Column headers */}
+                      <div className="grid grid-cols-[1fr,120px,100px,100px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/30">
+                        <span>Name</span>
+                        <span>Status</span>
+                        <span>Due date</span>
+                        <span className="text-right">Actions</span>
                       </div>
+                      {/* Task rows */}
+                      {phaseTasks.map((task) => (
+                        <div
+                          key={task.id}
+                          onClick={(e) => handleCardClick(task, e)}
+                          className="grid grid-cols-[1fr,120px,100px,100px] gap-2 px-4 py-2.5 items-center hover:bg-muted/30 cursor-pointer transition-colors group border-b last:border-b-0"
+                        >
+                          {/* Task name with labels */}
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-sm font-medium text-foreground truncate">
+                              {task.title}
+                            </span>
+                            {task.subtask_count && task.subtask_count > 0 && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
+                                <ListTodo className="w-3 h-3" />
+                                <span>{task.subtask_count}</span>
+                              </div>
+                            )}
+                            {task.labels && task.labels.length > 0 && (
+                              <div className="flex gap-1 flex-shrink-0">
+                                {task.labels.slice(0, 2).map((labelId) => {
+                                  const labelInfo = getLabelInfo(labelId);
+                                  if (!labelInfo) return null;
+                                  return (
+                                    <Badge
+                                      key={labelId}
+                                      variant="outline"
+                                      className={cn("text-[10px] px-1.5 py-0", labelInfo.color)}
+                                    >
+                                      {labelInfo.label}
+                                    </Badge>
+                                  );
+                                })}
+                                {task.labels.length > 2 && (
+                                  <span className="text-xs text-muted-foreground">+{task.labels.length - 2}</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Status badge */}
+                          <div className="flex items-center gap-2">
+                            <span className={cn("w-2 h-2 rounded-full", getStatusColor(task.column_id))} />
+                            <span className="text-xs text-muted-foreground">{getStatusInfo(task.column_id).label}</span>
+                          </div>
+
+                          {/* Due date */}
+                          <div className={cn("flex items-center gap-1 text-xs", getDueDateColor(task.due_date))}>
+                            <Calendar className="w-3 h-3" />
+                            <span>{task.due_date ? format(parseISO(task.due_date), "MMM d") : "-"}</span>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex justify-end">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button 
+                                  data-no-click
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingTask(task); setTaskDialogOpen(true); }}>
+                                  <Pencil className="w-4 h-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteClick(task); }}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </motion.div>
-                ))}
-                {getTasksByColumn(column.id).length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <p className="text-sm text-muted-foreground">No tasks</p>
-                  </div>
                 )}
-              </div>
+              </AnimatePresence>
             </div>
-          ))}
-        </div>
+          );
+        })}
+
+        {/* Unassigned phase for tasks without a phase */}
+        {(() => {
+          const unassignedTasks = getTasksByPhase(null);
+          const isExpanded = expandedPhases.has("unassigned");
+          
+          if (unassignedTasks.length === 0) return null;
+          
+          return (
+            <div className="border rounded-lg overflow-hidden bg-card">
+              <button
+                onClick={() => togglePhase("unassigned")}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                )}
+                <Badge variant="secondary" className="text-xs">
+                  Unassigned
+                </Badge>
+                <span className="text-sm text-muted-foreground ml-auto">
+                  {unassignedTasks.length}
+                </span>
+              </button>
+
+              <AnimatePresence initial={false}>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="border-t">
+                      <div className="grid grid-cols-[1fr,120px,100px,100px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/30">
+                        <span>Name</span>
+                        <span>Status</span>
+                        <span>Due date</span>
+                        <span className="text-right">Actions</span>
+                      </div>
+                      {unassignedTasks.map((task) => (
+                        <div
+                          key={task.id}
+                          onClick={(e) => handleCardClick(task, e)}
+                          className="grid grid-cols-[1fr,120px,100px,100px] gap-2 px-4 py-2.5 items-center hover:bg-muted/30 cursor-pointer transition-colors group border-b last:border-b-0"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-sm font-medium text-foreground truncate">
+                              {task.title}
+                            </span>
+                            {task.subtask_count && task.subtask_count > 0 && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
+                                <ListTodo className="w-3 h-3" />
+                                <span>{task.subtask_count}</span>
+                              </div>
+                            )}
+                            {task.labels && task.labels.length > 0 && (
+                              <div className="flex gap-1 flex-shrink-0">
+                                {task.labels.slice(0, 2).map((labelId) => {
+                                  const labelInfo = getLabelInfo(labelId);
+                                  if (!labelInfo) return null;
+                                  return (
+                                    <Badge
+                                      key={labelId}
+                                      variant="outline"
+                                      className={cn("text-[10px] px-1.5 py-0", labelInfo.color)}
+                                    >
+                                      {labelInfo.label}
+                                    </Badge>
+                                  );
+                                })}
+                                {task.labels.length > 2 && (
+                                  <span className="text-xs text-muted-foreground">+{task.labels.length - 2}</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={cn("w-2 h-2 rounded-full", getStatusColor(task.column_id))} />
+                            <span className="text-xs text-muted-foreground">{getStatusInfo(task.column_id).label}</span>
+                          </div>
+                          <div className={cn("flex items-center gap-1 text-xs", getDueDateColor(task.due_date))}>
+                            <Calendar className="w-3 h-3" />
+                            <span>{task.due_date ? format(parseISO(task.due_date), "MMM d") : "-"}</span>
+                          </div>
+                          <div className="flex justify-end">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button 
+                                  data-no-click
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingTask(task); setTaskDialogOpen(true); }}>
+                                  <Pencil className="w-4 h-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteClick(task); }}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })()}
+
+        {/* Empty state */}
+        {filteredTasks.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/30">
+            <p className="text-muted-foreground">No tasks found</p>
+          </div>
+        )}
       </div>
 
       {/* Task Dialog */}
