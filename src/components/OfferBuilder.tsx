@@ -632,13 +632,15 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
 
   const toggleDeliverable = (deliverableId: string) => {
     setSelectedDeliverables(prev => {
+      // If already selected, uncheck it
       if (prev.includes(deliverableId)) {
         return prev.filter(id => id !== deliverableId);
       }
-      // Check limit for free users
-      if (prev.length >= maxDeliverables) {
-        return prev; // Don't add more if at limit
+      // For free users (limit 1), auto-replace the selection
+      if (!isSubscribed) {
+        return [deliverableId];
       }
+      // For subscribed users, add to selection
       return [...prev, deliverableId];
     });
   };
@@ -868,8 +870,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>{offer ? "Edit Offer" : "Create Offer"}</DialogTitle>
             <DialogDescription>
               {step === 1 && "Step 1: Enter your offer details"}
@@ -880,7 +882,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
           </DialogHeader>
           
           {/* Step Indicators */}
-          <div className="flex items-center gap-2 py-2">
+          <div className="flex items-center gap-2 py-2 flex-shrink-0">
             {[1, 2, 3, 4].map((s) => (
               <div
                 key={s}
@@ -892,7 +894,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
             ))}
           </div>
 
-          <ScrollArea className="flex-1 pr-4 min-h-0">
+          <div className="flex-1 overflow-y-auto min-h-0 pr-2">
             <div className="space-y-6 py-4 pr-2">
               {/* Step 1: Offer Details */}
               {step === 1 && (
@@ -1072,8 +1074,34 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 <div className="space-y-4">
                   <div>
                     <Label>Select Main Deliverables</Label>
-                    <p className="text-sm text-muted-foreground mt-1">Choose what your clients will receive. Select all that apply.</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {isSubscribed 
+                        ? "Choose what your clients will receive. Select all that apply."
+                        : "Choose what your clients will receive."}
+                    </p>
                   </div>
+
+                  {/* Free plan upgrade notice */}
+                  {!isSubscribed && (
+                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <CheckSquare className="w-4 h-4 text-amber-600" />
+                        <span className="text-sm text-amber-700">Free plan: 1 deliverable included</span>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-amber-700 border-amber-500/30 hover:bg-amber-500/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open('/settings', '_blank');
+                        }}
+                      >
+                        Upgrade Plan
+                      </Button>
+                    </div>
+                  )}
+
                   <div className="grid gap-3">
                     {MAIN_DELIVERABLES.map((deliverable) => {
                       const Icon = deliverable.icon;
@@ -1098,7 +1126,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                                 <CardDescription className="text-xs mt-0.5">{deliverable.description}</CardDescription>
                               </div>
                               <div className={cn(
-                                "w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
+                                "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
                                 isSelected ? "bg-primary border-primary" : "border-muted-foreground/30"
                               )}>
                                 {isSelected && (
@@ -1113,24 +1141,17 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                       );
                     })}
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <CheckSquare className="w-4 h-4" />
-                      <span>{selectedDeliverables.length} deliverable{selectedDeliverables.length !== 1 ? 's' : ''} selected</span>
-                    </div>
-                    {!isSubscribed && (
-                      <span className="text-xs text-amber-600 bg-amber-500/10 px-2 py-1 rounded">
-                        Free plan: 1 deliverable max
-                      </span>
-                    )}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CheckSquare className="w-4 h-4" />
+                    <span>{selectedDeliverables.length} deliverable{selectedDeliverables.length !== 1 ? 's' : ''} selected</span>
                   </div>
                 </div>
               )}
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between gap-3 pt-4 border-t">
+          <div className="flex justify-between gap-3 pt-4 border-t flex-shrink-0">
             <Button 
               variant="outline" 
               onClick={() => step === 1 ? handleCloseDialog() : setStep((step - 1) as 1 | 2 | 3)}
