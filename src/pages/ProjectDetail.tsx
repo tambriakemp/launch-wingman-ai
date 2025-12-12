@@ -40,6 +40,7 @@ import { ProjectBoard } from "@/components/ProjectBoard";
 import { ProjectSettingsDialog } from "@/components/ProjectSettingsDialog";
 import { OfferBuilder } from "@/components/OfferBuilder";
 import { MessagingBuilder } from "@/components/MessagingBuilder";
+import { ContentPlanner } from "@/components/ContentPlanner";
 
 interface LaunchEvent {
   id: string;
@@ -465,30 +466,14 @@ const ProjectDetail = () => {
 
             <TabsContent value="content">
               <Card variant="elevated" className="min-h-[400px]">
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader>
                   <div>
                     <CardTitle>Content Planner</CardTitle>
-                    <CardDescription>Organize content tied to your launch calendar</CardDescription>
+                    <CardDescription>Plan your pre-launch and launch content based on proven strategies</CardDescription>
                   </div>
-                  <Button>
-                    <Plus className="w-4 h-4" />
-                    Add Content
-                  </Button>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                      <FileText className="w-8 h-8 text-muted-foreground" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No content planned</h3>
-                    <p className="text-muted-foreground mb-4 max-w-sm">
-                      Start planning your launch content like emails, social posts, and sales pages.
-                    </p>
-                    <Button variant="outline">
-                      <Plus className="w-4 h-4" />
-                      Add First Content Piece
-                    </Button>
-                  </div>
+                  <ContentPlanner projectId={project.id} />
                 </CardContent>
               </Card>
             </TabsContent>
