@@ -1619,10 +1619,19 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
             {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => {
               const isCompleted = s < step;
               const isCurrent = s === step;
-              const isOptional = s === 3 || s === 4 || s === 5;
+              const isClickable = isCompleted || isCurrent;
               
               return (
-                <div key={s} className="flex-1 flex flex-col items-center gap-1.5">
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => isClickable && setStep(s as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8)}
+                  disabled={!isClickable}
+                  className={cn(
+                    "flex-1 flex flex-col items-center gap-1.5 transition-opacity",
+                    isClickable ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-60"
+                  )}
+                >
                   <div
                     className={cn(
                       "w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all border-2",
@@ -1652,7 +1661,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     {s === 7 && "Funnel"}
                     {s === 8 && "Platforms"}
                   </span>
-                </div>
+                </button>
               );
             })}
           </div>
