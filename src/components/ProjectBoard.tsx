@@ -7,13 +7,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { TaskDialog, Task } from "@/components/TaskDialog";
+import { TaskDialog, Task, TASK_LABELS } from "@/components/TaskDialog";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 
 const COLUMNS = [
@@ -64,7 +65,7 @@ export const ProjectBoard = ({ projectId }: ProjectBoardProps) => {
     fetchTasks();
   }, [fetchTasks]);
 
-  const handleCreateTask = async (data: { title: string; description: string; due_date: Date | null; column_id: string }) => {
+  const handleCreateTask = async (data: { title: string; description: string; due_date: Date | null; column_id: string; labels: string[] }) => {
     if (!user) return;
 
     const { error } = await supabase.from("tasks").insert({
@@ -74,6 +75,7 @@ export const ProjectBoard = ({ projectId }: ProjectBoardProps) => {
       description: data.description || null,
       due_date: data.due_date ? format(data.due_date, "yyyy-MM-dd") : null,
       column_id: data.column_id,
+      labels: data.labels,
       position: tasks.filter(t => t.column_id === data.column_id).length,
     });
 
@@ -87,7 +89,7 @@ export const ProjectBoard = ({ projectId }: ProjectBoardProps) => {
     fetchTasks();
   };
 
-  const handleUpdateTask = async (data: { title: string; description: string; due_date: Date | null; column_id: string }) => {
+  const handleUpdateTask = async (data: { title: string; description: string; due_date: Date | null; column_id: string; labels: string[] }) => {
     if (!editingTask) return;
 
     const { error } = await supabase
@@ -97,6 +99,7 @@ export const ProjectBoard = ({ projectId }: ProjectBoardProps) => {
         description: data.description || null,
         due_date: data.due_date ? format(data.due_date, "yyyy-MM-dd") : null,
         column_id: data.column_id,
+        labels: data.labels,
       })
       .eq("id", editingTask.id);
 
@@ -200,6 +203,10 @@ export const ProjectBoard = ({ projectId }: ProjectBoardProps) => {
     return "text-muted-foreground";
   };
 
+  const getLabelInfo = (labelId: string) => {
+    return TASK_LABELS.find((l) => l.id === labelId);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -278,6 +285,24 @@ export const ProjectBoard = ({ projectId }: ProjectBoardProps) => {
                       </div>
                       {task.description && (
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.description}</p>
+                      )}
+                      {/* Labels */}
+                      {task.labels && task.labels.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {task.labels.map((labelId) => {
+                            const labelInfo = getLabelInfo(labelId);
+                            if (!labelInfo) return null;
+                            return (
+                              <Badge
+                                key={labelId}
+                                variant="outline"
+                                className={cn("text-[10px] px-1.5 py-0", labelInfo.color)}
+                              >
+                                {labelInfo.label}
+                              </Badge>
+                            );
+                          })}
+                        </div>
                       )}
                       {task.due_date && (
                         <div className={cn("flex items-center gap-1 mt-2 text-xs", getDueDateColor(task.due_date))}>
