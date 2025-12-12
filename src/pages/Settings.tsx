@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useSearchParams } from "react-router-dom";
 import {
   User,
   CreditCard,
@@ -15,10 +18,57 @@ import {
   Crown,
   Check,
   ArrowRight,
+  Loader2,
+  Settings2,
 } from "lucide-react";
 
 const Settings = () => {
-  const { user } = useAuth();
+  const { user, isSubscribed, subscriptionEnd, checkSubscription } = useAuth();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const [searchParams] = useSearchParams();
+
+  // Handle success/cancel redirects from Stripe
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      toast.success("Subscription successful! Welcome to Pro.");
+      checkSubscription();
+    } else if (searchParams.get('canceled') === 'true') {
+      toast.info("Checkout canceled.");
+    }
+  }, [searchParams, checkSubscription]);
+
+  const handleUpgrade = async () => {
+    setIsCheckingOut(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout');
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast.error("Failed to start checkout. Please try again.");
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setIsOpeningPortal(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Portal error:', error);
+      toast.error("Failed to open subscription management. Please try again.");
+    } finally {
+      setIsOpeningPortal(false);
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -89,46 +139,94 @@ const Settings = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex items-start justify-between p-4 bg-muted/50 rounded-lg">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-foreground">Free Plan</span>
-                    <span className="px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded-full">
-                      Current
-                    </span>
+              {isSubscribed ? (
+                /* Pro Plan - Active Subscription */
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between p-4 bg-primary/5 border-2 border-primary/20 rounded-lg">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Crown className="w-5 h-5 text-primary" />
+                        <span className="font-semibold text-foreground">Pro Plan</span>
+                        <span className="px-2 py-0.5 bg-primary/20 text-primary text-xs rounded-full">
+                          Active
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">Unlimited projects included</p>
+                      {subscriptionEnd && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Renews on {new Date(subscriptionEnd).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">1 active project included</p>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleManageSubscription}
+                    disabled={isOpeningPortal}
+                  >
+                    {isOpeningPortal ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Settings2 className="w-4 h-4" />
+                    )}
+                    Manage Subscription
+                  </Button>
                 </div>
-              </div>
+              ) : (
+                /* Free Plan - Show Upgrade */
+                <>
+                  <div className="flex items-start justify-between p-4 bg-muted/50 rounded-lg">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-foreground">Free Plan</span>
+                        <span className="px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded-full">
+                          Current
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">1 active project included</p>
+                    </div>
+                  </div>
 
-              <Separator className="my-6" />
+                  <Separator className="my-6" />
 
-              <div className="p-4 border-2 border-primary/20 rounded-lg bg-primary/5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Crown className="w-5 h-5 text-primary" />
-                  <span className="font-semibold text-foreground">Upgrade to Pro</span>
-                </div>
-                <div className="flex items-baseline gap-1 mb-4">
-                  <span className="text-3xl font-bold text-foreground">$10</span>
-                  <span className="text-muted-foreground">/month</span>
-                </div>
-                <ul className="space-y-2 mb-4">
-                  {[
-                    "Unlimited projects",
-                    "AI transformation generator",
-                    "Advanced calendar",
-                    "Priority support",
-                  ].map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Check className="w-4 h-4 text-success" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Button className="w-full" onClick={() => toast.info("Stripe integration coming soon!")}>
-                  Upgrade Now <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
-              </div>
+                  <div className="p-4 border-2 border-primary/20 rounded-lg bg-primary/5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Crown className="w-5 h-5 text-primary" />
+                      <span className="font-semibold text-foreground">Upgrade to Pro</span>
+                    </div>
+                    <div className="flex items-baseline gap-1 mb-4">
+                      <span className="text-3xl font-bold text-foreground">$15</span>
+                      <span className="text-muted-foreground">/month</span>
+                    </div>
+                    <ul className="space-y-2 mb-4">
+                      {[
+                        "Unlimited projects",
+                        "AI transformation generator",
+                        "Advanced calendar",
+                        "Priority support",
+                      ].map((feature, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Check className="w-4 h-4 text-success" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    <Button 
+                      className="w-full" 
+                      onClick={handleUpgrade}
+                      disabled={isCheckingOut}
+                    >
+                      {isCheckingOut ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          Upgrade Now <ArrowRight className="w-4 h-4 ml-1" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </motion.div>
