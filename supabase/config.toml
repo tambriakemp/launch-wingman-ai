@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.send-assessment-reminder]
 verify_jwt = false
+
+[functions.generate-offer-ideas]
+verify_jwt = false
