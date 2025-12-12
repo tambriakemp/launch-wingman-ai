@@ -536,7 +536,21 @@ const Projects = () => {
                     </p>
                   </div>
                 </div>
-                <Button variant="outline">
+                <Button 
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      const { data, error } = await supabase.functions.invoke('create-checkout');
+                      if (error) throw error;
+                      if (data?.url) {
+                        window.open(data.url, '_blank');
+                      }
+                    } catch (error) {
+                      console.error('Checkout error:', error);
+                      toast.error("Failed to start checkout. Please try again.");
+                    }
+                  }}
+                >
                   Upgrade to Pro <ArrowRight className="w-4 h-4 ml-1" />
                 </Button>
               </div>
