@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, FileText, Mail, Package, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Plus, Mail, Package, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -21,19 +21,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { SocialBioBuilder } from "./SocialBioBuilder";
+import { SalesPageCopyBuilder } from "./SalesPageCopyBuilder";
 
 interface MessagingItem {
   id: string;
   title: string;
   content: string;
-  type: "sales-page" | "email-sequence" | "deliverable";
+  type: "email-sequence" | "deliverable";
 }
 
 interface MessagingSectionProps {
   title: string;
   description: string;
   icon: React.ReactNode;
-  type: "sales-page" | "email-sequence" | "deliverable";
+  type: "email-sequence" | "deliverable";
   items: MessagingItem[];
   onAdd: (type: MessagingItem["type"]) => void;
   onEdit: (item: MessagingItem) => void;
@@ -130,11 +131,6 @@ interface MessagingBuilderProps {
 }
 
 const sectionConfig = {
-  "sales-page": {
-    title: "Sales Page Copy",
-    description: "Headlines, benefits, and persuasive copy for your sales page",
-    icon: <FileText className="w-5 h-5 text-primary" />,
-  },
   "email-sequence": {
     title: "Email Sequences",
     description: "Nurture sequences, launch emails, and follow-ups",
@@ -151,7 +147,7 @@ export const MessagingBuilder = ({ projectId }: MessagingBuilderProps) => {
   const [items, setItems] = useState<MessagingItem[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MessagingItem | null>(null);
-  const [currentType, setCurrentType] = useState<MessagingItem["type"]>("sales-page");
+  const [currentType, setCurrentType] = useState<MessagingItem["type"]>("email-sequence");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
@@ -211,16 +207,7 @@ export const MessagingBuilder = ({ projectId }: MessagingBuilderProps) => {
   return (
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2">
-        <MessagingSection
-          title={sectionConfig["sales-page"].title}
-          description={sectionConfig["sales-page"].description}
-          icon={sectionConfig["sales-page"].icon}
-          type="sales-page"
-          items={items}
-          onAdd={handleAdd}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
+        <SalesPageCopyBuilder projectId={projectId} />
         <SocialBioBuilder projectId={projectId} />
         <MessagingSection
           title={sectionConfig["email-sequence"].title}
