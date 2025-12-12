@@ -38,6 +38,8 @@ interface LoadLaunchTasksDialogProps {
   projectType: "launch" | "prelaunch";
   onTasksLoaded: () => void;
   taskCount: number;
+  trigger?: React.ReactNode;
+  showDeleteOnly?: boolean;
 }
 
 const SYSTEME_IO_LAUNCH_TASKS = [
@@ -282,6 +284,8 @@ export const LoadLaunchTasksDialog = ({
   projectType,
   onTasksLoaded,
   taskCount,
+  trigger,
+  showDeleteOnly = false,
 }: LoadLaunchTasksDialogProps) => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -366,111 +370,111 @@ export const LoadLaunchTasksDialog = ({
     }
   };
 
+  // If showDeleteOnly, render only the delete alert dialog
+  if (showDeleteOnly) {
+    return (
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          {trigger}
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete All Tasks?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all {taskCount} tasks from this project. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAllTasks}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeletingAll}
+            >
+              {isDeletingAll && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
+  }
+
   return (
-    <div className="flex gap-2">
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {trigger || (
           <Button variant="outline">
             <ListChecks className="w-4 h-4" />
             Load Launch Tasks
           </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Load Launch Tasks List</DialogTitle>
-            <DialogDescription>
-              Select your product type and platform to load a pre-built task list for your launch.
-            </DialogDescription>
-          </DialogHeader>
+        )}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Load Launch Tasks List</DialogTitle>
+          <DialogDescription>
+            Select your product type and platform to load a pre-built task list for your launch.
+          </DialogDescription>
+        </DialogHeader>
 
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="product-type">What type of product are you launching?</Label>
-              <Select value={productType} onValueChange={setProductType}>
-                <SelectTrigger id="product-type">
-                  <SelectValue placeholder="Select product type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="digital-product">Digital Product (ebook, workbook, etc.)</SelectItem>
-                  <SelectItem value="membership">Membership</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="platform">Which platform do you want to launch on?</Label>
-              <Select value={platform} onValueChange={setPlatform}>
-                <SelectTrigger id="platform">
-                  <SelectValue placeholder="Select platform" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="systeme-io">Systeme.io</SelectItem>
-                  <SelectItem value="skool">Skool</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {platform && !canLoadTasks && (
-              <p className="text-sm text-muted-foreground">
-                {platform === "skool" 
-                  ? "Skool task templates coming soon!" 
-                  : projectType === "prelaunch"
-                    ? "Launch task templates are only available for Launch projects."
-                    : "Please select both product type and platform."}
-              </p>
-            )}
-
-            {canLoadTasks && (
-              <p className="text-sm text-muted-foreground">
-                This will add {SYSTEME_IO_LAUNCH_TASKS.length} tasks to your project board covering all phases of your launch.
-              </p>
-            )}
+        <div className="grid gap-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="product-type">What type of product are you launching?</Label>
+            <Select value={productType} onValueChange={setProductType}>
+              <SelectTrigger id="product-type">
+                <SelectValue placeholder="Select product type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="digital-product">Digital Product (ebook, workbook, etc.)</SelectItem>
+                <SelectItem value="membership">Membership</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleLoadTasks} 
-              disabled={!canLoadTasks || isLoading}
-            >
-              {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Load Tasks
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="space-y-2">
+            <Label htmlFor="platform">Which platform do you want to launch on?</Label>
+            <Select value={platform} onValueChange={setPlatform}>
+              <SelectTrigger id="platform">
+                <SelectValue placeholder="Select platform" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="systeme-io">Systeme.io</SelectItem>
+                <SelectItem value="skool">Skool</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-      {taskCount > 0 && (
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="outline" className="text-destructive hover:text-destructive">
-              <Trash2 className="w-4 h-4" />
-              Delete All Tasks
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete All Tasks?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete all {taskCount} tasks from this project. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteAllTasks}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                disabled={isDeletingAll}
-              >
-                {isDeletingAll && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                Delete All
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
-    </div>
+          {platform && !canLoadTasks && (
+            <p className="text-sm text-muted-foreground">
+              {platform === "skool" 
+                ? "Skool task templates coming soon!" 
+                : projectType === "prelaunch"
+                  ? "Launch task templates are only available for Launch projects."
+                  : "Please select both product type and platform."}
+            </p>
+          )}
+
+          {canLoadTasks && (
+            <p className="text-sm text-muted-foreground">
+              This will add {SYSTEME_IO_LAUNCH_TASKS.length} tasks to your project board covering all phases of your launch.
+            </p>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleLoadTasks} 
+            disabled={!canLoadTasks || isLoading}
+          >
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+            Load Tasks
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

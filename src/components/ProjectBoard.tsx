@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO, isPast, isToday } from "date-fns";
-import { ChevronRight, ChevronDown, MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, Filter, X, ChevronsUpDown } from "lucide-react";
+import { ChevronRight, ChevronDown, MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, Filter, X, ChevronsUpDown, Settings, ListChecks } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -386,16 +386,48 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
             <ChevronsUpDown className="w-4 h-4 mr-2" />
             {allExpanded ? "Collapse All" : "Expand All"}
           </Button>
-          <LoadLaunchTasksDialog
-            projectId={projectId}
-            projectType={projectType}
-            onTasksLoaded={fetchTasks}
-            taskCount={tasks.length}
-          />
           <Button onClick={() => { setEditingTask(null); setTaskDialogOpen(true); }}>
             <Plus className="w-4 h-4" />
             Add Task
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-9 w-9">
+                <Settings className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Board Settings</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <LoadLaunchTasksDialog
+                projectId={projectId}
+                projectType={projectType}
+                onTasksLoaded={fetchTasks}
+                taskCount={tasks.length}
+                trigger={
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <ListChecks className="w-4 h-4 mr-2" />
+                    Load Launch Tasks
+                  </DropdownMenuItem>
+                }
+              />
+              {tasks.length > 0 && (
+                <LoadLaunchTasksDialog
+                  projectId={projectId}
+                  projectType={projectType}
+                  onTasksLoaded={fetchTasks}
+                  taskCount={tasks.length}
+                  showDeleteOnly
+                  trigger={
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete All Tasks
+                    </DropdownMenuItem>
+                  }
+                />
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
