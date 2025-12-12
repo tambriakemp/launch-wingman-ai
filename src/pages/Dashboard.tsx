@@ -60,7 +60,7 @@ const Dashboard = () => {
       setIsLoading(true);
 
       // Fetch all data in parallel
-      const [projectsRes, tasksRes, launchEventsRes] = await Promise.all([
+      const [projectsRes, tasksRes, launchEventsRes, contentRes] = await Promise.all([
         supabase
           .from("projects")
           .select("id, name, status, project_type, updated_at")
@@ -74,6 +74,9 @@ const Dashboard = () => {
           .from("launch_events")
           .select("id, title, enrollment_opens, prelaunch_start")
           .gte("enrollment_opens", new Date().toISOString().split("T")[0]),
+        supabase
+          .from("content_planner")
+          .select("id", { count: "exact" }),
       ]);
 
       // Process projects
@@ -83,25 +86,20 @@ const Dashboard = () => {
         setRecentProjects(projectsRes.data.slice(0, 5));
       }
 
-      // Process tasks
+      // Process tasks - count ALL incomplete tasks
       if (tasksRes.data) {
-        const today = startOfDay(new Date());
-        const dueTasks = tasksRes.data.filter((t) => {
-          if (!t.due_date) return false;
-          const dueDate = startOfDay(parseISO(t.due_date));
-          return isBefore(dueDate, today) || isToday(parseISO(t.due_date));
-        });
-        setTasksDue(dueTasks.length);
+        setTasksDue(tasksRes.data.length);
 
         // Get upcoming tasks (next 5 with due dates)
         const upcoming = tasksRes.data
           .filter((t) => t.due_date)
           .slice(0, 5);
         setUpcomingTasks(upcoming as Task[]);
+      }
 
-        // Content pieces (tasks with "Creative" or "Copy" or "Video" labels would be content)
-        // For now, we'll count all tasks as a placeholder since we don't have a content table
-        setContentPieces(tasksRes.data.length);
+      // Process content pieces from content_planner table
+      if (contentRes.count !== null) {
+        setContentPieces(contentRes.count);
       }
 
       // Process launch events
@@ -117,7 +115,7 @@ const Dashboard = () => {
 
   const stats = [
     { icon: FolderKanban, label: "Active Projects", value: activeProjects.toString(), color: "primary" },
-    { icon: CheckSquare, label: "Tasks Due", value: tasksDue.toString(), color: "secondary" },
+    { icon: CheckSquare, label: "Incomplete Tasks", value: tasksDue.toString(), color: "secondary" },
     { icon: Calendar, label: "Upcoming Launches", value: upcomingLaunches.toString(), color: "warning" },
     { icon: FileText, label: "Content Pieces", value: contentPieces.toString(), color: "info" },
   ];
