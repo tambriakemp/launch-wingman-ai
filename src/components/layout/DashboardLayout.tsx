@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdmin } from "@/hooks/useAdmin";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,
@@ -11,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -25,6 +27,7 @@ const navItems = [
 export const DashboardSidebar = () => {
   const location = useLocation();
   const { signOut, user } = useAuth();
+  const { isAdmin } = useAdmin();
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -70,6 +73,22 @@ export const DashboardSidebar = () => {
             </Link>
           );
         })}
+        
+        {/* Admin Link - only shown to admins */}
+        {isAdmin && (
+          <Link
+            to="/admin"
+            className={cn(
+              "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group",
+              location.pathname === "/admin"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+            )}
+          >
+            <Shield className={cn("w-5 h-5", location.pathname === "/admin" && "text-primary")} />
+            {!collapsed && <span>Admin</span>}
+          </Link>
+        )}
       </nav>
 
       {/* Collapse Toggle */}
