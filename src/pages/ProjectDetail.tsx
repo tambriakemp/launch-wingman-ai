@@ -35,6 +35,7 @@ import { LaunchCalendarEventDialog } from "@/components/LaunchCalendarEventDialo
 import { LaunchCalendarTimeline } from "@/components/LaunchCalendarTimeline";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { ProjectBoard } from "@/components/ProjectBoard";
+import { ProjectSettingsDialog } from "@/components/ProjectSettingsDialog";
 
 interface LaunchEvent {
   id: string;
@@ -128,6 +129,10 @@ const ProjectDetail = () => {
     setProject((prev) => prev ? { ...prev, transformation_statement: statement } : null);
   };
 
+  const handleProjectUpdated = (name: string, description: string | null) => {
+    setProject((prev) => prev ? { ...prev, name, description } : null);
+  };
+
   const handleEditEvent = (event: LaunchEvent) => {
     setEditingEvent(event);
     setEditDialogOpen(true);
@@ -207,10 +212,18 @@ const ProjectDetail = () => {
                 {project.description || "Manage your launch calendar, tasks, and content."}
               </p>
             </div>
-            <Button variant="outline">
-              <Settings className="w-4 h-4" />
-              Project Settings
-            </Button>
+            <ProjectSettingsDialog
+              projectId={project.id}
+              projectName={project.name}
+              projectDescription={project.description}
+              onProjectUpdated={handleProjectUpdated}
+              trigger={
+                <Button variant="outline">
+                  <Settings className="w-4 h-4" />
+                  Project Settings
+                </Button>
+              }
+            />
           </div>
         </motion.div>
 
