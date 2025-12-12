@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, FileText, Mail, Users, Package, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Plus, FileText, Mail, Package, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -20,19 +20,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { SocialBioBuilder } from "./SocialBioBuilder";
 
 interface MessagingItem {
   id: string;
   title: string;
   content: string;
-  type: "sales-page" | "social-bio" | "email-sequence" | "deliverable";
+  type: "sales-page" | "email-sequence" | "deliverable";
 }
 
 interface MessagingSectionProps {
   title: string;
   description: string;
   icon: React.ReactNode;
-  type: "sales-page" | "social-bio" | "email-sequence" | "deliverable";
+  type: "sales-page" | "email-sequence" | "deliverable";
   items: MessagingItem[];
   onAdd: (type: MessagingItem["type"]) => void;
   onEdit: (item: MessagingItem) => void;
@@ -49,7 +50,7 @@ const MessagingSection = ({
   onEdit,
   onDelete,
 }: MessagingSectionProps) => {
-  const sectionItems = items.filter((item) => item.type === type);
+  const sectionItems = items.filter((item) => item.type === type as string);
 
   return (
     <Card className="border bg-card">
@@ -134,11 +135,6 @@ const sectionConfig = {
     description: "Headlines, benefits, and persuasive copy for your sales page",
     icon: <FileText className="w-5 h-5 text-primary" />,
   },
-  "social-bio": {
-    title: "Social Media Bio",
-    description: "Bio copy for Instagram, LinkedIn, and other platforms",
-    icon: <Users className="w-5 h-5 text-primary" />,
-  },
   "email-sequence": {
     title: "Email Sequences",
     description: "Nurture sequences, launch emails, and follow-ups",
@@ -215,19 +211,37 @@ export const MessagingBuilder = ({ projectId }: MessagingBuilderProps) => {
   return (
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2">
-        {(Object.keys(sectionConfig) as MessagingItem["type"][]).map((type) => (
-          <MessagingSection
-            key={type}
-            title={sectionConfig[type].title}
-            description={sectionConfig[type].description}
-            icon={sectionConfig[type].icon}
-            type={type}
-            items={items}
-            onAdd={handleAdd}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        ))}
+        <MessagingSection
+          title={sectionConfig["sales-page"].title}
+          description={sectionConfig["sales-page"].description}
+          icon={sectionConfig["sales-page"].icon}
+          type="sales-page"
+          items={items}
+          onAdd={handleAdd}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+        <SocialBioBuilder projectId={projectId} />
+        <MessagingSection
+          title={sectionConfig["email-sequence"].title}
+          description={sectionConfig["email-sequence"].description}
+          icon={sectionConfig["email-sequence"].icon}
+          type="email-sequence"
+          items={items}
+          onAdd={handleAdd}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+        <MessagingSection
+          title={sectionConfig.deliverable.title}
+          description={sectionConfig.deliverable.description}
+          icon={sectionConfig.deliverable.icon}
+          type="deliverable"
+          items={items}
+          onAdd={handleAdd}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
