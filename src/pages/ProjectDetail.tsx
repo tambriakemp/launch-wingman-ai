@@ -198,6 +198,9 @@ const ProjectDetail = () => {
                 <Badge variant="outline" className={statusInfo.className}>
                   {statusInfo.label}
                 </Badge>
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                  {project.project_type === 'prelaunch' ? 'Pre-Launch' : 'Launch'}
+                </Badge>
               </div>
               <p className="text-muted-foreground">
                 {project.description || "Manage your launch calendar, tasks, and content."}
@@ -275,8 +278,8 @@ const ProjectDetail = () => {
               <Card variant="elevated" className="min-h-[400px]">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle>Launch Calendar</CardTitle>
-                    <CardDescription>Plan your launch timeline</CardDescription>
+                    <CardTitle>{project.project_type === 'prelaunch' ? 'Pre-Launch' : 'Launch'} Calendar</CardTitle>
+                    <CardDescription>Plan your {project.project_type === 'prelaunch' ? 'pre-launch' : 'launch'} timeline</CardDescription>
                   </div>
                   {launchEvents.length === 0 && (
                     <LaunchCalendarEventDialog projectId={project.id} projectType={project.project_type} onEventAdded={fetchLaunchEvents} />
@@ -290,7 +293,7 @@ const ProjectDetail = () => {
                       </div>
                       <h3 className="text-lg font-semibold text-foreground mb-2">No events scheduled</h3>
                       <p className="text-muted-foreground mb-4 max-w-sm">
-                        Start planning your launch by adding key dates and milestones.
+                        Start planning your {project.project_type === 'prelaunch' ? 'pre-launch' : 'launch'} by adding key dates and milestones.
                       </p>
                       <LaunchCalendarEventDialog 
                         projectId={project.id}
