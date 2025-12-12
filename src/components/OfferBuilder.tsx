@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Gift, ShoppingBag, Video, Users, CreditCard, GraduationCap, BookOpen, Layers, MoreVertical, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Gift, ShoppingBag, Video, Users, CreditCard, GraduationCap, BookOpen, Layers, Pencil, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -7,7 +7,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -16,12 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -144,26 +137,24 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [offerToDelete, setOfferToDelete] = useState<Offer | null>(null);
-  const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
   const [selectedNiche, setSelectedNiche] = useState<string>("");
   const [selectedOfferType, setSelectedOfferType] = useState<string>("");
   const [offerTitle, setOfferTitle] = useState<string>("");
   const [offerDescription, setOfferDescription] = useState<string>("");
   const [offerPrice, setOfferPrice] = useState<string>("");
 
-  // Fetch offers
-  const { data: offers = [], isLoading } = useQuery({
-    queryKey: ["offers", projectId],
+  // Fetch offer (only one per project)
+  const { data: offer, isLoading } = useQuery({
+    queryKey: ["offer", projectId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("offers")
         .select("*")
         .eq("project_id", projectId)
-        .order("created_at", { ascending: false });
+        .maybeSingle();
       
       if (error) throw error;
-      return data as Offer[];
+      return data as Offer | null;
     },
     enabled: !!projectId,
   });
@@ -181,7 +172,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["offers", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["offer", projectId] });
       toast.success("Offer created successfully");
       handleCloseDialog();
     },
@@ -205,7 +196,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["offers", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["offer", projectId] });
       toast.success("Offer updated successfully");
       handleCloseDialog();
     },
@@ -226,10 +217,9 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["offers", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["offer", projectId] });
       toast.success("Offer deleted successfully");
       setDeleteDialogOpen(false);
-      setOfferToDelete(null);
     },
     onError: (error) => {
       toast.error("Failed to delete offer");
@@ -243,7 +233,6 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setOfferTitle("");
     setOfferDescription("");
     setOfferPrice("");
-    setEditingOffer(null);
   };
 
   const handleCloseDialog = () => {
@@ -258,8 +247,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     }
   };
 
-  const handleEditOffer = (offer: Offer) => {
-    setEditingOffer(offer);
+  const handleEditOffer = () => {
+    if (!offer) return;
     setSelectedNiche(offer.niche);
     setSelectedOfferType(offer.offer_type);
     setOfferTitle(offer.title || "");
@@ -268,14 +257,9 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setDialogOpen(true);
   };
 
-  const handleDeleteClick = (offer: Offer) => {
-    setOfferToDelete(offer);
-    setDeleteDialogOpen(true);
-  };
-
   const handleConfirmDelete = () => {
-    if (offerToDelete) {
-      deleteMutation.mutate(offerToDelete.id);
+    if (offer) {
+      deleteMutation.mutate(offer.id);
     }
   };
 
@@ -290,8 +274,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
 
   const getOfferDetails = (offerTypeId: string) => {
     for (const category of Object.values(OFFER_TYPES)) {
-      const offer = category.find((o) => o.id === offerTypeId);
-      if (offer) return offer;
+      const o = category.find((item) => item.id === offerTypeId);
+      if (o) return o;
     }
     return null;
   };
@@ -302,9 +286,9 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     const offerCategory = getOfferCategory(selectedOfferType);
     const offerDetails = getOfferDetails(selectedOfferType);
 
-    if (editingOffer) {
+    if (offer) {
       updateMutation.mutate({
-        id: editingOffer.id,
+        id: offer.id,
         niche: selectedNiche,
         offer_category: offerCategory,
         offer_type: selectedOfferType,
@@ -326,7 +310,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     }
   };
 
-  const selectedOffer = getOfferDetails(selectedOfferType);
+  const selectedOfferDetails = getOfferDetails(selectedOfferType);
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
   if (isLoading) {
@@ -337,98 +321,105 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     );
   }
 
+  // Get details for saved offer
+  const savedOfferDetails = offer ? getOfferDetails(offer.offer_type) : null;
+  const SavedIcon = savedOfferDetails?.icon || Gift;
+
   return (
     <div className="space-y-6">
-      {offers.length === 0 ? (
+      {!offer ? (
         /* Empty State */
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
             <Gift className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">No offers yet</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">No offer yet</h3>
           <p className="text-muted-foreground mb-6 max-w-md">
-            Design your offers to attract and convert your ideal clients. Start by creating your first offer.
+            Design your offer to attract and convert your ideal clients. Start by creating your offer for this project.
           </p>
           
           <Button onClick={() => setDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
-            Create New Offer
+            Create Offer
           </Button>
         </div>
       ) : (
-        /* Offers List */
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-foreground">Your Offers</h3>
-            <Button onClick={() => setDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create New Offer
-            </Button>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {offers.map((offer) => {
-              const offerDetails = getOfferDetails(offer.offer_type);
-              const Icon = offerDetails?.icon || Gift;
-
-              return (
-                <Card key={offer.id} className="relative">
-                  <div className="absolute top-3 right-3">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEditOffer(offer)}>
-                          <Pencil className="w-4 h-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => handleDeleteClick(offer)}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+        /* Your Offer Section */
+        <Card>
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-4">
+                <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center", savedOfferDetails?.bgColor || "bg-muted")}>
+                  <SavedIcon className={cn("w-7 h-7", savedOfferDetails?.color || "text-muted-foreground")} />
+                </div>
+                <div>
+                  <CardTitle className="text-xl">{offer.title || savedOfferDetails?.name}</CardTitle>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="outline">
+                      {offer.offer_category === "Audience-Growing Offers" ? "Warm-Up Offer" : "Paid Offer"}
+                    </Badge>
+                    <Badge variant="secondary">{savedOfferDetails?.name}</Badge>
                   </div>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start gap-3">
-                      <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", offerDetails?.bgColor || "bg-muted")}>
-                        <Icon className={cn("w-5 h-5", offerDetails?.color || "text-muted-foreground")} />
-                      </div>
-                      <div className="flex-1 pr-8">
-                        <CardTitle className="text-base">{offer.title || offerDetails?.name}</CardTitle>
-                        <Badge variant="outline" className="mt-1 text-xs">
-                          {offer.offer_category === "Audience-Growing Offers" ? "Warm-Up" : "Paid"}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-sm text-muted-foreground">{offer.niche}</p>
-                    {offer.description && (
-                      <p className="text-sm text-foreground line-clamp-2">{offer.description}</p>
-                    )}
-                    {offer.price && (
-                      <p className="text-sm font-medium text-foreground">${offer.price}</p>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleEditOffer}>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Offer Details Grid */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Niche</p>
+                <p className="text-foreground">{offer.niche}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Offer Type</p>
+                <p className="text-foreground">{savedOfferDetails?.name}</p>
+              </div>
+              {offer.price !== null && (
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Price</p>
+                  <p className="text-foreground text-lg font-semibold">${offer.price}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Description */}
+            {offer.description && (
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Description</p>
+                <p className="text-foreground">{offer.description}</p>
+              </div>
+            )}
+
+            {/* Offer Type Info */}
+            <div className="p-4 rounded-lg bg-muted/50 border border-border">
+              <p className="text-sm font-medium text-foreground mb-2">About this offer type</p>
+              <p className="text-sm text-muted-foreground">{savedOfferDetails?.description}</p>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingOffer ? "Edit Offer" : "Create New Offer"}</DialogTitle>
+            <DialogTitle>{offer ? "Edit Offer" : "Create Offer"}</DialogTitle>
             <DialogDescription>
               Design an offer that resonates with your audience and drives results.
             </DialogDescription>
@@ -466,28 +457,28 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                       </Badge>
                     </div>
                     <div className="grid gap-3">
-                      {offersList.map((offer) => {
-                        const Icon = offer.icon;
-                        const isSelected = selectedOfferType === offer.id;
+                      {offersList.map((offerItem) => {
+                        const Icon = offerItem.icon;
+                        const isSelected = selectedOfferType === offerItem.id;
                         
                         return (
                           <Card
-                            key={offer.id}
+                            key={offerItem.id}
                             className={cn(
                               "cursor-pointer transition-all hover:border-primary/50",
                               isSelected && "border-primary ring-1 ring-primary"
                             )}
-                            onClick={() => setSelectedOfferType(offer.id)}
+                            onClick={() => setSelectedOfferType(offerItem.id)}
                           >
                             <CardHeader className="pb-2">
                               <div className="flex items-start gap-3">
-                                <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", offer.bgColor)}>
-                                  <Icon className={cn("w-5 h-5", offer.color)} />
+                                <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", offerItem.bgColor)}>
+                                  <Icon className={cn("w-5 h-5", offerItem.color)} />
                                 </div>
                                 <div className="flex-1">
-                                  <CardTitle className="text-base">{offer.name}</CardTitle>
+                                  <CardTitle className="text-base">{offerItem.name}</CardTitle>
                                   <CardDescription className="text-sm mt-1">
-                                    {offer.description}
+                                    {offerItem.description}
                                   </CardDescription>
                                 </div>
                                 {isSelected && (
@@ -519,7 +510,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     id="offerTitle"
                     value={offerTitle}
                     onChange={(e) => setOfferTitle(e.target.value)}
-                    placeholder={selectedOffer?.name || "Enter a custom title..."}
+                    placeholder={selectedOfferDetails?.name || "Enter a custom title..."}
                   />
                 </div>
 
@@ -559,7 +550,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 disabled={!selectedNiche || !selectedOfferType || isSaving}
               >
                 {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {editingOffer ? "Save Changes" : "Create Offer"}
+                {offer ? "Save Changes" : "Create Offer"}
               </Button>
             </div>
           </div>
@@ -572,7 +563,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleConfirmDelete}
         title="Delete Offer"
-        description={`Are you sure you want to delete "${offerToDelete?.title || getOfferDetails(offerToDelete?.offer_type || "")?.name}"? This action cannot be undone.`}
+        description={`Are you sure you want to delete "${offer?.title || savedOfferDetails?.name}"? This action cannot be undone.`}
         isDeleting={deleteMutation.isPending}
       />
     </div>
