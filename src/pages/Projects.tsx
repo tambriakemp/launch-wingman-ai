@@ -377,11 +377,23 @@ const Projects = () => {
               </DialogContent>
             </Dialog>
             ) : (
-              <Button size="lg" asChild>
-                <Link to="/settings">
-                  <Crown className="w-5 h-5" />
-                  Upgrade to Add More
-                </Link>
+              <Button 
+                size="lg" 
+                onClick={async () => {
+                  try {
+                    const { data, error } = await supabase.functions.invoke('create-checkout');
+                    if (error) throw error;
+                    if (data?.url) {
+                      window.open(data.url, '_blank');
+                    }
+                  } catch (error) {
+                    console.error('Checkout error:', error);
+                    toast.error("Failed to start checkout. Please try again.");
+                  }
+                }}
+              >
+                <Crown className="w-5 h-5" />
+                Upgrade to Add More
               </Button>
             )}
           </div>

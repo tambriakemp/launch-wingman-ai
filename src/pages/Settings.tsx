@@ -46,9 +46,9 @@ const Settings = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  // Fetch profile on mount
+  // Fetch profile on mount (create if doesn't exist for legacy users)
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchOrCreateProfile = async () => {
       if (!user) return;
       
       const { data, error } = await supabase
@@ -61,10 +61,19 @@ const Settings = () => {
         setProfile(data);
         setFirstName(data.first_name || "");
         setLastName(data.last_name || "");
+      } else if (error?.code === 'PGRST116') {
+        // No profile exists for this user, create one
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({ user_id: user.id, first_name: null, last_name: null });
+        
+        if (insertError) {
+          console.error('Failed to create profile:', insertError);
+        }
       }
     };
     
-    fetchProfile();
+    fetchOrCreateProfile();
   }, [user]);
 
   // Handle success/cancel redirects from Stripe
