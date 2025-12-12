@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Gift, ShoppingBag, Video, Users, CreditCard, GraduationCap, BookOpen, Layers, Pencil, Trash2, Loader2, Mail, DollarSign, Play, Instagram, Radio, Zap, UserCheck, Send, Rocket, ArrowDown, ChevronRight } from "lucide-react";
+import { Plus, Gift, ShoppingBag, Video, Users, CreditCard, GraduationCap, BookOpen, Layers, Pencil, Trash2, Loader2, Mail, DollarSign, Play, Instagram, Radio, Zap, UserCheck, Send, Rocket, ArrowDown, ChevronRight, ListChecks, FileText, Headphones, MessageSquare, MessagesSquare, Calendar, Layout, Volume2, Heart, BookMarked, UsersRound, Phone, MailCheck, MessageCircle, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -114,6 +114,137 @@ const OFFER_TYPES = {
     },
   ],
 };
+
+const MAIN_DELIVERABLES = [
+  {
+    id: "step-by-step-tutorials",
+    name: "Step-by-Step Tutorials",
+    icon: Video,
+    description: "Video or written guides that walk clients through processes in a sequential, easy-to-follow format. Ideal for teaching specific skills or workflows.",
+    color: "text-blue-500",
+    bgColor: "bg-blue-500/10",
+  },
+  {
+    id: "checklists",
+    name: "Checklists",
+    icon: ListChecks,
+    description: "Simple, actionable lists that help clients track their progress and ensure they don't miss any steps. Great for implementation and accountability.",
+    color: "text-green-500",
+    bgColor: "bg-green-500/10",
+  },
+  {
+    id: "cheat-sheets",
+    name: "Cheat Sheets",
+    icon: FileText,
+    description: "Quick-reference documents that condense key information into an easy-to-scan format. Perfect for summarizing complex topics.",
+    color: "text-purple-500",
+    bgColor: "bg-purple-500/10",
+  },
+  {
+    id: "coaching-sessions",
+    name: "1:1 or Group Coaching Sessions",
+    icon: Users,
+    description: "Live or scheduled calls where clients receive personalized guidance, feedback, and support. The highest-touch deliverable for transformation.",
+    color: "text-amber-500",
+    bgColor: "bg-amber-500/10",
+  },
+  {
+    id: "workbooks",
+    name: "Workbooks",
+    icon: BookOpen,
+    description: "Interactive documents with exercises, prompts, and space for reflection. Help clients apply what they learn and deepen their understanding.",
+    color: "text-rose-500",
+    bgColor: "bg-rose-500/10",
+  },
+  {
+    id: "planners",
+    name: "Planners",
+    icon: Calendar,
+    description: "Structured planning tools that help clients organize their time, goals, and tasks. Essential for goal-setting and time management.",
+    color: "text-indigo-500",
+    bgColor: "bg-indigo-500/10",
+  },
+  {
+    id: "templates",
+    name: "Templates",
+    icon: Layout,
+    description: "Pre-built frameworks, documents, or designs that clients can customize for their own use. Save time and provide a starting point.",
+    color: "text-cyan-500",
+    bgColor: "bg-cyan-500/10",
+  },
+  {
+    id: "trello-boards",
+    name: "Trello Boards",
+    icon: Layers,
+    description: "Pre-configured project management boards that help clients organize their workflow and track progress visually.",
+    color: "text-teal-500",
+    bgColor: "bg-teal-500/10",
+  },
+  {
+    id: "audio-files",
+    name: "Audio Files",
+    icon: Headphones,
+    description: "Recorded audio content like guided meditations, lessons, or motivational tracks. Great for on-the-go learning.",
+    color: "text-orange-500",
+    bgColor: "bg-orange-500/10",
+  },
+  {
+    id: "affirmations",
+    name: "Affirmations",
+    icon: Volume2,
+    description: "Curated positive statements designed to reinforce mindset shifts and encourage empowering beliefs.",
+    color: "text-pink-500",
+    bgColor: "bg-pink-500/10",
+  },
+  {
+    id: "journals",
+    name: "Journals",
+    icon: BookMarked,
+    description: "Guided journaling prompts and templates for self-reflection, gratitude practice, or goal tracking.",
+    color: "text-violet-500",
+    bgColor: "bg-violet-500/10",
+  },
+  {
+    id: "support-groups",
+    name: "Support Groups",
+    icon: UsersRound,
+    description: "Community spaces (like Facebook groups or Slack channels) where clients can connect, share, and support each other.",
+    color: "text-emerald-500",
+    bgColor: "bg-emerald-500/10",
+  },
+  {
+    id: "voice-message-support",
+    name: "Voice Message Support",
+    icon: Phone,
+    description: "Async voice messaging via apps like Voxer or Telegram for personalized coaching feedback without scheduling calls.",
+    color: "text-sky-500",
+    bgColor: "bg-sky-500/10",
+  },
+  {
+    id: "text-message-support",
+    name: "Text Message Support",
+    icon: MessageSquare,
+    description: "Direct text-based communication for quick questions, check-ins, and accountability.",
+    color: "text-lime-500",
+    bgColor: "bg-lime-500/10",
+  },
+  {
+    id: "email-support",
+    name: "Email Support",
+    icon: MailCheck,
+    description: "Dedicated email access for detailed questions, feedback, and ongoing support between sessions.",
+    color: "text-blue-600",
+    bgColor: "bg-blue-600/10",
+  },
+  {
+    id: "live-chat-support",
+    name: "Live Chat Support",
+    icon: MessageCircle,
+    description: "Real-time chat availability for immediate assistance and quick answers to client questions.",
+    color: "text-red-500",
+    bgColor: "bg-red-500/10",
+  },
+];
 
 const FUNNEL_TYPES = [
   {
@@ -286,6 +417,7 @@ interface Offer {
   offer_category: string;
   offer_type: string;
   funnel_type: string | null;
+  main_deliverables: string[] | null;
   title: string | null;
   description: string | null;
   price: number | null;
@@ -338,10 +470,11 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   const [selectedNiche, setSelectedNiche] = useState<string>("");
   const [selectedOfferType, setSelectedOfferType] = useState<string>("");
   const [selectedFunnelType, setSelectedFunnelType] = useState<string>("");
+  const [selectedDeliverables, setSelectedDeliverables] = useState<string[]>([]);
   const [offerTitle, setOfferTitle] = useState<string>("");
   const [offerDescription, setOfferDescription] = useState<string>("");
   const [offerPrice, setOfferPrice] = useState<string>("");
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
   // Fetch offer (only one per project)
   const { data: offer, isLoading } = useQuery({
@@ -431,6 +564,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setSelectedNiche("");
     setSelectedOfferType("");
     setSelectedFunnelType("");
+    setSelectedDeliverables([]);
     setOfferTitle("");
     setOfferDescription("");
     setOfferPrice("");
@@ -454,6 +588,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setSelectedNiche(offer.niche);
     setSelectedOfferType(offer.offer_type);
     setSelectedFunnelType(offer.funnel_type || "");
+    setSelectedDeliverables(offer.main_deliverables || []);
     setOfferTitle(offer.title || "");
     setOfferDescription(offer.description || "");
     setOfferPrice(offer.price?.toString() || "");
@@ -488,6 +623,18 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     return FUNNEL_TYPES.find((f) => f.id === funnelTypeId) || null;
   };
 
+  const getDeliverableDetails = (deliverableId: string) => {
+    return MAIN_DELIVERABLES.find((d) => d.id === deliverableId) || null;
+  };
+
+  const toggleDeliverable = (deliverableId: string) => {
+    setSelectedDeliverables(prev => 
+      prev.includes(deliverableId)
+        ? prev.filter(id => id !== deliverableId)
+        : [...prev, deliverableId]
+    );
+  };
+
   const handleSaveOffer = () => {
     if (!user || !offerTitle.trim() || !offerDescription.trim() || !selectedNiche || !selectedOfferType || !selectedFunnelType) return;
 
@@ -500,6 +647,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
         offer_category: offerCategory,
         offer_type: selectedOfferType,
         funnel_type: selectedFunnelType,
+        main_deliverables: selectedDeliverables,
         title: offerTitle.trim(),
         description: offerDescription.trim(),
         price: offerPrice ? parseFloat(offerPrice) : null,
@@ -512,6 +660,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
         offer_category: offerCategory,
         offer_type: selectedOfferType,
         funnel_type: selectedFunnelType,
+        main_deliverables: selectedDeliverables,
         title: offerTitle.trim(),
         description: offerDescription.trim(),
         price: offerPrice ? parseFloat(offerPrice) : null,
@@ -528,7 +677,9 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   // Step 2: Offer type
   const canProceedToStep3 = canProceedToStep2 && selectedOfferType;
   // Step 3: Funnel type
-  const canSave = canProceedToStep3 && selectedFunnelType;
+  const canProceedToStep4 = canProceedToStep3 && selectedFunnelType;
+  // Step 4: Deliverables (optional, but we allow saving)
+  const canSave = canProceedToStep4;
 
   if (isLoading) {
     return (
@@ -664,6 +815,46 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
               </CardContent>
             </Card>
           )}
+
+          {/* Main Deliverables Card */}
+          {offer?.main_deliverables && offer.main_deliverables.length > 0 && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10">
+                    <CheckSquare className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Main Deliverables</CardTitle>
+                    <CardDescription>What your clients will receive</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {offer.main_deliverables.map((deliverableId) => {
+                    const deliverable = getDeliverableDetails(deliverableId);
+                    if (!deliverable) return null;
+                    const Icon = deliverable.icon;
+                    return (
+                      <div 
+                        key={deliverableId}
+                        className={cn("p-3 rounded-lg border border-border flex items-start gap-3", deliverable.bgColor)}
+                      >
+                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-background/80")}>
+                          <Icon className={cn("w-4 h-4", deliverable.color)} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground">{deliverable.name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{deliverable.description}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
@@ -676,12 +867,13 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
               {step === 1 && "Step 1: Enter your offer details"}
               {step === 2 && "Step 2: Select your offer type"}
               {step === 3 && "Step 3: Select your funnel type"}
+              {step === 4 && "Step 4: Select main deliverables (optional)"}
             </DialogDescription>
           </DialogHeader>
           
           {/* Step Indicators */}
           <div className="flex items-center gap-2 py-2">
-            {[1, 2, 3].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <div
                 key={s}
                 className={cn(
@@ -866,6 +1058,61 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                   </div>
                 </div>
               )}
+
+              {/* Step 4: Main Deliverables */}
+              {step === 4 && (
+                <div className="space-y-4">
+                  <div>
+                    <Label>Select Main Deliverables</Label>
+                    <p className="text-sm text-muted-foreground mt-1">Choose what your clients will receive. Select all that apply.</p>
+                  </div>
+                  <div className="grid gap-3">
+                    {MAIN_DELIVERABLES.map((deliverable) => {
+                      const Icon = deliverable.icon;
+                      const isSelected = selectedDeliverables.includes(deliverable.id);
+                      
+                      return (
+                        <Card
+                          key={deliverable.id}
+                          className={cn(
+                            "cursor-pointer transition-all hover:border-primary/50",
+                            isSelected && "border-primary ring-1 ring-primary"
+                          )}
+                          onClick={() => toggleDeliverable(deliverable.id)}
+                        >
+                          <CardHeader className="py-3 px-4">
+                            <div className="flex items-start gap-3">
+                              <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0", deliverable.bgColor)}>
+                                <Icon className={cn("w-5 h-5", deliverable.color)} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <CardTitle className="text-sm">{deliverable.name}</CardTitle>
+                                <CardDescription className="text-xs mt-0.5">{deliverable.description}</CardDescription>
+                              </div>
+                              <div className={cn(
+                                "w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
+                                isSelected ? "bg-primary border-primary" : "border-muted-foreground/30"
+                              )}>
+                                {isSelected && (
+                                  <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                  {selectedDeliverables.length > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <CheckSquare className="w-4 h-4" />
+                      <span>{selectedDeliverables.length} deliverable{selectedDeliverables.length !== 1 ? 's' : ''} selected</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </ScrollArea>
 
@@ -873,15 +1120,19 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
           <div className="flex justify-between gap-3 pt-4 border-t">
             <Button 
               variant="outline" 
-              onClick={() => step === 1 ? handleCloseDialog() : setStep((step - 1) as 1 | 2)}
+              onClick={() => step === 1 ? handleCloseDialog() : setStep((step - 1) as 1 | 2 | 3)}
             >
               {step === 1 ? "Cancel" : "Back"}
             </Button>
             <div className="flex gap-2">
-              {step < 3 ? (
+              {step < 4 ? (
                 <Button 
-                  onClick={() => setStep((step + 1) as 2 | 3)}
-                  disabled={step === 1 ? !canProceedToStep2 : !canProceedToStep3}
+                  onClick={() => setStep((step + 1) as 2 | 3 | 4)}
+                  disabled={
+                    step === 1 ? !canProceedToStep2 : 
+                    step === 2 ? !canProceedToStep3 :
+                    !canProceedToStep4
+                  }
                 >
                   Continue
                 </Button>

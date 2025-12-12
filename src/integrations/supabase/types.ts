@@ -88,6 +88,7 @@ export type Database = {
           description: string | null
           funnel_type: string | null
           id: string
+          main_deliverables: string[] | null
           niche: string
           offer_category: string
           offer_type: string
@@ -102,6 +103,7 @@ export type Database = {
           description?: string | null
           funnel_type?: string | null
           id?: string
+          main_deliverables?: string[] | null
           niche: string
           offer_category: string
           offer_type: string
@@ -116,6 +118,7 @@ export type Database = {
           description?: string | null
           funnel_type?: string | null
           id?: string
+          main_deliverables?: string[] | null
           niche?: string
           offer_category?: string
           offer_type?: string
