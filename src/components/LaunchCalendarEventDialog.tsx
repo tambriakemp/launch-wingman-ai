@@ -17,13 +17,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -47,6 +40,7 @@ interface LaunchEvent {
 
 interface LaunchCalendarEventDialogProps {
   projectId: string;
+  projectType: "launch" | "prelaunch";
   onEventAdded?: () => void;
   trigger?: React.ReactNode;
   editEvent?: LaunchEvent;
@@ -71,7 +65,8 @@ const PRELAUNCH_WEEKS = 7;
 const CONTENT_CREATION_WEEKS = 2;
 
 export function LaunchCalendarEventDialog({ 
-  projectId, 
+  projectId,
+  projectType,
   onEventAdded, 
   trigger,
   editEvent,
@@ -87,7 +82,6 @@ export function LaunchCalendarEventDialog({
   const isEditMode = !!editEvent;
   
   const [title, setTitle] = useState("");
-  const [eventType, setEventType] = useState<"launch" | "prelaunch">("launch");
   const [showDates, setShowDates] = useState(false);
   const [programWeeks, setProgramWeeks] = useState(DEFAULT_PROGRAM_WEEKS);
   const [restWeeks, setRestWeeks] = useState(DEFAULT_REST_WEEKS);
@@ -107,7 +101,6 @@ export function LaunchCalendarEventDialog({
   useEffect(() => {
     if (editEvent && open) {
       setTitle(editEvent.title);
-      setEventType(editEvent.event_type as "launch" | "prelaunch");
       setProgramWeeks(editEvent.program_weeks || DEFAULT_PROGRAM_WEEKS);
       setRestWeeks(editEvent.rest_weeks || DEFAULT_REST_WEEKS);
       
@@ -130,7 +123,6 @@ export function LaunchCalendarEventDialog({
   useEffect(() => {
     if (!open && !isEditMode) {
       setTitle("");
-      setEventType("launch");
       setDates({
         prelaunchStart: undefined,
         contentCreationStart: undefined,
@@ -223,17 +215,17 @@ export function LaunchCalendarEventDialog({
 
       const eventData = {
         title: title.trim(),
-        event_type: eventType,
+        event_type: projectType,
         prelaunch_start: dates.prelaunchStart?.toISOString().split('T')[0],
         content_creation_start: dates.contentCreationStart?.toISOString().split('T')[0],
-        enrollment_opens: dates.enrollmentOpens?.toISOString().split('T')[0],
-        enrollment_closes: dates.enrollmentCloses?.toISOString().split('T')[0],
-        program_delivery_start: dates.programDeliveryStart?.toISOString().split('T')[0],
-        program_delivery_end: dates.programDeliveryEnd?.toISOString().split('T')[0],
-        rest_period_start: dates.restPeriodStart?.toISOString().split('T')[0],
-        rest_period_end: dates.restPeriodEnd?.toISOString().split('T')[0],
-        program_weeks: programWeeks,
-        rest_weeks: restWeeks,
+        enrollment_opens: projectType === 'launch' ? dates.enrollmentOpens?.toISOString().split('T')[0] : null,
+        enrollment_closes: projectType === 'launch' ? dates.enrollmentCloses?.toISOString().split('T')[0] : null,
+        program_delivery_start: projectType === 'launch' ? dates.programDeliveryStart?.toISOString().split('T')[0] : null,
+        program_delivery_end: projectType === 'launch' ? dates.programDeliveryEnd?.toISOString().split('T')[0] : null,
+        rest_period_start: projectType === 'launch' ? dates.restPeriodStart?.toISOString().split('T')[0] : null,
+        rest_period_end: projectType === 'launch' ? dates.restPeriodEnd?.toISOString().split('T')[0] : null,
+        program_weeks: projectType === 'launch' ? programWeeks : null,
+        rest_weeks: projectType === 'launch' ? restWeeks : null,
       };
 
       if (isEditMode && editEvent) {
@@ -262,7 +254,7 @@ export function LaunchCalendarEventDialog({
           return;
         }
 
-        toast.success(`${eventType === 'launch' ? 'Launch' : 'Prelaunch'} "${title}" added to calendar`);
+        toast.success(`${projectType === 'launch' ? 'Launch' : 'Prelaunch'} "${title}" added to calendar`);
       }
       
       setOpen(false);
@@ -341,20 +333,7 @@ export function LaunchCalendarEventDialog({
 
       <div className="space-y-6 py-4">
         <div className="space-y-2">
-          <Label>Event Type</Label>
-          <Select value={eventType} onValueChange={(v) => setEventType(v as "launch" | "prelaunch")}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select event type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="launch">Launch</SelectItem>
-              <SelectItem value="prelaunch">Prelaunch</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="title">Launch Title</Label>
+          <Label htmlFor="title">{projectType === 'launch' ? 'Launch' : 'Prelaunch'} Title</Label>
           <Input
             id="title"
             placeholder="e.g., Spring Cohort 2025"
@@ -394,7 +373,7 @@ export function LaunchCalendarEventDialog({
           </p>
         </div>
 
-        {dates.prelaunchStart && (
+        {dates.prelaunchStart && projectType === 'launch' && (
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="programWeeks">Program Length (weeks)</Label>
@@ -421,7 +400,7 @@ export function LaunchCalendarEventDialog({
           </div>
         )}
 
-        {dates.prelaunchStart && (
+        {dates.prelaunchStart && projectType === 'launch' && (
           <Button 
             variant="outline" 
             size="sm" 
@@ -451,48 +430,52 @@ export function LaunchCalendarEventDialog({
                 icon={<Rocket className="w-4 h-4" />}
                 description="Your selected start date"
               />
-              <DatePickerField
-                label="Enrollment Opens"
-                date={dates.enrollmentOpens}
-                onChange={(d) => updateDate("enrollmentOpens", d)}
-                icon={<Rocket className="w-4 h-4" />}
-                description="~7 weeks after prelaunch"
-              />
-              <DatePickerField
-                label="Enrollment Closes"
-                date={dates.enrollmentCloses}
-                onChange={(d) => updateDate("enrollmentCloses", d)}
-                icon={<Clock className="w-4 h-4" />}
-                description="1 week enrollment window"
-              />
-              <DatePickerField
-                label="Program Delivery Starts"
-                date={dates.programDeliveryStart}
-                onChange={(d) => updateDate("programDeliveryStart", d)}
-                icon={<Package className="w-4 h-4" />}
-                description="After enrollment closes"
-              />
-              <DatePickerField
-                label="Program Delivery Ends"
-                date={dates.programDeliveryEnd}
-                onChange={(d) => updateDate("programDeliveryEnd", d)}
-                icon={<Package className="w-4 h-4" />}
-                description={`${programWeeks} week program`}
-              />
-              <DatePickerField
-                label="Rest Period Starts"
-                date={dates.restPeriodStart}
-                onChange={(d) => updateDate("restPeriodStart", d)}
-                icon={<Coffee className="w-4 h-4" />}
-                description="After program ends"
-              />
-              <DatePickerField
-                label="Rest Period Ends"
-                date={dates.restPeriodEnd}
-                onChange={(d) => updateDate("restPeriodEnd", d)}
-                icon={<Coffee className="w-4 h-4" />}
-                description={`${restWeeks} week rest`}
-              />
+              {projectType === 'launch' && (
+                <>
+                  <DatePickerField
+                    label="Enrollment Opens"
+                    date={dates.enrollmentOpens}
+                    onChange={(d) => updateDate("enrollmentOpens", d)}
+                    icon={<Rocket className="w-4 h-4" />}
+                    description="~7 weeks after prelaunch"
+                  />
+                  <DatePickerField
+                    label="Enrollment Closes"
+                    date={dates.enrollmentCloses}
+                    onChange={(d) => updateDate("enrollmentCloses", d)}
+                    icon={<Clock className="w-4 h-4" />}
+                    description="1 week enrollment window"
+                  />
+                  <DatePickerField
+                    label="Program Delivery Starts"
+                    date={dates.programDeliveryStart}
+                    onChange={(d) => updateDate("programDeliveryStart", d)}
+                    icon={<Package className="w-4 h-4" />}
+                    description="After enrollment closes"
+                  />
+                  <DatePickerField
+                    label="Program Delivery Ends"
+                    date={dates.programDeliveryEnd}
+                    onChange={(d) => updateDate("programDeliveryEnd", d)}
+                    icon={<Package className="w-4 h-4" />}
+                    description={`${programWeeks} week program`}
+                  />
+                  <DatePickerField
+                    label="Rest Period Starts"
+                    date={dates.restPeriodStart}
+                    onChange={(d) => updateDate("restPeriodStart", d)}
+                    icon={<Coffee className="w-4 h-4" />}
+                    description="After program ends"
+                  />
+                  <DatePickerField
+                    label="Rest Period Ends"
+                    date={dates.restPeriodEnd}
+                    onChange={(d) => updateDate("restPeriodEnd", d)}
+                    icon={<Coffee className="w-4 h-4" />}
+                    description={`${restWeeks} week rest`}
+                  />
+                </>
+              )}
             </div>
 
             <div className="bg-accent/50 rounded-lg p-3 text-sm">
@@ -513,7 +496,7 @@ export function LaunchCalendarEventDialog({
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={!title.trim() || !dates.prelaunchStart || isSaving}>
-            {isSaving ? "Saving..." : isEditMode ? "Save Changes" : `Add ${eventType === 'launch' ? 'Launch' : 'Prelaunch'}`}
+            {isSaving ? "Saving..." : isEditMode ? "Save Changes" : `Add ${projectType === 'launch' ? 'Launch' : 'Prelaunch'}`}
           </Button>
         </div>
       </div>

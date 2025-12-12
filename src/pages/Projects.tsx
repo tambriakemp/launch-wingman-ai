@@ -57,6 +57,7 @@ interface Project {
   description: string | null;
   launch_date: string | null;
   status: "planning" | "active" | "completed";
+  project_type: "launch" | "prelaunch";
 }
 
 const statusColors = {
@@ -86,7 +87,7 @@ const Projects = () => {
       
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, description, launch_date, status")
+        .select("id, name, description, launch_date, status, project_type")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -121,8 +122,9 @@ const Projects = () => {
         description: newProject.description.trim() || null,
         user_id: user.id,
         status: "planning",
+        project_type: newProject.eventType,
       })
-      .select("id, name, description, launch_date, status")
+      .select("id, name, description, launch_date, status, project_type")
       .single();
 
     if (error) {

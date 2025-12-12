@@ -57,6 +57,7 @@ interface Project {
   description: string | null;
   status: "planning" | "active" | "completed";
   transformation_statement: string | null;
+  project_type: "launch" | "prelaunch";
 }
 
 const statusVariants = {
@@ -101,7 +102,7 @@ const ProjectDetail = () => {
 
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name, description, status, transformation_statement")
+        .select("id, name, description, status, transformation_statement, project_type")
         .eq("id", id)
         .maybeSingle();
 
@@ -278,7 +279,7 @@ const ProjectDetail = () => {
                     <CardDescription>Plan your launch timeline</CardDescription>
                   </div>
                   {launchEvents.length === 0 && (
-                    <LaunchCalendarEventDialog projectId={project.id} onEventAdded={fetchLaunchEvents} />
+                    <LaunchCalendarEventDialog projectId={project.id} projectType={project.project_type} onEventAdded={fetchLaunchEvents} />
                   )}
                 </CardHeader>
                 <CardContent>
@@ -293,6 +294,7 @@ const ProjectDetail = () => {
                       </p>
                       <LaunchCalendarEventDialog 
                         projectId={project.id}
+                        projectType={project.project_type}
                         onEventAdded={fetchLaunchEvents}
                         trigger={
                           <Button variant="outline">
@@ -483,6 +485,7 @@ const ProjectDetail = () => {
       {editingEvent && (
         <LaunchCalendarEventDialog
           projectId={project.id}
+          projectType={project.project_type}
           editEvent={editingEvent}
           open={editDialogOpen}
           onOpenChange={(open) => {
