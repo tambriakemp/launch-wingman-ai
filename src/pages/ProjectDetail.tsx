@@ -22,6 +22,7 @@ import {
   Pencil,
   Trash2,
   Gift,
+  MessageSquare,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -38,6 +39,7 @@ import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog"
 import { ProjectBoard } from "@/components/ProjectBoard";
 import { ProjectSettingsDialog } from "@/components/ProjectSettingsDialog";
 import { OfferBuilder } from "@/components/OfferBuilder";
+import { MessagingBuilder } from "@/components/MessagingBuilder";
 
 interface LaunchEvent {
   id: string;
@@ -275,10 +277,14 @@ const ProjectDetail = () => {
           transition={{ delay: 0.2 }}
         >
           <Tabs defaultValue="offers" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+            <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
               <TabsTrigger value="offers" className="gap-2">
                 <Gift className="w-4 h-4" />
                 Offer Builder
+              </TabsTrigger>
+              <TabsTrigger value="messaging" className="gap-2">
+                <MessageSquare className="w-4 h-4" />
+                Messaging
               </TabsTrigger>
               <TabsTrigger value="calendar" className="gap-2">
                 <Calendar className="w-4 h-4" />
@@ -308,6 +314,20 @@ const ProjectDetail = () => {
                 </CardHeader>
                 <CardContent>
                   <OfferBuilder projectId={project.id} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="messaging">
+              <Card variant="elevated" className="min-h-[400px]">
+                <CardHeader>
+                  <div>
+                    <CardTitle>Messaging</CardTitle>
+                    <CardDescription>Build copy for your sales pages, emails, and social media</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <MessagingBuilder projectId={project.id} />
                 </CardContent>
               </Card>
             </TabsContent>
