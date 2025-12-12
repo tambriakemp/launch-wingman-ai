@@ -432,8 +432,35 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
       </div>
 
       {/* Phase-grouped task list */}
-      <div className="space-y-2">
-        {/* Render phases in order */}
+      {tasks.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <ListTodo className="w-12 h-12 text-muted-foreground/30 mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">No tasks yet</h3>
+          <p className="text-muted-foreground text-sm mb-6 max-w-md">
+            Get started by adding your first task or loading a pre-built launch task template.
+          </p>
+          <div className="flex gap-3">
+            <Button onClick={() => { setEditingTask(null); setTaskDialogOpen(true); }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Task
+            </Button>
+            <LoadLaunchTasksDialog
+              projectId={projectId}
+              projectType={projectType}
+              onTasksLoaded={fetchTasks}
+              taskCount={0}
+              trigger={
+                <Button variant="outline">
+                  <ListChecks className="w-4 h-4 mr-2" />
+                  Load Launch Tasks
+                </Button>
+              }
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {/* Render phases in order */}
         {TASK_PHASES.map((phase) => {
           const phaseTasks = getTasksByPhase(phase.id);
           const isExpanded = expandedPhases.has(phase.id);
@@ -688,14 +715,14 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
           );
         })()}
 
-        {/* Empty state */}
-        {filteredTasks.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/30">
-            <p className="text-muted-foreground">No tasks found</p>
-          </div>
-        )}
-      </div>
-
+          {/* Empty state for filtered results */}
+          {filteredTasks.length === 0 && tasks.length > 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/30">
+              <p className="text-muted-foreground">No tasks found</p>
+            </div>
+          )}
+        </div>
+      )}
       {/* Task Dialog */}
       <TaskDialog
         open={taskDialogOpen}
