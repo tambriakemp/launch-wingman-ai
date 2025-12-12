@@ -456,12 +456,10 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
                             <span className="text-sm font-medium text-foreground truncate">
                               {task.title}
                             </span>
-                            {task.subtask_count && task.subtask_count > 0 && (
-                              <div className="flex items-center gap-0.5 text-xs text-muted-foreground flex-shrink-0">
-                                <ListTodo className="w-3.5 h-3.5" />
-                                <span>{task.subtask_count}</span>
-                              </div>
-                            )}
+                            <div className="flex items-center gap-0.5 text-xs text-muted-foreground flex-shrink-0">
+                              <ListTodo className="w-3.5 h-3.5" />
+                              <span>{task.subtask_count || 0}</span>
+                            </div>
                             {task.labels && task.labels.length > 0 && (
                               <div className="flex gap-1 flex-shrink-0">
                                 {task.labels.slice(0, 2).map((labelId) => {
@@ -587,12 +585,10 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
                             <span className="text-sm font-medium text-foreground truncate">
                               {task.title}
                             </span>
-                            {task.subtask_count && task.subtask_count > 0 && (
-                              <div className="flex items-center gap-0.5 text-xs text-muted-foreground flex-shrink-0">
-                                <ListTodo className="w-3.5 h-3.5" />
-                                <span>{task.subtask_count}</span>
-                              </div>
-                            )}
+                            <div className="flex items-center gap-0.5 text-xs text-muted-foreground flex-shrink-0">
+                              <ListTodo className="w-3.5 h-3.5" />
+                              <span>{task.subtask_count || 0}</span>
+                            </div>
                             {task.labels && task.labels.length > 0 && (
                               <div className="flex gap-1 flex-shrink-0">
                                 {task.labels.slice(0, 2).map((labelId) => {
