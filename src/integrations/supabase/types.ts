@@ -14,6 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
+      content_planner: {
+        Row: {
+          content: string | null
+          content_type: string
+          created_at: string
+          day_number: number
+          description: string | null
+          id: string
+          labels: string[] | null
+          phase: string
+          project_id: string
+          status: string
+          time_of_day: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          content_type: string
+          created_at?: string
+          day_number: number
+          description?: string | null
+          id?: string
+          labels?: string[] | null
+          phase: string
+          project_id: string
+          status?: string
+          time_of_day?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          content_type?: string
+          created_at?: string
+          day_number?: number
+          description?: string | null
+          id?: string
+          labels?: string[] | null
+          phase?: string
+          project_id?: string
+          status?: string
+          time_of_day?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_planner_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deliverable_copy: {
         Row: {
           content: string
