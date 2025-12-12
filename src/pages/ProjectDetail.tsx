@@ -64,10 +64,11 @@ interface Project {
   project_type: "launch" | "prelaunch";
 }
 
-const statusVariants: Record<ProjectStatus, { label: string; className: string }> = {
+const statusVariants: Record<string, { label: string; className: string }> = {
   active: { label: "Active", className: "text-success border-success" },
   draft: { label: "Draft", className: "text-warning border-warning" },
   archived: { label: "Archived", className: "text-muted-foreground border-muted" },
+  planning: { label: "Active", className: "text-success border-success" }, // Legacy fallback
 };
 
 const ProjectDetail = () => {
