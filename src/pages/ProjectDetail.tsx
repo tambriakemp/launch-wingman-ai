@@ -401,7 +401,7 @@ const ProjectDetail = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <ProjectBoard projectId={project.id} />
+                  <ProjectBoard projectId={project.id} projectType={project.project_type} />
                 </CardContent>
               </Card>
             </TabsContent>
