@@ -22,6 +22,9 @@ import {
 import { toast } from "sonner";
 import { SocialBioBuilder } from "./SocialBioBuilder";
 import { SalesPageCopyBuilder } from "./SalesPageCopyBuilder";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface MessagingItem {
   id: string;
@@ -39,6 +42,7 @@ interface MessagingSectionProps {
   onAdd: (type: MessagingItem["type"]) => void;
   onEdit: (item: MessagingItem) => void;
   onDelete: (item: MessagingItem) => void;
+  isLoading?: boolean;
 }
 
 const MessagingSection = ({
@@ -50,6 +54,7 @@ const MessagingSection = ({
   onAdd,
   onEdit,
   onDelete,
+  isLoading,
 }: MessagingSectionProps) => {
   const sectionItems = items.filter((item) => item.type === type as string);
 
@@ -144,12 +149,150 @@ const sectionConfig = {
 };
 
 export const MessagingBuilder = ({ projectId }: MessagingBuilderProps) => {
-  const [items, setItems] = useState<MessagingItem[]>([]);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MessagingItem | null>(null);
   const [currentType, setCurrentType] = useState<MessagingItem["type"]>("email-sequence");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+
+  // Fetch email sequences from database
+  const { data: emailSequences = [], isLoading: isLoadingEmails } = useQuery({
+    queryKey: ["email-sequences", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("email_sequences")
+        .select("*")
+        .eq("project_id", projectId);
+
+      if (error) throw error;
+      return (data || []).map((item) => ({
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        type: "email-sequence" as const,
+      }));
+    },
+    enabled: !!projectId,
+  });
+
+  // Fetch deliverable copy from database
+  const { data: deliverableCopy = [], isLoading: isLoadingDeliverables } = useQuery({
+    queryKey: ["deliverable-copy", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deliverable_copy")
+        .select("*")
+        .eq("project_id", projectId);
+
+      if (error) throw error;
+      return (data || []).map((item) => ({
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        type: "deliverable" as const,
+      }));
+    },
+    enabled: !!projectId,
+  });
+
+  // Combine both data sources
+  const items: MessagingItem[] = [...emailSequences, ...deliverableCopy];
+
+  // Create email sequence mutation
+  const createEmailMutation = useMutation({
+    mutationFn: async (data: { title: string; content: string }) => {
+      const { error } = await supabase.from("email_sequences").insert({
+        project_id: projectId,
+        user_id: user?.id,
+        title: data.title,
+        content: data.content,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["email-sequences", projectId] });
+      toast.success("Email sequence added");
+    },
+    onError: () => toast.error("Failed to save email sequence"),
+  });
+
+  // Update email sequence mutation
+  const updateEmailMutation = useMutation({
+    mutationFn: async (data: { id: string; title: string; content: string }) => {
+      const { error } = await supabase
+        .from("email_sequences")
+        .update({ title: data.title, content: data.content })
+        .eq("id", data.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["email-sequences", projectId] });
+      toast.success("Email sequence updated");
+    },
+    onError: () => toast.error("Failed to update email sequence"),
+  });
+
+  // Delete email sequence mutation
+  const deleteEmailMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("email_sequences").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["email-sequences", projectId] });
+      toast.success("Email sequence deleted");
+    },
+    onError: () => toast.error("Failed to delete email sequence"),
+  });
+
+  // Create deliverable copy mutation
+  const createDeliverableMutation = useMutation({
+    mutationFn: async (data: { title: string; content: string }) => {
+      const { error } = await supabase.from("deliverable_copy").insert({
+        project_id: projectId,
+        user_id: user?.id,
+        title: data.title,
+        content: data.content,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["deliverable-copy", projectId] });
+      toast.success("Deliverable copy added");
+    },
+    onError: () => toast.error("Failed to save deliverable copy"),
+  });
+
+  // Update deliverable copy mutation
+  const updateDeliverableMutation = useMutation({
+    mutationFn: async (data: { id: string; title: string; content: string }) => {
+      const { error } = await supabase
+        .from("deliverable_copy")
+        .update({ title: data.title, content: data.content })
+        .eq("id", data.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["deliverable-copy", projectId] });
+      toast.success("Deliverable copy updated");
+    },
+    onError: () => toast.error("Failed to update deliverable copy"),
+  });
+
+  // Delete deliverable copy mutation
+  const deleteDeliverableMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("deliverable_copy").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["deliverable-copy", projectId] });
+      toast.success("Deliverable copy deleted");
+    },
+    onError: () => toast.error("Failed to delete deliverable copy"),
+  });
 
   const handleAdd = (type: MessagingItem["type"]) => {
     setCurrentType(type);
@@ -168,8 +311,11 @@ export const MessagingBuilder = ({ projectId }: MessagingBuilderProps) => {
   };
 
   const handleDelete = (item: MessagingItem) => {
-    setItems((prev) => prev.filter((i) => i.id !== item.id));
-    toast.success("Item deleted");
+    if (item.type === "email-sequence") {
+      deleteEmailMutation.mutate(item.id);
+    } else {
+      deleteDeliverableMutation.mutate(item.id);
+    }
   };
 
   const handleSave = () => {
@@ -179,21 +325,17 @@ export const MessagingBuilder = ({ projectId }: MessagingBuilderProps) => {
     }
 
     if (editingItem) {
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === editingItem.id ? { ...item, title, content } : item
-        )
-      );
-      toast.success("Item updated");
+      if (currentType === "email-sequence") {
+        updateEmailMutation.mutate({ id: editingItem.id, title, content });
+      } else {
+        updateDeliverableMutation.mutate({ id: editingItem.id, title, content });
+      }
     } else {
-      const newItem: MessagingItem = {
-        id: crypto.randomUUID(),
-        title,
-        content,
-        type: currentType,
-      };
-      setItems((prev) => [...prev, newItem]);
-      toast.success("Item added");
+      if (currentType === "email-sequence") {
+        createEmailMutation.mutate({ title, content });
+      } else {
+        createDeliverableMutation.mutate({ title, content });
+      }
     }
 
     setDialogOpen(false);
@@ -218,6 +360,7 @@ export const MessagingBuilder = ({ projectId }: MessagingBuilderProps) => {
           onAdd={handleAdd}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          isLoading={isLoadingEmails}
         />
         <MessagingSection
           title={sectionConfig.deliverable.title}
@@ -228,6 +371,7 @@ export const MessagingBuilder = ({ projectId }: MessagingBuilderProps) => {
           onAdd={handleAdd}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          isLoading={isLoadingDeliverables}
         />
       </div>
 
