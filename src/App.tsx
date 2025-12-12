@@ -14,8 +14,10 @@ import Assessments from "./pages/Assessments";
 import Assessment from "./pages/Assessment";
 import CoachAssessment from "./pages/CoachAssessment";
 import WhyStatementAssessment from "./pages/WhyStatementAssessment";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 
 const queryClient = new QueryClient();
 
@@ -108,6 +110,14 @@ const App = () => (
                 <ProtectedRoute>
                   <CoachAssessment />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminDashboard />
+                </ProtectedAdminRoute>
               }
             />
             <Route path="*" element={<NotFound />} />
