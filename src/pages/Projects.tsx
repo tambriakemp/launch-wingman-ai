@@ -239,7 +239,14 @@ const Projects = () => {
           className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
         >
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Projects</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold text-foreground">Projects</h1>
+              {!isSubscribed && (
+                <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-muted text-muted-foreground">
+                  {activeProjectCount}/1
+                </span>
+              )}
+            </div>
             <p className="text-muted-foreground mt-1">
               Manage your launch projects and programs.
             </p>
