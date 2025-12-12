@@ -170,6 +170,7 @@ export type Database = {
           due_date: string | null
           id: string
           labels: string[] | null
+          phase: string | null
           position: number
           project_id: string
           title: string
@@ -183,6 +184,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           labels?: string[] | null
+          phase?: string | null
           position?: number
           project_id: string
           title: string
@@ -196,6 +198,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           labels?: string[] | null
+          phase?: string | null
           position?: number
           project_id?: string
           title?: string
