@@ -36,6 +36,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -47,23 +55,27 @@ import {
   ArrowRight,
   Loader2,
   Trash2,
+  Archive,
+  RotateCcw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+
+type ProjectStatus = "active" | "draft" | "archived";
 
 interface Project {
   id: string;
   name: string;
   description: string | null;
   launch_date: string | null;
-  status: "planning" | "active" | "completed";
+  status: ProjectStatus;
   project_type: "launch" | "prelaunch";
 }
 
-const statusColors = {
-  planning: "bg-warning/10 text-warning",
+const statusColors: Record<ProjectStatus, string> = {
   active: "bg-success/10 text-success",
-  completed: "bg-muted text-muted-foreground",
+  draft: "bg-warning/10 text-warning",
+  archived: "bg-muted text-muted-foreground",
 };
 
 const Projects = () => {
@@ -79,6 +91,10 @@ const Projects = () => {
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Archive sheet state
+  const [archiveSheetOpen, setArchiveSheetOpen] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState<string | null>(null);
 
   // Fetch projects on mount
   useEffect(() => {
@@ -121,7 +137,7 @@ const Projects = () => {
         name: newProject.name.trim(),
         description: newProject.description.trim() || null,
         user_id: user.id,
-        status: "planning",
+        status: "active",
         project_type: newProject.eventType,
       })
       .select("id, name, description, launch_date, status, project_type")
@@ -174,6 +190,30 @@ const Projects = () => {
     setIsDeleting(false);
   };
 
+  const handleUpdateStatus = async (projectId: string, newStatus: ProjectStatus) => {
+    setIsUpdatingStatus(projectId);
+
+    const { error } = await supabase
+      .from("projects")
+      .update({ status: newStatus })
+      .eq("id", projectId);
+
+    if (error) {
+      toast.error("Failed to update project status");
+      console.error(error);
+    } else {
+      setProjects(projects.map((p) => 
+        p.id === projectId ? { ...p, status: newStatus } : p
+      ));
+      toast.success(`Project ${newStatus === "archived" ? "archived" : "restored"}`);
+    }
+
+    setIsUpdatingStatus(null);
+  };
+
+  const activeProjects = projects.filter((p) => p.status !== "archived");
+  const archivedProjects = projects.filter((p) => p.status === "archived");
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
@@ -189,76 +229,131 @@ const Projects = () => {
               Manage your launch projects and programs.
             </p>
           </div>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button size="lg">
-                <Plus className="w-5 h-5" />
-                New Project
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Create New Project</DialogTitle>
-                <DialogDescription>
-                  Start a new launch project for your program or membership.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Project Name</Label>
-                  <Input
-                    id="name"
-                    placeholder="e.g., Spring Launch 2024"
-                    value={newProject.name}
-                    onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description (optional)</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Describe your launch..."
-                    value={newProject.description}
-                    onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                    rows={3}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="eventType">Project Type</Label>
-                  <Select 
-                    value={newProject.eventType} 
-                    onValueChange={(value: "launch" | "prelaunch") => setNewProject({ ...newProject, eventType: value })}
-                  >
-                    <SelectTrigger id="eventType" className="bg-background">
-                      <SelectValue placeholder="Select project type" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover z-50">
-                      <SelectItem value="launch">Launch</SelectItem>
-                      <SelectItem value="prelaunch">Prelaunch</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {newProject.eventType === "launch" 
-                      ? "A full launch includes prelaunch, enrollment, and delivery phases."
-                      : "A prelaunch focuses on warming up your audience before opening enrollment."}
-                  </p>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                  Cancel
+          <div className="flex items-center gap-2">
+            {archivedProjects.length > 0 && (
+              <Sheet open={archiveSheetOpen} onOpenChange={setArchiveSheetOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline">
+                    <Archive className="w-4 h-4" />
+                    Archived ({archivedProjects.length})
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="w-full sm:max-w-lg">
+                  <SheetHeader>
+                    <SheetTitle>Archived Projects</SheetTitle>
+                    <SheetDescription>
+                      View and restore your archived projects.
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="mt-6 space-y-3">
+                    {archivedProjects.map((project) => (
+                      <div
+                        key={project.id}
+                        className="flex items-center justify-between p-4 rounded-lg border bg-card"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground truncate">{project.name}</p>
+                          {project.description && (
+                            <p className="text-sm text-muted-foreground truncate">{project.description}</p>
+                          )}
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" disabled={isUpdatingStatus === project.id}>
+                              {isUpdatingStatus === project.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <RotateCcw className="w-4 h-4" />
+                              )}
+                              Restore
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-popover">
+                            <DropdownMenuItem onClick={() => handleUpdateStatus(project.id, "active")}>
+                              Set as Active
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleUpdateStatus(project.id, "draft")}>
+                              Set as Draft
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    ))}
+                  </div>
+                </SheetContent>
+              </Sheet>
+            )}
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg">
+                  <Plus className="w-5 h-5" />
+                  New Project
                 </Button>
-                <Button onClick={handleCreateProject} disabled={isCreating}>
-                  {isCreating ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-4 h-4" />
-                  )}
-                  Create Project
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Create New Project</DialogTitle>
+                  <DialogDescription>
+                    Start a new launch project for your program or membership.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Project Name</Label>
+                    <Input
+                      id="name"
+                      placeholder="e.g., Spring Launch 2024"
+                      value={newProject.name}
+                      onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description (optional)</Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Describe your launch..."
+                      value={newProject.description}
+                      onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="eventType">Project Type</Label>
+                    <Select 
+                      value={newProject.eventType} 
+                      onValueChange={(value: "launch" | "prelaunch") => setNewProject({ ...newProject, eventType: value })}
+                    >
+                      <SelectTrigger id="eventType" className="bg-background">
+                        <SelectValue placeholder="Select project type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        <SelectItem value="launch">Launch</SelectItem>
+                        <SelectItem value="prelaunch">Prelaunch</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {newProject.eventType === "launch" 
+                        ? "A full launch includes prelaunch, enrollment, and delivery phases."
+                        : "A prelaunch focuses on warming up your audience before opening enrollment."}
+                    </p>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateProject} disabled={isCreating}>
+                    {isCreating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4" />
+                    )}
+                    Create Project
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </motion.div>
 
         {/* Loading State */}
@@ -266,10 +361,10 @@ const Projects = () => {
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
-        ) : projects.length > 0 ? (
+        ) : activeProjects.length > 0 ? (
           /* Projects Grid */
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project, i) => (
+            {activeProjects.map((project, i) => (
               <motion.div
                 key={project.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -308,7 +403,16 @@ const Projects = () => {
                             <MoreVertical className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="bg-popover">
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleUpdateStatus(project.id, "archived");
+                            }}
+                          >
+                            <Archive className="w-4 h-4 mr-2" />
+                            Archive Project
+                          </DropdownMenuItem>
                           <DropdownMenuItem 
                             className="text-destructive focus:text-destructive"
                             onClick={(e) => handleDeleteClick(e, project)}
@@ -345,10 +449,12 @@ const Projects = () => {
                   <FolderKanban className="w-10 h-10 text-primary" />
                 </div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Create Your First Project
+                  {archivedProjects.length > 0 ? "No Active Projects" : "Create Your First Project"}
                 </h2>
                 <p className="text-muted-foreground max-w-md mb-8">
-                  Start by creating a project for your upcoming launch. Each project includes a calendar, kanban board, and content planner.
+                  {archivedProjects.length > 0 
+                    ? "All your projects are archived. Restore one or create a new project."
+                    : "Start by creating a project for your upcoming launch. Each project includes a calendar, kanban board, and content planner."}
                 </p>
                 <Button size="lg" onClick={() => setIsCreateOpen(true)}>
                   <Plus className="w-5 h-5" />

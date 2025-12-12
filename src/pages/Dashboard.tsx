@@ -131,9 +131,9 @@ const Dashboard = () => {
   };
 
   const statusVariants: Record<string, { label: string; className: string }> = {
-    planning: { label: "Planning", className: "text-warning border-warning" },
     active: { label: "Active", className: "text-success border-success" },
-    completed: { label: "Completed", className: "text-muted-foreground border-muted" },
+    draft: { label: "Draft", className: "text-warning border-warning" },
+    archived: { label: "Archived", className: "text-muted-foreground border-muted" },
   };
 
   return (
