@@ -7,6 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -64,7 +71,7 @@ const Projects = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [newProject, setNewProject] = useState({ name: "", description: "" });
+  const [newProject, setNewProject] = useState({ name: "", description: "", eventType: "launch" as "launch" | "prelaunch" });
   
   // Delete state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -123,7 +130,7 @@ const Projects = () => {
       console.error(error);
     } else {
       setProjects([data as Project, ...projects]);
-      setNewProject({ name: "", description: "" });
+      setNewProject({ name: "", description: "", eventType: "launch" });
       setIsCreateOpen(false);
       toast.success("Project created successfully!");
     }
@@ -213,6 +220,26 @@ const Projects = () => {
                     onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
                     rows={3}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="eventType">Project Type</Label>
+                  <Select 
+                    value={newProject.eventType} 
+                    onValueChange={(value: "launch" | "prelaunch") => setNewProject({ ...newProject, eventType: value })}
+                  >
+                    <SelectTrigger id="eventType" className="bg-background">
+                      <SelectValue placeholder="Select project type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="launch">Launch</SelectItem>
+                      <SelectItem value="prelaunch">Prelaunch</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {newProject.eventType === "launch" 
+                      ? "A full launch includes prelaunch, enrollment, and delivery phases."
+                      : "A prelaunch focuses on warming up your audience before opening enrollment."}
+                  </p>
                 </div>
               </div>
               <DialogFooter>
