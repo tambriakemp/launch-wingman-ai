@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, FileText, MoreHorizontal, Pencil, Trash2, Lock, X, Sparkles, RefreshCw, Eye, Check, Wand2, PenLine, ArrowLeft, GripVertical } from "lucide-react";
+import { Plus, FileText, MoreHorizontal, Pencil, Trash2, Lock, X, Sparkles, RefreshCw, Eye, Check, Wand2, PenLine, ArrowLeft, GripVertical, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -57,24 +57,43 @@ interface HeroSectionData {
   recommendedHeadline: number;
   selectedHeadline: number;
   subheadline: string;
+  subheadlines?: string[];
+  selectedSubheadline?: number;
   cta: string;
+  ctas?: string[];
+  selectedCta?: number;
 }
 
 interface WhyDifferentData {
   openingParagraph: string;
+  openingParagraphs?: string[];
+  selectedOpeningParagraph?: number;
   comparisonBullets: string[];
   bridgeSentence: string;
+  bridgeSentences?: string[];
+  selectedBridgeSentence?: number;
+}
+
+interface Benefit {
+  title: string;
+  description: string;
 }
 
 interface BenefitsSectionData {
-  benefits: { title: string; description: string }[];
+  benefits: Benefit[];
+  generatedBenefits?: Benefit[];
+  savedBenefits?: Benefit[];
 }
 
 interface OfferDetailsSectionData {
   introduction: string;
+  introductions?: string[];
+  selectedIntroduction?: number;
   modules: { name: string; description: string }[];
   bonuses: { name: string; value: string; description: string }[];
   guarantee: string;
+  guarantees?: string[];
+  selectedGuarantee?: number;
 }
 
 interface TestimonialsSectionData {
@@ -160,8 +179,17 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   const [isGenerating, setIsGenerating] = useState<Record<string, boolean>>({});
   const [hasGenerated, setHasGenerated] = useState<Record<string, boolean>>({});
   
-  // Hero part selection
+  // Part selection states for all sections
   const [selectedHeroPart, setSelectedHeroPart] = useState("headlines");
+  const [selectedWhyDifferentPart, setSelectedWhyDifferentPart] = useState("openingParagraph");
+  const [selectedOfferDetailsPart, setSelectedOfferDetailsPart] = useState("introduction");
+  const [selectedTestimonialsPart, setSelectedTestimonialsPart] = useState("all");
+  const [selectedFaqsPart, setSelectedFaqsPart] = useState("all");
+  
+  // Benefits specific state
+  const [benefitsCount, setBenefitsCount] = useState(4);
+  const [generatedBenefits, setGeneratedBenefits] = useState<Benefit[]>([]);
+  const [savedBenefits, setSavedBenefits] = useState<Benefit[]>([]);
   
   // Context inputs for "Why Different" section
   const [contextMode, setContextMode] = useState<"infer" | "provide">("infer");
@@ -276,6 +304,9 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     setWhyFails("");
     setUniqueApproach("");
     setSectionOrder(DEFAULT_SECTIONS.map(s => s.id));
+    setGeneratedBenefits([]);
+    setSavedBenefits([]);
+    setBenefitsCount(4);
   };
 
   const handleAdd = () => {
@@ -284,6 +315,8 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     setSections({});
     setSectionModes({});
     setSectionOrder(DEFAULT_SECTIONS.map(s => s.id));
+    setGeneratedBenefits([]);
+    setSavedBenefits([]);
     setIsAddMode(true);
   };
 
@@ -292,6 +325,12 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     setSelectedDeliverable(item.deliverableId);
     setSections(item.sections);
     setSectionOrder(item.sections.sectionOrder || DEFAULT_SECTIONS.map(s => s.id));
+    // Restore saved benefits from sections
+    if (item.sections.benefits?.savedBenefits) {
+      setSavedBenefits(item.sections.benefits.savedBenefits);
+    } else if (item.sections.benefits?.benefits) {
+      setSavedBenefits(item.sections.benefits.benefits);
+    }
     setIsAddMode(true);
   };
 
@@ -329,8 +368,21 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   };
 
   const saveSectionContent = (sectionId: string) => {
-    // Include current sectionOrder in sections before saving
-    const sectionsWithOrder = { ...sections, sectionOrder };
+    // Include saved benefits in sections for benefits section
+    let updatedSections = { ...sections };
+    if (sectionId === "benefits" && savedBenefits.length > 0) {
+      updatedSections = {
+        ...updatedSections,
+        benefits: {
+          ...updatedSections.benefits,
+          benefits: savedBenefits,
+          savedBenefits: savedBenefits,
+        }
+      };
+      setSections(updatedSections);
+    }
+    
+    const sectionsWithOrder = { ...updatedSections, sectionOrder };
     
     if (!selectedDeliverable) {
       toast.error("Please select a deliverable first");
@@ -347,14 +399,12 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     } else {
       const existing = items.find((i) => i.deliverableId === selectedDeliverable);
       if (existing) {
-        // Update existing
         updateMutation.mutate({ 
           id: existing.id, 
           deliverableId: selectedDeliverable, 
           sections: sectionsWithOrder 
         });
       } else {
-        // Create new
         createMutation.mutate({ 
           deliverableId: selectedDeliverable, 
           sections: sectionsWithOrder 
@@ -415,6 +465,37 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     toast.success("Custom section added");
   };
 
+  // Save a benefit from generated list
+  const saveBenefit = (benefit: Benefit) => {
+    if (!savedBenefits.find(b => b.title === benefit.title)) {
+      const newSavedBenefits = [...savedBenefits, benefit];
+      setSavedBenefits(newSavedBenefits);
+      setSections(prev => ({
+        ...prev,
+        benefits: {
+          ...prev.benefits,
+          benefits: newSavedBenefits,
+          savedBenefits: newSavedBenefits,
+        }
+      }));
+      toast.success("Benefit saved");
+    }
+  };
+
+  // Remove a saved benefit
+  const removeSavedBenefit = (index: number) => {
+    const newSavedBenefits = savedBenefits.filter((_, i) => i !== index);
+    setSavedBenefits(newSavedBenefits);
+    setSections(prev => ({
+      ...prev,
+      benefits: {
+        ...prev.benefits,
+        benefits: newSavedBenefits,
+        savedBenefits: newSavedBenefits,
+      }
+    }));
+  };
+
   // Generate AI copy for a section
   const generateSectionCopy = async (sectionType: string) => {
     if (!offer) {
@@ -448,6 +529,10 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
         }
       }
 
+      if (sectionType === "benefits") {
+        payload.count = benefitsCount;
+      }
+
       const { data, error } = await supabase.functions.invoke("generate-sales-copy", {
         body: payload,
       });
@@ -463,7 +548,11 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             recommendedHeadline: data.recommendedHeadline,
             selectedHeadline: data.recommendedHeadline,
             subheadline: data.subheadline,
+            subheadlines: data.subheadlines || [data.subheadline],
+            selectedSubheadline: 0,
             cta: data.cta,
+            ctas: data.ctas || [data.cta],
+            selectedCta: 0,
           },
         }));
       } else if (sectionType === "whyDifferent") {
@@ -471,23 +560,29 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           ...prev,
           whyDifferent: {
             openingParagraph: data.openingParagraph,
+            openingParagraphs: data.openingParagraphs || [data.openingParagraph],
+            selectedOpeningParagraph: 0,
             comparisonBullets: data.comparisonBullets,
             bridgeSentence: data.bridgeSentence,
+            bridgeSentences: data.bridgeSentences || [data.bridgeSentence],
+            selectedBridgeSentence: 0,
           },
         }));
       } else if (sectionType === "benefits") {
-        setSections(prev => ({
-          ...prev,
-          benefits: { benefits: data.benefits },
-        }));
+        // Store generated benefits separately for selection
+        setGeneratedBenefits(data.benefits);
       } else if (sectionType === "offerDetails") {
         setSections(prev => ({
           ...prev,
           offerDetails: {
             introduction: data.introduction,
+            introductions: data.introductions || [data.introduction],
+            selectedIntroduction: 0,
             modules: data.modules,
             bonuses: data.bonuses,
             guarantee: data.guarantee,
+            guarantees: data.guarantees || [data.guarantee],
+            selectedGuarantee: 0,
           },
         }));
       } else if (sectionType === "testimonials") {
@@ -518,10 +613,13 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
   // Check if a section has content
   const sectionHasContent = (sectionId: string): boolean => {
-    // Check for custom section
     if (sectionId.startsWith("custom_")) {
       const customSection = sections.customSections?.find(cs => cs.id === sectionId);
       return !!(customSection?.content?.trim());
+    }
+    
+    if (sectionId === "benefits") {
+      return savedBenefits.length > 0 || (sections.benefits?.benefits?.length || 0) > 0;
     }
     
     const aiData = sections[sectionId as keyof SalesPageCopySections];
@@ -545,8 +643,9 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     if (sectionId === "whyDifferent" && sections.whyDifferent) {
       return sections.whyDifferent.openingParagraph || "";
     }
-    if (sectionId === "benefits" && sections.benefits?.benefits) {
-      return `${sections.benefits.benefits.length} benefits`;
+    if (sectionId === "benefits") {
+      const count = savedBenefits.length || sections.benefits?.benefits?.length || 0;
+      return count > 0 ? `${count} benefits` : "";
     }
     if (sectionId === "offerDetails" && sections.offerDetails) {
       return `${sections.offerDetails.modules?.length || 0} modules, ${sections.offerDetails.bonuses?.length || 0} bonuses`;
@@ -558,13 +657,11 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       return `${sections.faqs.faqs.length} FAQs`;
     }
     
-    // Check for manual content
     const manualKey = `${sectionId}Manual` as keyof SalesPageCopySections;
     if (typeof sections[manualKey] === "string") {
       return (sections[manualKey] as string).slice(0, 50) + "...";
     }
     
-    // Check for custom section
     if (sectionId.startsWith("custom_")) {
       const customSection = sections.customSections?.find(cs => cs.id === sectionId);
       return customSection?.content?.slice(0, 50) || "";
@@ -597,7 +694,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                         snapshot.isDragging ? "shadow-lg ring-2 ring-primary" : "hover:shadow-sm"
                       } ${sectionHasContent(section.id) ? "border-border" : "border-dashed border-muted-foreground/30"}`}
                     >
-                      {/* Drag Handle */}
                       <div
                         {...provided.dragHandleProps}
                         className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
@@ -605,7 +701,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                         <GripVertical className="w-5 h-5" />
                       </div>
 
-                      {/* Index Badge */}
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-medium ${
                           sectionHasContent(section.id)
@@ -616,7 +711,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                         {sectionHasContent(section.id) ? <Check className="w-4 h-4" /> : index + 1}
                       </div>
 
-                      {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className={`font-medium ${!sectionHasContent(section.id) && "text-muted-foreground"}`}>
@@ -639,7 +733,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                         )}
                       </div>
 
-                      {/* Action */}
                       <Button
                         size="sm"
                         variant={sectionHasContent(section.id) ? "ghost" : "outline"}
@@ -682,7 +775,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
     return (
       <div className="h-full flex flex-col">
-        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-muted/30">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
@@ -698,12 +790,9 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           </Button>
         </div>
 
-        {/* Two-Panel Layout */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x overflow-hidden">
-          {/* Left Panel - Inputs */}
           <div className="flex flex-col overflow-y-auto">
             <div className="p-6 space-y-6">
-              {/* Mode Selection (not for custom sections) */}
               {!isCustom && section.aiEnabled && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">How would you like to create this section?</Label>
@@ -734,11 +823,9 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                 </div>
               )}
 
-              {/* Section-specific editor content */}
               {renderSectionEditorContent(editingSection, mode, isCustom)}
 
-              {/* Generate Button (AI mode only, not custom) */}
-              {!isCustom && mode === "ai" && section.aiEnabled && (
+              {!isCustom && mode === "ai" && section.aiEnabled && editingSection !== "benefits" && (
                 <Button
                   onClick={() => generateSectionCopy(editingSection)}
                   disabled={isGenerating[editingSection] || !offer}
@@ -761,7 +848,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             </div>
           </div>
 
-          {/* Right Panel - Outputs/Preview */}
           <div className="flex flex-col bg-muted/10 overflow-y-auto">
             <div className="p-4 border-b bg-muted/30">
               <h3 className="font-medium text-sm">
@@ -782,7 +868,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
   // Render section-specific editor content
   const renderSectionEditorContent = (sectionId: string, mode: "ai" | "manual", isCustom: boolean) => {
-    // Custom section
     if (isCustom) {
       const customSection = sections.customSections?.find(cs => cs.id === sectionId);
       return (
@@ -803,7 +888,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       );
     }
 
-    // Manual mode - just a textarea
     if (mode === "manual") {
       const manualKey = `${sectionId}Manual` as keyof SalesPageCopySections;
       return (
@@ -819,7 +903,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       );
     }
 
-    // AI mode - section-specific editors
     switch (sectionId) {
       case "hero":
         return renderHeroEditorInputs();
@@ -838,7 +921,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     }
   };
 
-  // Hero Editor Inputs
+  // Hero Editor Inputs - Simplified with just part selector and generate button
   const renderHeroEditorInputs = () => {
     const heroData = sections.hero;
     
@@ -850,7 +933,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
     return (
       <div className="space-y-4">
-        {/* Part Selector */}
         <div className="space-y-1">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
             Select Part to Edit
@@ -871,124 +953,116 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           ))}
         </div>
 
-        {/* Part-specific inputs */}
         <div className="pt-4 border-t">
-          {selectedHeroPart === "headlines" && (
-            <div className="p-4 rounded-lg bg-muted/50 border">
-              <p className="text-sm text-muted-foreground">
-                {heroData?.headlines ? (
-                  <>Select a headline from the <strong>Generated Outputs</strong> panel →</>
-                ) : (
-                  <>Click "Generate" below to create headline options</>
-                )}
-              </p>
-            </div>
-          )}
-
-          {selectedHeroPart === "subheadline" && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Subheadline</Label>
-              <Textarea
-                value={heroData?.subheadline || ""}
-                onChange={(e) => setSections(prev => ({
-                  ...prev,
-                  hero: { ...prev.hero!, subheadline: e.target.value }
-                }))}
-                placeholder="Enter your subheadline..."
-                rows={3}
-              />
-            </div>
-          )}
-
-          {selectedHeroPart === "cta" && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">CTA Button Text</Label>
-              <Input
-                value={heroData?.cta || ""}
-                onChange={(e) => setSections(prev => ({
-                  ...prev,
-                  hero: { ...prev.hero!, cta: e.target.value }
-                }))}
-                placeholder="e.g., Get Started Now"
-              />
-            </div>
-          )}
-
-          {!heroData && (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Click "Generate" to create headline options
+          <div className="p-4 rounded-lg bg-muted/50 border">
+            <p className="text-sm text-muted-foreground">
+              {heroData ? (
+                <>Select from the <strong>Generated Outputs</strong> panel →</>
+              ) : (
+                <>Click "Generate" below to create options</>
+              )}
             </p>
-          )}
+          </div>
         </div>
       </div>
     );
   };
 
-  // WhyDifferent Editor Inputs
+  // WhyDifferent Editor Inputs - With part selector like Hero
   const renderWhyDifferentEditorInputs = () => {
     const whyDifferentData = sections.whyDifferent;
 
+    const parts = [
+      { id: "openingParagraph", label: "Opening Paragraph", hasContent: !!whyDifferentData?.openingParagraph },
+      { id: "comparisonBullets", label: "Comparison Bullets", hasContent: !!(whyDifferentData?.comparisonBullets?.length) },
+      { id: "bridgeSentence", label: "Bridge Sentence", hasContent: !!whyDifferentData?.bridgeSentence },
+    ];
+
     return (
       <div className="space-y-4">
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+            Select Part to Edit
+          </p>
+          {parts.map((part) => (
+            <button
+              key={part.id}
+              onClick={() => setSelectedWhyDifferentPart(part.id)}
+              className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left text-sm transition-all ${
+                selectedWhyDifferentPart === part.id
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "hover:bg-accent text-foreground"
+              }`}
+            >
+              <span>{part.label}</span>
+              {part.hasContent && <Check className="w-3.5 h-3.5 text-green-500" />}
+            </button>
+          ))}
+        </div>
+
         {!whyDifferentData && (
           <>
-            <div className="space-y-3">
+            <div className="pt-4 border-t space-y-3">
               <Label className="text-sm font-medium">Context Source</Label>
               <RadioGroup
                 value={contextMode}
                 onValueChange={(v) => setContextMode(v as "infer" | "provide")}
-                className="space-y-2"
+                className="grid grid-cols-2 gap-3"
               >
-                <div className="flex items-center gap-2 p-3 border rounded-lg hover:bg-accent/50 transition-colors">
-                  <RadioGroupItem value="infer" id="context-infer" />
-                  <Label htmlFor="context-infer" className="flex-1 cursor-pointer">
-                    <span className="font-medium">Let AI infer context</span>
-                    <p className="text-xs text-muted-foreground">AI will determine what solutions your audience has tried</p>
-                  </Label>
-                </div>
-                <div className="flex items-center gap-2 p-3 border rounded-lg hover:bg-accent/50 transition-colors">
-                  <RadioGroupItem value="provide" id="context-provide" />
-                  <Label htmlFor="context-provide" className="flex-1 cursor-pointer">
-                    <span className="font-medium">I'll provide specific context</span>
-                    <p className="text-xs text-muted-foreground">Enter details about solutions they've tried</p>
-                  </Label>
-                </div>
+                <Label
+                  htmlFor="infer"
+                  className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                    contextMode === "infer" ? "border-primary bg-primary/5" : "hover:bg-accent"
+                  }`}
+                >
+                  <RadioGroupItem value="infer" id="infer" />
+                  <span className="text-sm">Let AI infer</span>
+                </Label>
+                <Label
+                  htmlFor="provide"
+                  className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                    contextMode === "provide" ? "border-primary bg-primary/5" : "hover:bg-accent"
+                  }`}
+                >
+                  <RadioGroupItem value="provide" id="provide" />
+                  <span className="text-sm">I'll provide details</span>
+                </Label>
               </RadioGroup>
             </div>
 
             {contextMode === "provide" && (
-              <Collapsible open={contextOpen} onOpenChange={setContextOpen}>
+              <Collapsible open={contextOpen} onOpenChange={setContextOpen} className="space-y-2">
                 <CollapsibleTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-full justify-between">
-                    <span>Context Details</span>
+                  <Button variant="ghost" size="sm" className="w-full justify-between">
+                    <span>Provide Context Details</span>
                     {contextOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </Button>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-3 mt-3">
+                <CollapsibleContent className="space-y-3 pt-2">
                   <div className="space-y-2">
-                    <Label className="text-sm">What solutions has your audience tried?</Label>
+                    <Label className="text-xs">What has your audience tried before?</Label>
                     <Textarea
-                      placeholder="e.g., Free YouTube tutorials, generic courses..."
                       value={attemptedSolutions}
                       onChange={(e) => setAttemptedSolutions(e.target.value)}
+                      placeholder="e.g., Other courses, DIY methods, generic advice..."
                       rows={2}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm">Why do those solutions typically fail?</Label>
+                    <Label className="text-xs">Why did those approaches fail? (optional)</Label>
                     <Textarea
-                      placeholder="e.g., Too generic, no personalized support..."
                       value={whyFails}
                       onChange={(e) => setWhyFails(e.target.value)}
+                      placeholder="e.g., Too complicated, not personalized, missing key elements..."
                       rows={2}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm">What makes your approach different?</Label>
+                    <Label className="text-xs">What makes your approach unique?</Label>
                     <Textarea
-                      placeholder="e.g., Personalized feedback combined with..."
                       value={uniqueApproach}
                       onChange={(e) => setUniqueApproach(e.target.value)}
+                      placeholder="e.g., Step-by-step guidance, proven framework, community support..."
                       rows={2}
                     />
                   </div>
@@ -998,160 +1072,600 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           </>
         )}
 
-        {whyDifferentData && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Opening Paragraph</Label>
-              <Textarea
-                value={whyDifferentData.openingParagraph}
-                onChange={(e) => setSections(prev => ({
-                  ...prev,
-                  whyDifferent: { ...prev.whyDifferent!, openingParagraph: e.target.value }
-                }))}
-                rows={3}
-              />
-            </div>
+        <div className="pt-4 border-t">
+          <div className="p-4 rounded-lg bg-muted/50 border">
+            <p className="text-sm text-muted-foreground">
+              {whyDifferentData ? (
+                <>Select from the <strong>Generated Outputs</strong> panel →</>
+              ) : (
+                <>Click "Generate" below to create differentiating copy</>
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
+  // Benefits Editor Inputs - Redesigned with count input and saved benefits display
+  const renderBenefitsEditorInputs = () => {
+    return (
+      <div className="space-y-4">
+        {/* Saved Benefits */}
+        {savedBenefits.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Saved Benefits ({savedBenefits.length})
+            </p>
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Comparison Bullets</Label>
-              {whyDifferentData.comparisonBullets?.map((bullet, idx) => (
-                <div key={idx} className="flex items-start gap-2">
-                  <span className="text-muted-foreground mt-2">•</span>
-                  <Textarea
-                    value={bullet}
-                    onChange={(e) => {
-                      const newBullets = [...(whyDifferentData.comparisonBullets || [])];
-                      newBullets[idx] = e.target.value;
-                      setSections(prev => ({
-                        ...prev,
-                        whyDifferent: { ...prev.whyDifferent!, comparisonBullets: newBullets }
-                      }));
-                    }}
-                    rows={2}
-                  />
+              {savedBenefits.map((benefit, idx) => (
+                <div key={idx} className="p-3 border rounded-lg bg-card relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeSavedBenefit(idx)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                  <div className="flex items-start gap-2 pr-8">
+                    <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                    <div>
+                      <h4 className="font-medium text-sm">{benefit.title}</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">{benefit.description}</p>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Bridge Sentence</Label>
-              <Textarea
-                value={whyDifferentData.bridgeSentence}
-                onChange={(e) => setSections(prev => ({
-                  ...prev,
-                  whyDifferent: { ...prev.whyDifferent!, bridgeSentence: e.target.value }
-                }))}
-                rows={2}
-              />
-            </div>
           </div>
         )}
 
-        {!whyDifferentData && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Click "Generate" to create differentiating copy
+        {/* Generate Controls */}
+        <div className="pt-4 border-t space-y-4">
+          <div className="flex items-center gap-3">
+            <Label className="text-sm font-medium whitespace-nowrap">Generate</Label>
+            <Select value={String(benefitsCount)} onValueChange={(v) => setBenefitsCount(Number(v))}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[2, 3, 4, 5, 6, 8].map(n => (
+                  <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-muted-foreground">benefits</span>
+          </div>
+
+          <Button
+            onClick={() => generateSectionCopy("benefits")}
+            disabled={isGenerating["benefits"] || !offer}
+            className="w-full"
+            size="lg"
+          >
+            {isGenerating["benefits"] ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                {generatedBenefits.length > 0 ? "Regenerate Benefits" : "Generate Benefits"}
+              </>
+            )}
+          </Button>
+
+          <p className="text-xs text-muted-foreground text-center">
+            Click "Save as Benefit" on each generated benefit you want to keep →
           </p>
-        )}
+        </div>
       </div>
     );
   };
 
-  // Benefits Editor Inputs
-  const renderBenefitsEditorInputs = () => {
-    const benefitsData = sections.benefits;
-
-    const addBenefit = () => {
-      const newBenefits = [...(benefitsData?.benefits || []), { title: "", description: "" }];
-      setSections(prev => ({ ...prev, benefits: { benefits: newBenefits } }));
-    };
-
-    const removeBenefit = (idx: number) => {
-      const newBenefits = (benefitsData?.benefits || []).filter((_, i) => i !== idx);
-      setSections(prev => ({ ...prev, benefits: { benefits: newBenefits } }));
-    };
-
-    return (
-      <div className="space-y-4">
-        {benefitsData?.benefits?.map((benefit, idx) => (
-          <div key={idx} className="p-4 border rounded-lg space-y-3 relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-destructive"
-              onClick={() => removeBenefit(idx)}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Benefit {idx + 1} Title</Label>
-              <Input
-                value={benefit.title}
-                onChange={(e) => {
-                  const newBenefits = [...(benefitsData?.benefits || [])];
-                  newBenefits[idx] = { ...newBenefits[idx], title: e.target.value };
-                  setSections(prev => ({ ...prev, benefits: { benefits: newBenefits } }));
-                }}
-                placeholder="Benefit title..."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Description</Label>
-              <Textarea
-                value={benefit.description}
-                onChange={(e) => {
-                  const newBenefits = [...(benefitsData?.benefits || [])];
-                  newBenefits[idx] = { ...newBenefits[idx], description: e.target.value };
-                  setSections(prev => ({ ...prev, benefits: { benefits: newBenefits } }));
-                }}
-                rows={2}
-                placeholder="Benefit description..."
-              />
-            </div>
-          </div>
-        ))}
-
-        <Button variant="outline" size="sm" onClick={addBenefit} className="w-full">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Benefit
-        </Button>
-
-        {!benefitsData?.benefits?.length && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Click "Generate" to create 4 key benefits
-          </p>
-        )}
-      </div>
-    );
-  };
-
-  // Offer Details Editor Inputs
+  // Offer Details Editor Inputs - With part selector
   const renderOfferDetailsEditorInputs = () => {
     const offerDetailsData = sections.offerDetails;
 
-    if (!offerDetailsData) {
-      return (
-        <p className="text-sm text-muted-foreground text-center py-4">
-          Click "Generate" to create offer details
+    const parts = [
+      { id: "introduction", label: "Introduction", hasContent: !!offerDetailsData?.introduction },
+      { id: "modules", label: "Modules", hasContent: !!(offerDetailsData?.modules?.length) },
+      { id: "bonuses", label: "Bonuses", hasContent: !!(offerDetailsData?.bonuses?.length) },
+      { id: "guarantee", label: "Guarantee", hasContent: !!offerDetailsData?.guarantee },
+    ];
+
+    return (
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+            Select Part to Edit
+          </p>
+          {parts.map((part) => (
+            <button
+              key={part.id}
+              onClick={() => setSelectedOfferDetailsPart(part.id)}
+              className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left text-sm transition-all ${
+                selectedOfferDetailsPart === part.id
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "hover:bg-accent text-foreground"
+              }`}
+            >
+              <span>{part.label}</span>
+              {part.hasContent && <Check className="w-3.5 h-3.5 text-green-500" />}
+            </button>
+          ))}
+        </div>
+
+        <div className="pt-4 border-t">
+          <div className="p-4 rounded-lg bg-muted/50 border">
+            <p className="text-sm text-muted-foreground">
+              {offerDetailsData ? (
+                <>View and edit content in the <strong>Generated Outputs</strong> panel →</>
+              ) : (
+                <>Click "Generate" below to create offer details</>
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Testimonials Editor Inputs - With part selector
+  const renderTestimonialsEditorInputs = () => {
+    const testimonialsData = sections.testimonials;
+    const testimonialCount = testimonialsData?.testimonials?.length || 0;
+
+    const parts = [
+      { id: "all", label: "All Testimonials", hasContent: testimonialCount > 0 },
+      ...(testimonialsData?.testimonials?.map((t, i) => ({
+        id: `testimonial-${i}`,
+        label: `Testimonial ${i + 1}: ${t.name}`,
+        hasContent: true,
+      })) || []),
+    ];
+
+    return (
+      <div className="space-y-4">
+        <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+          AI generates sample testimonials as templates. Replace with real testimonials before publishing.
         </p>
+
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+            Select Part to Edit
+          </p>
+          {parts.map((part) => (
+            <button
+              key={part.id}
+              onClick={() => setSelectedTestimonialsPart(part.id)}
+              className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left text-sm transition-all ${
+                selectedTestimonialsPart === part.id
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "hover:bg-accent text-foreground"
+              }`}
+            >
+              <span>{part.label}</span>
+              {part.hasContent && <Check className="w-3.5 h-3.5 text-green-500" />}
+            </button>
+          ))}
+        </div>
+
+        <div className="pt-4 border-t">
+          <div className="p-4 rounded-lg bg-muted/50 border">
+            <p className="text-sm text-muted-foreground">
+              {testimonialsData ? (
+                <>Edit content in the <strong>Generated Outputs</strong> panel →</>
+              ) : (
+                <>Click "Generate" below to create sample testimonials</>
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // FAQs Editor Inputs - With part selector
+  const renderFaqsEditorInputs = () => {
+    const faqsData = sections.faqs;
+    const faqCount = faqsData?.faqs?.length || 0;
+
+    const parts = [
+      { id: "all", label: "All FAQs", hasContent: faqCount > 0 },
+      ...(faqsData?.faqs?.map((f, i) => ({
+        id: `faq-${i}`,
+        label: `FAQ ${i + 1}: ${f.question.slice(0, 30)}...`,
+        hasContent: true,
+      })) || []),
+    ];
+
+    return (
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+            Select Part to Edit
+          </p>
+          {parts.map((part) => (
+            <button
+              key={part.id}
+              onClick={() => setSelectedFaqsPart(part.id)}
+              className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left text-sm transition-all ${
+                selectedFaqsPart === part.id
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "hover:bg-accent text-foreground"
+              }`}
+            >
+              <span className="truncate">{part.label}</span>
+              {part.hasContent && <Check className="w-3.5 h-3.5 text-green-500 shrink-0" />}
+            </button>
+          ))}
+        </div>
+
+        <div className="pt-4 border-t">
+          <div className="p-4 rounded-lg bg-muted/50 border">
+            <p className="text-sm text-muted-foreground">
+              {faqsData ? (
+                <>Edit content in the <strong>Generated Outputs</strong> panel →</>
+              ) : (
+                <>Click "Generate" below to create FAQs</>
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render output panel for section
+  const renderSectionOutputPanel = (sectionId: string, mode: "ai" | "manual") => {
+    if (mode === "manual" || sectionId.startsWith("custom_")) {
+      const manualKey = `${sectionId}Manual` as keyof SalesPageCopySections;
+      const content = sectionId.startsWith("custom_") 
+        ? sections.customSections?.find(cs => cs.id === sectionId)?.content
+        : (sections[manualKey] as string);
+      
+      if (!content) {
+        return (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p className="text-sm">Your content will appear here as you type</p>
+          </div>
+        );
+      }
+      
+      return (
+        <div className="p-4 border rounded-lg bg-card">
+          <p className="text-sm whitespace-pre-wrap">{content}</p>
+        </div>
+      );
+    }
+
+    // AI mode outputs based on section type
+    switch (sectionId) {
+      case "hero":
+        return renderHeroOutputPanel();
+      case "whyDifferent":
+        return renderWhyDifferentOutputPanel();
+      case "benefits":
+        return renderBenefitsOutputPanel();
+      case "offerDetails":
+        return renderOfferDetailsOutputPanel();
+      case "testimonials":
+        return renderTestimonialsOutputPanel();
+      case "faqs":
+        return renderFaqsOutputPanel();
+      default:
+        return (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p className="text-sm">Click "Generate" to see AI-generated options</p>
+          </div>
+        );
+    }
+  };
+
+  // Hero Output Panel
+  const renderHeroOutputPanel = () => {
+    const heroData = sections.hero;
+    
+    if (!heroData) {
+      return (
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          <p className="text-sm">Click "Generate" to see AI-generated options</p>
+        </div>
+      );
+    }
+
+    if (selectedHeroPart === "headlines") {
+      return (
+        <div className="space-y-3">
+          {heroData.headlines?.map((headline, idx) => (
+            <div
+              key={idx}
+              onClick={() => setSections(prev => ({
+                ...prev,
+                hero: { ...prev.hero!, selectedHeadline: idx }
+              }))}
+              className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                heroData.selectedHeadline === idx
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                  : "hover:border-primary/50"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">Headline {idx + 1}</span>
+                <div className="flex items-center gap-2">
+                  {idx === heroData.recommendedHeadline && (
+                    <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">Recommended</span>
+                  )}
+                  {heroData.selectedHeadline === idx && (
+                    <Check className="w-4 h-4 text-primary" />
+                  )}
+                </div>
+              </div>
+              <p className="text-sm font-medium">{headline}</p>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (selectedHeroPart === "subheadline") {
+      const subheadlines = heroData.subheadlines || [heroData.subheadline];
+      return (
+        <div className="space-y-3">
+          {subheadlines.map((sub, idx) => (
+            <div
+              key={idx}
+              onClick={() => setSections(prev => ({
+                ...prev,
+                hero: { ...prev.hero!, subheadline: sub, selectedSubheadline: idx }
+              }))}
+              className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                (heroData.selectedSubheadline ?? 0) === idx
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                  : "hover:border-primary/50"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">Subheadline {idx + 1}</span>
+                {(heroData.selectedSubheadline ?? 0) === idx && (
+                  <Check className="w-4 h-4 text-primary" />
+                )}
+              </div>
+              <p className="text-sm">{sub}</p>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (selectedHeroPart === "cta") {
+      const ctas = heroData.ctas || [heroData.cta];
+      return (
+        <div className="space-y-3">
+          {ctas.map((cta, idx) => (
+            <div
+              key={idx}
+              onClick={() => setSections(prev => ({
+                ...prev,
+                hero: { ...prev.hero!, cta, selectedCta: idx }
+              }))}
+              className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                (heroData.selectedCta ?? 0) === idx
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                  : "hover:border-primary/50"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">CTA {idx + 1}</span>
+                {(heroData.selectedCta ?? 0) === idx && (
+                  <Check className="w-4 h-4 text-primary" />
+                )}
+              </div>
+              <Button variant="outline" size="sm" className="pointer-events-none">{cta}</Button>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  // Why Different Output Panel
+  const renderWhyDifferentOutputPanel = () => {
+    const whyDifferentData = sections.whyDifferent;
+    
+    if (!whyDifferentData) {
+      return (
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          <p className="text-sm">Click "Generate" to see AI-generated options</p>
+        </div>
+      );
+    }
+
+    if (selectedWhyDifferentPart === "openingParagraph") {
+      const paragraphs = whyDifferentData.openingParagraphs || [whyDifferentData.openingParagraph];
+      return (
+        <div className="space-y-3">
+          {paragraphs.map((para, idx) => (
+            <div
+              key={idx}
+              onClick={() => setSections(prev => ({
+                ...prev,
+                whyDifferent: { ...prev.whyDifferent!, openingParagraph: para, selectedOpeningParagraph: idx }
+              }))}
+              className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                (whyDifferentData.selectedOpeningParagraph ?? 0) === idx
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                  : "hover:border-primary/50"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">Opening {idx + 1}</span>
+                {(whyDifferentData.selectedOpeningParagraph ?? 0) === idx && (
+                  <Check className="w-4 h-4 text-primary" />
+                )}
+              </div>
+              <p className="text-sm">{para}</p>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (selectedWhyDifferentPart === "comparisonBullets") {
+      return (
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground mb-2">Edit bullets directly:</p>
+          {whyDifferentData.comparisonBullets?.map((bullet, idx) => (
+            <div key={idx} className="flex items-start gap-2">
+              <span className="text-muted-foreground mt-2 shrink-0">•</span>
+              <Textarea
+                value={bullet}
+                onChange={(e) => {
+                  const newBullets = [...(whyDifferentData.comparisonBullets || [])];
+                  newBullets[idx] = e.target.value;
+                  setSections(prev => ({
+                    ...prev,
+                    whyDifferent: { ...prev.whyDifferent!, comparisonBullets: newBullets }
+                  }));
+                }}
+                rows={2}
+                className="flex-1"
+              />
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (selectedWhyDifferentPart === "bridgeSentence") {
+      const bridges = whyDifferentData.bridgeSentences || [whyDifferentData.bridgeSentence];
+      return (
+        <div className="space-y-3">
+          {bridges.map((bridge, idx) => (
+            <div
+              key={idx}
+              onClick={() => setSections(prev => ({
+                ...prev,
+                whyDifferent: { ...prev.whyDifferent!, bridgeSentence: bridge, selectedBridgeSentence: idx }
+              }))}
+              className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                (whyDifferentData.selectedBridgeSentence ?? 0) === idx
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                  : "hover:border-primary/50"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">Bridge {idx + 1}</span>
+                {(whyDifferentData.selectedBridgeSentence ?? 0) === idx && (
+                  <Check className="w-4 h-4 text-primary" />
+                )}
+              </div>
+              <p className="text-sm">{bridge}</p>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  // Benefits Output Panel - With Save as Benefit buttons
+  const renderBenefitsOutputPanel = () => {
+    if (generatedBenefits.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          <p className="text-sm">Click "Generate Benefits" to see options</p>
+        </div>
       );
     }
 
     return (
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Introduction</Label>
-          <Textarea
-            value={offerDetailsData.introduction}
-            onChange={(e) => setSections(prev => ({
-              ...prev,
-              offerDetails: { ...prev.offerDetails!, introduction: e.target.value }
-            }))}
-            rows={2}
-          />
-        </div>
+      <div className="space-y-3">
+        {generatedBenefits.map((benefit, idx) => {
+          const isSaved = savedBenefits.some(b => b.title === benefit.title);
+          return (
+            <div key={idx} className={`p-4 border rounded-lg transition-all ${isSaved ? "border-green-500/50 bg-green-500/5" : ""}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <h4 className="font-medium text-sm">{benefit.title}</h4>
+                  <p className="text-sm text-muted-foreground mt-1">{benefit.description}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 mt-3">
+                {isSaved ? (
+                  <span className="text-xs text-green-600 flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Saved
+                  </span>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => saveBenefit(benefit)}
+                  >
+                    <Save className="w-3.5 h-3.5 mr-1" />
+                    Save as Benefit
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Modules</Label>
+  // Offer Details Output Panel
+  const renderOfferDetailsOutputPanel = () => {
+    const offerDetailsData = sections.offerDetails;
+    
+    if (!offerDetailsData) {
+      return (
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          <p className="text-sm">Click "Generate" to see AI-generated options</p>
+        </div>
+      );
+    }
+
+    if (selectedOfferDetailsPart === "introduction") {
+      const introductions = offerDetailsData.introductions || [offerDetailsData.introduction];
+      return (
+        <div className="space-y-3">
+          {introductions.map((intro, idx) => (
+            <div
+              key={idx}
+              onClick={() => setSections(prev => ({
+                ...prev,
+                offerDetails: { ...prev.offerDetails!, introduction: intro, selectedIntroduction: idx }
+              }))}
+              className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                (offerDetailsData.selectedIntroduction ?? 0) === idx
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                  : "hover:border-primary/50"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">Introduction {idx + 1}</span>
+                {(offerDetailsData.selectedIntroduction ?? 0) === idx && (
+                  <Check className="w-4 h-4 text-primary" />
+                )}
+              </div>
+              <p className="text-sm">{intro}</p>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (selectedOfferDetailsPart === "modules") {
+      return (
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground mb-2">Edit modules directly:</p>
           {offerDetailsData.modules?.map((module, idx) => (
             <div key={idx} className="p-3 border rounded-lg space-y-2">
               <Input
@@ -1176,9 +1690,13 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             </div>
           ))}
         </div>
+      );
+    }
 
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Bonuses</Label>
+    if (selectedOfferDetailsPart === "bonuses") {
+      return (
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground mb-2">Edit bonuses directly:</p>
           {offerDetailsData.bonuses?.map((bonus, idx) => (
             <div key={idx} className="p-3 border rounded-lg space-y-2">
               <div className="flex gap-2">
@@ -1215,153 +1733,47 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             </div>
           ))}
         </div>
-
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Guarantee</Label>
-          <Textarea
-            value={offerDetailsData.guarantee}
-            onChange={(e) => setSections(prev => ({
-              ...prev,
-              offerDetails: { ...prev.offerDetails!, guarantee: e.target.value }
-            }))}
-            rows={2}
-          />
-        </div>
-      </div>
-    );
-  };
-
-  // Testimonials Editor Inputs
-  const renderTestimonialsEditorInputs = () => {
-    const testimonialsData = sections.testimonials;
-
-    if (!testimonialsData) {
-      return (
-        <>
-          <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-            AI generates sample testimonials as templates. Replace with real testimonials before publishing.
-          </p>
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Click "Generate" to create sample testimonials
-          </p>
-        </>
       );
     }
 
-    return (
-      <div className="space-y-3">
-        <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-          AI generates sample testimonials as templates. Replace with real testimonials before publishing.
-        </p>
-        {testimonialsData.testimonials?.map((testimonial, idx) => (
-          <div key={idx} className="p-3 border rounded-lg space-y-2">
-            <div className="flex gap-2">
-              <Input
-                value={testimonial.name}
-                onChange={(e) => {
-                  const newTestimonials = [...(testimonialsData.testimonials || [])];
-                  newTestimonials[idx] = { ...newTestimonials[idx], name: e.target.value };
-                  setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
-                }}
-                placeholder="Name"
-                className="flex-1"
-              />
-              <Input
-                value={testimonial.result}
-                onChange={(e) => {
-                  const newTestimonials = [...(testimonialsData.testimonials || [])];
-                  newTestimonials[idx] = { ...newTestimonials[idx], result: e.target.value };
-                  setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
-                }}
-                placeholder="Result achieved"
-                className="flex-1"
-              />
+    if (selectedOfferDetailsPart === "guarantee") {
+      const guarantees = offerDetailsData.guarantees || [offerDetailsData.guarantee];
+      return (
+        <div className="space-y-3">
+          {guarantees.map((guarantee, idx) => (
+            <div
+              key={idx}
+              onClick={() => setSections(prev => ({
+                ...prev,
+                offerDetails: { ...prev.offerDetails!, guarantee, selectedGuarantee: idx }
+              }))}
+              className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                (offerDetailsData.selectedGuarantee ?? 0) === idx
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                  : "hover:border-primary/50"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">Guarantee {idx + 1}</span>
+                {(offerDetailsData.selectedGuarantee ?? 0) === idx && (
+                  <Check className="w-4 h-4 text-primary" />
+                )}
+              </div>
+              <p className="text-sm">{guarantee}</p>
             </div>
-            <Textarea
-              value={testimonial.quote}
-              onChange={(e) => {
-                const newTestimonials = [...(testimonialsData.testimonials || [])];
-                newTestimonials[idx] = { ...newTestimonials[idx], quote: e.target.value };
-                setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
-              }}
-              placeholder="Testimonial quote"
-              rows={2}
-            />
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // FAQs Editor Inputs
-  const renderFaqsEditorInputs = () => {
-    const faqsData = sections.faqs;
-
-    if (!faqsData) {
-      return (
-        <p className="text-sm text-muted-foreground text-center py-4">
-          Click "Generate" to create FAQs
-        </p>
-      );
-    }
-
-    return (
-      <div className="space-y-3">
-        {faqsData.faqs?.map((faq, idx) => (
-          <div key={idx} className="p-3 border rounded-lg space-y-2">
-            <Input
-              value={faq.question}
-              onChange={(e) => {
-                const newFaqs = [...(faqsData.faqs || [])];
-                newFaqs[idx] = { ...newFaqs[idx], question: e.target.value };
-                setSections(prev => ({ ...prev, faqs: { faqs: newFaqs } }));
-              }}
-              placeholder="Question"
-              className="font-medium"
-            />
-            <Textarea
-              value={faq.answer}
-              onChange={(e) => {
-                const newFaqs = [...(faqsData.faqs || [])];
-                newFaqs[idx] = { ...newFaqs[idx], answer: e.target.value };
-                setSections(prev => ({ ...prev, faqs: { faqs: newFaqs } }));
-              }}
-              placeholder="Answer"
-              rows={2}
-            />
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // Render output panel for section
-  const renderSectionOutputPanel = (sectionId: string, mode: "ai" | "manual") => {
-    if (mode === "manual" || sectionId.startsWith("custom_")) {
-      const manualKey = `${sectionId}Manual` as keyof SalesPageCopySections;
-      const content = sectionId.startsWith("custom_") 
-        ? sections.customSections?.find(cs => cs.id === sectionId)?.content
-        : (sections[manualKey] as string);
-      
-      if (!content) {
-        return (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            <p className="text-sm">Your content will appear here as you type</p>
-          </div>
-        );
-      }
-      
-      return (
-        <div className="p-4 border rounded-lg bg-card">
-          <p className="text-sm whitespace-pre-wrap">{content}</p>
+          ))}
         </div>
       );
     }
 
-    // AI mode outputs
-    const sectionData = sections[sectionId as keyof SalesPageCopySections];
+    return null;
+  };
+
+  // Testimonials Output Panel
+  const renderTestimonialsOutputPanel = () => {
+    const testimonialsData = sections.testimonials;
     
-    if (!sectionData) {
+    if (!testimonialsData) {
       return (
         <div className="flex items-center justify-center h-full text-muted-foreground">
           <p className="text-sm">Click "Generate" to see AI-generated options</p>
@@ -1369,60 +1781,169 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       );
     }
 
-    // Display based on section type
-    switch (sectionId) {
-      case "hero":
-        const heroData = sectionData as HeroSectionData;
-        return (
-          <div className="space-y-3">
-            {heroData.headlines?.map((headline, idx) => (
-              <div
-                key={idx}
-                onClick={() => setSections(prev => ({
-                  ...prev,
-                  hero: { ...prev.hero!, selectedHeadline: idx }
-                }))}
-                className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                  heroData.selectedHeadline === idx
-                    ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                    : "hover:border-primary/50"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-muted-foreground">Headline {idx + 1}</span>
-                  {idx === heroData.recommendedHeadline && (
-                    <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">Recommended</span>
-                  )}
-                  {heroData.selectedHeadline === idx && (
-                    <Check className="w-4 h-4 text-primary" />
-                  )}
-                </div>
-                <p className="text-sm font-medium">{headline}</p>
+    if (selectedTestimonialsPart === "all") {
+      return (
+        <div className="space-y-3">
+          {testimonialsData.testimonials?.map((testimonial, idx) => (
+            <div key={idx} className="p-3 border rounded-lg space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  value={testimonial.name}
+                  onChange={(e) => {
+                    const newTestimonials = [...(testimonialsData.testimonials || [])];
+                    newTestimonials[idx] = { ...newTestimonials[idx], name: e.target.value };
+                    setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
+                  }}
+                  placeholder="Name"
+                  className="flex-1"
+                />
+                <Input
+                  value={testimonial.result}
+                  onChange={(e) => {
+                    const newTestimonials = [...(testimonialsData.testimonials || [])];
+                    newTestimonials[idx] = { ...newTestimonials[idx], result: e.target.value };
+                    setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
+                  }}
+                  placeholder="Result achieved"
+                  className="flex-1"
+                />
               </div>
-            ))}
-          </div>
-        );
-      
-      case "benefits":
-        const benefitsData = sectionData as BenefitsSectionData;
-        return (
-          <div className="space-y-3">
-            {benefitsData.benefits?.map((benefit, idx) => (
-              <div key={idx} className="p-4 border rounded-lg bg-card">
-                <h4 className="font-medium text-sm">{benefit.title}</h4>
-                <p className="text-sm text-muted-foreground mt-1">{benefit.description}</p>
-              </div>
-            ))}
-          </div>
-        );
-      
-      default:
-        return (
-          <div className="p-4 border rounded-lg bg-card">
-            <p className="text-sm text-muted-foreground">Content generated successfully</p>
-          </div>
-        );
+              <Textarea
+                value={testimonial.quote}
+                onChange={(e) => {
+                  const newTestimonials = [...(testimonialsData.testimonials || [])];
+                  newTestimonials[idx] = { ...newTestimonials[idx], quote: e.target.value };
+                  setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
+                }}
+                placeholder="Testimonial quote"
+                rows={2}
+              />
+            </div>
+          ))}
+        </div>
+      );
     }
+
+    // Individual testimonial editing
+    const testimonialIdx = parseInt(selectedTestimonialsPart.replace("testimonial-", ""));
+    const testimonial = testimonialsData.testimonials?.[testimonialIdx];
+    if (!testimonial) return null;
+
+    return (
+      <div className="p-4 border rounded-lg space-y-3">
+        <div className="space-y-2">
+          <Label className="text-xs">Name</Label>
+          <Input
+            value={testimonial.name}
+            onChange={(e) => {
+              const newTestimonials = [...(testimonialsData.testimonials || [])];
+              newTestimonials[testimonialIdx] = { ...newTestimonials[testimonialIdx], name: e.target.value };
+              setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
+            }}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label className="text-xs">Result Achieved</Label>
+          <Input
+            value={testimonial.result}
+            onChange={(e) => {
+              const newTestimonials = [...(testimonialsData.testimonials || [])];
+              newTestimonials[testimonialIdx] = { ...newTestimonials[testimonialIdx], result: e.target.value };
+              setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
+            }}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label className="text-xs">Quote</Label>
+          <Textarea
+            value={testimonial.quote}
+            onChange={(e) => {
+              const newTestimonials = [...(testimonialsData.testimonials || [])];
+              newTestimonials[testimonialIdx] = { ...newTestimonials[testimonialIdx], quote: e.target.value };
+              setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
+            }}
+            rows={4}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  // FAQs Output Panel
+  const renderFaqsOutputPanel = () => {
+    const faqsData = sections.faqs;
+    
+    if (!faqsData) {
+      return (
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          <p className="text-sm">Click "Generate" to see AI-generated options</p>
+        </div>
+      );
+    }
+
+    if (selectedFaqsPart === "all") {
+      return (
+        <div className="space-y-3">
+          {faqsData.faqs?.map((faq, idx) => (
+            <div key={idx} className="p-3 border rounded-lg space-y-2">
+              <Input
+                value={faq.question}
+                onChange={(e) => {
+                  const newFaqs = [...(faqsData.faqs || [])];
+                  newFaqs[idx] = { ...newFaqs[idx], question: e.target.value };
+                  setSections(prev => ({ ...prev, faqs: { faqs: newFaqs } }));
+                }}
+                placeholder="Question"
+                className="font-medium"
+              />
+              <Textarea
+                value={faq.answer}
+                onChange={(e) => {
+                  const newFaqs = [...(faqsData.faqs || [])];
+                  newFaqs[idx] = { ...newFaqs[idx], answer: e.target.value };
+                  setSections(prev => ({ ...prev, faqs: { faqs: newFaqs } }));
+                }}
+                placeholder="Answer"
+                rows={2}
+              />
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Individual FAQ editing
+    const faqIdx = parseInt(selectedFaqsPart.replace("faq-", ""));
+    const faq = faqsData.faqs?.[faqIdx];
+    if (!faq) return null;
+
+    return (
+      <div className="p-4 border rounded-lg space-y-3">
+        <div className="space-y-2">
+          <Label className="text-xs">Question</Label>
+          <Input
+            value={faq.question}
+            onChange={(e) => {
+              const newFaqs = [...(faqsData.faqs || [])];
+              newFaqs[faqIdx] = { ...newFaqs[faqIdx], question: e.target.value };
+              setSections(prev => ({ ...prev, faqs: { faqs: newFaqs } }));
+            }}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label className="text-xs">Answer</Label>
+          <Textarea
+            value={faq.answer}
+            onChange={(e) => {
+              const newFaqs = [...(faqsData.faqs || [])];
+              newFaqs[faqIdx] = { ...newFaqs[faqIdx], answer: e.target.value };
+              setSections(prev => ({ ...prev, faqs: { faqs: newFaqs } }));
+            }}
+            rows={4}
+          />
+        </div>
+      </div>
+    );
   };
 
   // ============ MAIN RENDER ============
@@ -1455,20 +1976,17 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                 </div>
                 <div>
                   <CardTitle className="text-base">
-                    {editingItem ? "Edit" : "Create"} Sales Page Copy
+                    {editingItem ? "Edit Sales Page Copy" : "Create Sales Page Copy"}
                   </CardTitle>
                   <CardDescription className="text-sm">
-                    Build compelling sales copy section by section
+                    Build compelling copy for your sales page
                   </CardDescription>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" onClick={() => setShowPreview(true)}>
+                <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
                   <Eye className="w-4 h-4 mr-1" />
-                  Preview Sales Page Copy
-                </Button>
-                <Button size="icon" variant="ghost" onClick={resetForm}>
-                  <X className="w-4 h-4" />
+                  Preview
                 </Button>
               </div>
             </div>
@@ -1476,7 +1994,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           <CardContent className="space-y-6">
             {/* Deliverable Selection */}
             <div className="space-y-2">
-              <Label>Select Deliverable</Label>
+              <Label className="text-sm font-medium">Select Deliverable</Label>
               <Select value={selectedDeliverable} onValueChange={setSelectedDeliverable}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choose a deliverable..." />
@@ -1489,16 +2007,12 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            {/* No offer warning */}
-            {!offer && (
-              <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                <p className="text-sm text-amber-700 dark:text-amber-400">
-                  Create an offer first to enable AI-powered copy generation.
+              {availableDeliverables.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  All deliverables have sales page copy. Edit existing entries or add more deliverables in the Offer Builder.
                 </p>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Sales Page Sections */}
             <div className="space-y-3">
