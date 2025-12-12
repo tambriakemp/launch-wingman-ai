@@ -376,8 +376,8 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
       </div>
 
       {/* Board */}
-      <div className="overflow-x-auto overflow-y-visible pb-4 -mx-4 px-4">
-        <div className="flex gap-4 min-w-max pt-1">
+      <div className="overflow-x-auto pb-4">
+        <div className="flex gap-4 min-w-max">
           {COLUMNS.map((column) => (
             <div
               key={column.id}
