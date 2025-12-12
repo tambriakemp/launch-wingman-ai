@@ -82,6 +82,56 @@ export type Database = {
           },
         ]
       }
+      offers: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          niche: string
+          offer_category: string
+          offer_type: string
+          price: number | null
+          project_id: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          niche: string
+          offer_category: string
+          offer_type: string
+          price?: number | null
+          project_id: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          niche?: string
+          offer_category?: string
+          offer_type?: string
+          price?: number | null
+          project_id?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
