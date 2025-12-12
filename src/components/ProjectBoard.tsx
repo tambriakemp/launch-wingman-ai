@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TaskDialog, Task, TASK_LABELS } from "@/components/TaskDialog";
+import { TaskDialog, Task, TASK_LABELS, TASK_PHASES } from "@/components/TaskDialog";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { LoadLaunchTasksDialog } from "@/components/LoadLaunchTasksDialog";
 
@@ -60,6 +60,7 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedPhase, setSelectedPhase] = useState<string>("all");
 
   // Refs for synced scrolling
   const topScrollRef = useRef<HTMLDivElement>(null);
@@ -126,7 +127,7 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
     fetchTasks();
   }, [fetchTasks]);
 
-  const handleCreateTask = async (data: { title: string; description: string; due_date: Date | null; column_id: string; labels: string[] }) => {
+  const handleCreateTask = async (data: { title: string; description: string; due_date: Date | null; column_id: string; labels: string[]; phase: string | null }) => {
     if (!user) return;
 
     const { error } = await supabase.from("tasks").insert({
@@ -137,6 +138,7 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
       due_date: data.due_date ? format(data.due_date, "yyyy-MM-dd") : null,
       column_id: data.column_id,
       labels: data.labels,
+      phase: data.phase,
       position: tasks.filter(t => t.column_id === data.column_id).length,
     });
 
@@ -150,7 +152,7 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
     fetchTasks();
   };
 
-  const handleUpdateTask = async (data: { title: string; description: string; due_date: Date | null; column_id: string; labels: string[] }) => {
+  const handleUpdateTask = async (data: { title: string; description: string; due_date: Date | null; column_id: string; labels: string[]; phase: string | null }) => {
     if (!editingTask) return;
 
     const { error } = await supabase
@@ -161,6 +163,7 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
         due_date: data.due_date ? format(data.due_date, "yyyy-MM-dd") : null,
         column_id: data.column_id,
         labels: data.labels,
+        phase: data.phase,
       })
       .eq("id", editingTask.id);
 
@@ -267,9 +270,10 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
     setSearchQuery("");
     setSelectedLabels([]);
     setSelectedStatus("all");
+    setSelectedPhase("all");
   };
 
-  const hasActiveFilters = searchQuery || selectedLabels.length > 0 || selectedStatus !== "all";
+  const hasActiveFilters = searchQuery || selectedLabels.length > 0 || selectedStatus !== "all" || selectedPhase !== "all";
 
   // Filter tasks
   const filteredTasks = tasks.filter(task => {
@@ -283,6 +287,10 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
     }
     // Status filter
     if (selectedStatus !== "all" && task.column_id !== selectedStatus) {
+      return false;
+    }
+    // Phase filter
+    if (selectedPhase !== "all" && task.phase !== selectedPhase) {
       return false;
     }
     return true;
@@ -301,6 +309,11 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
 
   const getLabelInfo = (labelId: string) => {
     return TASK_LABELS.find((l) => l.id === labelId);
+  };
+
+  const getPhaseInfo = (phaseId: string | null) => {
+    if (!phaseId) return null;
+    return TASK_PHASES.find((p) => p.id === phaseId);
   };
 
   if (isLoading) {
@@ -368,6 +381,20 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <Select value={selectedPhase} onValueChange={setSelectedPhase}>
+            <SelectTrigger className="w-44 h-9">
+              <SelectValue placeholder="All phases" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All phases</SelectItem>
+              {TASK_PHASES.map((phase) => (
+                <SelectItem key={phase.id} value={phase.id}>
+                  {phase.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9">
@@ -478,6 +505,23 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
                         </div>
                         {task.description && (
                           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.description}</p>
+                        )}
+                        {/* Phase badge */}
+                        {task.phase && (
+                          <div className="mt-2">
+                            {(() => {
+                              const phaseInfo = getPhaseInfo(task.phase);
+                              if (!phaseInfo) return null;
+                              return (
+                                <Badge
+                                  variant="outline"
+                                  className={cn("text-[10px] px-1.5 py-0", phaseInfo.color)}
+                                >
+                                  {phaseInfo.label}
+                                </Badge>
+                              );
+                            })()}
+                          </div>
                         )}
                         {/* Labels */}
                         {task.labels && task.labels.length > 0 && (
