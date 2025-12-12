@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ListChecks, Loader2, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ListChecks, Loader2, Trash2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,13 +10,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +25,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useQuery } from "@tanstack/react-query";
 
 interface LoadLaunchTasksDialogProps {
   projectId: string;
@@ -42,8 +38,27 @@ interface LoadLaunchTasksDialogProps {
   showDeleteOnly?: boolean;
 }
 
-const SYSTEME_IO_LAUNCH_TASKS = [
-  // PHASE 1: FOUNDATION & PLANNING
+interface TaskTemplate {
+  title: string;
+  labels: string[];
+  phase: string;
+}
+
+interface Offer {
+  id: string;
+  offer_type: string;
+  offer_category: string;
+  funnel_type: string | null;
+  main_deliverables: string[] | null;
+  funnel_platform: string | null;
+  community_platform: string | null;
+  email_platform: string | null;
+  niche: string;
+  title: string | null;
+}
+
+// Base tasks that apply to all offer types
+const BASE_FOUNDATION_TASKS: TaskTemplate[] = [
   { title: "Define your target audience (avatar/ideal customer)", labels: ["strategy"], phase: "foundation" },
   { title: "Identify the specific transformation your product delivers", labels: ["strategy"], phase: "foundation" },
   { title: "Research competitors and their offerings", labels: ["strategy"], phase: "foundation" },
@@ -53,231 +68,463 @@ const SYSTEME_IO_LAUNCH_TASKS = [
   { title: "Set enrollment goal (number of customers)", labels: ["strategy"], phase: "foundation" },
   { title: "Decide on product name", labels: ["creative"], phase: "foundation" },
   { title: "Write product tagline/subtitle", labels: ["copy"], phase: "foundation" },
-  { title: "Determine product format (course, membership, template pack, coaching program, etc.)", labels: ["strategy"], phase: "foundation" },
-  { title: "Decide on product length/duration", labels: ["strategy"], phase: "foundation" },
-  { title: "Choose delivery method (self-paced, cohort-based, drip, all-at-once)", labels: ["strategy"], phase: "foundation" },
-  { title: "Set pricing (research competitor pricing first)", labels: ["strategy"], phase: "foundation" },
-  { title: "Decide if offering payment plans (and terms)", labels: ["strategy"], phase: "foundation" },
-  { title: "Determine any bonuses or limited-time offers", labels: ["strategy", "marketing"], phase: "foundation" },
   { title: "Create product guarantee/refund policy", labels: ["copy"], phase: "foundation" },
-  { title: "Plan product lifecycle (evergreen vs. limited enrollment)", labels: ["strategy"], phase: "foundation" },
   { title: "Set launch date (enrollment opens)", labels: ["strategy"], phase: "foundation" },
   { title: "Set cart close date", labels: ["strategy"], phase: "foundation" },
-  { title: "Calculate prelaunch start date (6-8 weeks before launch)", labels: ["strategy"], phase: "foundation" },
-  { title: "Set content creation deadline", labels: ["strategy"], phase: "foundation" },
-  { title: "Set sales page completion deadline", labels: ["strategy"], phase: "foundation" },
-  { title: "Set email sequence completion deadline", labels: ["strategy"], phase: "foundation" },
   { title: "Create master launch timeline with all milestones", labels: ["strategy"], phase: "foundation" },
-
-  // PHASE 2: CONTENT CREATION
-  { title: "Outline all modules/sections of product", labels: ["creative"], phase: "content-creation" },
-  { title: "Write learning objectives for each module", labels: ["copy"], phase: "content-creation" },
-  { title: "Outline lessons within each module", labels: ["creative"], phase: "content-creation" },
-  { title: "Decide on content format (video, text, audio, worksheets, combination)", labels: ["strategy"], phase: "content-creation" },
-  { title: "Create lesson scripts or outlines", labels: ["copy"], phase: "content-creation" },
-  { title: "Identify any templates/worksheets/downloads needed", labels: ["creative"], phase: "content-creation" },
-  { title: "Plan any live components (calls, Q&As, workshops)", labels: ["strategy"], phase: "content-creation" },
-  { title: "Write all lesson content", labels: ["copy"], phase: "content-creation" },
-  { title: "Create worksheets and templates", labels: ["creative"], phase: "content-creation" },
-  { title: "Design PDF workbooks (Canva, InDesign, Google Docs)", labels: ["creative"], phase: "content-creation" },
-  { title: "Proofread all written content", labels: ["copy"], phase: "content-creation" },
-  { title: "Convert to final PDF format", labels: ["technical"], phase: "content-creation" },
-  { title: "Create fillable PDFs if needed", labels: ["technical"], phase: "content-creation" },
-  { title: "Create welcome guide/orientation document", labels: ["copy"], phase: "content-creation" },
-  { title: "Create resource library or links document", labels: ["copy"], phase: "content-creation" },
-  { title: "Design any slide decks or presentations", labels: ["creative"], phase: "content-creation" },
-  { title: "Create implementation checklists", labels: ["creative"], phase: "content-creation" },
-  { title: "Develop any bonus materials", labels: ["creative"], phase: "content-creation" },
-  { title: "Write FAQ document", labels: ["copy"], phase: "content-creation" },
-  { title: "Create community guidelines (if applicable)", labels: ["copy"], phase: "content-creation" },
-
-  // PHASE 3: SYSTEME.IO TECHNICAL SETUP
-  { title: "Sign up for Systeme.io account (or upgrade plan if needed)", labels: ["technical"], phase: "technical-setup" },
-  { title: "Set up payment processor (Stripe and/or PayPal)", labels: ["technical"], phase: "technical-setup" },
-  { title: "Connect domain name (if using custom domain)", labels: ["technical"], phase: "technical-setup" },
-  { title: "Set up business email address", labels: ["technical"], phase: "technical-setup" },
-  { title: "Configure account settings and preferences", labels: ["technical"], phase: "technical-setup" },
-  { title: "Create new product in Systeme.io", labels: ["technical"], phase: "technical-setup" },
-  { title: "Upload product name and description", labels: ["technical"], phase: "technical-setup" },
-  { title: "Set product price", labels: ["technical"], phase: "technical-setup" },
-  { title: "Configure payment plan options (if offering)", labels: ["technical"], phase: "technical-setup" },
-  { title: "Upload product image/thumbnail", labels: ["technical", "creative"], phase: "technical-setup" },
-  { title: "Set product availability settings", labels: ["technical"], phase: "technical-setup" },
-  { title: "Create course structure (modules and lessons)", labels: ["technical"], phase: "technical-setup" },
-  { title: "Upload all video content to lessons", labels: ["technical", "video"], phase: "technical-setup" },
-  { title: "Upload all PDF/downloadable content", labels: ["technical"], phase: "technical-setup" },
-  { title: "Set drip schedule (if using drip content)", labels: ["technical"], phase: "technical-setup" },
-  { title: "Configure lesson completion settings", labels: ["technical"], phase: "technical-setup" },
-  { title: "Test course navigation and flow", labels: ["technical"], phase: "technical-setup" },
-  { title: "Set up member dashboard/welcome area", labels: ["technical"], phase: "technical-setup" },
-  { title: "Create any member-only resources area", labels: ["technical"], phase: "technical-setup" },
-  { title: "Create sales funnel in Systeme.io", labels: ["technical"], phase: "technical-setup" },
-  { title: "Connect funnel to product", labels: ["technical"], phase: "technical-setup" },
-  { title: "Set up funnel steps (landing page → checkout → thank you)", labels: ["technical"], phase: "technical-setup" },
-  { title: "Configure funnel settings", labels: ["technical"], phase: "technical-setup" },
-  { title: "Create email list for buyers", labels: ["technical"], phase: "technical-setup" },
-  { title: "Create email list for waitlist (if applicable)", labels: ["technical"], phase: "technical-setup" },
-  { title: "Set up sender email and name", labels: ["technical"], phase: "technical-setup" },
-  { title: "Verify email domain (for better deliverability)", labels: ["technical"], phase: "technical-setup" },
-  { title: "Create email templates with branding", labels: ["technical", "creative"], phase: "technical-setup" },
-  { title: "Create automation: Purchase → Add to course", labels: ["technical"], phase: "technical-setup" },
-  { title: "Create automation: Purchase → Send welcome email", labels: ["technical"], phase: "technical-setup" },
-  { title: "Create automation: Purchase → Add to buyer email list", labels: ["technical"], phase: "technical-setup" },
-  { title: "Set up abandoned cart sequence (if available)", labels: ["technical", "marketing"], phase: "technical-setup" },
-  { title: "Test all automations with test purchase", labels: ["technical"], phase: "technical-setup" },
-
-  // PHASE 4: SALES PAGE & COPY
-  { title: "Research competitor sales pages", labels: ["strategy"], phase: "sales-page" },
-  { title: "Outline sales page structure", labels: ["copy"], phase: "sales-page" },
-  { title: "Identify testimonials/social proof to include", labels: ["strategy"], phase: "sales-page" },
-  { title: "Gather any statistics or data points", labels: ["strategy"], phase: "sales-page" },
-  { title: "Plan out objection handling sections", labels: ["strategy"], phase: "sales-page" },
-  { title: "Decide on FAQ questions to address", labels: ["strategy"], phase: "sales-page" },
-  { title: "Write compelling headline", labels: ["copy"], phase: "sales-page" },
-  { title: "Write sub-headline", labels: ["copy"], phase: "sales-page" },
-  { title: "Write opening hook/story", labels: ["copy"], phase: "sales-page" },
-  { title: "Write problem/agitation section", labels: ["copy"], phase: "sales-page" },
-  { title: "Write solution section (your product)", labels: ["copy"], phase: "sales-page" },
-  { title: "Write transformation/benefits section", labels: ["copy"], phase: "sales-page" },
-  { title: "Write what's included section (curriculum breakdown)", labels: ["copy"], phase: "sales-page" },
-  { title: "Write about you/credibility section", labels: ["copy"], phase: "sales-page" },
-  { title: "Write testimonials section", labels: ["copy"], phase: "sales-page" },
-  { title: "Write guarantee section", labels: ["copy"], phase: "sales-page" },
-  { title: "Write FAQ section", labels: ["copy"], phase: "sales-page" },
-  { title: "Write pricing section with CTA", labels: ["copy"], phase: "sales-page" },
-  { title: "Write urgency/scarcity section", labels: ["copy"], phase: "sales-page" },
-  { title: "Write final CTA", labels: ["copy"], phase: "sales-page" },
-  { title: "Choose sales page template in Systeme.io", labels: ["technical"], phase: "sales-page" },
-  { title: "Customize colors to match brand", labels: ["creative"], phase: "sales-page" },
-  { title: "Upload logo and brand elements", labels: ["creative"], phase: "sales-page" },
-  { title: "Add hero image or video", labels: ["creative", "video"], phase: "sales-page" },
-  { title: "Format all copy sections", labels: ["technical"], phase: "sales-page" },
-  { title: "Add product images or mockups", labels: ["creative"], phase: "sales-page" },
-  { title: "Add testimonial images (if applicable)", labels: ["creative"], phase: "sales-page" },
-  { title: "Insert CTA buttons throughout page", labels: ["technical"], phase: "sales-page" },
-  { title: "Add countdown timer (if using urgency)", labels: ["technical"], phase: "sales-page" },
-  { title: "Link checkout button to purchase", labels: ["technical"], phase: "sales-page" },
-  { title: "Optimize for mobile viewing", labels: ["technical"], phase: "sales-page" },
-  { title: "Test page load speed", labels: ["technical"], phase: "sales-page" },
-  { title: "Create checkout page", labels: ["technical"], phase: "sales-page" },
-  { title: "Customize thank you page (post-purchase)", labels: ["technical", "copy"], phase: "sales-page" },
-  { title: "Create order confirmation page", labels: ["technical"], phase: "sales-page" },
-  { title: "Create waitlist landing page (if applicable)", labels: ["technical", "marketing"], phase: "sales-page" },
-  { title: "Write privacy policy page", labels: ["copy"], phase: "sales-page" },
-  { title: "Write terms and conditions page", labels: ["copy"], phase: "sales-page" },
-  { title: "Write refund policy page", labels: ["copy"], phase: "sales-page" },
-  { title: "Link all legal pages in footer", labels: ["technical"], phase: "sales-page" },
-
-  // PHASE 5: EMAIL SEQUENCES
-  { title: "Pre-Launch Email 1: Welcome to waitlist + what to expect", labels: ["copy", "marketing"], phase: "email-marketing" },
-  { title: "Pre-Launch Email 2: Educational content related to problem", labels: ["copy", "marketing"], phase: "email-marketing" },
-  { title: "Pre-Launch Email 3: Educational content + story", labels: ["copy", "marketing"], phase: "email-marketing" },
-  { title: "Pre-Launch Email 4: Address objection or concern", labels: ["copy", "marketing"], phase: "email-marketing" },
-  { title: "Pre-Launch Email 5: Behind-the-scenes of product creation", labels: ["copy", "marketing"], phase: "email-marketing" },
-  { title: "Pre-Launch Email 6: Launch announcement (enrollment opens)", labels: ["copy", "marketing"], phase: "email-marketing" },
-  { title: "Launch Email 1: Enrollment is open! (Launch day)", labels: ["copy", "marketing"], phase: "email-marketing" },
-  { title: "Launch Email 2: Educational content + testimonial (Day 2)", labels: ["copy", "marketing"], phase: "email-marketing" },
-  { title: "Launch Email 3: What's inside the product (Day 3)", labels: ["copy", "marketing"], phase: "email-marketing" },
-  { title: "Launch Email 4: Handle main objection (Day 4)", labels: ["copy", "marketing"], phase: "email-marketing" },
-  { title: "Launch Email 5: 48 hours left reminder", labels: ["copy", "marketing"], phase: "email-marketing" },
-  { title: "Launch Email 6: 24 hours left reminder", labels: ["copy", "marketing"], phase: "email-marketing" },
-  { title: "Launch Email 7: Final hours reminder", labels: ["copy", "marketing"], phase: "email-marketing" },
-  { title: "Launch Email 8: Cart closed (for those who didn't buy)", labels: ["copy", "marketing"], phase: "email-marketing" },
-  { title: "Post-Purchase Email 1: Welcome! Here's how to access", labels: ["copy"], phase: "delivery" },
-  { title: "Post-Purchase Email 2: Getting started guide (Day 1)", labels: ["copy"], phase: "delivery" },
-  { title: "Post-Purchase Email 3: Week 1 check-in and encouragement", labels: ["copy"], phase: "delivery" },
-  { title: "Post-Purchase Email 4: Week 2 check-in", labels: ["copy"], phase: "delivery" },
-  { title: "Post-Purchase Email 5: Midpoint motivation", labels: ["copy"], phase: "delivery" },
-  { title: "Post-Purchase Email 6: Final push to completion", labels: ["copy"], phase: "delivery" },
-  { title: "Post-Purchase Email 7: Congratulations + request testimonial", labels: ["copy"], phase: "delivery" },
-  { title: "Create all email campaigns in Systeme.io", labels: ["technical"], phase: "email-marketing" },
-  { title: "Schedule or trigger emails appropriately", labels: ["technical"], phase: "email-marketing" },
-  { title: "Add unsubscribe links to all emails", labels: ["technical"], phase: "email-marketing" },
-  { title: "Test emails by sending to yourself", labels: ["technical"], phase: "email-marketing" },
-  { title: "Check mobile display of all emails", labels: ["technical"], phase: "email-marketing" },
-
-  // PHASE 6: PRELAUNCH CONTENT & MARKETING
-  { title: "Identify beta testers or past clients to feature", labels: ["strategy"], phase: "prelaunch-content" },
-  { title: "Request video testimonials", labels: ["video", "marketing"], phase: "prelaunch-content" },
-  { title: "Request written testimonials", labels: ["copy", "marketing"], phase: "prelaunch-content" },
-  { title: "Request before/after stories", labels: ["marketing"], phase: "prelaunch-content" },
-  { title: "Take screenshots of success stories/messages", labels: ["marketing"], phase: "prelaunch-content" },
-  { title: "Get permission to use testimonials", labels: ["marketing"], phase: "prelaunch-content" },
-  { title: "Edit and format testimonials", labels: ["copy"], phase: "prelaunch-content" },
-  { title: "Batch create social media posts", labels: ["copy", "marketing"], phase: "prelaunch-content" },
-  { title: "Create graphics for posts (Canva)", labels: ["creative", "marketing"], phase: "prelaunch-content" },
-  { title: "Record stories or video content", labels: ["video", "marketing"], phase: "prelaunch-content" },
-  { title: "Write blog posts (if applicable)", labels: ["copy", "marketing"], phase: "prelaunch-content" },
-  { title: "Create lead magnets or free resources", labels: ["creative", "marketing"], phase: "prelaunch-content" },
-  { title: "Design any promotional images", labels: ["creative", "marketing"], phase: "prelaunch-content" },
-  { title: "Create launch announcement graphics", labels: ["creative", "marketing"], phase: "prelaunch-content" },
-  { title: "Update social media bios with relevant info", labels: ["marketing"], phase: "prelaunch-content" },
-  { title: "Create Instagram/Facebook highlights about product", labels: ["marketing"], phase: "prelaunch-content" },
-  { title: "Set up link in bio tool (if needed)", labels: ["technical", "marketing"], phase: "prelaunch-content" },
-  { title: "Create Pinterest pins (if using Pinterest)", labels: ["creative", "marketing"], phase: "prelaunch-content" },
-  { title: "Set up YouTube playlist (if applicable)", labels: ["video", "marketing"], phase: "prelaunch-content" },
-
-  // PHASE 7: LAUNCH WEEK PREPARATION
-  { title: "Do complete test purchase on Systeme.io", labels: ["technical"], phase: "launch-prep" },
-  { title: "Verify course access after test purchase", labels: ["technical"], phase: "launch-prep" },
-  { title: "Test all lesson videos play correctly", labels: ["technical", "video"], phase: "launch-prep" },
-  { title: "Test all download links work", labels: ["technical"], phase: "launch-prep" },
-  { title: "Verify all emails send correctly", labels: ["technical"], phase: "launch-prep" },
-  { title: "Check sales page displays correctly on mobile and desktop", labels: ["technical"], phase: "launch-prep" },
-  { title: "Test payment processing (Stripe and PayPal if both)", labels: ["technical"], phase: "launch-prep" },
-  { title: "Verify refund process works", labels: ["technical"], phase: "launch-prep" },
-  { title: "Check all automations trigger properly", labels: ["technical"], phase: "launch-prep" },
-  { title: "Set up analytics tracking (if using)", labels: ["technical"], phase: "launch-prep" },
-  { title: "Finalize launch day social media posts", labels: ["copy", "marketing"], phase: "launch-prep" },
-  { title: "Create launch day stories", labels: ["creative", "marketing"], phase: "launch-prep" },
-  { title: "Prepare launch announcement email", labels: ["copy", "marketing"], phase: "launch-prep" },
-  { title: "Create cart closing reminder graphics", labels: ["creative", "marketing"], phase: "launch-prep" },
-  { title: "Prepare final day posts and emails", labels: ["copy", "marketing"], phase: "launch-prep" },
-  { title: "Screenshot or record any live elements", labels: ["video"], phase: "launch-prep" },
-  { title: "Prepare Q&A or webinar (if hosting)", labels: ["strategy"], phase: "launch-prep" },
-  { title: "Write DM response templates for common questions", labels: ["copy"], phase: "launch-prep" },
-  { title: "Create FAQ document for quick responses", labels: ["copy"], phase: "launch-prep" },
-  { title: "Prepare objection-handling scripts", labels: ["copy", "strategy"], phase: "launch-prep" },
-  { title: "Write testimonial request templates", labels: ["copy"], phase: "launch-prep" },
-  { title: "Set up tracking for questions/objections during launch", labels: ["strategy"], phase: "launch-prep" },
-  { title: "Set up customer support email", labels: ["technical"], phase: "launch-prep" },
-  { title: "Create help desk or support system (if needed)", labels: ["technical"], phase: "launch-prep" },
-  { title: "Prepare customer support templates", labels: ["copy"], phase: "launch-prep" },
-  { title: "Set up response system for technical issues", labels: ["technical"], phase: "launch-prep" },
-  { title: "Determine support hours during launch", labels: ["strategy"], phase: "launch-prep" },
-
-  // PHASE 8: LAUNCH EXECUTION
-  { title: "Launch Day: Send launch announcement email to waitlist", labels: ["marketing", "high-priority"], phase: "launch-execution" },
-  { title: "Launch Day: Post launch announcement on all platforms", labels: ["marketing", "high-priority"], phase: "launch-execution" },
-  { title: "Launch Day: Post launch day stories", labels: ["marketing"], phase: "launch-execution" },
-  { title: "Launch Day: Go live (if planned)", labels: ["video", "marketing"], phase: "launch-execution" },
-  { title: "Launch Day: Respond to all comments and DMs", labels: ["marketing"], phase: "launch-execution" },
-  { title: "Launch Day: Monitor sales and track conversions", labels: ["strategy"], phase: "launch-execution" },
-  { title: "Launch Day: Send thank you messages to buyers", labels: ["marketing"], phase: "launch-execution" },
-  { title: "Launch Day: Share buyer excitement/testimonials (with permission)", labels: ["marketing"], phase: "launch-execution" },
-  { title: "Mid-Launch: Send daily or every-other-day emails", labels: ["copy", "marketing"], phase: "launch-execution" },
-  { title: "Mid-Launch: Post daily social content", labels: ["marketing"], phase: "launch-execution" },
-  { title: "Mid-Launch: Share ongoing testimonials and results", labels: ["marketing"], phase: "launch-execution" },
-  { title: "Mid-Launch: Host Q&A or webinar (if planned)", labels: ["video", "marketing"], phase: "launch-execution" },
-  { title: "Mid-Launch: Continue DM and comment engagement", labels: ["marketing"], phase: "launch-execution" },
-  { title: "Mid-Launch: Address any technical issues immediately", labels: ["technical", "high-priority"], phase: "launch-execution" },
-  { title: "Mid-Launch: Track metrics (traffic, conversion rate, revenue)", labels: ["strategy"], phase: "launch-execution" },
-  { title: "Mid-Launch: Adjust messaging based on questions/objections", labels: ["strategy", "copy"], phase: "launch-execution" },
-  { title: "Cart Close: Send 48-hour warning email", labels: ["marketing", "high-priority"], phase: "launch-execution" },
-  { title: "Cart Close: Post 48-hour warning on social", labels: ["marketing"], phase: "launch-execution" },
-  { title: "Cart Close: Send 24-hour warning email", labels: ["marketing", "high-priority"], phase: "launch-execution" },
-  { title: "Cart Close: Post 24-hour warning on social", labels: ["marketing"], phase: "launch-execution" },
-  { title: "Cart Close: Send final hours reminder email", labels: ["marketing", "high-priority"], phase: "launch-execution" },
-  { title: "Cart Close: Post final hours reminder on social", labels: ["marketing"], phase: "launch-execution" },
-  { title: "Cart Close: Go live for final push (if planned)", labels: ["video", "marketing"], phase: "launch-execution" },
-  { title: "Cart Close: Send cart closed email to non-buyers", labels: ["marketing"], phase: "launch-execution" },
-  { title: "Post-Launch: Send welcome sequence to all buyers", labels: ["marketing"], phase: "delivery" },
-  { title: "Post-Launch: Grant access to all buyers (verify in Systeme.io)", labels: ["technical"], phase: "delivery" },
-  { title: "Post-Launch: Close enrollment in Systeme.io", labels: ["technical"], phase: "delivery" },
-  { title: "Post-Launch: Post 'cart closed' announcement", labels: ["marketing"], phase: "delivery" },
-  { title: "Post-Launch: Thank everyone for support/engagement", labels: ["marketing"], phase: "delivery" },
-  { title: "Post-Launch: Start planning evergreen waitlist (if applicable)", labels: ["strategy", "marketing"], phase: "analysis" },
 ];
+
+// Tasks by offer type
+const OFFER_TYPE_TASKS: Record<string, TaskTemplate[]> = {
+  "strategic-freebies": [
+    { title: "Choose freebie format (PDF, video, audio, template)", labels: ["strategy"], phase: "content-creation" },
+    { title: "Outline freebie content structure", labels: ["creative"], phase: "content-creation" },
+    { title: "Write freebie content", labels: ["copy"], phase: "content-creation" },
+    { title: "Design freebie with branding", labels: ["creative"], phase: "content-creation" },
+    { title: "Create freebie mockup image", labels: ["creative"], phase: "content-creation" },
+    { title: "Set up opt-in page for freebie", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create thank you page with delivery", labels: ["technical"], phase: "technical-setup" },
+    { title: "Write opt-in page copy", labels: ["copy"], phase: "sales-page" },
+    { title: "Test freebie delivery automation", labels: ["technical"], phase: "launch-prep" },
+  ],
+  "tangible-digital-products": [
+    { title: "Create template/planner/workbook structure", labels: ["creative"], phase: "content-creation" },
+    { title: "Design all pages/sections", labels: ["creative"], phase: "content-creation" },
+    { title: "Add instructions/how-to-use section", labels: ["copy"], phase: "content-creation" },
+    { title: "Create product mockups", labels: ["creative"], phase: "content-creation" },
+    { title: "Set product pricing", labels: ["strategy"], phase: "foundation" },
+    { title: "Write product description", labels: ["copy"], phase: "sales-page" },
+  ],
+  "online-workshops": [
+    { title: "Choose workshop topic and outcome", labels: ["strategy"], phase: "foundation" },
+    { title: "Create workshop outline/agenda", labels: ["creative"], phase: "content-creation" },
+    { title: "Develop workshop slides/presentation", labels: ["creative"], phase: "content-creation" },
+    { title: "Plan interactive elements (polls, Q&A, breakouts)", labels: ["strategy"], phase: "content-creation" },
+    { title: "Set up webinar/workshop platform", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create workshop registration page", labels: ["technical"], phase: "technical-setup" },
+    { title: "Write registration page copy", labels: ["copy"], phase: "sales-page" },
+    { title: "Set up reminder email sequence", labels: ["technical"], phase: "email-marketing" },
+    { title: "Record workshop or prepare for live delivery", labels: ["video"], phase: "content-creation" },
+    { title: "Plan workshop follow-up offer", labels: ["strategy"], phase: "foundation" },
+  ],
+  "1-1-coaching": [
+    { title: "Define coaching package structure (sessions, duration, frequency)", labels: ["strategy"], phase: "foundation" },
+    { title: "Create intake questionnaire", labels: ["copy"], phase: "content-creation" },
+    { title: "Set up scheduling system (Calendly, etc.)", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create welcome packet/onboarding materials", labels: ["creative"], phase: "content-creation" },
+    { title: "Design session framework/structure", labels: ["strategy"], phase: "content-creation" },
+    { title: "Create application/discovery call booking page", labels: ["technical"], phase: "technical-setup" },
+    { title: "Write discovery call script", labels: ["copy"], phase: "sales-page" },
+    { title: "Create coaching agreement/contract", labels: ["copy"], phase: "content-creation" },
+    { title: "Set up payment processing for high-ticket", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create client portal or resource hub", labels: ["technical"], phase: "technical-setup" },
+  ],
+  "coaching-membership": [
+    { title: "Define membership tiers and pricing", labels: ["strategy"], phase: "foundation" },
+    { title: "Plan monthly content calendar", labels: ["strategy"], phase: "content-creation" },
+    { title: "Create onboarding sequence for new members", labels: ["copy"], phase: "content-creation" },
+    { title: "Set up membership platform", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create member welcome area", labels: ["technical"], phase: "technical-setup" },
+    { title: "Plan live call schedule (group calls, Q&As)", labels: ["strategy"], phase: "foundation" },
+    { title: "Set up recurring billing", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create membership cancellation process", labels: ["technical"], phase: "technical-setup" },
+    { title: "Design retention strategy", labels: ["strategy"], phase: "foundation" },
+    { title: "Create member-only resources library", labels: ["creative"], phase: "content-creation" },
+  ],
+  "group-coaching-program": [
+    { title: "Define program duration and structure", labels: ["strategy"], phase: "foundation" },
+    { title: "Create curriculum outline by week/module", labels: ["creative"], phase: "content-creation" },
+    { title: "Plan group call schedule", labels: ["strategy"], phase: "foundation" },
+    { title: "Create program workbook/resources", labels: ["creative"], phase: "content-creation" },
+    { title: "Set up group coaching platform", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create program welcome sequence", labels: ["copy"], phase: "content-creation" },
+    { title: "Design accountability/tracking system", labels: ["strategy"], phase: "content-creation" },
+    { title: "Plan graduation/completion process", labels: ["strategy"], phase: "delivery" },
+  ],
+  "flagship-course": [
+    { title: "Create comprehensive curriculum outline", labels: ["creative"], phase: "content-creation" },
+    { title: "Outline all modules and lessons", labels: ["creative"], phase: "content-creation" },
+    { title: "Write learning objectives per module", labels: ["copy"], phase: "content-creation" },
+    { title: "Decide content format (video, text, audio)", labels: ["strategy"], phase: "foundation" },
+    { title: "Create lesson scripts/outlines", labels: ["copy"], phase: "content-creation" },
+    { title: "Record all video lessons", labels: ["video"], phase: "content-creation" },
+    { title: "Create course workbooks and templates", labels: ["creative"], phase: "content-creation" },
+    { title: "Set up course platform", labels: ["technical"], phase: "technical-setup" },
+    { title: "Upload all course content", labels: ["technical"], phase: "technical-setup" },
+    { title: "Configure drip schedule if applicable", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create course completion certificate", labels: ["creative"], phase: "content-creation" },
+    { title: "Test entire course experience", labels: ["technical"], phase: "launch-prep" },
+  ],
+  "mini-courses": [
+    { title: "Choose focused topic for mini-course", labels: ["strategy"], phase: "foundation" },
+    { title: "Create simple 3-5 lesson outline", labels: ["creative"], phase: "content-creation" },
+    { title: "Record or create lesson content", labels: ["video"], phase: "content-creation" },
+    { title: "Create quick-win worksheet", labels: ["creative"], phase: "content-creation" },
+    { title: "Set up course delivery platform", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create upsell to main offer", labels: ["strategy"], phase: "foundation" },
+  ],
+};
+
+// Tasks by funnel type
+const FUNNEL_TYPE_TASKS: Record<string, TaskTemplate[]> = {
+  "freebie-funnel": [
+    { title: "Create freebie opt-in landing page", labels: ["technical"], phase: "technical-setup" },
+    { title: "Write compelling opt-in page headline", labels: ["copy"], phase: "sales-page" },
+    { title: "Create thank you page with next steps", labels: ["technical"], phase: "technical-setup" },
+    { title: "Write 3-5 email welcome sequence", labels: ["copy", "marketing"], phase: "email-marketing" },
+    { title: "Add soft CTA to next offer in sequence", labels: ["copy"], phase: "email-marketing" },
+  ],
+  "low-ticket-funnel": [
+    { title: "Create sales page for low-ticket offer", labels: ["technical"], phase: "sales-page" },
+    { title: "Write sales page copy ($7-$49 positioning)", labels: ["copy"], phase: "sales-page" },
+    { title: "Set up checkout page with order form", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create order bump offer", labels: ["strategy"], phase: "foundation" },
+    { title: "Set up upsell page (optional)", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create post-purchase email sequence", labels: ["copy"], phase: "email-marketing" },
+  ],
+  "vsl-funnel": [
+    { title: "Write VSL script", labels: ["copy", "video"], phase: "content-creation" },
+    { title: "Record VSL video", labels: ["video"], phase: "content-creation" },
+    { title: "Create VSL landing page", labels: ["technical"], phase: "technical-setup" },
+    { title: "Set up checkout page", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create onboarding page", labels: ["technical"], phase: "technical-setup" },
+    { title: "Write follow-up email sequence", labels: ["copy"], phase: "email-marketing" },
+  ],
+  "instagram-funnel": [
+    { title: "Plan Instagram content series (Reels, Posts, Stories)", labels: ["creative", "marketing"], phase: "prelaunch-content" },
+    { title: "Create link in bio page", labels: ["technical"], phase: "technical-setup" },
+    { title: "Set up opt-in or sales page from bio", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create DM follow-up templates", labels: ["copy"], phase: "prelaunch-content" },
+    { title: "Plan story-to-sale content flow", labels: ["strategy"], phase: "prelaunch-content" },
+  ],
+  "webinar-funnel": [
+    { title: "Create webinar registration page", labels: ["technical"], phase: "technical-setup" },
+    { title: "Write registration page copy", labels: ["copy"], phase: "sales-page" },
+    { title: "Create webinar confirmation page", labels: ["technical"], phase: "technical-setup" },
+    { title: "Set up reminder email sequence (3-5 reminders)", labels: ["technical"], phase: "email-marketing" },
+    { title: "Create webinar presentation", labels: ["creative"], phase: "content-creation" },
+    { title: "Write webinar script with offer pitch", labels: ["copy"], phase: "content-creation" },
+    { title: "Record or deliver live webinar", labels: ["video"], phase: "content-creation" },
+    { title: "Create checkout page for webinar offer", labels: ["technical"], phase: "technical-setup" },
+    { title: "Write replay email sequence", labels: ["copy"], phase: "email-marketing" },
+  ],
+  "challenge-funnel": [
+    { title: "Create challenge registration page", labels: ["technical"], phase: "technical-setup" },
+    { title: "Write challenge welcome email", labels: ["copy"], phase: "email-marketing" },
+    { title: "Create Day 1 challenge content", labels: ["creative"], phase: "content-creation" },
+    { title: "Create Day 2 challenge content", labels: ["creative"], phase: "content-creation" },
+    { title: "Create Day 3 challenge content", labels: ["creative"], phase: "content-creation" },
+    { title: "Create Day 4 challenge content", labels: ["creative"], phase: "content-creation" },
+    { title: "Create Day 5 challenge content", labels: ["creative"], phase: "content-creation" },
+    { title: "Set up challenge community/group", labels: ["technical"], phase: "technical-setup" },
+    { title: "Plan offer reveal moment", labels: ["strategy"], phase: "foundation" },
+    { title: "Create challenge-to-offer sales page", labels: ["technical"], phase: "sales-page" },
+  ],
+  "membership-funnel": [
+    { title: "Create membership awareness content", labels: ["creative", "marketing"], phase: "prelaunch-content" },
+    { title: "Build membership sales page", labels: ["technical"], phase: "sales-page" },
+    { title: "Write membership sales page copy", labels: ["copy"], phase: "sales-page" },
+    { title: "Set up recurring payment checkout", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create member onboarding page", labels: ["technical"], phase: "technical-setup" },
+    { title: "Write orientation email sequence", labels: ["copy"], phase: "email-marketing" },
+    { title: "Plan ongoing retention emails", labels: ["strategy"], phase: "email-marketing" },
+  ],
+  "application-funnel": [
+    { title: "Create authority content/free training", labels: ["creative"], phase: "prelaunch-content" },
+    { title: "Build application page", labels: ["technical"], phase: "technical-setup" },
+    { title: "Write application questions", labels: ["copy"], phase: "sales-page" },
+    { title: "Create application confirmation page", labels: ["technical"], phase: "technical-setup" },
+    { title: "Set up application review process", labels: ["strategy"], phase: "foundation" },
+    { title: "Create strategy call booking page", labels: ["technical"], phase: "technical-setup" },
+    { title: "Write sales call script", labels: ["copy"], phase: "sales-page" },
+    { title: "Create contract template", labels: ["copy"], phase: "content-creation" },
+  ],
+  "email-nurture-funnel": [
+    { title: "Create lead magnet entry point", labels: ["creative"], phase: "content-creation" },
+    { title: "Write welcome email sequence (5-7 emails)", labels: ["copy"], phase: "email-marketing" },
+    { title: "Plan value emails (education, stories, wins)", labels: ["strategy"], phase: "email-marketing" },
+    { title: "Write soft offer introduction email", labels: ["copy"], phase: "email-marketing" },
+    { title: "Create direct sales CTA email", labels: ["copy"], phase: "email-marketing" },
+    { title: "Plan ongoing weekly email content", labels: ["strategy"], phase: "email-marketing" },
+  ],
+  "launch-funnel": [
+    { title: "Plan pre-launch content calendar", labels: ["strategy", "marketing"], phase: "prelaunch-content" },
+    { title: "Create waitlist/early access page", labels: ["technical"], phase: "technical-setup" },
+    { title: "Write pre-launch email sequence", labels: ["copy"], phase: "email-marketing" },
+    { title: "Create cart open announcement", labels: ["copy", "marketing"], phase: "launch-execution" },
+    { title: "Build sales page", labels: ["technical"], phase: "sales-page" },
+    { title: "Set up checkout page", labels: ["technical"], phase: "technical-setup" },
+    { title: "Write cart close urgency emails", labels: ["copy"], phase: "email-marketing" },
+    { title: "Create onboarding/welcome sequence", labels: ["copy"], phase: "delivery" },
+  ],
+};
+
+// Tasks by deliverable type
+const DELIVERABLE_TASKS: Record<string, TaskTemplate[]> = {
+  "step-by-step-tutorials": [
+    { title: "Outline tutorial structure and steps", labels: ["creative"], phase: "content-creation" },
+    { title: "Write tutorial script or outline", labels: ["copy"], phase: "content-creation" },
+    { title: "Record tutorial videos", labels: ["video"], phase: "content-creation" },
+    { title: "Edit and polish tutorial content", labels: ["video"], phase: "content-creation" },
+  ],
+  "checklists": [
+    { title: "Create checklist content and items", labels: ["copy"], phase: "content-creation" },
+    { title: "Design checklist PDF", labels: ["creative"], phase: "content-creation" },
+    { title: "Create fillable/interactive version", labels: ["technical"], phase: "content-creation" },
+  ],
+  "cheat-sheets": [
+    { title: "Compile key information for cheat sheet", labels: ["copy"], phase: "content-creation" },
+    { title: "Design cheat sheet layout", labels: ["creative"], phase: "content-creation" },
+    { title: "Create printable PDF version", labels: ["creative"], phase: "content-creation" },
+  ],
+  "coaching-sessions": [
+    { title: "Create session agenda template", labels: ["creative"], phase: "content-creation" },
+    { title: "Develop session framework", labels: ["strategy"], phase: "content-creation" },
+    { title: "Set up call scheduling system", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create pre-session questionnaire", labels: ["copy"], phase: "content-creation" },
+    { title: "Create post-session action template", labels: ["creative"], phase: "content-creation" },
+  ],
+  "workbooks": [
+    { title: "Outline workbook sections and exercises", labels: ["creative"], phase: "content-creation" },
+    { title: "Write workbook prompts and content", labels: ["copy"], phase: "content-creation" },
+    { title: "Design workbook pages", labels: ["creative"], phase: "content-creation" },
+    { title: "Create fillable PDF version", labels: ["technical"], phase: "content-creation" },
+  ],
+  "planners": [
+    { title: "Design planner layout and sections", labels: ["creative"], phase: "content-creation" },
+    { title: "Create planner pages (daily, weekly, monthly)", labels: ["creative"], phase: "content-creation" },
+    { title: "Add goal-setting and tracking sections", labels: ["creative"], phase: "content-creation" },
+    { title: "Create printable and digital versions", labels: ["technical"], phase: "content-creation" },
+  ],
+  "templates": [
+    { title: "Create template structure and format", labels: ["creative"], phase: "content-creation" },
+    { title: "Write template instructions", labels: ["copy"], phase: "content-creation" },
+    { title: "Design template with branding", labels: ["creative"], phase: "content-creation" },
+    { title: "Create editable version (Canva, Google Docs, etc.)", labels: ["technical"], phase: "content-creation" },
+  ],
+  "trello-boards": [
+    { title: "Plan Trello board structure and lists", labels: ["strategy"], phase: "content-creation" },
+    { title: "Create board with all cards and checklists", labels: ["technical"], phase: "content-creation" },
+    { title: "Add labels, due dates, and descriptions", labels: ["technical"], phase: "content-creation" },
+    { title: "Write board usage instructions", labels: ["copy"], phase: "content-creation" },
+  ],
+  "audio-files": [
+    { title: "Write audio scripts", labels: ["copy"], phase: "content-creation" },
+    { title: "Record audio content", labels: ["creative"], phase: "content-creation" },
+    { title: "Edit and master audio files", labels: ["creative"], phase: "content-creation" },
+    { title: "Create audio file covers/artwork", labels: ["creative"], phase: "content-creation" },
+  ],
+  "affirmations": [
+    { title: "Write affirmation statements", labels: ["copy"], phase: "content-creation" },
+    { title: "Record affirmation audio (optional)", labels: ["creative"], phase: "content-creation" },
+    { title: "Design affirmation cards or PDF", labels: ["creative"], phase: "content-creation" },
+  ],
+  "journals": [
+    { title: "Create journal prompts and sections", labels: ["copy"], phase: "content-creation" },
+    { title: "Design journal pages", labels: ["creative"], phase: "content-creation" },
+    { title: "Add reflection and tracking sections", labels: ["creative"], phase: "content-creation" },
+    { title: "Create printable PDF version", labels: ["creative"], phase: "content-creation" },
+  ],
+  "support-groups": [
+    { title: "Set up community platform (Facebook, Discord, etc.)", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create community guidelines", labels: ["copy"], phase: "content-creation" },
+    { title: "Plan community engagement activities", labels: ["strategy"], phase: "foundation" },
+    { title: "Set up moderation and welcome process", labels: ["technical"], phase: "technical-setup" },
+  ],
+  "voice-message-support": [
+    { title: "Set up Voxer/voice message platform", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create voice support guidelines and boundaries", labels: ["copy"], phase: "content-creation" },
+    { title: "Plan response time expectations", labels: ["strategy"], phase: "foundation" },
+  ],
+  "text-message-support": [
+    { title: "Set up text messaging platform", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create text support guidelines", labels: ["copy"], phase: "content-creation" },
+    { title: "Plan response templates for common questions", labels: ["copy"], phase: "content-creation" },
+  ],
+  "email-support": [
+    { title: "Set up dedicated support email", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create email response templates", labels: ["copy"], phase: "content-creation" },
+    { title: "Plan email support response time", labels: ["strategy"], phase: "foundation" },
+  ],
+  "live-chat-support": [
+    { title: "Set up live chat platform", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create chat response templates", labels: ["copy"], phase: "content-creation" },
+    { title: "Plan chat availability hours", labels: ["strategy"], phase: "foundation" },
+  ],
+};
+
+// Platform-specific tasks
+const PLATFORM_TASKS: Record<string, TaskTemplate[]> = {
+  // Funnel Builders
+  "clickfunnels": [
+    { title: "Set up ClickFunnels account and domain", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create funnel structure in ClickFunnels", labels: ["technical"], phase: "technical-setup" },
+    { title: "Design landing pages in ClickFunnels", labels: ["creative"], phase: "technical-setup" },
+    { title: "Set up checkout and order forms", labels: ["technical"], phase: "technical-setup" },
+    { title: "Configure payment integration (Stripe)", labels: ["technical"], phase: "technical-setup" },
+  ],
+  "kartra": [
+    { title: "Set up Kartra account and domain", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create pages and funnels in Kartra", labels: ["technical"], phase: "technical-setup" },
+    { title: "Set up Kartra email automations", labels: ["technical"], phase: "technical-setup" },
+    { title: "Configure Kartra membership if needed", labels: ["technical"], phase: "technical-setup" },
+  ],
+  "systeme-io": [
+    { title: "Set up Systeme.io account", labels: ["technical"], phase: "technical-setup" },
+    { title: "Connect payment processor (Stripe/PayPal)", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create sales funnel in Systeme.io", labels: ["technical"], phase: "technical-setup" },
+    { title: "Set up email automations", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create course/membership area if needed", labels: ["technical"], phase: "technical-setup" },
+    { title: "Test entire funnel flow", labels: ["technical"], phase: "launch-prep" },
+  ],
+  "kajabi-funnel": [
+    { title: "Set up Kajabi account and branding", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create pipeline (funnel) in Kajabi", labels: ["technical"], phase: "technical-setup" },
+    { title: "Build landing pages in Kajabi", labels: ["technical"], phase: "technical-setup" },
+    { title: "Set up Kajabi automations", labels: ["technical"], phase: "technical-setup" },
+  ],
+  // Community Platforms
+  "mighty-networks": [
+    { title: "Set up Mighty Networks space", labels: ["technical"], phase: "technical-setup" },
+    { title: "Configure community settings and sections", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create welcome content for new members", labels: ["copy"], phase: "content-creation" },
+    { title: "Set up community guidelines post", labels: ["copy"], phase: "content-creation" },
+  ],
+  "circle": [
+    { title: "Set up Circle community", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create spaces and categories", labels: ["technical"], phase: "technical-setup" },
+    { title: "Configure member onboarding flow", labels: ["technical"], phase: "technical-setup" },
+  ],
+  "discord": [
+    { title: "Create Discord server", labels: ["technical"], phase: "technical-setup" },
+    { title: "Set up channels and categories", labels: ["technical"], phase: "technical-setup" },
+    { title: "Configure roles and permissions", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create welcome channel and rules", labels: ["copy"], phase: "content-creation" },
+  ],
+  "slack": [
+    { title: "Create Slack workspace", labels: ["technical"], phase: "technical-setup" },
+    { title: "Set up channels for different topics", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create welcome messages and guidelines", labels: ["copy"], phase: "content-creation" },
+  ],
+  "facebook-groups": [
+    { title: "Create Facebook Group", labels: ["technical"], phase: "technical-setup" },
+    { title: "Set up group settings and questions", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create pinned welcome post", labels: ["copy"], phase: "content-creation" },
+    { title: "Set up group rules", labels: ["copy"], phase: "content-creation" },
+  ],
+  // Email Platforms
+  "mailchimp": [
+    { title: "Set up Mailchimp account", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create audience/list in Mailchimp", labels: ["technical"], phase: "technical-setup" },
+    { title: "Design email templates with branding", labels: ["creative"], phase: "technical-setup" },
+    { title: "Set up email automations", labels: ["technical"], phase: "email-marketing" },
+  ],
+  "convertkit": [
+    { title: "Set up ConvertKit account", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create sequences in ConvertKit", labels: ["technical"], phase: "email-marketing" },
+    { title: "Set up tags for segmentation", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create automation rules", labels: ["technical"], phase: "email-marketing" },
+  ],
+  "activecampaign-email": [
+    { title: "Set up ActiveCampaign account", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create lists and tags", labels: ["technical"], phase: "technical-setup" },
+    { title: "Build email automations", labels: ["technical"], phase: "email-marketing" },
+    { title: "Configure CRM pipeline if using", labels: ["technical"], phase: "technical-setup" },
+  ],
+  "mailerlite": [
+    { title: "Set up MailerLite account", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create subscriber groups", labels: ["technical"], phase: "technical-setup" },
+    { title: "Design email templates", labels: ["creative"], phase: "technical-setup" },
+    { title: "Build email automations", labels: ["technical"], phase: "email-marketing" },
+  ],
+  "flodesk": [
+    { title: "Set up Flodesk account", labels: ["technical"], phase: "technical-setup" },
+    { title: "Create segments in Flodesk", labels: ["technical"], phase: "technical-setup" },
+    { title: "Design beautiful email templates", labels: ["creative"], phase: "technical-setup" },
+    { title: "Set up workflows/automations", labels: ["technical"], phase: "email-marketing" },
+  ],
+};
+
+// Launch execution tasks
+const LAUNCH_EXECUTION_TASKS: TaskTemplate[] = [
+  { title: "Launch Day: Send launch announcement email", labels: ["marketing", "high-priority"], phase: "launch-execution" },
+  { title: "Launch Day: Post launch announcement on all platforms", labels: ["marketing", "high-priority"], phase: "launch-execution" },
+  { title: "Launch Day: Go live if planned", labels: ["video", "marketing"], phase: "launch-execution" },
+  { title: "Launch Day: Monitor sales and respond to questions", labels: ["marketing"], phase: "launch-execution" },
+  { title: "Mid-Launch: Send daily emails", labels: ["copy", "marketing"], phase: "launch-execution" },
+  { title: "Mid-Launch: Post daily social content", labels: ["marketing"], phase: "launch-execution" },
+  { title: "Mid-Launch: Address objections and questions", labels: ["marketing"], phase: "launch-execution" },
+  { title: "Cart Close: Send 48-hour warning email", labels: ["marketing", "high-priority"], phase: "launch-execution" },
+  { title: "Cart Close: Send 24-hour warning email", labels: ["marketing", "high-priority"], phase: "launch-execution" },
+  { title: "Cart Close: Send final hours reminder", labels: ["marketing", "high-priority"], phase: "launch-execution" },
+  { title: "Cart Close: Send cart closed email", labels: ["marketing"], phase: "launch-execution" },
+];
+
+// Delivery tasks
+const DELIVERY_TASKS: TaskTemplate[] = [
+  { title: "Send welcome email to all buyers", labels: ["marketing"], phase: "delivery" },
+  { title: "Grant access to all purchased content", labels: ["technical"], phase: "delivery" },
+  { title: "Send Day 1 getting started guide", labels: ["copy"], phase: "delivery" },
+  { title: "Check in with buyers after first week", labels: ["marketing"], phase: "delivery" },
+  { title: "Request testimonials from happy customers", labels: ["marketing"], phase: "analysis" },
+  { title: "Analyze launch metrics and results", labels: ["strategy"], phase: "analysis" },
+  { title: "Document lessons learned", labels: ["strategy"], phase: "analysis" },
+];
+
+// Function to generate tasks based on offer data
+const generateTasksFromOffer = (offer: Offer): TaskTemplate[] => {
+  const tasks: TaskTemplate[] = [];
+  
+  // Add base foundation tasks
+  tasks.push(...BASE_FOUNDATION_TASKS);
+  
+  // Add offer type specific tasks
+  if (offer.offer_type && OFFER_TYPE_TASKS[offer.offer_type]) {
+    tasks.push(...OFFER_TYPE_TASKS[offer.offer_type]);
+  }
+  
+  // Add funnel type specific tasks
+  if (offer.funnel_type && FUNNEL_TYPE_TASKS[offer.funnel_type]) {
+    tasks.push(...FUNNEL_TYPE_TASKS[offer.funnel_type]);
+  }
+  
+  // Add deliverable specific tasks
+  if (offer.main_deliverables && offer.main_deliverables.length > 0) {
+    offer.main_deliverables.forEach(deliverable => {
+      if (DELIVERABLE_TASKS[deliverable]) {
+        tasks.push(...DELIVERABLE_TASKS[deliverable]);
+      }
+    });
+  }
+  
+  // Add funnel platform tasks
+  if (offer.funnel_platform && PLATFORM_TASKS[offer.funnel_platform]) {
+    tasks.push(...PLATFORM_TASKS[offer.funnel_platform]);
+  }
+  
+  // Add community platform tasks
+  if (offer.community_platform && PLATFORM_TASKS[offer.community_platform]) {
+    tasks.push(...PLATFORM_TASKS[offer.community_platform]);
+  }
+  
+  // Add email platform tasks
+  if (offer.email_platform && PLATFORM_TASKS[offer.email_platform]) {
+    tasks.push(...PLATFORM_TASKS[offer.email_platform]);
+  }
+  
+  // Add launch execution tasks
+  tasks.push(...LAUNCH_EXECUTION_TASKS);
+  
+  // Add delivery tasks
+  tasks.push(...DELIVERY_TASKS);
+  
+  // Remove duplicates based on title
+  const uniqueTasks = tasks.filter((task, index, self) =>
+    index === self.findIndex((t) => t.title === task.title)
+  );
+  
+  return uniqueTasks;
+};
 
 export const LoadLaunchTasksDialog = ({
   projectId,
@@ -289,20 +536,34 @@ export const LoadLaunchTasksDialog = ({
 }: LoadLaunchTasksDialogProps) => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [productType, setProductType] = useState<string>("");
-  const [platform, setPlatform] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
 
-  const canLoadTasks = platform === "systeme-io" && projectType === "launch";
+  // Fetch offer data for this project
+  const { data: offer, isLoading: isLoadingOffer } = useQuery({
+    queryKey: ['offer', projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('offers')
+        .select('*')
+        .eq('project_id', projectId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data as Offer | null;
+    },
+    enabled: open,
+  });
+
+  const hasOffer = !!offer;
+  const generatedTasks = offer ? generateTasksFromOffer(offer) : [];
 
   const handleLoadTasks = async () => {
-    if (!user || !canLoadTasks) return;
+    if (!user || !hasOffer || !offer) return;
 
     setIsLoading(true);
 
     try {
-      // Get current task count to determine starting position
       const { count } = await supabase
         .from("tasks")
         .select("*", { count: "exact", head: true })
@@ -310,8 +571,7 @@ export const LoadLaunchTasksDialog = ({
 
       const startPosition = count || 0;
 
-      // Prepare all tasks for batch insert
-      const tasksToInsert = SYSTEME_IO_LAUNCH_TASKS.map((task, index) => ({
+      const tasksToInsert = generatedTasks.map((task, index) => ({
         project_id: projectId,
         user_id: user.id,
         title: task.title,
@@ -323,18 +583,15 @@ export const LoadLaunchTasksDialog = ({
         position: startPosition + index,
       }));
 
-      // Insert all tasks in a single batch
       const { error } = await supabase.from("tasks").insert(tasksToInsert);
 
       if (error) {
         console.error("Error loading tasks:", error);
         toast.error("Failed to load tasks");
       } else {
-        toast.success(`${SYSTEME_IO_LAUNCH_TASKS.length} tasks loaded successfully`);
+        toast.success(`${generatedTasks.length} tasks loaded based on your offer`);
         onTasksLoaded();
         setOpen(false);
-        setProductType("");
-        setPlatform("");
       }
     } catch (error) {
       console.error("Error loading tasks:", error);
@@ -370,7 +627,6 @@ export const LoadLaunchTasksDialog = ({
     }
   };
 
-  // If showDeleteOnly, render only the delete alert dialog
   if (showDeleteOnly) {
     return (
       <AlertDialog>
@@ -410,55 +666,97 @@ export const LoadLaunchTasksDialog = ({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle>Load Launch Tasks List</DialogTitle>
           <DialogDescription>
-            Select your product type and platform to load a pre-built task list for your launch.
+            Generate a customized task list based on your offer configuration.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="product-type">What type of product are you launching?</Label>
-            <Select value={productType} onValueChange={setProductType}>
-              <SelectTrigger id="product-type">
-                <SelectValue placeholder="Select product type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="digital-product">Digital Product (ebook, workbook, etc.)</SelectItem>
-                <SelectItem value="membership">Membership</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="py-4">
+          {isLoadingOffer ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : hasOffer ? (
+            <div className="space-y-4">
+              <div className="p-4 rounded-lg border bg-muted/30">
+                <h4 className="font-medium mb-3">Your Offer Configuration</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Offer Type:</span>
+                    <Badge variant="secondary" className="ml-2">
+                      {offer?.offer_type?.replace(/-/g, ' ')}
+                    </Badge>
+                  </div>
+                  {offer?.funnel_type && (
+                    <div>
+                      <span className="text-muted-foreground">Funnel:</span>
+                      <Badge variant="secondary" className="ml-2">
+                        {offer.funnel_type.replace(/-/g, ' ')}
+                      </Badge>
+                    </div>
+                  )}
+                  {offer?.funnel_platform && (
+                    <div>
+                      <span className="text-muted-foreground">Platform:</span>
+                      <Badge variant="outline" className="ml-2">
+                        {offer.funnel_platform.replace(/-/g, ' ')}
+                      </Badge>
+                    </div>
+                  )}
+                  {offer?.main_deliverables && offer.main_deliverables.length > 0 && (
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground">Deliverables:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {offer.main_deliverables.slice(0, 3).map(d => (
+                          <Badge key={d} variant="outline" className="text-xs">
+                            {d.replace(/-/g, ' ')}
+                          </Badge>
+                        ))}
+                        {offer.main_deliverables.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{offer.main_deliverables.length - 3} more
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="platform">Which platform do you want to launch on?</Label>
-            <Select value={platform} onValueChange={setPlatform}>
-              <SelectTrigger id="platform">
-                <SelectValue placeholder="Select platform" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="systeme-io">Systeme.io</SelectItem>
-                <SelectItem value="skool">Skool</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="flex items-center gap-2 text-sm">
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <span>
+                  <strong>{generatedTasks.length}</strong> tasks will be generated based on your offer
+                </span>
+              </div>
 
-          {platform && !canLoadTasks && (
-            <p className="text-sm text-muted-foreground">
-              {platform === "skool" 
-                ? "Skool task templates coming soon!" 
-                : projectType === "prelaunch"
-                  ? "Launch task templates are only available for Launch projects."
-                  : "Please select both product type and platform."}
-            </p>
-          )}
-
-          {canLoadTasks && (
-            <p className="text-sm text-muted-foreground">
-              This will add {SYSTEME_IO_LAUNCH_TASKS.length} tasks to your project board covering all phases of your launch.
-            </p>
+              <ScrollArea className="h-[200px] rounded-md border p-3">
+                <div className="space-y-1">
+                  {generatedTasks.slice(0, 30).map((task, index) => (
+                    <div key={index} className="flex items-center gap-2 text-sm py-1">
+                      <div className="w-1 h-1 rounded-full bg-primary" />
+                      <span className="text-muted-foreground truncate">{task.title}</span>
+                    </div>
+                  ))}
+                  {generatedTasks.length > 30 && (
+                    <div className="text-sm text-muted-foreground pt-2">
+                      ... and {generatedTasks.length - 30} more tasks
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <AlertCircle className="w-10 h-10 text-muted-foreground mb-3" />
+              <h4 className="font-medium mb-1">No Offer Configured</h4>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Please set up your offer in the Offer Builder tab first. The task list will be generated based on your offer type, funnel, deliverables, and platforms.
+              </p>
+            </div>
           )}
         </div>
 
@@ -468,10 +766,10 @@ export const LoadLaunchTasksDialog = ({
           </Button>
           <Button 
             onClick={handleLoadTasks} 
-            disabled={!canLoadTasks || isLoading}
+            disabled={!hasOffer || isLoading || isLoadingOffer}
           >
             {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-            Load Tasks
+            Load {generatedTasks.length} Tasks
           </Button>
         </DialogFooter>
       </DialogContent>
