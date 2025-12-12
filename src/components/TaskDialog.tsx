@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, X } from "lucide-react";
+import { Calendar as CalendarIcon, X, Plus, Trash2, CheckCircle2, Circle, ListTodo } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +29,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const COLUMNS = [
   { id: "todo", label: "To Do" },
@@ -51,6 +54,17 @@ export const TASK_LABELS = [
   { id: "quick-win", label: "Quick Win", color: "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30" },
 ];
 
+export interface Subtask {
+  id: string;
+  task_id: string;
+  user_id: string;
+  title: string;
+  completed: boolean;
+  position: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Task {
   id: string;
   project_id: string;
@@ -63,6 +77,7 @@ export interface Task {
   labels: string[] | null;
   created_at: string;
   updated_at: string;
+  subtask_count?: number;
 }
 
 interface TaskDialogProps {
@@ -71,6 +86,7 @@ interface TaskDialogProps {
   onSubmit: (data: { title: string; description: string; due_date: Date | null; column_id: string; labels: string[] }) => Promise<void>;
   editTask?: Task | null;
   trigger?: React.ReactNode;
+  onSubtasksChange?: () => void;
 }
 
 export const TaskDialog = ({
@@ -79,13 +95,37 @@ export const TaskDialog = ({
   onSubmit,
   editTask,
   trigger,
+  onSubtasksChange,
 }: TaskDialogProps) => {
+  const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [columnId, setColumnId] = useState("todo");
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Subtasks state
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
+  const [editingSubtaskTitle, setEditingSubtaskTitle] = useState("");
+
+  const fetchSubtasks = useCallback(async () => {
+    if (!editTask?.id) return;
+    
+    const { data, error } = await supabase
+      .from("subtasks")
+      .select("*")
+      .eq("task_id", editTask.id)
+      .order("position", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching subtasks:", error);
+    } else {
+      setSubtasks(data || []);
+    }
+  }, [editTask?.id]);
 
   useEffect(() => {
     if (editTask) {
@@ -94,14 +134,16 @@ export const TaskDialog = ({
       setDueDate(editTask.due_date ? new Date(editTask.due_date) : undefined);
       setColumnId(editTask.column_id);
       setSelectedLabels(editTask.labels || []);
+      fetchSubtasks();
     } else {
       setTitle("");
       setDescription("");
       setDueDate(undefined);
       setColumnId("todo");
       setSelectedLabels([]);
+      setSubtasks([]);
     }
-  }, [editTask, open]);
+  }, [editTask, open, fetchSubtasks]);
 
   const toggleLabel = (labelId: string) => {
     setSelectedLabels((prev) =>
@@ -109,6 +151,73 @@ export const TaskDialog = ({
         ? prev.filter((id) => id !== labelId)
         : [...prev, labelId]
     );
+  };
+
+  const handleAddSubtask = async () => {
+    if (!newSubtaskTitle.trim() || !editTask?.id || !user) return;
+
+    const { error } = await supabase.from("subtasks").insert({
+      task_id: editTask.id,
+      user_id: user.id,
+      title: newSubtaskTitle.trim(),
+      position: subtasks.length,
+    });
+
+    if (error) {
+      console.error("Error adding subtask:", error);
+      toast.error("Failed to add subtask");
+    } else {
+      setNewSubtaskTitle("");
+      fetchSubtasks();
+      onSubtasksChange?.();
+    }
+  };
+
+  const handleToggleSubtask = async (subtask: Subtask) => {
+    const { error } = await supabase
+      .from("subtasks")
+      .update({ completed: !subtask.completed })
+      .eq("id", subtask.id);
+
+    if (error) {
+      console.error("Error toggling subtask:", error);
+      toast.error("Failed to update subtask");
+    } else {
+      fetchSubtasks();
+    }
+  };
+
+  const handleUpdateSubtask = async (subtaskId: string) => {
+    if (!editingSubtaskTitle.trim()) return;
+
+    const { error } = await supabase
+      .from("subtasks")
+      .update({ title: editingSubtaskTitle.trim() })
+      .eq("id", subtaskId);
+
+    if (error) {
+      console.error("Error updating subtask:", error);
+      toast.error("Failed to update subtask");
+    } else {
+      setEditingSubtaskId(null);
+      setEditingSubtaskTitle("");
+      fetchSubtasks();
+    }
+  };
+
+  const handleDeleteSubtask = async (subtaskId: string) => {
+    const { error } = await supabase
+      .from("subtasks")
+      .delete()
+      .eq("id", subtaskId);
+
+    if (error) {
+      console.error("Error deleting subtask:", error);
+      toast.error("Failed to delete subtask");
+    } else {
+      fetchSubtasks();
+      onSubtasksChange?.();
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -136,10 +245,12 @@ export const TaskDialog = ({
     }
   };
 
+  const completedSubtasks = subtasks.filter(s => s.completed).length;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{editTask ? "Edit Task" : "Add New Task"}</DialogTitle>
@@ -218,10 +329,10 @@ export const TaskDialog = ({
               </Popover>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="column">Column</Label>
+              <Label htmlFor="status">Status</Label>
               <Select value={columnId} onValueChange={setColumnId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a column" />
+                  <SelectValue placeholder="Select a status" />
                 </SelectTrigger>
                 <SelectContent>
                   {COLUMNS.map((column) => (
@@ -232,6 +343,87 @@ export const TaskDialog = ({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Subtasks Section - Only show when editing */}
+            {editTask && (
+              <div className="grid gap-2">
+                <Label className="flex items-center gap-2">
+                  <ListTodo className="w-4 h-4" />
+                  Subtasks {subtasks.length > 0 && `(${completedSubtasks}/${subtasks.length})`}
+                </Label>
+                
+                {/* Add subtask input */}
+                <div className="flex gap-2">
+                  <Input
+                    value={newSubtaskTitle}
+                    onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                    placeholder="Add a subtask..."
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddSubtask();
+                      }
+                    }}
+                  />
+                  <Button type="button" size="icon" variant="outline" onClick={handleAddSubtask}>
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {/* Subtasks list */}
+                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  {subtasks.map((subtask) => (
+                    <div
+                      key={subtask.id}
+                      className="flex items-center gap-2 p-2 rounded-md bg-muted/50 group"
+                    >
+                      <Checkbox
+                        checked={subtask.completed}
+                        onCheckedChange={() => handleToggleSubtask(subtask)}
+                      />
+                      {editingSubtaskId === subtask.id ? (
+                        <Input
+                          value={editingSubtaskTitle}
+                          onChange={(e) => setEditingSubtaskTitle(e.target.value)}
+                          onBlur={() => handleUpdateSubtask(subtask.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              handleUpdateSubtask(subtask.id);
+                            } else if (e.key === "Escape") {
+                              setEditingSubtaskId(null);
+                            }
+                          }}
+                          autoFocus
+                          className="h-7 text-sm"
+                        />
+                      ) : (
+                        <span
+                          className={cn(
+                            "flex-1 text-sm cursor-pointer",
+                            subtask.completed && "line-through text-muted-foreground"
+                          )}
+                          onClick={() => {
+                            setEditingSubtaskId(subtask.id);
+                            setEditingSubtaskTitle(subtask.title);
+                          }}
+                        >
+                          {subtask.title}
+                        </span>
+                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleDeleteSubtask(subtask.id)}
+                      >
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
