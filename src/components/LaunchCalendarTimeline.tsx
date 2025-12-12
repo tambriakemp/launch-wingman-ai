@@ -1,8 +1,7 @@
-import { useMemo, useState } from "react";
-import { format, parseISO, startOfYear, endOfYear, eachMonthOfInterval, differenceInDays, isWithinInterval, isBefore, isAfter } from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useMemo, useRef } from "react";
+import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, differenceInDays, isBefore, isAfter, addMonths } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface LaunchEvent {
   id: string;
@@ -65,37 +64,60 @@ const phaseConfig: Record<string, { bg: string; border: string; label: string; s
 };
 
 export function LaunchCalendarTimeline({ events }: LaunchCalendarTimelineProps) {
-  // Determine the best year to display based on events
-  const getInitialYear = () => {
-    const now = new Date();
-    if (events.length === 0) return now.getFullYear();
-    
-    // Find the earliest event date
-    const eventDates = events.flatMap(e => [
-      e.prelaunch_start,
-      e.content_creation_start,
-      e.enrollment_opens,
-      e.program_delivery_start,
-    ].filter(Boolean).map(d => parseISO(d!)));
-    
-    if (eventDates.length === 0) return now.getFullYear();
-    
-    const earliestDate = eventDates.reduce((a, b) => a < b ? a : b);
-    return earliestDate.getFullYear();
-  };
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const [year, setYear] = useState(getInitialYear);
-  
-  const yearStart = startOfYear(new Date(year, 0, 1));
-  const yearEnd = endOfYear(new Date(year, 0, 1));
-  const months = eachMonthOfInterval({ start: yearStart, end: yearEnd });
-  const totalDays = differenceInDays(yearEnd, yearStart) + 1;
+  // Collect all dates from events
+  const allDates = useMemo(() => {
+    const dates: Date[] = [];
+    
+    events.forEach(event => {
+      if (event.content_creation_start) dates.push(parseISO(event.content_creation_start));
+      if (event.prelaunch_start) dates.push(parseISO(event.prelaunch_start));
+      if (event.enrollment_opens) dates.push(parseISO(event.enrollment_opens));
+      if (event.enrollment_closes) dates.push(parseISO(event.enrollment_closes));
+      if (event.program_delivery_start) dates.push(parseISO(event.program_delivery_start));
+      if (event.program_delivery_end) dates.push(parseISO(event.program_delivery_end));
+      if (event.rest_period_start) dates.push(parseISO(event.rest_period_start));
+      if (event.rest_period_end) dates.push(parseISO(event.rest_period_end));
+    });
+    
+    return dates;
+  }, [events]);
+
+  // Calculate timeline range based on events
+  const { timelineStart, timelineEnd, months, totalDays } = useMemo(() => {
+    if (allDates.length === 0) {
+      const now = new Date();
+      const start = startOfMonth(now);
+      const end = endOfMonth(addMonths(now, 5));
+      return {
+        timelineStart: start,
+        timelineEnd: end,
+        months: eachMonthOfInterval({ start, end }),
+        totalDays: differenceInDays(end, start) + 1,
+      };
+    }
+    
+    const earliestDate = allDates.reduce((a, b) => (a < b ? a : b));
+    const latestDate = allDates.reduce((a, b) => (a > b ? a : b));
+    
+    // Start from the beginning of the earliest month
+    const start = startOfMonth(earliestDate);
+    // End at the end of the latest month, plus 1 extra month for padding
+    const end = endOfMonth(addMonths(latestDate, 1));
+    
+    return {
+      timelineStart: start,
+      timelineEnd: end,
+      months: eachMonthOfInterval({ start, end }),
+      totalDays: differenceInDays(end, start) + 1,
+    };
+  }, [allDates]);
 
   const timelineBars = useMemo(() => {
     const bars: TimelineBar[] = [];
 
     events.forEach((event) => {
-      // Content Creation phase
       if (event.content_creation_start && event.prelaunch_start) {
         bars.push({
           eventId: event.id,
@@ -107,7 +129,6 @@ export function LaunchCalendarTimeline({ events }: LaunchCalendarTimelineProps) 
         });
       }
 
-      // Prelaunch phase
       if (event.prelaunch_start && event.enrollment_opens) {
         bars.push({
           eventId: event.id,
@@ -119,7 +140,6 @@ export function LaunchCalendarTimeline({ events }: LaunchCalendarTimelineProps) 
         });
       }
 
-      // Enrollment phase
       if (event.enrollment_opens && event.enrollment_closes) {
         bars.push({
           eventId: event.id,
@@ -131,7 +151,6 @@ export function LaunchCalendarTimeline({ events }: LaunchCalendarTimelineProps) 
         });
       }
 
-      // Program Delivery phase
       if (event.program_delivery_start && event.program_delivery_end) {
         bars.push({
           eventId: event.id,
@@ -143,7 +162,6 @@ export function LaunchCalendarTimeline({ events }: LaunchCalendarTimelineProps) 
         });
       }
 
-      // Rest Period phase
       if (event.rest_period_start && event.rest_period_end) {
         bars.push({
           eventId: event.id,
@@ -160,11 +178,10 @@ export function LaunchCalendarTimeline({ events }: LaunchCalendarTimelineProps) 
   }, [events]);
 
   const getBarStyle = (bar: TimelineBar) => {
-    // Clamp dates to the visible year
-    const barStart = isBefore(bar.startDate, yearStart) ? yearStart : bar.startDate;
-    const barEnd = isAfter(bar.endDate, yearEnd) ? yearEnd : bar.endDate;
+    const barStart = isBefore(bar.startDate, timelineStart) ? timelineStart : bar.startDate;
+    const barEnd = isAfter(bar.endDate, timelineEnd) ? timelineEnd : bar.endDate;
     
-    const startOffset = differenceInDays(barStart, yearStart);
+    const startOffset = differenceInDays(barStart, timelineStart);
     const duration = differenceInDays(barEnd, barStart) + 1;
     
     const left = (startOffset / totalDays) * 100;
@@ -174,15 +191,6 @@ export function LaunchCalendarTimeline({ events }: LaunchCalendarTimelineProps) 
       left: `${Math.max(0, left)}%`, 
       width: `${Math.max(0.5, Math.min(width, 100 - left))}%` 
     };
-  };
-
-  const isBarVisibleInYear = (bar: TimelineBar) => {
-    // Check if any part of the bar falls within the current year
-    return (
-      isWithinInterval(bar.startDate, { start: yearStart, end: yearEnd }) ||
-      isWithinInterval(bar.endDate, { start: yearStart, end: yearEnd }) ||
-      (isBefore(bar.startDate, yearStart) && isAfter(bar.endDate, yearEnd))
-    );
   };
 
   // Group bars by event
@@ -199,36 +207,24 @@ export function LaunchCalendarTimeline({ events }: LaunchCalendarTimelineProps) 
     return Object.entries(groups);
   }, [timelineBars]);
 
-  // Filter to only show events that have bars visible in the current year
-  const visibleEventGroups = eventGroups.filter(([, { bars }]) => 
-    bars.some(bar => isBarVisibleInYear(bar))
-  );
+  // Calculate month widths proportionally
+  const getMonthWidth = (month: Date) => {
+    const monthStart = startOfMonth(month);
+    const monthEnd = endOfMonth(month);
+    const days = differenceInDays(monthEnd, monthStart) + 1;
+    return (days / totalDays) * 100;
+  };
+
+  // Minimum width per month in pixels for readability
+  const minMonthWidth = 80;
+  const totalMinWidth = months.length * minMonthWidth;
 
   return (
     <TooltipProvider>
       <div className="space-y-4">
-        {/* Header with Year Navigation */}
+        {/* Header */}
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-foreground">Year at a Glance</h3>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="h-8 w-8"
-              onClick={() => setYear(y => y - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-semibold w-16 text-center">{year}</span>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="h-8 w-8"
-              onClick={() => setYear(y => y + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
 
         {/* Legend */}
@@ -241,86 +237,103 @@ export function LaunchCalendarTimeline({ events }: LaunchCalendarTimelineProps) 
           ))}
         </div>
 
-        {/* Timeline */}
-        <div className="border rounded-lg overflow-hidden bg-card">
-          {/* Month Headers */}
-          <div className="grid grid-cols-12 border-b bg-muted/50">
-            {months.map((month) => (
-              <div
-                key={month.toISOString()}
-                className="px-1 py-2 text-center text-xs font-medium text-muted-foreground border-r last:border-r-0"
-              >
-                {format(month, "MMM")}
-              </div>
-            ))}
-          </div>
-
-          {/* Timeline Rows */}
-          {visibleEventGroups.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">
-              <p className="text-sm">No events scheduled for {year}</p>
-              <p className="text-xs mt-1">Use the arrows to navigate to a different year</p>
-            </div>
-          ) : (
-            <div className="divide-y">
-              {visibleEventGroups.map(([eventId, { title, bars }]) => (
-                <div key={eventId} className="relative">
-                  {/* Event Title */}
-                  <div className="px-3 py-2 text-sm font-medium text-foreground bg-muted/20 border-b">
-                    {title}
+        {/* Scrollable Timeline */}
+        <ScrollArea className="w-full" ref={scrollRef}>
+          <div 
+            className="border rounded-lg overflow-hidden bg-card"
+            style={{ minWidth: `${totalMinWidth}px` }}
+          >
+            {/* Month Headers */}
+            <div className="flex border-b bg-muted/50">
+              {months.map((month, index) => {
+                const isNewYear = index === 0 || month.getMonth() === 0;
+                return (
+                  <div
+                    key={month.toISOString()}
+                    className="flex-shrink-0 px-1 py-2 text-center text-xs font-medium text-muted-foreground border-r last:border-r-0"
+                    style={{ width: `${getMonthWidth(month)}%`, minWidth: `${minMonthWidth}px` }}
+                  >
+                    {format(month, "MMM")}
+                    {isNewYear && (
+                      <span className="ml-1 text-foreground font-semibold">
+                        {format(month, "yyyy")}
+                      </span>
+                    )}
                   </div>
-                  
-                  {/* Timeline Row */}
-                  <div className="relative h-10 bg-card">
-                    {/* Month Grid Lines */}
-                    <div className="absolute inset-0 grid grid-cols-12 pointer-events-none">
-                      {months.map((month, i) => (
-                        <div
-                          key={month.toISOString()}
-                          className={`border-r border-border/30 ${i % 2 === 0 ? 'bg-muted/10' : ''}`}
-                        />
-                      ))}
+                );
+              })}
+            </div>
+
+            {/* Timeline Rows */}
+            {eventGroups.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground">
+                <p className="text-sm">No events scheduled</p>
+                <p className="text-xs mt-1">Add an event to see it on the timeline</p>
+              </div>
+            ) : (
+              <div className="divide-y">
+                {eventGroups.map(([eventId, { title, bars }]) => (
+                  <div key={eventId} className="relative">
+                    {/* Event Title */}
+                    <div className="px-3 py-2 text-sm font-medium text-foreground bg-muted/20 border-b sticky left-0">
+                      {title}
                     </div>
                     
-                    {/* Phase Bars */}
-                    <div className="absolute inset-0 py-1.5 px-0.5">
-                      {bars.filter(isBarVisibleInYear).map((bar, index) => {
-                        const style = getBarStyle(bar);
-                        const config = phaseConfig[bar.color];
-                        
-                        return (
-                          <Tooltip key={`${bar.eventId}-${bar.phase}-${index}`}>
-                            <TooltipTrigger asChild>
-                              <div
-                                className={`absolute h-7 rounded-sm ${config.bg} opacity-90 hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center overflow-hidden shadow-sm`}
-                                style={{
-                                  left: style.left,
-                                  width: style.width,
-                                }}
-                              >
-                                <span className="text-[10px] font-medium text-white truncate px-1">
-                                  {parseFloat(style.width) > 6 ? config.shortLabel : ''}
-                                </span>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <div className="text-xs">
-                                <p className="font-medium">{config.label}</p>
-                                <p className="text-muted-foreground">
-                                  {format(bar.startDate, "MMM d, yyyy")} - {format(bar.endDate, "MMM d, yyyy")}
-                                </p>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        );
-                      })}
+                    {/* Timeline Row */}
+                    <div className="relative h-10 bg-card">
+                      {/* Month Grid Lines */}
+                      <div className="absolute inset-0 flex pointer-events-none">
+                        {months.map((month, i) => (
+                          <div
+                            key={month.toISOString()}
+                            className={`flex-shrink-0 border-r border-border/30 ${i % 2 === 0 ? 'bg-muted/10' : ''}`}
+                            style={{ width: `${getMonthWidth(month)}%`, minWidth: `${minMonthWidth}px` }}
+                          />
+                        ))}
+                      </div>
+                      
+                      {/* Phase Bars */}
+                      <div className="absolute inset-0 py-1.5">
+                        {bars.map((bar, index) => {
+                          const style = getBarStyle(bar);
+                          const config = phaseConfig[bar.color];
+                          const widthNum = parseFloat(style.width);
+                          
+                          return (
+                            <Tooltip key={`${bar.eventId}-${bar.phase}-${index}`}>
+                              <TooltipTrigger asChild>
+                                <div
+                                  className={`absolute h-7 rounded-sm ${config.bg} opacity-90 hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center overflow-hidden shadow-sm`}
+                                  style={{
+                                    left: style.left,
+                                    width: style.width,
+                                  }}
+                                >
+                                  <span className="text-[10px] font-medium text-white truncate px-1">
+                                    {widthNum > 4 ? config.shortLabel : ''}
+                                  </span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <div className="text-xs">
+                                  <p className="font-medium">{config.label}</p>
+                                  <p className="text-muted-foreground">
+                                    {format(bar.startDate, "MMM d, yyyy")} - {format(bar.endDate, "MMM d, yyyy")}
+                                  </p>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       </div>
     </TooltipProvider>
   );
