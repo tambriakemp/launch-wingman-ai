@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { TransformationBuilder } from "@/components/TransformationBuilder";
 import { LaunchCalendarEventDialog } from "@/components/LaunchCalendarEventDialog";
 import { LaunchCalendarTimeline } from "@/components/LaunchCalendarTimeline";
+import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 
 interface LaunchEvent {
   id: string;
@@ -46,6 +47,8 @@ interface LaunchEvent {
   program_delivery_end: string | null;
   rest_period_start: string | null;
   rest_period_end: string | null;
+  program_weeks?: number | null;
+  rest_weeks?: number | null;
 }
 
 interface Project {
@@ -68,13 +71,20 @@ const ProjectDetail = () => {
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [launchEvents, setLaunchEvents] = useState<LaunchEvent[]>([]);
+  
+  // Edit and delete state
+  const [editingEvent, setEditingEvent] = useState<LaunchEvent | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<LaunchEvent | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchLaunchEvents = useCallback(async () => {
     if (!id) return;
     
     const { data, error } = await supabase
       .from("launch_events")
-      .select("id, title, event_type, content_creation_start, prelaunch_start, enrollment_opens, enrollment_closes, program_delivery_start, program_delivery_end, rest_period_start, rest_period_end")
+      .select("id, title, event_type, content_creation_start, prelaunch_start, enrollment_opens, enrollment_closes, program_delivery_start, program_delivery_end, rest_period_start, rest_period_end, program_weeks, rest_weeks")
       .eq("project_id", id)
       .order("prelaunch_start", { ascending: true });
     
@@ -116,11 +126,25 @@ const ProjectDetail = () => {
     setProject((prev) => prev ? { ...prev, transformation_statement: statement } : null);
   };
 
-  const handleDeleteEvent = async (eventId: string) => {
+  const handleEditEvent = (event: LaunchEvent) => {
+    setEditingEvent(event);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (event: LaunchEvent) => {
+    setEventToDelete(event);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!eventToDelete) return;
+    
+    setIsDeleting(true);
+    
     const { error } = await supabase
       .from("launch_events")
       .delete()
-      .eq("id", eventId);
+      .eq("id", eventToDelete.id);
 
     if (error) {
       toast.error("Failed to delete event");
@@ -129,6 +153,10 @@ const ProjectDetail = () => {
       toast.success("Event deleted");
       fetchLaunchEvents();
     }
+    
+    setIsDeleting(false);
+    setDeleteDialogOpen(false);
+    setEventToDelete(null);
   };
 
   if (isLoading) {
@@ -304,13 +332,13 @@ const ProjectDetail = () => {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEditEvent(event)}>
                                     <Pencil className="w-4 h-4 mr-2" />
                                     Edit
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     className="text-destructive"
-                                    onClick={() => handleDeleteEvent(event.id)}
+                                    onClick={() => handleDeleteClick(event)}
                                   >
                                     <Trash2 className="w-4 h-4 mr-2" />
                                     Delete
@@ -448,6 +476,30 @@ const ProjectDetail = () => {
           </Tabs>
         </motion.div>
       </div>
+
+      {/* Edit Event Dialog */}
+      {editingEvent && (
+        <LaunchCalendarEventDialog
+          projectId={project.id}
+          editEvent={editingEvent}
+          open={editDialogOpen}
+          onOpenChange={(open) => {
+            setEditDialogOpen(open);
+            if (!open) setEditingEvent(null);
+          }}
+          onEventAdded={fetchLaunchEvents}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        title="Delete Launch Event"
+        description={`Are you sure you want to delete "${eventToDelete?.title}"? This action cannot be undone.`}
+        isDeleting={isDeleting}
+      />
     </DashboardLayout>
   );
 };

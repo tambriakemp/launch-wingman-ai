@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { format, addWeeks, subWeeks } from "date-fns";
+import { format, addWeeks, subWeeks, parseISO } from "date-fns";
 import { CalendarIcon, Plus, Rocket, Clock, Coffee, Package, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -29,10 +29,29 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
+interface LaunchEvent {
+  id: string;
+  title: string;
+  event_type: string;
+  content_creation_start: string | null;
+  prelaunch_start: string | null;
+  enrollment_opens: string | null;
+  enrollment_closes: string | null;
+  program_delivery_start: string | null;
+  program_delivery_end: string | null;
+  rest_period_start: string | null;
+  rest_period_end: string | null;
+  program_weeks?: number | null;
+  rest_weeks?: number | null;
+}
+
 interface LaunchCalendarEventDialogProps {
   projectId: string;
   onEventAdded?: () => void;
   trigger?: React.ReactNode;
+  editEvent?: LaunchEvent;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 interface LaunchDates {
@@ -48,15 +67,25 @@ interface LaunchDates {
 
 const DEFAULT_PROGRAM_WEEKS = 8;
 const DEFAULT_REST_WEEKS = 2;
-const PRELAUNCH_WEEKS = 7; // 6-8 weeks, using 7 as middle
+const PRELAUNCH_WEEKS = 7;
 const CONTENT_CREATION_WEEKS = 2;
 
 export function LaunchCalendarEventDialog({ 
   projectId, 
   onEventAdded, 
-  trigger 
+  trigger,
+  editEvent,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: LaunchCalendarEventDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (controlledOnOpenChange || (() => {})) : setInternalOpen;
+  
+  const isEditMode = !!editEvent;
+  
   const [title, setTitle] = useState("");
   const [eventType, setEventType] = useState<"launch" | "prelaunch">("launch");
   const [showDates, setShowDates] = useState(false);
@@ -74,6 +103,49 @@ export function LaunchCalendarEventDialog({
     restPeriodStart: undefined,
     restPeriodEnd: undefined,
   });
+
+  useEffect(() => {
+    if (editEvent && open) {
+      setTitle(editEvent.title);
+      setEventType(editEvent.event_type as "launch" | "prelaunch");
+      setProgramWeeks(editEvent.program_weeks || DEFAULT_PROGRAM_WEEKS);
+      setRestWeeks(editEvent.rest_weeks || DEFAULT_REST_WEEKS);
+      
+      const parsedDates: LaunchDates = {
+        prelaunchStart: editEvent.prelaunch_start ? parseISO(editEvent.prelaunch_start) : undefined,
+        contentCreationStart: editEvent.content_creation_start ? parseISO(editEvent.content_creation_start) : undefined,
+        enrollmentOpens: editEvent.enrollment_opens ? parseISO(editEvent.enrollment_opens) : undefined,
+        enrollmentCloses: editEvent.enrollment_closes ? parseISO(editEvent.enrollment_closes) : undefined,
+        programDeliveryStart: editEvent.program_delivery_start ? parseISO(editEvent.program_delivery_start) : undefined,
+        programDeliveryEnd: editEvent.program_delivery_end ? parseISO(editEvent.program_delivery_end) : undefined,
+        restPeriodStart: editEvent.rest_period_start ? parseISO(editEvent.rest_period_start) : undefined,
+        restPeriodEnd: editEvent.rest_period_end ? parseISO(editEvent.rest_period_end) : undefined,
+      };
+      
+      setDates(parsedDates);
+      setShowDates(!!parsedDates.prelaunchStart);
+    }
+  }, [editEvent, open]);
+
+  useEffect(() => {
+    if (!open && !isEditMode) {
+      setTitle("");
+      setEventType("launch");
+      setDates({
+        prelaunchStart: undefined,
+        contentCreationStart: undefined,
+        enrollmentOpens: undefined,
+        enrollmentCloses: undefined,
+        programDeliveryStart: undefined,
+        programDeliveryEnd: undefined,
+        restPeriodStart: undefined,
+        restPeriodEnd: undefined,
+      });
+      setProgramWeeks(DEFAULT_PROGRAM_WEEKS);
+      setRestWeeks(DEFAULT_REST_WEEKS);
+      setShowDates(false);
+    }
+  }, [open, isEditMode]);
 
   const calculateDatesFromPrelaunch = (prelaunch: Date, weeks: number, rest: number) => {
     const contentCreation = subWeeks(prelaunch, CONTENT_CREATION_WEEKS);
@@ -95,9 +167,8 @@ export function LaunchCalendarEventDialog({
     };
   };
 
-  // Calculate suggested dates when prelaunch start date changes
   useEffect(() => {
-    if (dates.prelaunchStart) {
+    if (dates.prelaunchStart && !isEditMode) {
       const calculatedDates = calculateDatesFromPrelaunch(dates.prelaunchStart, programWeeks, restWeeks);
       
       setDates(prev => ({
@@ -113,7 +184,7 @@ export function LaunchCalendarEventDialog({
       
       setShowDates(true);
     }
-  }, [dates.prelaunchStart]);
+  }, [dates.prelaunchStart, isEditMode]);
 
   const updateDate = (key: keyof LaunchDates, date: Date | undefined) => {
     setDates(prev => ({ ...prev, [key]: date }));
@@ -122,7 +193,6 @@ export function LaunchCalendarEventDialog({
   const recalculateDates = () => {
     if (dates.prelaunchStart) {
       const calculatedDates = calculateDatesFromPrelaunch(dates.prelaunchStart, programWeeks, restWeeks);
-      
       setDates({
         prelaunchStart: dates.prelaunchStart,
         ...calculatedDates,
@@ -147,13 +217,11 @@ export function LaunchCalendarEventDialog({
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        toast.error("You must be logged in to add events");
+        toast.error("You must be logged in to save events");
         return;
       }
 
-      const { error } = await supabase.from("launch_events").insert({
-        project_id: projectId,
-        user_id: user.id,
+      const eventData = {
         title: title.trim(),
         event_type: eventType,
         prelaunch_start: dates.prelaunchStart?.toISOString().split('T')[0],
@@ -166,34 +234,38 @@ export function LaunchCalendarEventDialog({
         rest_period_end: dates.restPeriodEnd?.toISOString().split('T')[0],
         program_weeks: programWeeks,
         rest_weeks: restWeeks,
-      });
+      };
 
-      if (error) {
-        console.error("Error saving launch event:", error);
-        toast.error("Failed to save launch event");
-        return;
+      if (isEditMode && editEvent) {
+        const { error } = await supabase
+          .from("launch_events")
+          .update(eventData)
+          .eq("id", editEvent.id);
+
+        if (error) {
+          console.error("Error updating launch event:", error);
+          toast.error("Failed to update launch event");
+          return;
+        }
+
+        toast.success(`"${title}" updated successfully`);
+      } else {
+        const { error } = await supabase.from("launch_events").insert({
+          ...eventData,
+          project_id: projectId,
+          user_id: user.id,
+        });
+
+        if (error) {
+          console.error("Error saving launch event:", error);
+          toast.error("Failed to save launch event");
+          return;
+        }
+
+        toast.success(`${eventType === 'launch' ? 'Launch' : 'Prelaunch'} "${title}" added to calendar`);
       }
-
-      toast.success(`${eventType === 'launch' ? 'Launch' : 'Prelaunch'} "${title}" added to calendar`);
       
-      // Reset form
-      setTitle("");
-      setEventType("launch");
-      setDates({
-        prelaunchStart: undefined,
-        contentCreationStart: undefined,
-        enrollmentOpens: undefined,
-        enrollmentCloses: undefined,
-        programDeliveryStart: undefined,
-        programDeliveryEnd: undefined,
-        restPeriodStart: undefined,
-        restPeriodEnd: undefined,
-      });
-      setProgramWeeks(DEFAULT_PROGRAM_WEEKS);
-      setRestWeeks(DEFAULT_REST_WEEKS);
-      setShowDates(false);
       setOpen(false);
-      
       onEventAdded?.();
     } catch (err) {
       console.error("Error saving launch event:", err);
@@ -256,6 +328,206 @@ export function LaunchCalendarEventDialog({
     </div>
   );
 
+  const dialogContent = (
+    <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>{isEditMode ? "Edit Launch Event" : "Plan Your Launch"}</DialogTitle>
+        <DialogDescription>
+          {isEditMode 
+            ? "Update the details of your launch event."
+            : "Enter your launch title and prelaunch start date. We'll suggest dates for everything else."}
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-6 py-4">
+        <div className="space-y-2">
+          <Label>Event Type</Label>
+          <Select value={eventType} onValueChange={(v) => setEventType(v as "launch" | "prelaunch")}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select event type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="launch">Launch</SelectItem>
+              <SelectItem value="prelaunch">Prelaunch</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="title">Launch Title</Label>
+          <Input
+            id="title"
+            placeholder="e.g., Spring Cohort 2025"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Prelaunch Start Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !dates.prelaunchStart && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dates.prelaunchStart ? format(dates.prelaunchStart, "PPP") : "Pick your prelaunch start date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 z-50" align="start">
+              <Calendar
+                mode="single"
+                selected={dates.prelaunchStart}
+                onSelect={(date) => updateDate("prelaunchStart", date)}
+                defaultMonth={dates.prelaunchStart}
+                initialFocus
+                className="pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+          <p className="text-xs text-muted-foreground">
+            This is when you'll start building relationships and warming up your audience (6-8 weeks before enrollment opens).
+          </p>
+        </div>
+
+        {dates.prelaunchStart && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="programWeeks">Program Length (weeks)</Label>
+              <Input
+                id="programWeeks"
+                type="number"
+                min="1"
+                max="52"
+                value={programWeeks}
+                onChange={(e) => setProgramWeeks(parseInt(e.target.value) || DEFAULT_PROGRAM_WEEKS)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="restWeeks">Rest Period (weeks)</Label>
+              <Input
+                id="restWeeks"
+                type="number"
+                min="1"
+                max="12"
+                value={restWeeks}
+                onChange={(e) => setRestWeeks(parseInt(e.target.value) || DEFAULT_REST_WEEKS)}
+              />
+            </div>
+          </div>
+        )}
+
+        {dates.prelaunchStart && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={recalculateDates}
+            className="w-full"
+            type="button"
+          >
+            Recalculate All Dates
+          </Button>
+        )}
+
+        {showDates && dates.prelaunchStart && (
+          <div className="space-y-4">
+            <span className="text-sm font-semibold">Suggested Timeline</span>
+            <div className="rounded-lg border bg-card">
+              <DatePickerField
+                label="Content Creation Starts"
+                date={dates.contentCreationStart}
+                onChange={(d) => updateDate("contentCreationStart", d)}
+                icon={<Sparkles className="w-4 h-4" />}
+                description="2 weeks before prelaunch"
+              />
+              <DatePickerField
+                label="Prelaunch Starts"
+                date={dates.prelaunchStart}
+                onChange={(d) => updateDate("prelaunchStart", d)}
+                icon={<Rocket className="w-4 h-4" />}
+                description="Your selected start date"
+              />
+              <DatePickerField
+                label="Enrollment Opens"
+                date={dates.enrollmentOpens}
+                onChange={(d) => updateDate("enrollmentOpens", d)}
+                icon={<Rocket className="w-4 h-4" />}
+                description="~7 weeks after prelaunch"
+              />
+              <DatePickerField
+                label="Enrollment Closes"
+                date={dates.enrollmentCloses}
+                onChange={(d) => updateDate("enrollmentCloses", d)}
+                icon={<Clock className="w-4 h-4" />}
+                description="1 week enrollment window"
+              />
+              <DatePickerField
+                label="Program Delivery Starts"
+                date={dates.programDeliveryStart}
+                onChange={(d) => updateDate("programDeliveryStart", d)}
+                icon={<Package className="w-4 h-4" />}
+                description="After enrollment closes"
+              />
+              <DatePickerField
+                label="Program Delivery Ends"
+                date={dates.programDeliveryEnd}
+                onChange={(d) => updateDate("programDeliveryEnd", d)}
+                icon={<Package className="w-4 h-4" />}
+                description={`${programWeeks} week program`}
+              />
+              <DatePickerField
+                label="Rest Period Starts"
+                date={dates.restPeriodStart}
+                onChange={(d) => updateDate("restPeriodStart", d)}
+                icon={<Coffee className="w-4 h-4" />}
+                description="After program ends"
+              />
+              <DatePickerField
+                label="Rest Period Ends"
+                date={dates.restPeriodEnd}
+                onChange={(d) => updateDate("restPeriodEnd", d)}
+                icon={<Coffee className="w-4 h-4" />}
+                description={`${restWeeks} week rest`}
+              />
+            </div>
+
+            <div className="bg-accent/50 rounded-lg p-3 text-sm">
+              <p className="font-medium mb-1">Hot Launch Windows:</p>
+              <ul className="text-muted-foreground space-y-1 text-xs">
+                <li>• <strong>January - February:</strong> New year energy</li>
+                <li>• <strong>September - October:</strong> Back-to-school energy</li>
+              </ul>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Avoid: July-August (summer) and Late Nov-Dec (holidays)
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2 pt-4">
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={!title.trim() || !dates.prelaunchStart || isSaving}>
+            {isSaving ? "Saving..." : isEditMode ? "Save Changes" : `Add ${eventType === 'launch' ? 'Launch' : 'Prelaunch'}`}
+          </Button>
+        </div>
+      </div>
+    </DialogContent>
+  );
+
+  if (isControlled) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        {dialogContent}
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -266,218 +538,7 @@ export function LaunchCalendarEventDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Plan Your Launch</DialogTitle>
-          <DialogDescription>
-            Enter your launch title and prelaunch start date. We'll suggest dates for everything else.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6 py-4">
-          {/* Event Type */}
-          <div className="space-y-2">
-            <Label>Event Type</Label>
-            <Select value={eventType} onValueChange={(v) => setEventType(v as "launch" | "prelaunch")}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select event type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="launch">Launch</SelectItem>
-                <SelectItem value="prelaunch">Prelaunch</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Launch Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title">Launch Title</Label>
-            <Input
-              id="title"
-              placeholder="e.g., Spring Cohort 2025"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-
-          {/* Prelaunch Start Date */}
-          <div className="space-y-2">
-            <Label>Prelaunch Start Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !dates.prelaunchStart && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dates.prelaunchStart ? format(dates.prelaunchStart, "PPP") : "Pick your prelaunch start date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 z-50" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dates.prelaunchStart}
-                  onSelect={(date) => updateDate("prelaunchStart", date)}
-                  defaultMonth={dates.prelaunchStart}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-            <p className="text-xs text-muted-foreground">
-              This is when you'll start building relationships and warming up your audience (6-8 weeks before enrollment opens).
-            </p>
-          </div>
-
-          {/* Program & Rest Duration */}
-          {dates.prelaunchStart && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="programWeeks">Program Length (weeks)</Label>
-                <Input
-                  id="programWeeks"
-                  type="number"
-                  min="1"
-                  max="52"
-                  value={programWeeks}
-                  onChange={(e) => {
-                    setProgramWeeks(parseInt(e.target.value) || DEFAULT_PROGRAM_WEEKS);
-                  }}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="restWeeks">Rest Period (weeks)</Label>
-                <Input
-                  id="restWeeks"
-                  type="number"
-                  min="1"
-                  max="12"
-                  value={restWeeks}
-                  onChange={(e) => {
-                    setRestWeeks(parseInt(e.target.value) || DEFAULT_REST_WEEKS);
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Recalculate button */}
-          {dates.prelaunchStart && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={recalculateDates}
-              className="w-full"
-              type="button"
-            >
-              Recalculate All Dates
-            </Button>
-          )}
-
-          {/* Suggested Dates Section - Always expanded */}
-          {showDates && dates.prelaunchStart && (
-            <div className="space-y-4">
-              <span className="text-sm font-semibold">Suggested Timeline</span>
-              <div className="rounded-lg border bg-card">
-                {/* Content Creation */}
-                <DatePickerField
-                  label="Content Creation Starts"
-                  date={dates.contentCreationStart}
-                  onChange={(d) => updateDate("contentCreationStart", d)}
-                  icon={<Sparkles className="w-4 h-4" />}
-                  description="2 weeks before prelaunch"
-                />
-
-                {/* Prelaunch */}
-                <DatePickerField
-                  label="Prelaunch Starts"
-                  date={dates.prelaunchStart}
-                  onChange={(d) => updateDate("prelaunchStart", d)}
-                  icon={<Rocket className="w-4 h-4" />}
-                  description="Your selected start date"
-                />
-
-                {/* Enrollment Opens */}
-                <DatePickerField
-                  label="Enrollment Opens"
-                  date={dates.enrollmentOpens}
-                  onChange={(d) => updateDate("enrollmentOpens", d)}
-                  icon={<Rocket className="w-4 h-4" />}
-                  description="~7 weeks after prelaunch"
-                />
-
-                {/* Enrollment Closes */}
-                <DatePickerField
-                  label="Enrollment Closes"
-                  date={dates.enrollmentCloses}
-                  onChange={(d) => updateDate("enrollmentCloses", d)}
-                  icon={<Clock className="w-4 h-4" />}
-                  description="1 week enrollment window"
-                />
-
-                {/* Program Delivery */}
-                <DatePickerField
-                  label="Program Delivery Starts"
-                  date={dates.programDeliveryStart}
-                  onChange={(d) => updateDate("programDeliveryStart", d)}
-                  icon={<Package className="w-4 h-4" />}
-                  description="After enrollment closes"
-                />
-
-                <DatePickerField
-                  label="Program Delivery Ends"
-                  date={dates.programDeliveryEnd}
-                  onChange={(d) => updateDate("programDeliveryEnd", d)}
-                  icon={<Package className="w-4 h-4" />}
-                  description={`${programWeeks} week program`}
-                />
-
-                {/* Rest Period */}
-                <DatePickerField
-                  label="Rest Period Starts"
-                  date={dates.restPeriodStart}
-                  onChange={(d) => updateDate("restPeriodStart", d)}
-                  icon={<Coffee className="w-4 h-4" />}
-                  description="After program ends"
-                />
-
-                <DatePickerField
-                  label="Rest Period Ends"
-                  date={dates.restPeriodEnd}
-                  onChange={(d) => updateDate("restPeriodEnd", d)}
-                  icon={<Coffee className="w-4 h-4" />}
-                  description={`${restWeeks} week rest`}
-                />
-              </div>
-
-              {/* Tips */}
-              <div className="bg-accent/50 rounded-lg p-3 text-sm">
-                <p className="font-medium mb-1">Hot Launch Windows:</p>
-                <ul className="text-muted-foreground space-y-1 text-xs">
-                  <li>• <strong>January - February:</strong> New year energy</li>
-                  <li>• <strong>September - October:</strong> Back-to-school energy</li>
-                </ul>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Avoid: July-August (summer) and Late Nov-Dec (holidays)
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Save Button */}
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={!title.trim() || !dates.prelaunchStart || isSaving}>
-              {isSaving ? "Saving..." : `Add ${eventType === 'launch' ? 'Launch' : 'Prelaunch'}`}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
+      {dialogContent}
     </Dialog>
   );
 }
