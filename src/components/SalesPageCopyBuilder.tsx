@@ -85,6 +85,11 @@ interface BenefitsSectionData {
   savedBenefits?: Benefit[];
 }
 
+interface FAQ {
+  question: string;
+  answer: string;
+}
+
 interface OfferDetailsSectionData {
   introduction: string;
   introductions?: string[];
@@ -101,7 +106,9 @@ interface TestimonialsSectionData {
 }
 
 interface FAQsSectionData {
-  faqs: { question: string; answer: string }[];
+  faqs: FAQ[];
+  generatedFaqs?: FAQ[];
+  savedFaqs?: FAQ[];
 }
 
 interface CustomSection {
@@ -112,13 +119,13 @@ interface CustomSection {
 
 interface SalesPageCopySections {
   hero?: HeroSectionData;
-  heroManual?: string;
+  heroManual?: { headlines?: string; subheadline?: string; cta?: string };
   whyDifferent?: WhyDifferentData;
-  whyDifferentManual?: string;
+  whyDifferentManual?: { openingParagraph?: string; comparisonBullets?: string; bridgeSentence?: string };
   benefits?: BenefitsSectionData;
   benefitsManual?: string;
   offerDetails?: OfferDetailsSectionData;
-  offerDetailsManual?: string;
+  offerDetailsManual?: { introduction?: string; modules?: string; bonuses?: string; guarantee?: string };
   testimonials?: TestimonialsSectionData;
   testimonialsManual?: string;
   faqs?: FAQsSectionData;
@@ -183,13 +190,22 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   const [selectedHeroPart, setSelectedHeroPart] = useState("headlines");
   const [selectedWhyDifferentPart, setSelectedWhyDifferentPart] = useState("openingParagraph");
   const [selectedOfferDetailsPart, setSelectedOfferDetailsPart] = useState("introduction");
-  const [selectedTestimonialsPart, setSelectedTestimonialsPart] = useState("all");
-  const [selectedFaqsPart, setSelectedFaqsPart] = useState("all");
   
   // Benefits specific state
   const [benefitsCount, setBenefitsCount] = useState(4);
   const [generatedBenefits, setGeneratedBenefits] = useState<Benefit[]>([]);
   const [savedBenefits, setSavedBenefits] = useState<Benefit[]>([]);
+  const [showAddBenefitForm, setShowAddBenefitForm] = useState(false);
+  const [newBenefitTitle, setNewBenefitTitle] = useState("");
+  const [newBenefitDescription, setNewBenefitDescription] = useState("");
+  
+  // FAQs specific state (like benefits)
+  const [faqsCount, setFaqsCount] = useState(5);
+  const [generatedFaqs, setGeneratedFaqs] = useState<FAQ[]>([]);
+  const [savedFaqs, setSavedFaqs] = useState<FAQ[]>([]);
+  const [showAddFaqForm, setShowAddFaqForm] = useState(false);
+  const [newFaqQuestion, setNewFaqQuestion] = useState("");
+  const [newFaqAnswer, setNewFaqAnswer] = useState("");
   
   // Context inputs for "Why Different" section
   const [contextMode, setContextMode] = useState<"infer" | "provide">("infer");
@@ -254,7 +270,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales-page-copy", projectId] });
       toast.success("Sales page copy saved");
-      resetForm();
+      setEditingSection(null);
     },
     onError: () => toast.error("Failed to save sales page copy"),
   });
@@ -274,7 +290,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales-page-copy", projectId] });
       toast.success("Sales page copy updated");
-      resetForm();
+      setEditingSection(null);
     },
     onError: () => toast.error("Failed to update sales page copy"),
   });
@@ -307,6 +323,9 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     setGeneratedBenefits([]);
     setSavedBenefits([]);
     setBenefitsCount(4);
+    setGeneratedFaqs([]);
+    setSavedFaqs([]);
+    setFaqsCount(5);
   };
 
   const handleAdd = () => {
@@ -317,6 +336,8 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     setSectionOrder(DEFAULT_SECTIONS.map(s => s.id));
     setGeneratedBenefits([]);
     setSavedBenefits([]);
+    setGeneratedFaqs([]);
+    setSavedFaqs([]);
     setIsAddMode(true);
   };
 
@@ -330,6 +351,12 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       setSavedBenefits(item.sections.benefits.savedBenefits);
     } else if (item.sections.benefits?.benefits) {
       setSavedBenefits(item.sections.benefits.benefits);
+    }
+    // Restore saved FAQs from sections
+    if (item.sections.faqs?.savedFaqs) {
+      setSavedFaqs(item.sections.faqs.savedFaqs);
+    } else if (item.sections.faqs?.faqs) {
+      setSavedFaqs(item.sections.faqs.faqs);
     }
     setIsAddMode(true);
   };
@@ -382,6 +409,19 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       setSections(updatedSections);
     }
     
+    // Include saved FAQs in sections for faqs section
+    if (sectionId === "faqs" && savedFaqs.length > 0) {
+      updatedSections = {
+        ...updatedSections,
+        faqs: {
+          ...updatedSections.faqs,
+          faqs: savedFaqs,
+          savedFaqs: savedFaqs,
+        }
+      };
+      setSections(updatedSections);
+    }
+    
     const sectionsWithOrder = { ...updatedSections, sectionOrder };
     
     if (!selectedDeliverable) {
@@ -412,7 +452,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       }
     }
     
-    setEditingSection(null);
     toast.success(`${getAllSections().find(s => s.id === sectionId)?.label} saved`);
   };
 
@@ -496,6 +535,83 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     }));
   };
 
+  // Add a manual benefit
+  const addManualBenefit = () => {
+    if (!newBenefitTitle.trim() || !newBenefitDescription.trim()) {
+      toast.error("Please enter both title and description");
+      return;
+    }
+    const newBenefit: Benefit = { title: newBenefitTitle.trim(), description: newBenefitDescription.trim() };
+    const newSavedBenefits = [...savedBenefits, newBenefit];
+    setSavedBenefits(newSavedBenefits);
+    setSections(prev => ({
+      ...prev,
+      benefits: {
+        ...prev.benefits,
+        benefits: newSavedBenefits,
+        savedBenefits: newSavedBenefits,
+      }
+    }));
+    setNewBenefitTitle("");
+    setNewBenefitDescription("");
+    setShowAddBenefitForm(false);
+    toast.success("Benefit added");
+  };
+
+  // Save a FAQ from generated list
+  const saveFaq = (faq: FAQ) => {
+    if (!savedFaqs.find(f => f.question === faq.question)) {
+      const newSavedFaqs = [...savedFaqs, faq];
+      setSavedFaqs(newSavedFaqs);
+      setSections(prev => ({
+        ...prev,
+        faqs: {
+          ...prev.faqs,
+          faqs: newSavedFaqs,
+          savedFaqs: newSavedFaqs,
+        }
+      }));
+      toast.success("FAQ saved");
+    }
+  };
+
+  // Remove a saved FAQ
+  const removeSavedFaq = (index: number) => {
+    const newSavedFaqs = savedFaqs.filter((_, i) => i !== index);
+    setSavedFaqs(newSavedFaqs);
+    setSections(prev => ({
+      ...prev,
+      faqs: {
+        ...prev.faqs,
+        faqs: newSavedFaqs,
+        savedFaqs: newSavedFaqs,
+      }
+    }));
+  };
+
+  // Add a manual FAQ
+  const addManualFaq = () => {
+    if (!newFaqQuestion.trim() || !newFaqAnswer.trim()) {
+      toast.error("Please enter both question and answer");
+      return;
+    }
+    const newFaq: FAQ = { question: newFaqQuestion.trim(), answer: newFaqAnswer.trim() };
+    const newSavedFaqs = [...savedFaqs, newFaq];
+    setSavedFaqs(newSavedFaqs);
+    setSections(prev => ({
+      ...prev,
+      faqs: {
+        ...prev.faqs,
+        faqs: newSavedFaqs,
+        savedFaqs: newSavedFaqs,
+      }
+    }));
+    setNewFaqQuestion("");
+    setNewFaqAnswer("");
+    setShowAddFaqForm(false);
+    toast.success("FAQ added");
+  };
+
   // Generate AI copy for a section
   const generateSectionCopy = async (sectionType: string) => {
     if (!offer) {
@@ -533,6 +649,10 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
         payload.count = benefitsCount;
       }
 
+      if (sectionType === "faqs") {
+        payload.count = faqsCount;
+      }
+
       const { data, error } = await supabase.functions.invoke("generate-sales-copy", {
         body: payload,
       });
@@ -547,10 +667,10 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             headlines: data.headlines,
             recommendedHeadline: data.recommendedHeadline,
             selectedHeadline: data.recommendedHeadline,
-            subheadline: data.subheadline,
+            subheadline: data.subheadlines?.[0] || data.subheadline,
             subheadlines: data.subheadlines || [data.subheadline],
             selectedSubheadline: 0,
-            cta: data.cta,
+            cta: data.ctas?.[0] || data.cta,
             ctas: data.ctas || [data.cta],
             selectedCta: 0,
           },
@@ -559,11 +679,11 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
         setSections(prev => ({
           ...prev,
           whyDifferent: {
-            openingParagraph: data.openingParagraph,
+            openingParagraph: data.openingParagraphs?.[0] || data.openingParagraph,
             openingParagraphs: data.openingParagraphs || [data.openingParagraph],
             selectedOpeningParagraph: 0,
             comparisonBullets: data.comparisonBullets,
-            bridgeSentence: data.bridgeSentence,
+            bridgeSentence: data.bridgeSentences?.[0] || data.bridgeSentence,
             bridgeSentences: data.bridgeSentences || [data.bridgeSentence],
             selectedBridgeSentence: 0,
           },
@@ -575,12 +695,12 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
         setSections(prev => ({
           ...prev,
           offerDetails: {
-            introduction: data.introduction,
+            introduction: data.introductions?.[0] || data.introduction,
             introductions: data.introductions || [data.introduction],
             selectedIntroduction: 0,
             modules: data.modules,
             bonuses: data.bonuses,
-            guarantee: data.guarantee,
+            guarantee: data.guarantees?.[0] || data.guarantee,
             guarantees: data.guarantees || [data.guarantee],
             selectedGuarantee: 0,
           },
@@ -591,10 +711,8 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           testimonials: { testimonials: data.testimonials },
         }));
       } else if (sectionType === "faqs") {
-        setSections(prev => ({
-          ...prev,
-          faqs: { faqs: data.faqs },
-        }));
+        // Store generated FAQs separately for selection (like benefits)
+        setGeneratedFaqs(data.faqs);
       }
 
       setHasGenerated(prev => ({ ...prev, [sectionType]: true }));
@@ -622,9 +740,13 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       return savedBenefits.length > 0 || (sections.benefits?.benefits?.length || 0) > 0;
     }
     
+    if (sectionId === "faqs") {
+      return savedFaqs.length > 0 || (sections.faqs?.faqs?.length || 0) > 0;
+    }
+    
     const aiData = sections[sectionId as keyof SalesPageCopySections];
     const manualData = sections[`${sectionId}Manual` as keyof SalesPageCopySections];
-    return !!(aiData || (typeof manualData === "string" && manualData.trim()));
+    return !!(aiData || (typeof manualData === "object" && manualData !== null) || (typeof manualData === "string" && manualData.trim()));
   };
 
   // Check if section is AI mode
@@ -653,13 +775,15 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     if (sectionId === "testimonials" && sections.testimonials?.testimonials) {
       return `${sections.testimonials.testimonials.length} testimonials`;
     }
-    if (sectionId === "faqs" && sections.faqs?.faqs) {
-      return `${sections.faqs.faqs.length} FAQs`;
+    if (sectionId === "faqs") {
+      const count = savedFaqs.length || sections.faqs?.faqs?.length || 0;
+      return count > 0 ? `${count} FAQs` : "";
     }
     
     const manualKey = `${sectionId}Manual` as keyof SalesPageCopySections;
-    if (typeof sections[manualKey] === "string") {
-      return (sections[manualKey] as string).slice(0, 50) + "...";
+    const manualData = sections[manualKey];
+    if (typeof manualData === "string") {
+      return manualData.slice(0, 50) + "...";
     }
     
     if (sectionId.startsWith("custom_")) {
@@ -772,6 +896,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
     const mode = getSectionMode(editingSection);
     const isCustom = editingSection.startsWith("custom_");
+    const isBenefitsOrFaqs = editingSection === "benefits" || editingSection === "faqs";
 
     return (
       <div className="h-full flex flex-col">
@@ -825,7 +950,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
               {renderSectionEditorContent(editingSection, mode, isCustom)}
 
-              {!isCustom && mode === "ai" && section.aiEnabled && editingSection !== "benefits" && (
+              {!isCustom && mode === "ai" && section.aiEnabled && !isBenefitsOrFaqs && (
                 <Button
                   onClick={() => generateSectionCopy(editingSection)}
                   disabled={isGenerating[editingSection] || !offer}
@@ -889,18 +1014,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     }
 
     if (mode === "manual") {
-      const manualKey = `${sectionId}Manual` as keyof SalesPageCopySections;
-      return (
-        <div className="space-y-3">
-          <Label className="text-sm font-medium">Section Content</Label>
-          <Textarea
-            placeholder={`Write your ${getAllSections().find(s => s.id === sectionId)?.label.toLowerCase()} content...`}
-            value={(sections[manualKey] as string) || ""}
-            onChange={(e) => setSections(prev => ({ ...prev, [manualKey]: e.target.value }))}
-            rows={10}
-          />
-        </div>
-      );
+      return renderManualModeContent(sectionId);
     }
 
     switch (sectionId) {
@@ -921,14 +1035,423 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     }
   };
 
-  // Hero Editor Inputs - Simplified with just part selector and generate button
+  // Manual mode content with part selectors
+  const renderManualModeContent = (sectionId: string) => {
+    switch (sectionId) {
+      case "hero":
+        return renderHeroManualInputs();
+      case "whyDifferent":
+        return renderWhyDifferentManualInputs();
+      case "benefits":
+        return renderBenefitsManualInputs();
+      case "offerDetails":
+        return renderOfferDetailsManualInputs();
+      case "testimonials":
+        return (
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Testimonials</Label>
+            <Textarea
+              placeholder="Enter your testimonials..."
+              value={(sections.testimonialsManual as string) || ""}
+              onChange={(e) => setSections(prev => ({ ...prev, testimonialsManual: e.target.value }))}
+              rows={10}
+            />
+          </div>
+        );
+      case "faqs":
+        return renderFaqsManualInputs();
+      default:
+        return null;
+    }
+  };
+
+  // Hero Manual Inputs with part selector
+  const renderHeroManualInputs = () => {
+    const manualData = (sections.heroManual as { headlines?: string; subheadline?: string; cta?: string }) || {};
+    const parts = [
+      { id: "headlines", label: "Headlines" },
+      { id: "subheadline", label: "Subheadline" },
+      { id: "cta", label: "CTA Button" },
+    ];
+
+    return (
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+            Select Part to Edit
+          </p>
+          {parts.map((part) => (
+            <button
+              key={part.id}
+              onClick={() => setSelectedHeroPart(part.id)}
+              className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left text-sm transition-all ${
+                selectedHeroPart === part.id
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "hover:bg-accent text-foreground"
+              }`}
+            >
+              <span>{part.label}</span>
+              {manualData[part.id as keyof typeof manualData] && <Check className="w-3.5 h-3.5 text-green-500" />}
+            </button>
+          ))}
+        </div>
+
+        <div className="pt-4 border-t space-y-3">
+          {selectedHeroPart === "headlines" && (
+            <>
+              <Label className="text-sm font-medium">Headline</Label>
+              <Textarea
+                placeholder="Enter your headline..."
+                value={manualData.headlines || ""}
+                onChange={(e) => setSections(prev => ({ ...prev, heroManual: { ...manualData, headlines: e.target.value } }))}
+                rows={3}
+              />
+            </>
+          )}
+          {selectedHeroPart === "subheadline" && (
+            <>
+              <Label className="text-sm font-medium">Subheadline</Label>
+              <Textarea
+                placeholder="Enter your subheadline..."
+                value={manualData.subheadline || ""}
+                onChange={(e) => setSections(prev => ({ ...prev, heroManual: { ...manualData, subheadline: e.target.value } }))}
+                rows={3}
+              />
+            </>
+          )}
+          {selectedHeroPart === "cta" && (
+            <>
+              <Label className="text-sm font-medium">CTA Button Text</Label>
+              <Input
+                placeholder="Enter CTA text..."
+                value={manualData.cta || ""}
+                onChange={(e) => setSections(prev => ({ ...prev, heroManual: { ...manualData, cta: e.target.value } }))}
+              />
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // WhyDifferent Manual Inputs with part selector
+  const renderWhyDifferentManualInputs = () => {
+    const manualData = (sections.whyDifferentManual as { openingParagraph?: string; comparisonBullets?: string; bridgeSentence?: string }) || {};
+    const parts = [
+      { id: "openingParagraph", label: "Opening Paragraph" },
+      { id: "comparisonBullets", label: "Comparison Bullets" },
+      { id: "bridgeSentence", label: "Bridge Sentence" },
+    ];
+
+    return (
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+            Select Part to Edit
+          </p>
+          {parts.map((part) => (
+            <button
+              key={part.id}
+              onClick={() => setSelectedWhyDifferentPart(part.id)}
+              className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left text-sm transition-all ${
+                selectedWhyDifferentPart === part.id
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "hover:bg-accent text-foreground"
+              }`}
+            >
+              <span>{part.label}</span>
+              {manualData[part.id as keyof typeof manualData] && <Check className="w-3.5 h-3.5 text-green-500" />}
+            </button>
+          ))}
+        </div>
+
+        <div className="pt-4 border-t space-y-3">
+          {selectedWhyDifferentPart === "openingParagraph" && (
+            <>
+              <Label className="text-sm font-medium">Opening Paragraph</Label>
+              <Textarea
+                placeholder="You're tired of..."
+                value={manualData.openingParagraph || ""}
+                onChange={(e) => setSections(prev => ({ ...prev, whyDifferentManual: { ...manualData, openingParagraph: e.target.value } }))}
+                rows={4}
+              />
+            </>
+          )}
+          {selectedWhyDifferentPart === "comparisonBullets" && (
+            <>
+              <Label className="text-sm font-medium">Comparison Bullets</Label>
+              <Textarea
+                placeholder="• You thought about X BUT Y...&#10;• You also considered A BUT B..."
+                value={manualData.comparisonBullets || ""}
+                onChange={(e) => setSections(prev => ({ ...prev, whyDifferentManual: { ...manualData, comparisonBullets: e.target.value } }))}
+                rows={6}
+              />
+            </>
+          )}
+          {selectedWhyDifferentPart === "bridgeSentence" && (
+            <>
+              <Label className="text-sm font-medium">Bridge Sentence</Label>
+              <Textarea
+                placeholder="Enter the bridge sentence that transitions to your solution..."
+                value={manualData.bridgeSentence || ""}
+                onChange={(e) => setSections(prev => ({ ...prev, whyDifferentManual: { ...manualData, bridgeSentence: e.target.value } }))}
+                rows={3}
+              />
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Benefits Manual Inputs
+  const renderBenefitsManualInputs = () => {
+    return (
+      <div className="space-y-4">
+        {/* Saved Benefits */}
+        {savedBenefits.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Saved Benefits ({savedBenefits.length})
+            </p>
+            <div className="space-y-2">
+              {savedBenefits.map((benefit, idx) => (
+                <div key={idx} className="p-3 border rounded-lg bg-card relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeSavedBenefit(idx)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                  <div className="flex items-start gap-2 pr-8">
+                    <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                    <div>
+                      <h4 className="font-medium text-sm">{benefit.title}</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">{benefit.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Add Benefit Form */}
+        {showAddBenefitForm ? (
+          <div className="p-4 border rounded-lg space-y-3 bg-muted/30">
+            <div className="space-y-2">
+              <Label className="text-xs">Benefit Title</Label>
+              <Input
+                value={newBenefitTitle}
+                onChange={(e) => setNewBenefitTitle(e.target.value)}
+                placeholder="e.g., Save Hours Every Week"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Description</Label>
+              <Textarea
+                value={newBenefitDescription}
+                onChange={(e) => setNewBenefitDescription(e.target.value)}
+                placeholder="Explain the benefit..."
+                rows={2}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={addManualBenefit}>
+                <Check className="w-3.5 h-3.5 mr-1" />
+                Add Benefit
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setShowAddBenefitForm(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAddBenefitForm(true)}
+            className="w-full"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Custom Benefit
+          </Button>
+        )}
+      </div>
+    );
+  };
+
+  // OfferDetails Manual Inputs with part selector
+  const renderOfferDetailsManualInputs = () => {
+    const manualData = (sections.offerDetailsManual as { introduction?: string; modules?: string; bonuses?: string; guarantee?: string }) || {};
+    const parts = [
+      { id: "introduction", label: "Introduction" },
+      { id: "modules", label: "Modules" },
+      { id: "bonuses", label: "Bonuses" },
+      { id: "guarantee", label: "Guarantee" },
+    ];
+
+    return (
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+            Select Part to Edit
+          </p>
+          {parts.map((part) => (
+            <button
+              key={part.id}
+              onClick={() => setSelectedOfferDetailsPart(part.id)}
+              className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left text-sm transition-all ${
+                selectedOfferDetailsPart === part.id
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "hover:bg-accent text-foreground"
+              }`}
+            >
+              <span>{part.label}</span>
+              {manualData[part.id as keyof typeof manualData] && <Check className="w-3.5 h-3.5 text-green-500" />}
+            </button>
+          ))}
+        </div>
+
+        <div className="pt-4 border-t space-y-3">
+          {selectedOfferDetailsPart === "introduction" && (
+            <>
+              <Label className="text-sm font-medium">Introduction</Label>
+              <Textarea
+                placeholder="When you join..."
+                value={manualData.introduction || ""}
+                onChange={(e) => setSections(prev => ({ ...prev, offerDetailsManual: { ...manualData, introduction: e.target.value } }))}
+                rows={4}
+              />
+            </>
+          )}
+          {selectedOfferDetailsPart === "modules" && (
+            <>
+              <Label className="text-sm font-medium">Modules</Label>
+              <Textarea
+                placeholder="Module 1: Title - Description&#10;Module 2: Title - Description..."
+                value={manualData.modules || ""}
+                onChange={(e) => setSections(prev => ({ ...prev, offerDetailsManual: { ...manualData, modules: e.target.value } }))}
+                rows={8}
+              />
+            </>
+          )}
+          {selectedOfferDetailsPart === "bonuses" && (
+            <>
+              <Label className="text-sm font-medium">Bonuses</Label>
+              <Textarea
+                placeholder="Bonus 1: Name ($Value) - Description&#10;Bonus 2: Name ($Value) - Description..."
+                value={manualData.bonuses || ""}
+                onChange={(e) => setSections(prev => ({ ...prev, offerDetailsManual: { ...manualData, bonuses: e.target.value } }))}
+                rows={6}
+              />
+            </>
+          )}
+          {selectedOfferDetailsPart === "guarantee" && (
+            <>
+              <Label className="text-sm font-medium">Guarantee</Label>
+              <Textarea
+                placeholder="We're so confident that..."
+                value={manualData.guarantee || ""}
+                onChange={(e) => setSections(prev => ({ ...prev, offerDetailsManual: { ...manualData, guarantee: e.target.value } }))}
+                rows={4}
+              />
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // FAQs Manual Inputs (like benefits)
+  const renderFaqsManualInputs = () => {
+    return (
+      <div className="space-y-4">
+        {/* Saved FAQs */}
+        {savedFaqs.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Saved FAQs ({savedFaqs.length})
+            </p>
+            <div className="space-y-2">
+              {savedFaqs.map((faq, idx) => (
+                <div key={idx} className="p-3 border rounded-lg bg-card relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeSavedFaq(idx)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                  <div className="flex items-start gap-2 pr-8">
+                    <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                    <div>
+                      <h4 className="font-medium text-sm">{faq.question}</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">{faq.answer}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Add FAQ Form */}
+        {showAddFaqForm ? (
+          <div className="p-4 border rounded-lg space-y-3 bg-muted/30">
+            <div className="space-y-2">
+              <Label className="text-xs">Question</Label>
+              <Input
+                value={newFaqQuestion}
+                onChange={(e) => setNewFaqQuestion(e.target.value)}
+                placeholder="e.g., How long do I have access?"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Answer</Label>
+              <Textarea
+                value={newFaqAnswer}
+                onChange={(e) => setNewFaqAnswer(e.target.value)}
+                placeholder="Enter the answer..."
+                rows={3}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={addManualFaq}>
+                <Check className="w-3.5 h-3.5 mr-1" />
+                Add FAQ
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setShowAddFaqForm(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAddFaqForm(true)}
+            className="w-full"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Custom FAQ
+          </Button>
+        )}
+      </div>
+    );
+  };
+
+  // Hero Editor Inputs - Simplified with just part selector
   const renderHeroEditorInputs = () => {
     const heroData = sections.hero;
     
     const parts = [
       { id: "headlines", label: "Headlines", hasContent: !!heroData?.headlines?.length },
-      { id: "subheadline", label: "Subheadline", hasContent: !!heroData?.subheadline },
-      { id: "cta", label: "CTA Button", hasContent: !!heroData?.cta },
+      { id: "subheadline", label: "Subheadline", hasContent: !!heroData?.subheadlines?.length },
+      { id: "cta", label: "CTA Button", hasContent: !!heroData?.ctas?.length },
     ];
 
     return (
@@ -952,18 +1475,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             </button>
           ))}
         </div>
-
-        <div className="pt-4 border-t">
-          <div className="p-4 rounded-lg bg-muted/50 border">
-            <p className="text-sm text-muted-foreground">
-              {heroData ? (
-                <>Select from the <strong>Generated Outputs</strong> panel →</>
-              ) : (
-                <>Click "Generate" below to create options</>
-              )}
-            </p>
-          </div>
-        </div>
       </div>
     );
   };
@@ -973,9 +1484,9 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     const whyDifferentData = sections.whyDifferent;
 
     const parts = [
-      { id: "openingParagraph", label: "Opening Paragraph", hasContent: !!whyDifferentData?.openingParagraph },
+      { id: "openingParagraph", label: "Opening Paragraph", hasContent: !!whyDifferentData?.openingParagraphs?.length },
       { id: "comparisonBullets", label: "Comparison Bullets", hasContent: !!(whyDifferentData?.comparisonBullets?.length) },
-      { id: "bridgeSentence", label: "Bridge Sentence", hasContent: !!whyDifferentData?.bridgeSentence },
+      { id: "bridgeSentence", label: "Bridge Sentence", hasContent: !!whyDifferentData?.bridgeSentences?.length },
     ];
 
     return (
@@ -1071,18 +1582,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             )}
           </>
         )}
-
-        <div className="pt-4 border-t">
-          <div className="p-4 rounded-lg bg-muted/50 border">
-            <p className="text-sm text-muted-foreground">
-              {whyDifferentData ? (
-                <>Select from the <strong>Generated Outputs</strong> panel →</>
-              ) : (
-                <>Click "Generate" below to create differentiating copy</>
-              )}
-            </p>
-          </div>
-        </div>
       </div>
     );
   };
@@ -1121,6 +1620,48 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           </div>
         )}
 
+        {/* Add Manual Benefit */}
+        {showAddBenefitForm ? (
+          <div className="p-4 border rounded-lg space-y-3 bg-muted/30">
+            <div className="space-y-2">
+              <Label className="text-xs">Benefit Title</Label>
+              <Input
+                value={newBenefitTitle}
+                onChange={(e) => setNewBenefitTitle(e.target.value)}
+                placeholder="e.g., Save Hours Every Week"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Description</Label>
+              <Textarea
+                value={newBenefitDescription}
+                onChange={(e) => setNewBenefitDescription(e.target.value)}
+                placeholder="Explain the benefit..."
+                rows={2}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={addManualBenefit}>
+                <Check className="w-3.5 h-3.5 mr-1" />
+                Add Benefit
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setShowAddBenefitForm(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAddBenefitForm(true)}
+            className="w-full border-dashed"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Custom Benefit
+          </Button>
+        )}
+
         {/* Generate Controls */}
         <div className="pt-4 border-t space-y-4">
           <div className="flex items-center gap-3">
@@ -1156,10 +1697,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
               </>
             )}
           </Button>
-
-          <p className="text-xs text-muted-foreground text-center">
-            Click "Save as Benefit" on each generated benefit you want to keep →
-          </p>
         </div>
       </div>
     );
@@ -1170,10 +1707,10 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     const offerDetailsData = sections.offerDetails;
 
     const parts = [
-      { id: "introduction", label: "Introduction", hasContent: !!offerDetailsData?.introduction },
+      { id: "introduction", label: "Introduction", hasContent: !!offerDetailsData?.introductions?.length },
       { id: "modules", label: "Modules", hasContent: !!(offerDetailsData?.modules?.length) },
       { id: "bonuses", label: "Bonuses", hasContent: !!(offerDetailsData?.bonuses?.length) },
-      { id: "guarantee", label: "Guarantee", hasContent: !!offerDetailsData?.guarantee },
+      { id: "guarantee", label: "Guarantee", hasContent: !!offerDetailsData?.guarantees?.length },
     ];
 
     return (
@@ -1197,35 +1734,13 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             </button>
           ))}
         </div>
-
-        <div className="pt-4 border-t">
-          <div className="p-4 rounded-lg bg-muted/50 border">
-            <p className="text-sm text-muted-foreground">
-              {offerDetailsData ? (
-                <>View and edit content in the <strong>Generated Outputs</strong> panel →</>
-              ) : (
-                <>Click "Generate" below to create offer details</>
-              )}
-            </p>
-          </div>
-        </div>
       </div>
     );
   };
 
-  // Testimonials Editor Inputs - With part selector
+  // Testimonials Editor Inputs - Simplified
   const renderTestimonialsEditorInputs = () => {
     const testimonialsData = sections.testimonials;
-    const testimonialCount = testimonialsData?.testimonials?.length || 0;
-
-    const parts = [
-      { id: "all", label: "All Testimonials", hasContent: testimonialCount > 0 },
-      ...(testimonialsData?.testimonials?.map((t, i) => ({
-        id: `testimonial-${i}`,
-        label: `Testimonial ${i + 1}: ${t.name}`,
-        hasContent: true,
-      })) || []),
-    ];
 
     return (
       <div className="space-y-4">
@@ -1233,87 +1748,141 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           AI generates sample testimonials as templates. Replace with real testimonials before publishing.
         </p>
 
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-            Select Part to Edit
-          </p>
-          {parts.map((part) => (
-            <button
-              key={part.id}
-              onClick={() => setSelectedTestimonialsPart(part.id)}
-              className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left text-sm transition-all ${
-                selectedTestimonialsPart === part.id
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "hover:bg-accent text-foreground"
-              }`}
-            >
-              <span>{part.label}</span>
-              {part.hasContent && <Check className="w-3.5 h-3.5 text-green-500" />}
-            </button>
-          ))}
-        </div>
-
-        <div className="pt-4 border-t">
-          <div className="p-4 rounded-lg bg-muted/50 border">
-            <p className="text-sm text-muted-foreground">
-              {testimonialsData ? (
-                <>Edit content in the <strong>Generated Outputs</strong> panel →</>
-              ) : (
-                <>Click "Generate" below to create sample testimonials</>
-              )}
+        {testimonialsData?.testimonials && testimonialsData.testimonials.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Generated Testimonials ({testimonialsData.testimonials.length})
             </p>
+            <div className="space-y-2">
+              {testimonialsData.testimonials.map((t, idx) => (
+                <div key={idx} className="p-3 border rounded-lg bg-card">
+                  <div className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                    <div>
+                      <h4 className="font-medium text-sm">{t.name}</h4>
+                      <p className="text-xs text-muted-foreground">{t.result}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   };
 
-  // FAQs Editor Inputs - With part selector
+  // FAQs Editor Inputs - Redesigned like benefits
   const renderFaqsEditorInputs = () => {
-    const faqsData = sections.faqs;
-    const faqCount = faqsData?.faqs?.length || 0;
-
-    const parts = [
-      { id: "all", label: "All FAQs", hasContent: faqCount > 0 },
-      ...(faqsData?.faqs?.map((f, i) => ({
-        id: `faq-${i}`,
-        label: `FAQ ${i + 1}: ${f.question.slice(0, 30)}...`,
-        hasContent: true,
-      })) || []),
-    ];
-
     return (
       <div className="space-y-4">
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-            Select Part to Edit
-          </p>
-          {parts.map((part) => (
-            <button
-              key={part.id}
-              onClick={() => setSelectedFaqsPart(part.id)}
-              className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left text-sm transition-all ${
-                selectedFaqsPart === part.id
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "hover:bg-accent text-foreground"
-              }`}
-            >
-              <span className="truncate">{part.label}</span>
-              {part.hasContent && <Check className="w-3.5 h-3.5 text-green-500 shrink-0" />}
-            </button>
-          ))}
-        </div>
-
-        <div className="pt-4 border-t">
-          <div className="p-4 rounded-lg bg-muted/50 border">
-            <p className="text-sm text-muted-foreground">
-              {faqsData ? (
-                <>Edit content in the <strong>Generated Outputs</strong> panel →</>
-              ) : (
-                <>Click "Generate" below to create FAQs</>
-              )}
+        {/* Saved FAQs */}
+        {savedFaqs.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Saved FAQs ({savedFaqs.length})
             </p>
+            <div className="space-y-2">
+              {savedFaqs.map((faq, idx) => (
+                <div key={idx} className="p-3 border rounded-lg bg-card relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeSavedFaq(idx)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                  <div className="flex items-start gap-2 pr-8">
+                    <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                    <div>
+                      <h4 className="font-medium text-sm">{faq.question}</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{faq.answer}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
+        )}
+
+        {/* Add Manual FAQ */}
+        {showAddFaqForm ? (
+          <div className="p-4 border rounded-lg space-y-3 bg-muted/30">
+            <div className="space-y-2">
+              <Label className="text-xs">Question</Label>
+              <Input
+                value={newFaqQuestion}
+                onChange={(e) => setNewFaqQuestion(e.target.value)}
+                placeholder="e.g., How long do I have access?"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Answer</Label>
+              <Textarea
+                value={newFaqAnswer}
+                onChange={(e) => setNewFaqAnswer(e.target.value)}
+                placeholder="Enter the answer..."
+                rows={3}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={addManualFaq}>
+                <Check className="w-3.5 h-3.5 mr-1" />
+                Add FAQ
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setShowAddFaqForm(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAddFaqForm(true)}
+            className="w-full border-dashed"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Custom FAQ
+          </Button>
+        )}
+
+        {/* Generate Controls */}
+        <div className="pt-4 border-t space-y-4">
+          <div className="flex items-center gap-3">
+            <Label className="text-sm font-medium whitespace-nowrap">Generate</Label>
+            <Select value={String(faqsCount)} onValueChange={(v) => setFaqsCount(Number(v))}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[3, 4, 5, 6, 7, 8].map(n => (
+                  <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-muted-foreground">FAQs</span>
+          </div>
+
+          <Button
+            onClick={() => generateSectionCopy("faqs")}
+            disabled={isGenerating["faqs"] || !offer}
+            className="w-full"
+            size="lg"
+          >
+            {isGenerating["faqs"] ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                {generatedFaqs.length > 0 ? "Regenerate FAQs" : "Generate FAQs"}
+              </>
+            )}
+          </Button>
         </div>
       </div>
     );
@@ -1322,24 +1891,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   // Render output panel for section
   const renderSectionOutputPanel = (sectionId: string, mode: "ai" | "manual") => {
     if (mode === "manual" || sectionId.startsWith("custom_")) {
-      const manualKey = `${sectionId}Manual` as keyof SalesPageCopySections;
-      const content = sectionId.startsWith("custom_") 
-        ? sections.customSections?.find(cs => cs.id === sectionId)?.content
-        : (sections[manualKey] as string);
-      
-      if (!content) {
-        return (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            <p className="text-sm">Your content will appear here as you type</p>
-          </div>
-        );
-      }
-      
-      return (
-        <div className="p-4 border rounded-lg bg-card">
-          <p className="text-sm whitespace-pre-wrap">{content}</p>
-        </div>
-      );
+      return renderManualOutputPreview(sectionId);
     }
 
     // AI mode outputs based on section type
@@ -1363,6 +1915,105 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           </div>
         );
     }
+  };
+
+  // Manual output preview
+  const renderManualOutputPreview = (sectionId: string) => {
+    if (sectionId.startsWith("custom_")) {
+      const customSection = sections.customSections?.find(cs => cs.id === sectionId);
+      if (!customSection?.content) {
+        return (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p className="text-sm">Your content will appear here as you type</p>
+          </div>
+        );
+      }
+      return (
+        <div className="p-4 border rounded-lg bg-card">
+          <p className="text-sm whitespace-pre-wrap">{customSection.content}</p>
+        </div>
+      );
+    }
+
+    // For structured manual content
+    if (sectionId === "hero") {
+      const manualData = (sections.heroManual as { headlines?: string; subheadline?: string; cta?: string }) || {};
+      if (!manualData.headlines && !manualData.subheadline && !manualData.cta) {
+        return (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p className="text-sm">Your content will appear here as you type</p>
+          </div>
+        );
+      }
+      return (
+        <div className="space-y-4">
+          {manualData.headlines && (
+            <div className="p-4 border rounded-lg bg-card">
+              <p className="text-xs text-muted-foreground mb-1">Headline</p>
+              <p className="font-bold text-lg">{manualData.headlines}</p>
+            </div>
+          )}
+          {manualData.subheadline && (
+            <div className="p-4 border rounded-lg bg-card">
+              <p className="text-xs text-muted-foreground mb-1">Subheadline</p>
+              <p className="text-sm">{manualData.subheadline}</p>
+            </div>
+          )}
+          {manualData.cta && (
+            <div className="p-4 border rounded-lg bg-card">
+              <p className="text-xs text-muted-foreground mb-1">CTA Button</p>
+              <Button variant="outline" size="sm" className="pointer-events-none">{manualData.cta}</Button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (sectionId === "benefits") {
+      if (savedBenefits.length === 0) {
+        return (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p className="text-sm">Add benefits to see them here</p>
+          </div>
+        );
+      }
+      return (
+        <div className="space-y-3">
+          {savedBenefits.map((benefit, idx) => (
+            <div key={idx} className="p-4 border rounded-lg bg-card">
+              <h4 className="font-medium">{benefit.title}</h4>
+              <p className="text-sm text-muted-foreground mt-1">{benefit.description}</p>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (sectionId === "faqs") {
+      if (savedFaqs.length === 0) {
+        return (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p className="text-sm">Add FAQs to see them here</p>
+          </div>
+        );
+      }
+      return (
+        <div className="space-y-3">
+          {savedFaqs.map((faq, idx) => (
+            <div key={idx} className="p-4 border rounded-lg bg-card">
+              <h4 className="font-medium">{faq.question}</h4>
+              <p className="text-sm text-muted-foreground mt-1">{faq.answer}</p>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        <p className="text-sm">Your content will appear here as you type</p>
+      </div>
+    );
   };
 
   // Hero Output Panel
@@ -1517,25 +2168,16 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     }
 
     if (selectedWhyDifferentPart === "comparisonBullets") {
+      // Read-only display of comparison bullets
       return (
         <div className="space-y-3">
-          <p className="text-xs text-muted-foreground mb-2">Edit bullets directly:</p>
+          <p className="text-xs text-muted-foreground">Generated comparison bullets:</p>
           {whyDifferentData.comparisonBullets?.map((bullet, idx) => (
-            <div key={idx} className="flex items-start gap-2">
-              <span className="text-muted-foreground mt-2 shrink-0">•</span>
-              <Textarea
-                value={bullet}
-                onChange={(e) => {
-                  const newBullets = [...(whyDifferentData.comparisonBullets || [])];
-                  newBullets[idx] = e.target.value;
-                  setSections(prev => ({
-                    ...prev,
-                    whyDifferent: { ...prev.whyDifferent!, comparisonBullets: newBullets }
-                  }));
-                }}
-                rows={2}
-                className="flex-1"
-              />
+            <div key={idx} className="p-4 border rounded-lg bg-card">
+              <div className="flex items-start gap-2">
+                <span className="text-muted-foreground shrink-0">•</span>
+                <p className="text-sm">{bullet}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -1575,38 +2217,39 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     return null;
   };
 
-  // Benefits Output Panel - With Save as Benefit buttons
+  // Benefits Output Panel - Shows generated benefits with "Save as Benefit" button
   const renderBenefitsOutputPanel = () => {
     if (generatedBenefits.length === 0) {
       return (
         <div className="flex items-center justify-center h-full text-muted-foreground">
-          <p className="text-sm">Click "Generate Benefits" to see options</p>
+          <p className="text-sm">Click "Generate Benefits" to see AI-generated options</p>
         </div>
       );
     }
 
     return (
       <div className="space-y-3">
+        <p className="text-xs text-muted-foreground">Click "Save as Benefit" to add to your saved benefits</p>
         {generatedBenefits.map((benefit, idx) => {
           const isSaved = savedBenefits.some(b => b.title === benefit.title);
           return (
-            <div key={idx} className={`p-4 border rounded-lg transition-all ${isSaved ? "border-green-500/50 bg-green-500/5" : ""}`}>
+            <div key={idx} className={`p-4 border rounded-lg ${isSaved ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800" : "bg-card"}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
                   <h4 className="font-medium text-sm">{benefit.title}</h4>
-                  <p className="text-sm text-muted-foreground mt-1">{benefit.description}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{benefit.description}</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 mt-3">
                 {isSaved ? (
-                  <span className="text-xs text-green-600 flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Saved
-                  </span>
+                  <div className="flex items-center gap-1 text-green-600 text-xs shrink-0">
+                    <Check className="w-3.5 h-3.5" />
+                    Saved
+                  </div>
                 ) : (
                   <Button
-                    variant="outline"
                     size="sm"
+                    variant="outline"
                     onClick={() => saveBenefit(benefit)}
+                    className="shrink-0"
                   >
                     <Save className="w-3.5 h-3.5 mr-1" />
                     Save as Benefit
@@ -1620,7 +2263,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     );
   };
 
-  // Offer Details Output Panel
+  // Offer Details Output Panel - Read-only selectable
   const renderOfferDetailsOutputPanel = () => {
     const offerDetailsData = sections.offerDetails;
     
@@ -1663,30 +2306,14 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     }
 
     if (selectedOfferDetailsPart === "modules") {
+      // Read-only display of modules
       return (
         <div className="space-y-3">
-          <p className="text-xs text-muted-foreground mb-2">Edit modules directly:</p>
-          {offerDetailsData.modules?.map((module, idx) => (
-            <div key={idx} className="p-3 border rounded-lg space-y-2">
-              <Input
-                value={module.name}
-                onChange={(e) => {
-                  const newModules = [...(offerDetailsData.modules || [])];
-                  newModules[idx] = { ...newModules[idx], name: e.target.value };
-                  setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, modules: newModules } }));
-                }}
-                placeholder="Module name"
-                className="font-medium"
-              />
-              <Textarea
-                value={module.description}
-                onChange={(e) => {
-                  const newModules = [...(offerDetailsData.modules || [])];
-                  newModules[idx] = { ...newModules[idx], description: e.target.value };
-                  setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, modules: newModules } }));
-                }}
-                rows={2}
-              />
+          <p className="text-xs text-muted-foreground">Generated modules:</p>
+          {offerDetailsData.modules?.map((mod, idx) => (
+            <div key={idx} className="p-4 border rounded-lg bg-card">
+              <h4 className="font-medium text-sm">{mod.name}</h4>
+              <p className="text-xs text-muted-foreground mt-1">{mod.description}</p>
             </div>
           ))}
         </div>
@@ -1694,42 +2321,17 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     }
 
     if (selectedOfferDetailsPart === "bonuses") {
+      // Read-only display of bonuses
       return (
         <div className="space-y-3">
-          <p className="text-xs text-muted-foreground mb-2">Edit bonuses directly:</p>
+          <p className="text-xs text-muted-foreground">Generated bonuses:</p>
           {offerDetailsData.bonuses?.map((bonus, idx) => (
-            <div key={idx} className="p-3 border rounded-lg space-y-2">
-              <div className="flex gap-2">
-                <Input
-                  value={bonus.name}
-                  onChange={(e) => {
-                    const newBonuses = [...(offerDetailsData.bonuses || [])];
-                    newBonuses[idx] = { ...newBonuses[idx], name: e.target.value };
-                    setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, bonuses: newBonuses } }));
-                  }}
-                  placeholder="Bonus name"
-                  className="flex-1"
-                />
-                <Input
-                  value={bonus.value}
-                  onChange={(e) => {
-                    const newBonuses = [...(offerDetailsData.bonuses || [])];
-                    newBonuses[idx] = { ...newBonuses[idx], value: e.target.value };
-                    setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, bonuses: newBonuses } }));
-                  }}
-                  placeholder="Value"
-                  className="w-24"
-                />
+            <div key={idx} className="p-4 border rounded-lg bg-card">
+              <div className="flex justify-between items-start">
+                <h4 className="font-medium text-sm">{bonus.name}</h4>
+                <span className="text-xs text-primary font-medium">{bonus.value}</span>
               </div>
-              <Textarea
-                value={bonus.description}
-                onChange={(e) => {
-                  const newBonuses = [...(offerDetailsData.bonuses || [])];
-                  newBonuses[idx] = { ...newBonuses[idx], description: e.target.value };
-                  setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, bonuses: newBonuses } }));
-                }}
-                rows={2}
-              />
+              <p className="text-xs text-muted-foreground mt-1">{bonus.description}</p>
             </div>
           ))}
         </div>
@@ -1769,179 +2371,85 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     return null;
   };
 
-  // Testimonials Output Panel
+  // Testimonials Output Panel - Read-only display
   const renderTestimonialsOutputPanel = () => {
     const testimonialsData = sections.testimonials;
     
     if (!testimonialsData) {
       return (
         <div className="flex items-center justify-center h-full text-muted-foreground">
-          <p className="text-sm">Click "Generate" to see AI-generated options</p>
+          <p className="text-sm">Click "Generate" to see AI-generated testimonials</p>
         </div>
       );
     }
-
-    if (selectedTestimonialsPart === "all") {
-      return (
-        <div className="space-y-3">
-          {testimonialsData.testimonials?.map((testimonial, idx) => (
-            <div key={idx} className="p-3 border rounded-lg space-y-2">
-              <div className="flex gap-2">
-                <Input
-                  value={testimonial.name}
-                  onChange={(e) => {
-                    const newTestimonials = [...(testimonialsData.testimonials || [])];
-                    newTestimonials[idx] = { ...newTestimonials[idx], name: e.target.value };
-                    setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
-                  }}
-                  placeholder="Name"
-                  className="flex-1"
-                />
-                <Input
-                  value={testimonial.result}
-                  onChange={(e) => {
-                    const newTestimonials = [...(testimonialsData.testimonials || [])];
-                    newTestimonials[idx] = { ...newTestimonials[idx], result: e.target.value };
-                    setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
-                  }}
-                  placeholder="Result achieved"
-                  className="flex-1"
-                />
-              </div>
-              <Textarea
-                value={testimonial.quote}
-                onChange={(e) => {
-                  const newTestimonials = [...(testimonialsData.testimonials || [])];
-                  newTestimonials[idx] = { ...newTestimonials[idx], quote: e.target.value };
-                  setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
-                }}
-                placeholder="Testimonial quote"
-                rows={2}
-              />
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    // Individual testimonial editing
-    const testimonialIdx = parseInt(selectedTestimonialsPart.replace("testimonial-", ""));
-    const testimonial = testimonialsData.testimonials?.[testimonialIdx];
-    if (!testimonial) return null;
 
     return (
-      <div className="p-4 border rounded-lg space-y-3">
-        <div className="space-y-2">
-          <Label className="text-xs">Name</Label>
-          <Input
-            value={testimonial.name}
-            onChange={(e) => {
-              const newTestimonials = [...(testimonialsData.testimonials || [])];
-              newTestimonials[testimonialIdx] = { ...newTestimonials[testimonialIdx], name: e.target.value };
-              setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
-            }}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label className="text-xs">Result Achieved</Label>
-          <Input
-            value={testimonial.result}
-            onChange={(e) => {
-              const newTestimonials = [...(testimonialsData.testimonials || [])];
-              newTestimonials[testimonialIdx] = { ...newTestimonials[testimonialIdx], result: e.target.value };
-              setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
-            }}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label className="text-xs">Quote</Label>
-          <Textarea
-            value={testimonial.quote}
-            onChange={(e) => {
-              const newTestimonials = [...(testimonialsData.testimonials || [])];
-              newTestimonials[testimonialIdx] = { ...newTestimonials[testimonialIdx], quote: e.target.value };
-              setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
-            }}
-            rows={4}
-          />
-        </div>
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground">Generated sample testimonials (replace with real ones):</p>
+        {testimonialsData.testimonials?.map((testimonial, idx) => (
+          <div key={idx} className="p-4 border rounded-lg bg-card">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <span className="text-xs font-medium text-primary">
+                  {testimonial.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div className="flex-1">
+                <div className="flex justify-between items-start">
+                  <h4 className="font-medium text-sm">{testimonial.name}</h4>
+                  <Badge variant="secondary" className="text-xs">{testimonial.result}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 italic">"{testimonial.quote}"</p>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   };
 
-  // FAQs Output Panel
+  // FAQs Output Panel - Shows generated FAQs with "Save as FAQ" button
   const renderFaqsOutputPanel = () => {
-    const faqsData = sections.faqs;
-    
-    if (!faqsData) {
+    if (generatedFaqs.length === 0) {
       return (
         <div className="flex items-center justify-center h-full text-muted-foreground">
-          <p className="text-sm">Click "Generate" to see AI-generated options</p>
+          <p className="text-sm">Click "Generate FAQs" to see AI-generated options</p>
         </div>
       );
     }
-
-    if (selectedFaqsPart === "all") {
-      return (
-        <div className="space-y-3">
-          {faqsData.faqs?.map((faq, idx) => (
-            <div key={idx} className="p-3 border rounded-lg space-y-2">
-              <Input
-                value={faq.question}
-                onChange={(e) => {
-                  const newFaqs = [...(faqsData.faqs || [])];
-                  newFaqs[idx] = { ...newFaqs[idx], question: e.target.value };
-                  setSections(prev => ({ ...prev, faqs: { faqs: newFaqs } }));
-                }}
-                placeholder="Question"
-                className="font-medium"
-              />
-              <Textarea
-                value={faq.answer}
-                onChange={(e) => {
-                  const newFaqs = [...(faqsData.faqs || [])];
-                  newFaqs[idx] = { ...newFaqs[idx], answer: e.target.value };
-                  setSections(prev => ({ ...prev, faqs: { faqs: newFaqs } }));
-                }}
-                placeholder="Answer"
-                rows={2}
-              />
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    // Individual FAQ editing
-    const faqIdx = parseInt(selectedFaqsPart.replace("faq-", ""));
-    const faq = faqsData.faqs?.[faqIdx];
-    if (!faq) return null;
 
     return (
-      <div className="p-4 border rounded-lg space-y-3">
-        <div className="space-y-2">
-          <Label className="text-xs">Question</Label>
-          <Input
-            value={faq.question}
-            onChange={(e) => {
-              const newFaqs = [...(faqsData.faqs || [])];
-              newFaqs[faqIdx] = { ...newFaqs[faqIdx], question: e.target.value };
-              setSections(prev => ({ ...prev, faqs: { faqs: newFaqs } }));
-            }}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label className="text-xs">Answer</Label>
-          <Textarea
-            value={faq.answer}
-            onChange={(e) => {
-              const newFaqs = [...(faqsData.faqs || [])];
-              newFaqs[faqIdx] = { ...newFaqs[faqIdx], answer: e.target.value };
-              setSections(prev => ({ ...prev, faqs: { faqs: newFaqs } }));
-            }}
-            rows={4}
-          />
-        </div>
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground">Click "Save as FAQ" to add to your saved FAQs</p>
+        {generatedFaqs.map((faq, idx) => {
+          const isSaved = savedFaqs.some(f => f.question === faq.question);
+          return (
+            <div key={idx} className={`p-4 border rounded-lg ${isSaved ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800" : "bg-card"}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <h4 className="font-medium text-sm">{faq.question}</h4>
+                  <p className="text-xs text-muted-foreground mt-1">{faq.answer}</p>
+                </div>
+                {isSaved ? (
+                  <div className="flex items-center gap-1 text-green-600 text-xs shrink-0">
+                    <Check className="w-3.5 h-3.5" />
+                    Saved
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => saveFaq(faq)}
+                    className="shrink-0"
+                  >
+                    <Save className="w-3.5 h-3.5 mr-1" />
+                    Save as FAQ
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -2138,52 +2646,49 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
               <Sparkles className="w-5 h-5 text-muted-foreground" />
             </div>
-            <p className="text-sm text-muted-foreground mb-3">No sales page copy added yet</p>
-            <Button size="sm" variant="ghost" onClick={handleAdd}>
-              <Plus className="w-4 h-4" />
-              Add Your First
-            </Button>
+            <p className="text-sm text-muted-foreground mb-1">No sales page copy yet</p>
+            <p className="text-xs text-muted-foreground">
+              Click "Add New" to create compelling copy for your sales page
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
             {items.map((item) => (
               <div
                 key={item.id}
-                className="p-4 rounded-lg border bg-background hover:bg-accent/50 transition-colors"
+                className="flex items-center justify-between p-4 border rounded-lg bg-card hover:shadow-sm transition-shadow"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-medium text-foreground">{offer?.title || "Untitled Offer"}</h4>
-                      <Badge variant="secondary" className="text-xs">
-                        {item.deliverableName}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {Object.keys(item.sections).filter(k => !k.endsWith("Manual") || item.sections[k as keyof SalesPageCopySections]).length} sections completed
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-sm">{item.deliverableName}</h4>
+                    <p className="text-xs text-muted-foreground">
+                      {Object.keys(item.sections).filter(k => !k.includes("Manual") && k !== "sectionOrder" && k !== "customSections").length} sections
                     </p>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(item)}>
-                        <Pencil className="w-4 h-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => handleDelete(item)}
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleEdit(item)}>
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleDelete(item)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             ))}
           </div>
