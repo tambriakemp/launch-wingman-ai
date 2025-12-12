@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      launch_events: {
+        Row: {
+          content_creation_start: string | null
+          created_at: string
+          enrollment_closes: string | null
+          enrollment_opens: string | null
+          event_type: string
+          id: string
+          prelaunch_start: string | null
+          program_delivery_end: string | null
+          program_delivery_start: string | null
+          program_weeks: number | null
+          project_id: string
+          rest_period_end: string | null
+          rest_period_start: string | null
+          rest_weeks: number | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_creation_start?: string | null
+          created_at?: string
+          enrollment_closes?: string | null
+          enrollment_opens?: string | null
+          event_type?: string
+          id?: string
+          prelaunch_start?: string | null
+          program_delivery_end?: string | null
+          program_delivery_start?: string | null
+          program_weeks?: number | null
+          project_id: string
+          rest_period_end?: string | null
+          rest_period_start?: string | null
+          rest_weeks?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_creation_start?: string | null
+          created_at?: string
+          enrollment_closes?: string | null
+          enrollment_opens?: string | null
+          event_type?: string
+          id?: string
+          prelaunch_start?: string | null
+          program_delivery_end?: string | null
+          program_delivery_start?: string | null
+          program_weeks?: number | null
+          project_id?: string
+          rest_period_end?: string | null
+          rest_period_start?: string | null
+          rest_weeks?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "launch_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           created_at: string
