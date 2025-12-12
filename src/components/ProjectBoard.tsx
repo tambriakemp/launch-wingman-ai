@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { format, parseISO, isPast, isToday } from "date-fns";
-import { GripVertical, MoreHorizontal, Pencil, Trash2, Calendar, Plus, GitFork, Filter, X } from "lucide-react";
+import { GripVertical, MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, Filter, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -472,13 +472,13 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
                           <Calendar className="w-3 h-3" />
                           <span>{task.due_date ? format(parseISO(task.due_date), "MMM d") : "No date"}</span>
                         </div>
-                        {/* Subtask indicator */}
-                        {task.subtask_count && task.subtask_count > 0 && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1.5">
-                            <GitFork className="w-3 h-3 rotate-180" />
+                        {/* Subtask indicator - always show icon */}
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1.5">
+                          <ListTodo className="w-3 h-3" />
+                          {task.subtask_count && task.subtask_count > 0 && (
                             <span>{task.subtask_count} subtask{task.subtask_count > 1 ? 's' : ''}</span>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
                   </motion.div>
