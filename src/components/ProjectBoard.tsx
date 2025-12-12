@@ -375,9 +375,9 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
         </div>
       </div>
 
-      {/* Board */}
-      <div className="overflow-x-auto pb-4">
-        <div className="flex gap-4 min-w-max">
+      {/* Board - scrollable container */}
+      <div className="overflow-x-auto pb-4 scrollbar-thin">
+        <div className="flex gap-4 min-w-max py-1">
           {COLUMNS.map((column) => (
             <div
               key={column.id}
