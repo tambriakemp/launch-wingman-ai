@@ -377,8 +377,8 @@ const Projects = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
               >
-                <Link to={`/projects/${project.id}`}>
-                  <Card variant="elevated" className="h-full hover:shadow-xl transition-all duration-200 cursor-pointer group">
+                <Link to={`/projects/${project.id}`} className="h-full">
+                  <Card variant="elevated" className="h-full hover:shadow-xl transition-all duration-200 cursor-pointer group flex flex-col">
                     <CardHeader className="flex flex-row items-start justify-between space-y-0">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -429,7 +429,7 @@ const Projects = () => {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="mt-auto">
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
