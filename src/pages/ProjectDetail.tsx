@@ -20,6 +20,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TransformationBuilder } from "@/components/TransformationBuilder";
+import { LaunchCalendarEventDialog } from "@/components/LaunchCalendarEventDialog";
 
 interface Project {
   id: string;
@@ -189,10 +190,7 @@ const ProjectDetail = () => {
                     <CardTitle>Launch Calendar</CardTitle>
                     <CardDescription>Plan your quarterly launch timeline</CardDescription>
                   </div>
-                  <Button>
-                    <Plus className="w-4 h-4" />
-                    Add Event
-                  </Button>
+                  <LaunchCalendarEventDialog projectId={project.id} />
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -203,10 +201,15 @@ const ProjectDetail = () => {
                     <p className="text-muted-foreground mb-4 max-w-sm">
                       Start planning your launch by adding key dates and milestones.
                     </p>
-                    <Button variant="outline">
-                      <Plus className="w-4 h-4" />
-                      Add First Event
-                    </Button>
+                    <LaunchCalendarEventDialog 
+                      projectId={project.id}
+                      trigger={
+                        <Button variant="outline">
+                          <Plus className="w-4 h-4" />
+                          Add First Event
+                        </Button>
+                      }
+                    />
                   </div>
                 </CardContent>
               </Card>
