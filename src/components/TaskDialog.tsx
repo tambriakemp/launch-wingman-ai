@@ -323,12 +323,12 @@ export const TaskDialog = ({
             </div>
             <div className="grid gap-2">
               <Label htmlFor="phase">Phase</Label>
-              <Select value={selectedPhase || ""} onValueChange={(value) => setSelectedPhase(value || null)}>
+              <Select value={selectedPhase || "none"} onValueChange={(value) => setSelectedPhase(value === "none" ? null : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a phase" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No phase</SelectItem>
+                  <SelectItem value="none">No phase</SelectItem>
                   {TASK_PHASES.map((phase) => (
                     <SelectItem key={phase.id} value={phase.id}>
                       {phase.label}
