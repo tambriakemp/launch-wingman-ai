@@ -279,7 +279,7 @@ const ProjectDetail = () => {
           transition={{ delay: 0.2 }}
         >
           <Tabs defaultValue="offers" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+            <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
               <TabsTrigger value="offers" className="gap-2">
                 <Gift className="w-4 h-4" />
                 Offer Builder
@@ -295,10 +295,6 @@ const ProjectDetail = () => {
               <TabsTrigger value="content" className="gap-2">
                 <FileText className="w-4 h-4" />
                 Content
-              </TabsTrigger>
-              <TabsTrigger value="assessment" className="gap-2">
-                <ClipboardCheck className="w-4 h-4" />
-                Assessment
               </TabsTrigger>
             </TabsList>
 
@@ -432,35 +428,6 @@ const ProjectDetail = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="assessment">
-              <Card variant="elevated" className="min-h-[400px]">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Assessment Quizzes</CardTitle>
-                    <CardDescription>Create quizzes with scoring to assess your audience</CardDescription>
-                  </div>
-                  <Button>
-                    <Plus className="w-4 h-4" />
-                    Create Quiz
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                      <ClipboardCheck className="w-8 h-8 text-muted-foreground" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No quizzes created</h3>
-                    <p className="text-muted-foreground mb-4 max-w-sm">
-                      Create assessment quizzes with scoring to evaluate your audience's readiness for your program.
-                    </p>
-                    <Button variant="outline">
-                      <Plus className="w-4 h-4" />
-                      Create Your First Quiz
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
           </Tabs>
         </motion.div>
       </div>
