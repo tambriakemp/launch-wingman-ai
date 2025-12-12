@@ -44,7 +44,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Plus,
@@ -57,6 +57,7 @@ import {
   Trash2,
   Archive,
   RotateCcw,
+  Crown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -85,7 +86,7 @@ const statusColors: Record<ProjectStatus, string> = {
 };
 
 const Projects = () => {
-  const { user } = useAuth();
+  const { user, isSubscribed } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -124,6 +125,9 @@ const Projects = () => {
     fetchProjects();
   }, [user]);
 
+  const activeProjectCount = projects.filter((p) => p.status !== "archived").length;
+  const canCreateProject = isSubscribed || activeProjectCount < 1;
+
   const handleCreateProject = async () => {
     if (!newProject.name.trim()) {
       toast.error("Please enter a project name");
@@ -132,6 +136,11 @@ const Projects = () => {
 
     if (!user) {
       toast.error("You must be logged in to create a project");
+      return;
+    }
+
+    if (!canCreateProject) {
+      toast.error("Free plan is limited to 1 project. Upgrade to Pro for unlimited projects.");
       return;
     }
 
@@ -289,13 +298,14 @@ const Projects = () => {
                 </SheetContent>
               </Sheet>
             )}
-            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-              <DialogTrigger asChild>
-                <Button size="lg">
-                  <Plus className="w-5 h-5" />
-                  New Project
-                </Button>
-              </DialogTrigger>
+            {canCreateProject ? (
+              <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                <DialogTrigger asChild>
+                  <Button size="lg">
+                    <Plus className="w-5 h-5" />
+                    New Project
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                   <DialogTitle>Create New Project</DialogTitle>
@@ -359,6 +369,14 @@ const Projects = () => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            ) : (
+              <Button size="lg" asChild>
+                <Link to="/settings">
+                  <Crown className="w-5 h-5" />
+                  Upgrade to Add More
+                </Link>
+              </Button>
+            )}
           </div>
         </motion.div>
 
