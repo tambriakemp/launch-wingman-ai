@@ -32,6 +32,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TransformationBuilder } from "@/components/TransformationBuilder";
 import { LaunchCalendarEventDialog } from "@/components/LaunchCalendarEventDialog";
+import { LaunchCalendarTimeline } from "@/components/LaunchCalendarTimeline";
 
 interface LaunchEvent {
   id: string;
@@ -43,6 +44,8 @@ interface LaunchEvent {
   enrollment_closes: string | null;
   program_delivery_start: string | null;
   program_delivery_end: string | null;
+  rest_period_start: string | null;
+  rest_period_end: string | null;
 }
 
 interface Project {
@@ -71,7 +74,7 @@ const ProjectDetail = () => {
     
     const { data, error } = await supabase
       .from("launch_events")
-      .select("id, title, event_type, content_creation_start, prelaunch_start, enrollment_opens, enrollment_closes, program_delivery_start, program_delivery_end")
+      .select("id, title, event_type, content_creation_start, prelaunch_start, enrollment_opens, enrollment_closes, program_delivery_start, program_delivery_end, rest_period_start, rest_period_end")
       .eq("project_id", id)
       .order("prelaunch_start", { ascending: true });
     
@@ -270,76 +273,86 @@ const ProjectDetail = () => {
                       />
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      {launchEvents.map((event) => (
-                        <div key={event.id} className="p-4 rounded-lg border bg-card">
-                            <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                <Rocket className="w-5 h-5 text-primary" />
+                    <div className="space-y-8">
+                      {/* Year-at-a-Glance Timeline */}
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-4">Year at a Glance</h3>
+                        <LaunchCalendarTimeline events={launchEvents} />
+                      </div>
+
+                      {/* Event List */}
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-muted-foreground">All Events</h3>
+                        {launchEvents.map((event) => (
+                          <div key={event.id} className="p-4 rounded-lg border bg-card">
+                              <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                  <Rocket className="w-5 h-5 text-primary" />
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-foreground">{event.title}</h4>
+                                  <Badge variant="outline" className="text-xs capitalize">
+                                    {event.event_type}
+                                  </Badge>
+                                </div>
                               </div>
-                              <div>
-                                <h4 className="font-semibold text-foreground">{event.title}</h4>
-                                <Badge variant="outline" className="text-xs capitalize">
-                                  {event.event_type}
-                                </Badge>
-                              </div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem>
+                                    <Pencil className="w-4 h-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="text-destructive"
+                                    onClick={() => handleDeleteEvent(event.id)}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
-                                  <Pencil className="w-4 h-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-destructive"
-                                  onClick={() => handleDeleteEvent(event.id)}
-                                >
-                                  <Trash2 className="w-4 h-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                              {event.content_creation_start && (
+                                <div>
+                                  <p className="text-muted-foreground text-xs">Content Creation</p>
+                                  <p className="font-medium">{format(parseISO(event.content_creation_start), "MMM d, yyyy")}</p>
+                                </div>
+                              )}
+                              {event.prelaunch_start && (
+                                <div>
+                                  <p className="text-muted-foreground text-xs">Prelaunch Starts</p>
+                                  <p className="font-medium">{format(parseISO(event.prelaunch_start), "MMM d, yyyy")}</p>
+                                </div>
+                              )}
+                              {event.enrollment_opens && (
+                                <div>
+                                  <p className="text-muted-foreground text-xs">Enrollment Opens</p>
+                                  <p className="font-medium">{format(parseISO(event.enrollment_opens), "MMM d, yyyy")}</p>
+                                </div>
+                              )}
+                              {event.program_delivery_start && (
+                                <div>
+                                  <p className="text-muted-foreground text-xs">Program Starts</p>
+                                  <p className="font-medium">{format(parseISO(event.program_delivery_start), "MMM d, yyyy")}</p>
+                                </div>
+                              )}
+                              {event.program_delivery_end && (
+                                <div>
+                                  <p className="text-muted-foreground text-xs">Program Ends</p>
+                                  <p className="font-medium">{format(parseISO(event.program_delivery_end), "MMM d, yyyy")}</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-                            {event.content_creation_start && (
-                              <div>
-                                <p className="text-muted-foreground text-xs">Content Creation</p>
-                                <p className="font-medium">{format(parseISO(event.content_creation_start), "MMM d, yyyy")}</p>
-                              </div>
-                            )}
-                            {event.prelaunch_start && (
-                              <div>
-                                <p className="text-muted-foreground text-xs">Prelaunch Starts</p>
-                                <p className="font-medium">{format(parseISO(event.prelaunch_start), "MMM d, yyyy")}</p>
-                              </div>
-                            )}
-                            {event.enrollment_opens && (
-                              <div>
-                                <p className="text-muted-foreground text-xs">Enrollment Opens</p>
-                                <p className="font-medium">{format(parseISO(event.enrollment_opens), "MMM d, yyyy")}</p>
-                              </div>
-                            )}
-                            {event.program_delivery_start && (
-                              <div>
-                                <p className="text-muted-foreground text-xs">Program Starts</p>
-                                <p className="font-medium">{format(parseISO(event.program_delivery_start), "MMM d, yyyy")}</p>
-                              </div>
-                            )}
-                            {event.program_delivery_end && (
-                              <div>
-                                <p className="text-muted-foreground text-xs">Program Ends</p>
-                                <p className="font-medium">{format(parseISO(event.program_delivery_end), "MMM d, yyyy")}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   )}
                 </CardContent>
