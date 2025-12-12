@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { format, parseISO } from "date-fns";
+import { cn } from "@/lib/utils";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -306,17 +307,91 @@ const ProjectDetail = () => {
             </TabsList>
 
             <TabsContent value="offers">
-              <Card variant="elevated" className="min-h-[400px]">
-                <CardHeader>
-                  <div>
-                    <CardTitle>Offer Builder</CardTitle>
-                    <CardDescription>Design offers that attract and convert your ideal clients</CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <OfferBuilder projectId={project.id} />
-                </CardContent>
-              </Card>
+              <div className="space-y-6">
+                {/* Launch Calendar Summary */}
+                {launchEvents.length > 0 && (
+                  <Card variant="elevated">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center">
+                            <Calendar className="w-5 h-5 text-primary-foreground" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">{project.project_type === 'prelaunch' ? 'Pre-Launch' : 'Launch'} Timeline</CardTitle>
+                            <CardDescription>{launchEvents[0]?.title}</CardDescription>
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditEvent(launchEvents[0])}>
+                              <Pencil className="w-4 h-4 mr-2" />
+                              Edit Dates
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {launchEvents[0]?.prelaunch_start && (
+                          <div className="p-3 rounded-lg bg-accent/50">
+                            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                              <Rocket className="w-4 h-4" />
+                              <span className="text-xs font-medium">Prelaunch Starts</span>
+                            </div>
+                            <p className="font-semibold text-foreground">{format(parseISO(launchEvents[0].prelaunch_start), "MMM d, yyyy")}</p>
+                          </div>
+                        )}
+                        {launchEvents[0]?.enrollment_opens && (
+                          <div className="p-3 rounded-lg bg-accent/50">
+                            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                              <Rocket className="w-4 h-4" />
+                              <span className="text-xs font-medium">Enrollment Opens</span>
+                            </div>
+                            <p className="font-semibold text-foreground">{format(parseISO(launchEvents[0].enrollment_opens), "MMM d, yyyy")}</p>
+                          </div>
+                        )}
+                        {launchEvents[0]?.enrollment_closes && (
+                          <div className="p-3 rounded-lg bg-accent/50">
+                            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                              <Calendar className="w-4 h-4" />
+                              <span className="text-xs font-medium">Enrollment Closes</span>
+                            </div>
+                            <p className="font-semibold text-foreground">{format(parseISO(launchEvents[0].enrollment_closes), "MMM d, yyyy")}</p>
+                          </div>
+                        )}
+                        {launchEvents[0]?.program_delivery_start && (
+                          <div className="p-3 rounded-lg bg-accent/50">
+                            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                              <FileText className="w-4 h-4" />
+                              <span className="text-xs font-medium">Program Starts</span>
+                            </div>
+                            <p className="font-semibold text-foreground">{format(parseISO(launchEvents[0].program_delivery_start), "MMM d, yyyy")}</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <Card variant="elevated" className="min-h-[400px]">
+                  <CardHeader>
+                    <div>
+                      <CardTitle>Offer Builder</CardTitle>
+                      <CardDescription>Design offers that attract and convert your ideal clients</CardDescription>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <OfferBuilder projectId={project.id} />
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             <TabsContent value="messaging">
