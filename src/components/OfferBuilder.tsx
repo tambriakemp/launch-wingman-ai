@@ -355,6 +355,144 @@ const PLATFORM_CATEGORIES = {
       bgColor: "bg-blue-600/10",
     },
   ],
+  "Email Marketing Platforms": [
+    {
+      id: "mailchimp",
+      name: "Mailchimp",
+      description: "Classic choice, beginner-friendly, lots of templates.",
+      icon: Mail,
+      color: "text-yellow-500",
+      bgColor: "bg-yellow-500/10",
+    },
+    {
+      id: "constant-contact",
+      name: "Constant Contact",
+      description: "Simple setup + event marketing tools.",
+      icon: Mail,
+      color: "text-blue-500",
+      bgColor: "bg-blue-500/10",
+    },
+    {
+      id: "sendinblue",
+      name: "Sendinblue",
+      description: "Email + SMS in one place with strong automation.",
+      icon: Mail,
+      color: "text-sky-500",
+      bgColor: "bg-sky-500/10",
+    },
+    {
+      id: "activecampaign-email",
+      name: "ActiveCampaign",
+      description: "Powerful automation with CRM and segmentation.",
+      icon: Mail,
+      color: "text-rose-500",
+      bgColor: "bg-rose-500/10",
+    },
+    {
+      id: "getresponse-email",
+      name: "GetResponse",
+      description: "Good automation, webinars, and landing pages too.",
+      icon: Mail,
+      color: "text-cyan-500",
+      bgColor: "bg-cyan-500/10",
+    },
+    {
+      id: "aweber",
+      name: "AWeber",
+      description: "Great for creators and small businesses just starting out.",
+      icon: Mail,
+      color: "text-blue-600",
+      bgColor: "bg-blue-600/10",
+    },
+    {
+      id: "convertkit",
+      name: "ConvertKit",
+      description: "Easy automations and tagging — popular with bloggers & creators.",
+      icon: Mail,
+      color: "text-red-500",
+      bgColor: "bg-red-500/10",
+    },
+    {
+      id: "mailerlite",
+      name: "MailerLite",
+      description: "Clean interface, affordable, great for simple funnels.",
+      icon: Mail,
+      color: "text-green-500",
+      bgColor: "bg-green-500/10",
+    },
+    {
+      id: "kajabi-email",
+      name: "Kajabi (Email + CRM)",
+      description: "All-in-one with email + courses + landing pages.",
+      icon: Mail,
+      color: "text-indigo-500",
+      bgColor: "bg-indigo-500/10",
+    },
+    {
+      id: "flodesk",
+      name: "Flodesk",
+      description: "Beautiful design templates, flat pricing, simple interface.",
+      icon: Mail,
+      color: "text-pink-500",
+      bgColor: "bg-pink-500/10",
+    },
+    {
+      id: "hubspot",
+      name: "HubSpot Marketing Hub",
+      description: "Enterprise features + CRM + automation.",
+      icon: Mail,
+      color: "text-orange-500",
+      bgColor: "bg-orange-500/10",
+    },
+    {
+      id: "drip",
+      name: "Drip",
+      description: "Ecommerce-centric automation and segmentation.",
+      icon: Mail,
+      color: "text-purple-500",
+      bgColor: "bg-purple-500/10",
+    },
+    {
+      id: "klaviyo",
+      name: "Klaviyo",
+      description: "Popular with ecommerce brands (deep data + personalization).",
+      icon: Mail,
+      color: "text-emerald-500",
+      bgColor: "bg-emerald-500/10",
+    },
+    {
+      id: "benchmark",
+      name: "Benchmark Email",
+      description: "Advanced automation and reporting tools.",
+      icon: Mail,
+      color: "text-amber-500",
+      bgColor: "bg-amber-500/10",
+    },
+    {
+      id: "mailjet",
+      name: "Mailjet",
+      description: "Simple tool for straightforward campaigns.",
+      icon: Mail,
+      color: "text-orange-400",
+      bgColor: "bg-orange-400/10",
+    },
+    {
+      id: "moosend",
+      name: "Moosend",
+      description: "Low-cost with solid automation.",
+      icon: Mail,
+      color: "text-teal-500",
+      bgColor: "bg-teal-500/10",
+    },
+    {
+      id: "sender",
+      name: "Sender",
+      description: "Affordable with good deliverability basics.",
+      icon: Mail,
+      color: "text-lime-500",
+      bgColor: "bg-lime-500/10",
+    },
+  ],
 };
 
 const FUNNEL_TYPES = [
@@ -531,6 +669,7 @@ interface Offer {
   main_deliverables: string[] | null;
   funnel_platform: string | null;
   community_platform: string | null;
+  email_platform: string | null;
   title: string | null;
   description: string | null;
   price: number | null;
@@ -589,6 +728,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   const [offerPrice, setOfferPrice] = useState<string>("");
   const [selectedFunnelPlatform, setSelectedFunnelPlatform] = useState<string>("");
   const [selectedCommunityPlatform, setSelectedCommunityPlatform] = useState<string>("");
+  const [selectedEmailPlatform, setSelectedEmailPlatform] = useState<string>("");
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
 
   // Fetch offer (only one per project)
@@ -685,6 +825,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setOfferPrice("");
     setSelectedFunnelPlatform("");
     setSelectedCommunityPlatform("");
+    setSelectedEmailPlatform("");
     setStep(1);
   };
 
@@ -711,6 +852,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setOfferPrice(offer.price?.toString() || "");
     setSelectedFunnelPlatform(offer.funnel_platform || "");
     setSelectedCommunityPlatform(offer.community_platform || "");
+    setSelectedEmailPlatform(offer.email_platform || "");
     setStep(targetStep);
     setDialogOpen(true);
   };
@@ -783,6 +925,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
         main_deliverables: selectedDeliverables,
         funnel_platform: selectedFunnelPlatform || null,
         community_platform: selectedCommunityPlatform || null,
+        email_platform: selectedEmailPlatform || null,
         title: offerTitle.trim(),
         description: offerDescription.trim(),
         price: offerPrice ? parseFloat(offerPrice) : null,
@@ -798,6 +941,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
         main_deliverables: selectedDeliverables,
         funnel_platform: selectedFunnelPlatform || null,
         community_platform: selectedCommunityPlatform || null,
+        email_platform: selectedEmailPlatform || null,
         title: offerTitle.trim(),
         description: offerDescription.trim(),
         price: offerPrice ? parseFloat(offerPrice) : null,
@@ -988,7 +1132,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
           )}
 
           {/* Platforms Card */}
-          {(offer?.funnel_platform || offer?.community_platform) && (
+          {(offer?.funnel_platform || offer?.community_platform || offer?.email_platform) && (
             <Card>
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -1012,7 +1156,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-3 md:grid-cols-2">
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {offer?.funnel_platform && (() => {
                     const platform = getPlatformDetails(offer.funnel_platform, "Funnel Builders");
                     if (!platform) return null;
@@ -1044,6 +1188,24 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs text-muted-foreground">Community Platform</p>
+                          <p className="text-sm font-medium text-foreground">{platform.name}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {offer?.email_platform && (() => {
+                    const platform = getPlatformDetails(offer.email_platform, "Email Marketing Platforms");
+                    if (!platform) return null;
+                    const Icon = platform.icon;
+                    return (
+                      <div 
+                        className={cn("p-3 rounded-lg border border-border flex items-start gap-3", platform.bgColor)}
+                      >
+                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-background/80")}>
+                          <Icon className={cn("w-4 h-4", platform.color)} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-muted-foreground">Email Marketing</p>
                           <p className="text-sm font-medium text-foreground">{platform.name}</p>
                         </div>
                       </div>
@@ -1383,8 +1545,18 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
 
                   {Object.entries(PLATFORM_CATEGORIES).map(([category, platforms]) => {
                     const isFunnelCategory = category === "Funnel Builders";
-                    const selectedPlatform = isFunnelCategory ? selectedFunnelPlatform : selectedCommunityPlatform;
-                    const setSelectedPlatform = isFunnelCategory ? setSelectedFunnelPlatform : setSelectedCommunityPlatform;
+                    const isCommunityCategory = category === "Community & Engagement Platforms";
+                    const isEmailCategory = category === "Email Marketing Platforms";
+                    const selectedPlatform = isFunnelCategory 
+                      ? selectedFunnelPlatform 
+                      : isCommunityCategory 
+                        ? selectedCommunityPlatform 
+                        : selectedEmailPlatform;
+                    const setSelectedPlatform = isFunnelCategory 
+                      ? setSelectedFunnelPlatform 
+                      : isCommunityCategory 
+                        ? setSelectedCommunityPlatform 
+                        : setSelectedEmailPlatform;
                     
                     return (
                       <div key={category} className="space-y-3">

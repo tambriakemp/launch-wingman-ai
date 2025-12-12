@@ -163,6 +163,7 @@ export type Database = {
           community_platform: string | null
           created_at: string
           description: string | null
+          email_platform: string | null
           funnel_platform: string | null
           funnel_type: string | null
           id: string
@@ -180,6 +181,7 @@ export type Database = {
           community_platform?: string | null
           created_at?: string
           description?: string | null
+          email_platform?: string | null
           funnel_platform?: string | null
           funnel_type?: string | null
           id?: string
@@ -197,6 +199,7 @@ export type Database = {
           community_platform?: string | null
           created_at?: string
           description?: string | null
+          email_platform?: string | null
           funnel_platform?: string | null
           funnel_type?: string | null
           id?: string
