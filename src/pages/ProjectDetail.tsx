@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { format, parseISO } from "date-fns";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,11 +17,23 @@ import {
   Plus,
   Loader2,
   ClipboardCheck,
+  Rocket,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TransformationBuilder } from "@/components/TransformationBuilder";
 import { LaunchCalendarEventDialog } from "@/components/LaunchCalendarEventDialog";
+
+interface LaunchEvent {
+  id: string;
+  title: string;
+  event_type: string;
+  prelaunch_start: string | null;
+  enrollment_opens: string | null;
+  enrollment_closes: string | null;
+  program_delivery_start: string | null;
+  program_delivery_end: string | null;
+}
 
 interface Project {
   id: string;
@@ -41,6 +54,23 @@ const ProjectDetail = () => {
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [launchEvents, setLaunchEvents] = useState<LaunchEvent[]>([]);
+
+  const fetchLaunchEvents = useCallback(async () => {
+    if (!id) return;
+    
+    const { data, error } = await supabase
+      .from("launch_events")
+      .select("id, title, event_type, prelaunch_start, enrollment_opens, enrollment_closes, program_delivery_start, program_delivery_end")
+      .eq("project_id", id)
+      .order("prelaunch_start", { ascending: true });
+    
+    if (error) {
+      console.error("Error fetching launch events:", error);
+    } else {
+      setLaunchEvents(data || []);
+    }
+  }, [id]);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -66,7 +96,8 @@ const ProjectDetail = () => {
     };
 
     fetchProject();
-  }, [id, navigate]);
+    fetchLaunchEvents();
+  }, [id, navigate, fetchLaunchEvents]);
 
   const handleStatementSaved = (statement: string) => {
     setProject((prev) => prev ? { ...prev, transformation_statement: statement } : null);
@@ -190,27 +221,76 @@ const ProjectDetail = () => {
                     <CardTitle>Launch Calendar</CardTitle>
                     <CardDescription>Plan your quarterly launch timeline</CardDescription>
                   </div>
-                  <LaunchCalendarEventDialog projectId={project.id} />
+                  <LaunchCalendarEventDialog projectId={project.id} onEventAdded={fetchLaunchEvents} />
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                      <Calendar className="w-8 h-8 text-muted-foreground" />
+                  {launchEvents.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                        <Calendar className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground mb-2">No events scheduled</h3>
+                      <p className="text-muted-foreground mb-4 max-w-sm">
+                        Start planning your launch by adding key dates and milestones.
+                      </p>
+                      <LaunchCalendarEventDialog 
+                        projectId={project.id}
+                        onEventAdded={fetchLaunchEvents}
+                        trigger={
+                          <Button variant="outline">
+                            <Plus className="w-4 h-4" />
+                            Add First Event
+                          </Button>
+                        }
+                      />
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No events scheduled</h3>
-                    <p className="text-muted-foreground mb-4 max-w-sm">
-                      Start planning your launch by adding key dates and milestones.
-                    </p>
-                    <LaunchCalendarEventDialog 
-                      projectId={project.id}
-                      trigger={
-                        <Button variant="outline">
-                          <Plus className="w-4 h-4" />
-                          Add First Event
-                        </Button>
-                      }
-                    />
-                  </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {launchEvents.map((event) => (
+                        <div key={event.id} className="p-4 rounded-lg border bg-card">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <Rocket className="w-5 h-5 text-primary" />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-foreground">{event.title}</h4>
+                                <Badge variant="outline" className="text-xs capitalize">
+                                  {event.event_type}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                            {event.prelaunch_start && (
+                              <div>
+                                <p className="text-muted-foreground text-xs">Prelaunch Starts</p>
+                                <p className="font-medium">{format(parseISO(event.prelaunch_start), "MMM d, yyyy")}</p>
+                              </div>
+                            )}
+                            {event.enrollment_opens && (
+                              <div>
+                                <p className="text-muted-foreground text-xs">Enrollment Opens</p>
+                                <p className="font-medium">{format(parseISO(event.enrollment_opens), "MMM d, yyyy")}</p>
+                              </div>
+                            )}
+                            {event.program_delivery_start && (
+                              <div>
+                                <p className="text-muted-foreground text-xs">Program Starts</p>
+                                <p className="font-medium">{format(parseISO(event.program_delivery_start), "MMM d, yyyy")}</p>
+                              </div>
+                            )}
+                            {event.program_delivery_end && (
+                              <div>
+                                <p className="text-muted-foreground text-xs">Program Ends</p>
+                                <p className="font-medium">{format(parseISO(event.program_delivery_end), "MMM d, yyyy")}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
