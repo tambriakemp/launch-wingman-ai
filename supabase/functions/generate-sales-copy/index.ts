@@ -125,7 +125,7 @@ Write copy that validates their frustration and positions this offer as the solu
 Write the KEY BENEFITS section for a sales page.
 
 Requirements:
-- Generate 5-7 key benefits for this offer
+- Generate exactly 4 key benefits for this offer
 - Each benefit should have:
   - A bold, outcome-focused title (3-5 words)
   - A 1-2 sentence description explaining the benefit
