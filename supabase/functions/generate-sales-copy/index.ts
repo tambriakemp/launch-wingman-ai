@@ -27,6 +27,8 @@ serve(async (req) => {
       // For offer details
       priceType,
       price,
+      // Count for benefits/faqs
+      count,
     } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -50,9 +52,8 @@ Requirements:
   3) The fastest way to (desired outcome) for (audience)
   4) Finally, (achieve result) without (common frustration)
   5) What if you could (desired outcome) in (timeframe)?
-- Then choose the best headline and write:
-  - 1 subheadline (1-2 sentences that expands on the promise)
-  - 1 CTA button text (action-oriented, 2-5 words)
+- Create 4 subheadline options (1-2 sentences each that expand on the promise)
+- Create 4 CTA button text options (action-oriented, 2-5 words each)
 
 Tone: clear, confident, modern (not hypey)
 Avoid vague words like "aligned", "empowered", "transform your life" unless backed by specifics.
@@ -61,8 +62,8 @@ Return ONLY valid JSON in this exact format:
 {
   "headlines": ["headline1", "headline2", "headline3", "headline4", "headline5"],
   "recommendedHeadline": 0,
-  "subheadline": "...",
-  "cta": "..."
+  "subheadlines": ["subheadline1", "subheadline2", "subheadline3", "subheadline4"],
+  "ctas": ["cta1", "cta2", "cta3", "cta4"]
 }`;
 
       userPrompt = `Create HERO section copy for:
@@ -94,19 +95,19 @@ Our unique approach: ${uniqueApproach || "Tailored, step-by-step guidance"}`;
 Write the "Why this is different" section for a sales page.
 
 Requirements:
-- 1 opening paragraph starting with "You're tired of…" (2-3 sentences, empathetic, specific)
+- 4 opening paragraph options, each starting with "You're tired of…" (2-3 sentences, empathetic, specific)
 - 3-5 comparison bullets using this pattern:
   "You thought about (solution A) BUT (why it didn't work)"
   "You also considered (solution B) BUT (limitation)"
-- End with 1 bridge sentence that transitions to the solution (builds anticipation)
+- 4 bridge sentence options that transition to the solution (builds anticipation)
 
 Tone: understanding, confident, not condescending
 
 Return ONLY valid JSON in this exact format:
 {
-  "openingParagraph": "You're tired of...",
+  "openingParagraphs": ["paragraph1", "paragraph2", "paragraph3", "paragraph4"],
   "comparisonBullets": ["bullet1", "bullet2", "bullet3"],
-  "bridgeSentence": "..."
+  "bridgeSentences": ["bridge1", "bridge2", "bridge3", "bridge4"]
 }`;
 
       userPrompt = `Create "Why This Is Different" section for:
@@ -120,12 +121,13 @@ ${contextSection}
 Write copy that validates their frustration and positions this offer as the solution they've been looking for.`;
 
     } else if (sectionType === "benefits") {
+      const benefitCount = count || 4;
       systemPrompt = `You are a direct-response conversion copywriter.
 
 Write the KEY BENEFITS section for a sales page.
 
 Requirements:
-- Generate exactly 4 key benefits for this offer
+- Generate exactly ${benefitCount} key benefits for this offer
 - Each benefit should have:
   - A bold, outcome-focused title (3-5 words)
   - A 1-2 sentence description explaining the benefit
@@ -150,7 +152,7 @@ Return ONLY valid JSON in this exact format:
 - Offer Type: ${offerType || "Digital product"}
 - Main Deliverables: ${deliverables?.join(", ") || "Not specified"}
 
-Generate specific, outcome-focused benefits that resonate with the target audience's desires.`;
+Generate ${benefitCount} specific, outcome-focused benefits that resonate with the target audience's desires.`;
 
     } else if (sectionType === "offerDetails") {
       systemPrompt = `You are a direct-response conversion copywriter.
@@ -158,7 +160,7 @@ Generate specific, outcome-focused benefits that resonate with the target audien
 Write the "What's Included" / Offer Details section for a sales page.
 
 Requirements:
-- 1 introduction paragraph (2-3 sentences about what they get access to)
+- 4 introduction paragraph options (2-3 sentences each about what they get access to)
 - 4-6 modules/components with:
   - Module name (compelling, outcome-focused)
   - Module description (what's covered and what they'll achieve)
@@ -166,20 +168,20 @@ Requirements:
   - Bonus name
   - Perceived value (make it realistic based on content)
   - Description of what's included
-- 1 guarantee statement (risk-reversal, confident)
+- 4 guarantee statement options (risk-reversal, confident)
 
 Tone: clear, value-stacking, confident
 
 Return ONLY valid JSON in this exact format:
 {
-  "introduction": "When you join...",
+  "introductions": ["intro1", "intro2", "intro3", "intro4"],
   "modules": [
     { "name": "Module Name", "description": "What's covered and outcome." }
   ],
   "bonuses": [
     { "name": "Bonus Name", "value": "$97", "description": "What's included." }
   ],
-  "guarantee": "We're so confident..."
+  "guarantees": ["guarantee1", "guarantee2", "guarantee3", "guarantee4"]
 }`;
 
       userPrompt = `Create "What's Included" section for:
@@ -227,12 +229,13 @@ Return ONLY valid JSON in this exact format:
 Generate realistic sample testimonials that showcase the transformation this offer provides.`;
 
     } else if (sectionType === "faqs") {
+      const faqCount = count || 5;
       systemPrompt = `You are a direct-response conversion copywriter.
 
 Write the FAQ section for a sales page.
 
 Requirements:
-- Generate 5-7 common FAQs that prospects would ask before buying
+- Generate exactly ${faqCount} common FAQs that prospects would ask before buying
 - Include questions about:
   - Who this is for (and not for)
   - Time commitment
@@ -260,7 +263,7 @@ Return ONLY valid JSON in this exact format:
 - Price: ${price ? `$${price}` : "Not specified"}
 - Price Type: ${priceType || "One-time"}
 
-Generate FAQs that address common concerns and move prospects closer to purchasing.`;
+Generate ${faqCount} FAQs that address common concerns and move prospects closer to purchasing.`;
 
     } else {
       throw new Error("Invalid section type. Use 'hero', 'whyDifferent', 'benefits', 'offerDetails', 'testimonials', or 'faqs'");
@@ -325,6 +328,24 @@ Generate FAQs that address common concerns and move prospects closer to purchasi
     } catch (parseError) {
       console.error("Failed to parse AI response:", content);
       throw new Error("Failed to parse AI response");
+    }
+
+    // For hero section, also set legacy fields for backward compatibility
+    if (sectionType === "hero") {
+      result.subheadline = result.subheadlines?.[0] || "";
+      result.cta = result.ctas?.[0] || "";
+    }
+    
+    // For whyDifferent section, also set legacy fields
+    if (sectionType === "whyDifferent") {
+      result.openingParagraph = result.openingParagraphs?.[0] || "";
+      result.bridgeSentence = result.bridgeSentences?.[0] || "";
+    }
+    
+    // For offerDetails section, also set legacy fields
+    if (sectionType === "offerDetails") {
+      result.introduction = result.introductions?.[0] || "";
+      result.guarantee = result.guarantees?.[0] || "";
     }
 
     return new Response(
