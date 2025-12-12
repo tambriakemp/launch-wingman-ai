@@ -964,7 +964,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setSelectedIdeaIndex(index);
     const idea = offerIdeas[index];
     if (idea) {
-      setOfferTitle(idea.title);
+      // Only set description since title is now entered in step 1
       setOfferDescription(idea.description);
     }
   };
@@ -1012,18 +1012,18 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   const selectedFunnelDetails = getFunnelDetails(selectedFunnelType);
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
-  // Step 1: Niche and Offer Type selection
-  const canProceedToStep2 = selectedNiche && selectedOfferType;
-  // Step 2: AI Offer Ideas (optional but needs niche + offer type)
+  // Step 1: Niche + Offer Type + Offer Title
+  const canProceedToStep2 = selectedNiche && selectedOfferType && offerTitle.trim();
+  // Step 2: Main Deliverables (optional)
   const canProceedToStep3 = canProceedToStep2;
-  // Step 3: Offer details (title, description, price)
-  const canProceedToStep4 = canProceedToStep3 && offerTitle.trim() && offerDescription.trim();
-  // Step 4: Funnel type
-  const canProceedToStep5 = canProceedToStep4 && selectedFunnelType;
-  // Step 5: Deliverables (optional)
-  const canProceedToStep6 = canProceedToStep5;
+  // Step 3: AI Offer Ideas (optional)
+  const canProceedToStep4 = canProceedToStep3;
+  // Step 4: Offer details (description, price only)
+  const canProceedToStep5 = canProceedToStep4 && offerDescription.trim();
+  // Step 5: Funnel type
+  const canProceedToStep6 = canProceedToStep5 && selectedFunnelType;
   // Step 6: Platforms (optional)
-  const canSave = canProceedToStep5;
+  const canSave = canProceedToStep6;
 
   if (isLoading) {
     return (
@@ -1126,7 +1126,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     variant="ghost" 
                     size="icon" 
                     className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => handleEditOffer(2)}
+                    onClick={() => handleEditOffer(1)}
                   >
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -1162,7 +1162,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => handleEditOffer(4)}
+                    onClick={() => handleEditOffer(2)}
                   >
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -1212,7 +1212,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => handleEditOffer(5)}
+                    onClick={() => handleEditOffer(6)}
                   >
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -1297,7 +1297,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => handleEditOffer(3)}
+                    onClick={() => handleEditOffer(5)}
                   >
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -1321,11 +1321,11 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>{offer ? "Edit Offer" : "Create Offer"}</DialogTitle>
             <DialogDescription>
-              {step === 1 && "Step 1: Select your niche and offer type"}
-              {step === 2 && "Step 2: Get AI-powered offer ideas (optional)"}
-              {step === 3 && "Step 3: Enter your offer details"}
-              {step === 4 && "Step 4: Select your funnel type"}
-              {step === 5 && "Step 5: Select main deliverables (optional)"}
+              {step === 1 && "Step 1: Select your niche, offer type, and title"}
+              {step === 2 && "Step 2: Select main deliverables (optional)"}
+              {step === 3 && "Step 3: Get AI-powered offer ideas (optional)"}
+              {step === 4 && "Step 4: Enter your offer details"}
+              {step === 5 && "Step 5: Select your funnel type"}
               {step === 6 && "Step 6: Select your platforms"}
             </DialogDescription>
           </DialogHeader>
@@ -1345,7 +1345,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
 
           <div className="flex-1 overflow-y-auto min-h-0 pr-2">
             <div className="space-y-6 py-4 pr-2">
-              {/* Step 1: Niche and Offer Type */}
+              {/* Step 1: Niche + Offer Type + Offer Title */}
               {step === 1 && (
                 <div className="space-y-6">
                   <div className="space-y-2">
@@ -1421,11 +1421,103 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                       </div>
                     ))}
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="offerTitle">Offer Title <span className="text-destructive">*</span></Label>
+                    <Input
+                      id="offerTitle"
+                      value={offerTitle}
+                      onChange={(e) => setOfferTitle(e.target.value)}
+                      placeholder="e.g., 'Launch Like a Pro Masterclass'"
+                    />
+                  </div>
                 </div>
               )}
 
-              {/* Step 2: AI Offer Ideas */}
+              {/* Step 2: Main Deliverables (optional) */}
               {step === 2 && (
+                <div className="space-y-4">
+                  <div>
+                    <Label>Select Main Deliverables</Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {isSubscribed 
+                        ? "Choose what your clients will receive. Select all that apply."
+                        : "Choose what your clients will receive."}
+                    </p>
+                  </div>
+
+                  {/* Free plan upgrade notice */}
+                  {!isSubscribed && (
+                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <CheckSquare className="w-4 h-4 text-amber-600" />
+                        <span className="text-sm text-amber-700">Free plan: 1 deliverable included</span>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-amber-700 border-amber-500/30 hover:bg-amber-500/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open('/settings', '_blank');
+                        }}
+                      >
+                        Upgrade Plan
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="grid gap-3">
+                    {MAIN_DELIVERABLES.map((deliverable) => {
+                      const Icon = deliverable.icon;
+                      const isSelected = selectedDeliverables.includes(deliverable.id);
+                      
+                      return (
+                        <Card
+                          key={deliverable.id}
+                          className={cn(
+                            "cursor-pointer transition-all hover:border-primary/50",
+                            isSelected && "border-primary ring-1 ring-primary"
+                          )}
+                          onClick={() => toggleDeliverable(deliverable.id)}
+                        >
+                          <CardHeader className="py-3 px-4">
+                            <div className="flex items-start gap-3">
+                              <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0", deliverable.bgColor)}>
+                                <Icon className={cn("w-5 h-5", deliverable.color)} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <CardTitle className="text-sm">{deliverable.name}</CardTitle>
+                                <CardDescription className="text-xs mt-0.5">{deliverable.description}</CardDescription>
+                              </div>
+                              <div className={cn(
+                                "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
+                                isSelected ? "bg-primary border-primary" : "border-muted-foreground/30"
+                              )}>
+                                {isSelected && (
+                                  <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CheckSquare className="w-4 h-4" />
+                    <span>{selectedDeliverables.length} deliverable{selectedDeliverables.length !== 1 ? 's' : ''} selected</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    This step is optional. You can skip if you haven't decided on deliverables yet.
+                  </p>
+                </div>
+              )}
+
+              {/* Step 3: AI Offer Ideas (optional) */}
+              {step === 3 && (
                 <div className="space-y-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -1532,28 +1624,18 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 </div>
               )}
 
-              {/* Step 3: Offer Details */}
-              {step === 3 && (
+              {/* Step 4: Offer Details (description + price only) */}
+              {step === 4 && (
                 <div className="space-y-4">
                   {selectedIdeaIndex !== null && offerIdeas[selectedIdeaIndex] && (
                     <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-start gap-3">
                       <Lightbulb className="w-4 h-4 text-primary mt-0.5" />
                       <div className="flex-1">
                         <p className="text-sm font-medium text-foreground">Using AI-generated idea</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">You can edit the title and description below.</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">You can edit the description below.</p>
                       </div>
                     </div>
                   )}
-
-                  <div className="space-y-2">
-                    <Label htmlFor="offerTitle">Offer Title <span className="text-destructive">*</span></Label>
-                    <Input
-                      id="offerTitle"
-                      value={offerTitle}
-                      onChange={(e) => setOfferTitle(e.target.value)}
-                      placeholder="e.g., 'Launch Like a Pro Masterclass'"
-                    />
-                  </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="offerDescription">Description <span className="text-destructive">*</span></Label>
@@ -1581,8 +1663,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 </div>
               )}
 
-              {/* Step 4: Funnel Type */}
-              {step === 4 && (
+              {/* Step 5: Funnel Type */}
+              {step === 5 && (
                 <div className="space-y-4">
                   <Label>Select Funnel Type</Label>
                   <div className="grid gap-3">
@@ -1632,85 +1714,6 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                         </Card>
                       );
                     })}
-                  </div>
-                </div>
-              )}
-
-              {/* Step 5: Main Deliverables */}
-              {step === 5 && (
-                <div className="space-y-4">
-                  <div>
-                    <Label>Select Main Deliverables</Label>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {isSubscribed 
-                        ? "Choose what your clients will receive. Select all that apply."
-                        : "Choose what your clients will receive."}
-                    </p>
-                  </div>
-
-                  {/* Free plan upgrade notice */}
-                  {!isSubscribed && (
-                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <CheckSquare className="w-4 h-4 text-amber-600" />
-                        <span className="text-sm text-amber-700">Free plan: 1 deliverable included</span>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="text-amber-700 border-amber-500/30 hover:bg-amber-500/10"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open('/settings', '_blank');
-                        }}
-                      >
-                        Upgrade Plan
-                      </Button>
-                    </div>
-                  )}
-
-                  <div className="grid gap-3">
-                    {MAIN_DELIVERABLES.map((deliverable) => {
-                      const Icon = deliverable.icon;
-                      const isSelected = selectedDeliverables.includes(deliverable.id);
-                      
-                      return (
-                        <Card
-                          key={deliverable.id}
-                          className={cn(
-                            "cursor-pointer transition-all hover:border-primary/50",
-                            isSelected && "border-primary ring-1 ring-primary"
-                          )}
-                          onClick={() => toggleDeliverable(deliverable.id)}
-                        >
-                          <CardHeader className="py-3 px-4">
-                            <div className="flex items-start gap-3">
-                              <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0", deliverable.bgColor)}>
-                                <Icon className={cn("w-5 h-5", deliverable.color)} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <CardTitle className="text-sm">{deliverable.name}</CardTitle>
-                                <CardDescription className="text-xs mt-0.5">{deliverable.description}</CardDescription>
-                              </div>
-                              <div className={cn(
-                                "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
-                                isSelected ? "bg-primary border-primary" : "border-muted-foreground/30"
-                              )}>
-                                {isSelected && (
-                                  <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                )}
-                              </div>
-                            </div>
-                          </CardHeader>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckSquare className="w-4 h-4" />
-                    <span>{selectedDeliverables.length} deliverable{selectedDeliverables.length !== 1 ? 's' : ''} selected</span>
                   </div>
                 </div>
               )}
@@ -1806,10 +1809,11 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
               {step === 1 ? "Cancel" : "Back"}
             </Button>
             <div className="flex gap-2">
-              {step === 2 && (
+              {/* Skip buttons for optional steps 2 and 3 */}
+              {(step === 2 || step === 3) && (
                 <Button 
                   variant="outline"
-                  onClick={() => setStep(3)}
+                  onClick={() => setStep((step + 1) as 3 | 4)}
                 >
                   Skip
                 </Button>
@@ -1822,6 +1826,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     step === 2 ? !canProceedToStep3 :
                     step === 3 ? !canProceedToStep4 :
                     step === 4 ? !canProceedToStep5 :
+                    step === 5 ? !canProceedToStep6 :
                     false
                   }
                 >
