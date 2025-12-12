@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
-  Sparkles,
   Calendar,
   Kanban,
   FileText,
@@ -33,7 +32,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { TransformationBuilder } from "@/components/TransformationBuilder";
 import { LaunchCalendarEventDialog } from "@/components/LaunchCalendarEventDialog";
 import { LaunchCalendarTimeline } from "@/components/LaunchCalendarTimeline";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
@@ -134,10 +132,6 @@ const ProjectDetail = () => {
     fetchLaunchEvents();
   }, [id, navigate, fetchLaunchEvents]);
 
-  const handleStatementSaved = (statement: string) => {
-    setProject((prev) => prev ? { ...prev, transformation_statement: statement } : null);
-  };
-
   const handleProjectUpdated = (name: string, description: string | null, status: ProjectStatus) => {
     setProject((prev) => prev ? { ...prev, name, description, status } : null);
   };
@@ -235,41 +229,6 @@ const ProjectDetail = () => {
               }
             />
           </div>
-        </motion.div>
-
-        {/* Transformation Statement */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Card variant="elevated">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <CardTitle>Transformation Statement</CardTitle>
-                    <CardDescription>AI-generated statement for your launch</CardDescription>
-                  </div>
-                </div>
-                <TransformationBuilder
-                  projectId={project.id}
-                  currentStatement={project.transformation_statement}
-                  onStatementSaved={handleStatementSaved}
-                />
-              </div>
-            </CardHeader>
-            {project.transformation_statement && (
-              <CardContent>
-                <div className="p-4 bg-accent rounded-lg">
-                  <p className="text-lg text-foreground italic">"{project.transformation_statement}"</p>
-                </div>
-              </CardContent>
-            )}
-          </Card>
         </motion.div>
 
         {/* Main Tabs */}

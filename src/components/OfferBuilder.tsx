@@ -677,6 +677,7 @@ interface Offer {
   title: string | null;
   description: string | null;
   price: number | null;
+  price_type: string | null;
   target_audience: string | null;
   primary_pain_point: string | null;
   desired_outcome: string | null;
@@ -685,6 +686,15 @@ interface Offer {
   created_at: string;
   updated_at: string;
 }
+
+const PRICE_TYPES = [
+  { id: "free", name: "Free" },
+  { id: "one-time", name: "One-time Payment" },
+  { id: "subscription", name: "Monthly Subscription" },
+  { id: "quarterly", name: "Quarterly Payment" },
+  { id: "annually", name: "Annual Payment" },
+  { id: "installments", name: "Payment Plan (Installments)" },
+];
 
 interface OfferBuilderProps {
   projectId: string;
@@ -736,11 +746,12 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   const [desiredOutcome, setDesiredOutcome] = useState<string>("");
   const [problemStatement, setProblemStatement] = useState<string>("");
   const [isGeneratingProblemStatement, setIsGeneratingProblemStatement] = useState(false);
+  const [useOwnProblemStatement, setUseOwnProblemStatement] = useState(false);
   
   // Step 2: Offer Type
   const [selectedOfferType, setSelectedOfferType] = useState<string>("");
   
-  // Step 3: Transformation Statement (NEW)
+  // Step 3: Transformation Statement
   const [transformationStatements, setTransformationStatements] = useState<string[]>([]);
   const [selectedTransformationIndex, setSelectedTransformationIndex] = useState<number | null>(null);
   const [editedTransformation, setEditedTransformation] = useState<string>("");
@@ -749,6 +760,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   const [isRefiningTransformations, setIsRefiningTransformations] = useState(false);
   const [isCheckingAlignment, setIsCheckingAlignment] = useState(false);
   const [alignmentFeedback, setAlignmentFeedback] = useState<string>("");
+  const [useOwnTransformation, setUseOwnTransformation] = useState(false);
+  const [isGeneratingAdjusted, setIsGeneratingAdjusted] = useState(false);
   
   // Step 4: Deliverables
   const [selectedDeliverables, setSelectedDeliverables] = useState<string[]>([]);
@@ -762,6 +775,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   const [offerTitle, setOfferTitle] = useState<string>("");
   const [offerDescription, setOfferDescription] = useState<string>("");
   const [offerPrice, setOfferPrice] = useState<string>("");
+  const [offerPriceType, setOfferPriceType] = useState<string>("one-time");
   
   // Step 7: Funnel Type
   const [selectedFunnelType, setSelectedFunnelType] = useState<string>("");
@@ -863,17 +877,20 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setPrimaryPainPoint("");
     setDesiredOutcome("");
     setProblemStatement("");
+    setUseOwnProblemStatement(false);
     setSelectedOfferType("");
     setTransformationStatements([]);
     setSelectedTransformationIndex(null);
     setEditedTransformation("");
     setTransformationTimeframe("");
     setAlignmentFeedback("");
+    setUseOwnTransformation(false);
     setSelectedFunnelType("");
     setSelectedDeliverables([]);
     setOfferTitle("");
     setOfferDescription("");
     setOfferPrice("");
+    setOfferPriceType("one-time");
     setSelectedFunnelPlatform("");
     setSelectedCommunityPlatform("");
     setSelectedEmailPlatform("");
@@ -901,17 +918,20 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setPrimaryPainPoint(offer.primary_pain_point || "");
     setDesiredOutcome(offer.desired_outcome || "");
     setProblemStatement(offer.problem_statement || "");
+    setUseOwnProblemStatement(false);
     setSelectedOfferType(offer.offer_type);
     setEditedTransformation(offer.transformation_statement || "");
     setSelectedTransformationIndex(null);
     setTransformationStatements([]);
     setTransformationTimeframe("");
     setAlignmentFeedback("");
+    setUseOwnTransformation(!!offer.transformation_statement);
     setSelectedFunnelType(offer.funnel_type || "");
     setSelectedDeliverables(offer.main_deliverables || []);
     setOfferTitle(offer.title || "");
     setOfferDescription(offer.description || "");
     setOfferPrice(offer.price?.toString() || "");
+    setOfferPriceType(offer.price_type || "one-time");
     setSelectedFunnelPlatform(offer.funnel_platform || "");
     setSelectedCommunityPlatform(offer.community_platform || "");
     setSelectedEmailPlatform(offer.email_platform || "");
@@ -1109,6 +1129,40 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     }
   };
 
+  const generateAdjustedStatement = async () => {
+    if (!editedTransformation.trim() || !alignmentFeedback || !selectedOfferType) return;
+    
+    setIsGeneratingAdjusted(true);
+    
+    try {
+      const offerDetails = getOfferDetails(selectedOfferType);
+      
+      const { data, error } = await supabase.functions.invoke('generate-offer-transformation', {
+        body: {
+          operation: "adjust",
+          statement: editedTransformation,
+          feedback: alignmentFeedback,
+          offerType: offerDetails?.name || selectedOfferType,
+        },
+      });
+
+      if (error) throw error;
+      
+      if (data?.adjusted) {
+        setEditedTransformation(data.adjusted);
+        setAlignmentFeedback("");
+        toast.success("Statement adjusted based on feedback!");
+      } else {
+        throw new Error("Invalid response format");
+      }
+    } catch (error) {
+      console.error("Failed to generate adjusted statement:", error);
+      toast.error("Failed to generate adjusted statement. Please try again.");
+    } finally {
+      setIsGeneratingAdjusted(false);
+    }
+  };
+
   const handleSelectTransformation = (index: number) => {
     setSelectedTransformationIndex(index);
     setEditedTransformation(transformationStatements[index]);
@@ -1184,6 +1238,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
       title: offerTitle.trim() || null,
       description: offerDescription.trim() || null,
       price: offerPrice ? parseFloat(offerPrice) : null,
+      price_type: offerPriceType || "one-time",
       target_audience: targetAudience.trim() || null,
       primary_pain_point: primaryPainPoint.trim() || null,
       desired_outcome: desiredOutcome.trim() || null,
@@ -1610,42 +1665,57 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                         <Target className="w-4 h-4 text-primary" />
                         <Label className="text-sm font-medium">Problem Statement</Label>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={generateProblemStatement}
-                        disabled={isGeneratingProblemStatement || !selectedNiche || !targetAudience.trim() || !primaryPainPoint.trim() || !desiredOutcome.trim()}
-                      >
-                        {isGeneratingProblemStatement ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Generating...
-                          </>
-                        ) : problemStatement ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 mr-2" />
-                            Regenerate
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-4 h-4 mr-2" />
-                            Generate
-                          </>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setUseOwnProblemStatement(!useOwnProblemStatement)}
+                          className="text-xs"
+                        >
+                          {useOwnProblemStatement ? "Use AI" : "Write Your Own"}
+                        </Button>
+                        {!useOwnProblemStatement && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={generateProblemStatement}
+                            disabled={isGeneratingProblemStatement || !selectedNiche || !targetAudience.trim() || !primaryPainPoint.trim() || !desiredOutcome.trim()}
+                          >
+                            {isGeneratingProblemStatement ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Generating...
+                              </>
+                            ) : problemStatement ? (
+                              <>
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                Regenerate
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="w-4 h-4 mr-2" />
+                                Generate
+                              </>
+                            )}
+                          </Button>
                         )}
-                      </Button>
+                      </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      AI will synthesize your answers into a clear problem statement that anchors your offer messaging.
+                      {useOwnProblemStatement 
+                        ? "Write your own problem statement that anchors your offer messaging."
+                        : "AI will synthesize your answers into a clear problem statement that anchors your offer messaging."}
                     </p>
-                    {problemStatement && (
+                    {(problemStatement || useOwnProblemStatement) && (
                       <Textarea
                         value={problemStatement}
                         onChange={(e) => setProblemStatement(e.target.value)}
-                        rows={3}
-                        className="mt-2"
+                        placeholder="Enter your problem statement..."
+                        className="mt-2 min-h-[100px] resize-none"
+                        style={{ height: 'auto', overflow: 'visible' }}
                       />
                     )}
-                    {!problemStatement && !isGeneratingProblemStatement && (
+                    {!problemStatement && !isGeneratingProblemStatement && !useOwnProblemStatement && (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
                         <AlertCircle className="w-3 h-3" />
                         <span>Fill in all fields above to generate a problem statement</span>
@@ -1729,127 +1799,219 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     </p>
                   </div>
 
-                  {/* Timeframe input */}
-                  <div className="space-y-2">
-                    <Label htmlFor="timeframe">Timeframe <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                    <Input
-                      id="timeframe"
-                      value={transformationTimeframe}
-                      onChange={(e) => setTransformationTimeframe(e.target.value)}
-                      placeholder="e.g., '30 days', '8 weeks', '3 months'"
-                    />
-                    <p className="text-xs text-muted-foreground">If your offer has a specific timeframe, mention it here for more targeted statements.</p>
+                  {/* Toggle for own statement */}
+                  <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 border border-border">
+                    <Button
+                      variant={!useOwnTransformation ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setUseOwnTransformation(false)}
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate with AI
+                    </Button>
+                    <Button
+                      variant={useOwnTransformation ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setUseOwnTransformation(true)}
+                    >
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Write Your Own
+                    </Button>
                   </div>
 
-                  {/* Generate button */}
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={generateTransformationStatements}
-                      disabled={isGeneratingTransformations || isRefiningTransformations}
-                    >
-                      {isGeneratingTransformations ? (
+                  {/* Own statement mode */}
+                  {useOwnTransformation && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="ownTransformation">Your Transformation Statement</Label>
+                        <Textarea
+                          id="ownTransformation"
+                          value={editedTransformation}
+                          onChange={(e) => setEditedTransformation(e.target.value)}
+                          placeholder="e.g., I help busy moms lose weight and gain energy in just 30 days without restrictive diets..."
+                          className="min-h-[100px]"
+                        />
+                      </div>
+
+                      {/* Alignment check for own statement */}
+                      {editedTransformation.trim() && (
                         <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Generating...
-                        </>
-                      ) : transformationStatements.length > 0 ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 mr-2" />
-                          Regenerate
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Generate Statements
+                          <Button 
+                            variant="outline"
+                            onClick={checkOfferAlignment}
+                            disabled={isCheckingAlignment || !editedTransformation.trim()}
+                          >
+                            {isCheckingAlignment ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Checking...
+                              </>
+                            ) : (
+                              <>
+                                <ShieldCheck className="w-4 h-4 mr-2" />
+                                Check Offer Type Alignment
+                              </>
+                            )}
+                          </Button>
+
+                          {alignmentFeedback && (
+                            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 space-y-3">
+                              <div className="flex items-start gap-3">
+                                <ShieldCheck className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                                <div>
+                                  <p className="text-sm font-medium text-foreground">Alignment Feedback</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">{alignmentFeedback}</p>
+                                </div>
+                              </div>
+                              <Button 
+                                variant="outline"
+                                size="sm"
+                                onClick={generateAdjustedStatement}
+                                disabled={isGeneratingAdjusted}
+                              >
+                                {isGeneratingAdjusted ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Adjusting...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Wand2 className="w-4 h-4 mr-2" />
+                                    Generate Adjusted Statement
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          )}
                         </>
                       )}
-                    </Button>
-                    {transformationStatements.length > 0 && (
-                      <Button 
-                        variant="outline"
-                        onClick={refineTransformationStatements}
-                        disabled={isGeneratingTransformations || isRefiningTransformations}
-                      >
-                        {isRefiningTransformations ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Refining...
-                          </>
-                        ) : (
-                          <>
-                            <Wand2 className="w-4 h-4 mr-2" />
-                            Refine for Specificity
-                          </>
+                    </div>
+                  )}
+
+                  {/* AI generation mode */}
+                  {!useOwnTransformation && (
+                    <>
+                      {/* Timeframe input */}
+                      <div className="space-y-2">
+                        <Label htmlFor="timeframe">Timeframe <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                        <Input
+                          id="timeframe"
+                          value={transformationTimeframe}
+                          onChange={(e) => setTransformationTimeframe(e.target.value)}
+                          placeholder="e.g., '30 days', '8 weeks', '3 months'"
+                        />
+                        <p className="text-xs text-muted-foreground">If your offer has a specific timeframe, mention it here for more targeted statements.</p>
+                      </div>
+
+                      {/* Generate button */}
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={generateTransformationStatements}
+                          disabled={isGeneratingTransformations || isRefiningTransformations}
+                        >
+                          {isGeneratingTransformations ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Generating...
+                            </>
+                          ) : transformationStatements.length > 0 ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 mr-2" />
+                              Regenerate
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-4 h-4 mr-2" />
+                              Generate Statements
+                            </>
+                          )}
+                        </Button>
+                        {transformationStatements.length > 0 && (
+                          <Button 
+                            variant="outline"
+                            onClick={refineTransformationStatements}
+                            disabled={isGeneratingTransformations || isRefiningTransformations}
+                          >
+                            {isRefiningTransformations ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Refining...
+                              </>
+                            ) : (
+                              <>
+                                <Wand2 className="w-4 h-4 mr-2" />
+                                Refine for Specificity
+                              </>
+                            )}
+                          </Button>
                         )}
-                      </Button>
-                    )}
-                  </div>
-
-                  {/* Loading state */}
-                  {isGeneratingTransformations && (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
-                      <p className="text-sm text-muted-foreground">Crafting transformation statements...</p>
-                    </div>
-                  )}
-
-                  {/* Empty state */}
-                  {!isGeneratingTransformations && transformationStatements.length === 0 && !editedTransformation && (
-                    <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-border rounded-lg">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                        <Wand2 className="w-6 h-6 text-primary" />
                       </div>
-                      <h4 className="text-sm font-medium text-foreground mb-1">No transformation statement yet</h4>
-                      <p className="text-xs text-muted-foreground mb-4 max-w-sm">
-                        Click "Generate Statements" to create 3 variations based on your audience, problem, and offer type.
-                      </p>
-                    </div>
-                  )}
 
-                  {/* Statement selection cards */}
-                  {!isGeneratingTransformations && transformationStatements.length > 0 && (
-                    <div className="space-y-3">
-                      <Label>Select a statement to use:</Label>
-                      <div className="grid gap-3">
-                        {transformationStatements.map((statement, index) => {
-                          const isSelected = selectedTransformationIndex === index;
-                          
-                          return (
-                            <Card
-                              key={index}
-                              className={cn(
-                                "cursor-pointer transition-all hover:border-primary/50",
-                                isSelected && "border-primary ring-1 ring-primary"
-                              )}
-                              onClick={() => handleSelectTransformation(index)}
-                            >
-                              <CardHeader className="py-3 px-4">
-                                <div className="flex items-start gap-3">
-                                  <div className={cn(
-                                    "w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold",
-                                    isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                                  )}>
-                                    {index + 1}
-                                  </div>
-                                  <p className="text-sm text-foreground flex-1">{statement}</p>
-                                  <div className={cn(
-                                    "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
-                                    isSelected ? "bg-primary border-primary" : "border-muted-foreground/30"
-                                  )}>
-                                    {isSelected && (
-                                      <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                      </svg>
-                                    )}
-                                  </div>
-                                </div>
-                              </CardHeader>
-                            </Card>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                      {/* Loading state */}
+                      {isGeneratingTransformations && (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                          <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+                          <p className="text-sm text-muted-foreground">Crafting transformation statements...</p>
+                        </div>
+                      )}
+
+                      {/* Empty state */}
+                      {!isGeneratingTransformations && transformationStatements.length === 0 && !editedTransformation && (
+                        <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-border rounded-lg">
+                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                            <Wand2 className="w-6 h-6 text-primary" />
+                          </div>
+                          <h4 className="text-sm font-medium text-foreground mb-1">No transformation statement yet</h4>
+                          <p className="text-xs text-muted-foreground mb-4 max-w-sm">
+                            Click "Generate Statements" to create 3 variations based on your audience, problem, and offer type.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Statement selection cards */}
+                      {!isGeneratingTransformations && transformationStatements.length > 0 && (
+                        <div className="space-y-3">
+                          <Label>Select a statement to use:</Label>
+                          <div className="grid gap-3">
+                            {transformationStatements.map((statement, index) => {
+                              const isSelected = selectedTransformationIndex === index;
+                              
+                              return (
+                                <Card
+                                  key={index}
+                                  className={cn(
+                                    "cursor-pointer transition-all hover:border-primary/50",
+                                    isSelected && "border-primary ring-1 ring-primary"
+                                  )}
+                                  onClick={() => handleSelectTransformation(index)}
+                                >
+                                  <CardHeader className="py-3 px-4">
+                                    <div className="flex items-start gap-3">
+                                      <div className={cn(
+                                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold",
+                                        isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                                      )}>
+                                        {index + 1}
+                                      </div>
+                                      <p className="text-sm text-foreground flex-1">{statement}</p>
+                                      <div className={cn(
+                                        "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
+                                        isSelected ? "bg-primary border-primary" : "border-muted-foreground/30"
+                                      )}>
+                                        {isSelected && (
+                                          <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                          </svg>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </CardHeader>
+                                </Card>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
 
                   {/* Editable selected statement */}
                   {editedTransformation && (
