@@ -310,10 +310,7 @@ const ProjectDetail = () => {
                   ) : (
                     <div className="space-y-8">
                       {/* Year-at-a-Glance Timeline */}
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-4">Year at a Glance</h3>
-                        <LaunchCalendarTimeline events={launchEvents} />
-                      </div>
+                      <LaunchCalendarTimeline events={launchEvents} />
 
                       {/* Event List */}
                       <div className="space-y-4">

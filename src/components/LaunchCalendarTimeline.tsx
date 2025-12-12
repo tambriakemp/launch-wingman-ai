@@ -129,13 +129,18 @@ export function LaunchCalendarTimeline({ events }: LaunchCalendarTimelineProps) 
         });
       }
 
-      if (event.prelaunch_start && event.enrollment_opens) {
+      // For prelaunch phase: if enrollment_opens exists use it as end, otherwise use 7 weeks after prelaunch_start
+      if (event.prelaunch_start) {
+        const prelaunchEnd = event.enrollment_opens 
+          ? parseISO(event.enrollment_opens)
+          : addMonths(parseISO(event.prelaunch_start), 2); // ~7-8 weeks approximation
+        
         bars.push({
           eventId: event.id,
           eventTitle: event.title,
           phase: "prelaunch",
           startDate: parseISO(event.prelaunch_start),
-          endDate: parseISO(event.enrollment_opens),
+          endDate: prelaunchEnd,
           color: "prelaunch",
         });
       }

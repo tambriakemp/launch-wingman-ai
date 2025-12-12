@@ -283,11 +283,11 @@ export function LaunchCalendarEventDialog({
     <div className="flex items-start gap-3 py-3 border-b border-border/50 last:border-0">
       <div className="mt-1 text-muted-foreground flex-shrink-0">{icon}</div>
       <div className="flex-1 min-w-0 space-y-1">
-        <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="min-w-0 flex-1">
             <Label className="text-sm font-medium">{label}</Label>
             {description && (
-              <p className="text-xs text-muted-foreground truncate">{description}</p>
+              <p className="text-xs text-muted-foreground">{description}</p>
             )}
           </div>
           <Popover>
@@ -296,12 +296,12 @@ export function LaunchCalendarEventDialog({
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "w-[140px] flex-shrink-0 justify-start text-left font-normal",
+                  "w-full sm:w-[130px] flex-shrink-0 justify-start text-left font-normal text-xs",
                   !date && "text-muted-foreground"
                 )}
               >
-                <CalendarIcon className="mr-2 h-3 w-3" />
-                {date ? format(date, "MMM d, yyyy") : "Select"}
+                <CalendarIcon className="mr-1.5 h-3 w-3 flex-shrink-0" />
+                <span className="truncate">{date ? format(date, "MMM d, yyyy") : "Select"}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0 z-50" align="end">
