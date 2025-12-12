@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface LaunchEvent {
   id: string;
@@ -98,6 +99,22 @@ export function LaunchCalendarEventDialog({
     restPeriodEnd: undefined,
   });
 
+  // Fetch offer title for default event title
+  const { data: offer } = useQuery({
+    queryKey: ["offer-title", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("offers")
+        .select("title")
+        .eq("project_id", projectId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!projectId,
+  });
+
   useEffect(() => {
     if (editEvent && open) {
       setTitle(editEvent.title);
@@ -122,7 +139,8 @@ export function LaunchCalendarEventDialog({
 
   useEffect(() => {
     if (!open && !isEditMode) {
-      setTitle("");
+      // When dialog closes, reset to offer title or empty
+      setTitle(offer?.title || "");
       setDates({
         prelaunchStart: undefined,
         contentCreationStart: undefined,
@@ -137,7 +155,14 @@ export function LaunchCalendarEventDialog({
       setRestWeeks(DEFAULT_REST_WEEKS);
       setShowDates(false);
     }
-  }, [open, isEditMode]);
+  }, [open, isEditMode, offer?.title]);
+
+  // Set initial title from offer when dialog opens for new event
+  useEffect(() => {
+    if (open && !isEditMode && offer?.title && !title) {
+      setTitle(offer.title);
+    }
+  }, [open, isEditMode, offer?.title, title]);
 
   const calculateDatesFromPrelaunch = (prelaunch: Date, weeks: number, rest: number) => {
     const contentCreation = subWeeks(prelaunch, CONTENT_CREATION_WEEKS);
