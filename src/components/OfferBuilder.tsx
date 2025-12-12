@@ -1615,16 +1615,46 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
           </DialogHeader>
           
           {/* Step Indicators */}
-          <div className="flex items-center gap-2 py-2 flex-shrink-0">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
-              <div
-                key={s}
-                className={cn(
-                  "flex-1 h-1.5 rounded-full transition-colors",
-                  s <= step ? "bg-primary" : "bg-muted"
-                )}
-              />
-            ))}
+          <div className="flex items-center gap-1 py-3 flex-shrink-0 px-1">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => {
+              const isCompleted = s < step;
+              const isCurrent = s === step;
+              const isOptional = s === 3 || s === 4 || s === 5;
+              
+              return (
+                <div key={s} className="flex-1 flex flex-col items-center gap-1.5">
+                  <div
+                    className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all border-2",
+                      isCompleted && "bg-primary border-primary text-primary-foreground",
+                      isCurrent && "bg-primary/10 border-primary text-primary",
+                      !isCompleted && !isCurrent && "bg-muted border-muted-foreground/20 text-muted-foreground"
+                    )}
+                  >
+                    {isCompleted ? (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      s
+                    )}
+                  </div>
+                  <span className={cn(
+                    "text-[10px] leading-tight text-center hidden sm:block",
+                    isCurrent ? "text-primary font-medium" : "text-muted-foreground"
+                  )}>
+                    {s === 1 && "Audience"}
+                    {s === 2 && "Type"}
+                    {s === 3 && "Transform"}
+                    {s === 4 && "Deliver"}
+                    {s === 5 && "Ideas"}
+                    {s === 6 && "Details"}
+                    {s === 7 && "Funnel"}
+                    {s === 8 && "Platforms"}
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
           <div className="flex-1 overflow-y-auto min-h-0 pr-2">
@@ -2365,17 +2395,35 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="offerPrice">Price ($) <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                    <Input
-                      id="offerPrice"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={offerPrice}
-                      onChange={(e) => setOfferPrice(e.target.value)}
-                      placeholder="0.00"
-                    />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="offerPrice">Price ($) <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                      <Input
+                        id="offerPrice"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={offerPrice}
+                        onChange={(e) => setOfferPrice(e.target.value)}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="offerPriceType">Price Type</Label>
+                      <Select value={offerPriceType} onValueChange={setOfferPriceType}>
+                        <SelectTrigger id="offerPriceType">
+                          <SelectValue placeholder="Select price type..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border border-border">
+                          {PRICE_TYPES.map((priceType) => (
+                            <SelectItem key={priceType.id} value={priceType.id}>
+                              {priceType.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               )}
