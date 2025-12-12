@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { format, parseISO, isPast, isToday } from "date-fns";
 import { GripVertical, MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, Filter, X } from "lucide-react";
@@ -60,6 +60,23 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+
+  // Refs for synced scrolling
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const boardScrollRef = useRef<HTMLDivElement>(null);
+
+  // Sync scroll between top scrollbar and board
+  const handleTopScroll = () => {
+    if (topScrollRef.current && boardScrollRef.current) {
+      boardScrollRef.current.scrollLeft = topScrollRef.current.scrollLeft;
+    }
+  };
+
+  const handleBoardScroll = () => {
+    if (topScrollRef.current && boardScrollRef.current) {
+      topScrollRef.current.scrollLeft = boardScrollRef.current.scrollLeft;
+    }
+  };
 
   const fetchTasks = useCallback(async () => {
     if (!projectId) return;
@@ -375,8 +392,21 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
         </div>
       </div>
 
+      {/* Top scrollbar */}
+      <div 
+        ref={topScrollRef}
+        onScroll={handleTopScroll}
+        className="overflow-x-auto h-3 mb-2"
+      >
+        <div className="h-1" style={{ width: `${COLUMNS.length * 280 + (COLUMNS.length - 1) * 16}px` }} />
+      </div>
+
       {/* Board - scrollable container */}
-      <div className="overflow-x-auto pb-4 scrollbar-thin">
+      <div 
+        ref={boardScrollRef}
+        onScroll={handleBoardScroll}
+        className="overflow-x-auto pb-4"
+      >
         <div className="flex gap-4 min-w-max py-1">
           {COLUMNS.map((column) => (
             <div
