@@ -792,30 +792,6 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
             </CardContent>
           </Card>
 
-          {/* Funnel Diagram Card */}
-          {savedFunnelDetails && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-start gap-3">
-                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", savedFunnelDetails.bgColor)}>
-                    <SavedFunnelIcon className={cn("w-5 h-5", savedFunnelDetails.color)} />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">{savedFunnelDetails.name}</CardTitle>
-                    <CardDescription>{savedFunnelDetails.purpose}</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <FunnelDiagram 
-                  steps={savedFunnelDetails.steps} 
-                  color={savedFunnelDetails.color}
-                  bgColor={savedFunnelDetails.bgColor}
-                />
-              </CardContent>
-            </Card>
-          )}
-
           {/* Main Deliverables Card */}
           {offer?.main_deliverables && offer.main_deliverables.length > 0 && (
             <Card>
@@ -855,6 +831,30 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
               </CardContent>
             </Card>
           )}
+
+          {/* Funnel Diagram Card */}
+          {savedFunnelDetails && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-start gap-3">
+                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", savedFunnelDetails.bgColor)}>
+                    <SavedFunnelIcon className={cn("w-5 h-5", savedFunnelDetails.color)} />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">{savedFunnelDetails.name}</CardTitle>
+                    <CardDescription>{savedFunnelDetails.purpose}</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <FunnelDiagram 
+                  steps={savedFunnelDetails.steps} 
+                  color={savedFunnelDetails.color}
+                  bgColor={savedFunnelDetails.bgColor}
+                />
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
@@ -884,8 +884,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
             ))}
           </div>
 
-          <ScrollArea className="flex-1 pr-4">
-            <div className="space-y-6 py-4">
+          <ScrollArea className="flex-1 pr-4 min-h-0">
+            <div className="space-y-6 py-4 pr-2">
               {/* Step 1: Offer Details */}
               {step === 1 && (
                 <div className="space-y-4">
