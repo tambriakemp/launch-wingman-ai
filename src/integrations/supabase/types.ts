@@ -222,6 +222,7 @@ export type Database = {
           community_platform: string | null
           created_at: string
           description: string | null
+          desired_outcome: string | null
           email_platform: string | null
           funnel_platform: string | null
           funnel_type: string | null
@@ -231,7 +232,10 @@ export type Database = {
           offer_category: string
           offer_type: string
           price: number | null
+          primary_pain_point: string | null
+          problem_statement: string | null
           project_id: string
+          target_audience: string | null
           title: string | null
           updated_at: string
           user_id: string
@@ -240,6 +244,7 @@ export type Database = {
           community_platform?: string | null
           created_at?: string
           description?: string | null
+          desired_outcome?: string | null
           email_platform?: string | null
           funnel_platform?: string | null
           funnel_type?: string | null
@@ -249,7 +254,10 @@ export type Database = {
           offer_category: string
           offer_type: string
           price?: number | null
+          primary_pain_point?: string | null
+          problem_statement?: string | null
           project_id: string
+          target_audience?: string | null
           title?: string | null
           updated_at?: string
           user_id: string
@@ -258,6 +266,7 @@ export type Database = {
           community_platform?: string | null
           created_at?: string
           description?: string | null
+          desired_outcome?: string | null
           email_platform?: string | null
           funnel_platform?: string | null
           funnel_type?: string | null
@@ -267,7 +276,10 @@ export type Database = {
           offer_category?: string
           offer_type?: string
           price?: number | null
+          primary_pain_point?: string | null
+          problem_statement?: string | null
           project_id?: string
+          target_audience?: string | null
           title?: string | null
           updated_at?: string
           user_id?: string

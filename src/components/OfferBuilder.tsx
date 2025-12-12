@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Gift, ShoppingBag, Video, Users, CreditCard, GraduationCap, BookOpen, Layers, Pencil, Trash2, Loader2, Mail, DollarSign, Play, Instagram, Radio, Zap, UserCheck, Send, Rocket, ArrowDown, ChevronRight, ListChecks, FileText, Headphones, MessageSquare, MessagesSquare, Calendar, Layout, Volume2, Heart, BookMarked, UsersRound, Phone, MailCheck, MessageCircle, CheckSquare, Globe, MessageCircleMore, Sparkles, RefreshCw, Lightbulb } from "lucide-react";
+import { Plus, Gift, ShoppingBag, Video, Users, CreditCard, GraduationCap, BookOpen, Layers, Pencil, Trash2, Loader2, Mail, DollarSign, Play, Instagram, Radio, Zap, UserCheck, Send, Rocket, ArrowDown, ChevronRight, ListChecks, FileText, Headphones, MessageSquare, MessagesSquare, Calendar, Layout, Volume2, Heart, BookMarked, UsersRound, Phone, MailCheck, MessageCircle, CheckSquare, Globe, MessageCircleMore, Sparkles, RefreshCw, Lightbulb, Target, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,7 +26,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface OfferIdea {
   title: string;
@@ -678,6 +677,10 @@ interface Offer {
   title: string | null;
   description: string | null;
   price: number | null;
+  target_audience: string | null;
+  primary_pain_point: string | null;
+  desired_outcome: string | null;
+  problem_statement: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -724,20 +727,40 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  
+  // Step 1: Audience & Problem Discovery
   const [selectedNiche, setSelectedNiche] = useState<string>("");
+  const [targetAudience, setTargetAudience] = useState<string>("");
+  const [primaryPainPoint, setPrimaryPainPoint] = useState<string>("");
+  const [desiredOutcome, setDesiredOutcome] = useState<string>("");
+  const [problemStatement, setProblemStatement] = useState<string>("");
+  const [isGeneratingProblemStatement, setIsGeneratingProblemStatement] = useState(false);
+  
+  // Step 2: Offer Type
   const [selectedOfferType, setSelectedOfferType] = useState<string>("");
-  const [selectedFunnelType, setSelectedFunnelType] = useState<string>("");
+  
+  // Step 3: Deliverables
   const [selectedDeliverables, setSelectedDeliverables] = useState<string[]>([]);
-  const [offerTitle, setOfferTitle] = useState<string>("");
-  const [offerDescription, setOfferDescription] = useState<string>("");
-  const [offerPrice, setOfferPrice] = useState<string>("");
-  const [selectedFunnelPlatform, setSelectedFunnelPlatform] = useState<string>("");
-  const [selectedCommunityPlatform, setSelectedCommunityPlatform] = useState<string>("");
-  const [selectedEmailPlatform, setSelectedEmailPlatform] = useState<string>("");
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
+  
+  // Step 4: AI Ideas
   const [offerIdeas, setOfferIdeas] = useState<OfferIdea[]>([]);
   const [selectedIdeaIndex, setSelectedIdeaIndex] = useState<number | null>(null);
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
+  
+  // Step 5: Offer Details
+  const [offerTitle, setOfferTitle] = useState<string>("");
+  const [offerDescription, setOfferDescription] = useState<string>("");
+  const [offerPrice, setOfferPrice] = useState<string>("");
+  
+  // Step 6: Funnel Type
+  const [selectedFunnelType, setSelectedFunnelType] = useState<string>("");
+  
+  // Step 7: Platforms
+  const [selectedFunnelPlatform, setSelectedFunnelPlatform] = useState<string>("");
+  const [selectedCommunityPlatform, setSelectedCommunityPlatform] = useState<string>("");
+  const [selectedEmailPlatform, setSelectedEmailPlatform] = useState<string>("");
+  
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7>(1);
 
   // Fetch offer (only one per project)
   const { data: offer, isLoading } = useQuery({
@@ -825,6 +848,10 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
 
   const handleReset = () => {
     setSelectedNiche("");
+    setTargetAudience("");
+    setPrimaryPainPoint("");
+    setDesiredOutcome("");
+    setProblemStatement("");
     setSelectedOfferType("");
     setSelectedFunnelType("");
     setSelectedDeliverables([]);
@@ -851,9 +878,13 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     }
   };
 
-  const handleEditOffer = (targetStep: 1 | 2 | 3 | 4 | 5 | 6 = 1) => {
+  const handleEditOffer = (targetStep: 1 | 2 | 3 | 4 | 5 | 6 | 7 = 1) => {
     if (!offer) return;
     setSelectedNiche(offer.niche);
+    setTargetAudience(offer.target_audience || "");
+    setPrimaryPainPoint(offer.primary_pain_point || "");
+    setDesiredOutcome(offer.desired_outcome || "");
+    setProblemStatement(offer.problem_statement || "");
     setSelectedOfferType(offer.offer_type);
     setSelectedFunnelType(offer.funnel_type || "");
     setSelectedDeliverables(offer.main_deliverables || []);
@@ -905,21 +936,48 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   };
 
   const { isSubscribed } = useAuth();
-  const maxDeliverables = isSubscribed ? Infinity : 1;
 
   const toggleDeliverable = (deliverableId: string) => {
     setSelectedDeliverables(prev => {
-      // If already selected, uncheck it
       if (prev.includes(deliverableId)) {
         return prev.filter(id => id !== deliverableId);
       }
-      // For free users (limit 1), auto-replace the selection
       if (!isSubscribed) {
         return [deliverableId];
       }
-      // For subscribed users, add to selection
       return [...prev, deliverableId];
     });
+  };
+
+  const generateProblemStatement = async () => {
+    if (!selectedNiche || !targetAudience || !primaryPainPoint || !desiredOutcome) return;
+    
+    setIsGeneratingProblemStatement(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-problem-statement', {
+        body: {
+          niche: selectedNiche,
+          targetAudience,
+          primaryPainPoint,
+          desiredOutcome,
+        },
+      });
+
+      if (error) throw error;
+      
+      if (data?.problemStatement) {
+        setProblemStatement(data.problemStatement);
+        toast.success("Problem statement generated!");
+      } else {
+        throw new Error("Invalid response format");
+      }
+    } catch (error) {
+      console.error("Failed to generate problem statement:", error);
+      toast.error("Failed to generate problem statement. Please try again.");
+    } finally {
+      setIsGeneratingProblemStatement(false);
+    }
   };
 
   const generateOfferIdeas = async () => {
@@ -942,6 +1000,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
           offerTypeName: offerDetails?.name || selectedOfferType,
           mainDeliverable: selectedDeliverables[0] || null,
           mainDeliverableName: deliverableName,
+          problemStatement: problemStatement || null,
         },
       });
 
@@ -972,42 +1031,34 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   const handleSaveOffer = (isPartialSave = false) => {
     if (!user || !selectedNiche || !selectedOfferType) return;
     
-    // For full save, require all fields
     if (!isPartialSave && (!offerTitle.trim() || !offerDescription.trim() || !selectedFunnelType)) return;
 
     const offerCategory = getOfferCategory(selectedOfferType);
 
+    const offerData = {
+      project_id: projectId,
+      user_id: user.id,
+      niche: selectedNiche,
+      offer_category: offerCategory,
+      offer_type: selectedOfferType,
+      funnel_type: selectedFunnelType || null,
+      main_deliverables: selectedDeliverables,
+      funnel_platform: selectedFunnelPlatform || null,
+      community_platform: selectedCommunityPlatform || null,
+      email_platform: selectedEmailPlatform || null,
+      title: offerTitle.trim() || null,
+      description: offerDescription.trim() || null,
+      price: offerPrice ? parseFloat(offerPrice) : null,
+      target_audience: targetAudience.trim() || null,
+      primary_pain_point: primaryPainPoint.trim() || null,
+      desired_outcome: desiredOutcome.trim() || null,
+      problem_statement: problemStatement.trim() || null,
+    };
+
     if (offer) {
-      updateMutation.mutate({
-        id: offer.id,
-        niche: selectedNiche,
-        offer_category: offerCategory,
-        offer_type: selectedOfferType,
-        funnel_type: selectedFunnelType || null,
-        main_deliverables: selectedDeliverables,
-        funnel_platform: selectedFunnelPlatform || null,
-        community_platform: selectedCommunityPlatform || null,
-        email_platform: selectedEmailPlatform || null,
-        title: offerTitle.trim() || null,
-        description: offerDescription.trim() || null,
-        price: offerPrice ? parseFloat(offerPrice) : null,
-      });
+      updateMutation.mutate({ id: offer.id, ...offerData });
     } else {
-      createMutation.mutate({
-        project_id: projectId,
-        user_id: user.id,
-        niche: selectedNiche,
-        offer_category: offerCategory,
-        offer_type: selectedOfferType,
-        funnel_type: selectedFunnelType || null,
-        main_deliverables: selectedDeliverables,
-        funnel_platform: selectedFunnelPlatform || null,
-        community_platform: selectedCommunityPlatform || null,
-        email_platform: selectedEmailPlatform || null,
-        title: offerTitle.trim() || null,
-        description: offerDescription.trim() || null,
-        price: offerPrice ? parseFloat(offerPrice) : null,
-      });
+      createMutation.mutate(offerData);
     }
   };
 
@@ -1015,20 +1066,14 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   const selectedFunnelDetails = getFunnelDetails(selectedFunnelType);
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
-  // Step 1: Niche + Offer Type
-  const canProceedToStep2 = selectedNiche && selectedOfferType;
-  // Step 2: Main Deliverables (optional)
-  const canProceedToStep3 = canProceedToStep2;
-  // Step 3: AI Offer Ideas (optional)
-  const canProceedToStep4 = canProceedToStep3;
-  // Step 4: Offer details (title, description, price)
-  const canProceedToStep5 = canProceedToStep4 && offerTitle.trim() && offerDescription.trim();
-  // Step 5: Funnel type
-  const canProceedToStep6 = canProceedToStep5 && selectedFunnelType;
-  // Step 6: Platforms (optional)
-  const canSave = canProceedToStep6;
-  
-  // Minimum required to save (for Save & Exit)
+  // Step validation
+  const canProceedToStep2 = selectedNiche && targetAudience.trim() && primaryPainPoint.trim() && desiredOutcome.trim();
+  const canProceedToStep3 = canProceedToStep2 && selectedOfferType;
+  const canProceedToStep4 = canProceedToStep3; // Deliverables optional
+  const canProceedToStep5 = canProceedToStep4; // AI Ideas optional
+  const canProceedToStep6 = canProceedToStep5 && offerTitle.trim() && offerDescription.trim();
+  const canProceedToStep7 = canProceedToStep6 && selectedFunnelType;
+  const canSave = canProceedToStep7;
   const canSavePartial = selectedNiche && selectedOfferType;
 
   if (isLoading) {
@@ -1039,7 +1084,6 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     );
   }
 
-  // Get details for saved offer
   const savedOfferDetails = offer ? getOfferDetails(offer.offer_type) : null;
   const savedFunnelDetails = offer?.funnel_type ? getFunnelDetails(offer.funnel_type) : null;
   const SavedOfferIcon = savedOfferDetails?.icon || Gift;
@@ -1048,7 +1092,6 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   return (
     <div className="space-y-6">
       {!offer ? (
-        /* Empty State */
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
             <Gift className="w-8 h-8 text-muted-foreground" />
@@ -1064,7 +1107,6 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
           </Button>
         </div>
       ) : (
-        /* Your Offer Section */
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -1101,7 +1143,19 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Offer Details Grid */}
+              {/* Problem Statement */}
+              {offer.problem_statement && (
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="flex items-start gap-3">
+                    <Target className="w-5 h-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Problem Statement</p>
+                      <p className="text-sm text-muted-foreground">{offer.problem_statement}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-muted-foreground">Niche</p>
@@ -1119,20 +1173,18 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 )}
               </div>
 
-              {/* Description */}
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Description</p>
                 <p className="text-foreground">{offer.description}</p>
               </div>
 
-              {/* Offer Type Info */}
               {savedOfferDetails && (
                 <div className="p-4 rounded-lg bg-muted/50 border border-border relative">
                   <Button 
                     variant="ghost" 
                     size="icon" 
                     className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => handleEditOffer(1)}
+                    onClick={() => handleEditOffer(2)}
                   >
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -1168,7 +1220,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => handleEditOffer(2)}
+                    onClick={() => handleEditOffer(3)}
                   >
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -1218,7 +1270,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => handleEditOffer(6)}
+                    onClick={() => handleEditOffer(7)}
                   >
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -1231,9 +1283,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     if (!platform) return null;
                     const Icon = platform.icon;
                     return (
-                      <div 
-                        className={cn("p-3 rounded-lg border border-border flex items-start gap-3", platform.bgColor)}
-                      >
+                      <div className={cn("p-3 rounded-lg border border-border flex items-start gap-3", platform.bgColor)}>
                         <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-background/80")}>
                           <Icon className={cn("w-4 h-4", platform.color)} />
                         </div>
@@ -1249,9 +1299,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     if (!platform) return null;
                     const Icon = platform.icon;
                     return (
-                      <div 
-                        className={cn("p-3 rounded-lg border border-border flex items-start gap-3", platform.bgColor)}
-                      >
+                      <div className={cn("p-3 rounded-lg border border-border flex items-start gap-3", platform.bgColor)}>
                         <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-background/80")}>
                           <Icon className={cn("w-4 h-4", platform.color)} />
                         </div>
@@ -1267,9 +1315,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     if (!platform) return null;
                     const Icon = platform.icon;
                     return (
-                      <div 
-                        className={cn("p-3 rounded-lg border border-border flex items-start gap-3", platform.bgColor)}
-                      >
+                      <div className={cn("p-3 rounded-lg border border-border flex items-start gap-3", platform.bgColor)}>
                         <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-background/80")}>
                           <Icon className={cn("w-4 h-4", platform.color)} />
                         </div>
@@ -1303,7 +1349,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => handleEditOffer(5)}
+                    onClick={() => handleEditOffer(6)}
                   >
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -1327,18 +1373,19 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>{offer ? "Edit Offer" : "Create Offer"}</DialogTitle>
             <DialogDescription>
-              {step === 1 && "Step 1: Select your niche and offer type"}
-              {step === 2 && "Step 2: Select main deliverables (optional)"}
-              {step === 3 && "Step 3: Get AI-powered offer ideas (optional)"}
-              {step === 4 && "Step 4: Enter your offer details"}
-              {step === 5 && "Step 5: Select your funnel type"}
-              {step === 6 && "Step 6: Select your platforms"}
+              {step === 1 && "Step 1: Define your audience and their problem"}
+              {step === 2 && "Step 2: Select your offer type"}
+              {step === 3 && "Step 3: Select main deliverables (optional)"}
+              {step === 4 && "Step 4: Get AI-powered offer ideas (optional)"}
+              {step === 5 && "Step 5: Enter your offer details"}
+              {step === 6 && "Step 6: Select your funnel type"}
+              {step === 7 && "Step 7: Select your platforms"}
             </DialogDescription>
           </DialogHeader>
           
           {/* Step Indicators */}
           <div className="flex items-center gap-2 py-2 flex-shrink-0">
-            {[1, 2, 3, 4, 5, 6].map((s) => (
+            {[1, 2, 3, 4, 5, 6, 7].map((s) => (
               <div
                 key={s}
                 className={cn(
@@ -1351,7 +1398,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
 
           <div className="flex-1 overflow-y-auto min-h-0 pr-2">
             <div className="space-y-6 py-4 pr-2">
-              {/* Step 1: Niche + Offer Type + Offer Title */}
+              {/* Step 1: Audience & Problem Discovery */}
               {step === 1 && (
                 <div className="space-y-6">
                   <div className="space-y-2">
@@ -1370,69 +1417,169 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     </Select>
                   </div>
 
-                  <div className="space-y-4">
-                    <Label>Select Offer Type <span className="text-destructive">*</span></Label>
-                    
-                    {Object.entries(OFFER_TYPES).map(([category, offersList]) => (
-                      <div key={category} className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-medium text-muted-foreground">{category}</h4>
-                          <Badge variant="outline" className="text-xs">
-                            {category === "Audience-Growing Offers" ? "Warm-Up" : "Paid"}
-                          </Badge>
-                        </div>
-                        <div className="grid gap-3">
-                          {offersList.map((offerItem) => {
-                            const Icon = offerItem.icon;
-                            const isSelected = selectedOfferType === offerItem.id;
-                            
-                            return (
-                              <Card
-                                key={offerItem.id}
-                                className={cn(
-                                  "cursor-pointer transition-all hover:border-primary/50",
-                                  isSelected && "border-primary ring-1 ring-primary"
-                                )}
-                                onClick={() => setSelectedOfferType(offerItem.id)}
-                              >
-                                <CardHeader className="py-3 px-4">
-                                  <div className="flex items-start gap-3">
-                                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0", offerItem.bgColor)}>
-                                      <Icon className={cn("w-5 h-5", offerItem.color)} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <CardTitle className="text-sm">{offerItem.name}</CardTitle>
-                                      <CardDescription className="text-xs mt-0.5">{offerItem.description.substring(0, 80)}...</CardDescription>
-                                    </div>
-                                    {isSelected && (
-                                      <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
-                                        <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                      </div>
-                                    )}
-                                  </div>
-                                </CardHeader>
-                                {isSelected && (
-                                  <CardContent className="pt-0 pb-3 px-4">
-                                    <div className="ml-13 pl-10 border-l border-border">
-                                      <p className="text-sm text-muted-foreground">{offerItem.description}</p>
-                                    </div>
-                                  </CardContent>
-                                )}
-                              </Card>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
+                  <div className="space-y-2">
+                    <Label htmlFor="targetAudience">
+                      Who is this offer for? <span className="text-destructive">*</span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Describe your ideal customer in detail — their demographics, situation, and characteristics.
+                    </p>
+                    <Textarea
+                      id="targetAudience"
+                      value={targetAudience}
+                      onChange={(e) => setTargetAudience(e.target.value)}
+                      placeholder="e.g., Overwhelmed new moms aged 30-40 who want to get back in shape but have no time for traditional gym workouts"
+                      rows={3}
+                    />
                   </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="primaryPainPoint">
+                      What problem are they actively trying to solve? <span className="text-destructive">*</span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      What are they frustrated with, confused about, or stuck on right now?
+                    </p>
+                    <Textarea
+                      id="primaryPainPoint"
+                      value={primaryPainPoint}
+                      onChange={(e) => setPrimaryPainPoint(e.target.value)}
+                      placeholder="e.g., They've tried multiple fitness apps but can't stick to a routine because the workouts are too long and don't fit around baby's unpredictable schedule"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="desiredOutcome">
+                      What result do they truly want? <span className="text-destructive">*</span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Describe what success looks like for them — the transformation they're seeking.
+                    </p>
+                    <Textarea
+                      id="desiredOutcome"
+                      value={desiredOutcome}
+                      onChange={(e) => setDesiredOutcome(e.target.value)}
+                      placeholder="e.g., To feel confident in their body again, have consistent energy throughout the day, and fit into their pre-pregnancy clothes within 3 months"
+                      rows={3}
+                    />
+                  </div>
+
+                  {/* Problem Statement Generation */}
+                  <div className="space-y-3 p-4 rounded-lg bg-muted/50 border border-border">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Target className="w-4 h-4 text-primary" />
+                        <Label className="text-sm font-medium">Problem Statement</Label>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={generateProblemStatement}
+                        disabled={isGeneratingProblemStatement || !selectedNiche || !targetAudience.trim() || !primaryPainPoint.trim() || !desiredOutcome.trim()}
+                      >
+                        {isGeneratingProblemStatement ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Generating...
+                          </>
+                        ) : problemStatement ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            Regenerate
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            Generate
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      AI will synthesize your answers into a clear problem statement that anchors your offer messaging.
+                    </p>
+                    {problemStatement && (
+                      <Textarea
+                        value={problemStatement}
+                        onChange={(e) => setProblemStatement(e.target.value)}
+                        rows={3}
+                        className="mt-2"
+                      />
+                    )}
+                    {!problemStatement && !isGeneratingProblemStatement && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+                        <AlertCircle className="w-3 h-3" />
+                        <span>Fill in all fields above to generate a problem statement</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
-              {/* Step 2: Main Deliverables (optional) */}
+              {/* Step 2: Offer Type Selection */}
               {step === 2 && (
+                <div className="space-y-4">
+                  <Label>Select Offer Type <span className="text-destructive">*</span></Label>
+                  
+                  {Object.entries(OFFER_TYPES).map(([category, offersList]) => (
+                    <div key={category} className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-medium text-muted-foreground">{category}</h4>
+                        <Badge variant="outline" className="text-xs">
+                          {category === "Audience-Growing Offers" ? "Warm-Up" : "Paid"}
+                        </Badge>
+                      </div>
+                      <div className="grid gap-3">
+                        {offersList.map((offerItem) => {
+                          const Icon = offerItem.icon;
+                          const isSelected = selectedOfferType === offerItem.id;
+                          
+                          return (
+                            <Card
+                              key={offerItem.id}
+                              className={cn(
+                                "cursor-pointer transition-all hover:border-primary/50",
+                                isSelected && "border-primary ring-1 ring-primary"
+                              )}
+                              onClick={() => setSelectedOfferType(offerItem.id)}
+                            >
+                              <CardHeader className="py-3 px-4">
+                                <div className="flex items-start gap-3">
+                                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0", offerItem.bgColor)}>
+                                    <Icon className={cn("w-5 h-5", offerItem.color)} />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <CardTitle className="text-sm">{offerItem.name}</CardTitle>
+                                    <CardDescription className="text-xs mt-0.5">{offerItem.description.substring(0, 80)}...</CardDescription>
+                                  </div>
+                                  {isSelected && (
+                                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
+                                      <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    </div>
+                                  )}
+                                </div>
+                              </CardHeader>
+                              {isSelected && (
+                                <CardContent className="pt-0 pb-3 px-4">
+                                  <div className="ml-13 pl-10 border-l border-border">
+                                    <p className="text-sm text-muted-foreground">{offerItem.description}</p>
+                                  </div>
+                                </CardContent>
+                              )}
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Step 3: Main Deliverables (optional) */}
+              {step === 3 && (
                 <div className="space-y-4">
                   <div>
                     <Label>Select Main Deliverables</Label>
@@ -1443,7 +1590,6 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     </p>
                   </div>
 
-                  {/* Free plan upgrade notice */}
                   {!isSubscribed && (
                     <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
@@ -1513,8 +1659,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 </div>
               )}
 
-              {/* Step 3: AI Offer Ideas (optional) */}
-              {step === 3 && (
+              {/* Step 4: AI Offer Ideas (optional) */}
+              {step === 4 && (
                 <div className="space-y-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -1523,7 +1669,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                         AI Offer Ideas
                       </Label>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Get AI-powered offer suggestions based on your niche and offer type. Select one to use as a starting point.
+                        Get AI-powered offer suggestions based on your niche, offer type, and problem statement.
                       </p>
                     </div>
                     <Button 
@@ -1621,8 +1767,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 </div>
               )}
 
-              {/* Step 4: Offer Details (title, description, price) */}
-              {step === 4 && (
+              {/* Step 5: Offer Details (title, description, price) */}
+              {step === 5 && (
                 <div className="space-y-4">
                   {selectedIdeaIndex !== null && offerIdeas[selectedIdeaIndex] && (
                     <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-start gap-3">
@@ -1670,10 +1816,10 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 </div>
               )}
 
-              {/* Step 5: Funnel Type */}
-              {step === 5 && (
+              {/* Step 6: Funnel Type */}
+              {step === 6 && (
                 <div className="space-y-4">
-                  <Label>Select Funnel Type</Label>
+                  <Label>Select Funnel Type <span className="text-destructive">*</span></Label>
                   <div className="grid gap-3">
                     {FUNNEL_TYPES.map((funnel) => {
                       const Icon = funnel.icon;
@@ -1725,8 +1871,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 </div>
               )}
 
-              {/* Step 6: Platform Selection */}
-              {step === 6 && (
+              {/* Step 7: Platform Selection */}
+              {step === 7 && (
                 <div className="space-y-6">
                   <div>
                     <Label>Select Your Platforms</Label>
@@ -1738,7 +1884,6 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                   {Object.entries(PLATFORM_CATEGORIES).map(([category, platforms]) => {
                     const isFunnelCategory = category === "Funnel Builders";
                     const isCommunityCategory = category === "Community & Engagement Platforms";
-                    const isEmailCategory = category === "Email Marketing Platforms";
                     const selectedPlatform = isFunnelCategory 
                       ? selectedFunnelPlatform 
                       : isCommunityCategory 
@@ -1811,13 +1956,12 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
           <div className="flex justify-between gap-3 pt-4 border-t flex-shrink-0">
             <Button 
               variant="outline" 
-              onClick={() => step === 1 ? handleCloseDialog() : setStep((step - 1) as 1 | 2 | 3 | 4 | 5)}
+              onClick={() => step === 1 ? handleCloseDialog() : setStep((step - 1) as 1 | 2 | 3 | 4 | 5 | 6)}
             >
               {step === 1 ? "Cancel" : "Back"}
             </Button>
             <div className="flex gap-2">
-              {/* Save & Exit button - available when minimum requirements are met */}
-              {canSavePartial && step < 6 && (
+              {canSavePartial && step < 7 && (
                 <Button 
                   variant="outline"
                   onClick={() => handleSaveOffer(true)}
@@ -1827,24 +1971,24 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                   Save & Exit
                 </Button>
               )}
-              {/* Skip buttons for optional steps 2 and 3 */}
-              {(step === 2 || step === 3) && (
+              {(step === 3 || step === 4) && (
                 <Button 
                   variant="outline"
-                  onClick={() => setStep((step + 1) as 3 | 4)}
+                  onClick={() => setStep((step + 1) as 4 | 5)}
                 >
                   Skip
                 </Button>
               )}
-              {step < 6 ? (
+              {step < 7 ? (
                 <Button 
-                  onClick={() => setStep((step + 1) as 2 | 3 | 4 | 5 | 6)}
+                  onClick={() => setStep((step + 1) as 2 | 3 | 4 | 5 | 6 | 7)}
                   disabled={
                     step === 1 ? !canProceedToStep2 : 
                     step === 2 ? !canProceedToStep3 :
                     step === 3 ? !canProceedToStep4 :
                     step === 4 ? !canProceedToStep5 :
                     step === 5 ? !canProceedToStep6 :
+                    step === 6 ? !canProceedToStep7 :
                     false
                   }
                 >
