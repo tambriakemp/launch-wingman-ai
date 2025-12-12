@@ -700,7 +700,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     }
   };
 
-  const handleEditOffer = () => {
+  const handleEditOffer = (targetStep: 1 | 2 | 3 | 4 | 5 = 1) => {
     if (!offer) return;
     setSelectedNiche(offer.niche);
     setSelectedOfferType(offer.offer_type);
@@ -711,7 +711,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setOfferPrice(offer.price?.toString() || "");
     setSelectedFunnelPlatform(offer.funnel_platform || "");
     setSelectedCommunityPlatform(offer.community_platform || "");
-    setStep(1);
+    setStep(targetStep);
     setDialogOpen(true);
   };
 
@@ -871,7 +871,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={handleEditOffer}>
+                  <Button variant="outline" size="sm" onClick={() => handleEditOffer(1)}>
                     <Pencil className="w-4 h-4 mr-2" />
                     Edit
                   </Button>
@@ -914,8 +914,16 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
 
               {/* Offer Type Info */}
               {savedOfferDetails && (
-                <div className="p-4 rounded-lg bg-muted/50 border border-border">
-                  <div className="flex items-start gap-3">
+                <div className="p-4 rounded-lg bg-muted/50 border border-border relative">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={() => handleEditOffer(2)}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <div className="flex items-start gap-3 pr-8">
                     <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0", savedOfferDetails.bgColor)}>
                       <SavedOfferIcon className={cn("w-5 h-5", savedOfferDetails.color)} />
                     </div>
@@ -933,14 +941,24 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
           {offer?.main_deliverables && offer.main_deliverables.length > 0 && (
             <Card>
               <CardHeader>
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10">
-                    <CheckSquare className="w-5 h-5 text-primary" />
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10">
+                      <CheckSquare className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Main Deliverables</CardTitle>
+                      <CardDescription>What your clients will receive</CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">Main Deliverables</CardTitle>
-                    <CardDescription>What your clients will receive</CardDescription>
-                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={() => handleEditOffer(4)}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
@@ -973,14 +991,24 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
           {(offer?.funnel_platform || offer?.community_platform) && (
             <Card>
               <CardHeader>
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10">
-                    <Globe className="w-5 h-5 text-primary" />
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10">
+                      <Globe className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Platforms</CardTitle>
+                      <CardDescription>Tools you'll use to deliver your offer</CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">Platforms</CardTitle>
-                    <CardDescription>Tools you'll use to deliver your offer</CardDescription>
-                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={() => handleEditOffer(5)}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
@@ -1030,14 +1058,24 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
           {savedFunnelDetails && (
             <Card>
               <CardHeader>
-                <div className="flex items-start gap-3">
-                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", savedFunnelDetails.bgColor)}>
-                    <SavedFunnelIcon className={cn("w-5 h-5", savedFunnelDetails.color)} />
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", savedFunnelDetails.bgColor)}>
+                      <SavedFunnelIcon className={cn("w-5 h-5", savedFunnelDetails.color)} />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{savedFunnelDetails.name}</CardTitle>
+                      <CardDescription>{savedFunnelDetails.purpose}</CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">{savedFunnelDetails.name}</CardTitle>
-                    <CardDescription>{savedFunnelDetails.purpose}</CardDescription>
-                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={() => handleEditOffer(3)}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
