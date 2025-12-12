@@ -8,10 +8,18 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Sparkles, ArrowLeft, Mail, Lock, Loader2 } from "lucide-react";
+import { Sparkles, ArrowLeft, Mail, Lock, Loader2, User } from "lucide-react";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
-const authSchema = z.object({
+const signInSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const signUpSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
@@ -19,8 +27,13 @@ const authSchema = z.object({
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [resetLoading, setResetLoading] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [errors, setErrors] = useState<{ email?: string; password?: string; firstName?: string; lastName?: string }>({});
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
 
@@ -29,15 +42,35 @@ const Auth = () => {
     return null;
   }
 
-  const validateForm = () => {
+  const validateSignIn = () => {
     try {
-      authSchema.parse({ email, password });
+      signInSchema.parse({ email, password });
       setErrors({});
       return true;
     } catch (err) {
       if (err instanceof z.ZodError) {
-        const fieldErrors: { email?: string; password?: string } = {};
+        const fieldErrors: typeof errors = {};
         err.errors.forEach((error) => {
+          if (error.path[0] === "email") fieldErrors.email = error.message;
+          if (error.path[0] === "password") fieldErrors.password = error.message;
+        });
+        setErrors(fieldErrors);
+      }
+      return false;
+    }
+  };
+
+  const validateSignUp = () => {
+    try {
+      signUpSchema.parse({ firstName, lastName, email, password });
+      setErrors({});
+      return true;
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        const fieldErrors: typeof errors = {};
+        err.errors.forEach((error) => {
+          if (error.path[0] === "firstName") fieldErrors.firstName = error.message;
+          if (error.path[0] === "lastName") fieldErrors.lastName = error.message;
           if (error.path[0] === "email") fieldErrors.email = error.message;
           if (error.path[0] === "password") fieldErrors.password = error.message;
         });
@@ -49,7 +82,7 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateSignIn()) return;
 
     setLoading(true);
     const { error } = await signIn(email, password);
@@ -64,10 +97,10 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateSignUp()) return;
 
     setLoading(true);
-    const { error } = await signUp(email, password);
+    const { error } = await signUp(email, password, firstName, lastName);
     setLoading(false);
 
     if (error) {
@@ -78,6 +111,28 @@ const Auth = () => {
       }
     } else {
       toast.success("Account created successfully!");
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      toast.error("Please enter your email address");
+      return;
+    }
+
+    setResetLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/auth?reset=true`,
+    });
+    setResetLoading(false);
+
+    if (error) {
+      toast.error(error.message || "Failed to send reset email");
+    } else {
+      toast.success("Password reset email sent! Check your inbox.");
+      setShowResetPassword(false);
+      setResetEmail("");
     }
   };
 
@@ -123,125 +178,215 @@ const Auth = () => {
             Back to home
           </Link>
 
-          <Card variant="elevated" className="border-0 shadow-xl">
-            <Tabs defaultValue="signin" className="w-full">
+          {showResetPassword ? (
+            <Card variant="elevated" className="border-0 shadow-xl">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-center mb-4 lg:hidden">
                   <div className="w-12 h-12 gradient-primary rounded-xl flex items-center justify-center">
                     <Sparkles className="w-6 h-6 text-primary-foreground" />
                   </div>
                 </div>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="signin">Sign In</TabsTrigger>
-                  <TabsTrigger value="signup">Sign Up</TabsTrigger>
-                </TabsList>
+                <CardTitle className="text-center">Reset Password</CardTitle>
+                <CardDescription className="text-center">
+                  Enter your email and we'll send you a reset link.
+                </CardDescription>
               </CardHeader>
+              <form onSubmit={handleResetPassword}>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="reset-email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex flex-col gap-3">
+                  <Button type="submit" className="w-full" size="lg" disabled={resetLoading}>
+                    {resetLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      "Send Reset Link"
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => setShowResetPassword(false)}
+                  >
+                    Back to Sign In
+                  </Button>
+                </CardFooter>
+              </form>
+            </Card>
+          ) : (
+            <Card variant="elevated" className="border-0 shadow-xl">
+              <Tabs defaultValue="signin" className="w-full">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-center mb-4 lg:hidden">
+                    <div className="w-12 h-12 gradient-primary rounded-xl flex items-center justify-center">
+                      <Sparkles className="w-6 h-6 text-primary-foreground" />
+                    </div>
+                  </div>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="signin">Sign In</TabsTrigger>
+                    <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                  </TabsList>
+                </CardHeader>
 
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn}>
-                  <CardContent className="space-y-4">
-                    <CardDescription className="text-center mb-4">
-                      Welcome back! Sign in to continue.
-                    </CardDescription>
-                    <div className="space-y-2">
-                      <Label htmlFor="signin-email">Email</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          id="signin-email"
-                          type="email"
-                          placeholder="you@example.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="pl-10"
-                        />
+                <TabsContent value="signin">
+                  <form onSubmit={handleSignIn}>
+                    <CardContent className="space-y-4">
+                      <CardDescription className="text-center mb-4">
+                        Welcome back! Sign in to continue.
+                      </CardDescription>
+                      <div className="space-y-2">
+                        <Label htmlFor="signin-email">Email</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            id="signin-email"
+                            type="email"
+                            placeholder="you@example.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="pl-10"
+                          />
+                        </div>
+                        {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                       </div>
-                      {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signin-password">Password</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          id="signin-password"
-                          type="password"
-                          placeholder="••••••••"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="pl-10"
-                        />
+                      <div className="space-y-2">
+                        <Label htmlFor="signin-password">Password</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            id="signin-password"
+                            type="password"
+                            placeholder="••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="pl-10"
+                          />
+                        </div>
+                        {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
                       </div>
-                      {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                      {loading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Signing in...
-                        </>
-                      ) : (
-                        "Sign In"
-                      )}
-                    </Button>
-                  </CardFooter>
-                </form>
-              </TabsContent>
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="px-0 text-sm"
+                        onClick={() => setShowResetPassword(true)}
+                      >
+                        Forgot password?
+                      </Button>
+                    </CardContent>
+                    <CardFooter>
+                      <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                        {loading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Signing in...
+                          </>
+                        ) : (
+                          "Sign In"
+                        )}
+                      </Button>
+                    </CardFooter>
+                  </form>
+                </TabsContent>
 
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp}>
-                  <CardContent className="space-y-4">
-                    <CardDescription className="text-center mb-4">
-                      Create your account to get started.
-                    </CardDescription>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-email">Email</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          id="signup-email"
-                          type="email"
-                          placeholder="you@example.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="pl-10"
-                        />
+                <TabsContent value="signup">
+                  <form onSubmit={handleSignUp}>
+                    <CardContent className="space-y-4">
+                      <CardDescription className="text-center mb-4">
+                        Create your account to get started.
+                      </CardDescription>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="signup-firstname">First Name</Label>
+                          <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                              id="signup-firstname"
+                              type="text"
+                              placeholder="John"
+                              value={firstName}
+                              onChange={(e) => setFirstName(e.target.value)}
+                              className="pl-10"
+                            />
+                          </div>
+                          {errors.firstName && <p className="text-sm text-destructive">{errors.firstName}</p>}
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="signup-lastname">Last Name</Label>
+                          <Input
+                            id="signup-lastname"
+                            type="text"
+                            placeholder="Doe"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                          />
+                          {errors.lastName && <p className="text-sm text-destructive">{errors.lastName}</p>}
+                        </div>
                       </div>
-                      {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-password">Password</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          id="signup-password"
-                          type="password"
-                          placeholder="••••••••"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="pl-10"
-                        />
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-email">Email</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            id="signup-email"
+                            type="email"
+                            placeholder="you@example.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="pl-10"
+                          />
+                        </div>
+                        {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                       </div>
-                      {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                      {loading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Creating account...
-                        </>
-                      ) : (
-                        "Create Account"
-                      )}
-                    </Button>
-                  </CardFooter>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </Card>
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-password">Password</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            id="signup-password"
+                            type="password"
+                            placeholder="••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="pl-10"
+                          />
+                        </div>
+                        {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                        {loading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Creating account...
+                          </>
+                        ) : (
+                          "Create Account"
+                        )}
+                      </Button>
+                    </CardFooter>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            </Card>
+          )}
 
           <p className="text-center text-sm text-muted-foreground mt-6">
             By continuing, you agree to our Terms of Service and Privacy Policy.
