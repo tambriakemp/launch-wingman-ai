@@ -191,6 +191,7 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
     status: "planned",
     labels: [] as string[],
   });
+  const [draggedItem, setDraggedItem] = useState<ContentItem | null>(null);
 
   const { data: contentItems = [], isLoading } = useQuery({
     queryKey: ["content-planner", projectId],
@@ -291,6 +292,23 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
     },
     onError: () => {
       toast.error("Failed to update items");
+    },
+  });
+
+  const moveItemMutation = useMutation({
+    mutationFn: async ({ itemId, phase, day_number }: { itemId: string; phase: string; day_number: number }) => {
+      const { error } = await supabase
+        .from("content_planner")
+        .update({ phase, day_number })
+        .eq("id", itemId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+      toast.success("Content moved");
+    },
+    onError: () => {
+      toast.error("Failed to move content");
     },
   });
 
@@ -468,26 +486,52 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
     );
   }
 
+  const handleDragStart = (e: React.DragEvent, item: ContentItem) => {
+    setDraggedItem(item);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, targetPhase: string, targetDay: number) => {
+    e.preventDefault();
+    if (draggedItem && (draggedItem.phase !== targetPhase || draggedItem.day_number !== targetDay)) {
+      moveItemMutation.mutate({
+        itemId: draggedItem.id,
+        phase: targetPhase,
+        day_number: targetDay,
+      });
+    }
+    setDraggedItem(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+  };
+
   // Calendar View Component
   const CalendarView = () => (
     <div className="space-y-4">
       {/* Timeline Header */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-        <span>Timeline showing all {contentItems.length} content items across {PHASES.length} phases</span>
+        <span>Timeline showing all {contentItems.length} content items across {PHASES.length} phases. Drag items to move them.</span>
       </div>
       
-      {/* Phase Legend */}
+      {/* Content Type Legend */}
       <div className="flex flex-wrap gap-2 mb-4">
-        {PHASES.map(phase => (
-          <Badge key={phase.id} variant="outline" className="gap-1">
-            <div className={`w-2 h-2 rounded-full ${phase.color}`} />
-            {phase.shortLabel}
+        {CONTENT_TYPES.map(type => (
+          <Badge key={type.id} variant="outline" className="gap-1">
+            <div className={`w-2 h-2 rounded-full ${type.color}`} />
+            {type.label}
           </Badge>
         ))}
       </div>
 
       <ScrollArea className="w-full">
-        <div className="min-w-[900px]">
+        <div className="min-w-[1100px]">
           {/* Day Headers */}
           <div className="flex border-b pb-2 mb-2">
             <div className="w-24 flex-shrink-0 font-medium text-muted-foreground text-sm">Phase</div>
@@ -503,7 +547,7 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
             const phaseItems = getPhaseItems(phase.id);
             
             return (
-              <div key={phase.id} className="flex border-b last:border-0 py-2 min-h-[60px]">
+              <div key={phase.id} className="flex border-b last:border-0 py-2 min-h-[80px]">
                 <div className="w-24 flex-shrink-0 flex items-center">
                   <Badge variant="outline" className="text-xs">
                     <div className={`w-2 h-2 rounded-full ${phase.color} mr-1`} />
@@ -512,9 +556,17 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
                 </div>
                 {[1, 2, 3, 4, 5, 6, 7].map(day => {
                   const dayItems = phaseItems.filter(item => item.day_number === day);
+                  const isDropTarget = draggedItem && (draggedItem.phase !== phase.id || draggedItem.day_number !== day);
                   
                   return (
-                    <div key={day} className="flex-1 px-1 flex flex-col gap-1">
+                    <div 
+                      key={day} 
+                      className={`flex-1 px-1 flex flex-col gap-1 min-h-[60px] rounded transition-colors ${
+                        isDropTarget ? "bg-primary/10 border-2 border-dashed border-primary/30" : ""
+                      }`}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, phase.id, day)}
+                    >
                       {dayItems.map(item => {
                         const typeInfo = getContentTypeInfo(item.content_type);
                         const statusInfo = getStatusInfo(item.status);
@@ -524,16 +576,22 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <div
+                                  draggable
+                                  onDragStart={(e) => handleDragStart(e, item)}
+                                  onDragEnd={handleDragEnd}
                                   onClick={() => handleEdit(item)}
-                                  className={`p-1.5 rounded text-xs cursor-pointer transition-all hover:scale-105 ${typeInfo.color} text-white flex items-center gap-1 ${
+                                  className={`p-1.5 rounded text-xs cursor-grab active:cursor-grabbing transition-all hover:scale-105 ${typeInfo.color} text-white flex flex-col gap-0.5 ${
                                     item.status === "completed" ? "opacity-60" : ""
-                                  }`}
+                                  } ${draggedItem?.id === item.id ? "opacity-50 scale-95" : ""}`}
                                 >
-                                  <typeInfo.icon className="w-3 h-3 flex-shrink-0" />
-                                  <span className="truncate">{item.time_of_day === "evening" ? "PM" : "AM"}</span>
-                                  {item.status === "completed" && (
-                                    <CheckCircle2 className="w-3 h-3 flex-shrink-0" />
-                                  )}
+                                  <div className="flex items-center gap-1">
+                                    <typeInfo.icon className="w-3 h-3 flex-shrink-0" />
+                                    <span className="truncate font-medium">{typeInfo.label}</span>
+                                    {item.status === "completed" && (
+                                      <CheckCircle2 className="w-3 h-3 flex-shrink-0 ml-auto" />
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] opacity-80 capitalize">{item.time_of_day}</span>
                                 </div>
                               </TooltipTrigger>
                               <TooltipContent side="top" className="max-w-xs">
@@ -541,8 +599,7 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
                                   <p className="font-medium">{item.title}</p>
                                   <p className="text-xs text-muted-foreground">{item.description}</p>
                                   <div className="flex items-center gap-2 text-xs">
-                                    <span className="capitalize">{item.time_of_day}</span>
-                                    <span>•</span>
+                                    <Badge variant="secondary" className="text-xs">{typeInfo.label}</Badge>
                                     <span className={statusInfo.color}>{statusInfo.label}</span>
                                   </div>
                                 </div>
@@ -552,7 +609,9 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
                         );
                       })}
                       {dayItems.length === 0 && (
-                        <div className="h-6 rounded border border-dashed border-muted-foreground/20" />
+                        <div className={`h-full min-h-[40px] rounded border border-dashed ${
+                          isDropTarget ? "border-primary/50" : "border-muted-foreground/20"
+                        }`} />
                       )}
                     </div>
                   );
