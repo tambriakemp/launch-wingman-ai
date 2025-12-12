@@ -415,7 +415,7 @@ export function LaunchCalendarEventDialog({
         {showDates && dates.prelaunchStart && (
           <div className="space-y-4">
             <span className="text-sm font-semibold">Suggested Timeline</span>
-            <div className="rounded-lg border bg-card">
+            <div className="rounded-lg border bg-card px-2.5">
               <DatePickerField
                 label="Content Creation Starts"
                 date={dates.contentCreationStart}
