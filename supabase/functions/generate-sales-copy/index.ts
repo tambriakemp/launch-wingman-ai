@@ -23,7 +23,10 @@ serve(async (req) => {
       attemptedSolutions,
       whyFails,
       uniqueApproach,
-      inferContext
+      inferContext,
+      // For offer details
+      priceType,
+      price,
     } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -49,7 +52,6 @@ Requirements:
   5) What if you could (desired outcome) in (timeframe)?
 - Then choose the best headline and write:
   - 1 subheadline (1-2 sentences that expands on the promise)
-  - 3 short benefit bullets (specific, outcome-focused)
   - 1 CTA button text (action-oriented, 2-5 words)
 
 Tone: clear, confident, modern (not hypey)
@@ -60,7 +62,6 @@ Return ONLY valid JSON in this exact format:
   "headlines": ["headline1", "headline2", "headline3", "headline4", "headline5"],
   "recommendedHeadline": 0,
   "subheadline": "...",
-  "benefits": ["benefit1", "benefit2", "benefit3"],
   "cta": "..."
 }`;
 
@@ -75,11 +76,9 @@ Return ONLY valid JSON in this exact format:
 Generate compelling, specific copy that speaks directly to the audience's pain and desired transformation.`;
 
     } else if (sectionType === "whyDifferent") {
-      // Check if we need to infer context or use provided context
       let contextSection = "";
       
       if (inferContext) {
-        // AI will infer what solutions the audience has tried based on the problem/audience
         contextSection = `Based on the audience and problem, infer:
 - What solutions they've likely tried before
 - Why those solutions typically fail for this audience
@@ -120,8 +119,151 @@ ${contextSection}
 
 Write copy that validates their frustration and positions this offer as the solution they've been looking for.`;
 
+    } else if (sectionType === "benefits") {
+      systemPrompt = `You are a direct-response conversion copywriter.
+
+Write the KEY BENEFITS section for a sales page.
+
+Requirements:
+- Generate 5-7 key benefits for this offer
+- Each benefit should have:
+  - A bold, outcome-focused title (3-5 words)
+  - A 1-2 sentence description explaining the benefit
+- Use the Feature → Benefit → Outcome format
+- Focus on what the customer GETS, not what the product IS
+
+Tone: clear, benefit-focused, specific
+
+Return ONLY valid JSON in this exact format:
+{
+  "benefits": [
+    { "title": "Benefit Title Here", "description": "1-2 sentence description of this benefit and its impact." },
+    { "title": "Another Benefit", "description": "Description of benefit." }
+  ]
+}`;
+
+      userPrompt = `Create KEY BENEFITS section for:
+- Target Audience: ${audience || "Not specified"}
+- Core Problem: ${problem || "Not specified"}
+- Desired Outcome: ${desiredOutcome || "Not specified"}
+- Offer Name: ${offerName || "Not specified"}
+- Offer Type: ${offerType || "Digital product"}
+- Main Deliverables: ${deliverables?.join(", ") || "Not specified"}
+
+Generate specific, outcome-focused benefits that resonate with the target audience's desires.`;
+
+    } else if (sectionType === "offerDetails") {
+      systemPrompt = `You are a direct-response conversion copywriter.
+
+Write the "What's Included" / Offer Details section for a sales page.
+
+Requirements:
+- 1 introduction paragraph (2-3 sentences about what they get access to)
+- 4-6 modules/components with:
+  - Module name (compelling, outcome-focused)
+  - Module description (what's covered and what they'll achieve)
+- 2-3 bonuses with:
+  - Bonus name
+  - Perceived value (make it realistic based on content)
+  - Description of what's included
+- 1 guarantee statement (risk-reversal, confident)
+
+Tone: clear, value-stacking, confident
+
+Return ONLY valid JSON in this exact format:
+{
+  "introduction": "When you join...",
+  "modules": [
+    { "name": "Module Name", "description": "What's covered and outcome." }
+  ],
+  "bonuses": [
+    { "name": "Bonus Name", "value": "$97", "description": "What's included." }
+  ],
+  "guarantee": "We're so confident..."
+}`;
+
+      userPrompt = `Create "What's Included" section for:
+- Target Audience: ${audience || "Not specified"}
+- Core Problem: ${problem || "Not specified"}
+- Desired Outcome: ${desiredOutcome || "Not specified"}
+- Offer Name: ${offerName || "Not specified"}
+- Offer Type: ${offerType || "Digital product"}
+- Main Deliverables: ${deliverables?.join(", ") || "Not specified"}
+- Price: ${price ? `$${price}` : "Not specified"}
+- Price Type: ${priceType || "One-time"}
+
+Create compelling offer details that stack value and reduce perceived risk.`;
+
+    } else if (sectionType === "testimonials") {
+      systemPrompt = `You are a direct-response conversion copywriter.
+
+Generate SAMPLE testimonials that can be used as templates for collecting real testimonials.
+
+Requirements:
+- Generate 3 realistic-sounding sample testimonials
+- Each testimonial should follow the Problem → Solution → Result format
+- Include:
+  - Placeholder client name (realistic)
+  - Specific result achieved
+  - Quote in first person
+- Make them believable and specific, not generic praise
+
+NOTE: These are TEMPLATES to guide collecting real testimonials. Mark them clearly as samples.
+
+Return ONLY valid JSON in this exact format:
+{
+  "testimonials": [
+    { "name": "[Sample] Sarah M.", "result": "Specific result achieved", "quote": "First-person testimonial..." }
+  ]
+}`;
+
+      userPrompt = `Create SAMPLE testimonials for:
+- Target Audience: ${audience || "Not specified"}
+- Core Problem: ${problem || "Not specified"}
+- Desired Outcome: ${desiredOutcome || "Not specified"}
+- Offer Name: ${offerName || "Not specified"}
+- Offer Type: ${offerType || "Digital product"}
+
+Generate realistic sample testimonials that showcase the transformation this offer provides.`;
+
+    } else if (sectionType === "faqs") {
+      systemPrompt = `You are a direct-response conversion copywriter.
+
+Write the FAQ section for a sales page.
+
+Requirements:
+- Generate 5-7 common FAQs that prospects would ask before buying
+- Include questions about:
+  - Who this is for (and not for)
+  - Time commitment
+  - Guarantee/refund policy
+  - Results timeline
+  - Technical requirements (if applicable)
+  - Support/access details
+- Answers should handle objections and build confidence
+
+Tone: clear, reassuring, confident
+
+Return ONLY valid JSON in this exact format:
+{
+  "faqs": [
+    { "question": "Question here?", "answer": "Clear, helpful answer." }
+  ]
+}`;
+
+      userPrompt = `Create FAQ section for:
+- Target Audience: ${audience || "Not specified"}
+- Core Problem: ${problem || "Not specified"}
+- Desired Outcome: ${desiredOutcome || "Not specified"}
+- Offer Name: ${offerName || "Not specified"}
+- Offer Type: ${offerType || "Digital product"}
+- Price: ${price ? `$${price}` : "Not specified"}
+- Price Type: ${priceType || "One-time"}
+
+Generate FAQs that address common concerns and move prospects closer to purchasing.`;
+
     } else {
-      throw new Error("Invalid section type. Use 'hero' or 'whyDifferent'");
+      throw new Error("Invalid section type. Use 'hero', 'whyDifferent', 'benefits', 'offerDetails', 'testimonials', or 'faqs'");
     }
 
     console.log(`Generating ${sectionType} section copy`);
