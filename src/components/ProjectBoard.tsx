@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { TaskDialog, Task, TASK_LABELS } from "@/components/TaskDialog";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
+import { LoadLaunchTasksDialog } from "@/components/LoadLaunchTasksDialog";
 
 const COLUMNS = [
   { id: "todo", label: "To Do" },
@@ -27,9 +28,10 @@ const COLUMNS = [
 
 interface ProjectBoardProps {
   projectId: string;
+  projectType: "launch" | "prelaunch";
 }
 
-export const ProjectBoard = ({ projectId }: ProjectBoardProps) => {
+export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -217,7 +219,13 @@ export const ProjectBoard = ({ projectId }: ProjectBoardProps) => {
 
   return (
     <>
-      <div className="flex justify-end mb-4">
+      <div className="flex flex-wrap justify-end gap-2 mb-4">
+        <LoadLaunchTasksDialog
+          projectId={projectId}
+          projectType={projectType}
+          onTasksLoaded={fetchTasks}
+          taskCount={tasks.length}
+        />
         <Button onClick={() => { setEditingTask(null); setTaskDialogOpen(true); }}>
           <Plus className="w-4 h-4" />
           Add Task
