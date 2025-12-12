@@ -63,12 +63,12 @@ interface SalesPagePreviewProps {
 }
 
 export const SalesPagePreview = ({ open, onOpenChange, offerName, sections }: SalesPagePreviewProps) => {
-  const hasHero = sections.hero || sections.heroManual;
-  const hasWhyDifferent = sections.whyDifferent || sections.whyDifferentManual;
-  const hasBenefits = sections.benefits || sections.benefitsManual;
-  const hasOfferDetails = sections.offerDetails || sections.offerDetailsManual;
-  const hasTestimonials = sections.testimonials || sections.testimonialsManual;
-  const hasFaqs = sections.faqs || sections.faqsManual;
+  const hasHero = (sections.hero?.headlines?.length) || sections.heroManual;
+  const hasWhyDifferent = sections.whyDifferent?.openingParagraph || sections.whyDifferentManual;
+  const hasBenefits = (sections.benefits?.benefits?.length) || sections.benefitsManual;
+  const hasOfferDetails = sections.offerDetails?.introduction || sections.offerDetailsManual;
+  const hasTestimonials = (sections.testimonials?.testimonials?.length) || sections.testimonialsManual;
+  const hasFaqs = (sections.faqs?.faqs?.length) || sections.faqsManual;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -117,7 +117,7 @@ export const SalesPagePreview = ({ open, onOpenChange, offerName, sections }: Sa
                       {sections.whyDifferent.openingParagraph}
                     </p>
                     <ul className="space-y-3">
-                      {sections.whyDifferent.comparisonBullets.map((bullet, idx) => (
+                      {sections.whyDifferent.comparisonBullets?.map((bullet, idx) => (
                         <li key={idx} className="flex items-start gap-2 text-muted-foreground">
                           <span className="text-primary font-bold mt-0.5">•</span>
                           <span>{bullet}</span>
@@ -142,7 +142,7 @@ export const SalesPagePreview = ({ open, onOpenChange, offerName, sections }: Sa
                 <h2 className="text-2xl font-bold text-center text-foreground">What You'll Get</h2>
                 {sections.benefits ? (
                   <div className="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto">
-                    {sections.benefits.benefits.map((benefit, idx) => (
+                    {sections.benefits.benefits?.map((benefit, idx) => (
                       <div key={idx} className="flex items-start gap-3 p-4 rounded-lg bg-accent/30">
                         <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                         <div>
@@ -172,7 +172,7 @@ export const SalesPagePreview = ({ open, onOpenChange, offerName, sections }: Sa
                     
                     {/* Modules */}
                     <div className="space-y-3">
-                      {sections.offerDetails.modules.map((module, idx) => (
+                      {sections.offerDetails.modules?.map((module, idx) => (
                         <div key={idx} className="p-4 rounded-lg border bg-card">
                           <h4 className="font-semibold text-foreground">
                             Module {idx + 1}: {module.name}
@@ -183,12 +183,12 @@ export const SalesPagePreview = ({ open, onOpenChange, offerName, sections }: Sa
                     </div>
                     
                     {/* Bonuses */}
-                    {sections.offerDetails.bonuses.length > 0 && (
+                    {(sections.offerDetails.bonuses?.length ?? 0) > 0 && (
                       <div className="space-y-3 pt-4">
                         <h3 className="font-semibold text-center text-foreground">
                           Plus These Bonuses
                         </h3>
-                        {sections.offerDetails.bonuses.map((bonus, idx) => (
+                        {sections.offerDetails.bonuses?.map((bonus, idx) => (
                           <div key={idx} className="p-4 rounded-lg border border-primary/30 bg-primary/5">
                             <div className="flex items-center gap-2 mb-1">
                               <Star className="w-4 h-4 text-primary" />
@@ -224,7 +224,7 @@ export const SalesPagePreview = ({ open, onOpenChange, offerName, sections }: Sa
                 <h2 className="text-2xl font-bold text-center text-foreground">What Others Say</h2>
                 {sections.testimonials ? (
                   <div className="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-                    {sections.testimonials.testimonials.map((testimonial, idx) => (
+                    {sections.testimonials.testimonials?.map((testimonial, idx) => (
                       <div key={idx} className="p-4 rounded-lg border bg-card flex flex-col">
                         <p className="text-sm text-muted-foreground italic flex-1">
                           "{testimonial.quote}"
@@ -252,7 +252,7 @@ export const SalesPagePreview = ({ open, onOpenChange, offerName, sections }: Sa
                 </h2>
                 {sections.faqs ? (
                   <Accordion type="single" collapsible className="max-w-2xl mx-auto">
-                    {sections.faqs.faqs.map((faq, idx) => (
+                    {sections.faqs.faqs?.map((faq, idx) => (
                       <AccordionItem key={idx} value={`faq-${idx}`}>
                         <AccordionTrigger className="text-left">
                           <div className="flex items-center gap-2">
