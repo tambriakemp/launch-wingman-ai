@@ -21,6 +21,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  Gift,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -36,6 +37,7 @@ import { LaunchCalendarTimeline } from "@/components/LaunchCalendarTimeline";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { ProjectBoard } from "@/components/ProjectBoard";
 import { ProjectSettingsDialog } from "@/components/ProjectSettingsDialog";
+import { OfferBuilder } from "@/components/OfferBuilder";
 
 interface LaunchEvent {
   id: string;
@@ -272,8 +274,12 @@ const ProjectDetail = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Tabs defaultValue="calendar" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
+          <Tabs defaultValue="offers" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+              <TabsTrigger value="offers" className="gap-2">
+                <Gift className="w-4 h-4" />
+                Offer Builder
+              </TabsTrigger>
               <TabsTrigger value="calendar" className="gap-2">
                 <Calendar className="w-4 h-4" />
                 Calendar
@@ -291,6 +297,20 @@ const ProjectDetail = () => {
                 Assessment
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="offers">
+              <Card variant="elevated" className="min-h-[400px]">
+                <CardHeader>
+                  <div>
+                    <CardTitle>Offer Builder</CardTitle>
+                    <CardDescription>Design offers that attract and convert your ideal clients</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <OfferBuilder projectId={project.id} />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="calendar">
               <Card variant="elevated" className="min-h-[400px]">
