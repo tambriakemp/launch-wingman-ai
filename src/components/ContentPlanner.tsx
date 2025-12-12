@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -20,11 +20,16 @@ import {
   Trash2,
   Loader2,
   Rocket,
-  Download
+  Download,
+  Calendar,
+  List,
+  CheckSquare,
+  Square
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -49,6 +54,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -70,11 +83,11 @@ interface ContentPlannerProps {
 }
 
 const PHASES = [
-  { id: "week1", label: "Pre-Launch: Week 1", description: "Build awareness and engagement" },
-  { id: "week2", label: "Pre-Launch: Week 2", description: "Deepen connection with audience" },
-  { id: "week3", label: "Pre-Launch: Week 3", description: "Create anticipation and desire" },
-  { id: "week4", label: "Pre-Launch: Week 4", description: "Launch promo and final push" },
-  { id: "launch", label: "Launch Phase", description: "Cart open and FOMO" },
+  { id: "week1", label: "Pre-Launch: Week 1", shortLabel: "Week 1", description: "Build awareness and engagement", color: "bg-blue-500" },
+  { id: "week2", label: "Pre-Launch: Week 2", shortLabel: "Week 2", description: "Deepen connection with audience", color: "bg-indigo-500" },
+  { id: "week3", label: "Pre-Launch: Week 3", shortLabel: "Week 3", description: "Create anticipation and desire", color: "bg-violet-500" },
+  { id: "week4", label: "Pre-Launch: Week 4", shortLabel: "Week 4", description: "Launch promo and final push", color: "bg-purple-500" },
+  { id: "launch", label: "Launch Phase", shortLabel: "Launch", description: "Cart open and FOMO", color: "bg-rose-500" },
 ];
 
 const CONTENT_TYPES = [
@@ -161,9 +174,12 @@ const TEMPLATE_CONTENT: Omit<ContentItem, "id">[] = [
 
 export function ContentPlanner({ projectId }: ContentPlannerProps) {
   const queryClient = useQueryClient();
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [expandedPhases, setExpandedPhases] = useState<string[]>(["week1"]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ContentItem | null>(null);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [bulkActionOpen, setBulkActionOpen] = useState(false);
   const [formData, setFormData] = useState({
     phase: "week1",
     day_number: 1,
@@ -259,6 +275,25 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
     },
   });
 
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async ({ ids, status }: { ids: string[]; status: string }) => {
+      const { error } = await supabase
+        .from("content_planner")
+        .update({ status })
+        .in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+      toast.success(`Updated ${selectedItems.length} items`);
+      setSelectedItems([]);
+      setBulkActionOpen(false);
+    },
+    onError: () => {
+      toast.error("Failed to update items");
+    },
+  });
+
   const loadTemplateMutation = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -350,6 +385,34 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
     }));
   };
 
+  const toggleItemSelection = (id: string) => {
+    setSelectedItems(prev =>
+      prev.includes(id)
+        ? prev.filter(i => i !== id)
+        : [...prev, id]
+    );
+  };
+
+  const selectAllInPhase = (phaseId: string) => {
+    const phaseItems = contentItems.filter(item => item.phase === phaseId);
+    const phaseIds = phaseItems.map(item => item.id);
+    const allSelected = phaseIds.every(id => selectedItems.includes(id));
+    
+    if (allSelected) {
+      setSelectedItems(prev => prev.filter(id => !phaseIds.includes(id)));
+    } else {
+      setSelectedItems(prev => [...new Set([...prev, ...phaseIds])]);
+    }
+  };
+
+  const selectAll = () => {
+    if (selectedItems.length === contentItems.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(contentItems.map(item => item.id));
+    }
+  };
+
   const getContentTypeInfo = (typeId: string) => {
     return CONTENT_TYPES.find(t => t.id === typeId) || CONTENT_TYPES[0];
   };
@@ -405,198 +468,385 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
     );
   }
 
+  // Calendar View Component
+  const CalendarView = () => (
+    <div className="space-y-4">
+      {/* Timeline Header */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+        <span>Timeline showing all {contentItems.length} content items across {PHASES.length} phases</span>
+      </div>
+      
+      {/* Phase Legend */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {PHASES.map(phase => (
+          <Badge key={phase.id} variant="outline" className="gap-1">
+            <div className={`w-2 h-2 rounded-full ${phase.color}`} />
+            {phase.shortLabel}
+          </Badge>
+        ))}
+      </div>
+
+      <ScrollArea className="w-full">
+        <div className="min-w-[900px]">
+          {/* Day Headers */}
+          <div className="flex border-b pb-2 mb-2">
+            <div className="w-24 flex-shrink-0 font-medium text-muted-foreground text-sm">Phase</div>
+            {[1, 2, 3, 4, 5, 6, 7].map(day => (
+              <div key={day} className="flex-1 text-center font-medium text-sm text-muted-foreground">
+                Day {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Phase Rows */}
+          {PHASES.map(phase => {
+            const phaseItems = getPhaseItems(phase.id);
+            
+            return (
+              <div key={phase.id} className="flex border-b last:border-0 py-2 min-h-[60px]">
+                <div className="w-24 flex-shrink-0 flex items-center">
+                  <Badge variant="outline" className="text-xs">
+                    <div className={`w-2 h-2 rounded-full ${phase.color} mr-1`} />
+                    {phase.shortLabel}
+                  </Badge>
+                </div>
+                {[1, 2, 3, 4, 5, 6, 7].map(day => {
+                  const dayItems = phaseItems.filter(item => item.day_number === day);
+                  
+                  return (
+                    <div key={day} className="flex-1 px-1 flex flex-col gap-1">
+                      {dayItems.map(item => {
+                        const typeInfo = getContentTypeInfo(item.content_type);
+                        const statusInfo = getStatusInfo(item.status);
+                        
+                        return (
+                          <TooltipProvider key={item.id}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div
+                                  onClick={() => handleEdit(item)}
+                                  className={`p-1.5 rounded text-xs cursor-pointer transition-all hover:scale-105 ${typeInfo.color} text-white flex items-center gap-1 ${
+                                    item.status === "completed" ? "opacity-60" : ""
+                                  }`}
+                                >
+                                  <typeInfo.icon className="w-3 h-3 flex-shrink-0" />
+                                  <span className="truncate">{item.time_of_day === "evening" ? "PM" : "AM"}</span>
+                                  {item.status === "completed" && (
+                                    <CheckCircle2 className="w-3 h-3 flex-shrink-0" />
+                                  )}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs">
+                                <div className="space-y-1">
+                                  <p className="font-medium">{item.title}</p>
+                                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                                  <div className="flex items-center gap-2 text-xs">
+                                    <span className="capitalize">{item.time_of_day}</span>
+                                    <span>•</span>
+                                    <span className={statusInfo.color}>{statusInfo.label}</span>
+                                  </div>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        );
+                      })}
+                      {dayItems.length === 0 && (
+                        <div className="h-6 rounded border border-dashed border-muted-foreground/20" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
+    </div>
+  );
+
+  // List View Component
+  const ListView = () => (
+    <div className="space-y-3">
+      {PHASES.map((phase) => {
+        const isExpanded = expandedPhases.includes(phase.id);
+        const phaseItems = getPhaseItems(phase.id);
+        const completionPercent = getCompletionPercentage(phase.id);
+        const phaseIds = phaseItems.map(item => item.id);
+        const allSelected = phaseIds.length > 0 && phaseIds.every(id => selectedItems.includes(id));
+
+        return (
+          <Card key={phase.id} variant="elevated">
+            <div
+              className="flex items-center justify-between p-4 cursor-pointer hover:bg-accent/50 transition-colors"
+              onClick={() => togglePhase(phase.id)}
+            >
+              <div className="flex items-center gap-3">
+                {selectedItems.length > 0 && (
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={() => selectAllInPhase(phase.id)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                )}
+                {isExpanded ? (
+                  <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                )}
+                <div className={`w-3 h-3 rounded-full ${phase.color}`} />
+                <div>
+                  <h3 className="font-semibold text-foreground">{phase.label}</h3>
+                  <p className="text-sm text-muted-foreground">{phase.description}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-sm font-medium">{phaseItems.length} items</p>
+                  <p className="text-xs text-muted-foreground">{completionPercent}% complete</p>
+                </div>
+                <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all"
+                    style={{ width: `${completionPercent}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <AnimatePresence>
+              {isExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <CardContent className="pt-0">
+                    {phaseItems.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p className="mb-2">No content for this phase</p>
+                        <Button size="sm" variant="outline" onClick={() => handleAddNew(phase.id)}>
+                          <Plus className="w-4 h-4" />
+                          Add Content
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {/* Group by day */}
+                        {[1, 2, 3, 4, 5, 6, 7].map(day => {
+                          const dayItems = phaseItems.filter(item => item.day_number === day);
+                          if (dayItems.length === 0) return null;
+
+                          return (
+                            <div key={day} className="space-y-2">
+                              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground pt-2">
+                                <span>Day {day}</span>
+                                <div className="flex-1 h-px bg-border" />
+                              </div>
+                              {dayItems.map(item => {
+                                const typeInfo = getContentTypeInfo(item.content_type);
+                                const statusInfo = getStatusInfo(item.status);
+                                const StatusIcon = statusInfo.icon;
+                                const isSelected = selectedItems.includes(item.id);
+
+                                return (
+                                  <div
+                                    key={item.id}
+                                    className={`flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors group ${
+                                      isSelected ? "ring-2 ring-primary" : ""
+                                    }`}
+                                  >
+                                    <Checkbox
+                                      checked={isSelected}
+                                      onCheckedChange={() => toggleItemSelection(item.id)}
+                                    />
+                                    <div className={`w-8 h-8 rounded-lg ${typeInfo.color} flex items-center justify-center flex-shrink-0`}>
+                                      <typeInfo.icon className="w-4 h-4 text-white" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-xs text-muted-foreground capitalize">
+                                              {item.time_of_day}
+                                            </span>
+                                            <StatusIcon className={`w-4 h-4 ${statusInfo.color}`} />
+                                          </div>
+                                          <h4 className="font-medium text-foreground text-sm line-clamp-1">
+                                            {item.title}
+                                          </h4>
+                                          {item.description && (
+                                            <p className="text-xs text-muted-foreground line-clamp-1">
+                                              {item.description}
+                                            </p>
+                                          )}
+                                        </div>
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-8 w-8 opacity-0 group-hover:opacity-100"
+                                            >
+                                              <MoreHorizontal className="w-4 h-4" />
+                                            </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => handleEdit(item)}>
+                                              <Pencil className="w-4 h-4 mr-2" />
+                                              Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                              className="text-destructive"
+                                              onClick={() => deleteMutation.mutate(item.id)}
+                                            >
+                                              <Trash2 className="w-4 h-4 mr-2" />
+                                              Delete
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      </div>
+                                      {item.labels && item.labels.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                          {item.labels.map(label => {
+                                            const labelInfo = LABELS.find(l => l.id === label);
+                                            return (
+                                              <Badge
+                                                key={label}
+                                                variant="outline"
+                                                className={`text-xs ${labelInfo?.color || ""}`}
+                                              >
+                                                {label}
+                                              </Badge>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full mt-2"
+                          onClick={() => handleAddNew(phase.id)}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add to {phase.label}
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Card>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       {/* Header Actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setExpandedPhases(PHASES.map(p => p.id))}
-          >
-            Expand All
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setExpandedPhases([])}
-          >
-            Collapse All
+          {/* View Toggle */}
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "list" | "calendar")}>
+            <TabsList className="h-9">
+              <TabsTrigger value="list" className="gap-1.5 px-3">
+                <List className="w-4 h-4" />
+                List
+              </TabsTrigger>
+              <TabsTrigger value="calendar" className="gap-1.5 px-3">
+                <Calendar className="w-4 h-4" />
+                Timeline
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {viewMode === "list" && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setExpandedPhases(PHASES.map(p => p.id))}
+              >
+                Expand All
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setExpandedPhases([])}
+              >
+                Collapse All
+              </Button>
+            </>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Bulk Actions */}
+          {selectedItems.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {selectedItems.length} selected
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedItems([])}
+              >
+                Clear
+              </Button>
+              <DropdownMenu open={bulkActionOpen} onOpenChange={setBulkActionOpen}>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm">
+                    <CheckSquare className="w-4 h-4 mr-1" />
+                    Bulk Update
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {STATUS_OPTIONS.map(status => (
+                    <DropdownMenuItem
+                      key={status.id}
+                      onClick={() => bulkUpdateMutation.mutate({ ids: selectedItems, status: status.id })}
+                    >
+                      <status.icon className={`w-4 h-4 mr-2 ${status.color}`} />
+                      Mark as {status.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+
+          {viewMode === "list" && selectedItems.length === 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={selectAll}
+            >
+              <Square className="w-4 h-4 mr-1" />
+              Select All
+            </Button>
+          )}
+
+          <Button size="sm" onClick={() => handleAddNew("week1")}>
+            <Plus className="w-4 h-4" />
+            Add Content
           </Button>
         </div>
-        <Button size="sm" onClick={() => handleAddNew("week1")}>
-          <Plus className="w-4 h-4" />
-          Add Content
-        </Button>
       </div>
 
-      {/* Phase Sections */}
-      <div className="space-y-3">
-        {PHASES.map((phase) => {
-          const isExpanded = expandedPhases.includes(phase.id);
-          const phaseItems = getPhaseItems(phase.id);
-          const completionPercent = getCompletionPercentage(phase.id);
-
-          return (
-            <Card key={phase.id} variant="elevated">
-              <div
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-accent/50 transition-colors"
-                onClick={() => togglePhase(phase.id)}
-              >
-                <div className="flex items-center gap-3">
-                  {isExpanded ? (
-                    <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                  ) : (
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                  )}
-                  <div>
-                    <h3 className="font-semibold text-foreground">{phase.label}</h3>
-                    <p className="text-sm text-muted-foreground">{phase.description}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-sm font-medium">{phaseItems.length} items</p>
-                    <p className="text-xs text-muted-foreground">{completionPercent}% complete</p>
-                  </div>
-                  <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary transition-all"
-                      style={{ width: `${completionPercent}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <CardContent className="pt-0">
-                      {phaseItems.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <p className="mb-2">No content for this phase</p>
-                          <Button size="sm" variant="outline" onClick={() => handleAddNew(phase.id)}>
-                            <Plus className="w-4 h-4" />
-                            Add Content
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {/* Group by day */}
-                          {[1, 2, 3, 4, 5, 6, 7].map(day => {
-                            const dayItems = phaseItems.filter(item => item.day_number === day);
-                            if (dayItems.length === 0) return null;
-
-                            return (
-                              <div key={day} className="space-y-2">
-                                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground pt-2">
-                                  <span>Day {day}</span>
-                                  <div className="flex-1 h-px bg-border" />
-                                </div>
-                                {dayItems.map(item => {
-                                  const typeInfo = getContentTypeInfo(item.content_type);
-                                  const statusInfo = getStatusInfo(item.status);
-                                  const StatusIcon = statusInfo.icon;
-
-                                  return (
-                                    <div
-                                      key={item.id}
-                                      className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors group"
-                                    >
-                                      <div className={`w-8 h-8 rounded-lg ${typeInfo.color} flex items-center justify-center flex-shrink-0`}>
-                                        <typeInfo.icon className="w-4 h-4 text-white" />
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between gap-2">
-                                          <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                              <span className="text-xs text-muted-foreground capitalize">
-                                                {item.time_of_day}
-                                              </span>
-                                              <StatusIcon className={`w-4 h-4 ${statusInfo.color}`} />
-                                            </div>
-                                            <h4 className="font-medium text-foreground text-sm line-clamp-1">
-                                              {item.title}
-                                            </h4>
-                                            {item.description && (
-                                              <p className="text-xs text-muted-foreground line-clamp-1">
-                                                {item.description}
-                                              </p>
-                                            )}
-                                          </div>
-                                          <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 opacity-0 group-hover:opacity-100"
-                                              >
-                                                <MoreHorizontal className="w-4 h-4" />
-                                              </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                              <DropdownMenuItem onClick={() => handleEdit(item)}>
-                                                <Pencil className="w-4 h-4 mr-2" />
-                                                Edit
-                                              </DropdownMenuItem>
-                                              <DropdownMenuItem
-                                                className="text-destructive"
-                                                onClick={() => deleteMutation.mutate(item.id)}
-                                              >
-                                                <Trash2 className="w-4 h-4 mr-2" />
-                                                Delete
-                                              </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                          </DropdownMenu>
-                                        </div>
-                                        {item.labels && item.labels.length > 0 && (
-                                          <div className="flex flex-wrap gap-1 mt-2">
-                                            {item.labels.map(label => {
-                                              const labelInfo = LABELS.find(l => l.id === label);
-                                              return (
-                                                <Badge
-                                                  key={label}
-                                                  variant="outline"
-                                                  className={`text-xs ${labelInfo?.color || ""}`}
-                                                >
-                                                  {label}
-                                                </Badge>
-                                              );
-                                            })}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            );
-                          })}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full mt-2"
-                            onClick={() => handleAddNew(phase.id)}
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add to {phase.label}
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </Card>
-          );
-        })}
-      </div>
+      {/* Content Views */}
+      {viewMode === "calendar" ? <CalendarView /> : <ListView />}
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
