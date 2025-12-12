@@ -277,7 +277,9 @@ const ProjectDetail = () => {
                     <CardTitle>Launch Calendar</CardTitle>
                     <CardDescription>Plan your launch timeline</CardDescription>
                   </div>
-                  <LaunchCalendarEventDialog projectId={project.id} onEventAdded={fetchLaunchEvents} />
+                  {launchEvents.length === 0 && (
+                    <LaunchCalendarEventDialog projectId={project.id} onEventAdded={fetchLaunchEvents} />
+                  )}
                 </CardHeader>
                 <CardContent>
                   {launchEvents.length === 0 ? (
