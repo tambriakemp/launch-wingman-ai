@@ -964,13 +964,16 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setSelectedIdeaIndex(index);
     const idea = offerIdeas[index];
     if (idea) {
-      // Only set description since title is now entered in step 1
+      setOfferTitle(idea.title);
       setOfferDescription(idea.description);
     }
   };
 
-  const handleSaveOffer = () => {
-    if (!user || !offerTitle.trim() || !offerDescription.trim() || !selectedNiche || !selectedOfferType || !selectedFunnelType) return;
+  const handleSaveOffer = (isPartialSave = false) => {
+    if (!user || !selectedNiche || !selectedOfferType) return;
+    
+    // For full save, require all fields
+    if (!isPartialSave && (!offerTitle.trim() || !offerDescription.trim() || !selectedFunnelType)) return;
 
     const offerCategory = getOfferCategory(selectedOfferType);
 
@@ -980,13 +983,13 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
         niche: selectedNiche,
         offer_category: offerCategory,
         offer_type: selectedOfferType,
-        funnel_type: selectedFunnelType,
+        funnel_type: selectedFunnelType || null,
         main_deliverables: selectedDeliverables,
         funnel_platform: selectedFunnelPlatform || null,
         community_platform: selectedCommunityPlatform || null,
         email_platform: selectedEmailPlatform || null,
-        title: offerTitle.trim(),
-        description: offerDescription.trim(),
+        title: offerTitle.trim() || null,
+        description: offerDescription.trim() || null,
         price: offerPrice ? parseFloat(offerPrice) : null,
       });
     } else {
@@ -996,13 +999,13 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
         niche: selectedNiche,
         offer_category: offerCategory,
         offer_type: selectedOfferType,
-        funnel_type: selectedFunnelType,
+        funnel_type: selectedFunnelType || null,
         main_deliverables: selectedDeliverables,
         funnel_platform: selectedFunnelPlatform || null,
         community_platform: selectedCommunityPlatform || null,
         email_platform: selectedEmailPlatform || null,
-        title: offerTitle.trim(),
-        description: offerDescription.trim(),
+        title: offerTitle.trim() || null,
+        description: offerDescription.trim() || null,
         price: offerPrice ? parseFloat(offerPrice) : null,
       });
     }
@@ -1012,18 +1015,21 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   const selectedFunnelDetails = getFunnelDetails(selectedFunnelType);
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
-  // Step 1: Niche + Offer Type + Offer Title
-  const canProceedToStep2 = selectedNiche && selectedOfferType && offerTitle.trim();
+  // Step 1: Niche + Offer Type
+  const canProceedToStep2 = selectedNiche && selectedOfferType;
   // Step 2: Main Deliverables (optional)
   const canProceedToStep3 = canProceedToStep2;
   // Step 3: AI Offer Ideas (optional)
   const canProceedToStep4 = canProceedToStep3;
-  // Step 4: Offer details (description, price only)
-  const canProceedToStep5 = canProceedToStep4 && offerDescription.trim();
+  // Step 4: Offer details (title, description, price)
+  const canProceedToStep5 = canProceedToStep4 && offerTitle.trim() && offerDescription.trim();
   // Step 5: Funnel type
   const canProceedToStep6 = canProceedToStep5 && selectedFunnelType;
   // Step 6: Platforms (optional)
   const canSave = canProceedToStep6;
+  
+  // Minimum required to save (for Save & Exit)
+  const canSavePartial = selectedNiche && selectedOfferType;
 
   if (isLoading) {
     return (
@@ -1321,7 +1327,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>{offer ? "Edit Offer" : "Create Offer"}</DialogTitle>
             <DialogDescription>
-              {step === 1 && "Step 1: Select your niche, offer type, and title"}
+              {step === 1 && "Step 1: Select your niche and offer type"}
               {step === 2 && "Step 2: Select main deliverables (optional)"}
               {step === 3 && "Step 3: Get AI-powered offer ideas (optional)"}
               {step === 4 && "Step 4: Enter your offer details"}
@@ -1422,15 +1428,6 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     ))}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="offerTitle">Offer Title <span className="text-destructive">*</span></Label>
-                    <Input
-                      id="offerTitle"
-                      value={offerTitle}
-                      onChange={(e) => setOfferTitle(e.target.value)}
-                      placeholder="e.g., 'Launch Like a Pro Masterclass'"
-                    />
-                  </div>
                 </div>
               )}
 
@@ -1624,7 +1621,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 </div>
               )}
 
-              {/* Step 4: Offer Details (description + price only) */}
+              {/* Step 4: Offer Details (title, description, price) */}
               {step === 4 && (
                 <div className="space-y-4">
                   {selectedIdeaIndex !== null && offerIdeas[selectedIdeaIndex] && (
@@ -1632,10 +1629,20 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                       <Lightbulb className="w-4 h-4 text-primary mt-0.5" />
                       <div className="flex-1">
                         <p className="text-sm font-medium text-foreground">Using AI-generated idea</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">You can edit the description below.</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">You can edit the title and description below.</p>
                       </div>
                     </div>
                   )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="offerTitle">Offer Title <span className="text-destructive">*</span></Label>
+                    <Input
+                      id="offerTitle"
+                      value={offerTitle}
+                      onChange={(e) => setOfferTitle(e.target.value)}
+                      placeholder="e.g., 'Launch Like a Pro Masterclass'"
+                    />
+                  </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="offerDescription">Description <span className="text-destructive">*</span></Label>
@@ -1809,6 +1816,17 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
               {step === 1 ? "Cancel" : "Back"}
             </Button>
             <div className="flex gap-2">
+              {/* Save & Exit button - available when minimum requirements are met */}
+              {canSavePartial && step < 6 && (
+                <Button 
+                  variant="outline"
+                  onClick={() => handleSaveOffer(true)}
+                  disabled={isSaving}
+                >
+                  {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Save & Exit
+                </Button>
+              )}
               {/* Skip buttons for optional steps 2 and 3 */}
               {(step === 2 || step === 3) && (
                 <Button 
@@ -1834,7 +1852,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 </Button>
               ) : (
                 <Button 
-                  onClick={handleSaveOffer} 
+                  onClick={() => handleSaveOffer(false)} 
                   disabled={!canSave || isSaving}
                 >
                   {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
