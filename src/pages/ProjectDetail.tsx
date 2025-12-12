@@ -279,7 +279,7 @@ const ProjectDetail = () => {
           transition={{ delay: 0.2 }}
         >
           <Tabs defaultValue="offers" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
+            <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
               <TabsTrigger value="offers" className="gap-2">
                 <Gift className="w-4 h-4" />
                 Offer Builder
@@ -287,10 +287,6 @@ const ProjectDetail = () => {
               <TabsTrigger value="messaging" className="gap-2">
                 <MessageSquare className="w-4 h-4" />
                 Messaging
-              </TabsTrigger>
-              <TabsTrigger value="calendar" className="gap-2">
-                <Calendar className="w-4 h-4" />
-                Calendar
               </TabsTrigger>
               <TabsTrigger value="kanban" className="gap-2">
                 <Kanban className="w-4 h-4" />
@@ -404,123 +400,6 @@ const ProjectDetail = () => {
                 </CardHeader>
                 <CardContent>
                   <MessagingBuilder projectId={project.id} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="calendar">
-              <Card variant="elevated" className="min-h-[400px]">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>{project.project_type === 'prelaunch' ? 'Pre-Launch' : 'Launch'} Calendar</CardTitle>
-                    <CardDescription>Plan your {project.project_type === 'prelaunch' ? 'pre-launch' : 'launch'} timeline</CardDescription>
-                  </div>
-                  {launchEvents.length === 0 && (
-                    <LaunchCalendarEventDialog projectId={project.id} projectType={project.project_type} onEventAdded={fetchLaunchEvents} />
-                  )}
-                </CardHeader>
-                <CardContent>
-                  {launchEvents.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                        <Calendar className="w-8 h-8 text-muted-foreground" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-foreground mb-2">No events scheduled</h3>
-                      <p className="text-muted-foreground mb-4 max-w-sm">
-                        Start planning your {project.project_type === 'prelaunch' ? 'pre-launch' : 'launch'} by adding key dates and milestones.
-                      </p>
-                      <LaunchCalendarEventDialog 
-                        projectId={project.id}
-                        projectType={project.project_type}
-                        onEventAdded={fetchLaunchEvents}
-                        trigger={
-                          <Button variant="outline">
-                            <Plus className="w-4 h-4" />
-                            Add First Event
-                          </Button>
-                        }
-                      />
-                    </div>
-                  ) : (
-                    <div className="space-y-8">
-                      {/* Year-at-a-Glance Timeline */}
-                      <LaunchCalendarTimeline events={launchEvents} />
-
-                      {/* Event List */}
-                      <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-muted-foreground">All Events</h3>
-                        {launchEvents.map((event) => (
-                          <div key={event.id} className="p-4 rounded-lg border bg-card">
-                              <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                  <Rocket className="w-5 h-5 text-primary" />
-                                </div>
-                                <div>
-                                  <h4 className="font-semibold text-foreground">{event.title}</h4>
-                                  <Badge variant="outline" className="text-xs capitalize">
-                                    {event.event_type}
-                                  </Badge>
-                                </div>
-                              </div>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreHorizontal className="w-4 h-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleEditEvent(event)}>
-                                    <Pencil className="w-4 h-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onClick={() => handleDeleteClick(event)}
-                                  >
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-                              {event.content_creation_start && (
-                                <div>
-                                  <p className="text-muted-foreground text-xs">Content Creation</p>
-                                  <p className="font-medium">{format(parseISO(event.content_creation_start), "MMM d, yyyy")}</p>
-                                </div>
-                              )}
-                              {event.prelaunch_start && (
-                                <div>
-                                  <p className="text-muted-foreground text-xs">Prelaunch Starts</p>
-                                  <p className="font-medium">{format(parseISO(event.prelaunch_start), "MMM d, yyyy")}</p>
-                                </div>
-                              )}
-                              {event.enrollment_opens && (
-                                <div>
-                                  <p className="text-muted-foreground text-xs">Enrollment Opens</p>
-                                  <p className="font-medium">{format(parseISO(event.enrollment_opens), "MMM d, yyyy")}</p>
-                                </div>
-                              )}
-                              {event.program_delivery_start && (
-                                <div>
-                                  <p className="text-muted-foreground text-xs">Program Starts</p>
-                                  <p className="font-medium">{format(parseISO(event.program_delivery_start), "MMM d, yyyy")}</p>
-                                </div>
-                              )}
-                              {event.program_delivery_end && (
-                                <div>
-                                  <p className="text-muted-foreground text-xs">Program Ends</p>
-                                  <p className="font-medium">{format(parseISO(event.program_delivery_end), "MMM d, yyyy")}</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </TabsContent>
