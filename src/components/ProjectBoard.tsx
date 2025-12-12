@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { format, parseISO, isPast, isToday } from "date-fns";
-import { GripVertical, MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, Filter, X } from "lucide-react";
+import { GripVertical, MoreHorizontal, Pencil, Trash2, Calendar, Plus, GitFork, Filter, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -376,8 +376,8 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
       </div>
 
       {/* Board */}
-      <div className="overflow-x-auto pb-4">
-        <div className="flex gap-4 min-w-max">
+      <div className="overflow-x-auto overflow-y-visible pb-4 -mx-4 px-4">
+        <div className="flex gap-4 min-w-max pt-1">
           {COLUMNS.map((column) => (
             <div
               key={column.id}
@@ -467,19 +467,18 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
                             })}
                           </div>
                         )}
-                        {/* Footer row with due date and subtask indicator */}
-                        <div className="flex items-center gap-3 mt-2">
-                          <div className={cn("flex items-center gap-1 text-xs", getDueDateColor(task.due_date))}>
-                            <Calendar className="w-3 h-3" />
-                            <span>{task.due_date ? format(parseISO(task.due_date), "MMM d") : "No date"}</span>
-                          </div>
-                          {task.subtask_count && task.subtask_count > 0 && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <ListTodo className="w-3 h-3" />
-                              <span>{task.subtask_count}</span>
-                            </div>
-                          )}
+                        {/* Due date */}
+                        <div className={cn("flex items-center gap-1 text-xs mt-2", getDueDateColor(task.due_date))}>
+                          <Calendar className="w-3 h-3" />
+                          <span>{task.due_date ? format(parseISO(task.due_date), "MMM d") : "No date"}</span>
                         </div>
+                        {/* Subtask indicator */}
+                        {task.subtask_count && task.subtask_count > 0 && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1.5">
+                            <GitFork className="w-3 h-3 rotate-180" />
+                            <span>{task.subtask_count} subtask{task.subtask_count > 1 ? 's' : ''}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </motion.div>
