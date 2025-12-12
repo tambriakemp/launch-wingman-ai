@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Plus, FileText, MoreHorizontal, Pencil, Trash2, Lightbulb, ChevronDown, ChevronUp, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -251,7 +252,12 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-foreground">{item.deliverableName}</h4>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-medium text-foreground">{offer?.title || "Untitled Offer"}</h4>
+                      <Badge variant="secondary" className="text-xs">
+                        {item.deliverableName}
+                      </Badge>
+                    </div>
                     <p className="text-sm text-muted-foreground mt-1">
                       {Object.entries(item.sections).filter(([_, v]) => v.trim()).length} of {SALES_PAGE_SECTIONS.length} sections completed
                     </p>
