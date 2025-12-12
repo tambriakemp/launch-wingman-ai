@@ -2013,50 +2013,72 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                         </div>
                       )}
 
-                  {/* Editable selected statement */}
-                  {editedTransformation && (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="editedTransformation">Your Transformation Statement</Label>
-                        <Textarea
-                          id="editedTransformation"
-                          value={editedTransformation}
-                          onChange={(e) => setEditedTransformation(e.target.value)}
-                          rows={3}
-                          placeholder="Your transformation statement..."
-                        />
-                      </div>
-
-                      {/* Alignment check button */}
-                      <Button 
-                        variant="outline"
-                        onClick={checkOfferAlignment}
-                        disabled={isCheckingAlignment || !editedTransformation.trim()}
-                      >
-                        {isCheckingAlignment ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Checking...
-                          </>
-                        ) : (
-                          <>
-                            <ShieldCheck className="w-4 h-4 mr-2" />
-                            Check Offer Type Alignment
-                          </>
-                        )}
-                      </Button>
-
-                      {/* Alignment feedback */}
-                      {alignmentFeedback && (
-                        <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-start gap-3">
-                          <ShieldCheck className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                          <div>
-                            <p className="text-sm font-medium text-foreground">Alignment Feedback</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{alignmentFeedback}</p>
+                      {/* Editable selected statement */}
+                      {editedTransformation && (
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="editedTransformation">Your Transformation Statement</Label>
+                            <Textarea
+                              id="editedTransformation"
+                              value={editedTransformation}
+                              onChange={(e) => setEditedTransformation(e.target.value)}
+                              rows={3}
+                              placeholder="Your transformation statement..."
+                            />
                           </div>
+
+                          {/* Alignment check button */}
+                          <Button 
+                            variant="outline"
+                            onClick={checkOfferAlignment}
+                            disabled={isCheckingAlignment || !editedTransformation.trim()}
+                          >
+                            {isCheckingAlignment ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Checking...
+                              </>
+                            ) : (
+                              <>
+                                <ShieldCheck className="w-4 h-4 mr-2" />
+                                Check Offer Type Alignment
+                              </>
+                            )}
+                          </Button>
+
+                          {/* Alignment feedback */}
+                          {alignmentFeedback && (
+                            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 space-y-3">
+                              <div className="flex items-start gap-3">
+                                <ShieldCheck className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                                <div>
+                                  <p className="text-sm font-medium text-foreground">Alignment Feedback</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">{alignmentFeedback}</p>
+                                </div>
+                              </div>
+                              <Button 
+                                variant="outline"
+                                size="sm"
+                                onClick={generateAdjustedStatement}
+                                disabled={isGeneratingAdjusted}
+                              >
+                                {isGeneratingAdjusted ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Adjusting...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Wand2 className="w-4 h-4 mr-2" />
+                                    Generate Adjusted Statement
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       )}
-                    </div>
+                    </>
                   )}
 
                   <p className="text-xs text-muted-foreground text-center">
