@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Gift, ShoppingBag, Video, Users, CreditCard, GraduationCap, BookOpen, Layers, Pencil, Trash2, Loader2, Mail, DollarSign, Play, Instagram, Radio, Zap, UserCheck, Send, Rocket } from "lucide-react";
+import { Plus, Gift, ShoppingBag, Video, Users, CreditCard, GraduationCap, BookOpen, Layers, Pencil, Trash2, Loader2, Mail, DollarSign, Play, Instagram, Radio, Zap, UserCheck, Send, Rocket, ArrowDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -50,7 +50,7 @@ const OFFER_TYPES = {
       id: "strategic-freebies",
       name: "Strategic Freebies",
       icon: Gift,
-      description: "Bite-sized resources like mini-guides, checklists, or cheat sheets that deliver quick value at no cost.",
+      description: "Bite-sized resources like mini-guides, checklists, or cheat sheets that deliver quick value at no cost. They showcase your expertise and help people experience your style before they invest in bigger offers.",
       color: "text-teal-500",
       bgColor: "bg-teal-500/10",
     },
@@ -58,7 +58,7 @@ const OFFER_TYPES = {
       id: "tangible-digital-products",
       name: "Tangible Digital Products",
       icon: ShoppingBag,
-      description: "Practical tools such as templates, planners, or plug-and-play digital assets.",
+      description: "Practical tools such as templates, planners, or plug-and-play digital assets that your audience can start using immediately. These are usually low-cost or free, making them an easy yes for new leads.",
       color: "text-blue-500",
       bgColor: "bg-blue-500/10",
     },
@@ -66,7 +66,7 @@ const OFFER_TYPES = {
       id: "online-workshops",
       name: "Online Workshops",
       icon: Video,
-      description: "Short, topic-focused live or recorded sessions designed to deepen engagement.",
+      description: "Short, topic-focused live or recorded sessions designed to deepen engagement. These allow people to learn from you in real time and get a preview of your teaching or coaching approach.",
       color: "text-purple-500",
       bgColor: "bg-purple-500/10",
     },
@@ -76,7 +76,7 @@ const OFFER_TYPES = {
       id: "1-1-coaching",
       name: "1:1 Coaching",
       icon: Users,
-      description: "High-touch, personalized support tailored to a client's specific needs or goals.",
+      description: "High-touch, personalized support tailored to a client's specific needs or goals. This can be sold as single sessions or structured coaching packages and is one of the most premium services you can offer.",
       color: "text-amber-500",
       bgColor: "bg-amber-500/10",
     },
@@ -84,7 +84,7 @@ const OFFER_TYPES = {
       id: "coaching-membership",
       name: "Coaching Membership",
       icon: CreditCard,
-      description: "A subscription-based program that provides ongoing support through community and resources.",
+      description: "A subscription-based program that provides ongoing support through community, group sessions, resources, or periodic 1:1 access. This creates predictable, recurring monthly revenue.",
       color: "text-emerald-500",
       bgColor: "bg-emerald-500/10",
     },
@@ -92,7 +92,7 @@ const OFFER_TYPES = {
       id: "group-coaching-program",
       name: "Group Coaching Program",
       icon: Layers,
-      description: "A structured program where multiple clients learn together with scalability.",
+      description: "A structured program where multiple clients learn together. It balances personal interaction with scalability, allowing you to serve more people at once without sacrificing value.",
       color: "text-rose-500",
       bgColor: "bg-rose-500/10",
     },
@@ -100,7 +100,7 @@ const OFFER_TYPES = {
       id: "flagship-course",
       name: "Flagship Course",
       icon: GraduationCap,
-      description: "Your signature, in-depth course that covers a major transformation.",
+      description: "Your signature, in-depth course that covers a major transformation from start to finish. This is typically your main revenue driver and the offer you ultimately want most clients to move toward.",
       color: "text-indigo-500",
       bgColor: "bg-indigo-500/10",
     },
@@ -108,7 +108,7 @@ const OFFER_TYPES = {
       id: "mini-courses",
       name: "Mini-Courses",
       icon: BookOpen,
-      description: "Shorter, focused courses that dive into one specific topic.",
+      description: "Shorter, focused courses that dive into one specific topic. They're low-commitment, low-priced, and often serve as a stepping stone into your higher-ticket programs or flagship course.",
       color: "text-cyan-500",
       bgColor: "bg-cyan-500/10",
     },
@@ -297,6 +297,39 @@ interface OfferBuilderProps {
   projectId: string;
 }
 
+// Funnel Diagram Component
+const FunnelDiagram = ({ steps, color, bgColor }: { steps: string[]; color: string; bgColor: string }) => {
+  return (
+    <div className="py-4">
+      <div className="flex flex-col items-center gap-2">
+        {steps.map((step, index) => (
+          <div key={index} className="flex flex-col items-center w-full max-w-md">
+            <div 
+              className={cn(
+                "w-full py-3 px-4 rounded-lg border text-center transition-all",
+                bgColor,
+                "border-border"
+              )}
+              style={{
+                width: `${100 - (index * 5)}%`,
+                minWidth: '200px'
+              }}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <span className={cn("text-xs font-bold", color)}>{index + 1}</span>
+                <span className="text-sm font-medium text-foreground">{step}</span>
+              </div>
+            </div>
+            {index < steps.length - 1 && (
+              <ArrowDown className="w-4 h-4 text-muted-foreground my-1" />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -456,10 +489,9 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   };
 
   const handleSaveOffer = () => {
-    if (!user || !selectedNiche || !selectedOfferType || !selectedFunnelType) return;
+    if (!user || !offerTitle.trim() || !offerDescription.trim() || !selectedNiche || !selectedOfferType || !selectedFunnelType) return;
 
     const offerCategory = getOfferCategory(selectedOfferType);
-    const offerDetails = getOfferDetails(selectedOfferType);
 
     if (offer) {
       updateMutation.mutate({
@@ -468,8 +500,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
         offer_category: offerCategory,
         offer_type: selectedOfferType,
         funnel_type: selectedFunnelType,
-        title: offerTitle || offerDetails?.name || null,
-        description: offerDescription || null,
+        title: offerTitle.trim(),
+        description: offerDescription.trim(),
         price: offerPrice ? parseFloat(offerPrice) : null,
       });
     } else {
@@ -480,8 +512,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
         offer_category: offerCategory,
         offer_type: selectedOfferType,
         funnel_type: selectedFunnelType,
-        title: offerTitle || offerDetails?.name || null,
-        description: offerDescription || null,
+        title: offerTitle.trim(),
+        description: offerDescription.trim(),
         price: offerPrice ? parseFloat(offerPrice) : null,
       });
     }
@@ -491,8 +523,12 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   const selectedFunnelDetails = getFunnelDetails(selectedFunnelType);
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
-  const canProceedToStep2 = selectedNiche && selectedOfferType;
-  const canProceedToStep3 = canProceedToStep2 && selectedFunnelType;
+  // Step 1: Offer details (title, description, price, niche)
+  const canProceedToStep2 = offerTitle.trim() && offerDescription.trim() && selectedNiche;
+  // Step 2: Offer type
+  const canProceedToStep3 = canProceedToStep2 && selectedOfferType;
+  // Step 3: Funnel type
+  const canSave = canProceedToStep3 && selectedFunnelType;
 
   if (isLoading) {
     return (
@@ -528,94 +564,107 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
         </div>
       ) : (
         /* Your Offer Section */
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-4">
-                <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center", savedOfferDetails?.bgColor || "bg-muted")}>
-                  <SavedOfferIcon className={cn("w-7 h-7", savedOfferDetails?.color || "text-muted-foreground")} />
-                </div>
-                <div>
-                  <CardTitle className="text-xl">{offer.title || savedOfferDetails?.name}</CardTitle>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <Badge variant="outline">
-                      {offer.offer_category === "Audience-Growing Offers" ? "Warm-Up Offer" : "Paid Offer"}
-                    </Badge>
-                    <Badge variant="secondary">{savedOfferDetails?.name}</Badge>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center", savedOfferDetails?.bgColor || "bg-muted")}>
+                    <SavedOfferIcon className={cn("w-7 h-7", savedOfferDetails?.color || "text-muted-foreground")} />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">{offer.title}</CardTitle>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <Badge variant="outline">
+                        {offer.offer_category === "Audience-Growing Offers" ? "Warm-Up Offer" : "Paid Offer"}
+                      </Badge>
+                      <Badge variant="secondary">{savedOfferDetails?.name}</Badge>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleEditOffer}>
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Edit
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setDeleteDialogOpen(true)}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Offer Details Grid */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Niche</p>
-                <p className="text-foreground">{offer.niche}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Offer Type</p>
-                <p className="text-foreground">{savedOfferDetails?.name}</p>
-              </div>
-              {offer.price !== null && (
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Price</p>
-                  <p className="text-foreground text-lg font-semibold">${offer.price}</p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleEditOffer}>
+                    <Pencil className="w-4 h-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setDeleteDialogOpen(true)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
                 </div>
-              )}
-            </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Offer Details Grid */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Niche</p>
+                  <p className="text-foreground">{offer.niche}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Offer Type</p>
+                  <p className="text-foreground">{savedOfferDetails?.name}</p>
+                </div>
+                {offer.price !== null && (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">Price</p>
+                    <p className="text-foreground text-lg font-semibold">${offer.price}</p>
+                  </div>
+                )}
+              </div>
 
-            {/* Description */}
-            {offer.description && (
+              {/* Description */}
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Description</p>
                 <p className="text-foreground">{offer.description}</p>
               </div>
-            )}
 
-            {/* Funnel Type Section */}
-            {savedFunnelDetails && (
-              <div className="p-4 rounded-lg bg-muted/50 border border-border">
+              {/* Offer Type Info */}
+              {savedOfferDetails && (
+                <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                  <div className="flex items-start gap-3">
+                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0", savedOfferDetails.bgColor)}>
+                      <SavedOfferIcon className={cn("w-5 h-5", savedOfferDetails.color)} />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">About {savedOfferDetails.name}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{savedOfferDetails.description}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Funnel Diagram Card */}
+          {savedFunnelDetails && (
+            <Card>
+              <CardHeader>
                 <div className="flex items-start gap-3">
                   <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", savedFunnelDetails.bgColor)}>
                     <SavedFunnelIcon className={cn("w-5 h-5", savedFunnelDetails.color)} />
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-foreground">{savedFunnelDetails.name}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{savedFunnelDetails.purpose}</p>
-                    <div className="mt-3">
-                      <p className="text-xs font-medium text-muted-foreground mb-2">Funnel Steps:</p>
-                      <ol className="text-sm text-foreground space-y-1">
-                        {savedFunnelDetails.steps.map((step, index) => (
-                          <li key={index} className="flex items-start gap-2">
-                            <span className="text-muted-foreground">{index + 1}.</span>
-                            <span>{step}</span>
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
+                  <div>
+                    <CardTitle className="text-lg">{savedFunnelDetails.name}</CardTitle>
+                    <CardDescription>{savedFunnelDetails.purpose}</CardDescription>
                   </div>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              </CardHeader>
+              <CardContent>
+                <FunnelDiagram 
+                  steps={savedFunnelDetails.steps} 
+                  color={savedFunnelDetails.color}
+                  bgColor={savedFunnelDetails.bgColor}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
       {/* Create/Edit Dialog */}
@@ -624,9 +673,9 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
           <DialogHeader>
             <DialogTitle>{offer ? "Edit Offer" : "Create Offer"}</DialogTitle>
             <DialogDescription>
-              {step === 1 && "Step 1: Select your niche and offer type"}
-              {step === 2 && "Step 2: Select your funnel type"}
-              {step === 3 && "Step 3: Add offer details"}
+              {step === 1 && "Step 1: Enter your offer details"}
+              {step === 2 && "Step 2: Select your offer type"}
+              {step === 3 && "Step 3: Select your funnel type"}
             </DialogDescription>
           </DialogHeader>
           
@@ -645,81 +694,126 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
 
           <ScrollArea className="flex-1 pr-4">
             <div className="space-y-6 py-4">
-              {/* Step 1: Niche & Offer Type */}
+              {/* Step 1: Offer Details */}
               {step === 1 && (
-                <>
+                <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="niche">Select Your Niche</Label>
-                    <Select value={selectedNiche} onValueChange={setSelectedNiche}>
-                      <SelectTrigger id="niche">
-                        <SelectValue placeholder="Choose your niche..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border border-border">
-                        {NICHES.map((niche) => (
-                          <SelectItem key={niche} value={niche}>
-                            {niche}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="offerTitle">Offer Title <span className="text-destructive">*</span></Label>
+                    <Input
+                      id="offerTitle"
+                      value={offerTitle}
+                      onChange={(e) => setOfferTitle(e.target.value)}
+                      placeholder="e.g., 'Launch Like a Pro Masterclass'"
+                    />
                   </div>
 
-                  {selectedNiche && (
-                    <div className="space-y-4">
-                      <Label>Select Offer Type</Label>
-                      
-                      {Object.entries(OFFER_TYPES).map(([category, offersList]) => (
-                        <div key={category} className="space-y-3">
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-sm font-medium text-muted-foreground">{category}</h4>
-                            <Badge variant="outline" className="text-xs">
-                              {category === "Audience-Growing Offers" ? "Warm-Up" : "Paid"}
-                            </Badge>
-                          </div>
-                          <div className="grid gap-2">
-                            {offersList.map((offerItem) => {
-                              const Icon = offerItem.icon;
-                              const isSelected = selectedOfferType === offerItem.id;
-                              
-                              return (
-                                <Card
-                                  key={offerItem.id}
-                                  className={cn(
-                                    "cursor-pointer transition-all hover:border-primary/50",
-                                    isSelected && "border-primary ring-1 ring-primary"
-                                  )}
-                                  onClick={() => setSelectedOfferType(offerItem.id)}
-                                >
-                                  <CardHeader className="py-3 px-4">
-                                    <div className="flex items-center gap-3">
-                                      <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", offerItem.bgColor)}>
-                                        <Icon className={cn("w-4 h-4", offerItem.color)} />
-                                      </div>
-                                      <div className="flex-1">
-                                        <CardTitle className="text-sm">{offerItem.name}</CardTitle>
-                                      </div>
-                                      {isSelected && (
-                                        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                                          <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                          </svg>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </CardHeader>
-                                </Card>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
+                  <div className="space-y-2">
+                    <Label htmlFor="offerDescription">Description <span className="text-destructive">*</span></Label>
+                    <Textarea
+                      id="offerDescription"
+                      value={offerDescription}
+                      onChange={(e) => setOfferDescription(e.target.value)}
+                      placeholder="Describe what your offer includes and who it's for..."
+                      rows={4}
+                    />
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="niche">Niche <span className="text-destructive">*</span></Label>
+                      <Select value={selectedNiche} onValueChange={setSelectedNiche}>
+                        <SelectTrigger id="niche">
+                          <SelectValue placeholder="Choose your niche..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border border-border">
+                          {NICHES.map((niche) => (
+                            <SelectItem key={niche} value={niche}>
+                              {niche}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                  )}
-                </>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="offerPrice">Price ($) <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                      <Input
+                        id="offerPrice"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={offerPrice}
+                        onChange={(e) => setOfferPrice(e.target.value)}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                </div>
               )}
 
-              {/* Step 2: Funnel Type */}
+              {/* Step 2: Offer Type */}
               {step === 2 && (
+                <div className="space-y-4">
+                  <Label>Select Offer Type</Label>
+                  
+                  {Object.entries(OFFER_TYPES).map(([category, offersList]) => (
+                    <div key={category} className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-medium text-muted-foreground">{category}</h4>
+                        <Badge variant="outline" className="text-xs">
+                          {category === "Audience-Growing Offers" ? "Warm-Up" : "Paid"}
+                        </Badge>
+                      </div>
+                      <div className="grid gap-3">
+                        {offersList.map((offerItem) => {
+                          const Icon = offerItem.icon;
+                          const isSelected = selectedOfferType === offerItem.id;
+                          
+                          return (
+                            <Card
+                              key={offerItem.id}
+                              className={cn(
+                                "cursor-pointer transition-all hover:border-primary/50",
+                                isSelected && "border-primary ring-1 ring-primary"
+                              )}
+                              onClick={() => setSelectedOfferType(offerItem.id)}
+                            >
+                              <CardHeader className="py-3 px-4">
+                                <div className="flex items-start gap-3">
+                                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0", offerItem.bgColor)}>
+                                    <Icon className={cn("w-5 h-5", offerItem.color)} />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <CardTitle className="text-sm">{offerItem.name}</CardTitle>
+                                    <CardDescription className="text-xs mt-0.5">{offerItem.description.substring(0, 80)}...</CardDescription>
+                                  </div>
+                                  {isSelected && (
+                                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
+                                      <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    </div>
+                                  )}
+                                </div>
+                              </CardHeader>
+                              {isSelected && (
+                                <CardContent className="pt-0 pb-3 px-4">
+                                  <div className="ml-13 pl-10 border-l border-border">
+                                    <p className="text-sm text-muted-foreground">{offerItem.description}</p>
+                                  </div>
+                                </CardContent>
+                              )}
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Step 3: Funnel Type */}
+              {step === 3 && (
                 <div className="space-y-4">
                   <Label>Select Funnel Type</Label>
                   <div className="grid gap-3">
@@ -759,8 +853,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                               <div className="ml-13 pl-10 border-l border-border">
                                 <p className="text-xs font-medium text-muted-foreground mb-1">Steps:</p>
                                 <ol className="text-xs text-muted-foreground space-y-0.5">
-                                  {funnel.steps.map((step, index) => (
-                                    <li key={index}>{index + 1}. {step}</li>
+                                  {funnel.steps.map((funnelStep, index) => (
+                                    <li key={index}>{index + 1}. {funnelStep}</li>
                                   ))}
                                 </ol>
                               </div>
@@ -769,59 +863,6 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                         </Card>
                       );
                     })}
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3: Offer Details */}
-              {step === 3 && (
-                <div className="space-y-4">
-                  {/* Summary */}
-                  <div className="p-4 rounded-lg bg-accent border border-border">
-                    <h4 className="font-medium text-foreground mb-3">Your Selection</h4>
-                    <div className="grid gap-2 text-sm">
-                      <p><span className="text-muted-foreground">Niche:</span> {selectedNiche}</p>
-                      <p><span className="text-muted-foreground">Offer Type:</span> {selectedOfferDetails?.name}</p>
-                      <p><span className="text-muted-foreground">Funnel:</span> {selectedFunnelDetails?.name}</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h4 className="font-medium text-foreground">Offer Details (Optional)</h4>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="offerTitle">Custom Title</Label>
-                      <Input
-                        id="offerTitle"
-                        value={offerTitle}
-                        onChange={(e) => setOfferTitle(e.target.value)}
-                        placeholder={selectedOfferDetails?.name || "Enter a custom title..."}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="offerDescription">Description</Label>
-                      <Textarea
-                        id="offerDescription"
-                        value={offerDescription}
-                        onChange={(e) => setOfferDescription(e.target.value)}
-                        placeholder="Describe your offer..."
-                        rows={3}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="offerPrice">Price ($)</Label>
-                      <Input
-                        id="offerPrice"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={offerPrice}
-                        onChange={(e) => setOfferPrice(e.target.value)}
-                        placeholder="0.00"
-                      />
-                    </div>
                   </div>
                 </div>
               )}
@@ -847,7 +888,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
               ) : (
                 <Button 
                   onClick={handleSaveOffer} 
-                  disabled={!canProceedToStep3 || isSaving}
+                  disabled={!canSave || isSaving}
                 >
                   {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   {offer ? "Save Changes" : "Create Offer"}
