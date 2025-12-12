@@ -498,22 +498,38 @@ const Projects = () => {
                 </DialogHeader>
 
                 {/* Step indicator */}
-                <div className="flex items-center gap-2 py-2">
-                  <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
-                    createStep >= 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                  )}>
-                    1
+                <div className="flex items-center justify-center gap-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
+                      createStep >= 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    )}>
+                      1
+                    </div>
+                    <span className={cn(
+                      "text-sm font-medium transition-colors",
+                      createStep >= 1 ? "text-foreground" : "text-muted-foreground"
+                    )}>
+                      Details
+                    </span>
                   </div>
                   <div className={cn(
-                    "h-0.5 flex-1 transition-colors",
+                    "w-8 h-0.5 transition-colors",
                     createStep >= 2 ? "bg-primary" : "bg-muted"
                   )} />
-                  <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
-                    createStep >= 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                  )}>
-                    2
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors",
+                      createStep >= 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    )}>
+                      2
+                    </div>
+                    <span className={cn(
+                      "text-sm font-medium transition-colors",
+                      createStep >= 2 ? "text-foreground" : "text-muted-foreground"
+                    )}>
+                      Timeline
+                    </span>
                   </div>
                 </div>
 
