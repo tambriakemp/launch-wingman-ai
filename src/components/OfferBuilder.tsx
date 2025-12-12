@@ -627,12 +627,20 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     return MAIN_DELIVERABLES.find((d) => d.id === deliverableId) || null;
   };
 
+  const { isSubscribed } = useAuth();
+  const maxDeliverables = isSubscribed ? Infinity : 1;
+
   const toggleDeliverable = (deliverableId: string) => {
-    setSelectedDeliverables(prev => 
-      prev.includes(deliverableId)
-        ? prev.filter(id => id !== deliverableId)
-        : [...prev, deliverableId]
-    );
+    setSelectedDeliverables(prev => {
+      if (prev.includes(deliverableId)) {
+        return prev.filter(id => id !== deliverableId);
+      }
+      // Check limit for free users
+      if (prev.length >= maxDeliverables) {
+        return prev; // Don't add more if at limit
+      }
+      return [...prev, deliverableId];
+    });
   };
 
   const handleSaveOffer = () => {
@@ -1105,12 +1113,17 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                       );
                     })}
                   </div>
-                  {selectedDeliverables.length > 0 && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2 text-muted-foreground">
                       <CheckSquare className="w-4 h-4" />
                       <span>{selectedDeliverables.length} deliverable{selectedDeliverables.length !== 1 ? 's' : ''} selected</span>
                     </div>
-                  )}
+                    {!isSubscribed && (
+                      <span className="text-xs text-amber-600 bg-amber-500/10 px-2 py-1 rounded">
+                        Free plan: 1 deliverable max
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
