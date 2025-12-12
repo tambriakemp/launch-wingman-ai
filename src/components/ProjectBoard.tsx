@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO, isPast, isToday } from "date-fns";
-import { ChevronRight, ChevronDown, MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, Filter, X, ChevronsUpDown } from "lucide-react";
+import { ChevronRight, ChevronDown, MoreHorizontal, Pencil, Trash2, Calendar, Plus, GitBranch, Filter, X, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -457,8 +457,8 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
                               {task.title}
                             </span>
                             {task.subtask_count && task.subtask_count > 0 && (
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
-                                <ListTodo className="w-3 h-3" />
+                              <div className="flex items-center gap-0.5 text-xs text-muted-foreground flex-shrink-0">
+                                <GitBranch className="w-3 h-3" />
                                 <span>{task.subtask_count}</span>
                               </div>
                             )}
@@ -588,8 +588,8 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
                               {task.title}
                             </span>
                             {task.subtask_count && task.subtask_count > 0 && (
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
-                                <ListTodo className="w-3 h-3" />
+                              <div className="flex items-center gap-0.5 text-xs text-muted-foreground flex-shrink-0">
+                                <GitBranch className="w-3 h-3" />
                                 <span>{task.subtask_count}</span>
                               </div>
                             )}
