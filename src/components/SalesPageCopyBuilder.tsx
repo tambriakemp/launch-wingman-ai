@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, FileText, MoreHorizontal, Pencil, Trash2, Lock, X, Sparkles, RefreshCw, ChevronDown, ChevronUp, Eye, Check } from "lucide-react";
+import { Plus, FileText, MoreHorizontal, Pencil, Trash2, Lock, X, Sparkles, RefreshCw, ChevronDown, ChevronUp, Eye, Check, Wand2, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -133,6 +133,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   // AI generation states
   const [sectionModes, setSectionModes] = useState<Record<string, "ai" | "manual">>({});
   const [isGenerating, setIsGenerating] = useState<Record<string, boolean>>({});
+  const [hasGenerated, setHasGenerated] = useState<Record<string, boolean>>({});
   
   // Context inputs for "Why Different" section
   const [contextMode, setContextMode] = useState<"infer" | "provide">("infer");
@@ -388,6 +389,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
         }));
       }
 
+      setHasGenerated(prev => ({ ...prev, [sectionType]: true }));
       toast.success(`${sectionType.charAt(0).toUpperCase() + sectionType.slice(1)} section generated!`);
     } catch (error) {
       console.error("Error generating copy:", error);
@@ -489,26 +491,45 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     const heroData = sections.hero;
     
     return (
-      <div className="space-y-4 p-4 border rounded-lg bg-background">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-medium">Hero Section</Label>
-          <div className="flex items-center gap-2">
-            <RadioGroup
-              value={mode}
-              onValueChange={(v) => setSectionModes(prev => ({ ...prev, hero: v as "ai" | "manual" }))}
-              className="flex gap-4"
-            >
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="ai" id="hero-ai" />
-                <Label htmlFor="hero-ai" className="text-sm cursor-pointer">AI</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="manual" id="hero-manual" />
-                <Label htmlFor="hero-manual" className="text-sm cursor-pointer">Manual</Label>
-              </div>
-            </RadioGroup>
-          </div>
+      <div className="space-y-4 p-4 border rounded-lg bg-card shadow-sm">
+        <div className="flex items-center justify-between pb-3 border-b">
+          <Label className="text-base font-semibold">Hero Section</Label>
+          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
+            <X className="w-4 h-4" />
+          </Button>
         </div>
+
+        {/* Mode Selection Cards */}
+        {!heroData && !sections.heroManual && (
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setSectionModes(prev => ({ ...prev, hero: "ai" }))}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                mode === "ai" 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <Wand2 className="w-5 h-5 mb-2 text-primary" />
+              <div className="font-medium text-sm">AI Generate</div>
+              <p className="text-xs text-muted-foreground mt-1">Let AI create compelling copy</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSectionModes(prev => ({ ...prev, hero: "manual" }))}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                mode === "manual" 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <PenLine className="w-5 h-5 mb-2 text-primary" />
+              <div className="font-medium text-sm">Write My Own</div>
+              <p className="text-xs text-muted-foreground mt-1">Write from scratch</p>
+            </button>
+          </div>
+        )}
 
         {mode === "ai" ? (
           <div className="space-y-4">
@@ -526,7 +547,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Generate Hero Copy
+                    {hasGenerated.hero ? "Regenerate" : "Generate"} Hero Copy
                   </>
                 )}
               </Button>
@@ -592,15 +613,17 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             )}
           </div>
         ) : (
-          <Textarea
-            placeholder="Write your hero section copy..."
-            value={sections.heroManual || ""}
-            onChange={(e) => setSections(prev => ({ ...prev, heroManual: e.target.value }))}
-            rows={6}
-          />
+          <div className="space-y-3">
+            <Textarea
+              placeholder="Write your hero section copy..."
+              value={sections.heroManual || ""}
+              onChange={(e) => setSections(prev => ({ ...prev, heroManual: e.target.value }))}
+              rows={6}
+            />
+          </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-2 border-t">
+        <div className="flex justify-between gap-2 pt-3 border-t">
           <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
             Cancel
           </Button>
@@ -619,24 +642,45 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     const whyDifferentData = sections.whyDifferent;
     
     return (
-      <div className="space-y-4 p-4 border rounded-lg bg-background">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-medium">Why This Is Different</Label>
-          <RadioGroup
-            value={mode}
-            onValueChange={(v) => setSectionModes(prev => ({ ...prev, whyDifferent: v as "ai" | "manual" }))}
-            className="flex gap-4"
-          >
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="ai" id="why-ai" />
-              <Label htmlFor="why-ai" className="text-sm cursor-pointer">AI</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="manual" id="why-manual" />
-              <Label htmlFor="why-manual" className="text-sm cursor-pointer">Manual</Label>
-            </div>
-          </RadioGroup>
+      <div className="space-y-4 p-4 border rounded-lg bg-card shadow-sm">
+        <div className="flex items-center justify-between pb-3 border-b">
+          <Label className="text-base font-semibold">Why This Is Different</Label>
+          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
+            <X className="w-4 h-4" />
+          </Button>
         </div>
+
+        {/* Mode Selection Cards */}
+        {!whyDifferentData && !sections.whyDifferentManual && (
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setSectionModes(prev => ({ ...prev, whyDifferent: "ai" }))}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                mode === "ai" 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <Wand2 className="w-5 h-5 mb-2 text-primary" />
+              <div className="font-medium text-sm">AI Generate</div>
+              <p className="text-xs text-muted-foreground mt-1">Let AI create compelling copy</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSectionModes(prev => ({ ...prev, whyDifferent: "manual" }))}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                mode === "manual" 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <PenLine className="w-5 h-5 mb-2 text-primary" />
+              <div className="font-medium text-sm">Write My Own</div>
+              <p className="text-xs text-muted-foreground mt-1">Write from scratch</p>
+            </button>
+          </div>
+        )}
 
         {mode === "ai" ? (
           <div className="space-y-4">
@@ -721,7 +765,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Generate Copy
+                    {hasGenerated.whyDifferent ? "Regenerate" : "Generate"} Copy
                   </>
                 )}
               </Button>
@@ -784,15 +828,17 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             )}
           </div>
         ) : (
-          <Textarea
-            placeholder="Write your 'Why This Is Different' copy..."
-            value={sections.whyDifferentManual || ""}
-            onChange={(e) => setSections(prev => ({ ...prev, whyDifferentManual: e.target.value }))}
-            rows={6}
-          />
+          <div className="space-y-3">
+            <Textarea
+              placeholder="Write your 'Why This Is Different' copy..."
+              value={sections.whyDifferentManual || ""}
+              onChange={(e) => setSections(prev => ({ ...prev, whyDifferentManual: e.target.value }))}
+              rows={6}
+            />
+          </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-2 border-t">
+        <div className="flex justify-between gap-2 pt-3 border-t">
           <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
             Cancel
           </Button>
@@ -809,26 +855,57 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   const renderBenefitsEditor = () => {
     const mode = getSectionMode("benefits");
     const benefitsData = sections.benefits;
+
+    const addBenefit = () => {
+      const newBenefits = [...(benefitsData?.benefits || []), { title: "", description: "" }];
+      setSections(prev => ({ ...prev, benefits: { benefits: newBenefits } }));
+    };
+
+    const removeBenefit = (idx: number) => {
+      const newBenefits = (benefitsData?.benefits || []).filter((_, i) => i !== idx);
+      setSections(prev => ({ ...prev, benefits: { benefits: newBenefits } }));
+    };
     
     return (
-      <div className="space-y-4 p-4 border rounded-lg bg-background">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-medium">Key Benefits</Label>
-          <RadioGroup
-            value={mode}
-            onValueChange={(v) => setSectionModes(prev => ({ ...prev, benefits: v as "ai" | "manual" }))}
-            className="flex gap-4"
-          >
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="ai" id="benefits-ai" />
-              <Label htmlFor="benefits-ai" className="text-sm cursor-pointer">AI</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="manual" id="benefits-manual" />
-              <Label htmlFor="benefits-manual" className="text-sm cursor-pointer">Manual</Label>
-            </div>
-          </RadioGroup>
+      <div className="space-y-4 p-4 border rounded-lg bg-card shadow-sm">
+        <div className="flex items-center justify-between pb-3 border-b">
+          <Label className="text-base font-semibold">Key Benefits</Label>
+          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
+            <X className="w-4 h-4" />
+          </Button>
         </div>
+
+        {/* Mode Selection Cards */}
+        {!benefitsData && !sections.benefitsManual && (
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setSectionModes(prev => ({ ...prev, benefits: "ai" }))}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                mode === "ai" 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <Wand2 className="w-5 h-5 mb-2 text-primary" />
+              <div className="font-medium text-sm">AI Generate</div>
+              <p className="text-xs text-muted-foreground mt-1">Generate 4 benefits, add more manually</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSectionModes(prev => ({ ...prev, benefits: "manual" }))}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                mode === "manual" 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <PenLine className="w-5 h-5 mb-2 text-primary" />
+              <div className="font-medium text-sm">Write My Own</div>
+              <p className="text-xs text-muted-foreground mt-1">Write from scratch</p>
+            </button>
+          </div>
+        )}
 
         {mode === "ai" ? (
           <div className="space-y-4">
@@ -846,14 +923,24 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Generate Benefits
+                    {hasGenerated.benefits ? "Regenerate" : "Generate"} Benefits
                   </>
                 )}
               </Button>
             ) : (
               <div className="space-y-3">
                 {benefitsData.benefits?.map((benefit, idx) => (
-                  <div key={idx} className="p-3 border rounded-lg space-y-2">
+                  <div key={idx} className="p-3 border rounded-lg space-y-2 relative group">
+                    {benefitsData.benefits.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeBenefit(idx)}
+                      >
+                        <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                      </Button>
+                    )}
                     <Input
                       value={benefit.title}
                       onChange={(e) => {
@@ -862,7 +949,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                         setSections(prev => ({ ...prev, benefits: { benefits: newBenefits } }));
                       }}
                       placeholder="Benefit title"
-                      className="font-medium"
+                      className="font-medium pr-8"
                     />
                     <Textarea
                       value={benefit.description}
@@ -876,28 +963,40 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                     />
                   </div>
                 ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => generateSectionCopy("benefits")}
-                  disabled={isGenerating.benefits}
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${isGenerating.benefits ? "animate-spin" : ""}`} />
-                  Regenerate
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={addBenefit}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Benefit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => generateSectionCopy("benefits")}
+                    disabled={isGenerating.benefits}
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${isGenerating.benefits ? "animate-spin" : ""}`} />
+                    Regenerate
+                  </Button>
+                </div>
               </div>
             )}
           </div>
         ) : (
-          <Textarea
-            placeholder="List your key benefits..."
-            value={sections.benefitsManual || ""}
-            onChange={(e) => setSections(prev => ({ ...prev, benefitsManual: e.target.value }))}
-            rows={6}
-          />
+          <div className="space-y-3">
+            <Textarea
+              placeholder="List your key benefits..."
+              value={sections.benefitsManual || ""}
+              onChange={(e) => setSections(prev => ({ ...prev, benefitsManual: e.target.value }))}
+              rows={6}
+            />
+          </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-2 border-t">
+        <div className="flex justify-between gap-2 pt-3 border-t">
           <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
             Cancel
           </Button>
@@ -916,24 +1015,45 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     const offerDetailsData = sections.offerDetails;
     
     return (
-      <div className="space-y-4 p-4 border rounded-lg bg-background">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-medium">What's Included</Label>
-          <RadioGroup
-            value={mode}
-            onValueChange={(v) => setSectionModes(prev => ({ ...prev, offerDetails: v as "ai" | "manual" }))}
-            className="flex gap-4"
-          >
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="ai" id="offer-ai" />
-              <Label htmlFor="offer-ai" className="text-sm cursor-pointer">AI</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="manual" id="offer-manual" />
-              <Label htmlFor="offer-manual" className="text-sm cursor-pointer">Manual</Label>
-            </div>
-          </RadioGroup>
+      <div className="space-y-4 p-4 border rounded-lg bg-card shadow-sm">
+        <div className="flex items-center justify-between pb-3 border-b">
+          <Label className="text-base font-semibold">What's Included</Label>
+          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
+            <X className="w-4 h-4" />
+          </Button>
         </div>
+
+        {/* Mode Selection Cards */}
+        {!offerDetailsData && !sections.offerDetailsManual && (
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setSectionModes(prev => ({ ...prev, offerDetails: "ai" }))}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                mode === "ai" 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <Wand2 className="w-5 h-5 mb-2 text-primary" />
+              <div className="font-medium text-sm">AI Generate</div>
+              <p className="text-xs text-muted-foreground mt-1">Let AI create compelling copy</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSectionModes(prev => ({ ...prev, offerDetails: "manual" }))}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                mode === "manual" 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <PenLine className="w-5 h-5 mb-2 text-primary" />
+              <div className="font-medium text-sm">Write My Own</div>
+              <p className="text-xs text-muted-foreground mt-1">Write from scratch</p>
+            </button>
+          </div>
+        )}
 
         {mode === "ai" ? (
           <div className="space-y-4">
@@ -951,7 +1071,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Generate Offer Details
+                    {hasGenerated.offerDetails ? "Regenerate" : "Generate"} Offer Details
                   </>
                 )}
               </Button>
@@ -1060,15 +1180,17 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             )}
           </div>
         ) : (
-          <Textarea
-            placeholder="Describe what's included in your offer..."
-            value={sections.offerDetailsManual || ""}
-            onChange={(e) => setSections(prev => ({ ...prev, offerDetailsManual: e.target.value }))}
-            rows={8}
-          />
+          <div className="space-y-3">
+            <Textarea
+              placeholder="Describe what's included in your offer..."
+              value={sections.offerDetailsManual || ""}
+              onChange={(e) => setSections(prev => ({ ...prev, offerDetailsManual: e.target.value }))}
+              rows={8}
+            />
+          </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-2 border-t">
+        <div className="flex justify-between gap-2 pt-3 border-t">
           <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
             Cancel
           </Button>
@@ -1087,28 +1209,49 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     const testimonialsData = sections.testimonials;
     
     return (
-      <div className="space-y-4 p-4 border rounded-lg bg-background">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-medium">Testimonials</Label>
-          <RadioGroup
-            value={mode}
-            onValueChange={(v) => setSectionModes(prev => ({ ...prev, testimonials: v as "ai" | "manual" }))}
-            className="flex gap-4"
-          >
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="ai" id="testimonials-ai" />
-              <Label htmlFor="testimonials-ai" className="text-sm cursor-pointer">AI</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="manual" id="testimonials-manual" />
-              <Label htmlFor="testimonials-manual" className="text-sm cursor-pointer">Manual</Label>
-            </div>
-          </RadioGroup>
+      <div className="space-y-4 p-4 border rounded-lg bg-card shadow-sm">
+        <div className="flex items-center justify-between pb-3 border-b">
+          <Label className="text-base font-semibold">Testimonials</Label>
+          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
+            <X className="w-4 h-4" />
+          </Button>
         </div>
+
+        {/* Mode Selection Cards */}
+        {!testimonialsData && !sections.testimonialsManual && (
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setSectionModes(prev => ({ ...prev, testimonials: "ai" }))}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                mode === "ai" 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <Wand2 className="w-5 h-5 mb-2 text-primary" />
+              <div className="font-medium text-sm">AI Generate</div>
+              <p className="text-xs text-muted-foreground mt-1">Create sample testimonials</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSectionModes(prev => ({ ...prev, testimonials: "manual" }))}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                mode === "manual" 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <PenLine className="w-5 h-5 mb-2 text-primary" />
+              <div className="font-medium text-sm">Write My Own</div>
+              <p className="text-xs text-muted-foreground mt-1">Add real testimonials</p>
+            </button>
+          </div>
+        )}
 
         {mode === "ai" ? (
           <div className="space-y-4">
-            <p className="text-xs text-muted-foreground">AI generates sample testimonials as templates. Replace with real testimonials before publishing.</p>
+            <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">AI generates sample testimonials as templates. Replace with real testimonials before publishing.</p>
             {!testimonialsData ? (
               <Button
                 onClick={() => generateSectionCopy("testimonials")}
@@ -1123,7 +1266,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Generate Sample Testimonials
+                    {hasGenerated.testimonials ? "Regenerate" : "Generate"} Sample Testimonials
                   </>
                 )}
               </Button>
@@ -1178,15 +1321,17 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             )}
           </div>
         ) : (
-          <Textarea
-            placeholder="Add your testimonials..."
-            value={sections.testimonialsManual || ""}
-            onChange={(e) => setSections(prev => ({ ...prev, testimonialsManual: e.target.value }))}
-            rows={6}
-          />
+          <div className="space-y-3">
+            <Textarea
+              placeholder="Add your testimonials..."
+              value={sections.testimonialsManual || ""}
+              onChange={(e) => setSections(prev => ({ ...prev, testimonialsManual: e.target.value }))}
+              rows={6}
+            />
+          </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-2 border-t">
+        <div className="flex justify-between gap-2 pt-3 border-t">
           <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
             Cancel
           </Button>
@@ -1205,24 +1350,45 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     const faqsData = sections.faqs;
     
     return (
-      <div className="space-y-4 p-4 border rounded-lg bg-background">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-medium">FAQs</Label>
-          <RadioGroup
-            value={mode}
-            onValueChange={(v) => setSectionModes(prev => ({ ...prev, faqs: v as "ai" | "manual" }))}
-            className="flex gap-4"
-          >
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="ai" id="faqs-ai" />
-              <Label htmlFor="faqs-ai" className="text-sm cursor-pointer">AI</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="manual" id="faqs-manual" />
-              <Label htmlFor="faqs-manual" className="text-sm cursor-pointer">Manual</Label>
-            </div>
-          </RadioGroup>
+      <div className="space-y-4 p-4 border rounded-lg bg-card shadow-sm">
+        <div className="flex items-center justify-between pb-3 border-b">
+          <Label className="text-base font-semibold">FAQs</Label>
+          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
+            <X className="w-4 h-4" />
+          </Button>
         </div>
+
+        {/* Mode Selection Cards */}
+        {!faqsData && !sections.faqsManual && (
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setSectionModes(prev => ({ ...prev, faqs: "ai" }))}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                mode === "ai" 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <Wand2 className="w-5 h-5 mb-2 text-primary" />
+              <div className="font-medium text-sm">AI Generate</div>
+              <p className="text-xs text-muted-foreground mt-1">Create common FAQs</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSectionModes(prev => ({ ...prev, faqs: "manual" }))}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                mode === "manual" 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <PenLine className="w-5 h-5 mb-2 text-primary" />
+              <div className="font-medium text-sm">Write My Own</div>
+              <p className="text-xs text-muted-foreground mt-1">Add your own FAQs</p>
+            </button>
+          </div>
+        )}
 
         {mode === "ai" ? (
           <div className="space-y-4">
@@ -1240,7 +1406,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Generate FAQs
+                    {hasGenerated.faqs ? "Regenerate" : "Generate"} FAQs
                   </>
                 )}
               </Button>
@@ -1283,15 +1449,17 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             )}
           </div>
         ) : (
-          <Textarea
-            placeholder="Add your FAQs..."
-            value={sections.faqsManual || ""}
-            onChange={(e) => setSections(prev => ({ ...prev, faqsManual: e.target.value }))}
-            rows={6}
-          />
+          <div className="space-y-3">
+            <Textarea
+              placeholder="Add your FAQs..."
+              value={sections.faqsManual || ""}
+              onChange={(e) => setSections(prev => ({ ...prev, faqsManual: e.target.value }))}
+              rows={6}
+            />
+          </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-2 border-t">
+        <div className="flex justify-between gap-2 pt-3 border-t">
           <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
             Cancel
           </Button>
@@ -1340,7 +1508,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline" onClick={() => setShowPreview(true)}>
                   <Eye className="w-4 h-4 mr-1" />
-                  Preview
+                  Preview Sales Page Copy
                 </Button>
                 <Button size="icon" variant="ghost" onClick={resetForm}>
                   <X className="w-4 h-4" />
