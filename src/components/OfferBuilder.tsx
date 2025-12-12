@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Gift, ShoppingBag, Video, Users, CreditCard, GraduationCap, BookOpen, Layers, Pencil, Trash2, Loader2, Mail, DollarSign, Play, Instagram, Radio, Zap, UserCheck, Send, Rocket, ArrowDown, ChevronRight, ListChecks, FileText, Headphones, MessageSquare, MessagesSquare, Calendar, Layout, Volume2, Heart, BookMarked, UsersRound, Phone, MailCheck, MessageCircle, CheckSquare } from "lucide-react";
+import { Plus, Gift, ShoppingBag, Video, Users, CreditCard, GraduationCap, BookOpen, Layers, Pencil, Trash2, Loader2, Mail, DollarSign, Play, Instagram, Radio, Zap, UserCheck, Send, Rocket, ArrowDown, ChevronRight, ListChecks, FileText, Headphones, MessageSquare, MessagesSquare, Calendar, Layout, Volume2, Heart, BookMarked, UsersRound, Phone, MailCheck, MessageCircle, CheckSquare, Globe, MessageCircleMore } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -246,6 +246,117 @@ const MAIN_DELIVERABLES = [
   },
 ];
 
+const PLATFORM_CATEGORIES = {
+  "Funnel Builders": [
+    {
+      id: "clickfunnels",
+      name: "ClickFunnels",
+      description: "One of the most well-known sales funnel builders with drag-and-drop pages, order forms, upsells/downsells, and funnel templates.",
+      icon: Globe,
+      color: "text-blue-500",
+      bgColor: "bg-blue-500/10",
+    },
+    {
+      id: "kartra",
+      name: "Kartra",
+      description: "All-in-one platform with landing pages, email automation, carts, affiliate tracking, membership sites, and funnels.",
+      icon: Globe,
+      color: "text-purple-500",
+      bgColor: "bg-purple-500/10",
+    },
+    {
+      id: "systeme-io",
+      name: "Systeme.io",
+      description: "Affordable and user-friendly funnel builder with email automation, membership support, and courses.",
+      icon: Globe,
+      color: "text-green-500",
+      bgColor: "bg-green-500/10",
+    },
+    {
+      id: "getresponse",
+      name: "GetResponse",
+      description: "Marketing suite with funnel visualization, landing pages, webinars, and email automation.",
+      icon: Globe,
+      color: "text-cyan-500",
+      bgColor: "bg-cyan-500/10",
+    },
+    {
+      id: "leadpages",
+      name: "Leadpages",
+      description: "Strong landing page and conversion page builder that integrates with email and CRM tools.",
+      icon: Globe,
+      color: "text-orange-500",
+      bgColor: "bg-orange-500/10",
+    },
+    {
+      id: "kajabi-funnel",
+      name: "Kajabi",
+      description: "All-in-one creator platform with courses, funnels, memberships, and email automations.",
+      icon: Globe,
+      color: "text-indigo-500",
+      bgColor: "bg-indigo-500/10",
+    },
+    {
+      id: "activecampaign",
+      name: "ActiveCampaign",
+      description: "More advanced automation and CRM-driven funnels with behavior-based triggers.",
+      icon: Globe,
+      color: "text-rose-500",
+      bgColor: "bg-rose-500/10",
+    },
+  ],
+  "Community & Engagement Platforms": [
+    {
+      id: "kajabi-community",
+      name: "Kajabi",
+      description: "All-in-one creator platform with courses, funnels, memberships, and email automations.",
+      icon: UsersRound,
+      color: "text-indigo-500",
+      bgColor: "bg-indigo-500/10",
+    },
+    {
+      id: "mighty-networks",
+      name: "Mighty Networks",
+      description: "Community and membership platform for creators with network features.",
+      icon: UsersRound,
+      color: "text-purple-500",
+      bgColor: "bg-purple-500/10",
+    },
+    {
+      id: "circle",
+      name: "Circle",
+      description: "Community hub integrated with membership and course sales.",
+      icon: MessageCircleMore,
+      color: "text-teal-500",
+      bgColor: "bg-teal-500/10",
+    },
+    {
+      id: "discord",
+      name: "Discord",
+      description: "Real-time community used for cohorts, launch groups, and engagement.",
+      icon: MessageCircleMore,
+      color: "text-violet-500",
+      bgColor: "bg-violet-500/10",
+    },
+    {
+      id: "slack",
+      name: "Slack",
+      description: "Professional community space often used for paid membership groups.",
+      icon: MessageSquare,
+      color: "text-pink-500",
+      bgColor: "bg-pink-500/10",
+    },
+    {
+      id: "facebook-groups",
+      name: "Facebook Groups",
+      description: "Still widely used for community building and launch cohorts.",
+      icon: UsersRound,
+      color: "text-blue-600",
+      bgColor: "bg-blue-600/10",
+    },
+  ],
+};
+
 const FUNNEL_TYPES = [
   {
     id: "freebie-funnel",
@@ -418,6 +529,8 @@ interface Offer {
   offer_type: string;
   funnel_type: string | null;
   main_deliverables: string[] | null;
+  funnel_platform: string | null;
+  community_platform: string | null;
   title: string | null;
   description: string | null;
   price: number | null;
@@ -474,7 +587,9 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   const [offerTitle, setOfferTitle] = useState<string>("");
   const [offerDescription, setOfferDescription] = useState<string>("");
   const [offerPrice, setOfferPrice] = useState<string>("");
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [selectedFunnelPlatform, setSelectedFunnelPlatform] = useState<string>("");
+  const [selectedCommunityPlatform, setSelectedCommunityPlatform] = useState<string>("");
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
 
   // Fetch offer (only one per project)
   const { data: offer, isLoading } = useQuery({
@@ -568,6 +683,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setOfferTitle("");
     setOfferDescription("");
     setOfferPrice("");
+    setSelectedFunnelPlatform("");
+    setSelectedCommunityPlatform("");
     setStep(1);
   };
 
@@ -592,6 +709,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setOfferTitle(offer.title || "");
     setOfferDescription(offer.description || "");
     setOfferPrice(offer.price?.toString() || "");
+    setSelectedFunnelPlatform(offer.funnel_platform || "");
+    setSelectedCommunityPlatform(offer.community_platform || "");
     setStep(1);
     setDialogOpen(true);
   };
@@ -627,6 +746,10 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     return MAIN_DELIVERABLES.find((d) => d.id === deliverableId) || null;
   };
 
+  const getPlatformDetails = (platformId: string, category: keyof typeof PLATFORM_CATEGORIES) => {
+    return PLATFORM_CATEGORIES[category].find((p) => p.id === platformId) || null;
+  };
+
   const { isSubscribed } = useAuth();
   const maxDeliverables = isSubscribed ? Infinity : 1;
 
@@ -658,6 +781,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
         offer_type: selectedOfferType,
         funnel_type: selectedFunnelType,
         main_deliverables: selectedDeliverables,
+        funnel_platform: selectedFunnelPlatform || null,
+        community_platform: selectedCommunityPlatform || null,
         title: offerTitle.trim(),
         description: offerDescription.trim(),
         price: offerPrice ? parseFloat(offerPrice) : null,
@@ -671,6 +796,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
         offer_type: selectedOfferType,
         funnel_type: selectedFunnelType,
         main_deliverables: selectedDeliverables,
+        funnel_platform: selectedFunnelPlatform || null,
+        community_platform: selectedCommunityPlatform || null,
         title: offerTitle.trim(),
         description: offerDescription.trim(),
         price: offerPrice ? parseFloat(offerPrice) : null,
@@ -842,6 +969,63 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
             </Card>
           )}
 
+          {/* Platforms Card */}
+          {(offer?.funnel_platform || offer?.community_platform) && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10">
+                    <Globe className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Platforms</CardTitle>
+                    <CardDescription>Tools you'll use to deliver your offer</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {offer?.funnel_platform && (() => {
+                    const platform = getPlatformDetails(offer.funnel_platform, "Funnel Builders");
+                    if (!platform) return null;
+                    const Icon = platform.icon;
+                    return (
+                      <div 
+                        className={cn("p-3 rounded-lg border border-border flex items-start gap-3", platform.bgColor)}
+                      >
+                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-background/80")}>
+                          <Icon className={cn("w-4 h-4", platform.color)} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-muted-foreground">Funnel Builder</p>
+                          <p className="text-sm font-medium text-foreground">{platform.name}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {offer?.community_platform && (() => {
+                    const platform = getPlatformDetails(offer.community_platform, "Community & Engagement Platforms");
+                    if (!platform) return null;
+                    const Icon = platform.icon;
+                    return (
+                      <div 
+                        className={cn("p-3 rounded-lg border border-border flex items-start gap-3", platform.bgColor)}
+                      >
+                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-background/80")}>
+                          <Icon className={cn("w-4 h-4", platform.color)} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-muted-foreground">Community Platform</p>
+                          <p className="text-sm font-medium text-foreground">{platform.name}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Funnel Diagram Card */}
           {savedFunnelDetails && (
             <Card>
@@ -878,12 +1062,13 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
               {step === 2 && "Step 2: Select your offer type"}
               {step === 3 && "Step 3: Select your funnel type"}
               {step === 4 && "Step 4: Select main deliverables (optional)"}
+              {step === 5 && "Step 5: Select your platforms"}
             </DialogDescription>
           </DialogHeader>
           
           {/* Step Indicators */}
           <div className="flex items-center gap-2 py-2 flex-shrink-0">
-            {[1, 2, 3, 4].map((s) => (
+            {[1, 2, 3, 4, 5].map((s) => (
               <div
                 key={s}
                 className={cn(
@@ -1147,6 +1332,76 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                   </div>
                 </div>
               )}
+
+              {/* Step 5: Platform Selection */}
+              {step === 5 && (
+                <div className="space-y-6">
+                  <div>
+                    <Label>Select Your Platforms</Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Choose one platform from each category that you'll use for your offer.
+                    </p>
+                  </div>
+
+                  {Object.entries(PLATFORM_CATEGORIES).map(([category, platforms]) => {
+                    const isFunnelCategory = category === "Funnel Builders";
+                    const selectedPlatform = isFunnelCategory ? selectedFunnelPlatform : selectedCommunityPlatform;
+                    const setSelectedPlatform = isFunnelCategory ? setSelectedFunnelPlatform : setSelectedCommunityPlatform;
+                    
+                    return (
+                      <div key={category} className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-medium text-foreground">{category}</h4>
+                          {selectedPlatform && (
+                            <Badge variant="secondary" className="text-xs">
+                              1 selected
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="grid gap-3">
+                          {platforms.map((platform) => {
+                            const Icon = platform.icon;
+                            const isSelected = selectedPlatform === platform.id;
+                            
+                            return (
+                              <Card
+                                key={platform.id}
+                                className={cn(
+                                  "cursor-pointer transition-all hover:border-primary/50",
+                                  isSelected && "border-primary ring-1 ring-primary"
+                                )}
+                                onClick={() => setSelectedPlatform(isSelected ? "" : platform.id)}
+                              >
+                                <CardHeader className="py-3 px-4">
+                                  <div className="flex items-start gap-3">
+                                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0", platform.bgColor)}>
+                                      <Icon className={cn("w-5 h-5", platform.color)} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <CardTitle className="text-sm">{platform.name}</CardTitle>
+                                      <CardDescription className="text-xs mt-0.5">{platform.description}</CardDescription>
+                                    </div>
+                                    <div className={cn(
+                                      "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
+                                      isSelected ? "bg-primary border-primary" : "border-muted-foreground/30"
+                                    )}>
+                                      {isSelected && (
+                                        <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                      )}
+                                    </div>
+                                  </div>
+                                </CardHeader>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1154,18 +1409,19 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
           <div className="flex justify-between gap-3 pt-4 border-t flex-shrink-0">
             <Button 
               variant="outline" 
-              onClick={() => step === 1 ? handleCloseDialog() : setStep((step - 1) as 1 | 2 | 3)}
+              onClick={() => step === 1 ? handleCloseDialog() : setStep((step - 1) as 1 | 2 | 3 | 4)}
             >
               {step === 1 ? "Cancel" : "Back"}
             </Button>
             <div className="flex gap-2">
-              {step < 4 ? (
+              {step < 5 ? (
                 <Button 
-                  onClick={() => setStep((step + 1) as 2 | 3 | 4)}
+                  onClick={() => setStep((step + 1) as 2 | 3 | 4 | 5)}
                   disabled={
                     step === 1 ? !canProceedToStep2 : 
                     step === 2 ? !canProceedToStep3 :
-                    !canProceedToStep4
+                    step === 3 ? !canProceedToStep4 :
+                    false
                   }
                 >
                   Continue

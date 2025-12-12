@@ -160,8 +160,10 @@ export type Database = {
       }
       offers: {
         Row: {
+          community_platform: string | null
           created_at: string
           description: string | null
+          funnel_platform: string | null
           funnel_type: string | null
           id: string
           main_deliverables: string[] | null
@@ -175,8 +177,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          community_platform?: string | null
           created_at?: string
           description?: string | null
+          funnel_platform?: string | null
           funnel_type?: string | null
           id?: string
           main_deliverables?: string[] | null
@@ -190,8 +194,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          community_platform?: string | null
           created_at?: string
           description?: string | null
+          funnel_platform?: string | null
           funnel_type?: string | null
           id?: string
           main_deliverables?: string[] | null
