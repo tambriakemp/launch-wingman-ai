@@ -329,6 +329,39 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   };
 
   const saveSectionContent = (sectionId: string) => {
+    // Include current sectionOrder in sections before saving
+    const sectionsWithOrder = { ...sections, sectionOrder };
+    
+    if (!selectedDeliverable) {
+      toast.error("Please select a deliverable first");
+      return;
+    }
+    
+    // Actually persist to database
+    if (editingItem) {
+      updateMutation.mutate({ 
+        id: editingItem.id, 
+        deliverableId: selectedDeliverable, 
+        sections: sectionsWithOrder 
+      });
+    } else {
+      const existing = items.find((i) => i.deliverableId === selectedDeliverable);
+      if (existing) {
+        // Update existing
+        updateMutation.mutate({ 
+          id: existing.id, 
+          deliverableId: selectedDeliverable, 
+          sections: sectionsWithOrder 
+        });
+      } else {
+        // Create new
+        createMutation.mutate({ 
+          deliverableId: selectedDeliverable, 
+          sections: sectionsWithOrder 
+        });
+      }
+    }
+    
     setEditingSection(null);
     toast.success(`${getAllSections().find(s => s.id === sectionId)?.label} saved`);
   };
@@ -840,29 +873,15 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
         {/* Part-specific inputs */}
         <div className="pt-4 border-t">
-          {selectedHeroPart === "headlines" && heroData?.headlines && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Choose Your Headline</Label>
-              <RadioGroup
-                value={String(heroData.selectedHeadline)}
-                onValueChange={(v) => setSections(prev => ({
-                  ...prev,
-                  hero: { ...prev.hero!, selectedHeadline: parseInt(v) }
-                }))}
-                className="space-y-2"
-              >
-                {heroData.headlines.map((headline, idx) => (
-                  <div key={idx} className="flex items-start gap-2 p-3 border rounded-lg hover:bg-accent/50 transition-colors">
-                    <RadioGroupItem value={String(idx)} id={`headline-${idx}`} className="mt-1" />
-                    <Label htmlFor={`headline-${idx}`} className="flex-1 cursor-pointer text-sm">
-                      {headline}
-                      {idx === heroData.recommendedHeadline && (
-                        <span className="ml-2 px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">Recommended</span>
-                      )}
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
+          {selectedHeroPart === "headlines" && (
+            <div className="p-4 rounded-lg bg-muted/50 border">
+              <p className="text-sm text-muted-foreground">
+                {heroData?.headlines ? (
+                  <>Select a headline from the <strong>Generated Outputs</strong> panel →</>
+                ) : (
+                  <>Click "Generate" below to create headline options</>
+                )}
+              </p>
             </div>
           )}
 
