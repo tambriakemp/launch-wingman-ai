@@ -394,15 +394,11 @@ const ProjectDetail = () => {
 
             <TabsContent value="kanban">
               <Card variant="elevated" className="min-h-[400px]">
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader>
                   <div>
                     <CardTitle>Project Board</CardTitle>
                     <CardDescription>Manage tasks with due dates</CardDescription>
                   </div>
-                  <Button>
-                    <Plus className="w-4 h-4" />
-                    Add Task
-                  </Button>
                 </CardHeader>
                 <CardContent>
                   <ProjectBoard projectId={project.id} />
