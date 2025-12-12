@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, FileText, MoreHorizontal, Pencil, Trash2, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, FileText, MoreHorizontal, Pencil, Trash2, Lightbulb, ChevronDown, ChevronUp, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -33,6 +33,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 
 const SALES_PAGE_SECTIONS = [
   { id: "heading", label: "Heading", placeholder: "Enter your main headline..." },
@@ -57,12 +58,16 @@ interface SalesPageCopyBuilderProps {
 }
 
 export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) => {
+  const { isSubscribed } = useAuth();
   const [items, setItems] = useState<SalesPageCopy[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<SalesPageCopy | null>(null);
   const [selectedDeliverable, setSelectedDeliverable] = useState<string>("");
   const [sections, setSections] = useState<Record<string, string>>({});
   const [directionsOpen, setDirectionsOpen] = useState(true);
+
+  // Free users can only create 1 sales page copy
+  const canAddMore = isSubscribed || items.length < 1;
 
   // Fetch offer to get deliverables
   const { data: offer } = useQuery({
@@ -196,12 +201,24 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             size="sm"
             variant="outline"
             onClick={handleAdd}
-            disabled={deliverables.length === 0}
+            disabled={deliverables.length === 0 || !canAddMore}
           >
+            {!canAddMore && <Lock className="w-4 h-4" />}
             <Plus className="w-4 h-4" />
             Add New
           </Button>
         </div>
+        {/* Free plan notice */}
+        {!isSubscribed && items.length > 0 && (
+          <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <div className="flex items-center gap-2">
+              <Lock className="w-4 h-4 text-amber-600" />
+              <span className="text-xs text-amber-700 dark:text-amber-400">
+                Free plan: 1 sales page copy. Upgrade to Pro to create copy for multiple deliverables.
+              </span>
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {deliverables.length === 0 ? (
