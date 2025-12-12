@@ -34,6 +34,7 @@ import { TransformationBuilder } from "@/components/TransformationBuilder";
 import { LaunchCalendarEventDialog } from "@/components/LaunchCalendarEventDialog";
 import { LaunchCalendarTimeline } from "@/components/LaunchCalendarTimeline";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
+import { ProjectBoard } from "@/components/ProjectBoard";
 
 interface LaunchEvent {
   id: string;
@@ -262,7 +263,7 @@ const ProjectDetail = () => {
               </TabsTrigger>
               <TabsTrigger value="kanban" className="gap-2">
                 <Kanban className="w-4 h-4" />
-                Kanban
+                Project Board
               </TabsTrigger>
               <TabsTrigger value="content" className="gap-2">
                 <FileText className="w-4 h-4" />
@@ -404,16 +405,7 @@ const ProjectDetail = () => {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {["To Do", "In Progress", "Done"].map((column) => (
-                      <div key={column} className="bg-muted/50 rounded-lg p-4">
-                        <h4 className="font-medium text-foreground mb-4">{column}</h4>
-                        <div className="flex flex-col items-center justify-center py-8 text-center">
-                          <p className="text-sm text-muted-foreground">No tasks</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <ProjectBoard projectId={project.id} />
                 </CardContent>
               </Card>
             </TabsContent>
