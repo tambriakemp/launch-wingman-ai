@@ -741,13 +741,13 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Comparison Bullets</Label>
-                  {whyDifferentData.comparisonBullets.map((bullet, idx) => (
+                  {whyDifferentData.comparisonBullets?.map((bullet, idx) => (
                     <div key={idx} className="flex items-start gap-2">
                       <span className="text-muted-foreground mt-2">•</span>
                       <Textarea
                         value={bullet}
                         onChange={(e) => {
-                          const newBullets = [...whyDifferentData.comparisonBullets];
+                          const newBullets = [...(whyDifferentData.comparisonBullets || [])];
                           newBullets[idx] = e.target.value;
                           setSections(prev => ({
                             ...prev,
@@ -852,12 +852,12 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
               </Button>
             ) : (
               <div className="space-y-3">
-                {benefitsData.benefits.map((benefit, idx) => (
+                {benefitsData.benefits?.map((benefit, idx) => (
                   <div key={idx} className="p-3 border rounded-lg space-y-2">
                     <Input
                       value={benefit.title}
                       onChange={(e) => {
-                        const newBenefits = [...benefitsData.benefits];
+                        const newBenefits = [...(benefitsData.benefits || [])];
                         newBenefits[idx] = { ...newBenefits[idx], title: e.target.value };
                         setSections(prev => ({ ...prev, benefits: { benefits: newBenefits } }));
                       }}
@@ -867,7 +867,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                     <Textarea
                       value={benefit.description}
                       onChange={(e) => {
-                        const newBenefits = [...benefitsData.benefits];
+                        const newBenefits = [...(benefitsData.benefits || [])];
                         newBenefits[idx] = { ...newBenefits[idx], description: e.target.value };
                         setSections(prev => ({ ...prev, benefits: { benefits: newBenefits } }));
                       }}
@@ -971,12 +971,12 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Modules</Label>
-                  {offerDetailsData.modules.map((module, idx) => (
+                  {offerDetailsData.modules?.map((module, idx) => (
                     <div key={idx} className="p-3 border rounded-lg space-y-2">
                       <Input
                         value={module.name}
                         onChange={(e) => {
-                          const newModules = [...offerDetailsData.modules];
+                          const newModules = [...(offerDetailsData.modules || [])];
                           newModules[idx] = { ...newModules[idx], name: e.target.value };
                           setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, modules: newModules } }));
                         }}
@@ -986,7 +986,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                       <Textarea
                         value={module.description}
                         onChange={(e) => {
-                          const newModules = [...offerDetailsData.modules];
+                          const newModules = [...(offerDetailsData.modules || [])];
                           newModules[idx] = { ...newModules[idx], description: e.target.value };
                           setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, modules: newModules } }));
                         }}
@@ -998,13 +998,13 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Bonuses</Label>
-                  {offerDetailsData.bonuses.map((bonus, idx) => (
+                  {offerDetailsData.bonuses?.map((bonus, idx) => (
                     <div key={idx} className="p-3 border rounded-lg space-y-2">
                       <div className="flex gap-2">
                         <Input
                           value={bonus.name}
                           onChange={(e) => {
-                            const newBonuses = [...offerDetailsData.bonuses];
+                            const newBonuses = [...(offerDetailsData.bonuses || [])];
                             newBonuses[idx] = { ...newBonuses[idx], name: e.target.value };
                             setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, bonuses: newBonuses } }));
                           }}
@@ -1014,7 +1014,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                         <Input
                           value={bonus.value}
                           onChange={(e) => {
-                            const newBonuses = [...offerDetailsData.bonuses];
+                            const newBonuses = [...(offerDetailsData.bonuses || [])];
                             newBonuses[idx] = { ...newBonuses[idx], value: e.target.value };
                             setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, bonuses: newBonuses } }));
                           }}
@@ -1025,7 +1025,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                       <Textarea
                         value={bonus.description}
                         onChange={(e) => {
-                          const newBonuses = [...offerDetailsData.bonuses];
+                          const newBonuses = [...(offerDetailsData.bonuses || [])];
                           newBonuses[idx] = { ...newBonuses[idx], description: e.target.value };
                           setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, bonuses: newBonuses } }));
                         }}
@@ -1129,13 +1129,13 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
               </Button>
             ) : (
               <div className="space-y-3">
-                {testimonialsData.testimonials.map((testimonial, idx) => (
+                {testimonialsData.testimonials?.map((testimonial, idx) => (
                   <div key={idx} className="p-3 border rounded-lg space-y-2">
                     <div className="flex gap-2">
                       <Input
                         value={testimonial.name}
                         onChange={(e) => {
-                          const newTestimonials = [...testimonialsData.testimonials];
+                          const newTestimonials = [...(testimonialsData.testimonials || [])];
                           newTestimonials[idx] = { ...newTestimonials[idx], name: e.target.value };
                           setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
                         }}
@@ -1145,7 +1145,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                       <Input
                         value={testimonial.result}
                         onChange={(e) => {
-                          const newTestimonials = [...testimonialsData.testimonials];
+                          const newTestimonials = [...(testimonialsData.testimonials || [])];
                           newTestimonials[idx] = { ...newTestimonials[idx], result: e.target.value };
                           setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
                         }}
@@ -1156,7 +1156,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                     <Textarea
                       value={testimonial.quote}
                       onChange={(e) => {
-                        const newTestimonials = [...testimonialsData.testimonials];
+                        const newTestimonials = [...(testimonialsData.testimonials || [])];
                         newTestimonials[idx] = { ...newTestimonials[idx], quote: e.target.value };
                         setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
                       }}
@@ -1246,12 +1246,12 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
               </Button>
             ) : (
               <div className="space-y-3">
-                {faqsData.faqs.map((faq, idx) => (
+                {faqsData.faqs?.map((faq, idx) => (
                   <div key={idx} className="p-3 border rounded-lg space-y-2">
                     <Input
                       value={faq.question}
                       onChange={(e) => {
-                        const newFaqs = [...faqsData.faqs];
+                        const newFaqs = [...(faqsData.faqs || [])];
                         newFaqs[idx] = { ...newFaqs[idx], question: e.target.value };
                         setSections(prev => ({ ...prev, faqs: { faqs: newFaqs } }));
                       }}
@@ -1261,7 +1261,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                     <Textarea
                       value={faq.answer}
                       onChange={(e) => {
-                        const newFaqs = [...faqsData.faqs];
+                        const newFaqs = [...(faqsData.faqs || [])];
                         newFaqs[idx] = { ...newFaqs[idx], answer: e.target.value };
                         setSections(prev => ({ ...prev, faqs: { faqs: newFaqs } }));
                       }}
