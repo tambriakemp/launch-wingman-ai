@@ -284,6 +284,9 @@ const Projects = () => {
                           <span className={`px-2 py-1 rounded-md text-xs font-medium capitalize ${statusColors[project.status]}`}>
                             {project.status}
                           </span>
+                          <span className="px-2 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary capitalize">
+                            {project.project_type === 'prelaunch' ? 'Pre-Launch' : 'Launch'}
+                          </span>
                         </div>
                         <CardTitle className="group-hover:text-primary transition-colors">
                           {project.name}
