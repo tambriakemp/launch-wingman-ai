@@ -761,7 +761,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   const [isCheckingAlignment, setIsCheckingAlignment] = useState(false);
   const [alignmentFeedback, setAlignmentFeedback] = useState<string>("");
   const [useOwnTransformation, setUseOwnTransformation] = useState(false);
-  const [isGeneratingAdjusted, setIsGeneratingAdjusted] = useState(false);
+  const [wasAdjustedFromAlignment, setWasAdjustedFromAlignment] = useState(false);
   
   // Step 4: Deliverables
   const [selectedDeliverables, setSelectedDeliverables] = useState<string[]>([]);
@@ -885,6 +885,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setTransformationTimeframe("");
     setAlignmentFeedback("");
     setUseOwnTransformation(false);
+    setWasAdjustedFromAlignment(false);
     setSelectedFunnelType("");
     setSelectedDeliverables([]);
     setOfferTitle("");
@@ -926,6 +927,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setTransformationTimeframe("");
     setAlignmentFeedback("");
     setUseOwnTransformation(!!offer.transformation_statement);
+    setWasAdjustedFromAlignment(false);
     setSelectedFunnelType(offer.funnel_type || "");
     setSelectedDeliverables(offer.main_deliverables || []);
     setOfferTitle(offer.title || "");
@@ -1098,6 +1100,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     
     setIsCheckingAlignment(true);
     setAlignmentFeedback("");
+    setWasAdjustedFromAlignment(false);
     
     try {
       const offerDetails = getOfferDetails(selectedOfferType);
@@ -1113,7 +1116,11 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
       if (error) throw error;
       
       if (data?.revised) {
-        setEditedTransformation(data.revised);
+        // Auto-apply the adjusted statement
+        if (data.revised !== editedTransformation) {
+          setEditedTransformation(data.revised);
+          setWasAdjustedFromAlignment(true);
+        }
         if (data.feedback) {
           setAlignmentFeedback(data.feedback);
         }
@@ -1129,44 +1136,11 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     }
   };
 
-  const generateAdjustedStatement = async () => {
-    if (!editedTransformation.trim() || !alignmentFeedback || !selectedOfferType) return;
-    
-    setIsGeneratingAdjusted(true);
-    
-    try {
-      const offerDetails = getOfferDetails(selectedOfferType);
-      
-      const { data, error } = await supabase.functions.invoke('generate-offer-transformation', {
-        body: {
-          operation: "adjust",
-          statement: editedTransformation,
-          feedback: alignmentFeedback,
-          offerType: offerDetails?.name || selectedOfferType,
-        },
-      });
-
-      if (error) throw error;
-      
-      if (data?.adjusted) {
-        setEditedTransformation(data.adjusted);
-        setAlignmentFeedback("");
-        toast.success("Statement adjusted based on feedback!");
-      } else {
-        throw new Error("Invalid response format");
-      }
-    } catch (error) {
-      console.error("Failed to generate adjusted statement:", error);
-      toast.error("Failed to generate adjusted statement. Please try again.");
-    } finally {
-      setIsGeneratingAdjusted(false);
-    }
-  };
-
   const handleSelectTransformation = (index: number) => {
     setSelectedTransformationIndex(index);
     setEditedTransformation(transformationStatements[index]);
     setAlignmentFeedback("");
+    setWasAdjustedFromAlignment(false);
   };
 
   const generateOfferIdeas = async () => {
@@ -1300,6 +1274,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
         </div>
       ) : (
         <div className="space-y-6">
+          {/* Card 1: Offer Details */}
           <Card>
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -1318,7 +1293,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => handleEditOffer(1)}>
+                  <Button variant="outline" size="sm" onClick={() => handleEditOffer(6)}>
                     <Pencil className="w-4 h-4 mr-2" />
                     Edit
                   </Button>
@@ -1335,32 +1310,18 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Problem Statement */}
-              {offer.problem_statement && (
-                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-                  <div className="flex items-start gap-3">
-                    <Target className="w-5 h-5 text-primary mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground mb-1">Problem Statement</p>
-                      <p className="text-sm text-muted-foreground">{offer.problem_statement}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Niche</p>
-                  <p className="text-foreground">{offer.niche}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Offer Type</p>
-                  <p className="text-foreground">{savedOfferDetails?.name}</p>
-                </div>
                 {offer.price !== null && (
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">Price</p>
-                    <p className="text-foreground text-lg font-semibold">${offer.price}</p>
+                    <p className="text-foreground text-lg font-semibold">
+                      ${offer.price}
+                      {offer.price_type && offer.price_type !== "one-time" && (
+                        <span className="text-sm font-normal text-muted-foreground ml-1">
+                          ({PRICE_TYPES.find(p => p.id === offer.price_type)?.name || offer.price_type})
+                        </span>
+                      )}
+                    </p>
                   </div>
                 )}
               </div>
@@ -1387,6 +1348,83 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     <div>
                       <p className="font-medium text-foreground">About {savedOfferDetails.name}</p>
                       <p className="text-sm text-muted-foreground mt-1">{savedOfferDetails.description}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Card 2: Audience & Strategy */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10">
+                    <Target className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Audience & Strategy</CardTitle>
+                    <CardDescription>Your target market and messaging foundation</CardDescription>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={() => handleEditOffer(1)}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Niche</p>
+                  <p className="text-foreground">{offer.niche}</p>
+                </div>
+                {offer.target_audience && (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">Target Audience</p>
+                    <p className="text-foreground">{offer.target_audience}</p>
+                  </div>
+                )}
+                {offer.primary_pain_point && (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">Primary Pain Point</p>
+                    <p className="text-foreground">{offer.primary_pain_point}</p>
+                  </div>
+                )}
+                {offer.desired_outcome && (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">Desired Outcome</p>
+                    <p className="text-foreground">{offer.desired_outcome}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Problem Statement */}
+              {offer.problem_statement && (
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="flex items-start gap-3">
+                    <Target className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Problem Statement</p>
+                      <p className="text-sm text-muted-foreground">{offer.problem_statement}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Transformation Statement */}
+              {offer.transformation_statement && (
+                <div className="p-4 rounded-lg bg-accent/50 border border-accent">
+                  <div className="flex items-start gap-3">
+                    <Wand2 className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">Transformation Statement</p>
+                      <p className="text-sm text-muted-foreground">{offer.transformation_statement}</p>
                     </div>
                   </div>
                 </div>
@@ -1660,52 +1698,73 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
 
                   {/* Problem Statement Generation */}
                   <div className="space-y-3 p-4 rounded-lg bg-muted/50 border border-border">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Target className="w-4 h-4 text-primary" />
-                        <Label className="text-sm font-medium">Problem Statement</Label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setUseOwnProblemStatement(!useOwnProblemStatement)}
-                          className="text-xs"
-                        >
-                          {useOwnProblemStatement ? "Use AI" : "Write Your Own"}
-                        </Button>
-                        {!useOwnProblemStatement && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={generateProblemStatement}
-                            disabled={isGeneratingProblemStatement || !selectedNiche || !targetAudience.trim() || !primaryPainPoint.trim() || !desiredOutcome.trim()}
-                          >
-                            {isGeneratingProblemStatement ? (
-                              <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Generating...
-                              </>
-                            ) : problemStatement ? (
-                              <>
-                                <RefreshCw className="w-4 h-4 mr-2" />
-                                Regenerate
-                              </>
-                            ) : (
-                              <>
-                                <Sparkles className="w-4 h-4 mr-2" />
-                                Generate
-                              </>
-                            )}
-                          </Button>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Target className="w-4 h-4 text-primary" />
+                      <Label className="text-sm font-medium">Problem Statement</Label>
                     </div>
+                    
+                    {/* Segmented Control Toggle */}
+                    <div className="inline-flex rounded-lg border border-border p-1 bg-background">
+                      <button
+                        type="button"
+                        onClick={() => setUseOwnProblemStatement(false)}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                          !useOwnProblemStatement 
+                            ? "bg-primary text-primary-foreground" 
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Generate with AI
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setUseOwnProblemStatement(true)}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                          useOwnProblemStatement 
+                            ? "bg-primary text-primary-foreground" 
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        Write Your Own
+                      </button>
+                    </div>
+
                     <p className="text-xs text-muted-foreground">
                       {useOwnProblemStatement 
                         ? "Write your own problem statement that anchors your offer messaging."
                         : "AI will synthesize your answers into a clear problem statement that anchors your offer messaging."}
                     </p>
+
+                    {!useOwnProblemStatement && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={generateProblemStatement}
+                        disabled={isGeneratingProblemStatement || !selectedNiche || !targetAudience.trim() || !primaryPainPoint.trim() || !desiredOutcome.trim()}
+                      >
+                        {isGeneratingProblemStatement ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Generating...
+                          </>
+                        ) : problemStatement ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            Regenerate
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            Generate
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    
                     {(problemStatement || useOwnProblemStatement) && (
                       <Textarea
                         value={problemStatement}
@@ -1799,35 +1858,56 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     </p>
                   </div>
 
-                  {/* Toggle for own statement */}
-                  <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 border border-border">
-                    <Button
-                      variant={!useOwnTransformation ? "default" : "ghost"}
-                      size="sm"
+                  {/* Segmented Control Toggle */}
+                  <div className="inline-flex rounded-lg border border-border p-1 bg-background">
+                    <button
+                      type="button"
                       onClick={() => setUseOwnTransformation(false)}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                        !useOwnTransformation 
+                          ? "bg-primary text-primary-foreground" 
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
                     >
-                      <Sparkles className="w-4 h-4 mr-2" />
+                      <Sparkles className="w-3.5 h-3.5" />
                       Generate with AI
-                    </Button>
-                    <Button
-                      variant={useOwnTransformation ? "default" : "ghost"}
-                      size="sm"
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setUseOwnTransformation(true)}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                        useOwnTransformation 
+                          ? "bg-primary text-primary-foreground" 
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
                     >
-                      <Pencil className="w-4 h-4 mr-2" />
+                      <Pencil className="w-3.5 h-3.5" />
                       Write Your Own
-                    </Button>
+                    </button>
                   </div>
 
                   {/* Own statement mode */}
                   {useOwnTransformation && (
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="ownTransformation">Your Transformation Statement</Label>
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="ownTransformation">Your Transformation Statement</Label>
+                          {wasAdjustedFromAlignment && (
+                            <span className="inline-flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                              <ShieldCheck className="w-3 h-3" />
+                              Adjusted for alignment
+                            </span>
+                          )}
+                        </div>
                         <Textarea
                           id="ownTransformation"
                           value={editedTransformation}
-                          onChange={(e) => setEditedTransformation(e.target.value)}
+                          onChange={(e) => {
+                            setEditedTransformation(e.target.value);
+                            setWasAdjustedFromAlignment(false);
+                          }}
                           placeholder="e.g., I help busy moms lose weight and gain energy in just 30 days without restrictive diets..."
                           className="min-h-[100px]"
                         />
@@ -1855,7 +1935,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                           </Button>
 
                           {alignmentFeedback && (
-                            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 space-y-3">
+                            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
                               <div className="flex items-start gap-3">
                                 <ShieldCheck className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                                 <div>
@@ -1863,24 +1943,6 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                                   <p className="text-xs text-muted-foreground mt-0.5">{alignmentFeedback}</p>
                                 </div>
                               </div>
-                              <Button 
-                                variant="outline"
-                                size="sm"
-                                onClick={generateAdjustedStatement}
-                                disabled={isGeneratingAdjusted}
-                              >
-                                {isGeneratingAdjusted ? (
-                                  <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Adjusting...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Wand2 className="w-4 h-4 mr-2" />
-                                    Generate Adjusted Statement
-                                  </>
-                                )}
-                              </Button>
                             </div>
                           )}
                         </>
@@ -2017,11 +2079,22 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                       {editedTransformation && (
                         <div className="space-y-4">
                           <div className="space-y-2">
-                            <Label htmlFor="editedTransformation">Your Transformation Statement</Label>
+                            <div className="flex items-center gap-2">
+                              <Label htmlFor="editedTransformation">Your Transformation Statement</Label>
+                              {wasAdjustedFromAlignment && (
+                                <span className="inline-flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                  <ShieldCheck className="w-3 h-3" />
+                                  Adjusted for alignment
+                                </span>
+                              )}
+                            </div>
                             <Textarea
                               id="editedTransformation"
                               value={editedTransformation}
-                              onChange={(e) => setEditedTransformation(e.target.value)}
+                              onChange={(e) => {
+                                setEditedTransformation(e.target.value);
+                                setWasAdjustedFromAlignment(false);
+                              }}
                               rows={3}
                               placeholder="Your transformation statement..."
                             />
@@ -2048,7 +2121,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
 
                           {/* Alignment feedback */}
                           {alignmentFeedback && (
-                            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 space-y-3">
+                            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
                               <div className="flex items-start gap-3">
                                 <ShieldCheck className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                                 <div>
@@ -2056,24 +2129,6 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                                   <p className="text-xs text-muted-foreground mt-0.5">{alignmentFeedback}</p>
                                 </div>
                               </div>
-                              <Button 
-                                variant="outline"
-                                size="sm"
-                                onClick={generateAdjustedStatement}
-                                disabled={isGeneratingAdjusted}
-                              >
-                                {isGeneratingAdjusted ? (
-                                  <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Adjusting...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Wand2 className="w-4 h-4 mr-2" />
-                                    Generate Adjusted Statement
-                                  </>
-                                )}
-                              </Button>
                             </div>
                           )}
                         </div>
