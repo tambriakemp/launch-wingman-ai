@@ -18,7 +18,16 @@ import {
   Loader2,
   ClipboardCheck,
   Rocket,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TransformationBuilder } from "@/components/TransformationBuilder";
@@ -28,6 +37,7 @@ interface LaunchEvent {
   id: string;
   title: string;
   event_type: string;
+  content_creation_start: string | null;
   prelaunch_start: string | null;
   enrollment_opens: string | null;
   enrollment_closes: string | null;
@@ -61,7 +71,7 @@ const ProjectDetail = () => {
     
     const { data, error } = await supabase
       .from("launch_events")
-      .select("id, title, event_type, prelaunch_start, enrollment_opens, enrollment_closes, program_delivery_start, program_delivery_end")
+      .select("id, title, event_type, content_creation_start, prelaunch_start, enrollment_opens, enrollment_closes, program_delivery_start, program_delivery_end")
       .eq("project_id", id)
       .order("prelaunch_start", { ascending: true });
     
@@ -101,6 +111,21 @@ const ProjectDetail = () => {
 
   const handleStatementSaved = (statement: string) => {
     setProject((prev) => prev ? { ...prev, transformation_statement: statement } : null);
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    const { error } = await supabase
+      .from("launch_events")
+      .delete()
+      .eq("id", eventId);
+
+    if (error) {
+      toast.error("Failed to delete event");
+      console.error(error);
+    } else {
+      toast.success("Event deleted");
+      fetchLaunchEvents();
+    }
   };
 
   if (isLoading) {
@@ -219,7 +244,7 @@ const ProjectDetail = () => {
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
                     <CardTitle>Launch Calendar</CardTitle>
-                    <CardDescription>Plan your quarterly launch timeline</CardDescription>
+                    <CardDescription>Plan your launch timeline</CardDescription>
                   </div>
                   <LaunchCalendarEventDialog projectId={project.id} onEventAdded={fetchLaunchEvents} />
                 </CardHeader>
@@ -248,7 +273,7 @@ const ProjectDetail = () => {
                     <div className="space-y-4">
                       {launchEvents.map((event) => (
                         <div key={event.id} className="p-4 rounded-lg border bg-card">
-                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-start justify-between mb-3">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                                 <Rocket className="w-5 h-5 text-primary" />
@@ -260,8 +285,34 @@ const ProjectDetail = () => {
                                 </Badge>
                               </div>
                             </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem>
+                                  <Pencil className="w-4 h-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => handleDeleteEvent(event.id)}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                            {event.content_creation_start && (
+                              <div>
+                                <p className="text-muted-foreground text-xs">Content Creation</p>
+                                <p className="font-medium">{format(parseISO(event.content_creation_start), "MMM d, yyyy")}</p>
+                              </div>
+                            )}
                             {event.prelaunch_start && (
                               <div>
                                 <p className="text-muted-foreground text-xs">Prelaunch Starts</p>
