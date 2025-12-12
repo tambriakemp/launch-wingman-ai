@@ -454,7 +454,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
         
         {/* Show preview of content */}
         <div className="text-sm text-muted-foreground pl-11 space-y-1">
-          {sectionId === "hero" && sections.hero && (
+          {sectionId === "hero" && sections.hero && sections.hero.headlines && (
             <>
               <p className="truncate font-medium text-foreground">{sections.hero.headlines[sections.hero.selectedHeadline]}</p>
               <p className="truncate">{sections.hero.subheadline}</p>
@@ -463,16 +463,16 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           {sectionId === "whyDifferent" && sections.whyDifferent && (
             <p className="line-clamp-2">{sections.whyDifferent.openingParagraph}</p>
           )}
-          {sectionId === "benefits" && sections.benefits && (
+          {sectionId === "benefits" && sections.benefits?.benefits && (
             <p>{sections.benefits.benefits.length} benefits added</p>
           )}
           {sectionId === "offerDetails" && sections.offerDetails && (
-            <p>{sections.offerDetails.modules.length} modules, {sections.offerDetails.bonuses.length} bonuses</p>
+            <p>{sections.offerDetails.modules?.length || 0} modules, {sections.offerDetails.bonuses?.length || 0} bonuses</p>
           )}
-          {sectionId === "testimonials" && sections.testimonials && (
+          {sectionId === "testimonials" && sections.testimonials?.testimonials && (
             <p>{sections.testimonials.testimonials.length} testimonials</p>
           )}
-          {sectionId === "faqs" && sections.faqs && (
+          {sectionId === "faqs" && sections.faqs?.faqs && (
             <p>{sections.faqs.faqs.length} FAQs</p>
           )}
           {manualData && (
