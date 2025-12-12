@@ -1,16 +1,8 @@
 import { useState } from "react";
-import { Plus, FileText, MoreHorizontal, Pencil, Trash2, Lightbulb, ChevronDown, ChevronUp, Lock, Loader2 } from "lucide-react";
+import { Plus, FileText, MoreHorizontal, Pencil, Trash2, Lightbulb, ChevronDown, ChevronUp, Lock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -59,10 +51,29 @@ interface SalesPageCopyBuilderProps {
   projectId: string;
 }
 
+const DELIVERABLE_NAMES: Record<string, string> = {
+  "step-by-step-tutorials": "Step-by-Step Tutorials",
+  "checklists": "Checklists",
+  "cheat-sheets": "Cheat Sheets",
+  "coaching-sessions": "1:1 or Group Coaching Sessions",
+  "workbooks": "Workbooks",
+  "planners": "Planners",
+  "templates": "Templates",
+  "trello-boards": "Trello Boards",
+  "audio-files": "Audio Files",
+  "affirmations": "Affirmations",
+  "journals": "Journals",
+  "support-groups": "Support Groups",
+  "voice-message-support": "Voice Message Support",
+  "text-message-support": "Text Message Support",
+  "email-support": "Email Support",
+  "live-chat-support": "Live Chat Support",
+};
+
 export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) => {
   const { isSubscribed, user } = useAuth();
   const queryClient = useQueryClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isAddMode, setIsAddMode] = useState(false);
   const [editingItem, setEditingItem] = useState<SalesPageCopy | null>(null);
   const [selectedDeliverable, setSelectedDeliverable] = useState<string>("");
   const [sections, setSections] = useState<Record<string, string>>({});
@@ -109,26 +120,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
   const deliverables = offer?.main_deliverables || [];
 
-  // Deliverable name mapping
-  const DELIVERABLE_NAMES: Record<string, string> = {
-    "step-by-step-tutorials": "Step-by-Step Tutorials",
-    "checklists": "Checklists",
-    "cheat-sheets": "Cheat Sheets",
-    "coaching-sessions": "1:1 or Group Coaching Sessions",
-    "workbooks": "Workbooks",
-    "planners": "Planners",
-    "templates": "Templates",
-    "trello-boards": "Trello Boards",
-    "audio-files": "Audio Files",
-    "affirmations": "Affirmations",
-    "journals": "Journals",
-    "support-groups": "Support Groups",
-    "voice-message-support": "Voice Message Support",
-    "text-message-support": "Text Message Support",
-    "email-support": "Email Support",
-    "live-chat-support": "Live Chat Support",
-  };
-
   const getDeliverableName = (id: string) => DELIVERABLE_NAMES[id] || id;
 
   // Create mutation
@@ -145,6 +136,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales-page-copy", projectId] });
       toast.success("Sales page copy added");
+      resetForm();
     },
     onError: () => toast.error("Failed to save sales page copy"),
   });
@@ -164,6 +156,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales-page-copy", projectId] });
       toast.success("Sales page copy updated");
+      resetForm();
     },
     onError: () => toast.error("Failed to update sales page copy"),
   });
@@ -181,18 +174,25 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     onError: () => toast.error("Failed to delete sales page copy"),
   });
 
+  const resetForm = () => {
+    setIsAddMode(false);
+    setEditingItem(null);
+    setSelectedDeliverable("");
+    setSections({});
+  };
+
   const handleAdd = () => {
     setEditingItem(null);
     setSelectedDeliverable("");
     setSections({});
-    setDialogOpen(true);
+    setIsAddMode(true);
   };
 
   const handleEdit = (item: SalesPageCopy) => {
     setEditingItem(item);
     setSelectedDeliverable(item.deliverableId);
     setSections(item.sections);
-    setDialogOpen(true);
+    setIsAddMode(true);
   };
 
   const handleDelete = (item: SalesPageCopy) => {
@@ -223,11 +223,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
       createMutation.mutate({ deliverableId: selectedDeliverable, sections });
     }
-
-    setDialogOpen(false);
-    setSelectedDeliverable("");
-    setSections({});
-    setEditingItem(null);
   };
 
   const updateSection = (sectionId: string, value: string) => {
@@ -238,6 +233,111 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   const availableDeliverables = deliverables.filter(
     (d) => editingItem?.deliverableId === d || !items.find((i) => i.deliverableId === d)
   );
+
+  // Show inline form when adding/editing
+  if (isAddMode) {
+    return (
+      <Card className="border bg-card">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <FileText className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-base">
+                  {editingItem ? "Edit" : "Add"} Sales Page Copy
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Create compelling copy for each section of your sales page
+                </CardDescription>
+              </div>
+            </div>
+            <Button size="icon" variant="ghost" onClick={resetForm}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Deliverable Selection */}
+          <div className="space-y-2">
+            <Label>Select Deliverable</Label>
+            <Select value={selectedDeliverable} onValueChange={setSelectedDeliverable}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a deliverable..." />
+              </SelectTrigger>
+              <SelectContent>
+                {availableDeliverables.map((d) => (
+                  <SelectItem key={d} value={d}>
+                    {getDeliverableName(d)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* ChatGPT Direction Box */}
+          <Collapsible open={directionsOpen} onOpenChange={setDirectionsOpen}>
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+              <CollapsibleTrigger asChild>
+                <button className="flex items-center justify-between w-full text-left">
+                  <div className="flex items-center gap-2">
+                    <Lightbulb className="w-4 h-4 text-primary" />
+                    <span className="font-medium text-sm text-foreground">
+                      How to Create Your Sales Page Copy
+                    </span>
+                  </div>
+                  {directionsOpen ? (
+                    <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-3">
+                <div className="text-sm text-muted-foreground space-y-2">
+                  <p>
+                    Use ChatGPT to help generate each section of your sales page copy. For each section below, use this prompt template:
+                  </p>
+                  <div className="bg-background rounded-md p-3 border text-xs font-mono">
+                    "I'm creating a sales page for my [deliverable type]. My target audience is [describe audience]. Help me write the [section name] for my sales page. The main transformation I offer is [transformation statement]."
+                  </div>
+                  <p className="text-xs">
+                    Replace the bracketed sections with your specific details, then paste the generated copy into each section below.
+                  </p>
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+
+          {/* Sales Page Sections */}
+          <div className="space-y-4">
+            {SALES_PAGE_SECTIONS.map((section) => (
+              <div key={section.id} className="space-y-2">
+                <Label htmlFor={section.id}>{section.label}</Label>
+                <Textarea
+                  id={section.id}
+                  placeholder={section.placeholder}
+                  value={sections[section.id] || ""}
+                  onChange={(e) => updateSection(section.id, e.target.value)}
+                  rows={3}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button variant="outline" onClick={resetForm}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave}>
+              {editingItem ? "Save Changes" : "Save Copy"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border bg-card">
@@ -344,98 +444,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           </div>
         )}
       </CardContent>
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              {editingItem ? "Edit" : "Add"} Sales Page Copy
-            </DialogTitle>
-            <DialogDescription>
-              Create compelling copy for each section of your sales page
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto space-y-4 py-4 pr-2">
-            {/* Deliverable Selection */}
-            <div className="space-y-2">
-              <Label>Select Deliverable</Label>
-              <Select value={selectedDeliverable} onValueChange={setSelectedDeliverable}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a deliverable..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableDeliverables.map((d) => (
-                    <SelectItem key={d} value={d}>
-                      {getDeliverableName(d)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* ChatGPT Direction Box */}
-            <Collapsible open={directionsOpen} onOpenChange={setDirectionsOpen}>
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-                <CollapsibleTrigger asChild>
-                  <button className="flex items-center justify-between w-full text-left">
-                    <div className="flex items-center gap-2">
-                      <Lightbulb className="w-4 h-4 text-primary" />
-                      <span className="font-medium text-sm text-foreground">
-                        How to Create Your Sales Page Copy
-                      </span>
-                    </div>
-                    {directionsOpen ? (
-                      <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                    )}
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="mt-3">
-                  <div className="text-sm text-muted-foreground space-y-2">
-                    <p>
-                      Use ChatGPT to help generate each section of your sales page copy. For each section below, use this prompt template:
-                    </p>
-                    <div className="bg-background rounded-md p-3 border text-xs font-mono">
-                      "I'm creating a sales page for my [deliverable type]. My target audience is [describe audience]. Help me write the [section name] for my sales page. The main transformation I offer is [transformation statement]."
-                    </div>
-                    <p className="text-xs">
-                      Replace the bracketed sections with your specific details, then paste the generated copy into each section below.
-                    </p>
-                  </div>
-                </CollapsibleContent>
-              </div>
-            </Collapsible>
-
-            {/* Sales Page Sections */}
-            <div className="space-y-4">
-              {SALES_PAGE_SECTIONS.map((section) => (
-                <div key={section.id} className="space-y-2">
-                  <Label htmlFor={section.id}>{section.label}</Label>
-                  <Textarea
-                    id={section.id}
-                    placeholder={section.placeholder}
-                    value={sections[section.id] || ""}
-                    onChange={(e) => updateSection(section.id, e.target.value)}
-                    rows={3}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <DialogFooter className="pt-4 border-t">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave}>
-              {editingItem ? "Save Changes" : "Save Copy"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 };
