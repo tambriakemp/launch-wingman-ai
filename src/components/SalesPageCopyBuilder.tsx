@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, FileText, MoreHorizontal, Pencil, Trash2, Lock, X, Sparkles, RefreshCw, ChevronDown, ChevronUp, Eye, Check, Wand2, PenLine } from "lucide-react";
+import { Plus, FileText, MoreHorizontal, Pencil, Trash2, Lock, X, Sparkles, RefreshCw, Eye, Check, Wand2, PenLine, ArrowLeft, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,15 +25,25 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Json } from "@/integrations/supabase/types";
 import { SalesPagePreview } from "./SalesPagePreview";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 // Section definitions with AI capability
-const SALES_PAGE_SECTIONS = [
+const DEFAULT_SECTIONS = [
   { id: "hero", label: "Hero Section", aiEnabled: true },
   { id: "whyDifferent", label: "Why This Is Different", aiEnabled: true },
   { id: "benefits", label: "Key Benefits", aiEnabled: true },
@@ -75,6 +85,12 @@ interface FAQsSectionData {
   faqs: { question: string; answer: string }[];
 }
 
+interface CustomSection {
+  id: string;
+  label: string;
+  content: string;
+}
+
 interface SalesPageCopySections {
   hero?: HeroSectionData;
   heroManual?: string;
@@ -88,6 +104,8 @@ interface SalesPageCopySections {
   testimonialsManual?: string;
   faqs?: FAQsSectionData;
   faqsManual?: string;
+  customSections?: CustomSection[];
+  sectionOrder?: string[];
 }
 
 interface SalesPageCopy {
@@ -129,11 +147,21 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   const [sections, setSections] = useState<SalesPageCopySections>({});
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showAddCustomSection, setShowAddCustomSection] = useState(false);
+  const [customSectionName, setCustomSectionName] = useState("");
+  
+  // Section order state
+  const [sectionOrder, setSectionOrder] = useState<string[]>(() => 
+    DEFAULT_SECTIONS.map(s => s.id)
+  );
   
   // AI generation states
   const [sectionModes, setSectionModes] = useState<Record<string, "ai" | "manual">>({});
   const [isGenerating, setIsGenerating] = useState<Record<string, boolean>>({});
   const [hasGenerated, setHasGenerated] = useState<Record<string, boolean>>({});
+  
+  // Hero part selection
+  const [selectedHeroPart, setSelectedHeroPart] = useState("headlines");
   
   // Context inputs for "Why Different" section
   const [contextMode, setContextMode] = useState<"infer" | "provide">("infer");
@@ -191,7 +219,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
         project_id: projectId,
         user_id: user?.id,
         deliverable_id: data.deliverableId,
-        sections: data.sections as Json,
+        sections: { ...data.sections, sectionOrder } as unknown as Json,
       });
       if (error) throw error;
     },
@@ -210,7 +238,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
         .from("sales_page_copy")
         .update({
           deliverable_id: data.deliverableId,
-          sections: data.sections as Json,
+          sections: { ...data.sections, sectionOrder } as unknown as Json,
         })
         .eq("id", data.id);
       if (error) throw error;
@@ -247,6 +275,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     setAttemptedSolutions("");
     setWhyFails("");
     setUniqueApproach("");
+    setSectionOrder(DEFAULT_SECTIONS.map(s => s.id));
   };
 
   const handleAdd = () => {
@@ -254,6 +283,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     setSelectedDeliverable("");
     setSections({});
     setSectionModes({});
+    setSectionOrder(DEFAULT_SECTIONS.map(s => s.id));
     setIsAddMode(true);
   };
 
@@ -261,6 +291,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     setEditingItem(item);
     setSelectedDeliverable(item.deliverableId);
     setSections(item.sections);
+    setSectionOrder(item.sections.sectionOrder || DEFAULT_SECTIONS.map(s => s.id));
     setIsAddMode(true);
   };
 
@@ -299,7 +330,56 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
   const saveSectionContent = (sectionId: string) => {
     setEditingSection(null);
-    toast.success(`${SALES_PAGE_SECTIONS.find(s => s.id === sectionId)?.label} saved`);
+    toast.success(`${getAllSections().find(s => s.id === sectionId)?.label} saved`);
+  };
+
+  // Get all sections including custom ones
+  const getAllSections = () => {
+    const customSections = sections.customSections || [];
+    const allSections = [
+      ...DEFAULT_SECTIONS,
+      ...customSections.map(cs => ({ id: cs.id, label: cs.label, aiEnabled: false }))
+    ];
+    
+    // Sort by sectionOrder
+    return allSections.sort((a, b) => {
+      const aIdx = sectionOrder.indexOf(a.id);
+      const bIdx = sectionOrder.indexOf(b.id);
+      if (aIdx === -1) return 1;
+      if (bIdx === -1) return -1;
+      return aIdx - bIdx;
+    });
+  };
+
+  // Handle drag and drop
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    
+    const newOrder = Array.from(sectionOrder);
+    const [removed] = newOrder.splice(result.source.index, 1);
+    newOrder.splice(result.destination.index, 0, removed);
+    
+    setSectionOrder(newOrder);
+  };
+
+  // Add custom section
+  const handleAddCustomSection = () => {
+    if (!customSectionName.trim()) {
+      toast.error("Please enter a section name");
+      return;
+    }
+
+    const customId = `custom_${Date.now()}`;
+    const newCustomSections = [
+      ...(sections.customSections || []),
+      { id: customId, label: customSectionName.trim(), content: "" }
+    ];
+    
+    setSections(prev => ({ ...prev, customSections: newCustomSections }));
+    setSectionOrder(prev => [...prev, customId]);
+    setCustomSectionName("");
+    setShowAddCustomSection(false);
+    toast.success("Custom section added");
   };
 
   // Generate AI copy for a section
@@ -405,455 +485,560 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
   // Check if a section has content
   const sectionHasContent = (sectionId: string): boolean => {
+    // Check for custom section
+    if (sectionId.startsWith("custom_")) {
+      const customSection = sections.customSections?.find(cs => cs.id === sectionId);
+      return !!(customSection?.content?.trim());
+    }
+    
     const aiData = sections[sectionId as keyof SalesPageCopySections];
     const manualData = sections[`${sectionId}Manual` as keyof SalesPageCopySections];
     return !!(aiData || (typeof manualData === "string" && manualData.trim()));
   };
 
-  // Get section mode (defaults to ai)
+  // Check if section is AI mode
+  const isSectionAiMode = (sectionId: string): boolean => {
+    if (sectionId.startsWith("custom_")) return false;
+    const mode = sectionModes[sectionId] || "ai";
+    const hasAiData = !!sections[sectionId as keyof SalesPageCopySections];
+    return mode === "ai" || hasAiData;
+  };
+
+  // Get section preview text
+  const getSectionPreview = (sectionId: string): string => {
+    if (sectionId === "hero" && sections.hero?.headlines) {
+      return sections.hero.headlines[sections.hero.selectedHeadline] || "";
+    }
+    if (sectionId === "whyDifferent" && sections.whyDifferent) {
+      return sections.whyDifferent.openingParagraph || "";
+    }
+    if (sectionId === "benefits" && sections.benefits?.benefits) {
+      return `${sections.benefits.benefits.length} benefits`;
+    }
+    if (sectionId === "offerDetails" && sections.offerDetails) {
+      return `${sections.offerDetails.modules?.length || 0} modules, ${sections.offerDetails.bonuses?.length || 0} bonuses`;
+    }
+    if (sectionId === "testimonials" && sections.testimonials?.testimonials) {
+      return `${sections.testimonials.testimonials.length} testimonials`;
+    }
+    if (sectionId === "faqs" && sections.faqs?.faqs) {
+      return `${sections.faqs.faqs.length} FAQs`;
+    }
+    
+    // Check for manual content
+    const manualKey = `${sectionId}Manual` as keyof SalesPageCopySections;
+    if (typeof sections[manualKey] === "string") {
+      return (sections[manualKey] as string).slice(0, 50) + "...";
+    }
+    
+    // Check for custom section
+    if (sectionId.startsWith("custom_")) {
+      const customSection = sections.customSections?.find(cs => cs.id === sectionId);
+      return customSection?.content?.slice(0, 50) || "";
+    }
+    
+    return "";
+  };
+
+  // Get section mode
   const getSectionMode = (sectionId: string): "ai" | "manual" => {
     return sectionModes[sectionId] || "ai";
   };
 
-  // Render read-only view for a section
-  const renderSectionReadOnly = (sectionId: string) => {
-    const section = SALES_PAGE_SECTIONS.find(s => s.id === sectionId);
+  // ============ SECTION LIST VIEW ============
+  const renderSectionsList = () => {
+    const allSections = getAllSections();
+    
+    return (
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <Droppable droppableId="sections">
+          {(provided) => (
+            <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+              {allSections.map((section, index) => (
+                <Draggable key={section.id} draggableId={section.id} index={index}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      className={`flex items-center gap-3 p-4 border rounded-lg bg-card transition-all ${
+                        snapshot.isDragging ? "shadow-lg ring-2 ring-primary" : "hover:shadow-sm"
+                      } ${sectionHasContent(section.id) ? "border-border" : "border-dashed border-muted-foreground/30"}`}
+                    >
+                      {/* Drag Handle */}
+                      <div
+                        {...provided.dragHandleProps}
+                        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+                      >
+                        <GripVertical className="w-5 h-5" />
+                      </div>
+
+                      {/* Index Badge */}
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-medium ${
+                          sectionHasContent(section.id)
+                            ? "bg-primary/10 text-primary"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {sectionHasContent(section.id) ? <Check className="w-4 h-4" /> : index + 1}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`font-medium ${!sectionHasContent(section.id) && "text-muted-foreground"}`}>
+                            {section.label}
+                          </span>
+                          {sectionHasContent(section.id) && (
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                              {isSectionAiMode(section.id) ? (
+                                <Wand2 className="w-3 h-3" />
+                              ) : (
+                                <PenLine className="w-3 h-3" />
+                              )}
+                            </span>
+                          )}
+                        </div>
+                        {getSectionPreview(section.id) && (
+                          <p className="text-sm text-muted-foreground truncate mt-0.5">
+                            {getSectionPreview(section.id)}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Action */}
+                      <Button
+                        size="sm"
+                        variant={sectionHasContent(section.id) ? "ghost" : "outline"}
+                        onClick={() => setEditingSection(section.id)}
+                        className="shrink-0"
+                      >
+                        {sectionHasContent(section.id) ? (
+                          <>
+                            <Pencil className="w-4 h-4 mr-1" />
+                            Edit
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4 mr-1" />
+                            Add
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+    );
+  };
+
+  // ============ FULL-SCREEN SECTION EDITOR ============
+  const renderFullSectionEditor = () => {
+    if (!editingSection) return null;
+    
+    const section = getAllSections().find(s => s.id === editingSection);
     if (!section) return null;
 
-    const aiData = sections[sectionId as keyof SalesPageCopySections];
-    const manualData = sections[`${sectionId}Manual` as keyof SalesPageCopySections] as string | undefined;
+    const mode = getSectionMode(editingSection);
+    const isCustom = editingSection.startsWith("custom_");
 
-    if (!aiData && !manualData) {
-      return (
-        <div className="flex items-center justify-between p-4 border rounded-lg bg-background hover:bg-accent/30 transition-colors">
+    return (
+      <div className="h-full flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b bg-muted/30">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-              <span className="text-xs text-muted-foreground">{SALES_PAGE_SECTIONS.findIndex(s => s.id === sectionId) + 1}</span>
-            </div>
-            <span className="text-muted-foreground">{section.label}</span>
+            <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Back to Sections
+            </Button>
+            <div className="h-4 w-px bg-border" />
+            <h2 className="font-semibold">{section.label}</h2>
           </div>
-          <Button size="sm" variant="ghost" onClick={() => setEditingSection(sectionId)}>
-            <Plus className="w-4 h-4 mr-1" />
-            Add
+          <Button onClick={() => saveSectionContent(editingSection)}>
+            <Check className="w-4 h-4 mr-1" />
+            Save Section
           </Button>
+        </div>
+
+        {/* Two-Panel Layout */}
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x overflow-hidden">
+          {/* Left Panel - Inputs */}
+          <div className="flex flex-col overflow-y-auto">
+            <div className="p-6 space-y-6">
+              {/* Mode Selection (not for custom sections) */}
+              {!isCustom && section.aiEnabled && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">How would you like to create this section?</Label>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSectionModes(prev => ({ ...prev, [editingSection]: "ai" }))}
+                      className={`flex-1 p-4 rounded-lg border-2 text-left transition-all ${
+                        mode === "ai" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <Wand2 className="w-5 h-5 mb-2 text-primary" />
+                      <div className="font-medium text-sm">AI Generate</div>
+                      <p className="text-xs text-muted-foreground mt-1">Let AI create compelling copy</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSectionModes(prev => ({ ...prev, [editingSection]: "manual" }))}
+                      className={`flex-1 p-4 rounded-lg border-2 text-left transition-all ${
+                        mode === "manual" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <PenLine className="w-5 h-5 mb-2 text-primary" />
+                      <div className="font-medium text-sm">Write My Own</div>
+                      <p className="text-xs text-muted-foreground mt-1">Write from scratch</p>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Section-specific editor content */}
+              {renderSectionEditorContent(editingSection, mode, isCustom)}
+
+              {/* Generate Button (AI mode only, not custom) */}
+              {!isCustom && mode === "ai" && section.aiEnabled && (
+                <Button
+                  onClick={() => generateSectionCopy(editingSection)}
+                  disabled={isGenerating[editingSection] || !offer}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isGenerating[editingSection] ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      {hasGenerated[editingSection] ? "Regenerate" : "Generate"}
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Right Panel - Outputs/Preview */}
+          <div className="flex flex-col bg-muted/10 overflow-y-auto">
+            <div className="p-4 border-b bg-muted/30">
+              <h3 className="font-medium text-sm">
+                {mode === "ai" ? "Generated Outputs" : "Preview"}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {mode === "ai" ? "Click to select an option" : "Your content will appear here"}
+              </p>
+            </div>
+            <div className="flex-1 p-4">
+              {renderSectionOutputPanel(editingSection, mode)}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render section-specific editor content
+  const renderSectionEditorContent = (sectionId: string, mode: "ai" | "manual", isCustom: boolean) => {
+    // Custom section
+    if (isCustom) {
+      const customSection = sections.customSections?.find(cs => cs.id === sectionId);
+      return (
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">Section Content</Label>
+          <Textarea
+            placeholder="Write your section content..."
+            value={customSection?.content || ""}
+            onChange={(e) => {
+              const newCustomSections = sections.customSections?.map(cs =>
+                cs.id === sectionId ? { ...cs, content: e.target.value } : cs
+              ) || [];
+              setSections(prev => ({ ...prev, customSections: newCustomSections }));
+            }}
+            rows={10}
+          />
         </div>
       );
     }
 
-    return (
-      <div className="p-4 border rounded-lg bg-background">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <Check className="w-4 h-4 text-primary" />
-            </div>
-            <span className="font-medium">{section.label}</span>
-          </div>
-          <Button size="icon" variant="ghost" onClick={() => setEditingSection(sectionId)}>
-            <Pencil className="w-4 h-4" />
-          </Button>
+    // Manual mode - just a textarea
+    if (mode === "manual") {
+      const manualKey = `${sectionId}Manual` as keyof SalesPageCopySections;
+      return (
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">Section Content</Label>
+          <Textarea
+            placeholder={`Write your ${getAllSections().find(s => s.id === sectionId)?.label.toLowerCase()} content...`}
+            value={(sections[manualKey] as string) || ""}
+            onChange={(e) => setSections(prev => ({ ...prev, [manualKey]: e.target.value }))}
+            rows={10}
+          />
         </div>
-        
-        {/* Show preview of content */}
-        <div className="text-sm text-muted-foreground pl-11 space-y-1">
-          {sectionId === "hero" && sections.hero && sections.hero.headlines && (
-            <>
-              <p className="truncate font-medium text-foreground">{sections.hero.headlines[sections.hero.selectedHeadline]}</p>
-              <p className="truncate">{sections.hero.subheadline}</p>
-            </>
-          )}
-          {sectionId === "whyDifferent" && sections.whyDifferent && (
-            <p className="line-clamp-2">{sections.whyDifferent.openingParagraph}</p>
-          )}
-          {sectionId === "benefits" && sections.benefits?.benefits && (
-            <p>{sections.benefits.benefits.length} benefits added</p>
-          )}
-          {sectionId === "offerDetails" && sections.offerDetails && (
-            <p>{sections.offerDetails.modules?.length || 0} modules, {sections.offerDetails.bonuses?.length || 0} bonuses</p>
-          )}
-          {sectionId === "testimonials" && sections.testimonials?.testimonials && (
-            <p>{sections.testimonials.testimonials.length} testimonials</p>
-          )}
-          {sectionId === "faqs" && sections.faqs?.faqs && (
-            <p>{sections.faqs.faqs.length} FAQs</p>
-          )}
-          {manualData && (
-            <p className="line-clamp-2">{manualData}</p>
-          )}
-        </div>
-      </div>
-    );
+      );
+    }
+
+    // AI mode - section-specific editors
+    switch (sectionId) {
+      case "hero":
+        return renderHeroEditorInputs();
+      case "whyDifferent":
+        return renderWhyDifferentEditorInputs();
+      case "benefits":
+        return renderBenefitsEditorInputs();
+      case "offerDetails":
+        return renderOfferDetailsEditorInputs();
+      case "testimonials":
+        return renderTestimonialsEditorInputs();
+      case "faqs":
+        return renderFaqsEditorInputs();
+      default:
+        return null;
+    }
   };
 
-  // Render Hero Section Editor
-  const renderHeroEditor = () => {
-    const mode = getSectionMode("hero");
+  // Hero Editor Inputs
+  const renderHeroEditorInputs = () => {
     const heroData = sections.hero;
     
+    const parts = [
+      { id: "headlines", label: "Headlines", hasContent: !!heroData?.headlines?.length },
+      { id: "subheadline", label: "Subheadline", hasContent: !!heroData?.subheadline },
+      { id: "cta", label: "CTA Button", hasContent: !!heroData?.cta },
+    ];
+
     return (
-      <div className="space-y-4 p-4 border rounded-lg bg-card shadow-sm">
-        <div className="flex items-center justify-between pb-3 border-b">
-          <Label className="text-base font-semibold">Hero Section</Label>
-          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
-            <X className="w-4 h-4" />
-          </Button>
+      <div className="space-y-4">
+        {/* Part Selector */}
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+            Select Part to Edit
+          </p>
+          {parts.map((part) => (
+            <button
+              key={part.id}
+              onClick={() => setSelectedHeroPart(part.id)}
+              className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left text-sm transition-all ${
+                selectedHeroPart === part.id
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "hover:bg-accent text-foreground"
+              }`}
+            >
+              <span>{part.label}</span>
+              {part.hasContent && <Check className="w-3.5 h-3.5 text-green-500" />}
+            </button>
+          ))}
         </div>
 
-        {/* Mode Selection Cards */}
-        {!heroData && !sections.heroManual && (
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setSectionModes(prev => ({ ...prev, hero: "ai" }))}
-              className={`p-4 rounded-lg border-2 text-left transition-all ${
-                mode === "ai" 
-                  ? "border-primary bg-primary/5" 
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              <Wand2 className="w-5 h-5 mb-2 text-primary" />
-              <div className="font-medium text-sm">AI Generate</div>
-              <p className="text-xs text-muted-foreground mt-1">Let AI create compelling copy</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSectionModes(prev => ({ ...prev, hero: "manual" }))}
-              className={`p-4 rounded-lg border-2 text-left transition-all ${
-                mode === "manual" 
-                  ? "border-primary bg-primary/5" 
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              <PenLine className="w-5 h-5 mb-2 text-primary" />
-              <div className="font-medium text-sm">Write My Own</div>
-              <p className="text-xs text-muted-foreground mt-1">Write from scratch</p>
-            </button>
-          </div>
-        )}
-
-        {mode === "ai" ? (
-          <div className="space-y-4">
-            {!heroData ? (
-              <Button
-                onClick={() => generateSectionCopy("hero")}
-                disabled={isGenerating.hero || !offer}
-                className="w-full"
+        {/* Part-specific inputs */}
+        <div className="pt-4 border-t">
+          {selectedHeroPart === "headlines" && heroData?.headlines && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Choose Your Headline</Label>
+              <RadioGroup
+                value={String(heroData.selectedHeadline)}
+                onValueChange={(v) => setSections(prev => ({
+                  ...prev,
+                  hero: { ...prev.hero!, selectedHeadline: parseInt(v) }
+                }))}
+                className="space-y-2"
               >
-                {isGenerating.hero ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    {hasGenerated.hero ? "Regenerate" : "Generate"} Hero Copy
-                  </>
-                )}
-              </Button>
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Choose Your Headline</Label>
-                  <RadioGroup
-                    value={String(heroData.selectedHeadline)}
-                    onValueChange={(v) => setSections(prev => ({
-                      ...prev,
-                      hero: { ...prev.hero!, selectedHeadline: parseInt(v) }
-                    }))}
-                    className="space-y-2"
-                  >
-                    {heroData.headlines.map((headline, idx) => (
-                      <div key={idx} className="flex items-start gap-2 p-3 border rounded-lg hover:bg-accent/50 transition-colors">
-                        <RadioGroupItem value={String(idx)} id={`headline-${idx}`} className="mt-1" />
-                        <Label htmlFor={`headline-${idx}`} className="flex-1 cursor-pointer text-sm">
-                          {headline}
-                          {idx === heroData.recommendedHeadline && (
-                            <Badge variant="secondary" className="ml-2 text-xs">Recommended</Badge>
-                          )}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
+                {heroData.headlines.map((headline, idx) => (
+                  <div key={idx} className="flex items-start gap-2 p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                    <RadioGroupItem value={String(idx)} id={`headline-${idx}`} className="mt-1" />
+                    <Label htmlFor={`headline-${idx}`} className="flex-1 cursor-pointer text-sm">
+                      {headline}
+                      {idx === heroData.recommendedHeadline && (
+                        <span className="ml-2 px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">Recommended</span>
+                      )}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+          )}
 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Subheadline</Label>
-                  <Textarea
-                    value={heroData.subheadline}
-                    onChange={(e) => setSections(prev => ({
-                      ...prev,
-                      hero: { ...prev.hero!, subheadline: e.target.value }
-                    }))}
-                    rows={2}
-                  />
-                </div>
+          {selectedHeroPart === "subheadline" && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Subheadline</Label>
+              <Textarea
+                value={heroData?.subheadline || ""}
+                onChange={(e) => setSections(prev => ({
+                  ...prev,
+                  hero: { ...prev.hero!, subheadline: e.target.value }
+                }))}
+                placeholder="Enter your subheadline..."
+                rows={3}
+              />
+            </div>
+          )}
 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">CTA Button Text</Label>
-                  <Input
-                    value={heroData.cta}
-                    onChange={(e) => setSections(prev => ({
-                      ...prev,
-                      hero: { ...prev.hero!, cta: e.target.value }
-                    }))}
-                  />
-                </div>
+          {selectedHeroPart === "cta" && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">CTA Button Text</Label>
+              <Input
+                value={heroData?.cta || ""}
+                onChange={(e) => setSections(prev => ({
+                  ...prev,
+                  hero: { ...prev.hero!, cta: e.target.value }
+                }))}
+                placeholder="e.g., Get Started Now"
+              />
+            </div>
+          )}
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => generateSectionCopy("hero")}
-                  disabled={isGenerating.hero}
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${isGenerating.hero ? "animate-spin" : ""}`} />
-                  Regenerate
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <Textarea
-              placeholder="Write your hero section copy..."
-              value={sections.heroManual || ""}
-              onChange={(e) => setSections(prev => ({ ...prev, heroManual: e.target.value }))}
-              rows={6}
-            />
-          </div>
-        )}
-
-        <div className="flex justify-between gap-2 pt-3 border-t">
-          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
-            Cancel
-          </Button>
-          <Button size="sm" onClick={() => saveSectionContent("hero")}>
-            <Check className="w-4 h-4 mr-1" />
-            Save Section
-          </Button>
+          {!heroData && (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Click "Generate" to create headline options
+            </p>
+          )}
         </div>
       </div>
     );
   };
 
-  // Render Why Different Editor
-  const renderWhyDifferentEditor = () => {
-    const mode = getSectionMode("whyDifferent");
+  // WhyDifferent Editor Inputs
+  const renderWhyDifferentEditorInputs = () => {
     const whyDifferentData = sections.whyDifferent;
-    
-    return (
-      <div className="space-y-4 p-4 border rounded-lg bg-card shadow-sm">
-        <div className="flex items-center justify-between pb-3 border-b">
-          <Label className="text-base font-semibold">Why This Is Different</Label>
-          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
 
-        {/* Mode Selection Cards */}
-        {!whyDifferentData && !sections.whyDifferentManual && (
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setSectionModes(prev => ({ ...prev, whyDifferent: "ai" }))}
-              className={`p-4 rounded-lg border-2 text-left transition-all ${
-                mode === "ai" 
-                  ? "border-primary bg-primary/5" 
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              <Wand2 className="w-5 h-5 mb-2 text-primary" />
-              <div className="font-medium text-sm">AI Generate</div>
-              <p className="text-xs text-muted-foreground mt-1">Let AI create compelling copy</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSectionModes(prev => ({ ...prev, whyDifferent: "manual" }))}
-              className={`p-4 rounded-lg border-2 text-left transition-all ${
-                mode === "manual" 
-                  ? "border-primary bg-primary/5" 
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              <PenLine className="w-5 h-5 mb-2 text-primary" />
-              <div className="font-medium text-sm">Write My Own</div>
-              <p className="text-xs text-muted-foreground mt-1">Write from scratch</p>
-            </button>
-          </div>
+    return (
+      <div className="space-y-4">
+        {!whyDifferentData && (
+          <>
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Context Source</Label>
+              <RadioGroup
+                value={contextMode}
+                onValueChange={(v) => setContextMode(v as "infer" | "provide")}
+                className="space-y-2"
+              >
+                <div className="flex items-center gap-2 p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                  <RadioGroupItem value="infer" id="context-infer" />
+                  <Label htmlFor="context-infer" className="flex-1 cursor-pointer">
+                    <span className="font-medium">Let AI infer context</span>
+                    <p className="text-xs text-muted-foreground">AI will determine what solutions your audience has tried</p>
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2 p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                  <RadioGroupItem value="provide" id="context-provide" />
+                  <Label htmlFor="context-provide" className="flex-1 cursor-pointer">
+                    <span className="font-medium">I'll provide specific context</span>
+                    <p className="text-xs text-muted-foreground">Enter details about solutions they've tried</p>
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {contextMode === "provide" && (
+              <Collapsible open={contextOpen} onOpenChange={setContextOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full justify-between">
+                    <span>Context Details</span>
+                    {contextOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-3 mt-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm">What solutions has your audience tried?</Label>
+                    <Textarea
+                      placeholder="e.g., Free YouTube tutorials, generic courses..."
+                      value={attemptedSolutions}
+                      onChange={(e) => setAttemptedSolutions(e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Why do those solutions typically fail?</Label>
+                    <Textarea
+                      placeholder="e.g., Too generic, no personalized support..."
+                      value={whyFails}
+                      onChange={(e) => setWhyFails(e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">What makes your approach different?</Label>
+                    <Textarea
+                      placeholder="e.g., Personalized feedback combined with..."
+                      value={uniqueApproach}
+                      onChange={(e) => setUniqueApproach(e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+          </>
         )}
 
-        {mode === "ai" ? (
+        {whyDifferentData && (
           <div className="space-y-4">
-            {!whyDifferentData && (
-              <>
-                <div className="space-y-3">
-                  <RadioGroup
-                    value={contextMode}
-                    onValueChange={(v) => setContextMode(v as "infer" | "provide")}
-                    className="space-y-2"
-                  >
-                    <div className="flex items-center gap-2 p-3 border rounded-lg hover:bg-accent/50 transition-colors">
-                      <RadioGroupItem value="infer" id="context-infer" />
-                      <Label htmlFor="context-infer" className="flex-1 cursor-pointer">
-                        <span className="font-medium">Let AI infer context</span>
-                        <p className="text-xs text-muted-foreground">AI will determine what solutions your audience has tried</p>
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2 p-3 border rounded-lg hover:bg-accent/50 transition-colors">
-                      <RadioGroupItem value="provide" id="context-provide" />
-                      <Label htmlFor="context-provide" className="flex-1 cursor-pointer">
-                        <span className="font-medium">I'll provide specific context</span>
-                        <p className="text-xs text-muted-foreground">Enter details about solutions they've tried</p>
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Opening Paragraph</Label>
+              <Textarea
+                value={whyDifferentData.openingParagraph}
+                onChange={(e) => setSections(prev => ({
+                  ...prev,
+                  whyDifferent: { ...prev.whyDifferent!, openingParagraph: e.target.value }
+                }))}
+                rows={3}
+              />
+            </div>
 
-                {contextMode === "provide" && (
-                  <Collapsible open={contextOpen} onOpenChange={setContextOpen}>
-                    <CollapsibleTrigger asChild>
-                      <Button variant="outline" size="sm" className="w-full justify-between">
-                        <span>Context Details</span>
-                        {contextOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-3 mt-3">
-                      <div className="space-y-2">
-                        <Label className="text-sm">What solutions has your audience tried?</Label>
-                        <Textarea
-                          placeholder="e.g., Free YouTube tutorials, generic courses..."
-                          value={attemptedSolutions}
-                          onChange={(e) => setAttemptedSolutions(e.target.value)}
-                          rows={2}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Why do those solutions typically fail?</Label>
-                        <Textarea
-                          placeholder="e.g., Too generic, no personalized support..."
-                          value={whyFails}
-                          onChange={(e) => setWhyFails(e.target.value)}
-                          rows={2}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">What makes your approach different?</Label>
-                        <Textarea
-                          placeholder="e.g., Personalized feedback combined with..."
-                          value={uniqueApproach}
-                          onChange={(e) => setUniqueApproach(e.target.value)}
-                          rows={2}
-                        />
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                )}
-              </>
-            )}
-
-            {!whyDifferentData ? (
-              <Button
-                onClick={() => generateSectionCopy("whyDifferent")}
-                disabled={isGenerating.whyDifferent || !offer}
-                className="w-full"
-              >
-                {isGenerating.whyDifferent ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    {hasGenerated.whyDifferent ? "Regenerate" : "Generate"} Copy
-                  </>
-                )}
-              </Button>
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Opening Paragraph</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Comparison Bullets</Label>
+              {whyDifferentData.comparisonBullets?.map((bullet, idx) => (
+                <div key={idx} className="flex items-start gap-2">
+                  <span className="text-muted-foreground mt-2">•</span>
                   <Textarea
-                    value={whyDifferentData.openingParagraph}
-                    onChange={(e) => setSections(prev => ({
-                      ...prev,
-                      whyDifferent: { ...prev.whyDifferent!, openingParagraph: e.target.value }
-                    }))}
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Comparison Bullets</Label>
-                  {whyDifferentData.comparisonBullets?.map((bullet, idx) => (
-                    <div key={idx} className="flex items-start gap-2">
-                      <span className="text-muted-foreground mt-2">•</span>
-                      <Textarea
-                        value={bullet}
-                        onChange={(e) => {
-                          const newBullets = [...(whyDifferentData.comparisonBullets || [])];
-                          newBullets[idx] = e.target.value;
-                          setSections(prev => ({
-                            ...prev,
-                            whyDifferent: { ...prev.whyDifferent!, comparisonBullets: newBullets }
-                          }));
-                        }}
-                        rows={2}
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Bridge Sentence</Label>
-                  <Textarea
-                    value={whyDifferentData.bridgeSentence}
-                    onChange={(e) => setSections(prev => ({
-                      ...prev,
-                      whyDifferent: { ...prev.whyDifferent!, bridgeSentence: e.target.value }
-                    }))}
+                    value={bullet}
+                    onChange={(e) => {
+                      const newBullets = [...(whyDifferentData.comparisonBullets || [])];
+                      newBullets[idx] = e.target.value;
+                      setSections(prev => ({
+                        ...prev,
+                        whyDifferent: { ...prev.whyDifferent!, comparisonBullets: newBullets }
+                      }));
+                    }}
                     rows={2}
                   />
                 </div>
+              ))}
+            </div>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSections(prev => ({ ...prev, whyDifferent: undefined }))}
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Start Over
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <Textarea
-              placeholder="Write your 'Why This Is Different' copy..."
-              value={sections.whyDifferentManual || ""}
-              onChange={(e) => setSections(prev => ({ ...prev, whyDifferentManual: e.target.value }))}
-              rows={6}
-            />
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Bridge Sentence</Label>
+              <Textarea
+                value={whyDifferentData.bridgeSentence}
+                onChange={(e) => setSections(prev => ({
+                  ...prev,
+                  whyDifferent: { ...prev.whyDifferent!, bridgeSentence: e.target.value }
+                }))}
+                rows={2}
+              />
+            </div>
           </div>
         )}
 
-        <div className="flex justify-between gap-2 pt-3 border-t">
-          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
-            Cancel
-          </Button>
-          <Button size="sm" onClick={() => saveSectionContent("whyDifferent")}>
-            <Check className="w-4 h-4 mr-1" />
-            Save Section
-          </Button>
-        </div>
+        {!whyDifferentData && (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Click "Generate" to create differentiating copy
+          </p>
+        )}
       </div>
     );
   };
 
-  // Render Benefits Editor
-  const renderBenefitsEditor = () => {
-    const mode = getSectionMode("benefits");
+  // Benefits Editor Inputs
+  const renderBenefitsEditorInputs = () => {
     const benefitsData = sections.benefits;
 
     const addBenefit = () => {
@@ -865,632 +1050,385 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       const newBenefits = (benefitsData?.benefits || []).filter((_, i) => i !== idx);
       setSections(prev => ({ ...prev, benefits: { benefits: newBenefits } }));
     };
-    
+
     return (
-      <div className="space-y-4 p-4 border rounded-lg bg-card shadow-sm">
-        <div className="flex items-center justify-between pb-3 border-b">
-          <Label className="text-base font-semibold">Key Benefits</Label>
-          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {/* Mode Selection Cards */}
-        {!benefitsData && !sections.benefitsManual && (
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setSectionModes(prev => ({ ...prev, benefits: "ai" }))}
-              className={`p-4 rounded-lg border-2 text-left transition-all ${
-                mode === "ai" 
-                  ? "border-primary bg-primary/5" 
-                  : "border-border hover:border-primary/50"
-              }`}
+      <div className="space-y-4">
+        {benefitsData?.benefits?.map((benefit, idx) => (
+          <div key={idx} className="p-4 border rounded-lg space-y-3 relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-destructive"
+              onClick={() => removeBenefit(idx)}
             >
-              <Wand2 className="w-5 h-5 mb-2 text-primary" />
-              <div className="font-medium text-sm">AI Generate</div>
-              <p className="text-xs text-muted-foreground mt-1">Generate 4 benefits, add more manually</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSectionModes(prev => ({ ...prev, benefits: "manual" }))}
-              className={`p-4 rounded-lg border-2 text-left transition-all ${
-                mode === "manual" 
-                  ? "border-primary bg-primary/5" 
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              <PenLine className="w-5 h-5 mb-2 text-primary" />
-              <div className="font-medium text-sm">Write My Own</div>
-              <p className="text-xs text-muted-foreground mt-1">Write from scratch</p>
-            </button>
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Benefit {idx + 1} Title</Label>
+              <Input
+                value={benefit.title}
+                onChange={(e) => {
+                  const newBenefits = [...(benefitsData?.benefits || [])];
+                  newBenefits[idx] = { ...newBenefits[idx], title: e.target.value };
+                  setSections(prev => ({ ...prev, benefits: { benefits: newBenefits } }));
+                }}
+                placeholder="Benefit title..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Description</Label>
+              <Textarea
+                value={benefit.description}
+                onChange={(e) => {
+                  const newBenefits = [...(benefitsData?.benefits || [])];
+                  newBenefits[idx] = { ...newBenefits[idx], description: e.target.value };
+                  setSections(prev => ({ ...prev, benefits: { benefits: newBenefits } }));
+                }}
+                rows={2}
+                placeholder="Benefit description..."
+              />
+            </div>
           </div>
-        )}
+        ))}
 
-        {mode === "ai" ? (
-          <div className="space-y-4">
-            {!benefitsData ? (
-              <Button
-                onClick={() => generateSectionCopy("benefits")}
-                disabled={isGenerating.benefits || !offer}
-                className="w-full"
-              >
-                {isGenerating.benefits ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    {hasGenerated.benefits ? "Regenerate" : "Generate"} Benefits
-                  </>
-                )}
-              </Button>
-            ) : (
-              <div className="space-y-3">
-                {benefitsData.benefits?.map((benefit, idx) => (
-                  <div key={idx} className="p-3 border rounded-lg space-y-2 relative group">
-                    {benefitsData.benefits.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeBenefit(idx)}
-                      >
-                        <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
-                      </Button>
-                    )}
-                    <Input
-                      value={benefit.title}
-                      onChange={(e) => {
-                        const newBenefits = [...(benefitsData.benefits || [])];
-                        newBenefits[idx] = { ...newBenefits[idx], title: e.target.value };
-                        setSections(prev => ({ ...prev, benefits: { benefits: newBenefits } }));
-                      }}
-                      placeholder="Benefit title"
-                      className="font-medium pr-8"
-                    />
-                    <Textarea
-                      value={benefit.description}
-                      onChange={(e) => {
-                        const newBenefits = [...(benefitsData.benefits || [])];
-                        newBenefits[idx] = { ...newBenefits[idx], description: e.target.value };
-                        setSections(prev => ({ ...prev, benefits: { benefits: newBenefits } }));
-                      }}
-                      placeholder="Benefit description"
-                      rows={2}
-                    />
-                  </div>
-                ))}
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={addBenefit}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Benefit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => generateSectionCopy("benefits")}
-                    disabled={isGenerating.benefits}
-                  >
-                    <RefreshCw className={`w-4 h-4 mr-2 ${isGenerating.benefits ? "animate-spin" : ""}`} />
-                    Regenerate
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <Textarea
-              placeholder="List your key benefits..."
-              value={sections.benefitsManual || ""}
-              onChange={(e) => setSections(prev => ({ ...prev, benefitsManual: e.target.value }))}
-              rows={6}
-            />
-          </div>
-        )}
+        <Button variant="outline" size="sm" onClick={addBenefit} className="w-full">
+          <Plus className="w-4 h-4 mr-2" />
+          Add Benefit
+        </Button>
 
-        <div className="flex justify-between gap-2 pt-3 border-t">
-          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
-            Cancel
-          </Button>
-          <Button size="sm" onClick={() => saveSectionContent("benefits")}>
-            <Check className="w-4 h-4 mr-1" />
-            Save Section
-          </Button>
-        </div>
+        {!benefitsData?.benefits?.length && (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Click "Generate" to create 4 key benefits
+          </p>
+        )}
       </div>
     );
   };
 
-  // Render Offer Details Editor
-  const renderOfferDetailsEditor = () => {
-    const mode = getSectionMode("offerDetails");
+  // Offer Details Editor Inputs
+  const renderOfferDetailsEditorInputs = () => {
     const offerDetailsData = sections.offerDetails;
-    
+
+    if (!offerDetailsData) {
+      return (
+        <p className="text-sm text-muted-foreground text-center py-4">
+          Click "Generate" to create offer details
+        </p>
+      );
+    }
+
     return (
-      <div className="space-y-4 p-4 border rounded-lg bg-card shadow-sm">
-        <div className="flex items-center justify-between pb-3 border-b">
-          <Label className="text-base font-semibold">What's Included</Label>
-          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
-            <X className="w-4 h-4" />
-          </Button>
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Introduction</Label>
+          <Textarea
+            value={offerDetailsData.introduction}
+            onChange={(e) => setSections(prev => ({
+              ...prev,
+              offerDetails: { ...prev.offerDetails!, introduction: e.target.value }
+            }))}
+            rows={2}
+          />
         </div>
 
-        {/* Mode Selection Cards */}
-        {!offerDetailsData && !sections.offerDetailsManual && (
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setSectionModes(prev => ({ ...prev, offerDetails: "ai" }))}
-              className={`p-4 rounded-lg border-2 text-left transition-all ${
-                mode === "ai" 
-                  ? "border-primary bg-primary/5" 
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              <Wand2 className="w-5 h-5 mb-2 text-primary" />
-              <div className="font-medium text-sm">AI Generate</div>
-              <p className="text-xs text-muted-foreground mt-1">Let AI create compelling copy</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSectionModes(prev => ({ ...prev, offerDetails: "manual" }))}
-              className={`p-4 rounded-lg border-2 text-left transition-all ${
-                mode === "manual" 
-                  ? "border-primary bg-primary/5" 
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              <PenLine className="w-5 h-5 mb-2 text-primary" />
-              <div className="font-medium text-sm">Write My Own</div>
-              <p className="text-xs text-muted-foreground mt-1">Write from scratch</p>
-            </button>
-          </div>
-        )}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Modules</Label>
+          {offerDetailsData.modules?.map((module, idx) => (
+            <div key={idx} className="p-3 border rounded-lg space-y-2">
+              <Input
+                value={module.name}
+                onChange={(e) => {
+                  const newModules = [...(offerDetailsData.modules || [])];
+                  newModules[idx] = { ...newModules[idx], name: e.target.value };
+                  setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, modules: newModules } }));
+                }}
+                placeholder="Module name"
+                className="font-medium"
+              />
+              <Textarea
+                value={module.description}
+                onChange={(e) => {
+                  const newModules = [...(offerDetailsData.modules || [])];
+                  newModules[idx] = { ...newModules[idx], description: e.target.value };
+                  setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, modules: newModules } }));
+                }}
+                rows={2}
+              />
+            </div>
+          ))}
+        </div>
 
-        {mode === "ai" ? (
-          <div className="space-y-4">
-            {!offerDetailsData ? (
-              <Button
-                onClick={() => generateSectionCopy("offerDetails")}
-                disabled={isGenerating.offerDetails || !offer}
-                className="w-full"
-              >
-                {isGenerating.offerDetails ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    {hasGenerated.offerDetails ? "Regenerate" : "Generate"} Offer Details
-                  </>
-                )}
-              </Button>
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Introduction</Label>
-                  <Textarea
-                    value={offerDetailsData.introduction}
-                    onChange={(e) => setSections(prev => ({
-                      ...prev,
-                      offerDetails: { ...prev.offerDetails!, introduction: e.target.value }
-                    }))}
-                    rows={2}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Modules</Label>
-                  {offerDetailsData.modules?.map((module, idx) => (
-                    <div key={idx} className="p-3 border rounded-lg space-y-2">
-                      <Input
-                        value={module.name}
-                        onChange={(e) => {
-                          const newModules = [...(offerDetailsData.modules || [])];
-                          newModules[idx] = { ...newModules[idx], name: e.target.value };
-                          setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, modules: newModules } }));
-                        }}
-                        placeholder="Module name"
-                        className="font-medium"
-                      />
-                      <Textarea
-                        value={module.description}
-                        onChange={(e) => {
-                          const newModules = [...(offerDetailsData.modules || [])];
-                          newModules[idx] = { ...newModules[idx], description: e.target.value };
-                          setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, modules: newModules } }));
-                        }}
-                        rows={2}
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Bonuses</Label>
-                  {offerDetailsData.bonuses?.map((bonus, idx) => (
-                    <div key={idx} className="p-3 border rounded-lg space-y-2">
-                      <div className="flex gap-2">
-                        <Input
-                          value={bonus.name}
-                          onChange={(e) => {
-                            const newBonuses = [...(offerDetailsData.bonuses || [])];
-                            newBonuses[idx] = { ...newBonuses[idx], name: e.target.value };
-                            setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, bonuses: newBonuses } }));
-                          }}
-                          placeholder="Bonus name"
-                          className="flex-1"
-                        />
-                        <Input
-                          value={bonus.value}
-                          onChange={(e) => {
-                            const newBonuses = [...(offerDetailsData.bonuses || [])];
-                            newBonuses[idx] = { ...newBonuses[idx], value: e.target.value };
-                            setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, bonuses: newBonuses } }));
-                          }}
-                          placeholder="Value"
-                          className="w-24"
-                        />
-                      </div>
-                      <Textarea
-                        value={bonus.description}
-                        onChange={(e) => {
-                          const newBonuses = [...(offerDetailsData.bonuses || [])];
-                          newBonuses[idx] = { ...newBonuses[idx], description: e.target.value };
-                          setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, bonuses: newBonuses } }));
-                        }}
-                        rows={2}
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Guarantee</Label>
-                  <Textarea
-                    value={offerDetailsData.guarantee}
-                    onChange={(e) => setSections(prev => ({
-                      ...prev,
-                      offerDetails: { ...prev.offerDetails!, guarantee: e.target.value }
-                    }))}
-                    rows={2}
-                  />
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => generateSectionCopy("offerDetails")}
-                  disabled={isGenerating.offerDetails}
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${isGenerating.offerDetails ? "animate-spin" : ""}`} />
-                  Regenerate
-                </Button>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Bonuses</Label>
+          {offerDetailsData.bonuses?.map((bonus, idx) => (
+            <div key={idx} className="p-3 border rounded-lg space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  value={bonus.name}
+                  onChange={(e) => {
+                    const newBonuses = [...(offerDetailsData.bonuses || [])];
+                    newBonuses[idx] = { ...newBonuses[idx], name: e.target.value };
+                    setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, bonuses: newBonuses } }));
+                  }}
+                  placeholder="Bonus name"
+                  className="flex-1"
+                />
+                <Input
+                  value={bonus.value}
+                  onChange={(e) => {
+                    const newBonuses = [...(offerDetailsData.bonuses || [])];
+                    newBonuses[idx] = { ...newBonuses[idx], value: e.target.value };
+                    setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, bonuses: newBonuses } }));
+                  }}
+                  placeholder="Value"
+                  className="w-24"
+                />
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <Textarea
-              placeholder="Describe what's included in your offer..."
-              value={sections.offerDetailsManual || ""}
-              onChange={(e) => setSections(prev => ({ ...prev, offerDetailsManual: e.target.value }))}
-              rows={8}
-            />
-          </div>
-        )}
+              <Textarea
+                value={bonus.description}
+                onChange={(e) => {
+                  const newBonuses = [...(offerDetailsData.bonuses || [])];
+                  newBonuses[idx] = { ...newBonuses[idx], description: e.target.value };
+                  setSections(prev => ({ ...prev, offerDetails: { ...prev.offerDetails!, bonuses: newBonuses } }));
+                }}
+                rows={2}
+              />
+            </div>
+          ))}
+        </div>
 
-        <div className="flex justify-between gap-2 pt-3 border-t">
-          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
-            Cancel
-          </Button>
-          <Button size="sm" onClick={() => saveSectionContent("offerDetails")}>
-            <Check className="w-4 h-4 mr-1" />
-            Save Section
-          </Button>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Guarantee</Label>
+          <Textarea
+            value={offerDetailsData.guarantee}
+            onChange={(e) => setSections(prev => ({
+              ...prev,
+              offerDetails: { ...prev.offerDetails!, guarantee: e.target.value }
+            }))}
+            rows={2}
+          />
         </div>
       </div>
     );
   };
 
-  // Render Testimonials Editor
-  const renderTestimonialsEditor = () => {
-    const mode = getSectionMode("testimonials");
+  // Testimonials Editor Inputs
+  const renderTestimonialsEditorInputs = () => {
     const testimonialsData = sections.testimonials;
-    
+
+    if (!testimonialsData) {
+      return (
+        <>
+          <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+            AI generates sample testimonials as templates. Replace with real testimonials before publishing.
+          </p>
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Click "Generate" to create sample testimonials
+          </p>
+        </>
+      );
+    }
+
     return (
-      <div className="space-y-4 p-4 border rounded-lg bg-card shadow-sm">
-        <div className="flex items-center justify-between pb-3 border-b">
-          <Label className="text-base font-semibold">Testimonials</Label>
-          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {/* Mode Selection Cards */}
-        {!testimonialsData && !sections.testimonialsManual && (
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setSectionModes(prev => ({ ...prev, testimonials: "ai" }))}
-              className={`p-4 rounded-lg border-2 text-left transition-all ${
-                mode === "ai" 
-                  ? "border-primary bg-primary/5" 
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              <Wand2 className="w-5 h-5 mb-2 text-primary" />
-              <div className="font-medium text-sm">AI Generate</div>
-              <p className="text-xs text-muted-foreground mt-1">Create sample testimonials</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSectionModes(prev => ({ ...prev, testimonials: "manual" }))}
-              className={`p-4 rounded-lg border-2 text-left transition-all ${
-                mode === "manual" 
-                  ? "border-primary bg-primary/5" 
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              <PenLine className="w-5 h-5 mb-2 text-primary" />
-              <div className="font-medium text-sm">Write My Own</div>
-              <p className="text-xs text-muted-foreground mt-1">Add real testimonials</p>
-            </button>
-          </div>
-        )}
-
-        {mode === "ai" ? (
-          <div className="space-y-4">
-            <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">AI generates sample testimonials as templates. Replace with real testimonials before publishing.</p>
-            {!testimonialsData ? (
-              <Button
-                onClick={() => generateSectionCopy("testimonials")}
-                disabled={isGenerating.testimonials || !offer}
-                className="w-full"
-              >
-                {isGenerating.testimonials ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    {hasGenerated.testimonials ? "Regenerate" : "Generate"} Sample Testimonials
-                  </>
-                )}
-              </Button>
-            ) : (
-              <div className="space-y-3">
-                {testimonialsData.testimonials?.map((testimonial, idx) => (
-                  <div key={idx} className="p-3 border rounded-lg space-y-2">
-                    <div className="flex gap-2">
-                      <Input
-                        value={testimonial.name}
-                        onChange={(e) => {
-                          const newTestimonials = [...(testimonialsData.testimonials || [])];
-                          newTestimonials[idx] = { ...newTestimonials[idx], name: e.target.value };
-                          setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
-                        }}
-                        placeholder="Name"
-                        className="flex-1"
-                      />
-                      <Input
-                        value={testimonial.result}
-                        onChange={(e) => {
-                          const newTestimonials = [...(testimonialsData.testimonials || [])];
-                          newTestimonials[idx] = { ...newTestimonials[idx], result: e.target.value };
-                          setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
-                        }}
-                        placeholder="Result achieved"
-                        className="flex-1"
-                      />
-                    </div>
-                    <Textarea
-                      value={testimonial.quote}
-                      onChange={(e) => {
-                        const newTestimonials = [...(testimonialsData.testimonials || [])];
-                        newTestimonials[idx] = { ...newTestimonials[idx], quote: e.target.value };
-                        setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
-                      }}
-                      placeholder="Testimonial quote"
-                      rows={2}
-                    />
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => generateSectionCopy("testimonials")}
-                  disabled={isGenerating.testimonials}
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${isGenerating.testimonials ? "animate-spin" : ""}`} />
-                  Regenerate
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+          AI generates sample testimonials as templates. Replace with real testimonials before publishing.
+        </p>
+        {testimonialsData.testimonials?.map((testimonial, idx) => (
+          <div key={idx} className="p-3 border rounded-lg space-y-2">
+            <div className="flex gap-2">
+              <Input
+                value={testimonial.name}
+                onChange={(e) => {
+                  const newTestimonials = [...(testimonialsData.testimonials || [])];
+                  newTestimonials[idx] = { ...newTestimonials[idx], name: e.target.value };
+                  setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
+                }}
+                placeholder="Name"
+                className="flex-1"
+              />
+              <Input
+                value={testimonial.result}
+                onChange={(e) => {
+                  const newTestimonials = [...(testimonialsData.testimonials || [])];
+                  newTestimonials[idx] = { ...newTestimonials[idx], result: e.target.value };
+                  setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
+                }}
+                placeholder="Result achieved"
+                className="flex-1"
+              />
+            </div>
             <Textarea
-              placeholder="Add your testimonials..."
-              value={sections.testimonialsManual || ""}
-              onChange={(e) => setSections(prev => ({ ...prev, testimonialsManual: e.target.value }))}
-              rows={6}
+              value={testimonial.quote}
+              onChange={(e) => {
+                const newTestimonials = [...(testimonialsData.testimonials || [])];
+                newTestimonials[idx] = { ...newTestimonials[idx], quote: e.target.value };
+                setSections(prev => ({ ...prev, testimonials: { testimonials: newTestimonials } }));
+              }}
+              placeholder="Testimonial quote"
+              rows={2}
             />
           </div>
-        )}
-
-        <div className="flex justify-between gap-2 pt-3 border-t">
-          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
-            Cancel
-          </Button>
-          <Button size="sm" onClick={() => saveSectionContent("testimonials")}>
-            <Check className="w-4 h-4 mr-1" />
-            Save Section
-          </Button>
-        </div>
+        ))}
       </div>
     );
   };
 
-  // Render FAQs Editor
-  const renderFaqsEditor = () => {
-    const mode = getSectionMode("faqs");
+  // FAQs Editor Inputs
+  const renderFaqsEditorInputs = () => {
     const faqsData = sections.faqs;
-    
+
+    if (!faqsData) {
+      return (
+        <p className="text-sm text-muted-foreground text-center py-4">
+          Click "Generate" to create FAQs
+        </p>
+      );
+    }
+
     return (
-      <div className="space-y-4 p-4 border rounded-lg bg-card shadow-sm">
-        <div className="flex items-center justify-between pb-3 border-b">
-          <Label className="text-base font-semibold">FAQs</Label>
-          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {/* Mode Selection Cards */}
-        {!faqsData && !sections.faqsManual && (
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setSectionModes(prev => ({ ...prev, faqs: "ai" }))}
-              className={`p-4 rounded-lg border-2 text-left transition-all ${
-                mode === "ai" 
-                  ? "border-primary bg-primary/5" 
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              <Wand2 className="w-5 h-5 mb-2 text-primary" />
-              <div className="font-medium text-sm">AI Generate</div>
-              <p className="text-xs text-muted-foreground mt-1">Create common FAQs</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSectionModes(prev => ({ ...prev, faqs: "manual" }))}
-              className={`p-4 rounded-lg border-2 text-left transition-all ${
-                mode === "manual" 
-                  ? "border-primary bg-primary/5" 
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              <PenLine className="w-5 h-5 mb-2 text-primary" />
-              <div className="font-medium text-sm">Write My Own</div>
-              <p className="text-xs text-muted-foreground mt-1">Add your own FAQs</p>
-            </button>
-          </div>
-        )}
-
-        {mode === "ai" ? (
-          <div className="space-y-4">
-            {!faqsData ? (
-              <Button
-                onClick={() => generateSectionCopy("faqs")}
-                disabled={isGenerating.faqs || !offer}
-                className="w-full"
-              >
-                {isGenerating.faqs ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    {hasGenerated.faqs ? "Regenerate" : "Generate"} FAQs
-                  </>
-                )}
-              </Button>
-            ) : (
-              <div className="space-y-3">
-                {faqsData.faqs?.map((faq, idx) => (
-                  <div key={idx} className="p-3 border rounded-lg space-y-2">
-                    <Input
-                      value={faq.question}
-                      onChange={(e) => {
-                        const newFaqs = [...(faqsData.faqs || [])];
-                        newFaqs[idx] = { ...newFaqs[idx], question: e.target.value };
-                        setSections(prev => ({ ...prev, faqs: { faqs: newFaqs } }));
-                      }}
-                      placeholder="Question"
-                      className="font-medium"
-                    />
-                    <Textarea
-                      value={faq.answer}
-                      onChange={(e) => {
-                        const newFaqs = [...(faqsData.faqs || [])];
-                        newFaqs[idx] = { ...newFaqs[idx], answer: e.target.value };
-                        setSections(prev => ({ ...prev, faqs: { faqs: newFaqs } }));
-                      }}
-                      placeholder="Answer"
-                      rows={2}
-                    />
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => generateSectionCopy("faqs")}
-                  disabled={isGenerating.faqs}
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${isGenerating.faqs ? "animate-spin" : ""}`} />
-                  Regenerate
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
+      <div className="space-y-3">
+        {faqsData.faqs?.map((faq, idx) => (
+          <div key={idx} className="p-3 border rounded-lg space-y-2">
+            <Input
+              value={faq.question}
+              onChange={(e) => {
+                const newFaqs = [...(faqsData.faqs || [])];
+                newFaqs[idx] = { ...newFaqs[idx], question: e.target.value };
+                setSections(prev => ({ ...prev, faqs: { faqs: newFaqs } }));
+              }}
+              placeholder="Question"
+              className="font-medium"
+            />
             <Textarea
-              placeholder="Add your FAQs..."
-              value={sections.faqsManual || ""}
-              onChange={(e) => setSections(prev => ({ ...prev, faqsManual: e.target.value }))}
-              rows={6}
+              value={faq.answer}
+              onChange={(e) => {
+                const newFaqs = [...(faqsData.faqs || [])];
+                newFaqs[idx] = { ...newFaqs[idx], answer: e.target.value };
+                setSections(prev => ({ ...prev, faqs: { faqs: newFaqs } }));
+              }}
+              placeholder="Answer"
+              rows={2}
             />
           </div>
-        )}
-
-        <div className="flex justify-between gap-2 pt-3 border-t">
-          <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>
-            Cancel
-          </Button>
-          <Button size="sm" onClick={() => saveSectionContent("faqs")}>
-            <Check className="w-4 h-4 mr-1" />
-            Save Section
-          </Button>
-        </div>
+        ))}
       </div>
     );
   };
 
-  // Render the appropriate section editor
-  const renderSectionEditor = (sectionId: string) => {
+  // Render output panel for section
+  const renderSectionOutputPanel = (sectionId: string, mode: "ai" | "manual") => {
+    if (mode === "manual" || sectionId.startsWith("custom_")) {
+      const manualKey = `${sectionId}Manual` as keyof SalesPageCopySections;
+      const content = sectionId.startsWith("custom_") 
+        ? sections.customSections?.find(cs => cs.id === sectionId)?.content
+        : (sections[manualKey] as string);
+      
+      if (!content) {
+        return (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p className="text-sm">Your content will appear here as you type</p>
+          </div>
+        );
+      }
+      
+      return (
+        <div className="p-4 border rounded-lg bg-card">
+          <p className="text-sm whitespace-pre-wrap">{content}</p>
+        </div>
+      );
+    }
+
+    // AI mode outputs
+    const sectionData = sections[sectionId as keyof SalesPageCopySections];
+    
+    if (!sectionData) {
+      return (
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          <p className="text-sm">Click "Generate" to see AI-generated options</p>
+        </div>
+      );
+    }
+
+    // Display based on section type
     switch (sectionId) {
-      case "hero": return renderHeroEditor();
-      case "whyDifferent": return renderWhyDifferentEditor();
-      case "benefits": return renderBenefitsEditor();
-      case "offerDetails": return renderOfferDetailsEditor();
-      case "testimonials": return renderTestimonialsEditor();
-      case "faqs": return renderFaqsEditor();
-      default: return null;
+      case "hero":
+        const heroData = sectionData as HeroSectionData;
+        return (
+          <div className="space-y-3">
+            {heroData.headlines?.map((headline, idx) => (
+              <div
+                key={idx}
+                onClick={() => setSections(prev => ({
+                  ...prev,
+                  hero: { ...prev.hero!, selectedHeadline: idx }
+                }))}
+                className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                  heroData.selectedHeadline === idx
+                    ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                    : "hover:border-primary/50"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-muted-foreground">Headline {idx + 1}</span>
+                  {idx === heroData.recommendedHeadline && (
+                    <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">Recommended</span>
+                  )}
+                  {heroData.selectedHeadline === idx && (
+                    <Check className="w-4 h-4 text-primary" />
+                  )}
+                </div>
+                <p className="text-sm font-medium">{headline}</p>
+              </div>
+            ))}
+          </div>
+        );
+      
+      case "benefits":
+        const benefitsData = sectionData as BenefitsSectionData;
+        return (
+          <div className="space-y-3">
+            {benefitsData.benefits?.map((benefit, idx) => (
+              <div key={idx} className="p-4 border rounded-lg bg-card">
+                <h4 className="font-medium text-sm">{benefit.title}</h4>
+                <p className="text-sm text-muted-foreground mt-1">{benefit.description}</p>
+              </div>
+            ))}
+          </div>
+        );
+      
+      default:
+        return (
+          <div className="p-4 border rounded-lg bg-card">
+            <p className="text-sm text-muted-foreground">Content generated successfully</p>
+          </div>
+        );
     }
   };
 
-  // Show inline form when adding/editing
+  // ============ MAIN RENDER ============
+
+  // Show full-screen section editor when editing
+  if (isAddMode && editingSection) {
+    return (
+      <Card className="border bg-card h-[calc(100vh-200px)] min-h-[600px]">
+        {renderFullSectionEditor()}
+        <SalesPagePreview
+          open={showPreview}
+          onOpenChange={setShowPreview}
+          offerName={offer?.title || "Untitled Offer"}
+          sections={sections}
+        />
+      </Card>
+    );
+  }
+
+  // Show add/edit mode with section list
   if (isAddMode) {
     return (
       <>
         <Card className="border bg-card">
-          <CardHeader className="pb-4">
+          <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -1545,15 +1483,22 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
             {/* Sales Page Sections */}
             <div className="space-y-3">
-              {SALES_PAGE_SECTIONS.map((section) => (
-                <div key={section.id}>
-                  {editingSection === section.id ? (
-                    renderSectionEditor(section.id)
-                  ) : (
-                    renderSectionReadOnly(section.id)
-                  )}
-                </div>
-              ))}
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Sections</Label>
+                <p className="text-xs text-muted-foreground">Drag to reorder</p>
+              </div>
+              {renderSectionsList()}
+              
+              {/* Add Custom Section Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddCustomSection(true)}
+                className="w-full border-dashed"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Custom Section
+              </Button>
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t">
@@ -1573,6 +1518,36 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           offerName={offer?.title || "Untitled Offer"}
           sections={sections}
         />
+
+        {/* Add Custom Section Dialog */}
+        <Dialog open={showAddCustomSection} onOpenChange={setShowAddCustomSection}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Custom Section</DialogTitle>
+              <DialogDescription>
+                Create a new section with your own content.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Section Name</Label>
+                <Input
+                  value={customSectionName}
+                  onChange={(e) => setCustomSectionName(e.target.value)}
+                  placeholder="e.g., About the Creator"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddCustomSection(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddCustomSection}>
+                Add Section
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </>
     );
   }
