@@ -128,6 +128,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          labels: string[] | null
           position: number
           project_id: string
           title: string
@@ -140,6 +141,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          labels?: string[] | null
           position?: number
           project_id: string
           title: string
@@ -152,6 +154,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          labels?: string[] | null
           position?: number
           project_id?: string
           title?: string
