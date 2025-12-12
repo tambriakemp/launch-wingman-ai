@@ -54,7 +54,7 @@ const bioFormulas = [
       { key: "result", label: "What result do they achieve?", placeholder: "e.g., launch profitable memberships" },
       { key: "method", label: "What method do you use?", placeholder: "e.g., simple funnels & content" },
     ],
-    build: (data: Record<string, string>) => `I help ${data.who} ${data.result} using ${data.method}.`,
+    build: (data: Record<string, string>) => `I help ${data.who || ""} ${data.result || ""} using ${data.method || ""}.`.trim(),
   },
   {
     id: "identity-transformation",
@@ -68,7 +68,7 @@ const bioFormulas = [
       { key: "pain", label: "Their current pain", placeholder: "e.g., overwhelmed, stuck" },
       { key: "outcome", label: "Desired outcome", placeholder: "e.g., confidently launching" },
     ],
-    build: (data: Record<string, string>) => `${data.identity} helping ${data.who} go from ${data.pain} → ${data.outcome}.`,
+    build: (data: Record<string, string>) => `${data.identity || ""} helping ${data.who || ""} go from ${data.pain || ""} → ${data.outcome || ""}.`.trim(),
   },
   {
     id: "niche-authority",
@@ -81,7 +81,7 @@ const bioFormulas = [
       { key: "niche", label: "Your specific niche", placeholder: "e.g., Coaches & creators" },
       { key: "outcome", label: "Core outcome", placeholder: "e.g., Programs that actually convert" },
     ],
-    build: (data: Record<string, string>) => `${data.knownFor} | ${data.niche} | ${data.outcome}`,
+    build: (data: Record<string, string>) => `${data.knownFor || ""} | ${data.niche || ""} | ${data.outcome || ""}`.trim(),
   },
   {
     id: "problem-promise",
@@ -93,7 +93,7 @@ const bioFormulas = [
       { key: "problem", label: "The problem they face", placeholder: "e.g., launching with no sales" },
       { key: "solution", label: "Your solution/result", placeholder: "e.g., build launches that convert" },
     ],
-    build: (data: Record<string, string>) => `Tired of ${data.problem}?\nI help you ${data.solution}.`,
+    build: (data: Record<string, string>) => `Tired of ${data.problem || ""}?\nI help you ${data.solution || ""}.`.trim(),
   },
   {
     id: "this-is-for-you",
@@ -106,7 +106,7 @@ const bioFormulas = [
       { key: "result", label: "What result do they want?", placeholder: "e.g., consistent launches" },
       { key: "painPoint", label: "Pain point to avoid", placeholder: "e.g., burnout or confusion" },
     ],
-    build: (data: Record<string, string>) => `For ${data.who} who want ${data.result} without ${data.painPoint}.`,
+    build: (data: Record<string, string>) => `For ${data.who || ""} who want ${data.result || ""} without ${data.painPoint || ""}.`.trim(),
   },
   {
     id: "framework-based",
@@ -118,7 +118,7 @@ const bioFormulas = [
       { key: "who", label: "Who do you help?", placeholder: "e.g., coaches" },
       { key: "framework", label: "Your named framework/system", placeholder: "e.g., 90-Day Clarity → Content → Cash system" },
     ],
-    build: (data: Record<string, string>) => `Helping ${data.who} launch with my ${data.framework}.`,
+    build: (data: Record<string, string>) => `Helping ${data.who || ""} launch with my ${data.framework || ""}.`.trim(),
   },
   {
     id: "results-credibility",
@@ -130,7 +130,7 @@ const bioFormulas = [
       { key: "proof", label: "Your outcome or proof", placeholder: "e.g., Multiple 5-figure launches" },
       { key: "who", label: "Who do you help?", placeholder: "e.g., coaches" },
     ],
-    build: (data: Record<string, string>) => `${data.proof} | Helping ${data.who} build theirs`,
+    build: (data: Record<string, string>) => `${data.proof || ""} | Helping ${data.who || ""} build theirs`.trim(),
   },
   {
     id: "lifestyle-business",
@@ -142,7 +142,7 @@ const bioFormulas = [
       { key: "lifestyle", label: "Lifestyle goal", placeholder: "e.g., a freedom-first life" },
       { key: "skill", label: "Business skill", placeholder: "e.g., digital products & launches" },
     ],
-    build: (data: Record<string, string>) => `Building ${data.lifestyle} through ${data.skill}.`,
+    build: (data: Record<string, string>) => `Building ${data.lifestyle || ""} through ${data.skill || ""}.`.trim(),
   },
   {
     id: "short-punchy",
@@ -153,7 +153,7 @@ const bioFormulas = [
     fields: [
       { key: "statement", label: "Your bold statement", placeholder: "e.g., Launches made simple." },
     ],
-    build: (data: Record<string, string>) => data.statement,
+    build: (data: Record<string, string>) => (data.statement || "").trim(),
   },
   {
     id: "value-stack",
@@ -166,7 +166,7 @@ const bioFormulas = [
       { key: "line2", label: "Line 2: How you help", placeholder: "e.g., Funnels • Content • Launch Strategy" },
       { key: "line3", label: "Line 3: CTA", placeholder: "e.g., ↓ Free launch planner" },
     ],
-    build: (data: Record<string, string>) => `${data.line1}\n${data.line2}\n${data.line3}`,
+    build: (data: Record<string, string>) => `${data.line1 || ""}\n${data.line2 || ""}\n${data.line3 || ""}`.trim(),
   },
   {
     id: "anti-bio",
@@ -178,7 +178,7 @@ const bioFormulas = [
       { key: "anti", label: "Thing they hate", placeholder: "e.g., messy launches" },
       { key: "pro", label: "Desired outcome", placeholder: "e.g., simple, profitable systems" },
     ],
-    build: (data: Record<string, string>) => `Anti-${data.anti} | Pro-${data.pro}`,
+    build: (data: Record<string, string>) => `Anti-${data.anti || ""} | Pro-${data.pro || ""}`.trim(),
   },
   {
     id: "cta-first",
@@ -190,7 +190,7 @@ const bioFormulas = [
       { key: "benefit", label: "Main benefit", placeholder: "e.g., Plan your next launch with confidence" },
       { key: "cta", label: "What to do next", placeholder: "e.g., Grab the free planner below" },
     ],
-    build: (data: Record<string, string>) => `${data.benefit}\n→ ${data.cta}`,
+    build: (data: Record<string, string>) => `${data.benefit || ""}\n→ ${data.cta || ""}`.trim(),
   },
 ];
 
