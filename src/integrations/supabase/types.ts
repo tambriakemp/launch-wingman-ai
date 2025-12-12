@@ -89,6 +89,7 @@ export type Database = {
           id: string
           launch_date: string | null
           name: string
+          project_type: string
           status: string
           transformation_statement: string | null
           updated_at: string
@@ -100,6 +101,7 @@ export type Database = {
           id?: string
           launch_date?: string | null
           name: string
+          project_type?: string
           status?: string
           transformation_statement?: string | null
           updated_at?: string
@@ -111,6 +113,7 @@ export type Database = {
           id?: string
           launch_date?: string | null
           name?: string
+          project_type?: string
           status?: string
           transformation_statement?: string | null
           updated_at?: string
