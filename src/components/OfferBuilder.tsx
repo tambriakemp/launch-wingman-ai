@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Gift, ShoppingBag, Video, Users, CreditCard, GraduationCap, BookOpen, Layers, Pencil, Trash2, Loader2, Mail, DollarSign, Play, Instagram, Radio, Zap, UserCheck, Send, Rocket, ArrowDown, ChevronRight, ListChecks, FileText, Headphones, MessageSquare, MessagesSquare, Calendar, Layout, Volume2, Heart, BookMarked, UsersRound, Phone, MailCheck, MessageCircle, CheckSquare, Globe, MessageCircleMore, Sparkles, RefreshCw, Lightbulb, Target, AlertCircle } from "lucide-react";
+import { Plus, Gift, ShoppingBag, Video, Users, CreditCard, GraduationCap, BookOpen, Layers, Pencil, Trash2, Loader2, Mail, DollarSign, Play, Instagram, Radio, Zap, UserCheck, Send, Rocket, ArrowDown, ChevronRight, ListChecks, FileText, Headphones, MessageSquare, MessagesSquare, Calendar, Layout, Volume2, Heart, BookMarked, UsersRound, Phone, MailCheck, MessageCircle, CheckSquare, Globe, MessageCircleMore, Sparkles, RefreshCw, Lightbulb, Target, AlertCircle, Wand2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -681,6 +681,7 @@ interface Offer {
   primary_pain_point: string | null;
   desired_outcome: string | null;
   problem_statement: string | null;
+  transformation_statement: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -739,28 +740,38 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   // Step 2: Offer Type
   const [selectedOfferType, setSelectedOfferType] = useState<string>("");
   
-  // Step 3: Deliverables
+  // Step 3: Transformation Statement (NEW)
+  const [transformationStatements, setTransformationStatements] = useState<string[]>([]);
+  const [selectedTransformationIndex, setSelectedTransformationIndex] = useState<number | null>(null);
+  const [editedTransformation, setEditedTransformation] = useState<string>("");
+  const [transformationTimeframe, setTransformationTimeframe] = useState<string>("");
+  const [isGeneratingTransformations, setIsGeneratingTransformations] = useState(false);
+  const [isRefiningTransformations, setIsRefiningTransformations] = useState(false);
+  const [isCheckingAlignment, setIsCheckingAlignment] = useState(false);
+  const [alignmentFeedback, setAlignmentFeedback] = useState<string>("");
+  
+  // Step 4: Deliverables
   const [selectedDeliverables, setSelectedDeliverables] = useState<string[]>([]);
   
-  // Step 4: AI Ideas
+  // Step 5: AI Ideas
   const [offerIdeas, setOfferIdeas] = useState<OfferIdea[]>([]);
   const [selectedIdeaIndex, setSelectedIdeaIndex] = useState<number | null>(null);
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
   
-  // Step 5: Offer Details
+  // Step 6: Offer Details
   const [offerTitle, setOfferTitle] = useState<string>("");
   const [offerDescription, setOfferDescription] = useState<string>("");
   const [offerPrice, setOfferPrice] = useState<string>("");
   
-  // Step 6: Funnel Type
+  // Step 7: Funnel Type
   const [selectedFunnelType, setSelectedFunnelType] = useState<string>("");
   
-  // Step 7: Platforms
+  // Step 8: Platforms
   const [selectedFunnelPlatform, setSelectedFunnelPlatform] = useState<string>("");
   const [selectedCommunityPlatform, setSelectedCommunityPlatform] = useState<string>("");
   const [selectedEmailPlatform, setSelectedEmailPlatform] = useState<string>("");
   
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>(1);
 
   // Fetch offer (only one per project)
   const { data: offer, isLoading } = useQuery({
@@ -853,6 +864,11 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setDesiredOutcome("");
     setProblemStatement("");
     setSelectedOfferType("");
+    setTransformationStatements([]);
+    setSelectedTransformationIndex(null);
+    setEditedTransformation("");
+    setTransformationTimeframe("");
+    setAlignmentFeedback("");
     setSelectedFunnelType("");
     setSelectedDeliverables([]);
     setOfferTitle("");
@@ -878,7 +894,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     }
   };
 
-  const handleEditOffer = (targetStep: 1 | 2 | 3 | 4 | 5 | 6 | 7 = 1) => {
+  const handleEditOffer = (targetStep: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 = 1) => {
     if (!offer) return;
     setSelectedNiche(offer.niche);
     setTargetAudience(offer.target_audience || "");
@@ -886,6 +902,11 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     setDesiredOutcome(offer.desired_outcome || "");
     setProblemStatement(offer.problem_statement || "");
     setSelectedOfferType(offer.offer_type);
+    setEditedTransformation(offer.transformation_statement || "");
+    setSelectedTransformationIndex(null);
+    setTransformationStatements([]);
+    setTransformationTimeframe("");
+    setAlignmentFeedback("");
     setSelectedFunnelType(offer.funnel_type || "");
     setSelectedDeliverables(offer.main_deliverables || []);
     setOfferTitle(offer.title || "");
@@ -980,6 +1001,120 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     }
   };
 
+  // Transformation Statement Functions
+  const generateTransformationStatements = async () => {
+    if (!targetAudience || !primaryPainPoint || !desiredOutcome || !selectedOfferType) return;
+    
+    setIsGeneratingTransformations(true);
+    setTransformationStatements([]);
+    setSelectedTransformationIndex(null);
+    setEditedTransformation("");
+    setAlignmentFeedback("");
+    
+    try {
+      const offerDetails = getOfferDetails(selectedOfferType);
+      
+      const { data, error } = await supabase.functions.invoke('generate-offer-transformation', {
+        body: {
+          operation: "generate",
+          audience: targetAudience,
+          problem: primaryPainPoint,
+          desiredOutcome: desiredOutcome,
+          offerType: offerDetails?.name || selectedOfferType,
+          timeframe: transformationTimeframe || undefined,
+        },
+      });
+
+      if (error) throw error;
+      
+      if (data?.statements && Array.isArray(data.statements)) {
+        setTransformationStatements(data.statements);
+        toast.success("Transformation statements generated!");
+      } else {
+        throw new Error("Invalid response format");
+      }
+    } catch (error) {
+      console.error("Failed to generate transformation statements:", error);
+      toast.error("Failed to generate statements. Please try again.");
+    } finally {
+      setIsGeneratingTransformations(false);
+    }
+  };
+
+  const refineTransformationStatements = async () => {
+    if (transformationStatements.length === 0) return;
+    
+    setIsRefiningTransformations(true);
+    setAlignmentFeedback("");
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-offer-transformation', {
+        body: {
+          operation: "refine",
+          statements: transformationStatements,
+        },
+      });
+
+      if (error) throw error;
+      
+      if (data?.statements && Array.isArray(data.statements)) {
+        setTransformationStatements(data.statements);
+        setSelectedTransformationIndex(null);
+        setEditedTransformation("");
+        toast.success("Statements refined!");
+      } else {
+        throw new Error("Invalid response format");
+      }
+    } catch (error) {
+      console.error("Failed to refine statements:", error);
+      toast.error("Failed to refine statements. Please try again.");
+    } finally {
+      setIsRefiningTransformations(false);
+    }
+  };
+
+  const checkOfferAlignment = async () => {
+    if (!editedTransformation.trim() || !selectedOfferType) return;
+    
+    setIsCheckingAlignment(true);
+    setAlignmentFeedback("");
+    
+    try {
+      const offerDetails = getOfferDetails(selectedOfferType);
+      
+      const { data, error } = await supabase.functions.invoke('generate-offer-transformation', {
+        body: {
+          operation: "alignment",
+          statement: editedTransformation,
+          offerType: offerDetails?.name || selectedOfferType,
+        },
+      });
+
+      if (error) throw error;
+      
+      if (data?.revised) {
+        setEditedTransformation(data.revised);
+        if (data.feedback) {
+          setAlignmentFeedback(data.feedback);
+        }
+        toast.success("Alignment check complete!");
+      } else {
+        throw new Error("Invalid response format");
+      }
+    } catch (error) {
+      console.error("Failed to check alignment:", error);
+      toast.error("Failed to check alignment. Please try again.");
+    } finally {
+      setIsCheckingAlignment(false);
+    }
+  };
+
+  const handleSelectTransformation = (index: number) => {
+    setSelectedTransformationIndex(index);
+    setEditedTransformation(transformationStatements[index]);
+    setAlignmentFeedback("");
+  };
+
   const generateOfferIdeas = async () => {
     if (!selectedNiche || !selectedOfferType) return;
     
@@ -1053,6 +1188,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
       primary_pain_point: primaryPainPoint.trim() || null,
       desired_outcome: desiredOutcome.trim() || null,
       problem_statement: problemStatement.trim() || null,
+      transformation_statement: editedTransformation.trim() || null,
     };
 
     if (offer) {
@@ -1069,11 +1205,12 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
   // Step validation
   const canProceedToStep2 = selectedNiche && targetAudience.trim() && primaryPainPoint.trim() && desiredOutcome.trim();
   const canProceedToStep3 = canProceedToStep2 && selectedOfferType;
-  const canProceedToStep4 = canProceedToStep3; // Deliverables optional
-  const canProceedToStep5 = canProceedToStep4; // AI Ideas optional
-  const canProceedToStep6 = canProceedToStep5 && offerTitle.trim() && offerDescription.trim();
-  const canProceedToStep7 = canProceedToStep6 && selectedFunnelType;
-  const canSave = canProceedToStep7;
+  const canProceedToStep4 = canProceedToStep3; // Transformation optional
+  const canProceedToStep5 = canProceedToStep4; // Deliverables optional
+  const canProceedToStep6 = canProceedToStep5; // AI Ideas optional
+  const canProceedToStep7 = canProceedToStep6 && offerTitle.trim() && offerDescription.trim();
+  const canProceedToStep8 = canProceedToStep7 && selectedFunnelType;
+  const canSave = canProceedToStep8;
   const canSavePartial = selectedNiche && selectedOfferType;
 
   if (isLoading) {
@@ -1220,7 +1357,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => handleEditOffer(3)}
+                    onClick={() => handleEditOffer(4)}
                   >
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -1270,7 +1407,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => handleEditOffer(7)}
+                    onClick={() => handleEditOffer(8)}
                   >
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -1349,7 +1486,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => handleEditOffer(6)}
+                    onClick={() => handleEditOffer(7)}
                   >
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -1375,17 +1512,18 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
             <DialogDescription>
               {step === 1 && "Step 1: Define your audience and their problem"}
               {step === 2 && "Step 2: Select your offer type"}
-              {step === 3 && "Step 3: Select main deliverables (optional)"}
-              {step === 4 && "Step 4: Get AI-powered offer ideas (optional)"}
-              {step === 5 && "Step 5: Enter your offer details"}
-              {step === 6 && "Step 6: Select your funnel type"}
-              {step === 7 && "Step 7: Select your platforms"}
+              {step === 3 && "Step 3: Craft your transformation statement"}
+              {step === 4 && "Step 4: Select main deliverables (optional)"}
+              {step === 5 && "Step 5: Get AI-powered offer ideas (optional)"}
+              {step === 6 && "Step 6: Enter your offer details"}
+              {step === 7 && "Step 7: Select your funnel type"}
+              {step === 8 && "Step 8: Select your platforms"}
             </DialogDescription>
           </DialogHeader>
           
           {/* Step Indicators */}
           <div className="flex items-center gap-2 py-2 flex-shrink-0">
-            {[1, 2, 3, 4, 5, 6, 7].map((s) => (
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
               <div
                 key={s}
                 className={cn(
@@ -1578,8 +1716,195 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 </div>
               )}
 
-              {/* Step 3: Main Deliverables (optional) */}
+              {/* Step 3: Transformation Statement */}
               {step === 3 && (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Wand2 className="w-4 h-4 text-primary" />
+                      Transformation Statement
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Create a clear, compelling statement that shows the transformation your offer provides.
+                    </p>
+                  </div>
+
+                  {/* Timeframe input */}
+                  <div className="space-y-2">
+                    <Label htmlFor="timeframe">Timeframe <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                    <Input
+                      id="timeframe"
+                      value={transformationTimeframe}
+                      onChange={(e) => setTransformationTimeframe(e.target.value)}
+                      placeholder="e.g., '30 days', '8 weeks', '3 months'"
+                    />
+                    <p className="text-xs text-muted-foreground">If your offer has a specific timeframe, mention it here for more targeted statements.</p>
+                  </div>
+
+                  {/* Generate button */}
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={generateTransformationStatements}
+                      disabled={isGeneratingTransformations || isRefiningTransformations}
+                    >
+                      {isGeneratingTransformations ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : transformationStatements.length > 0 ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Regenerate
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Generate Statements
+                        </>
+                      )}
+                    </Button>
+                    {transformationStatements.length > 0 && (
+                      <Button 
+                        variant="outline"
+                        onClick={refineTransformationStatements}
+                        disabled={isGeneratingTransformations || isRefiningTransformations}
+                      >
+                        {isRefiningTransformations ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Refining...
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="w-4 h-4 mr-2" />
+                            Refine for Specificity
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Loading state */}
+                  {isGeneratingTransformations && (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+                      <p className="text-sm text-muted-foreground">Crafting transformation statements...</p>
+                    </div>
+                  )}
+
+                  {/* Empty state */}
+                  {!isGeneratingTransformations && transformationStatements.length === 0 && !editedTransformation && (
+                    <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-border rounded-lg">
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                        <Wand2 className="w-6 h-6 text-primary" />
+                      </div>
+                      <h4 className="text-sm font-medium text-foreground mb-1">No transformation statement yet</h4>
+                      <p className="text-xs text-muted-foreground mb-4 max-w-sm">
+                        Click "Generate Statements" to create 3 variations based on your audience, problem, and offer type.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Statement selection cards */}
+                  {!isGeneratingTransformations && transformationStatements.length > 0 && (
+                    <div className="space-y-3">
+                      <Label>Select a statement to use:</Label>
+                      <div className="grid gap-3">
+                        {transformationStatements.map((statement, index) => {
+                          const isSelected = selectedTransformationIndex === index;
+                          
+                          return (
+                            <Card
+                              key={index}
+                              className={cn(
+                                "cursor-pointer transition-all hover:border-primary/50",
+                                isSelected && "border-primary ring-1 ring-primary"
+                              )}
+                              onClick={() => handleSelectTransformation(index)}
+                            >
+                              <CardHeader className="py-3 px-4">
+                                <div className="flex items-start gap-3">
+                                  <div className={cn(
+                                    "w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold",
+                                    isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                                  )}>
+                                    {index + 1}
+                                  </div>
+                                  <p className="text-sm text-foreground flex-1">{statement}</p>
+                                  <div className={cn(
+                                    "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
+                                    isSelected ? "bg-primary border-primary" : "border-muted-foreground/30"
+                                  )}>
+                                    {isSelected && (
+                                      <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                </div>
+                              </CardHeader>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Editable selected statement */}
+                  {editedTransformation && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="editedTransformation">Your Transformation Statement</Label>
+                        <Textarea
+                          id="editedTransformation"
+                          value={editedTransformation}
+                          onChange={(e) => setEditedTransformation(e.target.value)}
+                          rows={3}
+                          placeholder="Your transformation statement..."
+                        />
+                      </div>
+
+                      {/* Alignment check button */}
+                      <Button 
+                        variant="outline"
+                        onClick={checkOfferAlignment}
+                        disabled={isCheckingAlignment || !editedTransformation.trim()}
+                      >
+                        {isCheckingAlignment ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Checking...
+                          </>
+                        ) : (
+                          <>
+                            <ShieldCheck className="w-4 h-4 mr-2" />
+                            Check Offer Type Alignment
+                          </>
+                        )}
+                      </Button>
+
+                      {/* Alignment feedback */}
+                      {alignmentFeedback && (
+                        <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-start gap-3">
+                          <ShieldCheck className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium text-foreground">Alignment Feedback</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{alignmentFeedback}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <p className="text-xs text-muted-foreground text-center">
+                    This step is optional. You can skip or come back to it later.
+                  </p>
+                </div>
+              )}
+
+              {/* Step 4: Main Deliverables (optional) */}
+              {step === 4 && (
                 <div className="space-y-4">
                   <div>
                     <Label>Select Main Deliverables</Label>
@@ -1659,8 +1984,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 </div>
               )}
 
-              {/* Step 4: AI Offer Ideas (optional) */}
-              {step === 4 && (
+              {/* Step 5: AI Offer Ideas (optional) */}
+              {step === 5 && (
                 <div className="space-y-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -1767,8 +2092,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 </div>
               )}
 
-              {/* Step 5: Offer Details (title, description, price) */}
-              {step === 5 && (
+              {/* Step 6: Offer Details (title, description, price) */}
+              {step === 6 && (
                 <div className="space-y-4">
                   {selectedIdeaIndex !== null && offerIdeas[selectedIdeaIndex] && (
                     <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-start gap-3">
@@ -1816,8 +2141,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 </div>
               )}
 
-              {/* Step 6: Funnel Type */}
-              {step === 6 && (
+              {/* Step 7: Funnel Type */}
+              {step === 7 && (
                 <div className="space-y-4">
                   <Label>Select Funnel Type <span className="text-destructive">*</span></Label>
                   <div className="grid gap-3">
@@ -1871,8 +2196,8 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                 </div>
               )}
 
-              {/* Step 7: Platform Selection */}
-              {step === 7 && (
+              {/* Step 8: Platform Selection */}
+              {step === 8 && (
                 <div className="space-y-6">
                   <div>
                     <Label>Select Your Platforms</Label>
@@ -1956,12 +2281,12 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
           <div className="flex justify-between gap-3 pt-4 border-t flex-shrink-0">
             <Button 
               variant="outline" 
-              onClick={() => step === 1 ? handleCloseDialog() : setStep((step - 1) as 1 | 2 | 3 | 4 | 5 | 6)}
+              onClick={() => step === 1 ? handleCloseDialog() : setStep((step - 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7)}
             >
               {step === 1 ? "Cancel" : "Back"}
             </Button>
             <div className="flex gap-2">
-              {canSavePartial && step < 7 && (
+              {canSavePartial && step < 8 && (
                 <Button 
                   variant="outline"
                   onClick={() => handleSaveOffer(true)}
@@ -1971,17 +2296,17 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                   Save & Exit
                 </Button>
               )}
-              {(step === 3 || step === 4) && (
+              {(step === 3 || step === 4 || step === 5) && (
                 <Button 
                   variant="outline"
-                  onClick={() => setStep((step + 1) as 4 | 5)}
+                  onClick={() => setStep((step + 1) as 4 | 5 | 6)}
                 >
                   Skip
                 </Button>
               )}
-              {step < 7 ? (
+              {step < 8 ? (
                 <Button 
-                  onClick={() => setStep((step + 1) as 2 | 3 | 4 | 5 | 6 | 7)}
+                  onClick={() => setStep((step + 1) as 2 | 3 | 4 | 5 | 6 | 7 | 8)}
                   disabled={
                     step === 1 ? !canProceedToStep2 : 
                     step === 2 ? !canProceedToStep3 :
@@ -1989,6 +2314,7 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
                     step === 4 ? !canProceedToStep5 :
                     step === 5 ? !canProceedToStep6 :
                     step === 6 ? !canProceedToStep7 :
+                    step === 7 ? !canProceedToStep8 :
                     false
                   }
                 >

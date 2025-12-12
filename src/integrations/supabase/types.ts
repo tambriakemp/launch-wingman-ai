@@ -237,6 +237,7 @@ export type Database = {
           project_id: string
           target_audience: string | null
           title: string | null
+          transformation_statement: string | null
           updated_at: string
           user_id: string
         }
@@ -259,6 +260,7 @@ export type Database = {
           project_id: string
           target_audience?: string | null
           title?: string | null
+          transformation_statement?: string | null
           updated_at?: string
           user_id: string
         }
@@ -281,6 +283,7 @@ export type Database = {
           project_id?: string
           target_audience?: string | null
           title?: string | null
+          transformation_statement?: string | null
           updated_at?: string
           user_id?: string
         }
