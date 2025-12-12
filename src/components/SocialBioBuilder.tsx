@@ -1,15 +1,7 @@
 import { useState } from "react";
-import { Plus, Users, MoreHorizontal, Pencil, Trash2, Instagram, Facebook, Twitter, Linkedin, AtSign, Loader2 } from "lucide-react";
+import { Plus, Users, MoreHorizontal, Pencil, Trash2, Instagram, Facebook, Twitter, Linkedin, AtSign, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -203,7 +195,7 @@ type Step = "platform" | "formula" | "content";
 export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isAddMode, setIsAddMode] = useState(false);
   const [step, setStep] = useState<Step>("platform");
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [selectedFormula, setSelectedFormula] = useState<string | null>(null);
@@ -249,6 +241,7 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["social-bios", projectId] });
       toast.success("Bio created");
+      resetForm();
     },
     onError: () => toast.error("Failed to save bio"),
   });
@@ -270,6 +263,7 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["social-bios", projectId] });
       toast.success("Bio updated");
+      resetForm();
     },
     onError: () => toast.error("Failed to update bio"),
   });
@@ -287,13 +281,22 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
     onError: () => toast.error("Failed to delete bio"),
   });
 
+  const resetForm = () => {
+    setIsAddMode(false);
+    setStep("platform");
+    setSelectedPlatform(null);
+    setSelectedFormula(null);
+    setFieldData({});
+    setEditingBio(null);
+  };
+
   const handleAdd = () => {
     setEditingBio(null);
     setStep("platform");
     setSelectedPlatform(null);
     setSelectedFormula(null);
     setFieldData({});
-    setDialogOpen(true);
+    setIsAddMode(true);
   };
 
   const handleEdit = (bio: SocialBio) => {
@@ -302,7 +305,7 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
     setSelectedFormula(bio.formula);
     setFieldData({ finalContent: bio.content });
     setStep("content");
-    setDialogOpen(true);
+    setIsAddMode(true);
   };
 
   const handleDelete = (bio: SocialBio) => {
@@ -359,17 +362,6 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
         fieldData,
       });
     }
-
-    setDialogOpen(false);
-    resetDialog();
-  };
-
-  const resetDialog = () => {
-    setStep("platform");
-    setSelectedPlatform(null);
-    setSelectedFormula(null);
-    setFieldData({});
-    setEditingBio(null);
   };
 
   const handleBack = () => {
@@ -389,6 +381,170 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
     const Icon = p.icon;
     return <Icon className="w-4 h-4" />;
   };
+
+  // Show inline form when adding/editing
+  if (isAddMode) {
+    return (
+      <Card className="border bg-card">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Users className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-base">
+                  {step === "platform" && "Select Platform"}
+                  {step === "formula" && "Choose Bio Formula"}
+                  {step === "content" && "Build Your Bio"}
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  {step === "platform" && "Choose the platform you're creating a bio for"}
+                  {step === "formula" && "Select a formula to structure your bio"}
+                  {step === "content" && `Fill in the details for your ${platform?.name} bio`}
+                </CardDescription>
+              </div>
+            </div>
+            <Button size="icon" variant="ghost" onClick={resetForm}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {step === "platform" && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {platforms.map((p) => {
+                const Icon = p.icon;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => handlePlatformSelect(p.id)}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all",
+                      "hover:border-primary hover:bg-primary/5",
+                      selectedPlatform === p.id
+                        ? "border-primary bg-primary/10"
+                        : "border-border"
+                    )}
+                  >
+                    <Icon className="w-6 h-6 text-primary" />
+                    <span className="text-sm font-medium">{p.name}</span>
+                    <span className="text-xs text-muted-foreground">{p.maxChars} chars max</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {step === "formula" && (
+            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+              {bioFormulas.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => handleFormulaSelect(f.id)}
+                  className={cn(
+                    "w-full text-left p-4 rounded-lg border-2 transition-all",
+                    "hover:border-primary hover:bg-primary/5",
+                    selectedFormula === f.id
+                      ? "border-primary bg-primary/10"
+                      : "border-border"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <h4 className="font-medium text-sm">{f.name}</h4>
+                    <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded">
+                      {f.bestFor}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-mono mb-2">{f.formula}</p>
+                  <p className="text-xs text-muted-foreground italic">"{f.example}"</p>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {step === "content" && formula && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg bg-muted/50 border">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Formula:</p>
+                <p className="text-sm font-mono">{formula.formula}</p>
+              </div>
+
+              {editingBio ? (
+                <div className="space-y-2">
+                  <Label htmlFor="finalContent">Bio Content</Label>
+                  <Textarea
+                    id="finalContent"
+                    value={fieldData.finalContent || ""}
+                    onChange={(e) => setFieldData({ finalContent: e.target.value })}
+                    rows={4}
+                    placeholder="Your bio content..."
+                  />
+                </div>
+              ) : (
+                formula.fields.map((field) => (
+                  <div key={field.key} className="space-y-2">
+                    <Label htmlFor={field.key}>{field.label}</Label>
+                    <Input
+                      id={field.key}
+                      value={fieldData[field.key] || ""}
+                      onChange={(e) =>
+                        setFieldData((prev) => ({ ...prev, [field.key]: e.target.value }))
+                      }
+                      placeholder={field.placeholder}
+                    />
+                  </div>
+                ))
+              )}
+
+              {generatedContent && (
+                <div className="space-y-2">
+                  <Label>Preview</Label>
+                  <div
+                    className={cn(
+                      "p-4 rounded-lg border whitespace-pre-line text-sm",
+                      isOverLimit ? "border-destructive bg-destructive/10" : "bg-muted/50"
+                    )}
+                  >
+                    {generatedContent}
+                  </div>
+                  <p
+                    className={cn(
+                      "text-xs",
+                      isOverLimit ? "text-destructive" : "text-muted-foreground"
+                    )}
+                  >
+                    {charCount}/{maxChars} characters
+                    {isOverLimit && " - Over limit!"}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-between gap-3 pt-4 border-t">
+            <div>
+              {step !== "platform" && (
+                <Button variant="outline" onClick={handleBack}>
+                  Back
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={resetForm}>
+                Cancel
+              </Button>
+              {step === "content" && (
+                <Button onClick={handleSave} disabled={isOverLimit}>
+                  {editingBio ? "Save Changes" : "Create Bio"}
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border bg-card">
@@ -477,156 +633,6 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
           </div>
         )}
       </CardContent>
-
-      <Dialog open={dialogOpen} onOpenChange={(open) => {
-        setDialogOpen(open);
-        if (!open) resetDialog();
-      }}>
-        <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
-              {step === "platform" && "Select Platform"}
-              {step === "formula" && "Choose Bio Formula"}
-              {step === "content" && "Build Your Bio"}
-            </DialogTitle>
-            <DialogDescription>
-              {step === "platform" && "Choose the platform you're creating a bio for"}
-              {step === "formula" && "Select a formula to structure your bio"}
-              {step === "content" && `Fill in the details for your ${platform?.name} bio`}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="py-4">
-            {step === "platform" && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {platforms.map((p) => {
-                  const Icon = p.icon;
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => handlePlatformSelect(p.id)}
-                      className={cn(
-                        "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all",
-                        "hover:border-primary hover:bg-primary/5",
-                        selectedPlatform === p.id
-                          ? "border-primary bg-primary/10"
-                          : "border-border"
-                      )}
-                    >
-                      <Icon className="w-6 h-6 text-primary" />
-                      <span className="text-sm font-medium">{p.name}</span>
-                      <span className="text-xs text-muted-foreground">{p.maxChars} chars max</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {step === "formula" && (
-              <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
-                {bioFormulas.map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => handleFormulaSelect(f.id)}
-                    className={cn(
-                      "w-full text-left p-4 rounded-lg border-2 transition-all",
-                      "hover:border-primary hover:bg-primary/5",
-                      selectedFormula === f.id
-                        ? "border-primary bg-primary/10"
-                        : "border-border"
-                    )}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <h4 className="font-medium text-sm">{f.name}</h4>
-                      <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded">
-                        {f.bestFor}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground font-mono mb-2">{f.formula}</p>
-                    <p className="text-xs text-muted-foreground italic">"{f.example}"</p>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {step === "content" && formula && (
-              <div className="space-y-4">
-                <div className="p-3 rounded-lg bg-muted/50 border">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Formula:</p>
-                  <p className="text-sm font-mono">{formula.formula}</p>
-                </div>
-
-                {editingBio ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="finalContent">Bio Content</Label>
-                    <Textarea
-                      id="finalContent"
-                      value={fieldData.finalContent || ""}
-                      onChange={(e) => setFieldData({ finalContent: e.target.value })}
-                      rows={4}
-                      placeholder="Your bio content..."
-                    />
-                  </div>
-                ) : (
-                  formula.fields.map((field) => (
-                    <div key={field.key} className="space-y-2">
-                      <Label htmlFor={field.key}>{field.label}</Label>
-                      <Input
-                        id={field.key}
-                        value={fieldData[field.key] || ""}
-                        onChange={(e) =>
-                          setFieldData((prev) => ({ ...prev, [field.key]: e.target.value }))
-                        }
-                        placeholder={field.placeholder}
-                      />
-                    </div>
-                  ))
-                )}
-
-                {generatedContent && (
-                  <div className="space-y-2">
-                    <Label>Preview</Label>
-                    <div
-                      className={cn(
-                        "p-4 rounded-lg border whitespace-pre-line text-sm",
-                        isOverLimit ? "border-destructive bg-destructive/10" : "bg-muted/50"
-                      )}
-                    >
-                      {generatedContent}
-                    </div>
-                    <p
-                      className={cn(
-                        "text-xs",
-                        isOverLimit ? "text-destructive" : "text-muted-foreground"
-                      )}
-                    >
-                      {charCount}/{maxChars} characters
-                      {isOverLimit && " - Over limit!"}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            {step !== "platform" && (
-              <Button variant="outline" onClick={handleBack} className="sm:mr-auto">
-                Back
-              </Button>
-            )}
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
-            </Button>
-            {step === "content" && (
-              <Button onClick={handleSave} disabled={isOverLimit}>
-                {editingBio ? "Save Changes" : "Create Bio"}
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 };
