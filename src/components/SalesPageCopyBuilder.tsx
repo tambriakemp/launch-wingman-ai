@@ -612,8 +612,8 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     toast.success("FAQ added");
   };
 
-  // Generate AI copy for a section
-  const generateSectionCopy = async (sectionType: string) => {
+  // Generate AI copy for a section (with optional part for part-specific regeneration)
+  const generateSectionCopy = async (sectionType: string, part?: string) => {
     if (!offer) {
       toast.error("Please create an offer first to generate copy");
       return;
@@ -624,6 +624,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     try {
       const payload: Record<string, unknown> = {
         sectionType,
+        part, // Optional: specific part to regenerate
         audience: offer.target_audience,
         problem: offer.primary_pain_point || offer.problem_statement,
         desiredOutcome: offer.desired_outcome,
@@ -659,52 +660,62 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
       if (error) throw error;
 
-      // Update sections based on type
+      // Update sections based on type - merge with existing data for part-specific generation
       if (sectionType === "hero") {
-        setSections(prev => ({
-          ...prev,
-          hero: {
-            headlines: data.headlines,
-            recommendedHeadline: data.recommendedHeadline,
-            selectedHeadline: data.recommendedHeadline,
-            subheadline: data.subheadlines?.[0] || data.subheadline,
-            subheadlines: data.subheadlines || [data.subheadline],
-            selectedSubheadline: 0,
-            cta: data.ctas?.[0] || data.cta,
-            ctas: data.ctas || [data.cta],
-            selectedCta: 0,
-          },
-        }));
+        setSections(prev => {
+          const existingHero = prev.hero;
+          return {
+            ...prev,
+            hero: {
+              // Keep existing data, override only what was regenerated
+              headlines: data.headlines || existingHero?.headlines || [],
+              recommendedHeadline: data.recommendedHeadline ?? existingHero?.recommendedHeadline ?? 0,
+              selectedHeadline: data.recommendedHeadline ?? existingHero?.selectedHeadline ?? 0,
+              subheadline: data.subheadlines?.[0] || existingHero?.subheadline || "",
+              subheadlines: data.subheadlines || existingHero?.subheadlines,
+              selectedSubheadline: data.subheadlines ? 0 : existingHero?.selectedSubheadline ?? 0,
+              cta: data.ctas?.[0] || existingHero?.cta || "",
+              ctas: data.ctas || existingHero?.ctas,
+              selectedCta: data.ctas ? 0 : existingHero?.selectedCta ?? 0,
+            },
+          };
+        });
       } else if (sectionType === "whyDifferent") {
-        setSections(prev => ({
-          ...prev,
-          whyDifferent: {
-            openingParagraph: data.openingParagraphs?.[0] || data.openingParagraph,
-            openingParagraphs: data.openingParagraphs || [data.openingParagraph],
-            selectedOpeningParagraph: 0,
-            comparisonBullets: data.comparisonBullets,
-            bridgeSentence: data.bridgeSentences?.[0] || data.bridgeSentence,
-            bridgeSentences: data.bridgeSentences || [data.bridgeSentence],
-            selectedBridgeSentence: 0,
-          },
-        }));
+        setSections(prev => {
+          const existingWhy = prev.whyDifferent;
+          return {
+            ...prev,
+            whyDifferent: {
+              openingParagraph: data.openingParagraphs?.[0] || existingWhy?.openingParagraph || "",
+              openingParagraphs: data.openingParagraphs || existingWhy?.openingParagraphs,
+              selectedOpeningParagraph: data.openingParagraphs ? 0 : existingWhy?.selectedOpeningParagraph ?? 0,
+              comparisonBullets: data.comparisonBullets || existingWhy?.comparisonBullets || [],
+              bridgeSentence: data.bridgeSentences?.[0] || existingWhy?.bridgeSentence || "",
+              bridgeSentences: data.bridgeSentences || existingWhy?.bridgeSentences,
+              selectedBridgeSentence: data.bridgeSentences ? 0 : existingWhy?.selectedBridgeSentence ?? 0,
+            },
+          };
+        });
       } else if (sectionType === "benefits") {
         // Store generated benefits separately for selection
         setGeneratedBenefits(data.benefits);
       } else if (sectionType === "offerDetails") {
-        setSections(prev => ({
-          ...prev,
-          offerDetails: {
-            introduction: data.introductions?.[0] || data.introduction,
-            introductions: data.introductions || [data.introduction],
-            selectedIntroduction: 0,
-            modules: data.modules,
-            bonuses: data.bonuses,
-            guarantee: data.guarantees?.[0] || data.guarantee,
-            guarantees: data.guarantees || [data.guarantee],
-            selectedGuarantee: 0,
-          },
-        }));
+        setSections(prev => {
+          const existingOffer = prev.offerDetails;
+          return {
+            ...prev,
+            offerDetails: {
+              introduction: data.introductions?.[0] || existingOffer?.introduction || "",
+              introductions: data.introductions || existingOffer?.introductions,
+              selectedIntroduction: data.introductions ? 0 : existingOffer?.selectedIntroduction ?? 0,
+              modules: data.modules || existingOffer?.modules || [],
+              bonuses: data.bonuses || existingOffer?.bonuses || [],
+              guarantee: data.guarantees?.[0] || existingOffer?.guarantee || "",
+              guarantees: data.guarantees || existingOffer?.guarantees,
+              selectedGuarantee: data.guarantees ? 0 : existingOffer?.selectedGuarantee ?? 0,
+            },
+          };
+        });
       } else if (sectionType === "testimonials") {
         setSections(prev => ({
           ...prev,
@@ -2485,6 +2496,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           onOpenChange={setShowPreview}
           offerName={offer?.title || "Untitled Offer"}
           sections={sections}
+          sectionModes={sectionModes}
         />
       </Card>
     );
@@ -2577,6 +2589,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           onOpenChange={setShowPreview}
           offerName={offer?.title || "Untitled Offer"}
           sections={sections}
+          sectionModes={sectionModes}
         />
 
         {/* Add Custom Section Dialog */}

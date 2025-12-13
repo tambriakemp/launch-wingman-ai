@@ -12,7 +12,8 @@ serve(async (req) => {
 
   try {
     const { 
-      sectionType, 
+      sectionType,
+      part, // Optional: specific part to generate (e.g., "headlines", "subheadline", "cta")
       audience, 
       problem, 
       desiredOutcome, 
@@ -41,7 +42,42 @@ serve(async (req) => {
     let userPrompt = "";
 
     if (sectionType === "hero") {
-      systemPrompt = `You are a direct-response conversion copywriter.
+      // Part-specific generation for hero section
+      if (part === "headlines") {
+        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY headlines.
+
+Create 5 headline options using these bold promise patterns:
+1) Do (desired outcome) without (main obstacle)
+2) Stop (pain), start (desired outcome)
+3) The fastest way to (desired outcome) for (audience)
+4) Finally, (achieve result) without (common frustration)
+5) What if you could (desired outcome) in (timeframe)?
+
+Tone: clear, confident, modern (not hypey)
+
+Return ONLY valid JSON: { "headlines": ["h1", "h2", "h3", "h4", "h5"], "recommendedHeadline": 0 }`;
+        userPrompt = `Create headlines for: Audience: ${audience}, Problem: ${problem}, Outcome: ${desiredOutcome}, Offer: ${offerName}`;
+      } else if (part === "subheadline") {
+        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY subheadlines.
+
+Create 4 subheadline options (1-2 sentences each that expand on the headline promise).
+
+Tone: clear, confident, modern
+
+Return ONLY valid JSON: { "subheadlines": ["sub1", "sub2", "sub3", "sub4"] }`;
+        userPrompt = `Create subheadlines for: Audience: ${audience}, Problem: ${problem}, Outcome: ${desiredOutcome}, Offer: ${offerName}`;
+      } else if (part === "cta") {
+        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY CTA button text options.
+
+Create 4 CTA button text options (action-oriented, 2-5 words each).
+
+Tone: clear, confident, action-oriented
+
+Return ONLY valid JSON: { "ctas": ["cta1", "cta2", "cta3", "cta4"] }`;
+        userPrompt = `Create CTA button text for: Audience: ${audience}, Offer: ${offerName}, Outcome: ${desiredOutcome}`;
+      } else {
+        // Generate all parts (default behavior)
+        systemPrompt = `You are a direct-response conversion copywriter.
 
 Write the HERO section for a sales page.
 
@@ -66,7 +102,7 @@ Return ONLY valid JSON in this exact format:
   "ctas": ["cta1", "cta2", "cta3", "cta4"]
 }`;
 
-      userPrompt = `Create HERO section copy for:
+        userPrompt = `Create HERO section copy for:
 - Target Audience: ${audience || "Not specified"}
 - Core Problem: ${problem || "Not specified"}
 - Desired Outcome: ${desiredOutcome || "Not specified"}
@@ -75,6 +111,7 @@ Return ONLY valid JSON in this exact format:
 - Main Deliverables: ${deliverables?.join(", ") || "Not specified"}
 
 Generate compelling, specific copy that speaks directly to the audience's pain and desired transformation.`;
+      }
 
     } else if (sectionType === "whyDifferent") {
       let contextSection = "";
@@ -90,7 +127,35 @@ Why those fail: ${whyFails || "Not personalized to their specific situation"}
 Our unique approach: ${uniqueApproach || "Tailored, step-by-step guidance"}`;
       }
 
-      systemPrompt = `You are a direct-response conversion copywriter.
+      // Part-specific generation for whyDifferent section
+      if (part === "openingParagraph") {
+        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY opening paragraphs.
+
+Create 4 opening paragraph options, each starting with "You're tired of…" (2-3 sentences, empathetic, specific).
+
+Tone: understanding, confident, not condescending
+
+Return ONLY valid JSON: { "openingParagraphs": ["p1", "p2", "p3", "p4"] }`;
+        userPrompt = `Create opening paragraphs for: Audience: ${audience}, Problem: ${problem}. ${contextSection}`;
+      } else if (part === "comparisonBullets") {
+        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY comparison bullets.
+
+Create 3-5 comparison bullets using this pattern:
+"You thought about (solution A) BUT (why it didn't work)"
+"You also considered (solution B) BUT (limitation)"
+
+Return ONLY valid JSON: { "comparisonBullets": ["bullet1", "bullet2", "bullet3", "bullet4"] }`;
+        userPrompt = `Create comparison bullets for: Audience: ${audience}, Problem: ${problem}. ${contextSection}`;
+      } else if (part === "bridgeSentence") {
+        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY bridge sentences.
+
+Create 4 bridge sentence options that transition to the solution (builds anticipation).
+
+Return ONLY valid JSON: { "bridgeSentences": ["bridge1", "bridge2", "bridge3", "bridge4"] }`;
+        userPrompt = `Create bridge sentences for: Audience: ${audience}, Offer: ${offerName}. ${contextSection}`;
+      } else {
+        // Generate all parts (default behavior)
+        systemPrompt = `You are a direct-response conversion copywriter.
 
 Write the "Why this is different" section for a sales page.
 
@@ -110,7 +175,7 @@ Return ONLY valid JSON in this exact format:
   "bridgeSentences": ["bridge1", "bridge2", "bridge3", "bridge4"]
 }`;
 
-      userPrompt = `Create "Why This Is Different" section for:
+        userPrompt = `Create "Why This Is Different" section for:
 - Target Audience: ${audience || "Not specified"}
 - Core Problem: ${problem || "Not specified"}  
 - Desired Outcome: ${desiredOutcome || "Not specified"}
@@ -119,6 +184,7 @@ Return ONLY valid JSON in this exact format:
 ${contextSection}
 
 Write copy that validates their frustration and positions this offer as the solution they've been looking for.`;
+      }
 
     } else if (sectionType === "benefits") {
       const benefitCount = count || 4;
@@ -155,7 +221,45 @@ Return ONLY valid JSON in this exact format:
 Generate ${benefitCount} specific, outcome-focused benefits that resonate with the target audience's desires.`;
 
     } else if (sectionType === "offerDetails") {
-      systemPrompt = `You are a direct-response conversion copywriter.
+      // Part-specific generation for offerDetails section
+      if (part === "introduction") {
+        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY introduction paragraphs.
+
+Create 4 introduction paragraph options (2-3 sentences each about what they get access to).
+
+Tone: clear, value-stacking, confident
+
+Return ONLY valid JSON: { "introductions": ["intro1", "intro2", "intro3", "intro4"] }`;
+        userPrompt = `Create introduction paragraphs for: Offer: ${offerName}, Audience: ${audience}, Deliverables: ${deliverables?.join(", ")}`;
+      } else if (part === "modules") {
+        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY modules.
+
+Create 4-6 modules/components with:
+- Module name (compelling, outcome-focused)
+- Module description (what's covered and what they'll achieve)
+
+Return ONLY valid JSON: { "modules": [{ "name": "Module Name", "description": "Description." }] }`;
+        userPrompt = `Create modules for: Offer: ${offerName}, Type: ${offerType}, Deliverables: ${deliverables?.join(", ")}, Outcome: ${desiredOutcome}`;
+      } else if (part === "bonuses") {
+        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY bonuses.
+
+Create 2-3 bonuses with:
+- Bonus name
+- Perceived value (make it realistic based on content)
+- Description of what's included
+
+Return ONLY valid JSON: { "bonuses": [{ "name": "Bonus Name", "value": "$97", "description": "What's included." }] }`;
+        userPrompt = `Create bonuses for: Offer: ${offerName}, Type: ${offerType}, Price: ${price ? `$${price}` : "mid-range"}`;
+      } else if (part === "guarantee") {
+        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY guarantee statements.
+
+Create 4 guarantee statement options (risk-reversal, confident).
+
+Return ONLY valid JSON: { "guarantees": ["guarantee1", "guarantee2", "guarantee3", "guarantee4"] }`;
+        userPrompt = `Create guarantee statements for: Offer: ${offerName}, Price: ${price ? `$${price}` : "Not specified"}`;
+      } else {
+        // Generate all parts (default behavior)
+        systemPrompt = `You are a direct-response conversion copywriter.
 
 Write the "What's Included" / Offer Details section for a sales page.
 
@@ -184,7 +288,7 @@ Return ONLY valid JSON in this exact format:
   "guarantees": ["guarantee1", "guarantee2", "guarantee3", "guarantee4"]
 }`;
 
-      userPrompt = `Create "What's Included" section for:
+        userPrompt = `Create "What's Included" section for:
 - Target Audience: ${audience || "Not specified"}
 - Core Problem: ${problem || "Not specified"}
 - Desired Outcome: ${desiredOutcome || "Not specified"}
@@ -195,6 +299,7 @@ Return ONLY valid JSON in this exact format:
 - Price Type: ${priceType || "One-time"}
 
 Create compelling offer details that stack value and reduce perceived risk.`;
+      }
 
     } else if (sectionType === "testimonials") {
       systemPrompt = `You are a direct-response conversion copywriter.
