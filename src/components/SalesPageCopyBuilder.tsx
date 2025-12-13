@@ -759,6 +759,25 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
   // Get section preview text
   const getSectionPreview = (sectionId: string): string => {
+    const mode = sectionModes[sectionId] || "ai";
+    
+    // Check manual content first if in manual mode
+    if (mode === "manual") {
+      if (sectionId === "hero" && sections.heroManual) {
+        const manual = sections.heroManual as { headlines?: string; subheadline?: string; cta?: string };
+        return manual.headlines?.slice(0, 50) || manual.subheadline?.slice(0, 50) || "";
+      }
+      if (sectionId === "whyDifferent" && sections.whyDifferentManual) {
+        const manual = sections.whyDifferentManual as { openingParagraph?: string; comparisonBullets?: string; bridgeSentence?: string };
+        return manual.openingParagraph?.slice(0, 50) || "";
+      }
+      if (sectionId === "offerDetails" && sections.offerDetailsManual) {
+        const manual = sections.offerDetailsManual as { introduction?: string; modules?: string; bonuses?: string; guarantee?: string };
+        return manual.introduction?.slice(0, 50) || "";
+      }
+    }
+    
+    // AI content
     if (sectionId === "hero" && sections.hero?.headlines) {
       return sections.hero.headlines[sections.hero.selectedHeadline] || "";
     }
