@@ -14,6 +14,129 @@ export type Database = {
   }
   public: {
     Tables: {
+      brand_colors: {
+        Row: {
+          created_at: string
+          hex_color: string
+          id: string
+          name: string | null
+          position: number
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          hex_color: string
+          id?: string
+          name?: string | null
+          position?: number
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          hex_color?: string
+          id?: string
+          name?: string | null
+          position?: number
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      brand_fonts: {
+        Row: {
+          created_at: string
+          custom_font_path: string | null
+          font_category: string
+          font_family: string
+          font_source: string
+          id: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_font_path?: string | null
+          font_category: string
+          font_family: string
+          font_source?: string
+          id?: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_font_path?: string | null
+          font_category?: string
+          font_family?: string
+          font_source?: string
+          id?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      brand_logos: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      brand_photos: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       content_planner: {
         Row: {
           content: string | null
