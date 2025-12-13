@@ -20,6 +20,7 @@ interface HeroSectionData {
 interface WhyDifferentData {
   openingParagraph: string;
   comparisonBullets: string[];
+  savedComparisonBullets?: string[];
   bridgeSentence: string;
 }
 
@@ -203,14 +204,13 @@ export const SalesPagePreview = ({ open, onOpenChange, offerName, sections, sect
                     <p className="text-muted-foreground italic">
                       {sections.whyDifferent.openingParagraph}
                     </p>
-                    <ul className="space-y-3">
-                      {sections.whyDifferent.comparisonBullets?.map((bullet, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-muted-foreground">
-                          <span className="text-primary font-bold mt-0.5">•</span>
-                          <span>{bullet}</span>
-                        </li>
+                    <div className="space-y-3">
+                      {(sections.whyDifferent.savedComparisonBullets || sections.whyDifferent.comparisonBullets)?.map((bullet, idx) => (
+                        <p key={idx} className="text-muted-foreground">
+                          {bullet}
+                        </p>
                       ))}
-                    </ul>
+                    </div>
                     <p className="text-foreground font-medium pt-2">
                       {sections.whyDifferent.bridgeSentence}
                     </p>

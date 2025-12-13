@@ -69,6 +69,8 @@ interface WhyDifferentData {
   openingParagraphs?: string[];
   selectedOpeningParagraph?: number;
   comparisonBullets: string[];
+  generatedComparisonBullets?: string[];
+  savedComparisonBullets?: string[];
   bridgeSentence: string;
   bridgeSentences?: string[];
   selectedBridgeSentence?: number;
@@ -207,6 +209,12 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   const [newFaqQuestion, setNewFaqQuestion] = useState("");
   const [newFaqAnswer, setNewFaqAnswer] = useState("");
   
+  // Comparison bullets specific state (like benefits)
+  const [generatedComparisonBullets, setGeneratedComparisonBullets] = useState<string[]>([]);
+  const [savedComparisonBullets, setSavedComparisonBullets] = useState<string[]>([]);
+  const [showAddBulletForm, setShowAddBulletForm] = useState(false);
+  const [newBulletText, setNewBulletText] = useState("");
+  
   // Context inputs for "Why Different" section
   const [contextMode, setContextMode] = useState<"infer" | "provide">("infer");
   const [attemptedSolutions, setAttemptedSolutions] = useState("");
@@ -326,6 +334,8 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     setGeneratedFaqs([]);
     setSavedFaqs([]);
     setFaqsCount(5);
+    setGeneratedComparisonBullets([]);
+    setSavedComparisonBullets([]);
   };
 
   const handleAdd = () => {
@@ -338,6 +348,8 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     setSavedBenefits([]);
     setGeneratedFaqs([]);
     setSavedFaqs([]);
+    setGeneratedComparisonBullets([]);
+    setSavedComparisonBullets([]);
     setIsAddMode(true);
   };
 
@@ -357,6 +369,12 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       setSavedFaqs(item.sections.faqs.savedFaqs);
     } else if (item.sections.faqs?.faqs) {
       setSavedFaqs(item.sections.faqs.faqs);
+    }
+    // Restore saved comparison bullets from sections
+    if (item.sections.whyDifferent?.savedComparisonBullets) {
+      setSavedComparisonBullets(item.sections.whyDifferent.savedComparisonBullets);
+    } else if (item.sections.whyDifferent?.comparisonBullets) {
+      setSavedComparisonBullets(item.sections.whyDifferent.comparisonBullets);
     }
     setIsAddMode(true);
   };
@@ -417,6 +435,19 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           ...updatedSections.faqs,
           faqs: savedFaqs,
           savedFaqs: savedFaqs,
+        }
+      };
+      setSections(updatedSections);
+    }
+    
+    // Include saved comparison bullets in sections for whyDifferent section
+    if (sectionId === "whyDifferent" && savedComparisonBullets.length > 0) {
+      updatedSections = {
+        ...updatedSections,
+        whyDifferent: {
+          ...updatedSections.whyDifferent!,
+          comparisonBullets: savedComparisonBullets,
+          savedComparisonBullets: savedComparisonBullets,
         }
       };
       setSections(updatedSections);
@@ -612,6 +643,58 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     toast.success("FAQ added");
   };
 
+  // Save a comparison bullet from generated list
+  const saveComparisonBullet = (bullet: string) => {
+    if (!savedComparisonBullets.includes(bullet)) {
+      const newSavedBullets = [...savedComparisonBullets, bullet];
+      setSavedComparisonBullets(newSavedBullets);
+      setSections(prev => ({
+        ...prev,
+        whyDifferent: {
+          ...prev.whyDifferent!,
+          comparisonBullets: newSavedBullets,
+          savedComparisonBullets: newSavedBullets,
+        }
+      }));
+      toast.success("Bullet saved");
+    }
+  };
+
+  // Remove a saved comparison bullet
+  const removeSavedComparisonBullet = (index: number) => {
+    const newSavedBullets = savedComparisonBullets.filter((_, i) => i !== index);
+    setSavedComparisonBullets(newSavedBullets);
+    setSections(prev => ({
+      ...prev,
+      whyDifferent: {
+        ...prev.whyDifferent!,
+        comparisonBullets: newSavedBullets,
+        savedComparisonBullets: newSavedBullets,
+      }
+    }));
+  };
+
+  // Add a manual comparison bullet
+  const addManualComparisonBullet = () => {
+    if (!newBulletText.trim()) {
+      toast.error("Please enter bullet text");
+      return;
+    }
+    const newSavedBullets = [...savedComparisonBullets, newBulletText.trim()];
+    setSavedComparisonBullets(newSavedBullets);
+    setSections(prev => ({
+      ...prev,
+      whyDifferent: {
+        ...prev.whyDifferent!,
+        comparisonBullets: newSavedBullets,
+        savedComparisonBullets: newSavedBullets,
+      }
+    }));
+    setNewBulletText("");
+    setShowAddBulletForm(false);
+    toast.success("Bullet added");
+  };
+
   // Generate AI copy for a section (with optional part for part-specific regeneration)
   const generateSectionCopy = async (sectionType: string, part?: string) => {
     if (!offer) {
@@ -681,6 +764,10 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           };
         });
       } else if (sectionType === "whyDifferent") {
+        // Handle comparison bullets like benefits - store in separate state for selection
+        if (data.comparisonBullets) {
+          setGeneratedComparisonBullets(data.comparisonBullets);
+        }
         setSections(prev => {
           const existingWhy = prev.whyDifferent;
           return {
@@ -689,7 +776,9 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
               openingParagraph: data.openingParagraphs?.[0] || existingWhy?.openingParagraph || "",
               openingParagraphs: data.openingParagraphs || existingWhy?.openingParagraphs,
               selectedOpeningParagraph: data.openingParagraphs ? 0 : existingWhy?.selectedOpeningParagraph ?? 0,
-              comparisonBullets: data.comparisonBullets || existingWhy?.comparisonBullets || [],
+              comparisonBullets: existingWhy?.comparisonBullets || savedComparisonBullets || [],
+              savedComparisonBullets: existingWhy?.savedComparisonBullets || savedComparisonBullets || [],
+              generatedComparisonBullets: data.comparisonBullets || existingWhy?.generatedComparisonBullets || [],
               bridgeSentence: data.bridgeSentences?.[0] || existingWhy?.bridgeSentence || "",
               bridgeSentences: data.bridgeSentences || existingWhy?.bridgeSentences,
               selectedBridgeSentence: data.bridgeSentences ? 0 : existingWhy?.selectedBridgeSentence ?? 0,
@@ -792,8 +881,14 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     if (sectionId === "hero" && sections.hero?.headlines) {
       return sections.hero.headlines[sections.hero.selectedHeadline] || "";
     }
-    if (sectionId === "whyDifferent" && sections.whyDifferent) {
-      return sections.whyDifferent.openingParagraph || "";
+    if (sectionId === "whyDifferent") {
+      const bulletCount = savedComparisonBullets.length || sections.whyDifferent?.comparisonBullets?.length || 0;
+      const hasBullets = bulletCount > 0;
+      const hasOpening = !!sections.whyDifferent?.openingParagraph;
+      if (hasBullets && hasOpening) {
+        return `${bulletCount} bullets`;
+      }
+      return sections.whyDifferent?.openingParagraph?.slice(0, 50) || (bulletCount > 0 ? `${bulletCount} bullets` : "");
     }
     if (sectionId === "benefits") {
       const count = savedBenefits.length || sections.benefits?.benefits?.length || 0;
@@ -1526,7 +1621,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
     const parts = [
       { id: "openingParagraph", label: "Opening Paragraph", hasContent: !!whyDifferentData?.openingParagraphs?.length },
-      { id: "comparisonBullets", label: "Comparison Bullets", hasContent: !!(whyDifferentData?.comparisonBullets?.length) },
+      { id: "comparisonBullets", label: "Comparison Bullets", hasContent: savedComparisonBullets.length > 0 },
       { id: "bridgeSentence", label: "Bridge Sentence", hasContent: !!whyDifferentData?.bridgeSentences?.length },
     ];
 
@@ -1551,6 +1646,72 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             </button>
           ))}
         </div>
+
+        {/* Show saved bullets when comparisonBullets part is selected */}
+        {selectedWhyDifferentPart === "comparisonBullets" && (
+          <div className="space-y-4 pt-4 border-t">
+            {/* Saved Bullets */}
+            {savedComparisonBullets.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Saved Bullets ({savedComparisonBullets.length})
+                </p>
+                <div className="space-y-2">
+                  {savedComparisonBullets.map((bullet, idx) => (
+                    <div key={idx} className="p-3 border rounded-lg bg-card relative">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeSavedComparisonBullet(idx)}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                      <div className="flex items-start gap-2 pr-8">
+                        <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                        <p className="text-sm">{bullet}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Add Bullet Form */}
+            {showAddBulletForm ? (
+              <div className="p-4 border rounded-lg space-y-3 bg-muted/30">
+                <div className="space-y-2">
+                  <Label className="text-xs">Comparison Bullet</Label>
+                  <Textarea
+                    value={newBulletText}
+                    onChange={(e) => setNewBulletText(e.target.value)}
+                    placeholder="You thought about X BUT Y..."
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={addManualComparisonBullet}>
+                    <Check className="w-3.5 h-3.5 mr-1" />
+                    Add Bullet
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setShowAddBulletForm(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddBulletForm(true)}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Custom Bullet
+              </Button>
+            )}
+          </div>
+        )}
 
         {!whyDifferentData && (
           <>
@@ -2209,18 +2370,44 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     }
 
     if (selectedWhyDifferentPart === "comparisonBullets") {
-      // Read-only display of comparison bullets
+      // Show generated comparison bullets with "Save as Bullet" buttons (like benefits)
+      if (generatedComparisonBullets.length === 0) {
+        return (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p className="text-sm">Click "Generate" to see AI-generated comparison bullets</p>
+          </div>
+        );
+      }
+
       return (
         <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">Generated comparison bullets:</p>
-          {whyDifferentData.comparisonBullets?.map((bullet, idx) => (
-            <div key={idx} className="p-4 border rounded-lg bg-card">
-              <div className="flex items-start gap-2">
-                <span className="text-muted-foreground shrink-0">•</span>
-                <p className="text-sm">{bullet}</p>
+          <p className="text-xs text-muted-foreground">Click "Save as Bullet" to add to your saved bullets</p>
+          {generatedComparisonBullets.map((bullet, idx) => {
+            const isSaved = savedComparisonBullets.includes(bullet);
+            return (
+              <div key={idx} className={`p-4 border rounded-lg ${isSaved ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800" : "bg-card"}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-sm flex-1">{bullet}</p>
+                  {isSaved ? (
+                    <div className="flex items-center gap-1 text-green-600 text-xs shrink-0">
+                      <Check className="w-3.5 h-3.5" />
+                      Saved
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => saveComparisonBullet(bullet)}
+                      className="shrink-0"
+                    >
+                      <Save className="w-3.5 h-3.5 mr-1" />
+                      Save as Bullet
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       );
     }

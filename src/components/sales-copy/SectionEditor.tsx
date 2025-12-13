@@ -444,7 +444,6 @@ export const WhyDifferentEditorContent = ({
             <Label className="text-sm font-medium">Comparison Bullets</Label>
             {whyDifferentData.comparisonBullets?.map((bullet: string, idx: number) => (
               <div key={idx} className="flex items-start gap-2">
-                <span className="text-muted-foreground mt-2">•</span>
                 <Textarea
                   value={bullet}
                   onChange={(e) => {
