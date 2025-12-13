@@ -149,6 +149,7 @@ interface SalesPageCopySections {
   faqsManual?: string;
   customSections?: CustomSection[];
   sectionOrder?: string[];
+  sectionModes?: Record<string, "ai" | "manual">;
 }
 
 interface SalesPageCopy {
@@ -426,6 +427,10 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     } else if (item.sections.offerDetails?.bonuses) {
       setSavedBonuses(item.sections.offerDetails.bonuses);
     }
+    // Restore section modes from sections
+    if (item.sections.sectionModes) {
+      setSectionModes(item.sections.sectionModes);
+    }
     setIsAddMode(true);
   };
 
@@ -450,15 +455,17 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       return;
     }
 
+    const sectionsWithModes = { ...sections, sectionModes };
+    
     if (editingItem) {
-      updateMutation.mutate({ id: editingItem.id, deliverableId: selectedDeliverable, sections });
+      updateMutation.mutate({ id: editingItem.id, deliverableId: selectedDeliverable, sections: sectionsWithModes });
     } else {
       const existing = items.find((i) => i.deliverableId === selectedDeliverable);
       if (existing) {
         toast.error("Sales page copy already exists for this deliverable. Edit the existing one instead.");
         return;
       }
-      createMutation.mutate({ deliverableId: selectedDeliverable, sections });
+      createMutation.mutate({ deliverableId: selectedDeliverable, sections: sectionsWithModes });
     }
   };
 
@@ -518,7 +525,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       setSections(updatedSections);
     }
     
-    const sectionsWithOrder = { ...updatedSections, sectionOrder };
+    const sectionsWithOrder = { ...updatedSections, sectionOrder, sectionModes };
     
     if (!selectedDeliverable) {
       toast.error("Please select a deliverable first");
