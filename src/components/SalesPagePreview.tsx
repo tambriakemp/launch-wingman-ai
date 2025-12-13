@@ -42,19 +42,38 @@ interface FAQsSectionData {
   faqs: { question: string; answer: string }[];
 }
 
+interface HeroManualData {
+  headlines?: string;
+  subheadline?: string;
+  cta?: string;
+}
+
+interface WhyDifferentManualData {
+  openingParagraph?: string;
+  comparisonBullets?: string;
+  bridgeSentence?: string;
+}
+
+interface OfferDetailsManualData {
+  introduction?: string;
+  modules?: string;
+  bonuses?: string;
+  guarantee?: string;
+}
+
 interface SalesPagePreviewProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   offerName: string;
   sections: {
     hero?: HeroSectionData;
-    heroManual?: string;
+    heroManual?: HeroManualData;
     whyDifferent?: WhyDifferentData;
-    whyDifferentManual?: string;
+    whyDifferentManual?: WhyDifferentManualData;
     benefits?: BenefitsSectionData;
     benefitsManual?: string;
     offerDetails?: OfferDetailsSectionData;
-    offerDetailsManual?: string;
+    offerDetailsManual?: OfferDetailsManualData;
     testimonials?: TestimonialsSectionData;
     testimonialsManual?: string;
     faqs?: FAQsSectionData;
@@ -63,13 +82,15 @@ interface SalesPagePreviewProps {
 }
 
 export const SalesPagePreview = ({ open, onOpenChange, offerName, sections }: SalesPagePreviewProps) => {
-  const hasHero = (sections.hero?.headlines?.length) || sections.heroManual;
-  const hasWhyDifferent = sections.whyDifferent?.openingParagraph || sections.whyDifferentManual;
+  const hasHeroManual = sections.heroManual?.headlines || sections.heroManual?.subheadline || sections.heroManual?.cta;
+  const hasHero = (sections.hero?.headlines?.length) || hasHeroManual;
+  const hasWhyDifferentManual = sections.whyDifferentManual?.openingParagraph || sections.whyDifferentManual?.comparisonBullets || sections.whyDifferentManual?.bridgeSentence;
+  const hasWhyDifferent = sections.whyDifferent?.openingParagraph || hasWhyDifferentManual;
   const hasBenefits = (sections.benefits?.benefits?.length) || sections.benefitsManual;
-  const hasOfferDetails = sections.offerDetails?.introduction || sections.offerDetailsManual;
+  const hasOfferDetailsManual = sections.offerDetailsManual?.introduction || sections.offerDetailsManual?.modules || sections.offerDetailsManual?.bonuses || sections.offerDetailsManual?.guarantee;
+  const hasOfferDetails = sections.offerDetails?.introduction || hasOfferDetailsManual;
   const hasTestimonials = (sections.testimonials?.testimonials?.length) || sections.testimonialsManual;
   const hasFaqs = (sections.faqs?.faqs?.length) || sections.faqsManual;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
@@ -99,11 +120,25 @@ export const SalesPagePreview = ({ open, onOpenChange, offerName, sections }: Sa
                       {sections.hero.cta}
                     </Button>
                   </>
-                ) : (
-                  <div className="prose dark:prose-invert max-w-none">
-                    <p className="whitespace-pre-wrap">{sections.heroManual}</p>
+                ) : sections.heroManual ? (
+                  <div className="space-y-6">
+                    {sections.heroManual.headlines && (
+                      <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">
+                        {sections.heroManual.headlines}
+                      </h1>
+                    )}
+                    {sections.heroManual.subheadline && (
+                      <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                        {sections.heroManual.subheadline}
+                      </p>
+                    )}
+                    {sections.heroManual.cta && (
+                      <Button size="lg" className="mt-4">
+                        {sections.heroManual.cta}
+                      </Button>
+                    )}
                   </div>
-                )}
+                ) : null}
               </section>
             )}
 
@@ -128,11 +163,25 @@ export const SalesPagePreview = ({ open, onOpenChange, offerName, sections }: Sa
                       {sections.whyDifferent.bridgeSentence}
                     </p>
                   </div>
-                ) : (
-                  <div className="prose dark:prose-invert max-w-2xl mx-auto">
-                    <p className="whitespace-pre-wrap">{sections.whyDifferentManual}</p>
+                ) : sections.whyDifferentManual ? (
+                  <div className="max-w-2xl mx-auto space-y-4">
+                    {sections.whyDifferentManual.openingParagraph && (
+                      <p className="text-muted-foreground italic">
+                        {sections.whyDifferentManual.openingParagraph}
+                      </p>
+                    )}
+                    {sections.whyDifferentManual.comparisonBullets && (
+                      <div className="text-muted-foreground whitespace-pre-wrap">
+                        {sections.whyDifferentManual.comparisonBullets}
+                      </div>
+                    )}
+                    {sections.whyDifferentManual.bridgeSentence && (
+                      <p className="text-foreground font-medium pt-2">
+                        {sections.whyDifferentManual.bridgeSentence}
+                      </p>
+                    )}
                   </div>
-                )}
+                ) : null}
               </section>
             )}
 
@@ -210,11 +259,32 @@ export const SalesPagePreview = ({ open, onOpenChange, offerName, sections }: Sa
                       </div>
                     )}
                   </div>
-                ) : (
-                  <div className="prose dark:prose-invert max-w-2xl mx-auto">
-                    <p className="whitespace-pre-wrap">{sections.offerDetailsManual}</p>
+                ) : sections.offerDetailsManual ? (
+                  <div className="max-w-2xl mx-auto space-y-6">
+                    {sections.offerDetailsManual.introduction && (
+                      <p className="text-center text-muted-foreground">
+                        {sections.offerDetailsManual.introduction}
+                      </p>
+                    )}
+                    {sections.offerDetailsManual.modules && (
+                      <div className="p-4 rounded-lg border bg-card">
+                        <h4 className="font-semibold text-foreground mb-2">Modules</h4>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{sections.offerDetailsManual.modules}</p>
+                      </div>
+                    )}
+                    {sections.offerDetailsManual.bonuses && (
+                      <div className="p-4 rounded-lg border border-primary/30 bg-primary/5">
+                        <h4 className="font-semibold text-foreground mb-2">Bonuses</h4>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{sections.offerDetailsManual.bonuses}</p>
+                      </div>
+                    )}
+                    {sections.offerDetailsManual.guarantee && (
+                      <div className="p-4 rounded-lg bg-accent/50 text-center">
+                        <p className="font-medium text-foreground">{sections.offerDetailsManual.guarantee}</p>
+                      </div>
+                    )}
                   </div>
-                )}
+                ) : null}
               </section>
             )}
 
