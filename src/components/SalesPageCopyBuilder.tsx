@@ -982,7 +982,18 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
               {!isCustom && mode === "ai" && section.aiEnabled && !isBenefitsOrFaqs && (
                 <Button
-                  onClick={() => generateSectionCopy(editingSection)}
+                  onClick={() => {
+                    // Pass the selected part for sections that have part selectors
+                    let part: string | undefined;
+                    if (editingSection === "hero") {
+                      part = selectedHeroPart;
+                    } else if (editingSection === "whyDifferent") {
+                      part = selectedWhyDifferentPart;
+                    } else if (editingSection === "offerDetails") {
+                      part = selectedOfferDetailsPart;
+                    }
+                    generateSectionCopy(editingSection, part);
+                  }}
                   disabled={isGenerating[editingSection] || !offer}
                   className="w-full"
                   size="lg"
