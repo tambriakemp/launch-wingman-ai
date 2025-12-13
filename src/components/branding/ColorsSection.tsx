@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,9 +10,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, X, Palette } from "lucide-react";
+import { Plus, X, Palette, Trash2, Pencil } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface ColorsSectionProps {
@@ -28,6 +27,170 @@ interface BrandColor {
   position: number;
   created_at: string;
 }
+
+// Convert HSV to Hex
+const hsvToHex = (h: number, s: number, v: number): string => {
+  const f = (n: number) => {
+    const k = (n + h / 60) % 6;
+    return v - v * s * Math.max(Math.min(k, 4 - k, 1), 0);
+  };
+  const r = Math.round(f(5) * 255);
+  const g = Math.round(f(3) * 255);
+  const b = Math.round(f(1) * 255);
+  return `#${[r, g, b].map((x) => x.toString(16).padStart(2, "0")).join("")}`;
+};
+
+// Convert Hex to HSV
+const hexToHsv = (hex: string): { h: number; s: number; v: number } => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return { h: 0, s: 0, v: 0 };
+  
+  const r = parseInt(result[1], 16) / 255;
+  const g = parseInt(result[2], 16) / 255;
+  const b = parseInt(result[3], 16) / 255;
+  
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+  
+  let h = 0;
+  const s = max === 0 ? 0 : d / max;
+  const v = max;
+  
+  if (max !== min) {
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h *= 60;
+  }
+  
+  return { h, s, v };
+};
+
+interface ColorPickerProps {
+  color: string;
+  onChange: (color: string) => void;
+}
+
+const ColorPicker = ({ color, onChange }: ColorPickerProps) => {
+  const saturationRef = useRef<HTMLDivElement>(null);
+  const hueRef = useRef<HTMLDivElement>(null);
+  const [isDraggingSat, setIsDraggingSat] = useState(false);
+  const [isDraggingHue, setIsDraggingHue] = useState(false);
+  
+  const hsv = hexToHsv(color);
+  const [hue, setHue] = useState(hsv.h);
+  const [saturation, setSaturation] = useState(hsv.s);
+  const [value, setValue] = useState(hsv.v);
+
+  useEffect(() => {
+    const newHsv = hexToHsv(color);
+    setHue(newHsv.h);
+    setSaturation(newHsv.s);
+    setValue(newHsv.v);
+  }, [color]);
+
+  const updateColor = useCallback((h: number, s: number, v: number) => {
+    const hex = hsvToHex(h, s, v);
+    onChange(hex);
+  }, [onChange]);
+
+  const handleSaturationMouseDown = (e: React.MouseEvent) => {
+    setIsDraggingSat(true);
+    updateSaturationValue(e);
+  };
+
+  const updateSaturationValue = useCallback((e: MouseEvent | React.MouseEvent) => {
+    if (!saturationRef.current) return;
+    const rect = saturationRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    setSaturation(x);
+    setValue(1 - y);
+    updateColor(hue, x, 1 - y);
+  }, [hue, updateColor]);
+
+  const handleHueMouseDown = (e: React.MouseEvent) => {
+    setIsDraggingHue(true);
+    updateHueValue(e);
+  };
+
+  const updateHueValue = useCallback((e: MouseEvent | React.MouseEvent) => {
+    if (!hueRef.current) return;
+    const rect = hueRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const newHue = x * 360;
+    setHue(newHue);
+    updateColor(newHue, saturation, value);
+  }, [saturation, value, updateColor]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDraggingSat) updateSaturationValue(e);
+      if (isDraggingHue) updateHueValue(e);
+    };
+    
+    const handleMouseUp = () => {
+      setIsDraggingSat(false);
+      setIsDraggingHue(false);
+    };
+
+    if (isDraggingSat || isDraggingHue) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDraggingSat, isDraggingHue, updateSaturationValue, updateHueValue]);
+
+  return (
+    <div className="space-y-3">
+      {/* Saturation/Value picker */}
+      <div
+        ref={saturationRef}
+        className="relative w-full h-40 rounded-lg cursor-crosshair overflow-hidden"
+        style={{
+          background: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, hsl(${hue}, 100%, 50%))`,
+        }}
+        onMouseDown={handleSaturationMouseDown}
+      >
+        <div
+          className="absolute w-4 h-4 border-2 border-white rounded-full shadow-md transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+          style={{
+            left: `${saturation * 100}%`,
+            top: `${(1 - value) * 100}%`,
+            boxShadow: "0 0 0 1px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)",
+          }}
+        />
+      </div>
+
+      {/* Hue slider */}
+      <div
+        ref={hueRef}
+        className="relative w-full h-3 rounded-full cursor-pointer"
+        style={{
+          background: "linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)",
+        }}
+        onMouseDown={handleHueMouseDown}
+      >
+        <div
+          className="absolute w-4 h-4 border-2 border-white rounded-full shadow-md transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+          style={{
+            left: `${(hue / 360) * 100}%`,
+            top: "50%",
+            backgroundColor: `hsl(${hue}, 100%, 50%)`,
+            boxShadow: "0 0 0 1px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)",
+          }}
+        />
+      </div>
+    </div>
+  );
+};
 
 const ColorsSection = ({ projectId }: ColorsSectionProps) => {
   const { user } = useAuth();
@@ -151,6 +314,13 @@ const ColorsSection = ({ projectId }: ColorsSectionProps) => {
     }
   };
 
+  const handleDelete = () => {
+    if (editingColor) {
+      deleteMutation.mutate(editingColor.id);
+      handleCloseDialog();
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -224,52 +394,62 @@ const ColorsSection = ({ projectId }: ColorsSectionProps) => {
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {editingColor ? "Edit Color" : "Add New Color"}
-            </DialogTitle>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <Input
+                value={colorName || "Untitled color"}
+                onChange={(e) => setColorName(e.target.value)}
+                placeholder="Untitled color"
+                className="border-none text-lg font-medium p-0 h-auto focus-visible:ring-0 bg-transparent"
+              />
+              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
+                <Pencil className="h-3 w-3 text-muted-foreground" />
+              </Button>
+            </div>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="flex items-center gap-4">
+          
+          <div className="space-y-4">
+            <ColorPicker color={selectedColor} onChange={setSelectedColor} />
+            
+            {/* Color preview and hex input */}
+            <div className="flex items-center gap-3 pt-2">
+              {editingColor && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleDelete}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
               <div
-                className="w-20 h-20 rounded-lg border shadow-inner"
+                className="w-8 h-8 rounded-md border shadow-inner shrink-0"
                 style={{ backgroundColor: selectedColor }}
               />
-              <div className="flex-1 space-y-2">
-                <Input
-                  type="color"
-                  value={selectedColor}
-                  onChange={(e) => setSelectedColor(e.target.value)}
-                  className="w-full h-10 cursor-pointer"
-                />
-                <Input
-                  type="text"
-                  value={selectedColor}
-                  onChange={(e) => setSelectedColor(e.target.value)}
-                  placeholder="#000000"
-                  className="font-mono"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Color Name (optional)</label>
               <Input
-                value={colorName}
-                onChange={(e) => setColorName(e.target.value)}
-                placeholder="e.g., Primary Blue"
-                className="mt-1"
+                type="text"
+                value={selectedColor.toUpperCase()}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
+                    setSelectedColor(val);
+                  }
+                }}
+                className="font-mono text-sm flex-1"
               />
             </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={handleCloseDialog} className="flex-1">
+                Cancel
+              </Button>
+              <Button onClick={handleSave} className="flex-1">
+                {editingColor ? "Update" : "Add Color"}
+              </Button>
+            </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleCloseDialog}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave}>
-              {editingColor ? "Update" : "Add Color"}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
