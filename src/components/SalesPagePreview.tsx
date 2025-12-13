@@ -31,7 +31,9 @@ interface BenefitsSectionData {
 interface OfferDetailsSectionData {
   introduction: string;
   modules: { name: string; description: string }[];
+  savedModules?: { name: string; description: string }[];
   bonuses: { name: string; value: string; description: string }[];
+  savedBonuses?: { name: string; value: string; description: string }[];
   guarantee: string;
 }
 
@@ -298,7 +300,7 @@ export const SalesPagePreview = ({ open, onOpenChange, offerName, sections, sect
                     
                     {/* Modules */}
                     <div className="space-y-3">
-                      {sections.offerDetails.modules?.map((module, idx) => (
+                      {(sections.offerDetails.savedModules || sections.offerDetails.modules)?.map((module, idx) => (
                         <div key={idx} className="p-4 rounded-lg border bg-card">
                           <h4 className="font-semibold text-foreground">
                             Module {idx + 1}: {module.name}
@@ -309,12 +311,12 @@ export const SalesPagePreview = ({ open, onOpenChange, offerName, sections, sect
                     </div>
                     
                     {/* Bonuses */}
-                    {(sections.offerDetails.bonuses?.length ?? 0) > 0 && (
+                    {((sections.offerDetails.savedBonuses || sections.offerDetails.bonuses)?.length ?? 0) > 0 && (
                       <div className="space-y-3 pt-4">
                         <h3 className="font-semibold text-center text-foreground">
                           Plus These Bonuses
                         </h3>
-                        {sections.offerDetails.bonuses?.map((bonus, idx) => (
+                        {(sections.offerDetails.savedBonuses || sections.offerDetails.bonuses)?.map((bonus, idx) => (
                           <div key={idx} className="p-4 rounded-lg border border-primary/30 bg-primary/5">
                             <div className="flex items-center gap-2 mb-1">
                               <Star className="w-4 h-4 text-primary" />
