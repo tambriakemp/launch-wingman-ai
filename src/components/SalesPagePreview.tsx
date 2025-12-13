@@ -64,6 +64,12 @@ interface OfferDetailsManualData {
   guarantee?: string;
 }
 
+interface CustomSection {
+  id: string;
+  label: string;
+  content: string;
+}
+
 interface SalesPagePreviewProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -81,6 +87,8 @@ interface SalesPagePreviewProps {
     testimonialsManual?: string;
     faqs?: FAQsSectionData;
     faqsManual?: string;
+    customSections?: CustomSection[];
+    sectionOrder?: string[];
   };
   sectionModes?: Record<string, "ai" | "manual">;
 }
@@ -423,8 +431,18 @@ export const SalesPagePreview = ({ open, onOpenChange, offerName, sections, sect
               </section>
             )}
 
+            {/* Custom Sections */}
+            {sections.customSections?.filter(cs => cs.content?.trim()).map((customSection) => (
+              <section key={customSection.id} className="space-y-6 pb-8 border-b">
+                <h2 className="text-2xl font-bold text-center text-foreground">{customSection.label}</h2>
+                <div className="prose dark:prose-invert max-w-2xl mx-auto">
+                  <p className="whitespace-pre-wrap">{customSection.content}</p>
+                </div>
+              </section>
+            ))}
+
             {/* Empty State */}
-            {!hasHero && !hasWhyDifferent && !hasBenefits && !hasOfferDetails && !hasTestimonials && !hasFaqs && (
+            {!hasHero && !hasWhyDifferent && !hasBenefits && !hasOfferDetails && !hasTestimonials && !hasFaqs && !sections.customSections?.some(cs => cs.content?.trim()) && (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">No sections have been completed yet.</p>
                 <p className="text-sm text-muted-foreground mt-1">
