@@ -21,6 +21,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  Palette,
   Gift,
   MessageSquare,
 } from "lucide-react";
@@ -40,6 +41,7 @@ import { ProjectSettingsDialog } from "@/components/ProjectSettingsDialog";
 import { OfferBuilder } from "@/components/OfferBuilder";
 import { MessagingBuilder } from "@/components/MessagingBuilder";
 import { ContentPlanner } from "@/components/ContentPlanner";
+import BrandingBuilder from "@/components/BrandingBuilder";
 
 interface LaunchEvent {
   id: string;
@@ -238,10 +240,14 @@ const ProjectDetail = () => {
           transition={{ delay: 0.2 }}
         >
           <Tabs defaultValue="offers" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
+            <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
               <TabsTrigger value="offers" className="gap-2">
                 <Gift className="w-4 h-4" />
                 Offer Builder
+              </TabsTrigger>
+              <TabsTrigger value="branding" className="gap-2">
+                <Palette className="w-4 h-4" />
+                Branding
               </TabsTrigger>
               <TabsTrigger value="messaging" className="gap-2">
                 <MessageSquare className="w-4 h-4" />
@@ -355,6 +361,20 @@ const ProjectDetail = () => {
                 </CardHeader>
                 <CardContent>
                   <MessagingBuilder projectId={project.id} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="branding">
+              <Card variant="elevated" className="min-h-[400px]">
+                <CardHeader>
+                  <div>
+                    <CardTitle>Brand Kit</CardTitle>
+                    <CardDescription>Manage your brand logos, colors, fonts, and photos</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <BrandingBuilder projectId={project.id} />
                 </CardContent>
               </Card>
             </TabsContent>
