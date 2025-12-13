@@ -470,23 +470,26 @@ const FontsSection = ({ projectId }: FontsSectionProps) => {
                       </div>
                       
                       {filteredUploadedFonts.length > 0 && (
-                        <SelectGroup>
-                          <SelectLabel className="text-xs uppercase tracking-wider text-muted-foreground">
-                            Uploaded Fonts
-                          </SelectLabel>
-                          {filteredUploadedFonts.map((font) => (
-                            <SelectItem
-                              key={font.id}
-                              value={font.font_family}
-                              style={{ fontFamily: font.font_family }}
-                            >
-                              <span className="flex items-center justify-between w-full gap-4">
-                                <span>{font.font_family}</span>
-                                <span className="text-muted-foreground">AaBb</span>
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
+                        <>
+                          <SelectGroup>
+                            <SelectLabel className="text-xs uppercase tracking-wider text-muted-foreground">
+                              Uploaded Fonts
+                            </SelectLabel>
+                            {filteredUploadedFonts.map((font) => (
+                              <SelectItem
+                                key={font.id}
+                                value={font.font_family}
+                                style={{ fontFamily: font.font_family }}
+                              >
+                                <span className="flex items-center justify-between w-full gap-4">
+                                  <span>{font.font_family}</span>
+                                  <span className="text-muted-foreground">AaBb</span>
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                          <div className="my-3 mx-2 border-t border-border" />
+                        </>
                       )}
                       
                       <SelectGroup>
