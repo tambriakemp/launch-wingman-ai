@@ -92,12 +92,27 @@ interface FAQ {
   answer: string;
 }
 
+interface Module {
+  name: string;
+  description: string;
+}
+
+interface Bonus {
+  name: string;
+  value: string;
+  description: string;
+}
+
 interface OfferDetailsSectionData {
   introduction: string;
   introductions?: string[];
   selectedIntroduction?: number;
-  modules: { name: string; description: string }[];
-  bonuses: { name: string; value: string; description: string }[];
+  modules: Module[];
+  generatedModules?: Module[];
+  savedModules?: Module[];
+  bonuses: Bonus[];
+  generatedBonuses?: Bonus[];
+  savedBonuses?: Bonus[];
   guarantee: string;
   guarantees?: string[];
   selectedGuarantee?: number;
@@ -214,6 +229,21 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   const [savedComparisonBullets, setSavedComparisonBullets] = useState<string[]>([]);
   const [showAddBulletForm, setShowAddBulletForm] = useState(false);
   const [newBulletText, setNewBulletText] = useState("");
+  
+  // Modules specific state (like benefits)
+  const [generatedModules, setGeneratedModules] = useState<Module[]>([]);
+  const [savedModules, setSavedModules] = useState<Module[]>([]);
+  const [showAddModuleForm, setShowAddModuleForm] = useState(false);
+  const [newModuleName, setNewModuleName] = useState("");
+  const [newModuleDescription, setNewModuleDescription] = useState("");
+  
+  // Bonuses specific state (like benefits)
+  const [generatedBonuses, setGeneratedBonuses] = useState<Bonus[]>([]);
+  const [savedBonuses, setSavedBonuses] = useState<Bonus[]>([]);
+  const [showAddBonusForm, setShowAddBonusForm] = useState(false);
+  const [newBonusName, setNewBonusName] = useState("");
+  const [newBonusValue, setNewBonusValue] = useState("");
+  const [newBonusDescription, setNewBonusDescription] = useState("");
   
   // Context inputs for "Why Different" section
   const [contextMode, setContextMode] = useState<"infer" | "provide">("infer");
@@ -336,6 +366,10 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     setFaqsCount(5);
     setGeneratedComparisonBullets([]);
     setSavedComparisonBullets([]);
+    setGeneratedModules([]);
+    setSavedModules([]);
+    setGeneratedBonuses([]);
+    setSavedBonuses([]);
   };
 
   const handleAdd = () => {
@@ -350,6 +384,10 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     setSavedFaqs([]);
     setGeneratedComparisonBullets([]);
     setSavedComparisonBullets([]);
+    setGeneratedModules([]);
+    setSavedModules([]);
+    setGeneratedBonuses([]);
+    setSavedBonuses([]);
     setIsAddMode(true);
   };
 
@@ -375,6 +413,18 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       setSavedComparisonBullets(item.sections.whyDifferent.savedComparisonBullets);
     } else if (item.sections.whyDifferent?.comparisonBullets) {
       setSavedComparisonBullets(item.sections.whyDifferent.comparisonBullets);
+    }
+    // Restore saved modules from sections
+    if (item.sections.offerDetails?.savedModules) {
+      setSavedModules(item.sections.offerDetails.savedModules);
+    } else if (item.sections.offerDetails?.modules) {
+      setSavedModules(item.sections.offerDetails.modules);
+    }
+    // Restore saved bonuses from sections
+    if (item.sections.offerDetails?.savedBonuses) {
+      setSavedBonuses(item.sections.offerDetails.savedBonuses);
+    } else if (item.sections.offerDetails?.bonuses) {
+      setSavedBonuses(item.sections.offerDetails.bonuses);
     }
     setIsAddMode(true);
   };
@@ -448,6 +498,21 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           ...updatedSections.whyDifferent!,
           comparisonBullets: savedComparisonBullets,
           savedComparisonBullets: savedComparisonBullets,
+        }
+      };
+      setSections(updatedSections);
+    }
+    
+    // Include saved modules and bonuses in sections for offerDetails section
+    if (sectionId === "offerDetails") {
+      updatedSections = {
+        ...updatedSections,
+        offerDetails: {
+          ...updatedSections.offerDetails!,
+          modules: savedModules,
+          savedModules: savedModules,
+          bonuses: savedBonuses,
+          savedBonuses: savedBonuses,
         }
       };
       setSections(updatedSections);
@@ -695,6 +760,119 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     toast.success("Bullet added");
   };
 
+  // Save a module from generated list
+  const saveModule = (module: Module) => {
+    if (!savedModules.find(m => m.name === module.name)) {
+      const newSavedModules = [...savedModules, module];
+      setSavedModules(newSavedModules);
+      setSections(prev => ({
+        ...prev,
+        offerDetails: {
+          ...prev.offerDetails!,
+          modules: newSavedModules,
+          savedModules: newSavedModules,
+        }
+      }));
+      toast.success("Module saved");
+    }
+  };
+
+  // Remove a saved module
+  const removeSavedModule = (index: number) => {
+    const newSavedModules = savedModules.filter((_, i) => i !== index);
+    setSavedModules(newSavedModules);
+    setSections(prev => ({
+      ...prev,
+      offerDetails: {
+        ...prev.offerDetails!,
+        modules: newSavedModules,
+        savedModules: newSavedModules,
+      }
+    }));
+  };
+
+  // Add a manual module
+  const addManualModule = () => {
+    if (!newModuleName.trim() || !newModuleDescription.trim()) {
+      toast.error("Please enter both name and description");
+      return;
+    }
+    const newModule: Module = { name: newModuleName.trim(), description: newModuleDescription.trim() };
+    const newSavedModules = [...savedModules, newModule];
+    setSavedModules(newSavedModules);
+    setSections(prev => ({
+      ...prev,
+      offerDetails: {
+        ...prev.offerDetails!,
+        modules: newSavedModules,
+        savedModules: newSavedModules,
+      }
+    }));
+    setNewModuleName("");
+    setNewModuleDescription("");
+    setShowAddModuleForm(false);
+    toast.success("Module added");
+  };
+
+  // Save a bonus from generated list
+  const saveBonus = (bonus: Bonus) => {
+    if (!savedBonuses.find(b => b.name === bonus.name)) {
+      const newSavedBonuses = [...savedBonuses, bonus];
+      setSavedBonuses(newSavedBonuses);
+      setSections(prev => ({
+        ...prev,
+        offerDetails: {
+          ...prev.offerDetails!,
+          bonuses: newSavedBonuses,
+          savedBonuses: newSavedBonuses,
+        }
+      }));
+      toast.success("Bonus saved");
+    }
+  };
+
+  // Remove a saved bonus
+  const removeSavedBonus = (index: number) => {
+    const newSavedBonuses = savedBonuses.filter((_, i) => i !== index);
+    setSavedBonuses(newSavedBonuses);
+    setSections(prev => ({
+      ...prev,
+      offerDetails: {
+        ...prev.offerDetails!,
+        bonuses: newSavedBonuses,
+        savedBonuses: newSavedBonuses,
+      }
+    }));
+  };
+
+  // Add a manual bonus
+  const addManualBonus = () => {
+    if (!newBonusName.trim() || !newBonusDescription.trim()) {
+      toast.error("Please enter name and description");
+      return;
+    }
+    const newBonus: Bonus = { 
+      name: newBonusName.trim(), 
+      value: newBonusValue.trim() || "$99 value", 
+      description: newBonusDescription.trim() 
+    };
+    const newSavedBonuses = [...savedBonuses, newBonus];
+    setSavedBonuses(newSavedBonuses);
+    setSections(prev => ({
+      ...prev,
+      offerDetails: {
+        ...prev.offerDetails!,
+        bonuses: newSavedBonuses,
+        savedBonuses: newSavedBonuses,
+      }
+    }));
+    setNewBonusName("");
+    setNewBonusValue("");
+    setNewBonusDescription("");
+    setShowAddBonusForm(false);
+    toast.success("Bonus added");
+  };
+
   // Generate AI copy for a section (with optional part for part-specific regeneration)
   const generateSectionCopy = async (sectionType: string, part?: string) => {
     if (!offer) {
@@ -789,6 +967,13 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
         // Store generated benefits separately for selection
         setGeneratedBenefits(data.benefits);
       } else if (sectionType === "offerDetails") {
+        // Store generated modules and bonuses separately for selection (like benefits)
+        if (data.modules) {
+          setGeneratedModules(data.modules);
+        }
+        if (data.bonuses) {
+          setGeneratedBonuses(data.bonuses);
+        }
         setSections(prev => {
           const existingOffer = prev.offerDetails;
           return {
@@ -797,8 +982,12 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
               introduction: data.introductions?.[0] || existingOffer?.introduction || "",
               introductions: data.introductions || existingOffer?.introductions,
               selectedIntroduction: data.introductions ? 0 : existingOffer?.selectedIntroduction ?? 0,
-              modules: data.modules || existingOffer?.modules || [],
-              bonuses: data.bonuses || existingOffer?.bonuses || [],
+              modules: existingOffer?.modules || savedModules || [],
+              savedModules: existingOffer?.savedModules || savedModules || [],
+              generatedModules: data.modules || existingOffer?.generatedModules || [],
+              bonuses: existingOffer?.bonuses || savedBonuses || [],
+              savedBonuses: existingOffer?.savedBonuses || savedBonuses || [],
+              generatedBonuses: data.bonuses || existingOffer?.generatedBonuses || [],
               guarantee: data.guarantees?.[0] || existingOffer?.guarantee || "",
               guarantees: data.guarantees || existingOffer?.guarantees,
               selectedGuarantee: data.guarantees ? 0 : existingOffer?.selectedGuarantee ?? 0,
@@ -894,8 +1083,10 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       const count = savedBenefits.length || sections.benefits?.benefits?.length || 0;
       return count > 0 ? `${count} benefits` : "";
     }
-    if (sectionId === "offerDetails" && sections.offerDetails) {
-      return `${sections.offerDetails.modules?.length || 0} modules, ${sections.offerDetails.bonuses?.length || 0} bonuses`;
+    if (sectionId === "offerDetails") {
+      const moduleCount = savedModules.length || sections.offerDetails?.modules?.length || 0;
+      const bonusCount = savedBonuses.length || sections.offerDetails?.bonuses?.length || 0;
+      return `${moduleCount} modules, ${bonusCount} bonuses`;
     }
     if (sectionId === "testimonials" && sections.testimonials?.testimonials) {
       return `${sections.testimonials.testimonials.length} testimonials`;
@@ -1904,15 +2095,15 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     );
   };
 
-  // Offer Details Editor Inputs - With part selector
+  // Offer Details Editor Inputs - With part selector and saved items display
   const renderOfferDetailsEditorInputs = () => {
     const offerDetailsData = sections.offerDetails;
 
     const parts = [
-      { id: "introduction", label: "Introduction", hasContent: !!offerDetailsData?.introductions?.length },
-      { id: "modules", label: "Modules", hasContent: !!(offerDetailsData?.modules?.length) },
-      { id: "bonuses", label: "Bonuses", hasContent: !!(offerDetailsData?.bonuses?.length) },
-      { id: "guarantee", label: "Guarantee", hasContent: !!offerDetailsData?.guarantees?.length },
+      { id: "introduction", label: "Introduction", hasContent: !!offerDetailsData?.introductions?.length || !!offerDetailsData?.introduction },
+      { id: "modules", label: "Modules", hasContent: savedModules.length > 0 },
+      { id: "bonuses", label: "Bonuses", hasContent: savedBonuses.length > 0 },
+      { id: "guarantee", label: "Guarantee", hasContent: !!offerDetailsData?.guarantees?.length || !!offerDetailsData?.guarantee },
     ];
 
     return (
@@ -1936,6 +2127,169 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             </button>
           ))}
         </div>
+
+        {/* Saved Modules Section */}
+        {selectedOfferDetailsPart === "modules" && (
+          <div className="space-y-3 pt-4 border-t">
+            {savedModules.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Saved Modules ({savedModules.length})
+                </p>
+                <div className="space-y-2">
+                  {savedModules.map((mod, idx) => (
+                    <div key={idx} className="p-3 border rounded-lg bg-card relative">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeSavedModule(idx)}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                      <div className="flex items-start gap-2 pr-8">
+                        <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                        <div>
+                          <h4 className="font-medium text-sm">{mod.name}</h4>
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{mod.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Add Manual Module */}
+            {showAddModuleForm ? (
+              <div className="p-4 border rounded-lg space-y-3 bg-muted/30">
+                <div className="space-y-2">
+                  <Label className="text-xs">Module Name</Label>
+                  <Input
+                    value={newModuleName}
+                    onChange={(e) => setNewModuleName(e.target.value)}
+                    placeholder="e.g., Module 1: Getting Started"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Description</Label>
+                  <Textarea
+                    value={newModuleDescription}
+                    onChange={(e) => setNewModuleDescription(e.target.value)}
+                    placeholder="What students will learn in this module..."
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={addManualModule}>
+                    <Check className="w-3.5 h-3.5 mr-1" />
+                    Add Module
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setShowAddModuleForm(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddModuleForm(true)}
+                className="w-full border-dashed"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Custom Module
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Saved Bonuses Section */}
+        {selectedOfferDetailsPart === "bonuses" && (
+          <div className="space-y-3 pt-4 border-t">
+            {savedBonuses.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Saved Bonuses ({savedBonuses.length})
+                </p>
+                <div className="space-y-2">
+                  {savedBonuses.map((bonus, idx) => (
+                    <div key={idx} className="p-3 border rounded-lg bg-card relative">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeSavedBonus(idx)}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                      <div className="flex items-start gap-2 pr-8">
+                        <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium text-sm">{bonus.name}</h4>
+                            <Badge variant="secondary" className="text-xs">{bonus.value}</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{bonus.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Add Manual Bonus */}
+            {showAddBonusForm ? (
+              <div className="p-4 border rounded-lg space-y-3 bg-muted/30">
+                <div className="space-y-2">
+                  <Label className="text-xs">Bonus Name</Label>
+                  <Input
+                    value={newBonusName}
+                    onChange={(e) => setNewBonusName(e.target.value)}
+                    placeholder="e.g., Private Community Access"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Value (optional)</Label>
+                  <Input
+                    value={newBonusValue}
+                    onChange={(e) => setNewBonusValue(e.target.value)}
+                    placeholder="e.g., $197 value"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Description</Label>
+                  <Textarea
+                    value={newBonusDescription}
+                    onChange={(e) => setNewBonusDescription(e.target.value)}
+                    placeholder="What's included in this bonus..."
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={addManualBonus}>
+                    <Check className="w-3.5 h-3.5 mr-1" />
+                    Add Bonus
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setShowAddBonusForm(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddBonusForm(true)}
+                className="w-full border-dashed"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Custom Bonus
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -2534,34 +2888,96 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     }
 
     if (selectedOfferDetailsPart === "modules") {
-      // Read-only display of modules
+      // Show generated modules with "Save as Module" buttons (like benefits)
+      if (generatedModules.length === 0) {
+        return (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p className="text-sm">Click "Generate" to see AI-generated modules</p>
+          </div>
+        );
+      }
+
       return (
         <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">Generated modules:</p>
-          {offerDetailsData.modules?.map((mod, idx) => (
-            <div key={idx} className="p-4 border rounded-lg bg-card">
-              <h4 className="font-medium text-sm">{mod.name}</h4>
-              <p className="text-xs text-muted-foreground mt-1">{mod.description}</p>
-            </div>
-          ))}
+          <p className="text-xs text-muted-foreground">Click "Save as Module" to add to your saved modules</p>
+          {generatedModules.map((mod, idx) => {
+            const isSaved = savedModules.some(m => m.name === mod.name);
+            return (
+              <div key={idx} className={`p-4 border rounded-lg ${isSaved ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800" : "bg-card"}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm">{mod.name}</h4>
+                    <p className="text-xs text-muted-foreground mt-1">{mod.description}</p>
+                  </div>
+                  {isSaved ? (
+                    <div className="flex items-center gap-1 text-green-600 text-xs shrink-0">
+                      <Check className="w-3.5 h-3.5" />
+                      Saved
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => saveModule(mod)}
+                      className="shrink-0"
+                    >
+                      <Save className="w-3.5 h-3.5 mr-1" />
+                      Save as Module
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       );
     }
 
     if (selectedOfferDetailsPart === "bonuses") {
-      // Read-only display of bonuses
+      // Show generated bonuses with "Save as Bonus" buttons (like benefits)
+      if (generatedBonuses.length === 0) {
+        return (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p className="text-sm">Click "Generate" to see AI-generated bonuses</p>
+          </div>
+        );
+      }
+
       return (
         <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">Generated bonuses:</p>
-          {offerDetailsData.bonuses?.map((bonus, idx) => (
-            <div key={idx} className="p-4 border rounded-lg bg-card">
-              <div className="flex justify-between items-start">
-                <h4 className="font-medium text-sm">{bonus.name}</h4>
-                <span className="text-xs text-primary font-medium">{bonus.value}</span>
+          <p className="text-xs text-muted-foreground">Click "Save as Bonus" to add to your saved bonuses</p>
+          {generatedBonuses.map((bonus, idx) => {
+            const isSaved = savedBonuses.some(b => b.name === bonus.name);
+            return (
+              <div key={idx} className={`p-4 border rounded-lg ${isSaved ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800" : "bg-card"}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-sm">{bonus.name}</h4>
+                      <Badge variant="secondary" className="text-xs">{bonus.value}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{bonus.description}</p>
+                  </div>
+                  {isSaved ? (
+                    <div className="flex items-center gap-1 text-green-600 text-xs shrink-0">
+                      <Check className="w-3.5 h-3.5" />
+                      Saved
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => saveBonus(bonus)}
+                      className="shrink-0"
+                    >
+                      <Save className="w-3.5 h-3.5 mr-1" />
+                      Save as Bonus
+                    </Button>
+                  )}
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">{bonus.description}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       );
     }
