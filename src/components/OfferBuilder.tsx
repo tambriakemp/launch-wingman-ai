@@ -978,17 +978,13 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
     return PLATFORM_CATEGORIES[category].find((p) => p.id === platformId) || null;
   };
 
-  const { isSubscribed } = useAuth();
-
   const toggleDeliverable = (deliverableId: string) => {
     setSelectedDeliverables(prev => {
       if (prev.includes(deliverableId)) {
         return prev.filter(id => id !== deliverableId);
       }
-      if (!isSubscribed) {
-        return [deliverableId];
-      }
-      return [...prev, deliverableId];
+      // Only allow one deliverable to be selected
+      return [deliverableId];
     });
   };
 
@@ -2180,33 +2176,11 @@ export const OfferBuilder = ({ projectId }: OfferBuilderProps) => {
               {step === 4 && (
                 <div className="space-y-4">
                   <div>
-                    <Label>Select Main Deliverables</Label>
+                    <Label>Select Main Deliverable</Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {isSubscribed 
-                        ? "Choose what your clients will receive. Select all that apply."
-                        : "Choose what your clients will receive."}
+                      Choose the main deliverable your clients will receive.
                     </p>
                   </div>
-
-                  {!isSubscribed && (
-                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <CheckSquare className="w-4 h-4 text-amber-600" />
-                        <span className="text-sm text-amber-700">Free plan: 1 deliverable included</span>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="text-amber-700 border-amber-500/30 hover:bg-amber-500/10"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open('/settings', '_blank');
-                        }}
-                      >
-                        Upgrade Plan
-                      </Button>
-                    </div>
-                  )}
 
                   <div className="grid gap-3">
                     {MAIN_DELIVERABLES.map((deliverable) => {
