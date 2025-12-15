@@ -112,9 +112,15 @@ const ProjectTransformation = () => {
     );
   }
 
-  // No funnel - redirect to funnel type
-  if (!funnel) {
-    navigate(`/projects/${projectId}/funnel-type`);
+  // No funnel or funnel type - redirect to funnel type
+  if (!funnel || !funnel.funnel_type) {
+    navigate(`/projects/${projectId}/funnel-type`, { replace: true });
+    return null;
+  }
+
+  // Audience not complete - redirect to audience
+  if (!funnel.niche || !funnel.target_audience) {
+    navigate(`/projects/${projectId}/audience`, { replace: true });
     return null;
   }
 

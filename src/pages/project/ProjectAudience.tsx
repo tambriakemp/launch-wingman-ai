@@ -102,9 +102,9 @@ const ProjectAudience = () => {
     );
   }
 
-  // No funnel - redirect to funnel type
-  if (!funnel) {
-    navigate(`/projects/${projectId}/funnel-type`);
+  // No funnel or no funnel type selected - redirect to funnel type
+  if (!funnel || !funnel.funnel_type) {
+    navigate(`/projects/${projectId}/funnel-type`, { replace: true });
     return null;
   }
 
