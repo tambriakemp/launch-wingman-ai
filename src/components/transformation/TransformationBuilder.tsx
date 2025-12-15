@@ -1,13 +1,21 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Sparkles, RefreshCw, Lock, Unlock, PenLine, Wand2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Check, Sparkles, Loader2, Zap, FileText, BookOpen, Lock, Unlock } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { StyleSelector, TransformationStyle } from "./StyleSelector";
-import { TransformationVersions, TransformationVersionsData } from "./TransformationVersions";
+import { TransformationStyle } from "./StyleSelector";
+import { TransformationVersionsData } from "./TransformationVersions";
 
 interface PainSymptom {
   id: string;
@@ -41,89 +49,85 @@ interface AudienceData {
 interface TransformationBuilderProps {
   audienceData: AudienceData;
   funnelType: string;
-  initialStyle: TransformationStyle;
-  initialVersions: TransformationVersionsData | null;
-  initialPrimaryVersion: 'one_liner' | 'standard' | 'expanded';
-  initialLocked: boolean;
-  initialManualStatement?: string;
-  initialMode?: 'ai' | 'manual';
+  transformationStatement: string;
+  transformationStyle: TransformationStyle;
+  transformationVersions: TransformationVersionsData | null;
+  primaryVersion: 'one_liner' | 'standard' | 'expanded';
+  isLocked: boolean;
+  onStatementChange: (statement: string) => void;
   onStyleChange: (style: TransformationStyle) => void;
   onVersionsChange: (versions: TransformationVersionsData) => void;
   onPrimaryVersionChange: (version: 'one_liner' | 'standard' | 'expanded') => void;
   onLockedChange: (locked: boolean) => void;
-  onStatementChange: (statement: string) => void;
-  onModeChange?: (mode: 'ai' | 'manual') => void;
 }
+
+interface VersionVariation {
+  type: 'one_liner' | 'standard' | 'expanded';
+  label: string;
+  statement: string;
+}
+
+const getVersionIcon = (type: string) => {
+  switch (type) {
+    case "one_liner":
+      return <Zap className="w-4 h-4" />;
+    case "standard":
+      return <FileText className="w-4 h-4" />;
+    case "expanded":
+      return <BookOpen className="w-4 h-4" />;
+    default:
+      return <FileText className="w-4 h-4" />;
+  }
+};
+
+const getVersionColor = (type: string) => {
+  switch (type) {
+    case "one_liner":
+      return "bg-blue-500/10 text-blue-600 border-blue-500/30";
+    case "standard":
+      return "bg-green-500/10 text-green-600 border-green-500/30";
+    case "expanded":
+      return "bg-purple-500/10 text-purple-600 border-purple-500/30";
+    default:
+      return "bg-muted text-muted-foreground";
+  }
+};
+
+const getVersionLabel = (type: string) => {
+  switch (type) {
+    case "one_liner":
+      return "Short & Punchy";
+    case "standard":
+      return "Clear & Practical";
+    case "expanded":
+      return "Expanded";
+    default:
+      return type;
+  }
+};
+
+const styleOptions = [
+  { value: 'short', label: 'Short & Punchy' },
+  { value: 'practical', label: 'Clear & Practical' },
+  { value: 'aspirational', label: 'Aspirational & Emotional' },
+  { value: 'authority', label: 'Authority-Driven' },
+];
 
 export const TransformationBuilder = ({
   audienceData,
   funnelType,
-  initialStyle,
-  initialVersions,
-  initialPrimaryVersion,
-  initialLocked,
-  initialManualStatement = '',
-  initialMode = 'ai',
+  transformationStatement,
+  transformationStyle,
+  transformationVersions,
+  primaryVersion,
+  isLocked,
+  onStatementChange,
   onStyleChange,
   onVersionsChange,
   onPrimaryVersionChange,
   onLockedChange,
-  onStatementChange,
-  onModeChange,
 }: TransformationBuilderProps) => {
-  const [mode, setMode] = useState<'ai' | 'manual'>(initialMode);
-  const [selectedStyle, setSelectedStyle] = useState<TransformationStyle>(initialStyle);
-  const [versions, setVersions] = useState<TransformationVersionsData | null>(initialVersions);
-  const [primaryVersion, setPrimaryVersion] = useState<'one_liner' | 'standard' | 'expanded'>(initialPrimaryVersion);
-  const [isLocked, setIsLocked] = useState(initialLocked);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [hasGenerated, setHasGenerated] = useState(!!initialVersions);
-  const [manualStatement, setManualStatement] = useState(initialManualStatement);
-
-  // Sync initial values
-  useEffect(() => {
-    setSelectedStyle(initialStyle);
-    setVersions(initialVersions);
-    setPrimaryVersion(initialPrimaryVersion);
-    setIsLocked(initialLocked);
-    setHasGenerated(!!initialVersions);
-    setManualStatement(initialManualStatement);
-    setMode(initialMode);
-  }, [initialStyle, initialVersions, initialPrimaryVersion, initialLocked, initialManualStatement, initialMode]);
-
-  // Update primary statement when versions or primary version changes (AI mode)
-  useEffect(() => {
-    if (mode === 'ai' && versions && primaryVersion) {
-      onStatementChange(versions[primaryVersion]);
-    }
-  }, [versions, primaryVersion, onStatementChange, mode]);
-
-  // Update statement when manual mode changes
-  useEffect(() => {
-    if (mode === 'manual') {
-      onStatementChange(manualStatement);
-    }
-  }, [manualStatement, mode, onStatementChange]);
-
-  const handleModeChange = (newMode: 'ai' | 'manual') => {
-    setMode(newMode);
-    onModeChange?.(newMode);
-    if (newMode === 'manual') {
-      onStatementChange(manualStatement);
-    } else if (versions && primaryVersion) {
-      onStatementChange(versions[primaryVersion]);
-    }
-  };
-
-  const handleStyleChange = (style: TransformationStyle) => {
-    setSelectedStyle(style);
-    onStyleChange(style);
-  };
-
-  const handleManualStatementChange = (text: string) => {
-    setManualStatement(text);
-    onStatementChange(text);
-  };
 
   const handleGenerate = async () => {
     if (!audienceData.targetAudience || !audienceData.primaryPainPoint || !audienceData.desiredOutcome) {
@@ -142,7 +146,7 @@ export const TransformationBuilder = ({
           mainObjections: audienceData.mainObjections,
           likelihoodElements: audienceData.likelihoodElements,
           timeEffortElements: audienceData.timeEffortElements,
-          selectedStyle,
+          selectedStyle: transformationStyle,
           funnelType,
         },
       });
@@ -150,13 +154,11 @@ export const TransformationBuilder = ({
       if (error) throw error;
 
       if (data?.versions) {
-        setVersions(data.versions);
         onVersionsChange(data.versions);
-        setHasGenerated(true);
         // Auto-select appropriate primary based on style
-        const autoPrimary = selectedStyle === 'short' ? 'one_liner' : 'standard';
-        setPrimaryVersion(autoPrimary);
+        const autoPrimary = transformationStyle === 'short' ? 'one_liner' : 'standard';
         onPrimaryVersionChange(autoPrimary);
+        onStatementChange(data.versions[autoPrimary]);
       }
     } catch (error) {
       console.error("Error generating transformation:", error);
@@ -165,21 +167,9 @@ export const TransformationBuilder = ({
     }
   };
 
-  const handleSelectPrimary = (version: 'one_liner' | 'standard' | 'expanded') => {
-    setPrimaryVersion(version);
-    onPrimaryVersionChange(version);
-  };
-
-  const handleEditVersion = (version: 'one_liner' | 'standard' | 'expanded', text: string) => {
-    if (!versions) return;
-    const newVersions = { ...versions, [version]: text };
-    setVersions(newVersions);
-    onVersionsChange(newVersions);
-  };
-
-  const handleLockToggle = (locked: boolean) => {
-    setIsLocked(locked);
-    onLockedChange(locked);
+  const handleSelectVariation = (variation: VersionVariation) => {
+    onPrimaryVersionChange(variation.type);
+    onStatementChange(variation.statement);
   };
 
   const isAudienceComplete = 
@@ -187,170 +177,157 @@ export const TransformationBuilder = ({
     audienceData.primaryPainPoint && 
     audienceData.desiredOutcome;
 
-  const formulaPlaceholder = `I help [${audienceData.targetAudience || 'WHO'}] go from [${audienceData.primaryPainPoint || 'CURRENT STRUGGLE'}] to [${audienceData.desiredOutcome || 'DESIRED OUTCOME'}] using [YOUR METHOD/APPROACH] without [COMMON OBSTACLE].`;
+  const formulaPlaceholder = `I help ${audienceData.targetAudience || '[WHO]'} go from ${audienceData.primaryPainPoint || '[CURRENT STRUGGLE]'} to ${audienceData.desiredOutcome || '[DESIRED OUTCOME]'} using [YOUR METHOD] without [COMMON OBSTACLE].`;
+
+  // Convert versions to variation array for display
+  const variations: VersionVariation[] = transformationVersions 
+    ? [
+        { type: 'one_liner', label: getVersionLabel('one_liner'), statement: transformationVersions.one_liner },
+        { type: 'standard', label: getVersionLabel('standard'), statement: transformationVersions.standard },
+        { type: 'expanded', label: getVersionLabel('expanded'), statement: transformationVersions.expanded },
+      ]
+    : [];
 
   return (
-    <div className="space-y-5">
-      {/* Mode Selection Card */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-5 space-y-5">
-          {/* Mode Toggle */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">How do you want to create your statement?</Label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => handleModeChange('ai')}
-                disabled={isLocked}
-                className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
-                  mode === 'ai'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <Wand2 className={`w-5 h-5 ${mode === 'ai' ? 'text-primary' : 'text-muted-foreground'}`} />
-                <div className="text-left">
-                  <p className={`text-sm font-medium ${mode === 'ai' ? 'text-primary' : ''}`}>Generate with AI</p>
-                  <p className="text-xs text-muted-foreground">Based on your audience</p>
-                </div>
-              </button>
-              <button
-                onClick={() => handleModeChange('manual')}
-                disabled={isLocked}
-                className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
-                  mode === 'manual'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <PenLine className={`w-5 h-5 ${mode === 'manual' ? 'text-primary' : 'text-muted-foreground'}`} />
-                <div className="text-left">
-                  <p className={`text-sm font-medium ${mode === 'manual' ? 'text-primary' : ''}`}>Write Manually</p>
-                  <p className="text-xs text-muted-foreground">Use the formula</p>
-                </div>
-              </button>
+    <Card>
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold">
+              3
+            </div>
+            <div>
+              <h3 className="font-semibold text-base">TRANSFORMATION STATEMENT</h3>
+              <p className="text-sm text-muted-foreground">Define your core promise</p>
             </div>
           </div>
-
-          {/* AI Mode: Style Selector + Generate */}
-          {mode === 'ai' && (
-            <>
-              <StyleSelector
-                selectedStyle={selectedStyle}
-                onChange={handleStyleChange}
-                disabled={isLocked}
-              />
-
-              <div className="flex justify-center">
-                <Button
-                  onClick={handleGenerate}
-                  disabled={isGenerating || !isAudienceComplete || isLocked}
-                  size="lg"
-                  className="min-w-[200px]"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : hasGenerated ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Regenerate
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Generate Versions
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {!isAudienceComplete && (
-                <p className="text-center text-sm text-muted-foreground">
-                  Complete your audience definition to generate
-                </p>
-              )}
-            </>
+          {transformationStatement && (
+            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
+              <Check className="w-3 h-3 mr-1" />
+              Complete
+            </Badge>
           )}
-
-          {/* Manual Mode: Textarea with formula */}
-          {mode === 'manual' && (
-            <div className="space-y-3">
-              <div className="p-3 rounded-lg bg-muted/50 border border-border">
-                <p className="text-[10px] font-medium text-muted-foreground mb-1 uppercase tracking-wide">Transformation Formula</p>
-                <p className="text-xs font-mono text-foreground">
-                  I help [WHO] go from [STRUGGLE] to [OUTCOME] using [METHOD] without [OBSTACLE].
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="manual-statement" className="text-sm">Your Transformation Statement</Label>
-                <Textarea
-                  id="manual-statement"
-                  value={manualStatement}
-                  onChange={(e) => handleManualStatementChange(e.target.value)}
-                  placeholder={formulaPlaceholder}
-                  rows={3}
-                  disabled={isLocked}
-                  className="resize-none text-sm"
-                />
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Generated Versions (AI mode) - Horizontal Layout */}
-      {mode === 'ai' && versions && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">Your Transformation Versions</Label>
-            <div className="flex items-center gap-2">
-              {isLocked ? (
-                <Lock className="w-4 h-4 text-muted-foreground" />
-              ) : (
-                <Unlock className="w-4 h-4 text-muted-foreground" />
-              )}
-              <Label htmlFor="lock-toggle" className="text-xs text-muted-foreground cursor-pointer">
-                Lock
-              </Label>
-              <Switch
-                id="lock-toggle"
-                checked={isLocked}
-                onCheckedChange={handleLockToggle}
-              />
-            </div>
-          </div>
-
-          <TransformationVersions
-            versions={versions}
-            primaryVersion={primaryVersion}
-            onSelectPrimary={handleSelectPrimary}
-            onEditVersion={handleEditVersion}
-            isLocked={isLocked}
-          />
         </div>
-      )}
-
-      {/* Manual Mode: Lock toggle */}
-      {mode === 'manual' && manualStatement && (
-        <div className="flex items-center justify-end gap-2 pt-2">
-          {isLocked ? (
-            <Lock className="w-4 h-4 text-muted-foreground" />
-          ) : (
-            <Unlock className="w-4 h-4 text-muted-foreground" />
-          )}
-          <Label htmlFor="lock-toggle-manual" className="text-xs text-muted-foreground cursor-pointer">
-            Lock transformation
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Main Textarea at TOP */}
+        <div className="space-y-2">
+          <Label htmlFor="transformationStatement" className="flex items-center gap-1">
+            Your Transformation Statement <span className="text-destructive">*</span>
           </Label>
-          <Switch
-            id="lock-toggle-manual"
-            checked={isLocked}
-            onCheckedChange={handleLockToggle}
+          <Textarea
+            id="transformationStatement"
+            placeholder={formulaPlaceholder}
+            value={transformationStatement}
+            onChange={(e) => onStatementChange(e.target.value)}
+            rows={3}
+            className="resize-none"
+            disabled={isLocked}
           />
+          <p className="text-xs text-muted-foreground">
+            Formula: "I help [WHO] go from [PAIN] to [OUTCOME] using [METHOD] without [OBSTACLE]"
+          </p>
         </div>
-      )}
-    </div>
+
+        {/* Generated Variations in MIDDLE */}
+        {variations.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-sm text-muted-foreground">
+              Click to use a variation:
+            </Label>
+            <div className="grid gap-2">
+              {variations.map((variation) => (
+                <button
+                  key={variation.type}
+                  onClick={() => handleSelectVariation(variation)}
+                  disabled={isLocked}
+                  className={`p-3 rounded-lg border text-left transition-all hover:border-primary/50 ${
+                    primaryVersion === variation.type
+                      ? "border-primary bg-primary/5"
+                      : "border-border bg-card"
+                  } ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge
+                      variant="outline"
+                      className={`${getVersionColor(variation.type)} gap-1`}
+                    >
+                      {getVersionIcon(variation.type)}
+                      {variation.label}
+                    </Badge>
+                    {primaryVersion === variation.type && (
+                      <Check className="w-4 h-4 text-primary ml-auto" />
+                    )}
+                  </div>
+                  <p className="text-sm">{variation.statement}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Lock Toggle */}
+        {transformationStatement && (
+          <div className="flex items-center justify-end gap-2 pt-2">
+            {isLocked ? (
+              <Lock className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <Unlock className="w-4 h-4 text-muted-foreground" />
+            )}
+            <Label htmlFor="lock-toggle" className="text-xs text-muted-foreground cursor-pointer">
+              Lock transformation
+            </Label>
+            <Switch
+              id="lock-toggle"
+              checked={isLocked}
+              onCheckedChange={onLockedChange}
+            />
+          </div>
+        )}
+
+        {/* Style Dropdown + Generate Button at BOTTOM */}
+        <div className="flex justify-end items-center gap-2 pt-4 border-t border-border">
+          {!isAudienceComplete && (
+            <span className="text-xs text-muted-foreground mr-2">
+              Complete audience first
+            </span>
+          )}
+          <Select
+            value={transformationStyle}
+            onValueChange={(value) => onStyleChange(value as TransformationStyle)}
+            disabled={isLocked || isGenerating}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select style" />
+            </SelectTrigger>
+            <SelectContent>
+              {styleOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            onClick={handleGenerate}
+            disabled={isGenerating || !isAudienceComplete || isLocked}
+            className="gap-2"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Generate
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
