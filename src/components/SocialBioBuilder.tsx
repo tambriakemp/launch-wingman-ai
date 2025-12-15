@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Users, MoreHorizontal, Pencil, Trash2, Instagram, Facebook, Twitter, Linkedin, AtSign, X } from "lucide-react";
+import { Plus, Users, MoreHorizontal, Pencil, Trash2, Instagram, Facebook, Twitter, Linkedin, AtSign, X, Lock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,12 @@ interface SocialBio {
   platform: string;
   formula: string;
   content: string;
+}
+
+interface TransformationVersions {
+  one_liner?: string;
+  standard?: string;
+  expanded?: string;
 }
 
 interface SocialBioBuilderProps {
@@ -221,6 +227,26 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
     },
     enabled: !!projectId,
   });
+
+  // Fetch project's transformation data
+  const { data: project } = useQuery({
+    queryKey: ["project-transformation-bio", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("transformation_statement, transformation_locked, transformation_versions")
+        .eq("id", projectId)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!projectId,
+  });
+
+  const transformationStatement = project?.transformation_statement || '';
+  const transformationLocked = project?.transformation_locked || false;
+  const transformationVersions = (project?.transformation_versions as TransformationVersions) || null;
 
   const platform = platforms.find((p) => p.id === selectedPlatform);
   const formula = bioFormulas.find((f) => f.id === selectedFormula);
@@ -465,6 +491,66 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
 
           {step === "content" && formula && (
             <div className="space-y-4">
+              {/* Transformation Reference Card */}
+              {transformationStatement && (
+                <div className={cn(
+                  "p-4 rounded-lg border",
+                  transformationLocked ? "bg-primary/5 border-primary/20" : "bg-muted/50"
+                )}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        {transformationLocked && <Lock className="w-3 h-3 text-primary" />}
+                        <p className="text-xs font-medium text-muted-foreground">
+                          {transformationLocked ? "Your Locked Transformation" : "Your Transformation"}
+                        </p>
+                      </div>
+                      <p className="text-sm text-foreground line-clamp-2">
+                        {transformationVersions?.one_liner || transformationStatement}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        // Smart pre-fill based on formula type
+                        const oneLiner = transformationVersions?.one_liner || transformationStatement;
+                        
+                        if (selectedFormula === "short-punchy") {
+                          setFieldData({ statement: oneLiner });
+                        } else if (selectedFormula === "who-result") {
+                          // Try to parse: "I help [who] [result] using [method]"
+                          setFieldData(prev => ({
+                            ...prev,
+                            who: prev.who || "",
+                            result: prev.result || "",
+                            method: prev.method || "",
+                          }));
+                          toast.success("Use your transformation as a guide to fill in the fields");
+                        } else if (selectedFormula === "identity-transformation") {
+                          setFieldData(prev => ({
+                            ...prev,
+                            identity: prev.identity || "",
+                            who: prev.who || "",
+                            pain: prev.pain || "",
+                            outcome: prev.outcome || "",
+                          }));
+                          toast.success("Use your transformation as a guide to fill in the fields");
+                        } else {
+                          // For other formulas, copy the one-liner to clipboard
+                          navigator.clipboard.writeText(oneLiner);
+                          toast.success("Transformation copied! Use it as reference for your bio");
+                        }
+                      }}
+                      className="shrink-0"
+                    >
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      Use
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="p-3 rounded-lg bg-muted/50 border">
                 <p className="text-xs font-medium text-muted-foreground mb-1">Formula:</p>
                 <p className="text-sm font-mono">{formula.formula}</p>

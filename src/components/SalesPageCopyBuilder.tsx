@@ -291,7 +291,27 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     enabled: !!projectId,
   });
 
+  // Fetch project's transformation statement
+  const { data: project } = useQuery({
+    queryKey: ["project-transformation", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("transformation_statement, transformation_locked")
+        .eq("id", projectId)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!projectId,
+  });
+
+  const transformationStatement = project?.transformation_statement || '';
+  const transformationLocked = project?.transformation_locked || false;
+
   const deliverables = offer?.main_deliverables || [];
+
 
   const getDeliverableName = (id: string) => DELIVERABLE_NAMES[id] || id;
 
@@ -901,6 +921,8 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
         deliverables: offer.main_deliverables,
         price: offer.price,
         priceType: offer.price_type,
+        // Include transformation statement for cohesive messaging
+        transformationStatement: transformationStatement || undefined,
       };
 
       if (sectionType === "whyDifferent") {
