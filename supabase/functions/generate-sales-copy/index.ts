@@ -30,7 +30,14 @@ serve(async (req) => {
       price,
       // Count for benefits/faqs
       count,
+      // Transformation statement for cohesive messaging
+      transformationStatement,
     } = await req.json();
+
+    // Build transformation context if available
+    const transformationContext = transformationStatement 
+      ? `\n\nCORE TRANSFORMATION PROMISE (use this as the foundation for all copy):\n"${transformationStatement}"\n\nEnsure all copy aligns with and reinforces this core transformation message.`
+      : '';
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
@@ -109,11 +116,9 @@ Return ONLY valid JSON in this exact format:
 - Offer Name: ${offerName || "Not specified"}
 - Offer Type: ${offerType || "Digital product"}
 - Main Deliverables: ${deliverables?.join(", ") || "Not specified"}
-
+${transformationContext}
 Generate compelling, specific copy that speaks directly to the audience's pain and desired transformation.`;
       }
-
-    } else if (sectionType === "whyDifferent") {
       let contextSection = "";
       
       if (inferContext) {
@@ -182,7 +187,7 @@ Return ONLY valid JSON in this exact format:
 - Offer Name: ${offerName || "Not specified"}
 
 ${contextSection}
-
+${transformationContext}
 Write copy that validates their frustration and positions this offer as the solution they've been looking for.`;
       }
 
@@ -217,7 +222,7 @@ Return ONLY valid JSON in this exact format:
 - Offer Name: ${offerName || "Not specified"}
 - Offer Type: ${offerType || "Digital product"}
 - Main Deliverables: ${deliverables?.join(", ") || "Not specified"}
-
+${transformationContext}
 Generate ${benefitCount} specific, outcome-focused benefits that resonate with the target audience's desires.`;
 
     } else if (sectionType === "offerDetails") {
@@ -297,7 +302,7 @@ Return ONLY valid JSON in this exact format:
 - Main Deliverables: ${deliverables?.join(", ") || "Not specified"}
 - Price: ${price ? `$${price}` : "Not specified"}
 - Price Type: ${priceType || "One-time"}
-
+${transformationContext}
 Create compelling offer details that stack value and reduce perceived risk.`;
       }
 
@@ -330,7 +335,7 @@ Return ONLY valid JSON in this exact format:
 - Desired Outcome: ${desiredOutcome || "Not specified"}
 - Offer Name: ${offerName || "Not specified"}
 - Offer Type: ${offerType || "Digital product"}
-
+${transformationContext}
 Generate realistic sample testimonials that showcase the transformation this offer provides.`;
 
     } else if (sectionType === "faqs") {
@@ -367,7 +372,7 @@ Return ONLY valid JSON in this exact format:
 - Offer Type: ${offerType || "Digital product"}
 - Price: ${price ? `$${price}` : "Not specified"}
 - Price Type: ${priceType || "One-time"}
-
+${transformationContext}
 Generate ${faqCount} FAQs that address common concerns and move prospects closer to purchasing.`;
 
     } else {

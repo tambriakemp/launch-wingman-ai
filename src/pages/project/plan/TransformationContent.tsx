@@ -43,6 +43,7 @@ const TransformationContent = ({ projectId }: Props) => {
   const [primaryVersion, setPrimaryVersion] = useState<'one_liner' | 'standard' | 'expanded'>('standard');
   const [isLocked, setIsLocked] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [transformationMode, setTransformationMode] = useState<'ai' | 'manual'>('ai');
 
   // Audience data state
   const [audienceData, setAudienceData] = useState({
@@ -256,11 +257,14 @@ const TransformationContent = ({ projectId }: Props) => {
         initialVersions={transformationVersions}
         initialPrimaryVersion={primaryVersion}
         initialLocked={isLocked}
+        initialManualStatement={!transformationVersions ? transformationStatement : ''}
+        initialMode={transformationVersions ? 'ai' : (transformationStatement ? 'manual' : 'ai')}
         onStyleChange={setTransformationStyle}
         onVersionsChange={setTransformationVersions}
         onPrimaryVersionChange={setPrimaryVersion}
         onLockedChange={setIsLocked}
         onStatementChange={setTransformationStatement}
+        onModeChange={setTransformationMode}
       />
 
       {/* Navigation */}
