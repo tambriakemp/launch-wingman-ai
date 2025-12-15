@@ -109,14 +109,6 @@ export const OfferStackBuilder = ({
 
   return (
     <div className="space-y-6">
-      {/* Progress Counter */}
-      <div className="flex justify-end">
-        <div className="text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">{configuredCount}</span>
-          /{activeOffers.length} configured
-        </div>
-      </div>
-
       {/* Info Banner */}
       <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/50 border border-border">
         <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
@@ -128,6 +120,14 @@ export const OfferStackBuilder = ({
             Each slot represents a position in your funnel. Select an offer type first, then use AI to generate titles and descriptions. 
             You can skip optional slots if they don't fit your strategy.
           </p>
+        </div>
+      </div>
+
+      {/* Progress Counter */}
+      <div className="flex justify-end">
+        <div className="text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">{configuredCount}</span>
+          /{activeOffers.length} configured
         </div>
       </div>
 

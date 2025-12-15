@@ -1,17 +1,18 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Save, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-
 import { AudienceDiscovery, AudienceData } from "@/components/funnel/AudienceDiscovery";
-import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { useState, useEffect } from "react";
 
-const ProjectAudience = () => {
-  const { id: projectId } = useParams();
+interface Props {
+  projectId: string;
+}
+
+const AudienceContent = ({ projectId }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -31,7 +32,7 @@ const ProjectAudience = () => {
       const { data, error } = await supabase
         .from('funnels')
         .select('*')
-        .eq('project_id', projectId!)
+        .eq('project_id', projectId)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -88,15 +89,11 @@ const ProjectAudience = () => {
     navigate(`/projects/${projectId}/transformation`);
   };
 
-  if (!projectId) return null;
-
   if (isLoading) {
     return (
-      <ProjectLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-        </div>
-      </ProjectLayout>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
@@ -115,60 +112,58 @@ const ProjectAudience = () => {
   );
 
   return (
-    <ProjectLayout>
-      <div className="space-y-6">
-        <PlanPageHeader
-          title="Audience & Strategy"
-          description="Define who you're serving and the transformation you provide"
-        />
+    <div className="space-y-6">
+      <PlanPageHeader
+        title="Audience & Strategy"
+        description="Define who you're serving and the transformation you provide"
+      />
 
-        {/* Audience Form */}
-        <AudienceDiscovery
-          data={audienceData}
-          onChange={setAudienceData}
-        />
+      {/* Audience Form */}
+      <AudienceDiscovery
+        data={audienceData}
+        onChange={setAudienceData}
+      />
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between pt-4 border-t border-border">
+      {/* Navigation */}
+      <div className="flex items-center justify-between pt-4 border-t border-border">
+        <Button
+          variant="outline"
+          onClick={() => navigate(`/projects/${projectId}/funnel-type`)}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Funnel Type
+        </Button>
+
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={() => navigate(`/projects/${projectId}/funnel-type`)}
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Funnel Type
+            {saveMutation.isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            Save
           </Button>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => saveMutation.mutate()}
-              disabled={saveMutation.isPending}
-            >
-              {saveMutation.isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4 mr-2" />
-              )}
-              Save
-            </Button>
-            <Button
-              onClick={handleSaveAndContinue}
-              disabled={!isComplete || saveMutation.isPending}
-            >
-              {saveMutation.isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <>
-                  Continue
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </>
-              )}
-            </Button>
-          </div>
+          <Button
+            onClick={handleSaveAndContinue}
+            disabled={!isComplete || saveMutation.isPending}
+          >
+            {saveMutation.isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <>
+                Continue
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </>
+            )}
+          </Button>
         </div>
       </div>
-    </ProjectLayout>
+    </div>
   );
 };
 
-export default ProjectAudience;
+export default AudienceContent;

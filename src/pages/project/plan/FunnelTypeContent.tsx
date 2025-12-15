@@ -1,17 +1,18 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Save, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-
 import { FunnelTypeSelector } from "@/components/funnel/FunnelTypeSelector";
-import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { useState, useEffect } from "react";
 
-const ProjectFunnelType = () => {
-  const { id: projectId } = useParams();
+interface Props {
+  projectId: string;
+}
+
+const FunnelTypeContent = ({ projectId }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -25,7 +26,7 @@ const ProjectFunnelType = () => {
       const { data, error } = await supabase
         .from('funnels')
         .select('*')
-        .eq('project_id', projectId!)
+        .eq('project_id', projectId)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -77,63 +78,57 @@ const ProjectFunnelType = () => {
     navigate(`/projects/${projectId}/audience`);
   };
 
-  if (!projectId) return null;
-
   if (isLoading) {
     return (
-      <ProjectLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-        </div>
-      </ProjectLayout>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   return (
-    <ProjectLayout>
-      <div className="space-y-6">
-        <PlanPageHeader
-          title="Select Funnel Type"
-          description="Choose the type of funnel that best fits your business model"
-        />
+    <div className="space-y-6">
+      <PlanPageHeader
+        title="Select Funnel Type"
+        description="Choose the type of funnel that best fits your business model"
+      />
 
-        {/* Funnel Type Selector */}
-        <FunnelTypeSelector
-          selectedFunnelType={selectedFunnelType}
-          onSelect={setSelectedFunnelType}
-        />
+      {/* Funnel Type Selector */}
+      <FunnelTypeSelector
+        selectedFunnelType={selectedFunnelType}
+        onSelect={setSelectedFunnelType}
+      />
 
-        {/* Navigation */}
-        <div className="flex items-center justify-end pt-4 border-t border-border gap-2">
-          <Button
-            variant="outline"
-            onClick={() => saveMutation.mutate()}
-            disabled={!selectedFunnelType || saveMutation.isPending}
-          >
-            {saveMutation.isPending ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4 mr-2" />
-            )}
-            Save
-          </Button>
-          <Button
-            onClick={handleSaveAndContinue}
-            disabled={!selectedFunnelType || saveMutation.isPending}
-          >
-            {saveMutation.isPending ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <>
-                Continue
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </>
-            )}
-          </Button>
-        </div>
+      {/* Navigation */}
+      <div className="flex items-center justify-end pt-4 border-t border-border gap-2">
+        <Button
+          variant="outline"
+          onClick={() => saveMutation.mutate()}
+          disabled={!selectedFunnelType || saveMutation.isPending}
+        >
+          {saveMutation.isPending ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4 mr-2" />
+          )}
+          Save
+        </Button>
+        <Button
+          onClick={handleSaveAndContinue}
+          disabled={!selectedFunnelType || saveMutation.isPending}
+        >
+          {saveMutation.isPending ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <>
+              Continue
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </>
+          )}
+        </Button>
       </div>
-    </ProjectLayout>
+    </div>
   );
 };
 
-export default ProjectFunnelType;
+export default FunnelTypeContent;
