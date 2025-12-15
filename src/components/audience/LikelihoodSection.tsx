@@ -342,21 +342,23 @@ export const LikelihoodSection = ({
         )}
 
         {/* Generate Button */}
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-2">
           <Button
             onClick={handleGenerate}
             disabled={!mainObjections.trim() || isGenerating || !canAddMore}
             variant="outline"
+            size="sm"
+            className="gap-2"
           >
             {isGenerating ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
                 Generating...
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Generate Suggestions
+                <Sparkles className="w-4 h-4" />
+                Generate with AI
               </>
             )}
           </Button>
