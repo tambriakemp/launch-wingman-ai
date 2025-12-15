@@ -19,8 +19,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 10%;
 
-    /* Deep Violet Primary */
-    --primary: 262 83% 58%;
+    /* Dark Primary (matching sidebar) */
+    --primary: 40 6% 10%;
     --primary-foreground: 0 0% 100%;
 
     /* Teal/Mint Secondary */
@@ -30,15 +30,15 @@
     --muted: 220 14% 96%;
     --muted-foreground: 220 9% 46%;
 
-    --accent: 262 83% 95%;
-    --accent-foreground: 262 83% 40%;
+    --accent: 47 96% 53%;
+    --accent-foreground: 40 6% 7%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 262 83% 58%;
+    --ring: 40 6% 10%;
 
     --radius: 0.75rem;
 
@@ -61,16 +61,16 @@
     --info-foreground: 0 0% 100%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%) 0%, hsl(280 83% 65%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(40 6% 10%) 0%, hsl(40 6% 20%) 100%);
     --gradient-secondary: linear-gradient(135deg, hsl(168 76% 42%) 0%, hsl(180 76% 50%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(262 83% 58%) 0%, hsl(280 83% 65%) 50%, hsl(168 76% 50%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(40 6% 10%) 0%, hsl(47 96% 53%) 100%);
 
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     --shadow-card: 0 2px 8px -2px rgb(0 0 0 / 0.08), 0 4px 16px -4px rgb(0 0 0 / 0.04);
-    --shadow-glow: 0 0 20px hsl(262 83% 58% / 0.3);
+    --shadow-glow: 0 0 20px hsl(47 96% 53% / 0.3);
   }
 
   .dark {

@@ -64,8 +64,8 @@ export const TopBar = () => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full p-0">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
+              <Avatar className="h-8 w-8 bg-[#1a1a1a]">
+                <AvatarFallback className="bg-[#1a1a1a] text-white text-sm font-medium">
                   {userInitial}
                 </AvatarFallback>
               </Avatar>
