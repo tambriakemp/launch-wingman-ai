@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   Sparkles,
   LayoutDashboard,
-  Gift,
+  Rocket,
   Image,
   Palette,
   Type,
@@ -36,7 +36,7 @@ const createNavSections = (projectId: string): NavSection[] => [
     heading: "Plan",
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: `/projects/${projectId}` },
-      { id: "offer", label: "Offer Builder", icon: Gift, href: `/projects/${projectId}/offer` },
+      { id: "offer", label: "Funnel Builder", icon: Rocket, href: `/projects/${projectId}/offer` },
     ],
   },
   {

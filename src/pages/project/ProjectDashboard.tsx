@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { format, parseISO, differenceInDays } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,8 @@ import { ProjectProgress } from "@/components/ProjectProgress";
 import { ProjectQuickStats } from "@/components/ProjectQuickStats";
 import { LaunchCalendarEventDialog } from "@/components/LaunchCalendarEventDialog";
 import { ProjectSettingsDialog } from "@/components/ProjectSettingsDialog";
+import { FunnelDiagram } from "@/components/funnel/FunnelDiagram";
+import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 import {
   Calendar,
   Loader2,
@@ -18,6 +20,13 @@ import {
   Settings,
   MoreHorizontal,
   Pencil,
+  ArrowRight,
+  Gift,
+  DollarSign,
+  Video,
+  Trophy,
+  Users,
+  ClipboardCheck,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -27,6 +36,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+const ICON_MAP: Record<string, React.ElementType> = {
+  Gift,
+  DollarSign,
+  Video,
+  Trophy,
+  Rocket,
+  Users,
+  ClipboardCheck,
+};
 
 interface LaunchEvent {
   id: string;
@@ -73,7 +92,9 @@ const ProjectDashboard = () => {
   // Stats for quick stats and progress
   const [taskStats, setTaskStats] = useState({ completed: 0, total: 0 });
   const [contentStats, setContentStats] = useState({ ready: 0, total: 0 });
-  const [hasOffer, setHasOffer] = useState(false);
+  const [hasFunnel, setHasFunnel] = useState(false);
+  const [funnelType, setFunnelType] = useState<string | null>(null);
+  const [offersCount, setOffersCount] = useState(0);
   const [hasBrandAssets, setHasBrandAssets] = useState(false);
   const [hasSalesCopy, setHasSalesCopy] = useState(false);
 
@@ -122,13 +143,21 @@ const ProjectDashboard = () => {
       });
     }
 
-    // Check for offer
-    const { data: offer } = await supabase
-      .from("offers")
-      .select("id")
+    // Check for funnel
+    const { data: funnel } = await supabase
+      .from("funnels")
+      .select("id, funnel_type")
       .eq("project_id", id)
       .maybeSingle();
-    setHasOffer(!!offer);
+    setHasFunnel(!!funnel);
+    setFunnelType(funnel?.funnel_type || null);
+
+    // Count offers
+    const { data: offers } = await supabase
+      .from("offers")
+      .select("id")
+      .eq("project_id", id);
+    setOffersCount(offers?.length || 0);
 
     // Check for brand assets
     const { data: logos } = await supabase
@@ -204,8 +233,11 @@ const ProjectDashboard = () => {
   const statusInfo = statusVariants[project.status];
   const launchDate = launchEvents[0]?.enrollment_opens || launchEvents[0]?.prelaunch_start || null;
 
+  const funnelConfig = funnelType ? FUNNEL_CONFIGS[funnelType] : null;
+  const FunnelIcon = funnelConfig?.icon ? ICON_MAP[funnelConfig.icon] || Rocket : Rocket;
+
   const progressSteps = [
-    { id: "offer", label: "Offer defined", completed: hasOffer },
+    { id: "funnel", label: "Funnel configured", completed: hasFunnel },
     { id: "brand", label: "Brand assets", completed: hasBrandAssets },
     { id: "copy", label: "Sales copy", completed: hasSalesCopy },
     { id: "tasks", label: "Tasks added", completed: taskStats.total > 0 },
@@ -259,6 +291,72 @@ const ProjectDashboard = () => {
             <CardContent className="pt-4 pb-4">
               <ProjectProgress steps={progressSteps} />
             </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Funnel Overview */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <Card variant="elevated">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${funnelConfig?.bgColor || 'bg-muted'}`}>
+                    <FunnelIcon className={`w-5 h-5 ${funnelConfig?.color || 'text-muted-foreground'}`} />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">
+                      {funnelConfig?.name || "Funnel Strategy"}
+                    </CardTitle>
+                    <CardDescription>
+                      {hasFunnel 
+                        ? `${offersCount} offer${offersCount !== 1 ? 's' : ''} configured • ${funnelConfig?.assets.length || 0} assets to create`
+                        : "Set up your funnel to get started"}
+                    </CardDescription>
+                  </div>
+                </div>
+                <Link to={`/projects/${id}/offer`}>
+                  <Button variant="outline" size="sm">
+                    {hasFunnel ? "View Funnel" : "Configure Funnel"}
+                    <ArrowRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            {funnelConfig && (
+              <CardContent>
+                <div className="flex flex-col lg:flex-row gap-6">
+                  <div className="flex-1">
+                    <FunnelDiagram
+                      steps={funnelConfig.steps}
+                      color={funnelConfig.color}
+                      bgColor={funnelConfig.bgColor}
+                    />
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <h4 className="text-sm font-medium text-muted-foreground">Offer Slots</h4>
+                    <div className="space-y-2">
+                      {funnelConfig.offerSlots.map((slot, index) => (
+                        <div 
+                          key={index}
+                          className="flex items-center gap-3 p-2 rounded-lg bg-accent/30"
+                        >
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${funnelConfig.bgColor} ${funnelConfig.color}`}>
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-foreground">{slot.label}</p>
+                            <p className="text-xs text-muted-foreground">{slot.priceRange}</p>
+                          </div>
+                          {slot.isRequired && (
+                            <Badge variant="outline" className="text-xs">Required</Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            )}
           </Card>
         </motion.div>
 
