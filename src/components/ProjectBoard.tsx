@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO, isPast, isToday } from "date-fns";
-import { ChevronRight, ChevronDown, MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, X, ChevronsUpDown, Settings, ListChecks, Search, AlertTriangle, RefreshCw } from "lucide-react";
+import { ChevronRight, ChevronDown, MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, X, ChevronsUpDown, Settings, ListChecks, Search, AlertTriangle, RefreshCw, LayoutGrid, CheckSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,6 +23,7 @@ import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog"
 import { LoadLaunchTasksDialog } from "@/components/LoadLaunchTasksDialog";
 import { FilterPopover } from "@/components/FilterPopover";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
+import { AssetChecklist } from "@/components/funnel/AssetChecklist";
 
 const COLUMNS = [
   { id: "todo", label: "To Do" },
@@ -78,6 +79,11 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
   const [funnelTypeChanged, setFunnelTypeChanged] = useState(false);
   const [currentFunnelType, setCurrentFunnelType] = useState<string | null>(null);
   const [isRepopulating, setIsRepopulating] = useState(false);
+  
+  // View mode toggle
+  const [viewMode, setViewMode] = useState<'kanban' | 'checklist'>('checklist');
+  const [offers, setOffers] = useState<any[]>([]);
+  const [completedAssets, setCompletedAssets] = useState<Set<string>>(new Set());
 
   const togglePhase = (phaseId: string) => {
     setExpandedPhases(prev => {
@@ -149,15 +155,15 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
     fetchTasks();
   }, [fetchTasks]);
 
-  // Check for funnel type changes
+  // Check for funnel type changes and fetch funnel data
   useEffect(() => {
-    const checkFunnelChange = async () => {
+    const checkFunnelAndFetchOffers = async () => {
       if (!projectId) return;
 
       // Fetch current funnel type
       const { data: funnel } = await supabase
         .from('funnels')
-        .select('funnel_type')
+        .select('id, funnel_type')
         .eq('project_id', projectId)
         .maybeSingle();
 
@@ -168,14 +174,51 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
         .eq('id', projectId)
         .single();
 
-      if (funnel?.funnel_type && project?.funnel_type_snapshot && 
-          funnel.funnel_type !== project.funnel_type_snapshot) {
-        setFunnelTypeChanged(true);
+      if (funnel?.funnel_type) {
         setCurrentFunnelType(funnel.funnel_type);
+        
+        // Check if funnel type changed
+        if (project?.funnel_type_snapshot && funnel.funnel_type !== project.funnel_type_snapshot) {
+          setFunnelTypeChanged(true);
+        }
+
+        // Fetch offers for checklist view
+        const { data: projectOffers } = await supabase
+          .from('offers')
+          .select('*')
+          .eq('funnel_id', funnel.id)
+          .order('slot_position');
+        
+        if (projectOffers) {
+          setOffers(projectOffers.map(offer => ({
+            id: offer.id,
+            slotType: offer.slot_type,
+            title: offer.title || '',
+            description: offer.description || '',
+            offerType: offer.offer_type,
+            price: offer.price?.toString() || '',
+            priceType: offer.price_type || 'one-time',
+            isConfigured: true,
+            isSkipped: false,
+          })));
+        }
+      }
+
+      // Fetch asset completions
+      const { data: completions } = await supabase
+        .from('funnel_asset_completions')
+        .select('asset_id, is_completed')
+        .eq('project_id', projectId);
+      
+      if (completions) {
+        const completedSet = new Set<string>(
+          completions.filter(c => c.is_completed).map(c => c.asset_id)
+        );
+        setCompletedAssets(completedSet);
       }
     };
 
-    checkFunnelChange();
+    checkFunnelAndFetchOffers();
   }, [projectId]);
 
   const handleRepopulateTasks = async () => {
@@ -187,6 +230,13 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
       setIsRepopulating(false);
       return;
     }
+
+    // Fetch current offers for this project
+    const { data: projectOffers } = await supabase
+      .from('offers')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('slot_position');
 
     // Delete existing tasks
     const { error: deleteError } = await supabase
@@ -201,17 +251,38 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
       return;
     }
 
-    // Generate new tasks
-    const tasksToInsert = config.assets.map((asset, index) => ({
-      project_id: projectId,
-      user_id: user.id,
-      title: asset.title,
-      description: asset.description,
-      column_id: 'todo',
-      phase: ASSET_PHASE_MAP[asset.category] || null,
-      labels: ASSET_LABEL_MAP[asset.category] || [],
-      position: index,
-    }));
+    // Generate new tasks with offer context
+    const tasksToInsert = config.assets
+      .filter(asset => {
+        // Always include non-slot-specific assets
+        if (!asset.offerSlotType) return true;
+        // Include if there's a configured offer of this slot type
+        return projectOffers?.some(offer => 
+          offer.slot_type === asset.offerSlotType && offer.title
+        );
+      })
+      .map((asset, index) => {
+        // Find related offer for this asset
+        const relatedOffer = asset.offerSlotType 
+          ? projectOffers?.find(o => o.slot_type === asset.offerSlotType)
+          : null;
+        
+        // Build enhanced description with offer title
+        const description = relatedOffer?.title 
+          ? `${asset.description} • ${relatedOffer.title}`
+          : asset.description;
+
+        return {
+          project_id: projectId,
+          user_id: user.id,
+          title: asset.title,
+          description: description,
+          column_id: 'todo',
+          phase: ASSET_PHASE_MAP[asset.category] || null,
+          labels: ASSET_LABEL_MAP[asset.category] || [],
+          position: index,
+        };
+      });
 
     if (tasksToInsert.length > 0) {
       const { error: insertError } = await supabase.from('tasks').insert(tasksToInsert);
@@ -331,8 +402,41 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
     setDeleteDialogOpen(true);
   };
 
+  const handleToggleAsset = async (assetId: string) => {
+    if (!user) return;
 
-  // Label filter is now handled by FilterPopover
+    const isCurrentlyCompleted = completedAssets.has(assetId);
+    
+    // Optimistic update
+    setCompletedAssets(prev => {
+      const next = new Set(prev);
+      if (isCurrentlyCompleted) {
+        next.delete(assetId);
+      } else {
+        next.add(assetId);
+      }
+      return next;
+    });
+
+    // Persist to database
+    if (isCurrentlyCompleted) {
+      await supabase
+        .from('funnel_asset_completions')
+        .delete()
+        .eq('project_id', projectId)
+        .eq('asset_id', assetId);
+    } else {
+      await supabase
+        .from('funnel_asset_completions')
+        .upsert({
+          project_id: projectId,
+          user_id: user.id,
+          asset_id: assetId,
+          is_completed: true,
+        });
+    }
+  };
+
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -480,17 +584,41 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
           )}
         </div>
 
+        {/* View Toggle */}
+        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+          <Button
+            variant={viewMode === 'checklist' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="h-7 px-2.5"
+            onClick={() => setViewMode('checklist')}
+          >
+            <CheckSquare className="w-4 h-4 mr-1.5" />
+            Checklist
+          </Button>
+          <Button
+            variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="h-7 px-2.5"
+            onClick={() => setViewMode('kanban')}
+          >
+            <LayoutGrid className="w-4 h-4 mr-1.5" />
+            Board
+          </Button>
+        </div>
+
         {/* Actions */}
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 text-muted-foreground"
-            onClick={allExpanded ? collapseAll : expandAll}
-          >
-            <ChevronsUpDown className="w-4 h-4 mr-1" />
-            {allExpanded ? "Collapse" : "Expand"}
-          </Button>
+          {viewMode === 'kanban' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 text-muted-foreground"
+              onClick={allExpanded ? collapseAll : expandAll}
+            >
+              <ChevronsUpDown className="w-4 h-4 mr-1" />
+              {allExpanded ? "Collapse" : "Expand"}
+            </Button>
+          )}
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -538,34 +666,53 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
         </div>
       </div>
 
-      {/* Phase-grouped task list */}
-      {tasks.length === 0 ? (
+      {/* Checklist View */}
+      {viewMode === 'checklist' && currentFunnelType ? (
+        <AssetChecklist
+          funnelType={currentFunnelType}
+          offers={offers}
+          completedAssets={completedAssets}
+          onToggleAsset={handleToggleAsset}
+        />
+      ) : viewMode === 'checklist' && !currentFunnelType ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <ListTodo className="w-12 h-12 text-muted-foreground/30 mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">No tasks yet</h3>
+          <CheckSquare className="w-12 h-12 text-muted-foreground/30 mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">No funnel configured</h3>
           <p className="text-muted-foreground text-sm mb-6 max-w-md">
-            Get started by adding your first task or loading a pre-built launch task template.
+            Set up your funnel first to see the asset checklist.
           </p>
-          <div className="flex gap-3">
-            <Button onClick={() => { setEditingTask(null); setTaskDialogOpen(true); }}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Task
-            </Button>
-            <LoadLaunchTasksDialog
-              projectId={projectId}
-              projectType={projectType}
-              onTasksLoaded={fetchTasks}
-              taskCount={0}
-              trigger={
-                <Button variant="outline">
-                  <ListChecks className="w-4 h-4 mr-2" />
-                  Load Launch Tasks
-                </Button>
-              }
-            />
-          </div>
         </div>
       ) : (
+        /* Kanban/Board View */
+        <>
+          {/* Phase-grouped task list */}
+          {tasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <ListTodo className="w-12 h-12 text-muted-foreground/30 mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No tasks yet</h3>
+              <p className="text-muted-foreground text-sm mb-6 max-w-md">
+                Get started by adding your first task or loading a pre-built launch task template.
+              </p>
+              <div className="flex gap-3">
+                <Button onClick={() => { setEditingTask(null); setTaskDialogOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Task
+                </Button>
+                <LoadLaunchTasksDialog
+                  projectId={projectId}
+                  projectType={projectType}
+                  onTasksLoaded={fetchTasks}
+                  taskCount={0}
+                  trigger={
+                    <Button variant="outline">
+                      <ListChecks className="w-4 h-4 mr-2" />
+                      Load Launch Tasks
+                    </Button>
+                  }
+                />
+              </div>
+            </div>
+          ) : (
         <div className="space-y-2">
           {/* Render phases in order */}
         {TASK_PHASES.map((phase) => {
@@ -829,6 +976,8 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
             </div>
           )}
         </div>
+          )}
+        </>
       )}
       {/* Task Dialog */}
       <TaskDialog

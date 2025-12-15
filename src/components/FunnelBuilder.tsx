@@ -347,16 +347,40 @@ export const FunnelBuilder = ({ projectId, projectType = "launch" }: FunnelBuild
     // Only generate tasks if none exist
     if (existingTasks && existingTasks.length > 0) return;
 
-    const tasksToInsert = config.assets.map((asset, index) => ({
-      project_id: projectId,
-      user_id: user.id,
-      title: asset.title,
-      description: asset.description,
-      column_id: 'todo',
-      phase: ASSET_PHASE_MAP[asset.category] || null,
-      labels: ASSET_LABEL_MAP[asset.category] || [],
-      position: index,
-    }));
+    // Filter assets based on configured/non-skipped offers and build tasks with offer context
+    const tasksToInsert = config.assets
+      .filter(asset => {
+        // Always include non-slot-specific assets
+        if (!asset.offerSlotType) return true;
+        // Include if there's a configured offer of this slot type that isn't skipped
+        return offers.some(offer => 
+          offer.slotType === asset.offerSlotType && 
+          !offer.isSkipped &&
+          (offer.isConfigured || offer.title)
+        );
+      })
+      .map((asset, index) => {
+        // Find related offer for this asset
+        const relatedOffer = asset.offerSlotType 
+          ? offers.find(o => o.slotType === asset.offerSlotType && !o.isSkipped)
+          : null;
+        
+        // Build enhanced description with offer title
+        const description = relatedOffer?.title 
+          ? `${asset.description} • ${relatedOffer.title}`
+          : asset.description;
+
+        return {
+          project_id: projectId,
+          user_id: user.id,
+          title: asset.title,
+          description: description,
+          column_id: 'todo',
+          phase: ASSET_PHASE_MAP[asset.category] || null,
+          labels: ASSET_LABEL_MAP[asset.category] || [],
+          position: index,
+        };
+      });
 
     if (tasksToInsert.length > 0) {
       const { error } = await supabase.from('tasks').insert(tasksToInsert);
