@@ -1,12 +1,11 @@
 import { motion } from "framer-motion";
 import { 
-  Pencil, Layers, Users, Sparkles, Package, ListChecks,
+  Pencil, Layers, Users, Sparkles, Package,
   Gift, DollarSign, Video, Trophy, Rocket, ClipboardCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 import { FunnelDiagram } from "./FunnelDiagram";
 import { AudienceData } from "./AudienceDiscovery";
@@ -45,9 +44,6 @@ export const FunnelSummary = ({
   if (!funnelConfig) return null;
 
   const Icon = ICON_MAP[funnelConfig.icon] || Layers;
-  const totalAssets = funnelConfig.assets.length;
-  const completedCount = funnelConfig.assets.filter(a => completedAssets.has(a.id)).length;
-  const progressPercent = totalAssets > 0 ? (completedCount / totalAssets) * 100 : 0;
 
   return (
     <div className="space-y-6">
@@ -243,42 +239,6 @@ export const FunnelSummary = ({
           </Card>
         </motion.div>
 
-        {/* Asset Checklist Progress Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="lg:col-span-2"
-        >
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <ListChecks className="w-4 h-4 text-primary" />
-                  Asset Checklist Progress
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onEditStep('checklist')}
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {completedCount} of {totalAssets} assets complete
-                </span>
-                <span className="font-medium text-foreground">
-                  {Math.round(progressPercent)}%
-                </span>
-              </div>
-              <Progress value={progressPercent} className="h-2" />
-            </CardContent>
-          </Card>
-        </motion.div>
       </div>
     </div>
   );

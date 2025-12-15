@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { 
   Gift, DollarSign, Video, Trophy, Rocket, Users, ClipboardCheck,
   Check
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 import { FunnelDiagram } from "./FunnelDiagram";
 import { cn } from "@/lib/utils";
@@ -80,7 +80,7 @@ export const FunnelTypeSelector = ({
                   : "border-border bg-card hover:border-muted-foreground/30"
               )}
             >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline [&>svg]:hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline [&>svg]:hidden group">
                 <div className="flex items-center gap-3 flex-1">
                   {isSelected && (
                     <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
@@ -101,6 +101,27 @@ export const FunnelTypeSelector = ({
                       {funnel.description}
                     </p>
                   </div>
+                  {/* Select button in header when expanded */}
+                  {openItem === funnel.id && (
+                    <Button
+                      size="sm"
+                      variant={isSelected ? "default" : "outline"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelect(funnel.id);
+                      }}
+                      className="shrink-0"
+                    >
+                      {isSelected ? (
+                        <>
+                          <Check className="w-4 h-4 mr-1" />
+                          Selected
+                        </>
+                      ) : (
+                        "Select"
+                      )}
+                    </Button>
+                  )}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
@@ -126,20 +147,9 @@ export const FunnelTypeSelector = ({
                   />
 
                   <div className="pt-2 border-t border-border">
-                    <p className="text-xs text-muted-foreground mb-3">
+                    <p className="text-xs text-muted-foreground">
                       Offer Slots: {funnel.offerSlots.map(s => s.label.replace(" (Optional)", "")).join(" → ")}
                     </p>
-                    <button
-                      onClick={() => handleSelect(funnel.id)}
-                      className={cn(
-                        "w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors",
-                        isSelected
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted hover:bg-muted/80 text-foreground"
-                      )}
-                    >
-                      {isSelected ? "Selected" : "Select This Funnel"}
-                    </button>
                   </div>
                 </div>
               </AccordionContent>

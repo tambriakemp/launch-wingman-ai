@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   ChevronLeft, ChevronRight, Check, Loader2, Save,
-  Layers, Users, ListChecks, Sparkles, Package, Lock
+  Layers, Users, Sparkles, Package, Lock, Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,22 +15,21 @@ import { AudienceDiscovery, AudienceData } from "@/components/funnel/AudienceDis
 import { TransformationStep } from "@/components/funnel/TransformationStep";
 import { OfferStackBuilder } from "@/components/funnel/OfferStackBuilder";
 import { OfferSlotData } from "@/components/funnel/OfferSlotCard";
-import { AssetChecklist } from "@/components/funnel/AssetChecklist";
 import { FunnelSummary } from "@/components/funnel/FunnelSummary";
+import { FunnelPreview } from "@/components/funnel/FunnelPreview";
 import { cn } from "@/lib/utils";
 
 interface FunnelBuilderProps {
   projectId: string;
 }
 
-type Step = 'funnel-type' | 'audience' | 'transformation' | 'offers' | 'checklist';
+type Step = 'funnel-type' | 'audience' | 'transformation' | 'offers';
 
 const STEPS: { id: Step; label: string; icon: React.ElementType }[] = [
   { id: 'funnel-type', label: 'Funnel Type', icon: Layers },
   { id: 'audience', label: 'Audience', icon: Users },
   { id: 'transformation', label: 'Transformation', icon: Sparkles },
   { id: 'offers', label: 'Offers', icon: Package },
-  { id: 'checklist', label: 'Checklist', icon: ListChecks },
 ];
 
 export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
@@ -51,6 +50,7 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
   const [isLoadingCompletions, setIsLoadingCompletions] = useState(true);
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [isFirstTimeSetup, setIsFirstTimeSetup] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Fetch existing funnel data
   const { data: existingFunnel, isLoading } = useQuery({
@@ -144,7 +144,6 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
         setIsSetupComplete(true);
         setIsFirstTimeSetup(false);
       } else if (existingFunnel.funnel_type) {
-        setCurrentStep('audience');
         setIsFirstTimeSetup(false);
       }
     }
@@ -187,13 +186,18 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
     }
   }, [funnelType, existingOffers]);
 
-  // Calculate step completion status
+  // Calculate step completion status - ALL audience fields are now required
   const stepCompletion = useMemo(() => ({
     'funnel-type': !!funnelType,
-    'audience': !!(audienceData.niche && audienceData.targetAudience),
+    'audience': !!(
+      audienceData.niche && 
+      audienceData.targetAudience && 
+      audienceData.primaryPainPoint && 
+      audienceData.desiredOutcome && 
+      audienceData.problemStatement
+    ),
     'transformation': true, // Optional step - always "complete"
     'offers': offers.some(o => o.isConfigured || o.title || o.isSkipped),
-    'checklist': true, // Always accessible after offers
   }), [funnelType, audienceData, offers]);
 
   // Save funnel mutation
@@ -297,68 +301,22 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
     setFunnelType(type);
   };
 
-  const handleToggleAsset = async (assetId: string) => {
-    if (!user) return;
-
-    const isCurrentlyCompleted = completedAssets.has(assetId);
-    const newIsCompleted = !isCurrentlyCompleted;
-
-    // Optimistically update UI
-    setCompletedAssets(prev => {
-      const newSet = new Set(prev);
-      if (newIsCompleted) {
-        newSet.add(assetId);
-      } else {
-        newSet.delete(assetId);
-      }
-      return newSet;
-    });
-
-    try {
-      // Upsert completion status in database
-      const { error } = await supabase
-        .from('funnel_asset_completions')
-        .upsert({
-          project_id: projectId,
-          user_id: user.id,
-          asset_id: assetId,
-          is_completed: newIsCompleted,
-        }, {
-          onConflict: 'project_id,asset_id',
-        });
-
-      if (error) throw error;
-
-      // Invalidate query to keep in sync
-      queryClient.invalidateQueries({ queryKey: ['asset-completions', projectId] });
-    } catch (error) {
-      console.error("Error saving asset completion:", error);
-      // Revert optimistic update on error
-      setCompletedAssets(prev => {
-        const newSet = new Set(prev);
-        if (isCurrentlyCompleted) {
-          newSet.add(assetId);
-        } else {
-          newSet.delete(assetId);
-        }
-        return newSet;
-      });
-      toast.error("Failed to save progress");
-    }
-  };
-
   const canProceed = () => {
     switch (currentStep) {
       case 'funnel-type':
         return !!funnelType;
       case 'audience':
-        return !!(audienceData.niche && audienceData.targetAudience);
+        return !!(
+          audienceData.niche && 
+          audienceData.targetAudience && 
+          audienceData.primaryPainPoint && 
+          audienceData.desiredOutcome && 
+          audienceData.problemStatement
+        );
       case 'transformation':
         return true; // Optional step
       case 'offers':
         return offers.some(o => o.isConfigured || o.title || o.isSkipped);
-      case 'checklist':
-        return true;
       default:
         return false;
     }
@@ -420,7 +378,11 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
   if (isSetupComplete && funnelType) {
     return (
       <div className="space-y-6">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setShowPreview(true)}>
+            <Eye className="w-4 h-4 mr-2" />
+            Preview Funnel
+          </Button>
           <Button variant="outline" onClick={handleEditFunnel}>
             Edit Funnel
           </Button>
@@ -433,6 +395,12 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
           completedAssets={completedAssets}
           onEditStep={(step) => goToStep(step as Step)}
         />
+        <FunnelPreview
+          isOpen={showPreview}
+          onClose={() => setShowPreview(false)}
+          funnelType={funnelType}
+          offers={offers}
+        />
       </div>
     );
   }
@@ -440,7 +408,7 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
   return (
     <div className="space-y-6">
       {/* Step Indicator */}
-      <div className="flex items-center justify-center p-4 bg-card border border-border rounded-xl">
+      <div className="flex items-center justify-between p-4 bg-card border border-border rounded-xl">
         <div className="flex items-center gap-2">
           {STEPS.map((step, index) => {
             const Icon = step.icon;
@@ -485,6 +453,14 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
             );
           })}
         </div>
+
+        {/* Preview Button in header */}
+        {funnelType && (
+          <Button variant="ghost" size="sm" onClick={() => setShowPreview(true)}>
+            <Eye className="w-4 h-4 mr-2" />
+            Preview
+          </Button>
+        )}
       </div>
 
       {/* Step Content */}
@@ -549,22 +525,6 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
               />
             </motion.div>
           )}
-
-          {currentStep === 'checklist' && funnelType && (
-            <motion.div
-              key="checklist"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-            >
-              <AssetChecklist
-                funnelType={funnelType}
-                offers={offers}
-                completedAssets={completedAssets}
-                onToggleAsset={handleToggleAsset}
-              />
-            </motion.div>
-          )}
         </AnimatePresence>
       </div>
 
@@ -600,7 +560,7 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
             </Button>
           )}
 
-          {currentStep !== 'checklist' ? (
+          {currentStep !== 'offers' ? (
             <Button
               onClick={nextStep}
               disabled={!canProceed()}
@@ -628,6 +588,16 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
           )}
         </div>
       </div>
+
+      {/* Preview Dialog */}
+      {funnelType && (
+        <FunnelPreview
+          isOpen={showPreview}
+          onClose={() => setShowPreview(false)}
+          funnelType={funnelType}
+          offers={offers}
+        />
+      )}
     </div>
   );
 };
