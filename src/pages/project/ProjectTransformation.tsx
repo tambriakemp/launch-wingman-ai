@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Save, ArrowLeft, ArrowRight } from "lucide-react";
+import { Loader2, Save, ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { TransformationStep } from "@/components/funnel/TransformationStep";
 import { AudienceData } from "@/components/funnel/AudienceDiscovery";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
+import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { useState, useEffect } from "react";
 
 const ProjectTransformation = () => {
@@ -127,15 +128,15 @@ const ProjectTransformation = () => {
   return (
     <ProjectLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">Transformation Statement</h1>
-            <p className="text-muted-foreground">
-              Create a powerful statement that articulates the transformation you provide
-            </p>
-          </div>
-        </div>
+        <PlanPageHeader
+          title="Transformation Statement"
+          description="Create a powerful statement that articulates the transformation you provide"
+          icon={Sparkles}
+          breadcrumbs={[
+            { label: "Funnel Type", href: `/projects/${projectId}/funnel-type` },
+            { label: "Audience", href: `/projects/${projectId}/audience` }
+          ]}
+        />
 
         {/* Transformation Form */}
         <TransformationStep
