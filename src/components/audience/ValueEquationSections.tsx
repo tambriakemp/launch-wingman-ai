@@ -4,6 +4,7 @@ import { Check } from "lucide-react";
 import { WhoSection } from "./WhoSection";
 import { DreamOutcomeSection } from "./DreamOutcomeSection";
 import { PainSection } from "./PainSection";
+import { LikelihoodSection, LikelihoodElement } from "./LikelihoodSection";
 
 interface SubAudience {
   name: string;
@@ -20,6 +21,8 @@ export interface ValueEquationData {
   primaryPainPoint: string;
   painSymptoms: string[];
   problemStatement: string;
+  mainObjections: string;
+  likelihoodElements: LikelihoodElement[];
 }
 
 interface ValueEquationSectionsProps {
@@ -68,6 +71,8 @@ export const ValueEquationSections = ({
 
   const isWhoComplete = !!(data.niche && data.targetAudience);
   const isDreamComplete = !!data.desiredOutcome;
+  const isPainComplete = !!(data.primaryPainPoint && data.painSymptoms.length > 0);
+  const isLikelihoodComplete = !!(data.mainObjections && data.likelihoodElements.length > 0);
 
   return (
     <div className="space-y-6">
@@ -114,24 +119,17 @@ export const ValueEquationSections = ({
         onSymptomsChange={(symptoms) => updateField("painSymptoms", symptoms)}
       />
 
-      {/* Section 4: PERCEIVED LIKELIHOOD (Coming Soon) */}
-      <Card className="opacity-60">
-        <CardHeader className="pb-4">
-          <SectionHeader
-            number={4}
-            title="PERCEIVED LIKELIHOOD"
-            subtitle="Why will they believe it works?"
-            isComplete={false}
-          />
-        </CardHeader>
-        <CardContent>
-          <div className="p-4 text-center border border-dashed rounded-lg bg-muted/30">
-            <p className="text-sm text-muted-foreground">
-              Coming soon: Define obstacles, proof elements, and credibility builders
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Section 4: PERCEIVED LIKELIHOOD */}
+      <LikelihoodSection
+        mainObjections={data.mainObjections}
+        likelihoodElements={data.likelihoodElements}
+        niche={data.niche}
+        targetAudience={data.targetAudience}
+        primaryPainPoint={data.primaryPainPoint}
+        desiredOutcome={data.desiredOutcome}
+        onObjectionsChange={(value) => updateField("mainObjections", value)}
+        onElementsChange={(elements) => updateField("likelihoodElements", elements)}
+      />
 
       {/* Section 5: TIME + EFFORT (Coming Soon) */}
       <Card className="opacity-60">

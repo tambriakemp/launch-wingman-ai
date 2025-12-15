@@ -319,6 +319,8 @@ export type Database = {
           funnel_platform: string | null
           funnel_type: string
           id: string
+          likelihood_elements: Json | null
+          main_objections: string | null
           niche: string | null
           pain_symptoms: Json | null
           primary_pain_point: string | null
@@ -338,6 +340,8 @@ export type Database = {
           funnel_platform?: string | null
           funnel_type: string
           id?: string
+          likelihood_elements?: Json | null
+          main_objections?: string | null
           niche?: string | null
           pain_symptoms?: Json | null
           primary_pain_point?: string | null
@@ -357,6 +361,8 @@ export type Database = {
           funnel_platform?: string | null
           funnel_type?: string
           id?: string
+          likelihood_elements?: Json | null
+          main_objections?: string | null
           niche?: string | null
           pain_symptoms?: Json | null
           primary_pain_point?: string | null

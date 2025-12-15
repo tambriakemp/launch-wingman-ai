@@ -32,6 +32,8 @@ const AudienceContent = ({ projectId }: Props) => {
     primaryPainPoint: '',
     painSymptoms: [],
     problemStatement: '',
+    mainObjections: '',
+    likelihoodElements: [],
   });
 
   // Track if initial load is done to avoid auto-save on first render
@@ -77,6 +79,17 @@ const AudienceContent = ({ projectId }: Props) => {
         }
       }
 
+      // Parse likelihood_elements from jsonb
+      let likelihoodElements: ValueEquationData['likelihoodElements'] = [];
+      if ((funnel as any).likelihood_elements) {
+        try {
+          const parsed = (funnel as any).likelihood_elements as unknown;
+          likelihoodElements = Array.isArray(parsed) ? parsed as ValueEquationData['likelihoodElements'] : [];
+        } catch {
+          likelihoodElements = [];
+        }
+      }
+
       setAudienceData({
         niche: funnel.niche || '',
         targetAudience: funnel.target_audience || '',
@@ -86,6 +99,8 @@ const AudienceContent = ({ projectId }: Props) => {
         primaryPainPoint: funnel.primary_pain_point || '',
         painSymptoms,
         problemStatement: funnel.problem_statement || '',
+        mainObjections: (funnel as any).main_objections || '',
+        likelihoodElements,
       });
 
       // Mark as initialized after data is loaded
@@ -111,6 +126,8 @@ const AudienceContent = ({ projectId }: Props) => {
           primary_pain_point: audienceData.primaryPainPoint,
           pain_symptoms: audienceData.painSymptoms,
           problem_statement: audienceData.problemStatement,
+          main_objections: audienceData.mainObjections,
+          likelihood_elements: audienceData.likelihoodElements,
         } as any)
         .eq('id', funnel.id);
 
@@ -178,6 +195,8 @@ const AudienceContent = ({ projectId }: Props) => {
             primary_pain_point: audienceData.primaryPainPoint,
             pain_symptoms: audienceData.painSymptoms,
             problem_statement: audienceData.problemStatement,
+            main_objections: audienceData.mainObjections,
+            likelihood_elements: audienceData.likelihoodElements,
           } as any)
           .eq('id', funnel.id);
         if (error) throw error;
