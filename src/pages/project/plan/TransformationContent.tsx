@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Save, ArrowLeft, ArrowRight } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +8,9 @@ import { TransformationBuilder } from "@/components/transformation/Transformatio
 import { TransformationStyle } from "@/components/transformation/StyleSelector";
 import { TransformationVersionsData } from "@/components/transformation/TransformationVersions";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
+import { AudienceSummaryCard } from "@/components/transformation/AudienceSummaryCard";
+import { Card, CardContent } from "@/components/ui/card";
+import { Info } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 
 interface PainSymptom {
@@ -237,6 +240,7 @@ const TransformationContent = ({ projectId }: Props) => {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <PlanPageHeader
           title="Transformation Statement"
@@ -249,23 +253,67 @@ const TransformationContent = ({ projectId }: Props) => {
         )}
       </div>
 
-      {/* Transformation Builder */}
-      <TransformationBuilder
-        audienceData={audienceData}
-        funnelType={funnel.funnel_type}
-        initialStyle={transformationStyle}
-        initialVersions={transformationVersions}
-        initialPrimaryVersion={primaryVersion}
-        initialLocked={isLocked}
-        initialManualStatement={!transformationVersions ? transformationStatement : ''}
-        initialMode={transformationVersions ? 'ai' : (transformationStatement ? 'manual' : 'ai')}
-        onStyleChange={setTransformationStyle}
-        onVersionsChange={setTransformationVersions}
-        onPrimaryVersionChange={setPrimaryVersion}
-        onLockedChange={setIsLocked}
-        onStatementChange={setTransformationStatement}
-        onModeChange={setTransformationMode}
-      />
+      {/* Two-Column Layout */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Left Sidebar - Sticky */}
+        <div className="lg:w-[340px] shrink-0">
+          <div className="lg:sticky lg:top-6 space-y-4">
+            {/* Compact Audience Summary */}
+            <AudienceSummaryCard
+              niche={audienceData.niche}
+              targetAudience={audienceData.targetAudience}
+              primaryPainPoint={audienceData.primaryPainPoint}
+              painSymptoms={audienceData.painSymptoms}
+              desiredOutcome={audienceData.desiredOutcome}
+              mainObjections={audienceData.mainObjections}
+              likelihoodElements={audienceData.likelihoodElements}
+              timeEffortElements={audienceData.timeEffortElements}
+              specificityScore={audienceData.specificityScore}
+              compact
+            />
+
+            {/* Why This Works Card */}
+            <Card className="bg-muted/30 border-border">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">Why This Works</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Your transformation statement is derived from your audience definition. 
+                      It captures who you help, their pain, and the outcome you deliver.
+                      {transformationStyle === 'short' && " The short & punchy style is optimized for social media."}
+                      {transformationStyle === 'practical' && " The clear & practical style works best for sales pages."}
+                      {transformationStyle === 'aspirational' && " The aspirational style connects emotionally."}
+                      {transformationStyle === 'authority' && " The authority style positions you as premium."}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Right Main Content */}
+        <div className="flex-1 min-w-0">
+          <TransformationBuilder
+            audienceData={audienceData}
+            funnelType={funnel.funnel_type}
+            initialStyle={transformationStyle}
+            initialVersions={transformationVersions}
+            initialPrimaryVersion={primaryVersion}
+            initialLocked={isLocked}
+            initialManualStatement={!transformationVersions ? transformationStatement : ''}
+            initialMode={transformationVersions ? 'ai' : (transformationStatement ? 'manual' : 'ai')}
+            onStyleChange={setTransformationStyle}
+            onVersionsChange={setTransformationVersions}
+            onPrimaryVersionChange={setPrimaryVersion}
+            onLockedChange={setIsLocked}
+            onStatementChange={setTransformationStatement}
+            onModeChange={setTransformationMode}
+          />
+        </div>
+      </div>
 
       {/* Navigation */}
       <div className="flex items-center justify-between pt-4 border-t border-border">

@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Sparkles, RefreshCw, Lock, Unlock, Info, PenLine, Wand2 } from "lucide-react";
+import { Loader2, Sparkles, RefreshCw, Lock, Unlock, PenLine, Wand2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { AudienceSummaryCard } from "./AudienceSummaryCard";
 import { StyleSelector, TransformationStyle } from "./StyleSelector";
 import { TransformationVersions, TransformationVersionsData } from "./TransformationVersions";
 
@@ -191,30 +190,18 @@ export const TransformationBuilder = ({
   const formulaPlaceholder = `I help [${audienceData.targetAudience || 'WHO'}] go from [${audienceData.primaryPainPoint || 'CURRENT STRUGGLE'}] to [${audienceData.desiredOutcome || 'DESIRED OUTCOME'}] using [YOUR METHOD/APPROACH] without [COMMON OBSTACLE].`;
 
   return (
-    <div className="space-y-6">
-      {/* Section 1: Audience Summary */}
-      <AudienceSummaryCard
-        niche={audienceData.niche}
-        targetAudience={audienceData.targetAudience}
-        primaryPainPoint={audienceData.primaryPainPoint}
-        painSymptoms={audienceData.painSymptoms}
-        desiredOutcome={audienceData.desiredOutcome}
-        mainObjections={audienceData.mainObjections}
-        likelihoodElements={audienceData.likelihoodElements}
-        timeEffortElements={audienceData.timeEffortElements}
-        specificityScore={audienceData.specificityScore}
-      />
-
-      {/* Section 2: Mode Selection */}
+    <div className="space-y-5">
+      {/* Mode Selection Card */}
       <Card className="bg-card border-border">
-        <CardContent className="p-6 space-y-6">
+        <CardContent className="p-5 space-y-5">
+          {/* Mode Toggle */}
           <div className="space-y-3">
             <Label className="text-sm font-medium">How do you want to create your statement?</Label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => handleModeChange('ai')}
                 disabled={isLocked}
-                className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all ${
+                className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
                   mode === 'ai'
                     ? 'border-primary bg-primary/5'
                     : 'border-border hover:border-primary/50'
@@ -223,13 +210,13 @@ export const TransformationBuilder = ({
                 <Wand2 className={`w-5 h-5 ${mode === 'ai' ? 'text-primary' : 'text-muted-foreground'}`} />
                 <div className="text-left">
                   <p className={`text-sm font-medium ${mode === 'ai' ? 'text-primary' : ''}`}>Generate with AI</p>
-                  <p className="text-xs text-muted-foreground">Based on your audience data</p>
+                  <p className="text-xs text-muted-foreground">Based on your audience</p>
                 </div>
               </button>
               <button
                 onClick={() => handleModeChange('manual')}
                 disabled={isLocked}
-                className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all ${
+                className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
                   mode === 'manual'
                     ? 'border-primary bg-primary/5'
                     : 'border-border hover:border-primary/50'
@@ -238,7 +225,7 @@ export const TransformationBuilder = ({
                 <PenLine className={`w-5 h-5 ${mode === 'manual' ? 'text-primary' : 'text-muted-foreground'}`} />
                 <div className="text-left">
                   <p className={`text-sm font-medium ${mode === 'manual' ? 'text-primary' : ''}`}>Write Manually</p>
-                  <p className="text-xs text-muted-foreground">Use the formula guide</p>
+                  <p className="text-xs text-muted-foreground">Use the formula</p>
                 </div>
               </button>
             </div>
@@ -253,27 +240,27 @@ export const TransformationBuilder = ({
                 disabled={isLocked}
               />
 
-              <div className="flex justify-center pt-2">
+              <div className="flex justify-center">
                 <Button
                   onClick={handleGenerate}
                   disabled={isGenerating || !isAudienceComplete || isLocked}
                   size="lg"
-                  className="min-w-[240px]"
+                  className="min-w-[200px]"
                 >
                   {isGenerating ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating Versions...
+                      Generating...
                     </>
                   ) : hasGenerated ? (
                     <>
                       <RefreshCw className="w-4 h-4 mr-2" />
-                      Regenerate Transformation
+                      Regenerate
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Generate Transformation Versions
+                      Generate Versions
                     </>
                   )}
                 </Button>
@@ -281,7 +268,7 @@ export const TransformationBuilder = ({
 
               {!isAudienceComplete && (
                 <p className="text-center text-sm text-muted-foreground">
-                  Complete your audience definition to generate transformation statements
+                  Complete your audience definition to generate
                 </p>
               )}
             </>
@@ -289,37 +276,34 @@ export const TransformationBuilder = ({
 
           {/* Manual Mode: Textarea with formula */}
           {mode === 'manual' && (
-            <div className="space-y-4">
-              <div className="p-4 rounded-lg bg-muted/50 border border-border">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Transformation Formula:</p>
-                <p className="text-sm font-mono text-foreground">
-                  I help [WHO] go from [CURRENT STRUGGLE] to [DESIRED OUTCOME] using [METHOD/APPROACH] without [COMMON OBSTACLE].
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                <p className="text-[10px] font-medium text-muted-foreground mb-1 uppercase tracking-wide">Transformation Formula</p>
+                <p className="text-xs font-mono text-foreground">
+                  I help [WHO] go from [STRUGGLE] to [OUTCOME] using [METHOD] without [OBSTACLE].
                 </p>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="manual-statement">Your Transformation Statement</Label>
+                <Label htmlFor="manual-statement" className="text-sm">Your Transformation Statement</Label>
                 <Textarea
                   id="manual-statement"
                   value={manualStatement}
                   onChange={(e) => handleManualStatementChange(e.target.value)}
                   placeholder={formulaPlaceholder}
-                  rows={4}
+                  rows={3}
                   disabled={isLocked}
-                  className="resize-none"
+                  className="resize-none text-sm"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Use the formula above as a guide. Your audience data has been pre-filled in the placeholder.
-                </p>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Section 3: Generated Versions (AI mode only) */}
+      {/* Generated Versions (AI mode) - Horizontal Layout */}
       {mode === 'ai' && versions && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-medium">Your Transformation Versions</Label>
             <div className="flex items-center gap-2">
@@ -329,7 +313,7 @@ export const TransformationBuilder = ({
                 <Unlock className="w-4 h-4 text-muted-foreground" />
               )}
               <Label htmlFor="lock-toggle" className="text-xs text-muted-foreground cursor-pointer">
-                Lock transformation
+                Lock
               </Label>
               <Switch
                 id="lock-toggle"
@@ -346,66 +330,25 @@ export const TransformationBuilder = ({
             onEditVersion={handleEditVersion}
             isLocked={isLocked}
           />
-
-          {/* Why This Works */}
-          <Card className="bg-muted/30 border-border">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                <div className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">Why This Works</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    This transformation statement is derived from your defined audience ({audienceData.targetAudience?.slice(0, 40)}...), 
-                    their core pain ({audienceData.primaryPainPoint?.slice(0, 30)}...), 
-                    and desired outcome ({audienceData.desiredOutcome?.slice(0, 30)}...).
-                    {selectedStyle === 'short' && " The short & punchy style is optimized for social media engagement."}
-                    {selectedStyle === 'practical' && " The clear & practical style is optimized for sales page conversions."}
-                    {selectedStyle === 'aspirational' && " The aspirational style connects emotionally with your audience's identity."}
-                    {selectedStyle === 'authority' && " The authority style positions you as a premium expert."}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       )}
 
-      {/* Manual Mode: Lock toggle and info */}
+      {/* Manual Mode: Lock toggle */}
       {mode === 'manual' && manualStatement && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">Your Transformation Statement</Label>
-            <div className="flex items-center gap-2">
-              {isLocked ? (
-                <Lock className="w-4 h-4 text-muted-foreground" />
-              ) : (
-                <Unlock className="w-4 h-4 text-muted-foreground" />
-              )}
-              <Label htmlFor="lock-toggle-manual" className="text-xs text-muted-foreground cursor-pointer">
-                Lock transformation
-              </Label>
-              <Switch
-                id="lock-toggle-manual"
-                checked={isLocked}
-                onCheckedChange={handleLockToggle}
-              />
-            </div>
-          </div>
-
-          <Card className="bg-muted/30 border-border">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                <div className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">Why This Works</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Your manually written statement captures your unique voice and positioning.
-                    Once locked, this statement will be used as the foundation for Sales Copy and Social Bio generation.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex items-center justify-end gap-2 pt-2">
+          {isLocked ? (
+            <Lock className="w-4 h-4 text-muted-foreground" />
+          ) : (
+            <Unlock className="w-4 h-4 text-muted-foreground" />
+          )}
+          <Label htmlFor="lock-toggle-manual" className="text-xs text-muted-foreground cursor-pointer">
+            Lock transformation
+          </Label>
+          <Switch
+            id="lock-toggle-manual"
+            checked={isLocked}
+            onCheckedChange={handleLockToggle}
+          />
         </div>
       )}
     </div>
