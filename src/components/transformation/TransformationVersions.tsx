@@ -24,18 +24,15 @@ interface TransformationVersionsProps {
 const VERSION_CONFIG = {
   one_liner: {
     label: 'One-Liner',
-    description: 'For bios & hooks',
-    copyLabel: 'Copy for bio',
+    description: 'Bios & hooks',
   },
   standard: {
     label: 'Standard',
-    description: 'For sales pages',
-    copyLabel: 'Copy for sales page',
+    description: 'Sales pages',
   },
   expanded: {
     label: 'Expanded',
-    description: 'For about sections',
-    copyLabel: 'Copy for about',
+    description: 'About sections',
   },
 };
 
@@ -51,9 +48,9 @@ export const TransformationVersions = ({
 
   if (!versions) return null;
 
-  const handleCopy = async (text: string, label: string) => {
+  const handleCopy = async (text: string) => {
     await navigator.clipboard.writeText(text);
-    toast.success(`${label} copied!`);
+    toast.success("Copied!");
   };
 
   const handleStartEdit = (version: 'one_liner' | 'standard' | 'expanded') => {
@@ -74,7 +71,7 @@ export const TransformationVersions = ({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       {(Object.keys(VERSION_CONFIG) as Array<keyof typeof VERSION_CONFIG>).map((key) => {
         const config = VERSION_CONFIG[key];
         const text = versions[key];
@@ -85,80 +82,74 @@ export const TransformationVersions = ({
           <Card
             key={key}
             className={cn(
-              "transition-all",
-              isPrimary ? "border-primary bg-primary/5" : "border-border"
+              "transition-all cursor-pointer group",
+              isPrimary ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border hover:border-primary/30"
             )}
+            onClick={() => !isLocked && !isEditing && onSelectPrimary(key)}
           >
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm">{config.label}</span>
-                  <span className="text-xs text-muted-foreground">({config.description})</span>
-                  {isPrimary && (
-                    <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0">
-                      <Star className="w-3 h-3 mr-1" />
-                      Primary
-                    </Badge>
-                  )}
+            <CardContent className="p-3">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  {isPrimary && <Star className="w-3.5 h-3.5 text-primary fill-primary" />}
+                  <span className="font-medium text-xs">{config.label}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleCopy(text, config.copyLabel)}
-                    className="h-7 px-2"
+                    onClick={(e) => { e.stopPropagation(); handleCopy(text); }}
+                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
-                    <Copy className="w-3.5 h-3.5" />
+                    <Copy className="w-3 h-3" />
                   </Button>
                   {!isLocked && !isEditing && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleStartEdit(key)}
-                      className="h-7 px-2"
+                      onClick={(e) => { e.stopPropagation(); handleStartEdit(key); }}
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <Pencil className="w-3.5 h-3.5" />
+                      <Pencil className="w-3 h-3" />
                     </Button>
                   )}
                 </div>
               </div>
 
+              {/* Description */}
+              <p className="text-[10px] text-muted-foreground mb-2">{config.description}</p>
+
+              {/* Content */}
               {isEditing ? (
-                <div className="space-y-2">
+                <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
                   <Textarea
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
-                    rows={key === 'one_liner' ? 2 : key === 'standard' ? 3 : 4}
-                    className="bg-background text-sm"
+                    rows={4}
+                    className="bg-background text-xs"
                   />
-                  <div className="flex justify-end gap-2">
-                    <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
-                      <X className="w-3.5 h-3.5 mr-1" />
+                  <div className="flex justify-end gap-1">
+                    <Button size="sm" variant="ghost" onClick={handleCancelEdit} className="h-7 px-2 text-xs">
+                      <X className="w-3 h-3 mr-1" />
                       Cancel
                     </Button>
-                    <Button size="sm" onClick={handleSaveEdit}>
-                      <Check className="w-3.5 h-3.5 mr-1" />
+                    <Button size="sm" onClick={handleSaveEdit} className="h-7 px-2 text-xs">
+                      <Check className="w-3 h-3 mr-1" />
                       Save
                     </Button>
                   </div>
                 </div>
               ) : (
-                <>
-                  <p className="text-sm text-foreground leading-relaxed">
-                    "{text}"
-                  </p>
-                  {!isPrimary && !isLocked && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onSelectPrimary(key)}
-                      className="mt-3 text-xs"
-                    >
-                      <Star className="w-3 h-3 mr-1" />
-                      Use as Primary
-                    </Button>
-                  )}
-                </>
+                <p className="text-xs text-foreground leading-relaxed line-clamp-4">
+                  "{text}"
+                </p>
+              )}
+
+              {/* Primary Badge */}
+              {isPrimary && !isEditing && (
+                <Badge className="mt-2 bg-primary/10 text-primary border-primary/20 text-[10px] px-1.5 py-0">
+                  Primary
+                </Badge>
               )}
             </CardContent>
           </Card>
