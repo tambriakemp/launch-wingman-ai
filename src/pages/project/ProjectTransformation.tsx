@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Save, ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
+import { Loader2, Save, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -131,11 +131,6 @@ const ProjectTransformation = () => {
         <PlanPageHeader
           title="Transformation Statement"
           description="Create a powerful statement that articulates the transformation you provide"
-          icon={Sparkles}
-          breadcrumbs={[
-            { label: "Funnel Type", href: `/projects/${projectId}/funnel-type` },
-            { label: "Audience", href: `/projects/${projectId}/audience` }
-          ]}
         />
 
         {/* Transformation Form */}

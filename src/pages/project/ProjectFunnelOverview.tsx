@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Eye, Rocket, Users, Sparkles, Package, CheckCircle, Circle, ArrowRight, Edit2, Target, MessageSquare, Lightbulb, LayoutDashboard } from "lucide-react";
+import { Loader2, Eye, Rocket, Users, Sparkles, Package, CheckCircle, ArrowRight, Edit2, Target, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -123,7 +123,6 @@ const ProjectFunnelOverview = () => {
         <PlanPageHeader
           title="Funnel Overview"
           description="Your complete funnel configuration at a glance"
-          icon={LayoutDashboard}
         />
 
         {/* Launch Timeline */}

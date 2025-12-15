@@ -48,17 +48,8 @@ export const FunnelTypeSelector = ({
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-foreground mb-2">
-          Choose Your Funnel Type
-        </h2>
-        <p className="text-muted-foreground">
-          Select the funnel that best matches your launch strategy. Click to expand and see details.
-        </p>
-      </div>
-
-      <Accordion 
+    <div className="space-y-4">
+      <Accordion
         type="single" 
         collapsible 
         value={openItem}
