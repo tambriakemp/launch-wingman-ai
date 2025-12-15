@@ -410,53 +410,131 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
                 </div>
               )}
 
-              {/* Suggested Timeline Preview */}
+              {/* Suggested Timeline Preview - Editable */}
               {dates.prelaunchStart && (
                 <div className="space-y-3">
-                  <span className="text-sm font-semibold">Suggested Timeline</span>
+                  <span className="text-sm font-semibold">Suggested Timeline <span className="text-muted-foreground font-normal">(click to edit)</span></span>
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="p-2 rounded bg-callout text-callout-foreground">
-                      <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
-                        <Sparkles className="w-3 h-3" />
-                        Content Creation
-                      </div>
-                      <p className="font-medium">{dates.contentCreationStart ? format(dates.contentCreationStart, "MMM d, yyyy") : "-"}</p>
-                    </div>
-                    <div className="p-2 rounded bg-callout text-callout-foreground">
-                      <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
-                        <Rocket className="w-3 h-3" />
-                        Prelaunch Starts
-                      </div>
-                      <p className="font-medium">{dates.prelaunchStart ? format(dates.prelaunchStart, "MMM d, yyyy") : "-"}</p>
-                    </div>
-                    <div className="p-2 rounded bg-callout text-callout-foreground">
-                      <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
-                        <Rocket className="w-3 h-3" />
-                        Enrollment Opens
-                      </div>
-                      <p className="font-medium">{dates.enrollmentOpens ? format(dates.enrollmentOpens, "MMM d, yyyy") : "-"}</p>
-                    </div>
-                    <div className="p-2 rounded bg-callout text-callout-foreground">
-                      <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
-                        <Clock className="w-3 h-3" />
-                        Enrollment Closes
-                      </div>
-                      <p className="font-medium">{dates.enrollmentCloses ? format(dates.enrollmentCloses, "MMM d, yyyy") : "-"}</p>
-                    </div>
-                    <div className="p-2 rounded bg-callout text-callout-foreground">
-                      <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
-                        <Package className="w-3 h-3" />
-                        Program Starts
-                      </div>
-                      <p className="font-medium">{dates.programDeliveryStart ? format(dates.programDeliveryStart, "MMM d, yyyy") : "-"}</p>
-                    </div>
-                    <div className="p-2 rounded bg-callout text-callout-foreground">
-                      <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
-                        <Coffee className="w-3 h-3" />
-                        Rest Starts
-                      </div>
-                      <p className="font-medium">{dates.restPeriodStart ? format(dates.restPeriodStart, "MMM d, yyyy") : "-"}</p>
-                    </div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="p-2 rounded bg-callout text-callout-foreground text-left hover:ring-2 hover:ring-callout-accent/50 transition-all">
+                          <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
+                            <Sparkles className="w-3 h-3" />
+                            Content Creation
+                          </div>
+                          <p className="font-medium">{dates.contentCreationStart ? format(dates.contentCreationStart, "MMM d, yyyy") : "-"}</p>
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 z-50" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={dates.contentCreationStart}
+                          onSelect={(date) => setDates(prev => ({ ...prev, contentCreationStart: date }))}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="p-2 rounded bg-callout text-callout-foreground text-left hover:ring-2 hover:ring-callout-accent/50 transition-all">
+                          <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
+                            <Rocket className="w-3 h-3" />
+                            Prelaunch Starts
+                          </div>
+                          <p className="font-medium">{dates.prelaunchStart ? format(dates.prelaunchStart, "MMM d, yyyy") : "-"}</p>
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 z-50" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={dates.prelaunchStart}
+                          onSelect={(date) => setDates(prev => ({ ...prev, prelaunchStart: date }))}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="p-2 rounded bg-callout text-callout-foreground text-left hover:ring-2 hover:ring-callout-accent/50 transition-all">
+                          <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
+                            <Rocket className="w-3 h-3" />
+                            Enrollment Opens
+                          </div>
+                          <p className="font-medium">{dates.enrollmentOpens ? format(dates.enrollmentOpens, "MMM d, yyyy") : "-"}</p>
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 z-50" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={dates.enrollmentOpens}
+                          onSelect={(date) => setDates(prev => ({ ...prev, enrollmentOpens: date }))}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="p-2 rounded bg-callout text-callout-foreground text-left hover:ring-2 hover:ring-callout-accent/50 transition-all">
+                          <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
+                            <Clock className="w-3 h-3" />
+                            Enrollment Closes
+                          </div>
+                          <p className="font-medium">{dates.enrollmentCloses ? format(dates.enrollmentCloses, "MMM d, yyyy") : "-"}</p>
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 z-50" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={dates.enrollmentCloses}
+                          onSelect={(date) => setDates(prev => ({ ...prev, enrollmentCloses: date }))}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="p-2 rounded bg-callout text-callout-foreground text-left hover:ring-2 hover:ring-callout-accent/50 transition-all">
+                          <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
+                            <Package className="w-3 h-3" />
+                            Program Starts
+                          </div>
+                          <p className="font-medium">{dates.programDeliveryStart ? format(dates.programDeliveryStart, "MMM d, yyyy") : "-"}</p>
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 z-50" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={dates.programDeliveryStart}
+                          onSelect={(date) => setDates(prev => ({ ...prev, programDeliveryStart: date }))}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="p-2 rounded bg-callout text-callout-foreground text-left hover:ring-2 hover:ring-callout-accent/50 transition-all">
+                          <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
+                            <Coffee className="w-3 h-3" />
+                            Rest Starts
+                          </div>
+                          <p className="font-medium">{dates.restPeriodStart ? format(dates.restPeriodStart, "MMM d, yyyy") : "-"}</p>
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 z-50" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={dates.restPeriodStart}
+                          onSelect={(date) => setDates(prev => ({ ...prev, restPeriodStart: date }))}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
               )}
