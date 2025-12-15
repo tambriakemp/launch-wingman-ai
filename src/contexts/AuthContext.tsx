@@ -78,8 +78,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [session, checkSubscription]);
 
+  const navigateToProject = async () => {
+    // Fetch most recent project and redirect to it
+    const { data: projects } = await supabase
+      .from("projects")
+      .select("id")
+      .order("updated_at", { ascending: false })
+      .limit(1);
+
+    if (projects && projects.length > 0) {
+      navigate(`/projects/${projects[0].id}/offer`);
+    } else {
+      navigate("/projects");
+    }
+  };
+
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
-    const redirectUrl = `${window.location.origin}/dashboard`;
+    const redirectUrl = `${window.location.origin}/projects`;
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -94,7 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
     
     if (!error) {
-      navigate("/dashboard");
+      await navigateToProject();
     }
     
     return { error: error as Error | null };
@@ -107,7 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
     
     if (!error) {
-      navigate("/dashboard");
+      await navigateToProject();
     }
     
     return { error: error as Error | null };

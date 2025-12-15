@@ -570,6 +570,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          funnel_type_snapshot: string | null
           id: string
           launch_date: string | null
           name: string
@@ -582,6 +583,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          funnel_type_snapshot?: string | null
           id?: string
           launch_date?: string | null
           name: string
@@ -594,6 +596,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          funnel_type_snapshot?: string | null
           id?: string
           launch_date?: string | null
           name?: string
