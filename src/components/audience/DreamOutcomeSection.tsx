@@ -4,8 +4,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles, Loader2, Target, Heart, User } from "lucide-react";
+import { Check, Sparkles, Loader2, Target, Heart, User, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface DreamOutcomeSectionProps {
   desiredOutcome: string;
@@ -13,6 +14,7 @@ interface DreamOutcomeSectionProps {
   targetAudience: string;
   painPoint: string;
   onChange: (value: string) => void;
+  onSave?: () => void;
 }
 
 interface OutcomeVariation {
@@ -81,6 +83,7 @@ export const DreamOutcomeSection = ({
   targetAudience,
   painPoint,
   onChange,
+  onSave,
 }: DreamOutcomeSectionProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [variations, setVariations] = useState<OutcomeVariation[]>([]);
@@ -118,6 +121,13 @@ export const DreamOutcomeSection = ({
     onChange(variation.statement);
   };
 
+  const handleSave = () => {
+    if (onSave) {
+      onSave();
+    }
+    toast.success("Dream outcome saved");
+  };
+
   const isComplete = !!desiredOutcome;
   const hasContext = !!(niche || targetAudience);
 
@@ -132,35 +142,25 @@ export const DreamOutcomeSection = ({
         />
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* AI Generation Button */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleGenerate}
-            disabled={isGenerating || !hasContext}
-            className="gap-2"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                Generate 3 Variations
-              </>
-            )}
-          </Button>
-          {!hasContext && (
-            <span className="text-xs text-muted-foreground">
-              Add niche or audience first
-            </span>
-          )}
+        {/* Main Textarea at TOP */}
+        <div className="space-y-2">
+          <Label htmlFor="desiredOutcome" className="flex items-center gap-1">
+            Desired Outcome <span className="text-destructive">*</span>
+          </Label>
+          <Textarea
+            id="desiredOutcome"
+            placeholder="Describe the specific transformation or result your audience wants to achieve..."
+            value={desiredOutcome}
+            onChange={(e) => onChange(e.target.value)}
+            rows={3}
+            className="resize-none"
+          />
+          <p className="text-xs text-muted-foreground">
+            Example: "Go from overwhelmed solopreneur to confident CEO running a 6-figure business with a team"
+          </p>
         </div>
 
-        {/* Generated Variations */}
+        {/* Generated Variations in MIDDLE */}
         {variations.length > 0 && (
           <div className="space-y-2">
             <Label className="text-sm text-muted-foreground">
@@ -196,22 +196,41 @@ export const DreamOutcomeSection = ({
           </div>
         )}
 
-        {/* Main Textarea */}
-        <div className="space-y-2">
-          <Label htmlFor="desiredOutcome" className="flex items-center gap-1">
-            Desired Outcome <span className="text-destructive">*</span>
-          </Label>
-          <Textarea
-            id="desiredOutcome"
-            placeholder="Describe the specific transformation or result your audience wants to achieve..."
-            value={desiredOutcome}
-            onChange={(e) => onChange(e.target.value)}
-            rows={3}
-            className="resize-none"
-          />
-          <p className="text-xs text-muted-foreground">
-            Example: "Go from overwhelmed solopreneur to confident CEO running a 6-figure business with a team"
-          </p>
+        {/* Buttons at BOTTOM RIGHT */}
+        <div className="flex justify-end items-center gap-2 pt-4 border-t border-border">
+          {!hasContext && (
+            <span className="text-xs text-muted-foreground mr-2">
+              Add niche or audience first
+            </span>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleGenerate}
+            disabled={isGenerating || !hasContext}
+            className="gap-2"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Generate
+              </>
+            )}
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={!desiredOutcome}
+            className="gap-2"
+          >
+            <Save className="w-4 h-4" />
+            Save
+          </Button>
         </div>
       </CardContent>
     </Card>
