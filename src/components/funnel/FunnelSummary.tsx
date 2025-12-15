@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { 
-  Pencil, Layers, Users, Sparkles, Package,
-  Gift, DollarSign, Video, Trophy, Rocket, ClipboardCheck
+  Pencil, Layers, Users, Sparkles,
+  Gift, DollarSign, Video, Trophy, Rocket, ClipboardCheck,
+  Target, AlertCircle, Lightbulb, FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,13 +59,12 @@ export const FunnelSummary = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Funnel Type Card - Enhanced with offer slots */}
+      <div className="grid grid-cols-1 gap-4">
+        {/* Funnel Type Card - Full width with offer slots */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0 }}
-          className="lg:col-span-2"
         >
           <Card className="h-full">
             <CardHeader className="pb-3">
@@ -146,140 +146,108 @@ export const FunnelSummary = ({
           </Card>
         </motion.div>
 
-        {/* Audience Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Card className="h-full">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" />
-                  Audience & Strategy
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onEditStep('audience')}
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">Niche</p>
-                <p className="text-sm font-medium text-foreground">{audienceData.niche || "Not set"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">Target Audience</p>
-                <p className="text-sm font-medium text-foreground">{audienceData.targetAudience || "Not set"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">Pain Point</p>
-                <p className="text-sm text-foreground line-clamp-2">{audienceData.primaryPainPoint || "Not set"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">Desired Outcome</p>
-                <p className="text-sm text-foreground line-clamp-2">{audienceData.desiredOutcome || "Not set"}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Transformation Statement Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card className="h-full">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  Transformation Statement
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onEditStep('transformation')}
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {transformationStatement ? (
-                <p className="text-sm text-foreground italic">
-                  "{transformationStatement}"
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">
-                  No transformation statement set
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Offers Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card className="h-full">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Package className="w-4 h-4 text-primary" />
-                  Offer Stack
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onEditStep('offers')}
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {offers.length > 0 ? (
-                offers.map((offer, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
+        {/* Audience & Transformation Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Audience Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="h-full">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Users className="w-4 h-4 text-primary" />
+                    Audience & Strategy
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEditStep('audience')}
                   >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {offer.title || offer.slotType.replace(/-/g, ' ')}
-                      </p>
-                      {offer.price && (
-                        <p className="text-xs text-muted-foreground">
-                          ${offer.price} - {offer.priceType}
-                        </p>
-                      )}
-                    </div>
-                    {offer.isConfigured && (
-                      <Badge variant="outline" className="text-emerald-600 border-emerald-600/50 bg-emerald-500/10 shrink-0">
-                        Configured
-                      </Badge>
-                    )}
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <Target className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-0.5">Niche</p>
+                    <p className="text-sm font-medium text-foreground">{audienceData.niche || "Not set"}</p>
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground italic">
-                  No offers configured
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Users className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-0.5">Target Audience</p>
+                    <p className="text-sm font-medium text-foreground">{audienceData.targetAudience || "Not set"}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-0.5">Pain Point</p>
+                    <p className="text-sm text-foreground">{audienceData.primaryPainPoint || "Not set"}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Lightbulb className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-0.5">Desired Outcome</p>
+                    <p className="text-sm text-foreground">{audienceData.desiredOutcome || "Not set"}</p>
+                  </div>
+                </div>
+                {audienceData.problemStatement && (
+                  <div className="flex items-start gap-3 pt-2 border-t border-border">
+                    <FileText className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-0.5">Problem Statement</p>
+                      <p className="text-sm text-foreground">{audienceData.problemStatement}</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
 
+          {/* Transformation Statement Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="h-full">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    Transformation Statement
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEditStep('transformation')}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="flex items-center h-[calc(100%-60px)]">
+                {transformationStatement ? (
+                  <p className="text-sm text-foreground italic leading-relaxed">
+                    "{transformationStatement}"
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">
+                    No transformation statement set. Click edit to add one.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

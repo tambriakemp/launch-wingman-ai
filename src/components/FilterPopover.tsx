@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Filter, X } from "lucide-react";
+import { Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { TASK_LABELS, TASK_PHASES } from "@/components/TaskDialog";
+import { TASK_LABELS } from "@/components/TaskDialog";
+import { ASSET_CATEGORIES } from "@/components/funnel/AssetChecklist";
 
 const COLUMNS = [
   { id: "todo", label: "To Do" },
@@ -32,8 +33,8 @@ interface FilterPopoverProps {
   onStatusChange: (status: string) => void;
   selectedLabels: string[];
   onLabelsChange: (labels: string[]) => void;
-  selectedPhase: string;
-  onPhaseChange: (phase: string) => void;
+  selectedCategory: string;
+  onCategoryChange: (category: string) => void;
   onClear: () => void;
 }
 
@@ -42,8 +43,8 @@ export const FilterPopover = ({
   onStatusChange,
   selectedLabels,
   onLabelsChange,
-  selectedPhase,
-  onPhaseChange,
+  selectedCategory,
+  onCategoryChange,
   onClear,
 }: FilterPopoverProps) => {
   const [open, setOpen] = useState(false);
@@ -51,7 +52,7 @@ export const FilterPopover = ({
   const activeFilterCount =
     (selectedStatus !== "all" ? 1 : 0) +
     selectedLabels.length +
-    (selectedPhase !== "all" ? 1 : 0);
+    (selectedCategory !== "all" ? 1 : 0);
 
   const toggleLabel = (labelId: string) => {
     if (selectedLabels.includes(labelId)) {
@@ -110,18 +111,18 @@ export const FilterPopover = ({
           </Select>
         </div>
 
-        {/* Phase Filter */}
+        {/* Category Filter */}
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Phase</Label>
-          <Select value={selectedPhase} onValueChange={onPhaseChange}>
+          <Label className="text-xs text-muted-foreground">Category</Label>
+          <Select value={selectedCategory} onValueChange={onCategoryChange}>
             <SelectTrigger className="h-9">
-              <SelectValue placeholder="All phases" />
+              <SelectValue placeholder="All categories" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All phases</SelectItem>
-              {TASK_PHASES.map((phase) => (
-                <SelectItem key={phase.id} value={phase.id}>
-                  {phase.label}
+              <SelectItem value="all">All categories</SelectItem>
+              {ASSET_CATEGORIES.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.label}
                 </SelectItem>
               ))}
             </SelectContent>
