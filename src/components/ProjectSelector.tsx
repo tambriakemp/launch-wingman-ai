@@ -349,7 +349,7 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
               </div>
             </div>
           ) : (
-            <div className="space-y-4 py-4">
+            <div className="space-y-6 py-4">
               {/* Prelaunch Start Date */}
               <div className="space-y-2">
                 <Label>Prelaunch Start Date</Label>
@@ -384,157 +384,99 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
 
               {/* Program & Rest Weeks */}
               {dates.prelaunchStart && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="programWeeks">Program Length (weeks)</Label>
-                    <Input
-                      id="programWeeks"
-                      type="number"
-                      min="1"
-                      max="52"
-                      value={programWeeks}
-                      onChange={(e) => setProgramWeeks(parseInt(e.target.value) || DEFAULT_PROGRAM_WEEKS)}
-                    />
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="programWeeks">Program Length (weeks)</Label>
+                      <Input
+                        id="programWeeks"
+                        type="number"
+                        min="1"
+                        max="52"
+                        value={programWeeks}
+                        onChange={(e) => setProgramWeeks(parseInt(e.target.value) || DEFAULT_PROGRAM_WEEKS)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="restWeeks">Rest Period (weeks)</Label>
+                      <Input
+                        id="restWeeks"
+                        type="number"
+                        min="1"
+                        max="12"
+                        value={restWeeks}
+                        onChange={(e) => setRestWeeks(parseInt(e.target.value) || DEFAULT_REST_WEEKS)}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="restWeeks">Rest Period (weeks)</Label>
-                    <Input
-                      id="restWeeks"
-                      type="number"
-                      min="1"
-                      max="12"
-                      value={restWeeks}
-                      onChange={(e) => setRestWeeks(parseInt(e.target.value) || DEFAULT_REST_WEEKS)}
-                    />
-                  </div>
-                </div>
+
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      if (dates.prelaunchStart) {
+                        const calculatedDates = calculateDatesFromPrelaunch(dates.prelaunchStart, programWeeks, restWeeks);
+                        setDates(prev => ({
+                          ...prev,
+                          ...calculatedDates,
+                        }));
+                      }
+                    }}
+                    className="w-full"
+                    type="button"
+                  >
+                    Recalculate All Dates
+                  </Button>
+                </>
               )}
 
-              {/* Suggested Timeline Preview - Editable */}
+              {/* Suggested Timeline - List Style */}
               {dates.prelaunchStart && (
-                <div className="space-y-3">
-                  <span className="text-sm font-semibold">Suggested Timeline <span className="text-muted-foreground font-normal">(click to edit)</span></span>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className="p-2 rounded bg-callout text-callout-foreground text-left hover:ring-2 hover:ring-callout-accent/50 transition-all">
-                          <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
-                            <Sparkles className="w-3 h-3" />
-                            Content Creation
-                          </div>
-                          <p className="font-medium">{dates.contentCreationStart ? format(dates.contentCreationStart, "MMM d, yyyy") : "-"}</p>
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 z-50" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={dates.contentCreationStart}
-                          onSelect={(date) => setDates(prev => ({ ...prev, contentCreationStart: date }))}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className="p-2 rounded bg-callout text-callout-foreground text-left hover:ring-2 hover:ring-callout-accent/50 transition-all">
-                          <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
-                            <Rocket className="w-3 h-3" />
-                            Prelaunch Starts
-                          </div>
-                          <p className="font-medium">{dates.prelaunchStart ? format(dates.prelaunchStart, "MMM d, yyyy") : "-"}</p>
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 z-50" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={dates.prelaunchStart}
-                          onSelect={(date) => setDates(prev => ({ ...prev, prelaunchStart: date }))}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className="p-2 rounded bg-callout text-callout-foreground text-left hover:ring-2 hover:ring-callout-accent/50 transition-all">
-                          <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
-                            <Rocket className="w-3 h-3" />
-                            Enrollment Opens
-                          </div>
-                          <p className="font-medium">{dates.enrollmentOpens ? format(dates.enrollmentOpens, "MMM d, yyyy") : "-"}</p>
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 z-50" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={dates.enrollmentOpens}
-                          onSelect={(date) => setDates(prev => ({ ...prev, enrollmentOpens: date }))}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className="p-2 rounded bg-callout text-callout-foreground text-left hover:ring-2 hover:ring-callout-accent/50 transition-all">
-                          <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
-                            <Clock className="w-3 h-3" />
-                            Enrollment Closes
-                          </div>
-                          <p className="font-medium">{dates.enrollmentCloses ? format(dates.enrollmentCloses, "MMM d, yyyy") : "-"}</p>
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 z-50" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={dates.enrollmentCloses}
-                          onSelect={(date) => setDates(prev => ({ ...prev, enrollmentCloses: date }))}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className="p-2 rounded bg-callout text-callout-foreground text-left hover:ring-2 hover:ring-callout-accent/50 transition-all">
-                          <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
-                            <Package className="w-3 h-3" />
-                            Program Starts
-                          </div>
-                          <p className="font-medium">{dates.programDeliveryStart ? format(dates.programDeliveryStart, "MMM d, yyyy") : "-"}</p>
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 z-50" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={dates.programDeliveryStart}
-                          onSelect={(date) => setDates(prev => ({ ...prev, programDeliveryStart: date }))}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className="p-2 rounded bg-callout text-callout-foreground text-left hover:ring-2 hover:ring-callout-accent/50 transition-all">
-                          <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
-                            <Coffee className="w-3 h-3" />
-                            Rest Starts
-                          </div>
-                          <p className="font-medium">{dates.restPeriodStart ? format(dates.restPeriodStart, "MMM d, yyyy") : "-"}</p>
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 z-50" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={dates.restPeriodStart}
-                          onSelect={(date) => setDates(prev => ({ ...prev, restPeriodStart: date }))}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
+                <div className="space-y-4">
+                  <span className="text-sm font-semibold">Suggested Timeline</span>
+                  <div className="rounded-lg border bg-card px-2.5">
+                    <DatePickerField
+                      label="Content Creation Starts"
+                      date={dates.contentCreationStart}
+                      onChange={(d) => setDates(prev => ({ ...prev, contentCreationStart: d }))}
+                      icon={<Sparkles className="w-4 h-4" />}
+                      description="2 weeks before prelaunch"
+                    />
+                    <DatePickerField
+                      label="Prelaunch Starts"
+                      date={dates.prelaunchStart}
+                      onChange={(d) => setDates(prev => ({ ...prev, prelaunchStart: d }))}
+                      icon={<Rocket className="w-4 h-4" />}
+                      description="Your selected start date"
+                    />
+                    <DatePickerField
+                      label="Enrollment Opens"
+                      date={dates.enrollmentOpens}
+                      onChange={(d) => setDates(prev => ({ ...prev, enrollmentOpens: d }))}
+                      icon={<Rocket className="w-4 h-4" />}
+                      description="~7 weeks after prelaunch"
+                    />
+                    <DatePickerField
+                      label="Enrollment Closes"
+                      date={dates.enrollmentCloses}
+                      onChange={(d) => setDates(prev => ({ ...prev, enrollmentCloses: d }))}
+                      icon={<Clock className="w-4 h-4" />}
+                      description="1 week enrollment window"
+                    />
+                    <DatePickerField
+                      label="Program Delivery Starts"
+                      date={dates.programDeliveryStart}
+                      onChange={(d) => setDates(prev => ({ ...prev, programDeliveryStart: d }))}
+                      icon={<Package className="w-4 h-4" />}
+                      description="After enrollment closes"
+                    />
+                    <DatePickerField
+                      label="Rest Period Starts"
+                      date={dates.restPeriodStart}
+                      onChange={(d) => setDates(prev => ({ ...prev, restPeriodStart: d }))}
+                      icon={<Coffee className="w-4 h-4" />}
+                      description="After program ends"
+                    />
                   </div>
                 </div>
               )}
@@ -595,3 +537,57 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
     </>
   );
 };
+
+const DatePickerField = ({ 
+  label, 
+  date, 
+  onChange,
+  icon,
+  description
+}: { 
+  label: string; 
+  date: Date | undefined; 
+  onChange: (date: Date | undefined) => void;
+  icon: React.ReactNode;
+  description?: string;
+}) => (
+  <div className="flex items-start gap-3 py-3 border-b border-border/50 last:border-0">
+    <div className="mt-1 text-muted-foreground flex-shrink-0">{icon}</div>
+    <div className="flex-1 min-w-0 space-y-1">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <Label className="text-sm font-medium">{label}</Label>
+          {description && (
+            <p className="text-xs text-muted-foreground">{description}</p>
+          )}
+        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                "w-full sm:w-[130px] flex-shrink-0 justify-start text-left font-normal text-xs",
+                !date && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-1.5 h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{date ? format(date, "MMM d, yyyy") : "Select"}</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 z-50" align="end">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={onChange}
+              defaultMonth={date}
+              initialFocus
+              className="pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+    </div>
+  </div>
+);
+
