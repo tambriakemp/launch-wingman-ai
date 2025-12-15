@@ -5,45 +5,75 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Slot type guidance for AI
+const SLOT_TYPE_GUIDANCE: Record<string, string> = {
+  "lead-magnet": "This is a FREE offer to attract leads. Focus on quick wins, easy consumption, and high perceived value. Examples: checklists, templates, mini-courses, guides.",
+  "tripwire": "This is a LOW-TICKET offer ($7-47). Focus on immediate, specific results that build trust. Should be irresistible value for the price.",
+  "core": "This is the MAIN offer ($97-997+). Focus on comprehensive transformation and significant results. This is where the real value lives.",
+  "upsell": "This is an UPGRADE offer. Focus on accelerated results, additional support, or premium features that complement the core offer.",
+  "downsell": "This is a REDUCED alternative. Focus on a simpler version or payment plan that still delivers value at a lower commitment.",
+  "bonus": "This is an ADDED VALUE item. Focus on complementary tools or resources that enhance the main offer.",
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { niche, offerType, offerTypeName, mainDeliverable, mainDeliverableName } = await req.json();
+    const { 
+      niche, 
+      targetAudience,
+      primaryPainPoint,
+      desiredOutcome,
+      offerType, 
+      slotType,
+      funnelType,
+    } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are an expert marketing strategist and offer creation consultant for coaches and digital marketers. Your job is to generate creative, compelling offer ideas based on the user's niche, offer type, and main deliverable.
+    const slotGuidance = slotType && SLOT_TYPE_GUIDANCE[slotType] 
+      ? `\n\nSlot Type Context: ${SLOT_TYPE_GUIDANCE[slotType]}`
+      : "";
 
-Generate exactly 5 unique offer ideas. Each idea should be:
+    const systemPrompt = `You are an expert marketing strategist and offer creation consultant for coaches and digital marketers. Your job is to generate creative, compelling offer ideas based on the user's complete context.
+
+Generate exactly 3 unique offer ideas. Each idea should be:
 - Specific and actionable
-- Appealing to the target audience in the given niche
-- Aligned with the selected offer type and deliverable
-- Include a catchy title and a brief 1-2 sentence description
+- Appealing to the target audience
+- Aligned with the selected offer type (${offerType || "not specified"})
+- Appropriate for the slot position in the funnel
+- Include a catchy title and a 2-3 sentence description${slotGuidance}
 
 Return the response as a JSON object with this exact structure:
 {
   "ideas": [
     {
       "title": "Offer Title Here",
-      "description": "Brief description of what this offer includes and who it's for."
+      "description": "Description explaining what this offer includes, who it's for, and what transformation it delivers."
     }
   ]
 }
 
 Only return valid JSON, no additional text or markdown.`;
 
-    const userPrompt = `Generate 5 offer ideas for a coach/creator in the ${niche} niche.
+    const userPrompt = `Generate 3 offer ideas with the following context:
 
-Offer Type: ${offerTypeName}
-Main Deliverable: ${mainDeliverableName || "Not specified yet"}
+Niche: ${niche || "Not specified"}
+Target Audience: ${targetAudience || "Not specified"}
+Primary Pain Point: ${primaryPainPoint || "Not specified"}
+Desired Outcome: ${desiredOutcome || "Not specified"}
+Offer Type: ${offerType || "Not specified"}
+Slot Type: ${slotType || "core"} (position in funnel)
+${funnelType ? `Funnel Type: ${funnelType}` : ""}
 
-Create compelling offer ideas that would work well with this combination.`;
+Create 3 compelling offer ideas that align with ALL of this context. Make sure the titles are catchy and the descriptions clearly articulate the value.`;
+
+    console.log("Generating offer ideas with context:", { niche, slotType, offerType, funnelType });
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -99,6 +129,8 @@ Create compelling offer ideas that would work well with this combination.`;
       console.error("Failed to parse AI response:", content);
       throw new Error("Failed to parse offer ideas from AI response");
     }
+
+    console.log("Generated offer ideas successfully:", ideas?.ideas?.length);
 
     return new Response(JSON.stringify(ideas), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
