@@ -4,10 +4,28 @@ import { Loader2, Save, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { TransformationStep } from "@/components/funnel/TransformationStep";
-import { AudienceData } from "@/components/funnel/AudienceDiscovery";
+import { TransformationBuilder } from "@/components/transformation/TransformationBuilder";
+import { TransformationStyle } from "@/components/transformation/StyleSelector";
+import { TransformationVersionsData } from "@/components/transformation/TransformationVersions";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+
+interface PainSymptom {
+  id: string;
+  text: string;
+}
+
+interface LikelihoodElement {
+  id: string;
+  type: 'objection_counter' | 'proof' | 'credibility';
+  text: string;
+}
+
+interface TimeEffortElement {
+  id: string;
+  type: 'quick_win' | 'friction_reducer';
+  text: string;
+}
 
 interface Props {
   projectId: string;
@@ -18,17 +36,29 @@ const TransformationContent = ({ projectId }: Props) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  // Transformation state
   const [transformationStatement, setTransformationStatement] = useState('');
-  const [audienceData, setAudienceData] = useState<AudienceData>({
+  const [transformationStyle, setTransformationStyle] = useState<TransformationStyle>('practical');
+  const [transformationVersions, setTransformationVersions] = useState<TransformationVersionsData | null>(null);
+  const [primaryVersion, setPrimaryVersion] = useState<'one_liner' | 'standard' | 'expanded'>('standard');
+  const [isLocked, setIsLocked] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  // Audience data state
+  const [audienceData, setAudienceData] = useState({
     niche: '',
     targetAudience: '',
     primaryPainPoint: '',
+    painSymptoms: [] as PainSymptom[],
     desiredOutcome: '',
-    problemStatement: '',
+    mainObjections: '',
+    likelihoodElements: [] as LikelihoodElement[],
+    timeEffortElements: [] as TimeEffortElement[],
+    specificityScore: 0,
   });
 
-  // Fetch funnel
-  const { data: funnel, isLoading } = useQuery({
+  // Fetch funnel data for audience info
+  const { data: funnel, isLoading: funnelLoading } = useQuery({
     queryKey: ['funnel', projectId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -42,13 +72,13 @@ const TransformationContent = ({ projectId }: Props) => {
     enabled: !!projectId,
   });
 
-  // Fetch project for transformation statement
-  const { data: project } = useQuery({
-    queryKey: ['project', projectId],
+  // Fetch project data for transformation
+  const { data: project, isLoading: projectLoading } = useQuery({
+    queryKey: ['project-transformation', projectId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('projects')
-        .select('transformation_statement')
+        .select('transformation_statement, transformation_style, transformation_locked, transformation_versions')
         .eq('id', projectId)
         .single();
       if (error) throw error;
@@ -57,50 +87,134 @@ const TransformationContent = ({ projectId }: Props) => {
     enabled: !!projectId,
   });
 
-  // Initialize from existing data
+  // Initialize audience data from funnel
   useEffect(() => {
     if (funnel) {
+      const parsePainSymptoms = (data: unknown): PainSymptom[] => {
+        if (!data || !Array.isArray(data)) return [];
+        return data.map((item: unknown) => {
+          if (typeof item === 'object' && item !== null && 'id' in item && 'text' in item) {
+            return item as PainSymptom;
+          }
+          return { id: crypto.randomUUID(), text: String(item) };
+        });
+      };
+
+      const parseLikelihoodElements = (data: unknown): LikelihoodElement[] => {
+        if (!data || !Array.isArray(data)) return [];
+        return data.filter((item): item is LikelihoodElement => 
+          typeof item === 'object' && 
+          item !== null && 
+          'id' in item && 
+          'type' in item && 
+          'text' in item
+        );
+      };
+
+      const parseTimeEffortElements = (data: unknown): TimeEffortElement[] => {
+        if (!data || !Array.isArray(data)) return [];
+        return data.filter((item): item is TimeEffortElement => 
+          typeof item === 'object' && 
+          item !== null && 
+          'id' in item && 
+          'type' in item && 
+          'text' in item
+        );
+      };
+
       setAudienceData({
         niche: funnel.niche || '',
         targetAudience: funnel.target_audience || '',
         primaryPainPoint: funnel.primary_pain_point || '',
+        painSymptoms: parsePainSymptoms(funnel.pain_symptoms),
         desiredOutcome: funnel.desired_outcome || '',
-        problemStatement: funnel.problem_statement || '',
+        mainObjections: funnel.main_objections || '',
+        likelihoodElements: parseLikelihoodElements(funnel.likelihood_elements),
+        timeEffortElements: parseTimeEffortElements(funnel.time_effort_elements),
+        specificityScore: funnel.specificity_score || 0,
       });
     }
   }, [funnel]);
 
+  // Initialize transformation data from project
   useEffect(() => {
-    if (project?.transformation_statement) {
-      setTransformationStatement(project.transformation_statement);
+    if (project) {
+      if (project.transformation_statement) {
+        setTransformationStatement(project.transformation_statement);
+      }
+      if (project.transformation_style) {
+        setTransformationStyle(project.transformation_style as TransformationStyle);
+      }
+      if (project.transformation_locked !== null) {
+        setIsLocked(project.transformation_locked);
+      }
+      if (project.transformation_versions) {
+        const versions = project.transformation_versions as unknown as TransformationVersionsData;
+        setTransformationVersions(versions);
+        // Determine primary version from statement match
+        if (project.transformation_statement) {
+          if (versions.one_liner === project.transformation_statement) {
+            setPrimaryVersion('one_liner');
+          } else if (versions.expanded === project.transformation_statement) {
+            setPrimaryVersion('expanded');
+          } else {
+            setPrimaryVersion('standard');
+          }
+        }
+      }
     }
   }, [project]);
 
-  // Save mutation
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      if (!user || !projectId) throw new Error("Missing required data");
-
+  // Auto-save with debounce
+  const performSave = useCallback(async () => {
+    if (!user || !projectId) return;
+    
+    setSaveStatus('saving');
+    try {
       const { error } = await supabase
         .from('projects')
-        .update({ transformation_statement: transformationStatement })
+        .update({
+          transformation_statement: transformationStatement,
+          transformation_style: transformationStyle,
+          transformation_locked: isLocked,
+          transformation_versions: transformationVersions ? JSON.parse(JSON.stringify(transformationVersions)) : null,
+        })
         .eq('id', projectId);
+      
       if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['project', projectId] });
-    },
-    onError: (error) => {
+      setSaveStatus('saved');
+      queryClient.invalidateQueries({ queryKey: ['project-transformation', projectId] });
+    } catch (error) {
       console.error("Error saving:", error);
-    },
-  });
+      setSaveStatus('idle');
+    }
+  }, [user, projectId, transformationStatement, transformationStyle, isLocked, transformationVersions, queryClient]);
+
+  // Debounced auto-save
+  useEffect(() => {
+    if (!project) return; // Don't save until initial data is loaded
+
+    const timer = setTimeout(() => {
+      performSave();
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [transformationStatement, transformationStyle, isLocked, transformationVersions, performSave, project]);
+
+  // Reset save status after showing "saved"
+  useEffect(() => {
+    if (saveStatus === 'saved') {
+      const timer = setTimeout(() => setSaveStatus('idle'), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [saveStatus]);
 
   const handleSaveAndContinue = async () => {
-    await saveMutation.mutateAsync();
+    await performSave();
     navigate(`/projects/${projectId}/offers`);
   };
 
-  if (isLoading) {
+  if (funnelLoading || projectLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -122,17 +236,31 @@ const TransformationContent = ({ projectId }: Props) => {
 
   return (
     <div className="space-y-6">
-      <PlanPageHeader
-        title="Transformation Statement"
-        description="Create a powerful statement that articulates the transformation you provide"
-      />
+      <div className="flex items-center justify-between">
+        <PlanPageHeader
+          title="Transformation Statement"
+          description="Turn your audience insights into powerful messaging"
+        />
+        {saveStatus !== 'idle' && (
+          <span className="text-xs text-muted-foreground">
+            {saveStatus === 'saving' ? 'Saving...' : 'Saved ✓'}
+          </span>
+        )}
+      </div>
 
-      {/* Transformation Form */}
-      <TransformationStep
+      {/* Transformation Builder */}
+      <TransformationBuilder
         audienceData={audienceData}
-        transformationStatement={transformationStatement}
-        onChange={setTransformationStatement}
-        funnelType={funnel.funnel_type || undefined}
+        funnelType={funnel.funnel_type}
+        initialStyle={transformationStyle}
+        initialVersions={transformationVersions}
+        initialPrimaryVersion={primaryVersion}
+        initialLocked={isLocked}
+        onStyleChange={setTransformationStyle}
+        onVersionsChange={setTransformationVersions}
+        onPrimaryVersionChange={setPrimaryVersion}
+        onLockedChange={setIsLocked}
+        onStatementChange={setTransformationStatement}
       />
 
       {/* Navigation */}
@@ -147,29 +275,10 @@ const TransformationContent = ({ projectId }: Props) => {
 
         <div className="flex items-center gap-2">
           <Button
-            variant="outline"
-            onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending}
-          >
-            {saveMutation.isPending ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4 mr-2" />
-            )}
-            Save
-          </Button>
-          <Button
             onClick={handleSaveAndContinue}
-            disabled={saveMutation.isPending}
           >
-            {saveMutation.isPending ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <>
-                Continue
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </>
-            )}
+            Continue
+            <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
       </div>
