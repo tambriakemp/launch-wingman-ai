@@ -594,7 +594,10 @@ export type Database = {
           name: string
           project_type: string
           status: string
+          transformation_locked: boolean | null
           transformation_statement: string | null
+          transformation_style: string | null
+          transformation_versions: Json | null
           updated_at: string
           user_id: string
         }
@@ -607,7 +610,10 @@ export type Database = {
           name: string
           project_type?: string
           status?: string
+          transformation_locked?: boolean | null
           transformation_statement?: string | null
+          transformation_style?: string | null
+          transformation_versions?: Json | null
           updated_at?: string
           user_id: string
         }
@@ -620,7 +626,10 @@ export type Database = {
           name?: string
           project_type?: string
           status?: string
+          transformation_locked?: boolean | null
           transformation_statement?: string | null
+          transformation_style?: string | null
+          transformation_versions?: Json | null
           updated_at?: string
           user_id?: string
         }
