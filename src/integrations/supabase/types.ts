@@ -272,6 +272,65 @@ export type Database = {
           },
         ]
       }
+      funnels: {
+        Row: {
+          community_platform: string | null
+          created_at: string
+          desired_outcome: string | null
+          email_platform: string | null
+          funnel_platform: string | null
+          funnel_type: string
+          id: string
+          niche: string | null
+          primary_pain_point: string | null
+          problem_statement: string | null
+          project_id: string
+          target_audience: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          community_platform?: string | null
+          created_at?: string
+          desired_outcome?: string | null
+          email_platform?: string | null
+          funnel_platform?: string | null
+          funnel_type: string
+          id?: string
+          niche?: string | null
+          primary_pain_point?: string | null
+          problem_statement?: string | null
+          project_id: string
+          target_audience?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          community_platform?: string | null
+          created_at?: string
+          desired_outcome?: string | null
+          email_platform?: string | null
+          funnel_platform?: string | null
+          funnel_type?: string
+          id?: string
+          niche?: string | null
+          primary_pain_point?: string | null
+          problem_statement?: string | null
+          project_id?: string
+          target_audience?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funnels_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       launch_events: {
         Row: {
           content_creation_start: string | null
@@ -347,9 +406,11 @@ export type Database = {
           description: string | null
           desired_outcome: string | null
           email_platform: string | null
+          funnel_id: string | null
           funnel_platform: string | null
           funnel_type: string | null
           id: string
+          is_required: boolean
           main_deliverables: string[] | null
           niche: string
           offer_category: string
@@ -359,6 +420,8 @@ export type Database = {
           primary_pain_point: string | null
           problem_statement: string | null
           project_id: string
+          slot_position: number
+          slot_type: string
           target_audience: string | null
           title: string | null
           transformation_statement: string | null
@@ -371,9 +434,11 @@ export type Database = {
           description?: string | null
           desired_outcome?: string | null
           email_platform?: string | null
+          funnel_id?: string | null
           funnel_platform?: string | null
           funnel_type?: string | null
           id?: string
+          is_required?: boolean
           main_deliverables?: string[] | null
           niche: string
           offer_category: string
@@ -383,6 +448,8 @@ export type Database = {
           primary_pain_point?: string | null
           problem_statement?: string | null
           project_id: string
+          slot_position?: number
+          slot_type?: string
           target_audience?: string | null
           title?: string | null
           transformation_statement?: string | null
@@ -395,9 +462,11 @@ export type Database = {
           description?: string | null
           desired_outcome?: string | null
           email_platform?: string | null
+          funnel_id?: string | null
           funnel_platform?: string | null
           funnel_type?: string | null
           id?: string
+          is_required?: boolean
           main_deliverables?: string[] | null
           niche?: string
           offer_category?: string
@@ -407,6 +476,8 @@ export type Database = {
           primary_pain_point?: string | null
           problem_statement?: string | null
           project_id?: string
+          slot_position?: number
+          slot_type?: string
           target_audience?: string | null
           title?: string | null
           transformation_statement?: string | null
@@ -414,6 +485,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "offers_funnel_id_fkey"
+            columns: ["funnel_id"]
+            isOneToOne: false
+            referencedRelation: "funnels"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "offers_project_id_fkey"
             columns: ["project_id"]

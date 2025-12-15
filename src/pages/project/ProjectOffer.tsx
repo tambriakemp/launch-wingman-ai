@@ -1,6 +1,6 @@
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { useParams } from "react-router-dom";
-import { OfferBuilder } from "@/components/OfferBuilder";
+import { FunnelBuilder } from "@/components/FunnelBuilder";
 
 const ProjectOffer = () => {
   const { id } = useParams();
@@ -11,10 +11,10 @@ const ProjectOffer = () => {
     <ProjectLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Offer Builder</h1>
-          <p className="text-muted-foreground">Design offers that attract and convert your ideal clients</p>
+          <h1 className="text-2xl font-bold text-foreground">Funnel Builder</h1>
+          <p className="text-muted-foreground">Design your funnel with offers and track all required assets</p>
         </div>
-        <OfferBuilder projectId={id} />
+        <FunnelBuilder projectId={id} />
       </div>
     </ProjectLayout>
   );
