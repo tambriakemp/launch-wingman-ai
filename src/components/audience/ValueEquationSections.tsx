@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Check } from "lucide-react";
 import { WhoSection } from "./WhoSection";
+import { DreamOutcomeSection } from "./DreamOutcomeSection";
 
 interface SubAudience {
   name: string;
@@ -96,34 +97,13 @@ export const ValueEquationSections = ({
       </Card>
 
       {/* Section 2: DREAM OUTCOME */}
-      <Card>
-        <CardHeader className="pb-4">
-          <SectionHeader
-            number={2}
-            title="DREAM OUTCOME"
-            subtitle="What does success look like for them?"
-            isComplete={isDreamComplete}
-          />
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="space-y-2">
-            <Label htmlFor="desiredOutcome" className="flex items-center gap-1">
-              Desired Outcome <span className="text-destructive">*</span>
-            </Label>
-            <Textarea
-              id="desiredOutcome"
-              placeholder="Describe the specific transformation or result your audience wants to achieve..."
-              value={data.desiredOutcome}
-              onChange={(e) => updateField("desiredOutcome", e.target.value)}
-              rows={3}
-              className="resize-none"
-            />
-            <p className="text-xs text-muted-foreground">
-              Example: "Go from overwhelmed solopreneur to confident CEO running a 6-figure business with a team"
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <DreamOutcomeSection
+        desiredOutcome={data.desiredOutcome}
+        niche={data.niche}
+        targetAudience={data.targetAudience}
+        painPoint={data.primaryPainPoint}
+        onChange={(value) => updateField("desiredOutcome", value)}
+      />
 
       {/* Section 3: PAIN */}
       <Card>
