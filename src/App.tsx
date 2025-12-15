@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
-
+import AppRedirect from "./pages/AppRedirect";
 import Projects from "./pages/Projects";
 import Settings from "./pages/Settings";
 import Assessments from "./pages/Assessments";
@@ -40,8 +40,10 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
-            {/* Redirect /dashboard to /projects */}
-            <Route path="/dashboard" element={<Navigate to="/projects" replace />} />
+            {/* Smart redirect to last used project */}
+            <Route path="/app" element={<ProtectedRoute><AppRedirect /></ProtectedRoute>} />
+            {/* Legacy redirect */}
+            <Route path="/dashboard" element={<Navigate to="/app" replace />} />
             <Route
               path="/projects"
               element={
