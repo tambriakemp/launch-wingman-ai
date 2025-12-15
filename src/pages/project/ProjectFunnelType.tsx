@@ -1,12 +1,13 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Save, ArrowRight } from "lucide-react";
+import { Loader2, Save, ArrowRight, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { FunnelTypeSelector } from "@/components/funnel/FunnelTypeSelector";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
+import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { useState, useEffect } from "react";
 
 const ProjectFunnelType = () => {
@@ -93,15 +94,11 @@ const ProjectFunnelType = () => {
   return (
     <ProjectLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">Select Funnel Type</h1>
-            <p className="text-muted-foreground">
-              Choose the type of funnel that best fits your business model
-            </p>
-          </div>
-        </div>
+        <PlanPageHeader
+          title="Select Funnel Type"
+          description="Choose the type of funnel that best fits your business model"
+          icon={Rocket}
+        />
 
         {/* Funnel Type Selector */}
         <FunnelTypeSelector

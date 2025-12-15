@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Eye, Rocket, Users, Sparkles, Package, CheckCircle, Circle, ArrowRight, Edit2, Target, MessageSquare, Lightbulb } from "lucide-react";
+import { Loader2, Eye, Rocket, Users, Sparkles, Package, CheckCircle, Circle, ArrowRight, Edit2, Target, MessageSquare, Lightbulb, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { FunnelPreview } from "@/components/funnel/FunnelPreview";
 import { FunnelEmptyState } from "@/components/funnel/FunnelEmptyState";
 import { LaunchTimeline } from "@/components/funnel/LaunchTimeline";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
+import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { 
@@ -119,13 +120,11 @@ const ProjectFunnelOverview = () => {
   return (
     <ProjectLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Funnel Overview</h1>
-          <p className="text-muted-foreground">
-            Your complete funnel configuration at a glance
-          </p>
-        </div>
+        <PlanPageHeader
+          title="Funnel Overview"
+          description="Your complete funnel configuration at a glance"
+          icon={LayoutDashboard}
+        />
 
         {/* Launch Timeline */}
         <LaunchTimeline projectId={projectId} projectType={project?.project_type as "launch" | "prelaunch" || "launch"} />
