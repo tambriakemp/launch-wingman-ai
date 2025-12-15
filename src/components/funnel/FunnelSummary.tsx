@@ -59,19 +59,30 @@ export const FunnelSummary = ({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Funnel Type Card */}
+        {/* Funnel Type Card - Enhanced with offer slots */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0 }}
+          className="lg:col-span-2"
         >
           <Card className="h-full">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-primary" />
-                  Funnel Type
-                </CardTitle>
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-12 h-12 rounded-lg flex items-center justify-center",
+                    funnelConfig.bgColor, funnelConfig.color
+                  )}>
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">{funnelConfig.name}</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {offers.filter(o => o.isConfigured || o.title).length} offers configured • {funnelConfig.assets.length} assets to create
+                    </p>
+                  </div>
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -82,25 +93,55 @@ export const FunnelSummary = ({
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  "w-12 h-12 rounded-lg flex items-center justify-center",
-                  funnelConfig.bgColor, funnelConfig.color
-                )}>
-                  <Icon className="w-6 h-6" />
+              <p className="text-sm text-muted-foreground">
+                {funnelConfig.description}
+              </p>
+              <div className="flex flex-col lg:flex-row gap-6">
+                <div className="flex-1">
+                  <FunnelDiagram
+                    steps={funnelConfig.steps}
+                    color={funnelConfig.color}
+                    bgColor={funnelConfig.bgColor}
+                  />
                 </div>
-                <div>
-                  <p className="font-semibold text-foreground">{funnelConfig.name}</p>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {funnelConfig.description}
-                  </p>
+                <div className="flex-1 space-y-3">
+                  <h4 className="text-sm font-medium text-muted-foreground">Offer Slots</h4>
+                  <div className="space-y-2">
+                    {funnelConfig.offerSlots.map((slot, index) => {
+                      const configuredOffer = offers.find(o => o.slotType === slot.type);
+                      return (
+                        <div 
+                          key={index}
+                          className="flex items-center gap-3 p-2 rounded-lg bg-accent/30"
+                        >
+                          <div className={cn(
+                            "w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold",
+                            funnelConfig.bgColor, funnelConfig.color
+                          )}>
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-foreground">
+                              {configuredOffer?.title || slot.label}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {configuredOffer?.price ? `$${configuredOffer.price}` : slot.priceRange}
+                            </p>
+                          </div>
+                          {slot.isRequired && (
+                            <Badge variant="outline" className="text-xs">Required</Badge>
+                          )}
+                          {(configuredOffer?.isConfigured || configuredOffer?.title) && (
+                            <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-600/50 bg-emerald-500/10">
+                              Configured
+                            </Badge>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-              <FunnelDiagram
-                steps={funnelConfig.steps}
-                color={funnelConfig.color}
-                bgColor={funnelConfig.bgColor}
-              />
             </CardContent>
           </Card>
         </motion.div>

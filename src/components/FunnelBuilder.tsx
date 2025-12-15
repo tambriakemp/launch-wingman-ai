@@ -17,10 +17,13 @@ import { OfferStackBuilder } from "@/components/funnel/OfferStackBuilder";
 import { OfferSlotData } from "@/components/funnel/OfferSlotCard";
 import { FunnelSummary } from "@/components/funnel/FunnelSummary";
 import { FunnelPreview } from "@/components/funnel/FunnelPreview";
+import { FunnelEmptyState } from "@/components/funnel/FunnelEmptyState";
+import { LaunchTimeline } from "@/components/funnel/LaunchTimeline";
 import { cn } from "@/lib/utils";
 
 interface FunnelBuilderProps {
   projectId: string;
+  projectType?: "launch" | "prelaunch";
 }
 
 type Step = 'funnel-type' | 'audience' | 'transformation' | 'offers';
@@ -32,7 +35,23 @@ const STEPS: { id: Step; label: string; icon: React.ElementType }[] = [
   { id: 'offers', label: 'Offers', icon: Package },
 ];
 
-export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
+// Map asset categories to task phases
+const ASSET_PHASE_MAP: Record<string, string> = {
+  'pages': 'technical',
+  'emails': 'emails',
+  'content': 'prelaunch',
+  'deliverables': 'delivery',
+};
+
+// Map asset categories to task labels
+const ASSET_LABEL_MAP: Record<string, string[]> = {
+  'pages': ['technical'],
+  'emails': ['copy'],
+  'content': ['creative', 'marketing'],
+  'deliverables': ['creative'],
+};
+
+export const FunnelBuilder = ({ projectId, projectType = "launch" }: FunnelBuilderProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState<Step>('funnel-type');
@@ -51,6 +70,7 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [isFirstTimeSetup, setIsFirstTimeSetup] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
 
   // Fetch existing funnel data
   const { data: existingFunnel, isLoading } = useQuery({
@@ -283,19 +303,70 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
 
       return funnelId;
     },
-    onSuccess: () => {
+    onSuccess: async (funnelId) => {
       queryClient.invalidateQueries({ queryKey: ['funnel', projectId] });
       queryClient.invalidateQueries({ queryKey: ['funnel-offers', projectId] });
       queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+      
+      // Generate tasks from funnel assets when setup is complete
+      if (currentStep === 'offers' && funnelType && user) {
+        await generateTasksFromFunnel(funnelType);
+        
+        // Update funnel_type_snapshot on the project
+        await supabase
+          .from('projects')
+          .update({ funnel_type_snapshot: funnelType })
+          .eq('id', projectId);
+      }
+      
       toast.success("Funnel saved successfully!");
       setIsSetupComplete(true);
       setIsFirstTimeSetup(false);
+      setShowWizard(false);
     },
     onError: (error) => {
       console.error("Error saving funnel:", error);
       toast.error("Failed to save funnel");
     },
   });
+
+  // Function to generate tasks from funnel assets
+  const generateTasksFromFunnel = async (funnelTypeKey: string) => {
+    if (!user) return;
+    
+    const config = FUNNEL_CONFIGS[funnelTypeKey];
+    if (!config) return;
+
+    // Check if there are already tasks for this project
+    const { data: existingTasks } = await supabase
+      .from('tasks')
+      .select('id')
+      .eq('project_id', projectId)
+      .limit(1);
+
+    // Only generate tasks if none exist
+    if (existingTasks && existingTasks.length > 0) return;
+
+    const tasksToInsert = config.assets.map((asset, index) => ({
+      project_id: projectId,
+      user_id: user.id,
+      title: asset.title,
+      description: asset.description,
+      column_id: 'todo',
+      phase: ASSET_PHASE_MAP[asset.category] || null,
+      labels: ASSET_LABEL_MAP[asset.category] || [],
+      position: index,
+    }));
+
+    if (tasksToInsert.length > 0) {
+      const { error } = await supabase.from('tasks').insert(tasksToInsert);
+      if (error) {
+        console.error('Error generating tasks:', error);
+      } else {
+        toast.success(`${tasksToInsert.length} tasks generated from funnel assets`);
+      }
+    }
+  };
 
   const handleFunnelTypeSelect = (type: string) => {
     setFunnelType(type);
@@ -363,6 +434,12 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
 
   const handleEditFunnel = () => {
     setIsSetupComplete(false);
+    setShowWizard(true);
+    setCurrentStep('funnel-type');
+  };
+
+  const handleStartFunnel = () => {
+    setShowWizard(true);
     setCurrentStep('funnel-type');
   };
 
@@ -374,8 +451,13 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
     );
   }
 
+  // Show empty state if no funnel exists and not in wizard mode
+  if (!existingFunnel && !showWizard) {
+    return <FunnelEmptyState onCreateFunnel={handleStartFunnel} />;
+  }
+
   // Show completed summary view
-  if (isSetupComplete && funnelType) {
+  if (isSetupComplete && funnelType && !showWizard) {
     return (
       <div className="space-y-6">
         <div className="flex justify-end gap-2">
@@ -393,8 +475,14 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
           transformationStatement={transformationStatement}
           offers={offers}
           completedAssets={completedAssets}
-          onEditStep={(step) => goToStep(step as Step)}
+          onEditStep={(step) => {
+            setShowWizard(true);
+            goToStep(step as Step);
+          }}
         />
+        {/* Launch Timeline */}
+        <LaunchTimeline projectId={projectId} projectType={projectType} />
+        
         <FunnelPreview
           isOpen={showPreview}
           onClose={() => setShowPreview(false)}

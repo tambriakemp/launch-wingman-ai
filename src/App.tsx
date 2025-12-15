@@ -54,12 +54,12 @@ const App = () => (
               }
             />
             
-            {/* Project-specific routes */}
+            {/* Project-specific routes - Funnel Builder is the landing page */}
             <Route
               path="/projects/:id"
               element={
                 <ProtectedRoute>
-                  <ProjectDashboard />
+                  <ProjectOffer />
                 </ProtectedRoute>
               }
             />

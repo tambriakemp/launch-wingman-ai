@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO, isPast, isToday } from "date-fns";
-import { ChevronRight, ChevronDown, MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, X, ChevronsUpDown, Settings, ListChecks, Search } from "lucide-react";
+import { ChevronRight, ChevronDown, MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, X, ChevronsUpDown, Settings, ListChecks, Search, AlertTriangle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +22,7 @@ import { TaskDialog, Task, TASK_LABELS, TASK_PHASES } from "@/components/TaskDia
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { LoadLaunchTasksDialog } from "@/components/LoadLaunchTasksDialog";
 import { FilterPopover } from "@/components/FilterPopover";
+import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 
 const COLUMNS = [
   { id: "todo", label: "To Do" },
@@ -29,6 +31,22 @@ const COLUMNS = [
   { id: "review", label: "Review" },
   { id: "done", label: "Done" },
 ];
+
+// Map asset categories to task phases
+const ASSET_PHASE_MAP: Record<string, string> = {
+  'pages': 'technical',
+  'emails': 'emails',
+  'content': 'prelaunch',
+  'deliverables': 'delivery',
+};
+
+// Map asset categories to task labels
+const ASSET_LABEL_MAP: Record<string, string[]> = {
+  'pages': ['technical'],
+  'emails': ['copy'],
+  'content': ['creative', 'marketing'],
+  'deliverables': ['creative'],
+};
 
 interface ProjectBoardProps {
   projectId: string;
@@ -55,6 +73,11 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
 
   // Collapsible phase state - includes "unassigned" for tasks with no phase
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set([...TASK_PHASES.map(p => p.id), "unassigned"]));
+  
+  // Funnel change detection
+  const [funnelTypeChanged, setFunnelTypeChanged] = useState(false);
+  const [currentFunnelType, setCurrentFunnelType] = useState<string | null>(null);
+  const [isRepopulating, setIsRepopulating] = useState(false);
 
   const togglePhase = (phaseId: string) => {
     setExpandedPhases(prev => {
@@ -125,6 +148,103 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
+
+  // Check for funnel type changes
+  useEffect(() => {
+    const checkFunnelChange = async () => {
+      if (!projectId) return;
+
+      // Fetch current funnel type
+      const { data: funnel } = await supabase
+        .from('funnels')
+        .select('funnel_type')
+        .eq('project_id', projectId)
+        .maybeSingle();
+
+      // Fetch project snapshot
+      const { data: project } = await supabase
+        .from('projects')
+        .select('funnel_type_snapshot')
+        .eq('id', projectId)
+        .single();
+
+      if (funnel?.funnel_type && project?.funnel_type_snapshot && 
+          funnel.funnel_type !== project.funnel_type_snapshot) {
+        setFunnelTypeChanged(true);
+        setCurrentFunnelType(funnel.funnel_type);
+      }
+    };
+
+    checkFunnelChange();
+  }, [projectId]);
+
+  const handleRepopulateTasks = async () => {
+    if (!user || !currentFunnelType) return;
+
+    setIsRepopulating(true);
+    const config = FUNNEL_CONFIGS[currentFunnelType];
+    if (!config) {
+      setIsRepopulating(false);
+      return;
+    }
+
+    // Delete existing tasks
+    const { error: deleteError } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('project_id', projectId);
+
+    if (deleteError) {
+      console.error('Error deleting tasks:', deleteError);
+      toast.error('Failed to clear existing tasks');
+      setIsRepopulating(false);
+      return;
+    }
+
+    // Generate new tasks
+    const tasksToInsert = config.assets.map((asset, index) => ({
+      project_id: projectId,
+      user_id: user.id,
+      title: asset.title,
+      description: asset.description,
+      column_id: 'todo',
+      phase: ASSET_PHASE_MAP[asset.category] || null,
+      labels: ASSET_LABEL_MAP[asset.category] || [],
+      position: index,
+    }));
+
+    if (tasksToInsert.length > 0) {
+      const { error: insertError } = await supabase.from('tasks').insert(tasksToInsert);
+      if (insertError) {
+        console.error('Error generating tasks:', insertError);
+        toast.error('Failed to generate tasks');
+        setIsRepopulating(false);
+        return;
+      }
+    }
+
+    // Update project snapshot
+    await supabase
+      .from('projects')
+      .update({ funnel_type_snapshot: currentFunnelType })
+      .eq('id', projectId);
+
+    setFunnelTypeChanged(false);
+    setIsRepopulating(false);
+    toast.success(`${tasksToInsert.length} tasks generated for new funnel type`);
+    fetchTasks();
+  };
+
+  const handleDismissFunnelChange = async () => {
+    if (!currentFunnelType) return;
+
+    await supabase
+      .from('projects')
+      .update({ funnel_type_snapshot: currentFunnelType })
+      .eq('id', projectId);
+
+    setFunnelTypeChanged(false);
+  };
 
   const handleCreateTask = async (data: { title: string; description: string; due_date: Date | null; column_id: string; labels: string[]; phase: string | null }) => {
     if (!user) return;
@@ -289,6 +409,45 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
 
   return (
     <>
+      {/* Funnel Change Alert */}
+      {funnelTypeChanged && (
+        <Alert className="mb-4 border-warning bg-warning/10">
+          <AlertTriangle className="h-4 w-4 text-warning" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>
+              Your funnel type has changed. Would you like to update your task list to match the new funnel?
+            </span>
+            <div className="flex gap-2 ml-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleDismissFunnelChange}
+                disabled={isRepopulating}
+              >
+                Keep Current Tasks
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={handleRepopulateTasks}
+                disabled={isRepopulating}
+              >
+                {isRepopulating ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Repopulate Board
+                  </>
+                )}
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Toolbar - Streamlined */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         {/* Search & Filters */}
