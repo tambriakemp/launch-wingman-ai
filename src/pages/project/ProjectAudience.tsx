@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Save, ArrowLeft, ArrowRight, Users } from "lucide-react";
+import { Loader2, Save, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -123,8 +123,6 @@ const ProjectAudience = () => {
         <PlanPageHeader
           title="Audience & Strategy"
           description="Define who you're serving and the transformation you provide"
-          icon={Users}
-          breadcrumbs={[{ label: "Funnel Type", href: `/projects/${projectId}/funnel-type` }]}
         />
 
         {/* Audience Form */}

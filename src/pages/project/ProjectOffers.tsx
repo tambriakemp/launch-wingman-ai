@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Save, ArrowLeft, Check, Package } from "lucide-react";
+import { Loader2, Save, ArrowLeft, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -272,12 +272,6 @@ const ProjectOffers = () => {
         <PlanPageHeader
           title="Offer Stack"
           description="Configure each offer in your funnel"
-          icon={Package}
-          breadcrumbs={[
-            { label: "Funnel Type", href: `/projects/${projectId}/funnel-type` },
-            { label: "Audience", href: `/projects/${projectId}/audience` },
-            { label: "Transformation", href: `/projects/${projectId}/transformation` }
-          ]}
         />
 
         {/* Offer Stack Builder */}

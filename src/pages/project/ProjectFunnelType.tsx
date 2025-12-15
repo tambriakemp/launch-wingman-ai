@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Save, ArrowRight, Rocket } from "lucide-react";
+import { Loader2, Save, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -97,7 +97,6 @@ const ProjectFunnelType = () => {
         <PlanPageHeader
           title="Select Funnel Type"
           description="Choose the type of funnel that best fits your business model"
-          icon={Rocket}
         />
 
         {/* Funnel Type Selector */}
