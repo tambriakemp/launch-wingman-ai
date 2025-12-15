@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO, isPast, isToday } from "date-fns";
-import { ChevronRight, ChevronDown, MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, Filter, X, ChevronsUpDown, Settings, ListChecks } from "lucide-react";
+import { ChevronRight, ChevronDown, MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, X, ChevronsUpDown, Settings, ListChecks, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,19 +15,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-  DropdownMenuCheckboxItem,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { TaskDialog, Task, TASK_LABELS, TASK_PHASES } from "@/components/TaskDialog";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { LoadLaunchTasksDialog } from "@/components/LoadLaunchTasksDialog";
+import { FilterPopover } from "@/components/FilterPopover";
 
 const COLUMNS = [
   { id: "todo", label: "To Do" },
@@ -219,13 +212,7 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
   };
 
 
-  const toggleLabelFilter = (labelId: string) => {
-    setSelectedLabels(prev =>
-      prev.includes(labelId)
-        ? prev.filter(id => id !== labelId)
-        : [...prev, labelId]
-    );
-  };
+  // Label filter is now handled by FilterPopover
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -302,78 +289,32 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
 
   return (
     <>
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-2">
+      {/* Toolbar - Streamlined */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        {/* Search & Filters */}
+        <div className="flex items-center gap-2">
           <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search tasks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-48 h-9"
+              className="w-52 h-9 pl-8"
             />
           </div>
-          
-          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="w-40 h-9">
-              <SelectValue placeholder="All statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              {COLUMNS.map((column) => (
-                <SelectItem key={column.id} value={column.id}>
-                  {column.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9">
-                <Filter className="w-4 h-4 mr-2" />
-                Labels
-                {selectedLabels.length > 0 && (
-                  <Badge variant="secondary" className="ml-2 h-5 px-1.5">
-                    {selectedLabels.length}
-                  </Badge>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48">
-              <DropdownMenuLabel>Filter by label</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {TASK_LABELS.map((label) => (
-                <DropdownMenuCheckboxItem
-                  key={label.id}
-                  checked={selectedLabels.includes(label.id)}
-                  onCheckedChange={() => toggleLabelFilter(label.id)}
-                >
-                  <span className={cn("px-2 py-0.5 rounded text-xs", label.color)}>
-                    {label.label}
-                  </span>
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Select value={selectedPhase} onValueChange={setSelectedPhase}>
-            <SelectTrigger className="w-44 h-9">
-              <SelectValue placeholder="All phases" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All phases</SelectItem>
-              {TASK_PHASES.map((phase) => (
-                <SelectItem key={phase.id} value={phase.id}>
-                  {phase.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <FilterPopover
+            selectedStatus={selectedStatus}
+            onStatusChange={setSelectedStatus}
+            selectedLabels={selectedLabels}
+            onLabelsChange={setSelectedLabels}
+            selectedPhase={selectedPhase}
+            onPhaseChange={setSelectedPhase}
+            onClear={clearFilters}
+          />
 
           {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9">
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 text-muted-foreground">
               <X className="w-4 h-4 mr-1" />
               Clear
             </Button>
@@ -381,15 +322,17 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
         </div>
 
         {/* Actions */}
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" className="h-9" onClick={allExpanded ? collapseAll : expandAll}>
-            <ChevronsUpDown className="w-4 h-4 mr-2" />
-            {allExpanded ? "Collapse All" : "Expand All"}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 text-muted-foreground"
+            onClick={allExpanded ? collapseAll : expandAll}
+          >
+            <ChevronsUpDown className="w-4 h-4 mr-1" />
+            {allExpanded ? "Collapse" : "Expand"}
           </Button>
-          <Button onClick={() => { setEditingTask(null); setTaskDialogOpen(true); }}>
-            <Plus className="w-4 h-4" />
-            Add Task
-          </Button>
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-9 w-9">
@@ -428,6 +371,11 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <Button onClick={() => { setEditingTask(null); setTaskDialogOpen(true); }}>
+            <Plus className="w-4 h-4 mr-1" />
+            Add Task
+          </Button>
         </div>
       </div>
 
