@@ -4,7 +4,7 @@ import { Loader2, Save, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
+
 import { AudienceDiscovery, AudienceData } from "@/components/funnel/AudienceDiscovery";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
@@ -71,18 +71,15 @@ const ProjectAudience = () => {
         if (error) throw error;
       } else {
         // No funnel exists - redirect to funnel type first
-        toast.error("Please select a funnel type first");
         navigate(`/projects/${projectId}/funnel-type`);
         return;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['funnel', projectId] });
-      toast.success("Audience data saved!");
     },
     onError: (error) => {
       console.error("Error saving:", error);
-      toast.error("Failed to save");
     },
   });
 

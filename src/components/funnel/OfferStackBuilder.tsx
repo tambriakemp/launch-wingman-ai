@@ -109,15 +109,8 @@ export const OfferStackBuilder = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-foreground mb-1">
-            Configure Your Offers
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            Set up each offer in your {funnelConfig.name}. Required offers are marked.
-          </p>
-        </div>
+      {/* Progress Counter */}
+      <div className="flex justify-end">
         <div className="text-sm text-muted-foreground">
           <span className="font-medium text-foreground">{configuredCount}</span>
           /{activeOffers.length} configured
