@@ -329,6 +329,7 @@ export type Database = {
           specificity_score: number | null
           sub_audiences: Json | null
           target_audience: string | null
+          time_effort_elements: Json | null
           updated_at: string
           user_id: string
         }
@@ -350,6 +351,7 @@ export type Database = {
           specificity_score?: number | null
           sub_audiences?: Json | null
           target_audience?: string | null
+          time_effort_elements?: Json | null
           updated_at?: string
           user_id: string
         }
@@ -371,6 +373,7 @@ export type Database = {
           specificity_score?: number | null
           sub_audiences?: Json | null
           target_audience?: string | null
+          time_effort_elements?: Json | null
           updated_at?: string
           user_id?: string
         }

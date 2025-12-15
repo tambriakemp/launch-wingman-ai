@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.generate-likelihood-elements]
 verify_jwt = false
+
+[functions.generate-time-effort]
+verify_jwt = false
