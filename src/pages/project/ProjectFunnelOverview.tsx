@@ -206,11 +206,6 @@ const ProjectFunnelOverview = () => {
                     <span className="text-muted-foreground shrink-0">Pain Point:</span>
                     <span className="text-foreground line-clamp-1">{funnel.primary_pain_point}</span>
                   </div>
-                  {funnel.problem_statement && (
-                    <p className="text-muted-foreground text-xs mt-2 line-clamp-2 italic">
-                      "{funnel.problem_statement.substring(0, 120)}..."
-                    </p>
-                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center py-4 text-center">

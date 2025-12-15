@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import {
   User,
   CreditCard,
@@ -21,6 +24,8 @@ import {
   Loader2,
   Settings2,
   Lock,
+  FolderOpen,
+  Trash2,
 } from "lucide-react";
 
 interface Profile {
@@ -28,11 +33,19 @@ interface Profile {
   last_name: string | null;
 }
 
+interface Project {
+  id: string;
+  name: string;
+  status: string;
+  created_at: string;
+}
+
 const Settings = () => {
   const { user, isSubscribed, subscriptionEnd, checkSubscription } = useAuth();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [searchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   
   // Profile state
   const [profile, setProfile] = useState<Profile>({ first_name: null, last_name: null });
@@ -45,6 +58,44 @@ const Settings = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Delete project state
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+
+  // Fetch projects for management
+  const { data: projects = [], isLoading: isLoadingProjects } = useQuery({
+    queryKey: ["all-projects", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name, status, created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as Project[];
+    },
+    enabled: !!user,
+  });
+
+  // Delete project mutation
+  const deleteProjectMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["all-projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects-selector"] });
+      toast.success("Project deleted successfully");
+      setProjectToDelete(null);
+    },
+    onError: (error) => {
+      toast.error("Failed to delete project");
+      console.error("Delete error:", error);
+    },
+  });
 
   // Fetch profile on mount (create if doesn't exist for legacy users)
   useEffect(() => {
@@ -186,8 +237,21 @@ const Settings = () => {
 
   const hasProfileChanges = firstName !== (profile.first_name || "") || lastName !== (profile.last_name || "");
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active":
+        return <Badge variant="outline" className="text-emerald-600 border-emerald-600/50">Active</Badge>;
+      case "archived":
+        return <Badge variant="outline" className="text-muted-foreground">Archived</Badge>;
+      case "draft":
+        return <Badge variant="outline" className="text-amber-600 border-amber-600/50">Draft</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
   return (
-    <DashboardLayout>
+    <ProjectLayout>
       <div className="space-y-8 max-w-4xl">
         {/* Header */}
         <motion.div
@@ -446,6 +510,68 @@ const Settings = () => {
           </Card>
         </motion.div>
 
+        {/* Manage Projects Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+        >
+          <Card variant="elevated">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-muted rounded-xl flex items-center justify-center">
+                  <FolderOpen className="w-5 h-5 text-foreground" />
+                </div>
+                <div>
+                  <CardTitle>Manage Projects</CardTitle>
+                  <CardDescription>View and delete your projects</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoadingProjects ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : projects.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4">No projects yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {projects.map((project) => (
+                    <div 
+                      key={project.id} 
+                      className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-xs font-semibold text-accent-foreground">
+                          {project.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{project.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Created {new Date(project.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {getStatusBadge(project.status)}
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setProjectToDelete(project)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* Notifications Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -498,7 +624,17 @@ const Settings = () => {
           </Card>
         </motion.div>
       </div>
-    </DashboardLayout>
+
+      {/* Delete Project Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={!!projectToDelete}
+        onOpenChange={(open) => !open && setProjectToDelete(null)}
+        onConfirm={() => projectToDelete && deleteProjectMutation.mutate(projectToDelete.id)}
+        title="Delete Project"
+        description={`This will permanently delete "${projectToDelete?.name}" and all its data including tasks, content, and launch events. This action cannot be undone.`}
+        isDeleting={deleteProjectMutation.isPending}
+      />
+    </ProjectLayout>
   );
 };
 
