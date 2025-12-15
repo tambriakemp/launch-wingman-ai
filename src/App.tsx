@@ -18,11 +18,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 
 // Project-specific pages
-import ProjectFunnelOverview from "./pages/project/ProjectFunnelOverview";
-import ProjectFunnelType from "./pages/project/ProjectFunnelType";
-import ProjectAudience from "./pages/project/ProjectAudience";
-import ProjectTransformation from "./pages/project/ProjectTransformation";
-import ProjectOffers from "./pages/project/ProjectOffers";
+import ProjectPlan from "./pages/project/ProjectPlan";
 import ProjectBrand from "./pages/project/ProjectBrand";
 import ProjectMessaging from "./pages/project/ProjectMessaging";
 import ProjectExecute from "./pages/project/ProjectExecute";
@@ -45,12 +41,12 @@ const App = () => (
             <Route path="/dashboard" element={<Navigate to="/app" replace />} />
             <Route path="/projects" element={<Navigate to="/app" replace />} />
             
-            {/* Project-specific routes - Funnel Overview is the landing page */}
+            {/* Project-specific routes - Plan section uses unified ProjectPlan */}
             <Route
               path="/projects/:id"
               element={
                 <ProtectedRoute>
-                  <ProjectFunnelOverview />
+                  <ProjectPlan />
                 </ProtectedRoute>
               }
             />
@@ -58,7 +54,7 @@ const App = () => (
               path="/projects/:id/offer"
               element={
                 <ProtectedRoute>
-                  <ProjectFunnelOverview />
+                  <ProjectPlan />
                 </ProtectedRoute>
               }
             />
@@ -66,7 +62,7 @@ const App = () => (
               path="/projects/:id/funnel-type"
               element={
                 <ProtectedRoute>
-                  <ProjectFunnelType />
+                  <ProjectPlan />
                 </ProtectedRoute>
               }
             />
@@ -74,7 +70,7 @@ const App = () => (
               path="/projects/:id/audience"
               element={
                 <ProtectedRoute>
-                  <ProjectAudience />
+                  <ProjectPlan />
                 </ProtectedRoute>
               }
             />
@@ -82,7 +78,7 @@ const App = () => (
               path="/projects/:id/transformation"
               element={
                 <ProtectedRoute>
-                  <ProjectTransformation />
+                  <ProjectPlan />
                 </ProtectedRoute>
               }
             />
@@ -90,7 +86,7 @@ const App = () => (
               path="/projects/:id/offers"
               element={
                 <ProtectedRoute>
-                  <ProjectOffers />
+                  <ProjectPlan />
                 </ProtectedRoute>
               }
             />

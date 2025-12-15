@@ -1,14 +1,12 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Save, ArrowLeft, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-
 import { OfferStackBuilder } from "@/components/funnel/OfferStackBuilder";
 import { OfferSlotData } from "@/components/funnel/OfferSlotCard";
 import { AudienceData } from "@/components/funnel/AudienceDiscovery";
-import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 import { useState, useEffect } from "react";
@@ -29,8 +27,11 @@ const ASSET_LABEL_MAP: Record<string, string[]> = {
   'deliverables': ['creative'],
 };
 
-const ProjectOffers = () => {
-  const { id: projectId } = useParams();
+interface Props {
+  projectId: string;
+}
+
+const OffersContent = ({ projectId }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -51,7 +52,7 @@ const ProjectOffers = () => {
       const { data, error } = await supabase
         .from('funnels')
         .select('*')
-        .eq('project_id', projectId!)
+        .eq('project_id', projectId)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -236,15 +237,11 @@ const ProjectOffers = () => {
     },
   });
 
-  if (!projectId) return null;
-
   if (isLoading) {
     return (
-      <ProjectLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-        </div>
-      </ProjectLayout>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
@@ -263,62 +260,60 @@ const ProjectOffers = () => {
   const hasConfiguredOffers = offers.some(o => o.isConfigured || o.title || o.isSkipped);
 
   return (
-    <ProjectLayout>
-      <div className="space-y-6">
-        <PlanPageHeader
-          title="Offer Stack"
-          description="Configure each offer in your funnel"
-        />
+    <div className="space-y-6">
+      <PlanPageHeader
+        title="Offer Stack"
+        description="Configure each offer in your funnel"
+      />
 
-        {/* Offer Stack Builder */}
-        <OfferStackBuilder
-          funnelType={funnel.funnel_type}
-          offers={offers}
-          onChange={setOffers}
-          audienceData={audienceData}
-        />
+      {/* Offer Stack Builder */}
+      <OfferStackBuilder
+        funnelType={funnel.funnel_type}
+        offers={offers}
+        onChange={setOffers}
+        audienceData={audienceData}
+      />
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between pt-4 border-t border-border">
+      {/* Navigation */}
+      <div className="flex items-center justify-between pt-4 border-t border-border">
+        <Button
+          variant="outline"
+          onClick={() => navigate(`/projects/${projectId}/transformation`)}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Transformation
+        </Button>
+
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={() => navigate(`/projects/${projectId}/transformation`)}
+            onClick={() => saveMutation.mutate(false)}
+            disabled={saveMutation.isPending}
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Transformation
+            {saveMutation.isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            Save
           </Button>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => saveMutation.mutate(false)}
-              disabled={saveMutation.isPending}
-            >
-              {saveMutation.isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4 mr-2" />
-              )}
-              Save
-            </Button>
-            <Button
-              onClick={() => saveMutation.mutate(true)}
-              disabled={!hasConfiguredOffers || saveMutation.isPending}
-            >
-              {saveMutation.isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <>
-                  <Check className="w-4 h-4 mr-2" />
-                  Complete Setup
-                </>
-              )}
-            </Button>
-          </div>
+          <Button
+            onClick={() => saveMutation.mutate(true)}
+            disabled={!hasConfiguredOffers || saveMutation.isPending}
+          >
+            {saveMutation.isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <>
+                <Check className="w-4 h-4 mr-2" />
+                Complete Setup
+              </>
+            )}
+          </Button>
         </div>
       </div>
-    </ProjectLayout>
+    </div>
   );
 };
 
-export default ProjectOffers;
+export default OffersContent;
