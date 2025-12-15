@@ -320,6 +320,7 @@ export type Database = {
           funnel_type: string
           id: string
           niche: string | null
+          pain_symptoms: Json | null
           primary_pain_point: string | null
           problem_statement: string | null
           project_id: string
@@ -338,6 +339,7 @@ export type Database = {
           funnel_type: string
           id?: string
           niche?: string | null
+          pain_symptoms?: Json | null
           primary_pain_point?: string | null
           problem_statement?: string | null
           project_id: string
@@ -356,6 +358,7 @@ export type Database = {
           funnel_type?: string
           id?: string
           niche?: string | null
+          pain_symptoms?: Json | null
           primary_pain_point?: string | null
           problem_statement?: string | null
           project_id?: string

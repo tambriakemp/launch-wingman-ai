@@ -1,22 +1,27 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Save, ArrowLeft, ArrowRight } from "lucide-react";
+import { Loader2, Save, ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { AudienceProfileCard } from "@/components/audience/AudienceProfileCard";
 import { ValueEquationSections, ValueEquationData } from "@/components/audience/ValueEquationSections";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 interface Props {
   projectId: string;
 }
 
+type SaveStatus = 'idle' | 'saving' | 'saved';
+
 const AudienceContent = ({ projectId }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [audienceData, setAudienceData] = useState<ValueEquationData>({
     niche: '',
@@ -25,8 +30,12 @@ const AudienceContent = ({ projectId }: Props) => {
     specificityScore: 0,
     desiredOutcome: '',
     primaryPainPoint: '',
+    painSymptoms: [],
     problemStatement: '',
   });
+
+  // Track if initial load is done to avoid auto-save on first render
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Fetch funnel
   const { data: funnel, isLoading } = useQuery({
@@ -57,6 +66,17 @@ const AudienceContent = ({ projectId }: Props) => {
         }
       }
 
+      // Parse pain_symptoms from jsonb
+      let painSymptoms: string[] = [];
+      if ((funnel as any).pain_symptoms) {
+        try {
+          const parsed = (funnel as any).pain_symptoms as unknown;
+          painSymptoms = Array.isArray(parsed) ? parsed as string[] : [];
+        } catch {
+          painSymptoms = [];
+        }
+      }
+
       setAudienceData({
         niche: funnel.niche || '',
         targetAudience: funnel.target_audience || '',
@@ -64,12 +84,84 @@ const AudienceContent = ({ projectId }: Props) => {
         specificityScore: (funnel as any).specificity_score || 0,
         desiredOutcome: funnel.desired_outcome || '',
         primaryPainPoint: funnel.primary_pain_point || '',
+        painSymptoms,
         problemStatement: funnel.problem_statement || '',
       });
+
+      // Mark as initialized after data is loaded
+      setTimeout(() => setIsInitialized(true), 100);
     }
   }, [funnel]);
 
-  // Save mutation
+  // Auto-save function
+  const performSave = useCallback(async () => {
+    if (!user || !projectId || !funnel) return;
+
+    setSaveStatus('saving');
+
+    try {
+      const { error } = await supabase
+        .from('funnels')
+        .update({
+          niche: audienceData.niche,
+          target_audience: audienceData.targetAudience,
+          sub_audiences: audienceData.subAudiences,
+          specificity_score: audienceData.specificityScore,
+          desired_outcome: audienceData.desiredOutcome,
+          primary_pain_point: audienceData.primaryPainPoint,
+          pain_symptoms: audienceData.painSymptoms,
+          problem_statement: audienceData.problemStatement,
+        } as any)
+        .eq('id', funnel.id);
+
+      if (error) throw error;
+
+      setSaveStatus('saved');
+      queryClient.invalidateQueries({ queryKey: ['funnel', projectId] });
+
+      // Reset to idle after 2 seconds
+      statusTimeoutRef.current = setTimeout(() => {
+        setSaveStatus('idle');
+      }, 2000);
+    } catch (error) {
+      console.error("Error auto-saving:", error);
+      setSaveStatus('idle');
+    }
+  }, [audienceData, funnel, projectId, user, queryClient]);
+
+  // Debounced auto-save effect
+  useEffect(() => {
+    if (!isInitialized || !funnel) return;
+
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    if (statusTimeoutRef.current) {
+      clearTimeout(statusTimeoutRef.current);
+    }
+
+    // Set new timeout for auto-save (1.5 seconds)
+    saveTimeoutRef.current = setTimeout(() => {
+      performSave();
+    }, 1500);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [audienceData, isInitialized, funnel, performSave]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      if (statusTimeoutRef.current) clearTimeout(statusTimeoutRef.current);
+    };
+  }, []);
+
+  // Manual save mutation (for explicit save button)
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!user || !projectId) throw new Error("Missing required data");
@@ -84,6 +176,7 @@ const AudienceContent = ({ projectId }: Props) => {
             specificity_score: audienceData.specificityScore,
             desired_outcome: audienceData.desiredOutcome,
             primary_pain_point: audienceData.primaryPainPoint,
+            pain_symptoms: audienceData.painSymptoms,
             problem_statement: audienceData.problemStatement,
           } as any)
           .eq('id', funnel.id);
@@ -96,6 +189,10 @@ const AudienceContent = ({ projectId }: Props) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['funnel', projectId] });
+      setSaveStatus('saved');
+      statusTimeoutRef.current = setTimeout(() => {
+        setSaveStatus('idle');
+      }, 2000);
     },
     onError: (error) => {
       console.error("Error saving:", error);
@@ -130,10 +227,28 @@ const AudienceContent = ({ projectId }: Props) => {
 
   return (
     <div className="space-y-6">
-      <PlanPageHeader
-        title="Value Equation Builder"
-        description="Define your audience using Alex Hormozi's Value Equation framework"
-      />
+      {/* Header with Save Status */}
+      <div className="flex items-start justify-between">
+        <PlanPageHeader
+          title="Value Equation Builder"
+          description="Define your audience using Alex Hormozi's Value Equation framework"
+        />
+        {/* Auto-save Status Indicator */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-[100px] justify-end">
+          {saveStatus === 'saving' && (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Saving...</span>
+            </>
+          )}
+          {saveStatus === 'saved' && (
+            <>
+              <Check className="w-4 h-4 text-green-500" />
+              <span className="text-green-500">Saved</span>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Audience Profile Card - Live Preview */}
       <AudienceProfileCard

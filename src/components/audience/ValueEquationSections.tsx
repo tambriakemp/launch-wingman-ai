@@ -1,10 +1,9 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Check } from "lucide-react";
 import { WhoSection } from "./WhoSection";
 import { DreamOutcomeSection } from "./DreamOutcomeSection";
+import { PainSection } from "./PainSection";
 
 interface SubAudience {
   name: string;
@@ -19,6 +18,7 @@ export interface ValueEquationData {
   specificityScore: number;
   desiredOutcome: string;
   primaryPainPoint: string;
+  painSymptoms: string[];
   problemStatement: string;
 }
 
@@ -68,7 +68,6 @@ export const ValueEquationSections = ({
 
   const isWhoComplete = !!(data.niche && data.targetAudience);
   const isDreamComplete = !!data.desiredOutcome;
-  const isPainComplete = !!data.primaryPainPoint;
 
   return (
     <div className="space-y-6">
@@ -106,34 +105,14 @@ export const ValueEquationSections = ({
       />
 
       {/* Section 3: PAIN */}
-      <Card>
-        <CardHeader className="pb-4">
-          <SectionHeader
-            number={3}
-            title="PAIN"
-            subtitle="What's keeping them stuck?"
-            isComplete={isPainComplete}
-          />
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="space-y-2">
-            <Label htmlFor="primaryPainPoint" className="flex items-center gap-1">
-              Primary Pain Point <span className="text-destructive">*</span>
-            </Label>
-            <Textarea
-              id="primaryPainPoint"
-              placeholder="What's the biggest frustration, challenge, or obstacle they face?"
-              value={data.primaryPainPoint}
-              onChange={(e) => updateField("primaryPainPoint", e.target.value)}
-              rows={3}
-              className="resize-none"
-            />
-            <p className="text-xs text-muted-foreground">
-              Example: "Constantly juggling tasks, never finishing what they start, feeling like they're falling behind"
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <PainSection
+        primaryPainPoint={data.primaryPainPoint}
+        painSymptoms={data.painSymptoms}
+        niche={data.niche}
+        targetAudience={data.targetAudience}
+        onPainPointChange={(value) => updateField("primaryPainPoint", value)}
+        onSymptomsChange={(symptoms) => updateField("painSymptoms", symptoms)}
+      />
 
       {/* Section 4: PERCEIVED LIKELIHOOD (Coming Soon) */}
       <Card className="opacity-60">
