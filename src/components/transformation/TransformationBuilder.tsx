@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -190,25 +190,6 @@ export const TransformationBuilder = ({
 
   return (
     <Card>
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold">
-              3
-            </div>
-            <div>
-              <h3 className="font-semibold text-base">TRANSFORMATION STATEMENT</h3>
-              <p className="text-sm text-muted-foreground">Define your core promise</p>
-            </div>
-          </div>
-          {transformationStatement && (
-            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
-              <Check className="w-3 h-3 mr-1" />
-              Complete
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
       <CardContent className="space-y-4">
         {/* Main Textarea at TOP */}
         <div className="space-y-2">
