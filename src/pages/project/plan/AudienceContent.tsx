@@ -276,6 +276,7 @@ const AudienceContent = ({ projectId }: Props) => {
         primaryPainPoint={audienceData.primaryPainPoint}
         desiredOutcome={audienceData.desiredOutcome}
         specificityScore={audienceData.specificityScore}
+        likelihoodElements={audienceData.likelihoodElements}
       />
 
       {/* Value Equation Sections */}

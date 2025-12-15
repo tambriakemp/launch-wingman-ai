@@ -1,5 +1,10 @@
 import { Card } from "@/components/ui/card";
-import { User, Target, Zap } from "lucide-react";
+import { User, Target, Zap, Shield, BarChart3, GraduationCap } from "lucide-react";
+
+interface LikelihoodElement {
+  type: 'objection_counter' | 'proof' | 'credibility';
+  text: string;
+}
 
 interface AudienceProfileCardProps {
   niche: string;
@@ -7,6 +12,7 @@ interface AudienceProfileCardProps {
   primaryPainPoint: string;
   desiredOutcome: string;
   specificityScore?: number;
+  likelihoodElements?: LikelihoodElement[];
 }
 
 export const AudienceProfileCard = ({
@@ -15,6 +21,7 @@ export const AudienceProfileCard = ({
   primaryPainPoint,
   desiredOutcome,
   specificityScore = 0,
+  likelihoodElements = [],
 }: AudienceProfileCardProps) => {
   const hasContent = niche || targetAudience || primaryPainPoint || desiredOutcome;
 
@@ -30,6 +37,12 @@ export const AudienceProfileCard = ({
     if (score >= 4) return "Needs Work";
     return "Too Vague";
   };
+
+  // Count likelihood elements by type
+  const objectionCount = likelihoodElements.filter(e => e.type === 'objection_counter').length;
+  const proofCount = likelihoodElements.filter(e => e.type === 'proof').length;
+  const credibilityCount = likelihoodElements.filter(e => e.type === 'credibility').length;
+  const hasLikelihoodElements = likelihoodElements.length > 0;
 
   if (!hasContent) {
     return (
@@ -68,6 +81,30 @@ export const AudienceProfileCard = ({
               <span className="text-sm text-muted-foreground">
                 Outcome: {desiredOutcome}
               </span>
+            </div>
+          )}
+
+          {hasLikelihoodElements && (
+            <div className="flex items-center gap-4 pt-1">
+              <span className="text-xs text-muted-foreground">Credibility:</span>
+              {objectionCount > 0 && (
+                <div className="flex items-center gap-1">
+                  <Shield className="w-3 h-3 text-blue-500" />
+                  <span className="text-xs text-blue-600">{objectionCount}</span>
+                </div>
+              )}
+              {proofCount > 0 && (
+                <div className="flex items-center gap-1">
+                  <BarChart3 className="w-3 h-3 text-green-500" />
+                  <span className="text-xs text-green-600">{proofCount}</span>
+                </div>
+              )}
+              {credibilityCount > 0 && (
+                <div className="flex items-center gap-1">
+                  <GraduationCap className="w-3 h-3 text-purple-500" />
+                  <span className="text-xs text-purple-600">{credibilityCount}</span>
+                </div>
+              )}
             </div>
           )}
         </div>
