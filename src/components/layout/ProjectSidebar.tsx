@@ -1,6 +1,7 @@
 import { Link, useLocation, useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import {
   Sparkles,
   LayoutDashboard,
@@ -17,6 +18,8 @@ import {
   Calendar,
   Users,
   Lock,
+  ArrowLeft,
+  FolderOpen,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
 import { Separator } from "@/components/ui/separator";
@@ -81,9 +84,27 @@ interface StepCompletion {
   transformation: boolean;
 }
 
+interface LastProjectInfo {
+  id: string;
+  name: string;
+}
+
 export const ProjectSidebar = () => {
   const location = useLocation();
   const { id: projectId } = useParams();
+  const [lastProject, setLastProject] = useState<LastProjectInfo | null>(null);
+
+  // Load last project from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("lastProjectInfo");
+    if (stored) {
+      try {
+        setLastProject(JSON.parse(stored));
+      } catch {
+        // Ignore parse errors
+      }
+    }
+  }, []);
 
   // Fetch funnel data to determine step completion
   const { data: funnel } = useQuery({
@@ -101,14 +122,14 @@ export const ProjectSidebar = () => {
     enabled: !!projectId,
   });
 
-  // Fetch project data for transformation statement
+  // Fetch project data for transformation statement and name
   const { data: project } = useQuery({
     queryKey: ['project', projectId],
     queryFn: async () => {
       if (!projectId) return null;
       const { data, error } = await supabase
         .from('projects')
-        .select('transformation_statement')
+        .select('transformation_statement, name')
         .eq('id', projectId)
         .single();
       if (error) throw error;
@@ -117,7 +138,70 @@ export const ProjectSidebar = () => {
     enabled: !!projectId,
   });
 
-  if (!projectId) return null;
+  // Save current project to localStorage when on a project page
+  useEffect(() => {
+    if (projectId && project?.name) {
+      const projectInfo: LastProjectInfo = { id: projectId, name: project.name };
+      localStorage.setItem("lastProjectInfo", JSON.stringify(projectInfo));
+      setLastProject(projectInfo);
+    }
+  }, [projectId, project?.name]);
+
+  // Render simplified sidebar for non-project pages (Settings, Assessments)
+  if (!projectId) {
+    return (
+      <TooltipProvider>
+        <motion.aside
+          initial={{ x: -20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          className="fixed left-0 top-0 h-screen w-56 bg-sidebar border-r border-sidebar-border flex flex-col z-50"
+        >
+          {/* Logo */}
+          <div className="px-4 py-3 border-b border-sidebar-border">
+            <Link to="/projects" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-sidebar-primary-foreground" />
+              </div>
+              <span className="text-base font-semibold text-sidebar-accent-foreground">Coach Hub</span>
+            </Link>
+          </div>
+
+          {/* Back to Project Navigation */}
+          <div className="px-3 py-3 border-b border-sidebar-border space-y-2">
+            {lastProject ? (
+              <Link
+                to={`/projects/${lastProject.id}/offer`}
+                className="flex items-center gap-2 px-2 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="truncate">Back to {lastProject.name}</span>
+              </Link>
+            ) : (
+              <Link
+                to="/projects"
+                className="flex items-center gap-2 px-2 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors"
+              >
+                <FolderOpen className="w-4 h-4" />
+                <span>View All Projects</span>
+              </Link>
+            )}
+          </div>
+
+          {/* Project Selector */}
+          <div className="px-3 py-2 border-b border-sidebar-border">
+            <ProjectSelector />
+          </div>
+
+          {/* Empty nav area for consistency */}
+          <nav className="flex-1 overflow-y-auto px-3 py-2">
+            <p className="px-2 py-4 text-xs text-sidebar-foreground/60">
+              Select a project to see navigation options.
+            </p>
+          </nav>
+        </motion.aside>
+      </TooltipProvider>
+    );
+  }
 
   const navSections = createNavSections(projectId);
 
@@ -166,7 +250,7 @@ export const ProjectSidebar = () => {
       >
         {/* Logo */}
         <div className="px-4 py-3 border-b border-sidebar-border">
-          <Link to="/dashboard" className="flex items-center gap-2">
+          <Link to="/projects" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-sidebar-primary-foreground" />
             </div>
