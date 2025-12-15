@@ -34,6 +34,7 @@ const AudienceContent = ({ projectId }: Props) => {
     problemStatement: '',
     mainObjections: '',
     likelihoodElements: [],
+    timeEffortElements: [],
   });
 
   // Track if initial load is done to avoid auto-save on first render
@@ -90,6 +91,17 @@ const AudienceContent = ({ projectId }: Props) => {
         }
       }
 
+      // Parse time_effort_elements from jsonb
+      let timeEffortElements: ValueEquationData['timeEffortElements'] = [];
+      if ((funnel as any).time_effort_elements) {
+        try {
+          const parsed = (funnel as any).time_effort_elements as unknown;
+          timeEffortElements = Array.isArray(parsed) ? parsed as ValueEquationData['timeEffortElements'] : [];
+        } catch {
+          timeEffortElements = [];
+        }
+      }
+
       setAudienceData({
         niche: funnel.niche || '',
         targetAudience: funnel.target_audience || '',
@@ -101,6 +113,7 @@ const AudienceContent = ({ projectId }: Props) => {
         problemStatement: funnel.problem_statement || '',
         mainObjections: (funnel as any).main_objections || '',
         likelihoodElements,
+        timeEffortElements,
       });
 
       // Mark as initialized after data is loaded
@@ -128,6 +141,7 @@ const AudienceContent = ({ projectId }: Props) => {
           problem_statement: audienceData.problemStatement,
           main_objections: audienceData.mainObjections,
           likelihood_elements: audienceData.likelihoodElements,
+          time_effort_elements: audienceData.timeEffortElements,
         } as any)
         .eq('id', funnel.id);
 
@@ -197,6 +211,7 @@ const AudienceContent = ({ projectId }: Props) => {
             problem_statement: audienceData.problemStatement,
             main_objections: audienceData.mainObjections,
             likelihood_elements: audienceData.likelihoodElements,
+            time_effort_elements: audienceData.timeEffortElements,
           } as any)
           .eq('id', funnel.id);
         if (error) throw error;

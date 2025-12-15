@@ -5,6 +5,7 @@ import { WhoSection } from "./WhoSection";
 import { DreamOutcomeSection } from "./DreamOutcomeSection";
 import { PainSection } from "./PainSection";
 import { LikelihoodSection, LikelihoodElement } from "./LikelihoodSection";
+import { TimeEffortSection, TimeEffortElement } from "./TimeEffortSection";
 
 interface SubAudience {
   name: string;
@@ -23,6 +24,7 @@ export interface ValueEquationData {
   problemStatement: string;
   mainObjections: string;
   likelihoodElements: LikelihoodElement[];
+  timeEffortElements: TimeEffortElement[];
 }
 
 interface ValueEquationSectionsProps {
@@ -131,24 +133,15 @@ export const ValueEquationSections = ({
         onElementsChange={(elements) => updateField("likelihoodElements", elements)}
       />
 
-      {/* Section 5: TIME + EFFORT (Coming Soon) */}
-      <Card className="opacity-60">
-        <CardHeader className="pb-4">
-          <SectionHeader
-            number={5}
-            title="TIME + EFFORT"
-            subtitle="How easy is the path?"
-            isComplete={false}
-          />
-        </CardHeader>
-        <CardContent>
-          <div className="p-4 text-center border border-dashed rounded-lg bg-muted/30">
-            <p className="text-sm text-muted-foreground">
-              Coming soon: Quick wins and friction reducers
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Section 5: TIME + EFFORT */}
+      <TimeEffortSection
+        timeEffortElements={data.timeEffortElements}
+        niche={data.niche}
+        targetAudience={data.targetAudience}
+        primaryPainPoint={data.primaryPainPoint}
+        desiredOutcome={data.desiredOutcome}
+        onElementsChange={(elements) => updateField("timeEffortElements", elements)}
+      />
     </div>
   );
 };
