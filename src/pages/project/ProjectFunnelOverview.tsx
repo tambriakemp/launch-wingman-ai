@@ -131,7 +131,7 @@ const ProjectFunnelOverview = () => {
         <LaunchTimeline projectId={projectId} projectType={project?.project_type as "launch" | "prelaunch" || "launch"} />
 
         {/* Inline Progress Stepper */}
-        <div className="relative">
+        <div className="relative max-w-2xl mx-auto">
           <div className="flex items-center justify-between">
             {steps.map((step, index) => {
               const StepIcon = step.icon;
@@ -143,7 +143,7 @@ const ProjectFunnelOverview = () => {
                     className={cn(
                       "flex items-center gap-2 px-4 py-2 rounded-full transition-all",
                       step.complete 
-                        ? "bg-amber-500/20 text-amber-600 hover:bg-amber-500/30" 
+                        ? "bg-foreground text-background hover:bg-foreground/90" 
                         : "bg-muted text-muted-foreground hover:bg-muted/80"
                     )}
                   >
@@ -157,7 +157,7 @@ const ProjectFunnelOverview = () => {
                   {!isLast && (
                     <div className={cn(
                       "flex-1 h-0.5 mx-2",
-                      step.complete ? "bg-amber-500/40" : "bg-muted"
+                      step.complete ? "bg-foreground/40" : "bg-muted"
                     )} />
                   )}
                 </div>
@@ -220,7 +220,7 @@ const ProjectFunnelOverview = () => {
                     variant="link" 
                     size="sm" 
                     onClick={() => navigate(`/projects/${projectId}/audience`)}
-                    className="text-amber-600"
+                    className="text-foreground"
                   >
                     Set up audience →
                   </Button>
@@ -229,7 +229,7 @@ const ProjectFunnelOverview = () => {
             </CardContent>
           </Card>
 
-          {/* Transformation Card */}
+          {/* Problem & Transformation Card */}
           <Card className="border bg-card">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
@@ -237,7 +237,7 @@ const ProjectFunnelOverview = () => {
                   <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
                     <Lightbulb className="w-4 h-4 text-muted-foreground" />
                   </div>
-                  <CardTitle className="text-base">Transformation Statement</CardTitle>
+                  <CardTitle className="text-base">Problem & Transformation</CardTitle>
                 </div>
                 <Button 
                   variant="ghost" 
@@ -249,25 +249,41 @@ const ProjectFunnelOverview = () => {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
-              {hasTransformation ? (
-                <p className="text-sm text-foreground leading-relaxed">
-                  "{project?.transformation_statement}"
-                </p>
-              ) : (
-                <div className="flex flex-col items-center py-4 text-center">
-                  <Sparkles className="w-8 h-8 text-muted-foreground/50 mb-2" />
-                  <p className="text-sm text-muted-foreground">Not configured yet</p>
-                  <Button 
-                    variant="link" 
-                    size="sm" 
-                    onClick={() => navigate(`/projects/${projectId}/transformation`)}
-                    className="text-amber-600"
-                  >
-                    Create statement →
-                  </Button>
-                </div>
-              )}
+            <CardContent className="space-y-4">
+              {/* Problem Statement */}
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Problem Statement</h4>
+                {funnel.problem_statement ? (
+                  <p className="text-sm text-foreground leading-relaxed line-clamp-3">
+                    "{funnel.problem_statement}"
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">Not configured</p>
+                )}
+              </div>
+              
+              {/* Transformation Statement */}
+              <div>
+                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Transformation Statement</h4>
+                {hasTransformation ? (
+                  <p className="text-sm text-foreground leading-relaxed">
+                    "{project?.transformation_statement}"
+                  </p>
+                ) : (
+                  <div className="flex flex-col items-center py-2 text-center">
+                    <Sparkles className="w-6 h-6 text-muted-foreground/50 mb-1" />
+                    <p className="text-sm text-muted-foreground">Not configured yet</p>
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      onClick={() => navigate(`/projects/${projectId}/transformation`)}
+                      className="text-foreground"
+                    >
+                      Create statement →
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -305,15 +321,15 @@ const ProjectFunnelOverview = () => {
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">{funnelConfig.description}</p>
               
-              <div className="flex flex-col lg:flex-row gap-6">
-                <div className="flex-1">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
                   <FunnelDiagram
                     steps={funnelConfig.steps}
                     color={funnelConfig.color}
                     bgColor={funnelConfig.bgColor}
                   />
                 </div>
-                <div className="flex-1 space-y-3">
+                <div className="space-y-3">
                   <h4 className="text-sm font-medium text-foreground">Configured Offers</h4>
                   <div className="space-y-2">
                     {funnelConfig.offerSlots.map((slot, index) => {
