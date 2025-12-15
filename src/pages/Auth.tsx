@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,8 @@ const Auth = () => {
   const [errors, setErrors] = useState<{ email?: string; password?: string; firstName?: string; lastName?: string }>({});
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get("tab") === "signup" ? "signup" : "signin";
 
   if (user) {
     navigate("/app");
@@ -232,16 +234,26 @@ const Auth = () => {
             </Card>
           ) : (
             <Card variant="elevated" className="border-0 shadow-xl">
-              <Tabs defaultValue="signin" className="w-full">
+              <Tabs defaultValue={defaultTab} className="w-full">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-center mb-4 lg:hidden">
                     <div className="w-12 h-12 gradient-primary rounded-xl flex items-center justify-center">
                       <Sparkles className="w-6 h-6 text-primary-foreground" />
                     </div>
                   </div>
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="signin">Sign In</TabsTrigger>
-                    <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-2 bg-muted p-1">
+                    <TabsTrigger 
+                      value="signin"
+                      className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground"
+                    >
+                      Sign In
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="signup"
+                      className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-transparent data-[state=inactive]:text-muted-foreground"
+                    >
+                      Sign Up
+                    </TabsTrigger>
                   </TabsList>
                 </CardHeader>
 

@@ -86,7 +86,7 @@ const Landing = () => {
                   <Link to="/auth">Sign In</Link>
                 </Button>
                 <Button variant="hero" asChild>
-                  <Link to="/auth">Get Started</Link>
+                  <Link to="/auth?tab=signup">Get Started</Link>
                 </Button>
               </>
             )}
@@ -117,7 +117,7 @@ const Landing = () => {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button size="xl" variant="hero" asChild>
-                <Link to="/auth">
+                <Link to="/auth?tab=signup">
                   Start Free <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>
@@ -276,7 +276,7 @@ const Landing = () => {
               Join hundreds of coaches and marketers who trust Coach Hub for their launches.
             </p>
             <Button size="xl" variant="glass" asChild>
-              <Link to="/auth">
+              <Link to="/auth?tab=signup">
                 Start Your Free Account <ArrowRight className="w-5 h-5" />
               </Link>
             </Button>
