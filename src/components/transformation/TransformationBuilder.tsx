@@ -190,10 +190,10 @@ export const TransformationBuilder = ({
 
   return (
     <Card>
-      <CardContent className="space-y-4">
+      <CardContent className="p-6 space-y-6">
         {/* Main Textarea at TOP */}
-        <div className="space-y-2">
-          <Label htmlFor="transformationStatement" className="flex items-center gap-1">
+        <div className="space-y-3">
+          <Label htmlFor="transformationStatement" className="text-sm font-medium text-foreground flex items-center gap-1">
             Your Transformation Statement <span className="text-destructive">*</span>
           </Label>
           <Textarea
@@ -202,7 +202,7 @@ export const TransformationBuilder = ({
             value={transformationStatement}
             onChange={(e) => onStatementChange(e.target.value)}
             rows={3}
-            className="resize-none"
+            className="resize-none text-foreground"
             disabled={isLocked}
           />
           <p className="text-xs text-muted-foreground">
@@ -212,23 +212,23 @@ export const TransformationBuilder = ({
 
         {/* Generated Variations in MIDDLE */}
         {variations.length > 0 && (
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-foreground">
               Click to use a variation:
             </Label>
-            <div className="grid gap-2">
+            <div className="grid gap-3">
               {variations.map((variation) => (
                 <button
                   key={variation.type}
                   onClick={() => handleSelectVariation(variation)}
                   disabled={isLocked}
-                  className={`p-3 rounded-lg border text-left transition-all hover:border-primary/50 ${
+                  className={`p-4 rounded-lg border text-left transition-all hover:border-primary/50 ${
                     primaryVersion === variation.type
                       ? "border-primary bg-primary/5"
                       : "border-border bg-card"
                   } ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-2">
                     <Badge
                       variant="outline"
                       className={`${getVersionColor(variation.type)} gap-1`}
@@ -240,7 +240,7 @@ export const TransformationBuilder = ({
                       <Check className="w-4 h-4 text-primary ml-auto" />
                     )}
                   </div>
-                  <p className="text-sm">{variation.statement}</p>
+                  <p className="text-sm text-foreground">{variation.statement}</p>
                 </button>
               ))}
             </div>
@@ -249,13 +249,13 @@ export const TransformationBuilder = ({
 
         {/* Lock Toggle */}
         {transformationStatement && (
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex items-center justify-end gap-2 pt-4">
             {isLocked ? (
-              <Lock className="w-4 h-4 text-muted-foreground" />
+              <Lock className="w-4 h-4 text-foreground" />
             ) : (
               <Unlock className="w-4 h-4 text-muted-foreground" />
             )}
-            <Label htmlFor="lock-toggle" className="text-xs text-muted-foreground cursor-pointer">
+            <Label htmlFor="lock-toggle" className="text-sm text-foreground cursor-pointer">
               Lock transformation
             </Label>
             <Switch
