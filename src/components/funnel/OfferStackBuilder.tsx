@@ -15,16 +15,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { AudienceData } from "./AudienceDiscovery";
+
 interface OfferStackBuilderProps {
   funnelType: string;
   offers: OfferSlotData[];
   onChange: (offers: OfferSlotData[]) => void;
+  audienceData?: AudienceData;
 }
 
 export const OfferStackBuilder = ({
   funnelType,
   offers,
   onChange,
+  audienceData,
 }: OfferStackBuilderProps) => {
   const [expandedSlots, setExpandedSlots] = useState<Set<number>>(new Set([0]));
   const [showAddSlot, setShowAddSlot] = useState(false);
@@ -148,6 +152,7 @@ export const OfferStackBuilder = ({
               onRemove={() => handleRemoveOffer(index)}
               isRemovable={!getSlotConfig(offer).isRequired || 
                 offers.filter(o => o.slotType === offer.slotType).length > 1}
+              audienceData={audienceData}
             />
           ))}
         </AnimatePresence>

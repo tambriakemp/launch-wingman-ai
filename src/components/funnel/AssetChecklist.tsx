@@ -264,29 +264,6 @@ export const AssetChecklist = ({
           );
         })}
       </div>
-
-      {/* Quick Links */}
-      <div className="p-4 rounded-lg bg-muted/30 border border-border">
-        <p className="text-sm font-medium text-foreground mb-3">Quick Links</p>
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
-            const categoryAssets = assetsByCategory[key as AssetCategory];
-            if (categoryAssets.length === 0) return null;
-            
-            return (
-              <Button
-                key={key}
-                variant="outline"
-                size="sm"
-                onClick={() => handleNavigateToSection(config.route)}
-              >
-                <config.icon className={cn("w-4 h-4 mr-1", config.color)} />
-                {config.label}
-              </Button>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 };
