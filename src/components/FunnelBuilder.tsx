@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   ChevronLeft, ChevronRight, Check, Loader2, Save,
-  Layers, Users, ListChecks, Sparkles, Package
+  Layers, Users, ListChecks, Sparkles, Package, Lock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,6 +50,7 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
   const [completedAssets, setCompletedAssets] = useState<Set<string>>(new Set());
   const [isLoadingCompletions, setIsLoadingCompletions] = useState(true);
   const [isSetupComplete, setIsSetupComplete] = useState(false);
+  const [isFirstTimeSetup, setIsFirstTimeSetup] = useState(true);
 
   // Fetch existing funnel data
   const { data: existingFunnel, isLoading } = useQuery({
@@ -138,11 +139,13 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
         problemStatement: existingFunnel.problem_statement || '',
       });
       
-      // If we have offers, show completed view
+      // If we have offers, user has completed setup before
       if (existingOffers && existingOffers.length > 0) {
         setIsSetupComplete(true);
+        setIsFirstTimeSetup(false);
       } else if (existingFunnel.funnel_type) {
         setCurrentStep('audience');
+        setIsFirstTimeSetup(false);
       }
     }
   }, [existingFunnel, existingOffers]);
@@ -166,6 +169,7 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
         price: offer.price?.toString() || '',
         priceType: offer.price_type || 'one-time',
         isConfigured: true,
+        isSkipped: false,
       })));
     } else if (funnelType && FUNNEL_CONFIGS[funnelType]) {
       // Initialize with default slots from funnel config
@@ -178,9 +182,19 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
         price: '',
         priceType: slot.type === 'lead-magnet' ? 'free' : 'one-time',
         isConfigured: false,
+        isSkipped: false,
       })));
     }
   }, [funnelType, existingOffers]);
+
+  // Calculate step completion status
+  const stepCompletion = useMemo(() => ({
+    'funnel-type': !!funnelType,
+    'audience': !!(audienceData.niche && audienceData.targetAudience),
+    'transformation': true, // Optional step - always "complete"
+    'offers': offers.some(o => o.isConfigured || o.title || o.isSkipped),
+    'checklist': true, // Always accessible after offers
+  }), [funnelType, audienceData, offers]);
 
   // Save funnel mutation
   const saveFunnelMutation = useMutation({
@@ -226,9 +240,10 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
         if (error) throw error;
       }
 
-      // Save offers
-      for (let i = 0; i < offers.length; i++) {
-        const offer = offers[i];
+      // Save offers (only non-skipped)
+      const activeOffers = offers.filter(o => !o.isSkipped);
+      for (let i = 0; i < activeOffers.length; i++) {
+        const offer = activeOffers[i];
         const offerData = {
           project_id: projectId,
           user_id: user.id,
@@ -270,6 +285,7 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
       queryClient.invalidateQueries({ queryKey: ['project', projectId] });
       toast.success("Funnel saved successfully!");
       setIsSetupComplete(true);
+      setIsFirstTimeSetup(false);
     },
     onError: (error) => {
       console.error("Error saving funnel:", error);
@@ -336,11 +352,11 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
       case 'funnel-type':
         return !!funnelType;
       case 'audience':
-        return !!audienceData.niche && !!audienceData.targetAudience;
+        return !!(audienceData.niche && audienceData.targetAudience);
       case 'transformation':
         return true; // Optional step
       case 'offers':
-        return offers.some(o => o.isConfigured || o.title);
+        return offers.some(o => o.isConfigured || o.title || o.isSkipped);
       case 'checklist':
         return true;
       default:
@@ -348,9 +364,29 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
     }
   };
 
+  const canNavigateToStep = (targetStep: Step) => {
+    // If not first time setup, allow free navigation
+    if (!isFirstTimeSetup) return true;
+
+    const targetIndex = STEPS.findIndex(s => s.id === targetStep);
+    const currentIndex = STEPS.findIndex(s => s.id === currentStep);
+
+    // Can always go back
+    if (targetIndex <= currentIndex) return true;
+
+    // Can only go forward if all previous steps are complete
+    for (let i = 0; i < targetIndex; i++) {
+      const stepId = STEPS[i].id;
+      if (!stepCompletion[stepId]) return false;
+    }
+    return true;
+  };
+
   const goToStep = (step: Step) => {
-    setCurrentStep(step);
-    setIsSetupComplete(false);
+    if (canNavigateToStep(step)) {
+      setCurrentStep(step);
+      setIsSetupComplete(false);
+    }
   };
 
   const nextStep = () => {
@@ -410,6 +446,9 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
             const Icon = step.icon;
             const isActive = currentStep === step.id;
             const isPast = STEPS.findIndex(s => s.id === currentStep) > index;
+            const isComplete = stepCompletion[step.id];
+            const canNavigate = canNavigateToStep(step.id);
+            const isLocked = isFirstTimeSetup && !canNavigate;
             
             return (
               <div key={step.id} className="flex items-center">
@@ -421,16 +460,21 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
                 )}
                 <button
                   onClick={() => goToStep(step.id)}
+                  disabled={isLocked}
                   className={cn(
                     "flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors",
                     isActive 
                       ? "bg-primary text-primary-foreground" 
-                      : isPast
+                      : isPast || isComplete
                         ? "bg-primary/10 text-primary hover:bg-primary/20"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        : isLocked
+                          ? "text-muted-foreground/50 cursor-not-allowed"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   )}
                 >
-                  {isPast && !isActive ? (
+                  {isLocked ? (
+                    <Lock className="w-4 h-4" />
+                  ) : isPast && !isActive && isComplete ? (
                     <Check className="w-4 h-4" />
                   ) : (
                     <Icon className="w-4 h-4" />
@@ -485,6 +529,7 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
                 audienceData={audienceData}
                 transformationStatement={transformationStatement}
                 onChange={setTransformationStatement}
+                funnelType={funnelType || undefined}
               />
             </motion.div>
           )}

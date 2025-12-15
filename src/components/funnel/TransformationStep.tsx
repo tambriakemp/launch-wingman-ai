@@ -13,12 +13,14 @@ interface TransformationStepProps {
   audienceData: AudienceData;
   transformationStatement: string;
   onChange: (statement: string) => void;
+  funnelType?: string;
 }
 
 export const TransformationStep = ({
   audienceData,
   transformationStatement,
   onChange,
+  funnelType,
 }: TransformationStepProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
@@ -37,13 +39,15 @@ export const TransformationStep = ({
 
     setIsGenerating(true);
     try {
-      // Generate 3 variations
+      // Generate 3 variations with full context
       const promises = Array(3).fill(null).map(() =>
         supabase.functions.invoke("generate-transformation", {
           body: {
             audience: audienceData.targetAudience,
             problem: audienceData.primaryPainPoint,
             result: audienceData.desiredOutcome,
+            niche: audienceData.niche,
+            funnelType: funnelType,
           },
         })
       );

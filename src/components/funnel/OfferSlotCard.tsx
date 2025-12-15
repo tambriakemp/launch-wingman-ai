@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ChevronDown, ChevronUp, GripVertical, Sparkles, 
-  Check, Trash2, Loader2 
+  Check, Trash2, Loader2, SkipForward
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,12 @@ export interface OfferSlotData {
   price: string;
   priceType: string;
   isConfigured: boolean;
+  isSkipped?: boolean;
+}
+
+interface GeneratedIdea {
+  title: string;
+  description: string;
 }
 
 interface OfferSlotCardProps {
@@ -43,6 +49,7 @@ interface OfferSlotCardProps {
   onRemove?: () => void;
   isRemovable: boolean;
   audienceData?: AudienceData;
+  funnelType?: string;
 }
 
 const PRICE_TYPES = [
@@ -64,21 +71,35 @@ export const OfferSlotCard = ({
   onRemove,
   isRemovable,
   audienceData,
+  funnelType,
 }: OfferSlotCardProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedIdeas, setGeneratedIdeas] = useState<GeneratedIdea[]>([]);
+  const [showIdeas, setShowIdeas] = useState(false);
   const colorClasses = SLOT_TYPE_COLORS[slot.type] || SLOT_TYPE_COLORS['core'];
 
   const handleFieldChange = (field: keyof OfferSlotData, value: string | boolean) => {
     onChange({ ...data, [field]: value });
   };
 
+  const handleSkipToggle = () => {
+    onChange({ ...data, isSkipped: !data.isSkipped, isConfigured: false });
+  };
+
   const handleGenerateTitleDescription = async () => {
+    // Validate offer type is selected
+    if (!data.offerType) {
+      toast.error("Please select an offer type first");
+      return;
+    }
+
     if (!audienceData?.niche || !audienceData?.targetAudience) {
       toast.error("Please complete the audience step first");
       return;
     }
 
     setIsGenerating(true);
+    setShowIdeas(false);
     try {
       const { data: result, error } = await supabase.functions.invoke(
         "generate-offer-ideas",
@@ -88,8 +109,9 @@ export const OfferSlotCard = ({
             targetAudience: audienceData.targetAudience,
             primaryPainPoint: audienceData.primaryPainPoint || "",
             desiredOutcome: audienceData.desiredOutcome || "",
-            offerType: data.offerType || slot.recommendedOfferTypes[0] || "Course",
+            offerType: data.offerType,
             slotType: slot.type,
+            funnelType: funnelType,
           },
         }
       );
@@ -97,13 +119,9 @@ export const OfferSlotCard = ({
       if (error) throw error;
 
       if (result?.ideas && result.ideas.length > 0) {
-        const idea = result.ideas[0];
-        onChange({
-          ...data,
-          title: idea.title || data.title,
-          description: idea.description || data.description,
-        });
-        toast.success("Generated title and description!");
+        setGeneratedIdeas(result.ideas);
+        setShowIdeas(true);
+        toast.success("Generated 3 offer ideas! Select one below.");
       }
     } catch (error) {
       console.error("Error generating offer ideas:", error);
@@ -112,6 +130,39 @@ export const OfferSlotCard = ({
       setIsGenerating(false);
     }
   };
+
+  const handleSelectIdea = (idea: GeneratedIdea) => {
+    onChange({
+      ...data,
+      title: idea.title,
+      description: idea.description,
+    });
+    setShowIdeas(false);
+    toast.success("Applied idea to your offer!");
+  };
+
+  // If skipped, show minimal card
+  if (data.isSkipped) {
+    return (
+      <motion.div
+        layout
+        className="border rounded-xl overflow-hidden border-border bg-muted/30 opacity-60"
+      >
+        <div className="p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className={cn("shrink-0", colorClasses)}>
+              {slot.label.replace(" (Optional)", "")}
+            </Badge>
+            <span className="text-sm text-muted-foreground italic">Skipped</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={handleSkipToggle}>
+            <SkipForward className="w-4 h-4 mr-1" />
+            Include
+          </Button>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -186,28 +237,94 @@ export const OfferSlotCard = ({
                 )}
               </p>
 
+              {/* Offer Type - Required before AI */}
+              <div className="space-y-2">
+                <Label htmlFor={`offer-type-${position}`}>
+                  Offer Type <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={data.offerType}
+                  onValueChange={(value) => handleFieldChange("offerType", value)}
+                >
+                  <SelectTrigger id={`offer-type-${position}`}>
+                    <SelectValue placeholder="Select type first..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {slot.recommendedOfferTypes.length > 0 && (
+                      <>
+                        <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                          Recommended
+                        </div>
+                        {slot.recommendedOfferTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="w-3 h-3 text-primary" />
+                              {type}
+                            </div>
+                          </SelectItem>
+                        ))}
+                        <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">
+                          All Types
+                        </div>
+                      </>
+                    )}
+                    {OFFER_TYPES.filter(t => !slot.recommendedOfferTypes.includes(t)).map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* AI Generate Button */}
               {audienceData && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleGenerateTitleDescription}
-                  disabled={isGenerating}
+                  disabled={isGenerating || !data.offerType}
                   className="w-full"
                 >
                   {isGenerating ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating...
+                      Generating 3 Ideas...
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Generate Title & Description with AI
+                      {!data.offerType ? "Select Offer Type First" : "Generate Title & Description with AI"}
                     </>
                   )}
                 </Button>
               )}
+
+              {/* Generated Ideas Selection */}
+              <AnimatePresence>
+                {showIdeas && generatedIdeas.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-2"
+                  >
+                    <Label>Select an idea (click to apply)</Label>
+                    <div className="grid gap-2">
+                      {generatedIdeas.map((idea, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleSelectIdea(idea)}
+                          className="p-3 border border-border rounded-lg text-left hover:border-primary hover:bg-primary/5 transition-all"
+                        >
+                          <p className="font-medium text-sm text-foreground">{idea.title}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{idea.description}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -221,43 +338,6 @@ export const OfferSlotCard = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={`offer-type-${position}`}>Offer Type</Label>
-                  <Select
-                    value={data.offerType}
-                    onValueChange={(value) => handleFieldChange("offerType", value)}
-                  >
-                    <SelectTrigger id={`offer-type-${position}`}>
-                      <SelectValue placeholder="Select type..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {slot.recommendedOfferTypes.length > 0 && (
-                        <>
-                          <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                            Recommended
-                          </div>
-                          {slot.recommendedOfferTypes.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              <div className="flex items-center gap-2">
-                                <Sparkles className="w-3 h-3 text-primary" />
-                                {type}
-                              </div>
-                            </SelectItem>
-                          ))}
-                          <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">
-                            All Types
-                          </div>
-                        </>
-                      )}
-                      {OFFER_TYPES.filter(t => !slot.recommendedOfferTypes.includes(t)).map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor={`price-${position}`}>Price</Label>
                   <Input
                     id={`price-${position}`}
@@ -268,7 +348,7 @@ export const OfferSlotCard = ({
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label htmlFor={`price-type-${position}`}>Price Type</Label>
                   <Select
                     value={data.priceType}
@@ -300,23 +380,37 @@ export const OfferSlotCard = ({
               </div>
 
               <div className="flex items-center justify-between pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleFieldChange("isConfigured", !data.isConfigured)}
-                  className={cn(
-                    data.isConfigured && "bg-emerald-500/10 border-emerald-500/50 text-emerald-600"
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleFieldChange("isConfigured", !data.isConfigured)}
+                    className={cn(
+                      data.isConfigured && "bg-emerald-500/10 border-emerald-500/50 text-emerald-600"
+                    )}
+                  >
+                    {data.isConfigured ? (
+                      <>
+                        <Check className="w-4 h-4 mr-1" />
+                        Configured
+                      </>
+                    ) : (
+                      "Mark as Configured"
+                    )}
+                  </Button>
+
+                  {!slot.isRequired && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSkipToggle}
+                      className="text-muted-foreground"
+                    >
+                      <SkipForward className="w-4 h-4 mr-1" />
+                      Skip
+                    </Button>
                   )}
-                >
-                  {data.isConfigured ? (
-                    <>
-                      <Check className="w-4 h-4 mr-1" />
-                      Configured
-                    </>
-                  ) : (
-                    "Mark as Configured"
-                  )}
-                </Button>
+                </div>
 
                 {isRemovable && onRemove && (
                   <Button

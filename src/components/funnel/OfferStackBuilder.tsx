@@ -84,6 +84,7 @@ export const OfferStackBuilder = ({
       price: '',
       priceType: 'one-time',
       isConfigured: false,
+      isSkipped: false,
     };
 
     onChange([...offers, newOffer]);
@@ -103,8 +104,8 @@ export const OfferStackBuilder = ({
     };
   };
 
-  const configuredCount = offers.filter(o => o.isConfigured).length;
-  const requiredCount = funnelConfig.offerSlots.filter(s => s.isRequired).length;
+  const configuredCount = offers.filter(o => o.isConfigured && !o.isSkipped).length;
+  const activeOffers = offers.filter(o => !o.isSkipped);
 
   return (
     <div className="space-y-6">
@@ -119,7 +120,7 @@ export const OfferStackBuilder = ({
         </div>
         <div className="text-sm text-muted-foreground">
           <span className="font-medium text-foreground">{configuredCount}</span>
-          /{offers.length} configured
+          /{activeOffers.length} configured
         </div>
       </div>
 
@@ -131,8 +132,8 @@ export const OfferStackBuilder = ({
             How offer slots work
           </p>
           <p className="text-muted-foreground">
-            Each slot represents a position in your funnel. Fill in the details for each offer, 
-            then mark it as configured when ready. You can add additional slots if needed.
+            Each slot represents a position in your funnel. Select an offer type first, then use AI to generate titles and descriptions. 
+            You can skip optional slots if they don't fit your strategy.
           </p>
         </div>
       </div>
@@ -153,6 +154,7 @@ export const OfferStackBuilder = ({
               isRemovable={!getSlotConfig(offer).isRequired || 
                 offers.filter(o => o.slotType === offer.slotType).length > 1}
               audienceData={audienceData}
+              funnelType={funnelType}
             />
           ))}
         </AnimatePresence>

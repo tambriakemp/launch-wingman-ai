@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Gift, DollarSign, Video, Trophy, Rocket, Users, ClipboardCheck,
-  Check, ChevronDown
+  Check
 } from "lucide-react";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 import { FunnelDiagram } from "./FunnelDiagram";
@@ -43,6 +43,8 @@ export const FunnelTypeSelector = ({
 
   const handleSelect = (funnelId: string) => {
     onSelect(funnelId);
+    // Auto-collapse after selection
+    setOpenItem(undefined);
   };
 
   return (
@@ -78,7 +80,7 @@ export const FunnelTypeSelector = ({
                   : "border-border bg-card hover:border-muted-foreground/30"
               )}
             >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline [&[data-state=open]>div>.chevron]:rotate-180">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline [&>svg]:hidden">
                 <div className="flex items-center gap-3 flex-1">
                   {isSelected && (
                     <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
@@ -99,7 +101,6 @@ export const FunnelTypeSelector = ({
                       {funnel.description}
                     </p>
                   </div>
-                  <ChevronDown className="chevron w-5 h-5 text-muted-foreground shrink-0 transition-transform duration-200" />
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
