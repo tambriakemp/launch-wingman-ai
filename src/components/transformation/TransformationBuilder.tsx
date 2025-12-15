@@ -240,7 +240,7 @@ export const TransformationBuilder = ({
                       <Check className="w-4 h-4 text-primary ml-auto" />
                     )}
                   </div>
-                  <p className="text-sm">{variation.statement}</p>
+                  <p className="text-sm text-foreground">{variation.statement}</p>
                 </button>
               ))}
             </div>
