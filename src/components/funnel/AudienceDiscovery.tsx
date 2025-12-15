@@ -103,16 +103,6 @@ export const AudienceDiscovery = ({ data, onChange }: AudienceDiscoveryProps) =>
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-foreground mb-2">
-          Audience & Problem Discovery
-        </h2>
-        <p className="text-muted-foreground">
-          Define who you're serving and the transformation you provide. This information 
-          will shape all your offers and messaging.
-        </p>
-      </div>
-
       {/* White card container for better contrast */}
       <Card className="bg-card border-border">
         <CardContent className="p-6">
