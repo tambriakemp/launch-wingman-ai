@@ -4,9 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles, Loader2, Target, Heart, User, Save } from "lucide-react";
+import { Check, Sparkles, Loader2, Target, Heart, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 interface DreamOutcomeSectionProps {
   desiredOutcome: string;
@@ -14,7 +13,6 @@ interface DreamOutcomeSectionProps {
   targetAudience: string;
   painPoint: string;
   onChange: (value: string) => void;
-  onSave?: () => void;
 }
 
 interface OutcomeVariation {
@@ -83,7 +81,6 @@ export const DreamOutcomeSection = ({
   targetAudience,
   painPoint,
   onChange,
-  onSave,
 }: DreamOutcomeSectionProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [variations, setVariations] = useState<OutcomeVariation[]>([]);
@@ -121,12 +118,6 @@ export const DreamOutcomeSection = ({
     onChange(variation.statement);
   };
 
-  const handleSave = () => {
-    if (onSave) {
-      onSave();
-    }
-    toast.success("Dream outcome saved");
-  };
 
   const isComplete = !!desiredOutcome;
   const hasContext = !!(niche || targetAudience);
@@ -221,15 +212,6 @@ export const DreamOutcomeSection = ({
                 Generate
               </>
             )}
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={!desiredOutcome}
-            className="gap-2"
-          >
-            <Save className="w-4 h-4" />
-            Save
           </Button>
         </div>
       </CardContent>

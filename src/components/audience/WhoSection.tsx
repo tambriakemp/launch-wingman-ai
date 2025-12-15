@@ -225,12 +225,6 @@ export const WhoSection = ({
           💡 Don't worry about perfection - AI will help refine your description
         </p>
         
-        {specificityFeedback && (
-          <div className="flex items-start gap-2 p-3 rounded-md bg-muted/50 border border-border">
-            <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-muted-foreground">{specificityFeedback}</p>
-          </div>
-        )}
       </div>
 
       {/* Niche-Specific Examples */}
@@ -267,6 +261,12 @@ export const WhoSection = ({
 
       {/* AI Sub-Audience Generator */}
       <div className="pt-3 border-t border-border space-y-3">
+        {specificityFeedback && (
+          <div className="flex items-start gap-2 p-3 rounded-md bg-muted/50 border border-border">
+            <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-muted-foreground">{specificityFeedback}</p>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div>
             <Label className="text-sm">AI Sub-Audience Suggestions</Label>
