@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { AudienceProfileCard } from "@/components/audience/AudienceProfileCard";
-import { ValueEquationTabs, ValueEquationData } from "@/components/audience/ValueEquationTabs";
+import { ValueEquationSections, ValueEquationData } from "@/components/audience/ValueEquationSections";
 import { useState, useEffect } from "react";
 
 interface Props {
@@ -17,7 +17,6 @@ const AudienceContent = ({ projectId }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("who");
 
   const [audienceData, setAudienceData] = useState<ValueEquationData>({
     niche: '',
@@ -145,12 +144,10 @@ const AudienceContent = ({ projectId }: Props) => {
         specificityScore={audienceData.specificityScore}
       />
 
-      {/* Tab-based Value Equation Form */}
-      <ValueEquationTabs
+      {/* Value Equation Sections */}
+      <ValueEquationSections
         data={audienceData}
         onChange={setAudienceData}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
       />
 
       {/* Navigation */}
