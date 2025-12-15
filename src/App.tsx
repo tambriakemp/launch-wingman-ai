@@ -2,13 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
-import ProjectDetail from "./pages/ProjectDetail";
 import Settings from "./pages/Settings";
 import Assessments from "./pages/Assessments";
 import Assessment from "./pages/Assessment";
@@ -18,6 +17,13 @@ import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+
+// Project-specific pages
+import ProjectDashboard from "./pages/project/ProjectDashboard";
+import ProjectOffer from "./pages/project/ProjectOffer";
+import ProjectBrand from "./pages/project/ProjectBrand";
+import ProjectMessaging from "./pages/project/ProjectMessaging";
+import ProjectExecute from "./pages/project/ProjectExecute";
 
 const queryClient = new QueryClient();
 
@@ -47,14 +53,108 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            
+            {/* Project-specific routes */}
             <Route
               path="/projects/:id"
               element={
                 <ProtectedRoute>
-                  <ProjectDetail />
+                  <ProjectDashboard />
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/projects/:id/offer"
+              element={
+                <ProtectedRoute>
+                  <ProjectOffer />
+                </ProtectedRoute>
+              }
+            />
+            {/* Brand routes */}
+            <Route
+              path="/projects/:id/logos"
+              element={
+                <ProtectedRoute>
+                  <ProjectBrand />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id/colors"
+              element={
+                <ProtectedRoute>
+                  <ProjectBrand />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id/fonts"
+              element={
+                <ProtectedRoute>
+                  <ProjectBrand />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id/photos"
+              element={
+                <ProtectedRoute>
+                  <ProjectBrand />
+                </ProtectedRoute>
+              }
+            />
+            {/* Messaging routes */}
+            <Route
+              path="/projects/:id/sales-copy"
+              element={
+                <ProtectedRoute>
+                  <ProjectMessaging />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id/social-bio"
+              element={
+                <ProtectedRoute>
+                  <ProjectMessaging />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id/emails"
+              element={
+                <ProtectedRoute>
+                  <ProjectMessaging />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id/deliverables"
+              element={
+                <ProtectedRoute>
+                  <ProjectMessaging />
+                </ProtectedRoute>
+              }
+            />
+            {/* Execute routes */}
+            <Route
+              path="/projects/:id/board"
+              element={
+                <ProtectedRoute>
+                  <ProjectExecute />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id/content"
+              element={
+                <ProtectedRoute>
+                  <ProjectExecute />
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/settings"
               element={
