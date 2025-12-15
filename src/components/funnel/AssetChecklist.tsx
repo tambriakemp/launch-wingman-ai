@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { 
   FileText, Mail, MessageSquare, Package, 
-  Check, Circle, ChevronDown, ChevronRight,
-  ExternalLink, ArrowRight
+  Check, ChevronDown, ChevronRight,
+  ArrowRight, GripVertical
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -18,6 +19,7 @@ interface AssetChecklistProps {
   offers: OfferSlotData[];
   completedAssets: Set<string>;
   onToggleAsset: (assetId: string) => void;
+  onReorderAssets?: (categoryId: string, reorderedAssets: AssetRequirement[]) => void;
 }
 
 type AssetCategory = 'pages' | 'emails' | 'content' | 'deliverables';
@@ -54,11 +56,20 @@ const CATEGORY_CONFIG: Record<AssetCategory, {
   },
 };
 
+// Filter categories for the filter popover
+export const ASSET_CATEGORIES = [
+  { id: 'pages', label: 'Pages' },
+  { id: 'emails', label: 'Emails' },
+  { id: 'content', label: 'Content' },
+  { id: 'deliverables', label: 'Deliverables' },
+];
+
 export const AssetChecklist = ({
   funnelType,
   offers,
   completedAssets,
   onToggleAsset,
+  onReorderAssets,
 }: AssetChecklistProps) => {
   const navigate = useNavigate();
   const { id: projectId } = useParams();
@@ -125,6 +136,22 @@ export const AssetChecklist = ({
     }
   };
 
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination || !onReorderAssets) return;
+    
+    const categoryId = result.source.droppableId as AssetCategory;
+    const sourceIndex = result.source.index;
+    const destIndex = result.destination.index;
+    
+    if (sourceIndex === destIndex) return;
+    
+    const categoryAssets = [...assetsByCategory[categoryId]];
+    const [movedAsset] = categoryAssets.splice(sourceIndex, 1);
+    categoryAssets.splice(destIndex, 0, movedAsset);
+    
+    onReorderAssets(categoryId, categoryAssets);
+  };
+
   if (!funnelConfig) return null;
 
   return (
@@ -153,117 +180,143 @@ export const AssetChecklist = ({
         </div>
       </div>
 
-      {/* Categories */}
-      <div className="space-y-3">
-        {(Object.keys(assetsByCategory) as AssetCategory[]).map((category) => {
-          const config = CATEGORY_CONFIG[category];
-          const Icon = config.icon;
-          const categoryAssets = assetsByCategory[category];
-          const categoryCompleted = categoryAssets.filter(a => completedAssets.has(a.id)).length;
-          const isExpanded = expandedCategories.has(category);
+      {/* Categories with Drag and Drop */}
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div className="space-y-3">
+          {(Object.keys(assetsByCategory) as AssetCategory[]).map((category) => {
+            const config = CATEGORY_CONFIG[category];
+            const Icon = config.icon;
+            const categoryAssets = assetsByCategory[category];
+            const categoryCompleted = categoryAssets.filter(a => completedAssets.has(a.id)).length;
+            const isExpanded = expandedCategories.has(category);
 
-          if (categoryAssets.length === 0) return null;
+            if (categoryAssets.length === 0) return null;
 
-          return (
-            <div 
-              key={category}
-              className="border border-border rounded-xl overflow-hidden bg-card"
-            >
-              {/* Category Header */}
-              <button
-                onClick={() => toggleCategory(category)}
-                className="w-full p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors"
+            return (
+              <div 
+                key={category}
+                className="border border-border rounded-xl overflow-hidden bg-card"
               >
-                <Icon className={cn("w-5 h-5", config.color)} />
-                <span className="font-medium text-foreground flex-1 text-left">
-                  {config.label}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {categoryCompleted}/{categoryAssets.length}
-                </span>
-                {isExpanded ? (
-                  <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                )}
-              </button>
+                {/* Category Header */}
+                <button
+                  onClick={() => toggleCategory(category)}
+                  className="w-full p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors"
+                >
+                  <Icon className={cn("w-5 h-5", config.color)} />
+                  <span className="font-medium text-foreground flex-1 text-left">
+                    {config.label}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {categoryCompleted}/{categoryAssets.length}
+                  </span>
+                  {isExpanded ? (
+                    <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </button>
 
-              {/* Category Items */}
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div className="border-t border-border">
-                      {categoryAssets.map((asset, index) => {
-                        const isCompleted = completedAssets.has(asset.id);
-                        const relatedOffer = asset.offerSlotType 
-                          ? offers.find(o => o.slotType === asset.offerSlotType)
-                          : null;
-
-                        return (
-                          <div
-                            key={asset.id}
-                            className={cn(
-                              "flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors",
-                              index !== categoryAssets.length - 1 && "border-b border-border"
-                            )}
+                {/* Category Items */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Droppable droppableId={category}>
+                        {(provided) => (
+                          <div 
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            className="border-t border-border"
                           >
-                            <button
-                              onClick={() => onToggleAsset(asset.id)}
-                              className={cn(
-                                "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
-                                isCompleted
-                                  ? "bg-emerald-500 border-emerald-500"
-                                  : "border-muted-foreground hover:border-primary"
-                              )}
-                            >
-                              {isCompleted && (
-                                <Check className="w-3 h-3 text-white" />
-                              )}
-                            </button>
+                            {categoryAssets.map((asset, index) => {
+                              const isCompleted = completedAssets.has(asset.id);
+                              const relatedOffer = asset.offerSlotType 
+                                ? offers.find(o => o.slotType === asset.offerSlotType)
+                                : null;
 
-                            <div className="flex-1 min-w-0">
-                              <p className={cn(
-                                "text-sm font-medium",
-                                isCompleted ? "text-muted-foreground line-through" : "text-foreground"
-                              )}>
-                                {asset.title}
-                              </p>
-                              <p className="text-xs text-muted-foreground line-clamp-1">
-                                {asset.description}
-                                {relatedOffer?.title && (
-                                  <span className="ml-1 text-primary">
-                                    • {relatedOffer.title}
-                                  </span>
-                                )}
-                              </p>
-                            </div>
+                              return (
+                                <Draggable key={asset.id} draggableId={asset.id} index={index}>
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      className={cn(
+                                        "flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors",
+                                        index !== categoryAssets.length - 1 && "border-b border-border",
+                                        snapshot.isDragging && "bg-muted shadow-lg"
+                                      )}
+                                    >
+                                      {/* Drag Handle */}
+                                      <div
+                                        {...provided.dragHandleProps}
+                                        className="cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground"
+                                      >
+                                        <GripVertical className="w-4 h-4" />
+                                      </div>
 
-                            {asset.linkedSection && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="shrink-0"
-                                onClick={() => handleNavigateToSection(asset.linkedSection!)}
-                              >
-                                <ArrowRight className="w-4 h-4" />
-                              </Button>
-                            )}
+                                      {/* Completion Toggle */}
+                                      <button
+                                        onClick={() => onToggleAsset(asset.id)}
+                                        className={cn(
+                                          "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
+                                          isCompleted
+                                            ? "bg-emerald-500 border-emerald-500"
+                                            : "border-muted-foreground hover:border-primary"
+                                        )}
+                                      >
+                                        {isCompleted && (
+                                          <Check className="w-3 h-3 text-white" />
+                                        )}
+                                      </button>
+
+                                      <div className="flex-1 min-w-0">
+                                        <p className={cn(
+                                          "text-sm font-medium",
+                                          isCompleted ? "text-muted-foreground line-through" : "text-foreground"
+                                        )}>
+                                          {asset.title}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground line-clamp-1">
+                                          {asset.description}
+                                          {relatedOffer?.title && (
+                                            <span className="ml-1 text-primary">
+                                              • {relatedOffer.title}
+                                            </span>
+                                          )}
+                                        </p>
+                                      </div>
+
+                                      {asset.linkedSection && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="shrink-0"
+                                          onClick={() => handleNavigateToSection(asset.linkedSection!)}
+                                        >
+                                          <ArrowRight className="w-4 h-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  )}
+                                </Draggable>
+                              );
+                            })}
+                            {provided.placeholder}
                           </div>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
-      </div>
+                        )}
+                      </Droppable>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+      </DragDropContext>
     </div>
   );
 };

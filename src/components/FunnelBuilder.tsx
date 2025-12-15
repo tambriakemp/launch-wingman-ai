@@ -484,6 +484,9 @@ export const FunnelBuilder = ({ projectId, projectType = "launch" }: FunnelBuild
   if (isSetupComplete && funnelType && !showWizard) {
     return (
       <div className="space-y-6">
+        {/* Launch Timeline at top */}
+        <LaunchTimeline projectId={projectId} projectType={projectType} />
+        
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => setShowPreview(true)}>
             <Eye className="w-4 h-4 mr-2" />
@@ -504,8 +507,6 @@ export const FunnelBuilder = ({ projectId, projectType = "launch" }: FunnelBuild
             goToStep(step as Step);
           }}
         />
-        {/* Launch Timeline */}
-        <LaunchTimeline projectId={projectId} projectType={projectType} />
         
         <FunnelPreview
           isOpen={showPreview}
