@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ChevronDown, ChevronUp, GripVertical, Sparkles, 
-  Check, X, Plus, Trash2 
+  Check, Trash2, Loader2 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { OfferSlotConfig, OFFER_TYPES, SLOT_TYPE_COLORS } from "@/data/funnelConfigs";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { AudienceData } from "./AudienceDiscovery";
 
 export interface OfferSlotData {
   id?: string;
@@ -39,6 +42,7 @@ interface OfferSlotCardProps {
   onChange: (data: OfferSlotData) => void;
   onRemove?: () => void;
   isRemovable: boolean;
+  audienceData?: AudienceData;
 }
 
 const PRICE_TYPES = [
@@ -59,11 +63,54 @@ export const OfferSlotCard = ({
   onChange,
   onRemove,
   isRemovable,
+  audienceData,
 }: OfferSlotCardProps) => {
+  const [isGenerating, setIsGenerating] = useState(false);
   const colorClasses = SLOT_TYPE_COLORS[slot.type] || SLOT_TYPE_COLORS['core'];
 
   const handleFieldChange = (field: keyof OfferSlotData, value: string | boolean) => {
     onChange({ ...data, [field]: value });
+  };
+
+  const handleGenerateTitleDescription = async () => {
+    if (!audienceData?.niche || !audienceData?.targetAudience) {
+      toast.error("Please complete the audience step first");
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const { data: result, error } = await supabase.functions.invoke(
+        "generate-offer-ideas",
+        {
+          body: {
+            niche: audienceData.niche,
+            targetAudience: audienceData.targetAudience,
+            primaryPainPoint: audienceData.primaryPainPoint || "",
+            desiredOutcome: audienceData.desiredOutcome || "",
+            offerType: data.offerType || slot.recommendedOfferTypes[0] || "Course",
+            slotType: slot.type,
+          },
+        }
+      );
+
+      if (error) throw error;
+
+      if (result?.ideas && result.ideas.length > 0) {
+        const idea = result.ideas[0];
+        onChange({
+          ...data,
+          title: idea.title || data.title,
+          description: idea.description || data.description,
+        });
+        toast.success("Generated title and description!");
+      }
+    } catch (error) {
+      console.error("Error generating offer ideas:", error);
+      toast.error("Failed to generate ideas");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -138,6 +185,29 @@ export const OfferSlotCard = ({
                   </span>
                 )}
               </p>
+
+              {/* AI Generate Button */}
+              {audienceData && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateTitleDescription}
+                  disabled={isGenerating}
+                  className="w-full"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate Title & Description with AI
+                    </>
+                  )}
+                </Button>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">

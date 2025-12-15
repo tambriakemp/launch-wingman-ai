@@ -1,9 +1,15 @@
 import { useState } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -20,8 +26,37 @@ interface AudienceDiscoveryProps {
   onChange: (data: AudienceData) => void;
 }
 
+const NICHES = [
+  "Business Coaching",
+  "Life Coaching",
+  "Health & Wellness",
+  "Fitness & Nutrition",
+  "Mindset & Personal Development",
+  "Career & Leadership",
+  "Relationships & Dating",
+  "Spirituality & Mindfulness",
+  "Financial Coaching",
+  "Parenting & Family",
+  "Creative Arts & Writing",
+  "Marketing & Sales",
+  "Real Estate",
+  "Technology & Software",
+  "Education & E-Learning",
+  "Beauty & Fashion",
+  "Travel & Lifestyle",
+  "Food & Cooking",
+  "Music & Entertainment",
+  "Sports & Athletics",
+  "Pet Care & Training",
+  "Home & Interior Design",
+  "Sustainability & Environment",
+  "Legal & Consulting",
+  "Other",
+];
+
 export const AudienceDiscovery = ({ data, onChange }: AudienceDiscoveryProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [hasGenerated, setHasGenerated] = useState(!!data.problemStatement);
 
   const handleFieldChange = (field: keyof AudienceData, value: string) => {
     onChange({ ...data, [field]: value });
@@ -51,6 +86,7 @@ export const AudienceDiscovery = ({ data, onChange }: AudienceDiscoveryProps) =>
 
       if (result?.problemStatement) {
         handleFieldChange("problemStatement", result.problemStatement);
+        setHasGenerated(true);
         toast.success("Problem statement generated!");
       }
     } catch (error) {
@@ -76,12 +112,21 @@ export const AudienceDiscovery = ({ data, onChange }: AudienceDiscoveryProps) =>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="niche">Your Niche</Label>
-          <Input
-            id="niche"
+          <Select
             value={data.niche}
-            onChange={(e) => handleFieldChange("niche", e.target.value)}
-            placeholder="e.g., Health & Wellness Coaching"
-          />
+            onValueChange={(value) => handleFieldChange("niche", value)}
+          >
+            <SelectTrigger id="niche">
+              <SelectValue placeholder="Select your niche..." />
+            </SelectTrigger>
+            <SelectContent>
+              {NICHES.map((niche) => (
+                <SelectItem key={niche} value={niche}>
+                  {niche}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <p className="text-xs text-muted-foreground">
             The industry or market you serve
           </p>
@@ -89,11 +134,12 @@ export const AudienceDiscovery = ({ data, onChange }: AudienceDiscoveryProps) =>
 
         <div className="space-y-2">
           <Label htmlFor="targetAudience">Target Audience</Label>
-          <Input
+          <Textarea
             id="targetAudience"
             value={data.targetAudience}
             onChange={(e) => handleFieldChange("targetAudience", e.target.value)}
-            placeholder="e.g., Busy professionals aged 35-50"
+            placeholder="e.g., Busy professionals aged 35-50 who want to..."
+            rows={2}
           />
           <p className="text-xs text-muted-foreground">
             Who specifically you help
@@ -142,6 +188,11 @@ export const AudienceDiscovery = ({ data, onChange }: AudienceDiscoveryProps) =>
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Generating...
+              </>
+            ) : hasGenerated ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Regenerate with AI
               </>
             ) : (
               <>
