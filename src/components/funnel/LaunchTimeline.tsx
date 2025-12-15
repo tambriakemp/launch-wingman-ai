@@ -105,45 +105,45 @@ export const LaunchTimeline = ({ projectId, projectType }: LaunchTimelineProps) 
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {launchEvents[0]?.prelaunch_start && (
-                <div className="p-3 rounded-lg bg-accent/50">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <div className="p-3 rounded-lg bg-callout">
+                  <div className="flex items-center gap-2 text-callout-accent mb-1">
                     <Rocket className="w-4 h-4" />
                     <span className="text-xs font-medium">Prelaunch Starts</span>
                   </div>
-                  <p className="font-semibold text-foreground">
+                  <p className="font-semibold text-callout-foreground">
                     {format(parseISO(launchEvents[0].prelaunch_start), "MMM d, yyyy")}
                   </p>
                 </div>
               )}
               {launchEvents[0]?.enrollment_opens && (
-                <div className="p-3 rounded-lg bg-accent/50">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <div className="p-3 rounded-lg bg-callout">
+                  <div className="flex items-center gap-2 text-callout-accent mb-1">
                     <Rocket className="w-4 h-4" />
                     <span className="text-xs font-medium">Enrollment Opens</span>
                   </div>
-                  <p className="font-semibold text-foreground">
+                  <p className="font-semibold text-callout-foreground">
                     {format(parseISO(launchEvents[0].enrollment_opens), "MMM d, yyyy")}
                   </p>
                 </div>
               )}
               {launchEvents[0]?.enrollment_closes && (
-                <div className="p-3 rounded-lg bg-accent/50">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <div className="p-3 rounded-lg bg-callout">
+                  <div className="flex items-center gap-2 text-callout-accent mb-1">
                     <Calendar className="w-4 h-4" />
                     <span className="text-xs font-medium">Enrollment Closes</span>
                   </div>
-                  <p className="font-semibold text-foreground">
+                  <p className="font-semibold text-callout-foreground">
                     {format(parseISO(launchEvents[0].enrollment_closes), "MMM d, yyyy")}
                   </p>
                 </div>
               )}
               {launchEvents[0]?.program_delivery_start && (
-                <div className="p-3 rounded-lg bg-accent/50">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <div className="p-3 rounded-lg bg-callout">
+                  <div className="flex items-center gap-2 text-callout-accent mb-1">
                     <FileText className="w-4 h-4" />
                     <span className="text-xs font-medium">Program Starts</span>
                   </div>
-                  <p className="font-semibold text-foreground">
+                  <p className="font-semibold text-callout-foreground">
                     {format(parseISO(launchEvents[0].program_delivery_start), "MMM d, yyyy")}
                   </p>
                 </div>

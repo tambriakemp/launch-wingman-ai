@@ -130,46 +130,42 @@ const ProjectFunnelOverview = () => {
         {/* Launch Timeline */}
         <LaunchTimeline projectId={projectId} projectType={project?.project_type as "launch" | "prelaunch" || "launch"} />
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {steps.map((step) => (
-            <Card
-              key={step.id}
-              className={cn(
-                "cursor-pointer transition-all hover:border-primary/50",
-                step.complete ? "border-emerald-500/30 bg-emerald-500/5" : ""
-              )}
-              onClick={() => navigate(`/projects/${projectId}/${step.route}`)}
-            >
-              <CardContent className="p-4 flex items-center gap-3">
-                {step.complete ? (
-                  <CheckCircle className="w-5 h-5 text-emerald-500" />
-                ) : (
-                  <Circle className="w-5 h-5 text-muted-foreground" />
-                )}
-                <div>
-                  <p className="text-sm font-medium text-foreground">{step.label}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {step.complete ? "Complete" : "Not set"}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Progress Bar */}
+        {/* Combined Progress Bar with Step Indicators */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-medium text-foreground">Setup Progress</p>
               <p className="text-sm text-muted-foreground">{completedSteps}/{steps.length} complete</p>
             </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div className="h-2 bg-muted rounded-full overflow-hidden mb-4">
               <div 
                 className="h-full bg-primary transition-all"
                 style={{ width: `${(completedSteps / steps.length) * 100}%` }}
               />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {steps.map((step) => (
+                <div
+                  key={step.id}
+                  onClick={() => navigate(`/projects/${projectId}/${step.route}`)}
+                  className={cn(
+                    "flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all hover:bg-muted/50",
+                    step.complete ? "text-success" : "text-muted-foreground"
+                  )}
+                >
+                  {step.complete ? (
+                    <CheckCircle className="w-4 h-4" />
+                  ) : (
+                    <Circle className="w-4 h-4" />
+                  )}
+                  <div>
+                    <p className="text-sm font-medium">{step.label}</p>
+                    <p className="text-xs opacity-70">
+                      {step.complete ? "Complete" : "Not set"}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
