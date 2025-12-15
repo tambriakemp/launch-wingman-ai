@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Eye, Rocket, Users, Sparkles, Package, CheckCircle, Circle, ArrowRight } from "lucide-react";
+import { Loader2, Eye, Rocket, Users, Sparkles, Package, CheckCircle, Circle, ArrowRight, Edit2, Target, MessageSquare, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -108,10 +108,10 @@ const ProjectFunnelOverview = () => {
   const hasOffers = offers.some(o => o.title);
 
   const steps = [
-    { id: 'funnel-type', label: 'Funnel Type', complete: !!funnel.funnel_type, route: 'funnel-type' },
-    { id: 'audience', label: 'Audience', complete: hasAudience, route: 'audience' },
-    { id: 'transformation', label: 'Transformation', complete: hasTransformation, route: 'transformation' },
-    { id: 'offers', label: 'Offers', complete: hasOffers, route: 'offers' },
+    { id: 'funnel-type', label: 'Funnel Type', complete: !!funnel.funnel_type, route: 'funnel-type', icon: Rocket },
+    { id: 'audience', label: 'Audience', complete: hasAudience, route: 'audience', icon: Users },
+    { id: 'transformation', label: 'Transformation', complete: hasTransformation, route: 'transformation', icon: Sparkles },
+    { id: 'offers', label: 'Offers', complete: hasOffers, route: 'offers', icon: Package },
   ];
 
   const completedSteps = steps.filter(s => s.complete).length;
@@ -130,49 +130,151 @@ const ProjectFunnelOverview = () => {
         {/* Launch Timeline */}
         <LaunchTimeline projectId={projectId} projectType={project?.project_type as "launch" | "prelaunch" || "launch"} />
 
-        {/* Combined Progress Bar with Step Indicators */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-medium text-foreground">Setup Progress</p>
-              <p className="text-sm text-muted-foreground">{completedSteps}/{steps.length} complete</p>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden mb-4">
-              <div 
-                className="h-full bg-primary transition-all"
-                style={{ width: `${(completedSteps / steps.length) * 100}%` }}
-              />
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {steps.map((step) => (
-                <div
-                  key={step.id}
-                  onClick={() => navigate(`/projects/${projectId}/${step.route}`)}
-                  className={cn(
-                    "flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all hover:bg-muted/50",
-                    step.complete ? "text-success" : "text-muted-foreground"
+        {/* Inline Progress Stepper */}
+        <div className="relative">
+          <div className="flex items-center justify-between">
+            {steps.map((step, index) => {
+              const StepIcon = step.icon;
+              const isLast = index === steps.length - 1;
+              return (
+                <div key={step.id} className="flex items-center flex-1">
+                  <button
+                    onClick={() => navigate(`/projects/${projectId}/${step.route}`)}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-full transition-all",
+                      step.complete 
+                        ? "bg-amber-500/20 text-amber-600 hover:bg-amber-500/30" 
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    )}
+                  >
+                    {step.complete ? (
+                      <CheckCircle className="w-4 h-4" />
+                    ) : (
+                      <StepIcon className="w-4 h-4" />
+                    )}
+                    <span className="text-sm font-medium hidden sm:inline">{step.label}</span>
+                  </button>
+                  {!isLast && (
+                    <div className={cn(
+                      "flex-1 h-0.5 mx-2",
+                      step.complete ? "bg-amber-500/40" : "bg-muted"
+                    )} />
                   )}
-                >
-                  {step.complete ? (
-                    <CheckCircle className="w-4 h-4" />
-                  ) : (
-                    <Circle className="w-4 h-4" />
-                  )}
-                  <div>
-                    <p className="text-sm font-medium">{step.label}</p>
-                    <p className="text-xs opacity-70">
-                      {step.complete ? "Complete" : "Not set"}
-                    </p>
-                  </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              );
+            })}
+          </div>
+          <p className="text-center text-xs text-muted-foreground mt-3">
+            {completedSteps}/{steps.length} complete
+          </p>
+        </div>
+
+        {/* Audience & Transformation Cards */}
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Audience Card */}
+          <Card className="border bg-card">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                    <Target className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <CardTitle className="text-base">Audience & Strategy</CardTitle>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => navigate(`/projects/${projectId}/audience`)}
+                >
+                  <Edit2 className="w-3.5 h-3.5 mr-1" />
+                  Edit
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {hasAudience ? (
+                <div className="space-y-2 text-sm">
+                  <div className="flex gap-2">
+                    <span className="text-muted-foreground shrink-0">Niche:</span>
+                    <span className="text-foreground">{funnel.niche}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-muted-foreground shrink-0">Audience:</span>
+                    <span className="text-foreground line-clamp-1">{funnel.target_audience}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-muted-foreground shrink-0">Pain Point:</span>
+                    <span className="text-foreground line-clamp-1">{funnel.primary_pain_point}</span>
+                  </div>
+                  {funnel.problem_statement && (
+                    <p className="text-muted-foreground text-xs mt-2 line-clamp-2 italic">
+                      "{funnel.problem_statement.substring(0, 120)}..."
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center py-4 text-center">
+                  <Users className="w-8 h-8 text-muted-foreground/50 mb-2" />
+                  <p className="text-sm text-muted-foreground">Not configured yet</p>
+                  <Button 
+                    variant="link" 
+                    size="sm" 
+                    onClick={() => navigate(`/projects/${projectId}/audience`)}
+                    className="text-amber-600"
+                  >
+                    Set up audience →
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Transformation Card */}
+          <Card className="border bg-card">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                    <Lightbulb className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <CardTitle className="text-base">Transformation Statement</CardTitle>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => navigate(`/projects/${projectId}/transformation`)}
+                >
+                  <Edit2 className="w-3.5 h-3.5 mr-1" />
+                  Edit
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {hasTransformation ? (
+                <p className="text-sm text-foreground leading-relaxed">
+                  "{project?.transformation_statement}"
+                </p>
+              ) : (
+                <div className="flex flex-col items-center py-4 text-center">
+                  <Sparkles className="w-8 h-8 text-muted-foreground/50 mb-2" />
+                  <p className="text-sm text-muted-foreground">Not configured yet</p>
+                  <Button 
+                    variant="link" 
+                    size="sm" 
+                    onClick={() => navigate(`/projects/${projectId}/transformation`)}
+                    className="text-amber-600"
+                  >
+                    Create statement →
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Funnel Type Card */}
         {funnelConfig && (
-          <Card>
+          <Card className="border bg-card">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -212,34 +314,36 @@ const ProjectFunnelOverview = () => {
                   />
                 </div>
                 <div className="flex-1 space-y-3">
-                  <h4 className="text-sm font-medium text-muted-foreground">Configured Offers</h4>
+                  <h4 className="text-sm font-medium text-foreground">Configured Offers</h4>
                   <div className="space-y-2">
                     {funnelConfig.offerSlots.map((slot, index) => {
                       const configuredOffer = offers.find(o => o.slot_type === slot.type);
                       return (
-                        <div key={index} className="flex items-center gap-3 p-2 rounded-lg bg-accent/30">
+                        <div key={index} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
                           <div className={cn(
-                            "w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold",
+                            "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold",
                             funnelConfig.bgColor, funnelConfig.color
                           )}>
                             {index + 1}
                           </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-foreground">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">
                               {configuredOffer?.title || slot.label}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {configuredOffer?.price ? `$${configuredOffer.price}` : slot.priceRange}
                             </p>
                           </div>
-                          {slot.isRequired && (
-                            <Badge variant="outline" className="text-xs">Required</Badge>
-                          )}
-                          {configuredOffer?.title && (
-                            <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-600/50 bg-emerald-500/10">
-                              Configured
-                            </Badge>
-                          )}
+                          <div className="flex gap-1.5">
+                            {slot.isRequired && (
+                              <Badge variant="outline" className="text-xs">Required</Badge>
+                            )}
+                            {configuredOffer?.title && (
+                              <Badge className="text-xs bg-emerald-500/20 text-emerald-600 border-0">
+                                Configured
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
