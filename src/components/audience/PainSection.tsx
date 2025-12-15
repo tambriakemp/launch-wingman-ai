@@ -325,7 +325,7 @@ export const PainSection = ({
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                {suggestions.length > 0 ? 'Regenerate Symptoms' : 'Generate Symptoms'}
+                Generate with AI
               </>
             )}
           </Button>
