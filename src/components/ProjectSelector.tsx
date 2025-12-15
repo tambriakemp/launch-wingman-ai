@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronsUpDown, Plus, Check, FolderKanban, Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { ChevronsUpDown, Plus, Check, Loader2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -20,23 +20,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface ProjectSelectorProps {
   currentProjectId?: string;
   onCreateNew?: () => void;
 }
 
-const statusColors: Record<string, string> = {
-  active: "bg-success/10 text-success",
-  draft: "bg-warning/10 text-warning",
-  archived: "bg-muted text-muted-foreground",
-};
-
 export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelectorProps) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: projects, isLoading } = useQuery({
     queryKey: ["projects-selector", user?.id],
@@ -53,6 +48,32 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
     enabled: !!user,
   });
 
+  const createProjectMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .insert({
+          name: "Untitled Project",
+          user_id: user!.id,
+          status: "active",
+          project_type: "launch",
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["projects-selector"] });
+      navigate(`/projects/${data.id}/offer`);
+      toast.success("New project created");
+    },
+    onError: () => {
+      toast.error("Failed to create project");
+    },
+  });
+
   const currentProject = projects?.find((p) => p.id === currentProjectId);
 
   const handleSelectProject = (projectId: string) => {
@@ -62,42 +83,51 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
 
   const handleCreateNew = () => {
     setOpen(false);
-    if (onCreateNew) {
-      onCreateNew();
-    } else {
-      navigate("/projects");
-    }
+    createProjectMutation.mutate();
+  };
+
+  const getProjectInitial = (name: string) => {
+    return name.charAt(0).toUpperCase();
   };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
+          variant="ghost"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between bg-sidebar-accent/50 border-sidebar-border hover:bg-sidebar-accent"
+          className="w-full justify-between bg-[#2a2a2a] border-0 hover:bg-[#333] text-white h-10 px-3"
         >
-          <div className="flex items-center gap-2 truncate">
-            <div className="w-6 h-6 rounded bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <FolderKanban className="w-3.5 h-3.5 text-primary" />
+          <div className="flex items-center gap-2.5 truncate">
+            <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center flex-shrink-0 text-xs font-semibold text-accent-foreground">
+              {currentProject ? getProjectInitial(currentProject.name) : "?"}
             </div>
-            <span className="truncate font-medium">
+            <span className="truncate font-medium text-sm">
               {isLoading ? "Loading..." : currentProject?.name || "Select project"}
             </span>
           </div>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-70" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-0 bg-popover border-border shadow-lg" align="start">
-        <Command>
-          <CommandInput placeholder="Search projects..." className="h-9" />
-          <CommandList>
-            <CommandEmpty>No projects found.</CommandEmpty>
-            <CommandGroup heading="Your Projects">
+      <PopoverContent 
+        className="w-64 p-0 bg-[#1a1a1a] border-[#333] shadow-xl" 
+        align="start"
+        sideOffset={4}
+      >
+        <Command className="bg-transparent">
+          <CommandInput 
+            placeholder="Search projects..." 
+            className="h-9 border-0 bg-transparent text-white placeholder:text-gray-500 focus:ring-0"
+          />
+          <CommandList className="max-h-[280px]">
+            <CommandEmpty className="py-4 text-center text-sm text-gray-500">
+              No projects found.
+            </CommandEmpty>
+            <CommandGroup heading="Your Projects" className="text-gray-400 text-xs px-2 py-1.5">
               {isLoading ? (
                 <div className="flex items-center justify-center py-6">
-                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                  <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
                 </div>
               ) : (
                 projects?.map((project) => (
@@ -105,29 +135,32 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
                     key={project.id}
                     value={project.name}
                     onSelect={() => handleSelectProject(project.id)}
-                    className="flex items-center gap-2 cursor-pointer"
+                    className="flex items-center gap-2.5 cursor-pointer py-2 px-2 text-white hover:bg-[#2a2a2a] rounded-md mx-1 aria-selected:bg-[#2a2a2a]"
                   >
-                    <div className="flex-1 flex items-center gap-2 min-w-0">
-                      <div
-                        className={cn(
-                          "w-2 h-2 rounded-full flex-shrink-0",
-                          project.status === "active" ? "bg-success" : "bg-warning"
-                        )}
-                      />
-                      <span className="truncate">{project.name}</span>
+                    <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center flex-shrink-0 text-xs font-semibold text-accent-foreground">
+                      {getProjectInitial(project.name)}
                     </div>
+                    <span className="truncate flex-1 text-sm">{project.name}</span>
                     {project.id === currentProjectId && (
-                      <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                      <Check className="h-4 w-4 text-accent flex-shrink-0" />
                     )}
                   </CommandItem>
                 ))
               )}
             </CommandGroup>
-            <CommandSeparator />
-            <CommandGroup>
-              <CommandItem onSelect={handleCreateNew} className="cursor-pointer">
-                <Plus className="mr-2 h-4 w-4" />
-                <span>New Project</span>
+            <CommandSeparator className="bg-[#333]" />
+            <CommandGroup className="p-1">
+              <CommandItem 
+                onSelect={handleCreateNew} 
+                className="cursor-pointer py-2 px-2 text-white hover:bg-[#2a2a2a] rounded-md mx-1 aria-selected:bg-[#2a2a2a]"
+                disabled={createProjectMutation.isPending}
+              >
+                {createProjectMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="mr-2 h-4 w-4" />
+                )}
+                <span className="text-sm">New Project</span>
               </CommandItem>
             </CommandGroup>
           </CommandList>
