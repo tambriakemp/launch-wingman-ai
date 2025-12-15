@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronsUpDown, Plus, Check, Loader2 } from "lucide-react";
+import { ChevronsUpDown, Plus, Check, Loader2, CalendarIcon, Rocket, Clock, Coffee, Package, Sparkles } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { format, addWeeks, subWeeks } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Command,
   CommandEmpty,
@@ -37,10 +39,39 @@ interface ProjectSelectorProps {
   onCreateNew?: () => void;
 }
 
+interface LaunchDates {
+  prelaunchStart: Date | undefined;
+  contentCreationStart: Date | undefined;
+  enrollmentOpens: Date | undefined;
+  enrollmentCloses: Date | undefined;
+  programDeliveryStart: Date | undefined;
+  programDeliveryEnd: Date | undefined;
+  restPeriodStart: Date | undefined;
+  restPeriodEnd: Date | undefined;
+}
+
+const DEFAULT_PROGRAM_WEEKS = 8;
+const DEFAULT_REST_WEEKS = 2;
+const PRELAUNCH_WEEKS = 7;
+const CONTENT_CREATION_WEEKS = 2;
+
 export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [showNameDialog, setShowNameDialog] = useState(false);
+  const [step, setStep] = useState<1 | 2>(1);
   const [projectName, setProjectName] = useState("");
+  const [programWeeks, setProgramWeeks] = useState(DEFAULT_PROGRAM_WEEKS);
+  const [restWeeks, setRestWeeks] = useState(DEFAULT_REST_WEEKS);
+  const [dates, setDates] = useState<LaunchDates>({
+    prelaunchStart: undefined,
+    contentCreationStart: undefined,
+    enrollmentOpens: undefined,
+    enrollmentCloses: undefined,
+    programDeliveryStart: undefined,
+    programDeliveryEnd: undefined,
+    restPeriodStart: undefined,
+    restPeriodEnd: undefined,
+  });
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -60,13 +91,44 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
     enabled: !!user,
   });
 
+  const calculateDatesFromPrelaunch = (prelaunch: Date, weeks: number, rest: number) => {
+    const contentCreation = subWeeks(prelaunch, CONTENT_CREATION_WEEKS);
+    const enrollmentOpen = addWeeks(prelaunch, PRELAUNCH_WEEKS);
+    const enrollmentClose = addWeeks(enrollmentOpen, 1);
+    const programStart = enrollmentClose;
+    const programEnd = addWeeks(programStart, weeks);
+    const restStart = programEnd;
+    const restEnd = addWeeks(restStart, rest);
+
+    return {
+      contentCreationStart: contentCreation,
+      enrollmentOpens: enrollmentOpen,
+      enrollmentCloses: enrollmentClose,
+      programDeliveryStart: programStart,
+      programDeliveryEnd: programEnd,
+      restPeriodStart: restStart,
+      restPeriodEnd: restEnd,
+    };
+  };
+
+  useEffect(() => {
+    if (dates.prelaunchStart) {
+      const calculatedDates = calculateDatesFromPrelaunch(dates.prelaunchStart, programWeeks, restWeeks);
+      setDates(prev => ({
+        ...prev,
+        ...calculatedDates,
+      }));
+    }
+  }, [dates.prelaunchStart, programWeeks, restWeeks]);
+
   const createProjectMutation = useMutation({
-    mutationFn: async (name: string) => {
+    mutationFn: async ({ name, launchDates }: { name: string; launchDates?: LaunchDates }) => {
       const trimmedName = name.trim();
       if (!trimmedName) throw new Error("Project name is required");
       if (trimmedName.length > 100) throw new Error("Project name must be less than 100 characters");
 
-      const { data, error } = await supabase
+      // Create project
+      const { data: project, error } = await supabase
         .from("projects")
         .insert({
           name: trimmedName,
@@ -78,12 +140,37 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
         .single();
 
       if (error) throw error;
-      return data;
+
+      // If launch dates provided, create launch event
+      if (launchDates?.prelaunchStart) {
+        const { error: eventError } = await supabase.from("launch_events").insert({
+          title: trimmedName,
+          event_type: "launch",
+          project_id: project.id,
+          user_id: user!.id,
+          prelaunch_start: launchDates.prelaunchStart.toISOString().split('T')[0],
+          content_creation_start: launchDates.contentCreationStart?.toISOString().split('T')[0],
+          enrollment_opens: launchDates.enrollmentOpens?.toISOString().split('T')[0],
+          enrollment_closes: launchDates.enrollmentCloses?.toISOString().split('T')[0],
+          program_delivery_start: launchDates.programDeliveryStart?.toISOString().split('T')[0],
+          program_delivery_end: launchDates.programDeliveryEnd?.toISOString().split('T')[0],
+          rest_period_start: launchDates.restPeriodStart?.toISOString().split('T')[0],
+          rest_period_end: launchDates.restPeriodEnd?.toISOString().split('T')[0],
+          program_weeks: programWeeks,
+          rest_weeks: restWeeks,
+        });
+
+        if (eventError) {
+          console.error("Error creating launch event:", eventError);
+          // Don't throw - project still created successfully
+        }
+      }
+
+      return project;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["projects-selector"] });
-      setShowNameDialog(false);
-      setProjectName("");
+      resetDialog();
       navigate(`/projects/${data.id}/funnel-type`);
       toast.success("Project created successfully");
     },
@@ -91,6 +178,24 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
       toast.error(error instanceof Error ? error.message : "Failed to create project");
     },
   });
+
+  const resetDialog = () => {
+    setShowNameDialog(false);
+    setProjectName("");
+    setStep(1);
+    setDates({
+      prelaunchStart: undefined,
+      contentCreationStart: undefined,
+      enrollmentOpens: undefined,
+      enrollmentCloses: undefined,
+      programDeliveryStart: undefined,
+      programDeliveryEnd: undefined,
+      restPeriodStart: undefined,
+      restPeriodEnd: undefined,
+    });
+    setProgramWeeks(DEFAULT_PROGRAM_WEEKS);
+    setRestWeeks(DEFAULT_REST_WEEKS);
+  };
 
   const currentProject = projects?.find((p) => p.id === currentProjectId);
 
@@ -102,6 +207,7 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
   const handleOpenCreateDialog = () => {
     setOpen(false);
     setProjectName("");
+    setStep(1);
     setShowNameDialog(true);
   };
 
@@ -110,7 +216,19 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
       toast.error("Please enter a project name");
       return;
     }
-    createProjectMutation.mutate(projectName);
+    createProjectMutation.mutate({ name: projectName, launchDates: dates });
+  };
+
+  const handleNextStep = () => {
+    if (!projectName.trim()) {
+      toast.error("Please enter a project name");
+      return;
+    }
+    setStep(2);
+  };
+
+  const handleSkipTimeline = () => {
+    createProjectMutation.mutate({ name: projectName });
   };
 
   const getProjectInitial = (name: string) => {
@@ -191,57 +309,208 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
         </PopoverContent>
       </Popover>
 
-      {/* Create Project Name Dialog */}
-      <Dialog open={showNameDialog} onOpenChange={setShowNameDialog}>
-        <DialogContent className="sm:max-w-md">
+      {/* Create Project Dialog */}
+      <Dialog open={showNameDialog} onOpenChange={(open) => {
+        if (!open) resetDialog();
+        else setShowNameDialog(true);
+      }}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create New Project</DialogTitle>
+            <DialogTitle>
+              {step === 1 ? "Create New Project" : "Set Launch Timeline"}
+            </DialogTitle>
             <DialogDescription>
-              Give your project a name to get started
+              {step === 1 
+                ? "Give your project a name to get started" 
+                : "Set your prelaunch start date and we'll suggest the rest (optional)"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="project-name">Project Name</Label>
-              <Input
-                id="project-name"
-                placeholder="e.g., Spring Launch 2025"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                maxLength={100}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && projectName.trim()) {
-                    handleCreateProject();
-                  }
-                }}
-                autoFocus
-              />
-              <p className="text-xs text-muted-foreground">
-                {projectName.length}/100 characters
-              </p>
+
+          {step === 1 ? (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="project-name">Project Name</Label>
+                <Input
+                  id="project-name"
+                  placeholder="e.g., Spring Launch 2025"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  maxLength={100}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && projectName.trim()) {
+                      handleNextStep();
+                    }
+                  }}
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground">
+                  {projectName.length}/100 characters
+                </p>
+              </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowNameDialog(false)}
-              disabled={createProjectMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreateProject}
-              disabled={!projectName.trim() || createProjectMutation.isPending}
-            >
-              {createProjectMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                "Create Project"
+          ) : (
+            <div className="space-y-4 py-4">
+              {/* Prelaunch Start Date */}
+              <div className="space-y-2">
+                <Label>Prelaunch Start Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !dates.prelaunchStart && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dates.prelaunchStart ? format(dates.prelaunchStart, "PPP") : "Pick your prelaunch start date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-50" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dates.prelaunchStart}
+                      onSelect={(date) => setDates(prev => ({ ...prev, prelaunchStart: date }))}
+                      defaultMonth={dates.prelaunchStart}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+                <p className="text-xs text-muted-foreground">
+                  This is when you'll start building relationships (6-8 weeks before enrollment opens).
+                </p>
+              </div>
+
+              {/* Program & Rest Weeks */}
+              {dates.prelaunchStart && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="programWeeks">Program Length (weeks)</Label>
+                    <Input
+                      id="programWeeks"
+                      type="number"
+                      min="1"
+                      max="52"
+                      value={programWeeks}
+                      onChange={(e) => setProgramWeeks(parseInt(e.target.value) || DEFAULT_PROGRAM_WEEKS)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="restWeeks">Rest Period (weeks)</Label>
+                    <Input
+                      id="restWeeks"
+                      type="number"
+                      min="1"
+                      max="12"
+                      value={restWeeks}
+                      onChange={(e) => setRestWeeks(parseInt(e.target.value) || DEFAULT_REST_WEEKS)}
+                    />
+                  </div>
+                </div>
               )}
-            </Button>
+
+              {/* Suggested Timeline Preview */}
+              {dates.prelaunchStart && (
+                <div className="space-y-3">
+                  <span className="text-sm font-semibold">Suggested Timeline</span>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="p-2 rounded bg-callout text-callout-foreground">
+                      <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
+                        <Sparkles className="w-3 h-3" />
+                        Content Creation
+                      </div>
+                      <p className="font-medium">{dates.contentCreationStart ? format(dates.contentCreationStart, "MMM d, yyyy") : "-"}</p>
+                    </div>
+                    <div className="p-2 rounded bg-callout text-callout-foreground">
+                      <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
+                        <Rocket className="w-3 h-3" />
+                        Prelaunch Starts
+                      </div>
+                      <p className="font-medium">{dates.prelaunchStart ? format(dates.prelaunchStart, "MMM d, yyyy") : "-"}</p>
+                    </div>
+                    <div className="p-2 rounded bg-callout text-callout-foreground">
+                      <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
+                        <Rocket className="w-3 h-3" />
+                        Enrollment Opens
+                      </div>
+                      <p className="font-medium">{dates.enrollmentOpens ? format(dates.enrollmentOpens, "MMM d, yyyy") : "-"}</p>
+                    </div>
+                    <div className="p-2 rounded bg-callout text-callout-foreground">
+                      <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
+                        <Clock className="w-3 h-3" />
+                        Enrollment Closes
+                      </div>
+                      <p className="font-medium">{dates.enrollmentCloses ? format(dates.enrollmentCloses, "MMM d, yyyy") : "-"}</p>
+                    </div>
+                    <div className="p-2 rounded bg-callout text-callout-foreground">
+                      <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
+                        <Package className="w-3 h-3" />
+                        Program Starts
+                      </div>
+                      <p className="font-medium">{dates.programDeliveryStart ? format(dates.programDeliveryStart, "MMM d, yyyy") : "-"}</p>
+                    </div>
+                    <div className="p-2 rounded bg-callout text-callout-foreground">
+                      <div className="flex items-center gap-1.5 text-callout-accent text-xs mb-0.5">
+                        <Coffee className="w-3 h-3" />
+                        Rest Starts
+                      </div>
+                      <p className="font-medium">{dates.restPeriodStart ? format(dates.restPeriodStart, "MMM d, yyyy") : "-"}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            {step === 1 ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowNameDialog(false)}
+                  disabled={createProjectMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleNextStep}
+                  disabled={!projectName.trim() || createProjectMutation.isPending}
+                >
+                  Next
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setStep(1)}
+                  disabled={createProjectMutation.isPending}
+                >
+                  Back
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={handleSkipTimeline}
+                  disabled={createProjectMutation.isPending}
+                >
+                  Skip
+                </Button>
+                <Button
+                  onClick={handleCreateProject}
+                  disabled={createProjectMutation.isPending}
+                >
+                  {createProjectMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Project"
+                  )}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

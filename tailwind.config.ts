@@ -72,6 +72,11 @@ export default {
           DEFAULT: "hsl(var(--info))",
           foreground: "hsl(var(--info-foreground))",
         },
+        callout: {
+          DEFAULT: "hsl(var(--callout))",
+          foreground: "hsl(var(--callout-foreground))",
+          accent: "hsl(var(--callout-accent))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
