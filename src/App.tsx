@@ -19,8 +19,11 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 
 // Project-specific pages
-import ProjectDashboard from "./pages/project/ProjectDashboard";
-import ProjectOffer from "./pages/project/ProjectOffer";
+import ProjectFunnelOverview from "./pages/project/ProjectFunnelOverview";
+import ProjectFunnelType from "./pages/project/ProjectFunnelType";
+import ProjectAudience from "./pages/project/ProjectAudience";
+import ProjectTransformation from "./pages/project/ProjectTransformation";
+import ProjectOffers from "./pages/project/ProjectOffers";
 import ProjectBrand from "./pages/project/ProjectBrand";
 import ProjectMessaging from "./pages/project/ProjectMessaging";
 import ProjectExecute from "./pages/project/ProjectExecute";
@@ -54,12 +57,12 @@ const App = () => (
               }
             />
             
-            {/* Project-specific routes - Funnel Builder is the landing page */}
+            {/* Project-specific routes - Funnel Overview is the landing page */}
             <Route
               path="/projects/:id"
               element={
                 <ProtectedRoute>
-                  <ProjectOffer />
+                  <ProjectFunnelOverview />
                 </ProtectedRoute>
               }
             />
@@ -67,7 +70,39 @@ const App = () => (
               path="/projects/:id/offer"
               element={
                 <ProtectedRoute>
-                  <ProjectOffer />
+                  <ProjectFunnelOverview />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id/funnel-type"
+              element={
+                <ProtectedRoute>
+                  <ProjectFunnelType />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id/audience"
+              element={
+                <ProtectedRoute>
+                  <ProjectAudience />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id/transformation"
+              element={
+                <ProtectedRoute>
+                  <ProjectTransformation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id/offers"
+              element={
+                <ProtectedRoute>
+                  <ProjectOffers />
                 </ProtectedRoute>
               }
             />
