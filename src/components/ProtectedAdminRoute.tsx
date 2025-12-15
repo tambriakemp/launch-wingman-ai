@@ -23,7 +23,7 @@ const ProtectedAdminRoute = ({ children }: ProtectedAdminRouteProps) => {
   }
 
   if (!isAdmin) {
-    return <Navigate to="/projects" replace />;
+    return <Navigate to="/app" replace />;
   }
 
   return <>{children}</>;

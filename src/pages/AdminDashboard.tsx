@@ -129,8 +129,8 @@ const AdminDashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" asChild>
-              <Link to="/projects">
-                ← Back to Projects
+              <Link to="/app">
+                ← Back to App
               </Link>
             </Button>
             <Button variant="outline" onClick={handleSignOut}>

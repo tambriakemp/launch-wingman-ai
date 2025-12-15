@@ -78,7 +78,7 @@ const Landing = () => {
           <div className="flex items-center gap-4">
             {user ? (
               <Button asChild>
-                <Link to="/projects">Go to Projects</Link>
+                <Link to="/app">Go to App</Link>
               </Button>
             ) : (
               <>
