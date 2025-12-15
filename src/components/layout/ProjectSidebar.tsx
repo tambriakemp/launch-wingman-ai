@@ -158,7 +158,7 @@ export const ProjectSidebar = () => {
         >
           {/* Logo */}
           <div className="px-4 py-3 border-b border-sidebar-border">
-            <Link to="/projects" className="flex items-center gap-2">
+            <Link to="/app" className="flex items-center gap-2">
               <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-sidebar-primary-foreground" />
               </div>
@@ -178,11 +178,11 @@ export const ProjectSidebar = () => {
               </Link>
             ) : (
               <Link
-                to="/projects"
+                to="/app"
                 className="flex items-center gap-2 px-2 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors"
               >
                 <FolderOpen className="w-4 h-4" />
-                <span>View All Projects</span>
+                <span>Go to Projects</span>
               </Link>
             )}
           </div>
@@ -250,7 +250,7 @@ export const ProjectSidebar = () => {
       >
         {/* Logo */}
         <div className="px-4 py-3 border-b border-sidebar-border">
-          <Link to="/projects" className="flex items-center gap-2">
+          <Link to="/app" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-sidebar-primary-foreground" />
             </div>

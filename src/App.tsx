@@ -7,7 +7,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import AppRedirect from "./pages/AppRedirect";
-import Projects from "./pages/Projects";
 import Settings from "./pages/Settings";
 import Assessments from "./pages/Assessments";
 import Assessment from "./pages/Assessment";
@@ -42,16 +41,9 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             {/* Smart redirect to last used project */}
             <Route path="/app" element={<ProtectedRoute><AppRedirect /></ProtectedRoute>} />
-            {/* Legacy redirect */}
+            {/* Legacy redirects */}
             <Route path="/dashboard" element={<Navigate to="/app" replace />} />
-            <Route
-              path="/projects"
-              element={
-                <ProtectedRoute>
-                  <Projects />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/projects" element={<Navigate to="/app" replace />} />
             
             {/* Project-specific routes - Funnel Overview is the landing page */}
             <Route

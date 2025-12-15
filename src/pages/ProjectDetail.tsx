@@ -184,10 +184,10 @@ const ProjectDetail = () => {
       if (error) {
         toast.error("Failed to load project");
         console.error(error);
-        navigate("/projects");
+        navigate("/app");
       } else if (!data) {
         toast.error("Project not found");
-        navigate("/projects");
+        navigate("/app");
       } else {
         setProject(data as Project);
       }
@@ -262,7 +262,7 @@ const ProjectDetail = () => {
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
           <Link
-            to="/projects"
+            to="/app"
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
