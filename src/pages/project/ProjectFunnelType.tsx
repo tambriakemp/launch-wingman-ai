@@ -4,7 +4,7 @@ import { Loader2, Save, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
+
 import { FunnelTypeSelector } from "@/components/funnel/FunnelTypeSelector";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
@@ -66,11 +66,9 @@ const ProjectFunnelType = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['funnel', projectId] });
-      toast.success("Funnel type saved!");
     },
     onError: (error) => {
       console.error("Error saving:", error);
-      toast.error("Failed to save");
     },
   });
 

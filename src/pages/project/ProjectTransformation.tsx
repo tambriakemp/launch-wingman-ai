@@ -4,7 +4,7 @@ import { Loader2, Save, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
+
 import { TransformationStep } from "@/components/funnel/TransformationStep";
 import { AudienceData } from "@/components/funnel/AudienceDiscovery";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
@@ -88,11 +88,9 @@ const ProjectTransformation = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project', projectId] });
-      toast.success("Transformation statement saved!");
     },
     onError: (error) => {
       console.error("Error saving:", error);
-      toast.error("Failed to save");
     },
   });
 

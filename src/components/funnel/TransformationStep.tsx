@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+
 import { cn } from "@/lib/utils";
 import { AudienceData } from "./AudienceDiscovery";
 
@@ -35,7 +35,6 @@ export const TransformationStep = ({
 
   const handleGenerate = async () => {
     if (!audienceData.targetAudience || !audienceData.primaryPainPoint || !audienceData.desiredOutcome) {
-      toast.error("Please complete the audience step first");
       return;
     }
 
@@ -62,13 +61,11 @@ export const TransformationStep = ({
       if (statements.length > 0) {
         setGeneratedOptions(statements);
         setHasGenerated(true);
-        toast.success("Generated transformation statements!");
       } else {
         throw new Error("Failed to generate statements");
       }
     } catch (error) {
       console.error("Error generating statements:", error);
-      toast.error("Failed to generate transformation statements");
     } finally {
       setIsGenerating(false);
     }
@@ -82,31 +79,18 @@ export const TransformationStep = ({
 
   const handleUseManual = () => {
     if (!manualStatement.trim()) {
-      toast.error("Please enter your statement");
       return;
     }
     onChange(manualStatement);
-    toast.success("Statement saved!");
   };
 
   const handleSaveEdit = () => {
     onChange(editedStatement);
     setIsEditing(false);
-    toast.success("Statement updated!");
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-foreground mb-2">
-          Transformation Statement
-        </h2>
-        <p className="text-muted-foreground">
-          Create a powerful statement that articulates the transformation you provide.
-          This step is optional but recommended.
-        </p>
-      </div>
-
       {/* Formula Card */}
       <Card className="bg-primary/5 border-primary/20">
         <CardContent className="py-4">

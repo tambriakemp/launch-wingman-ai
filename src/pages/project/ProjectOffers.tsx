@@ -4,7 +4,7 @@ import { Loader2, Save, ArrowLeft, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
+
 import { OfferStackBuilder } from "@/components/funnel/OfferStackBuilder";
 import { OfferSlotData } from "@/components/funnel/OfferSlotCard";
 import { AudienceData } from "@/components/funnel/AudienceDiscovery";
@@ -168,8 +168,6 @@ const ProjectOffers = () => {
       const { error } = await supabase.from('tasks').insert(tasksToInsert);
       if (error) {
         console.error('Error generating tasks:', error);
-      } else {
-        toast.success(`${tasksToInsert.length} tasks generated from funnel assets`);
       }
     }
   };
@@ -229,14 +227,12 @@ const ProjectOffers = () => {
     },
     onSuccess: (_, completeSetup) => {
       queryClient.invalidateQueries({ queryKey: ['funnel-offers', projectId] });
-      toast.success(completeSetup ? "Setup complete!" : "Offers saved!");
       if (completeSetup) {
         navigate(`/projects/${projectId}/offer`);
       }
     },
     onError: (error) => {
       console.error("Error saving:", error);
-      toast.error("Failed to save");
     },
   });
 
