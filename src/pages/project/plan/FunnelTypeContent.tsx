@@ -41,29 +41,22 @@ const FunnelTypeContent = ({ projectId }: Props) => {
     }
   }, [funnel]);
 
-  // Save mutation
+  // Save mutation - use upsert to handle race conditions
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!user || !projectId || !selectedFunnelType) throw new Error("Missing required data");
 
-      const funnelData = {
-        project_id: projectId,
-        user_id: user.id,
-        funnel_type: selectedFunnelType,
-      };
-
-      if (funnel) {
-        const { error } = await supabase
-          .from('funnels')
-          .update({ funnel_type: selectedFunnelType })
-          .eq('id', funnel.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('funnels')
-          .insert(funnelData);
-        if (error) throw error;
-      }
+      const { error } = await supabase
+        .from('funnels')
+        .upsert(
+          {
+            project_id: projectId,
+            user_id: user.id,
+            funnel_type: selectedFunnelType,
+          },
+          { onConflict: 'project_id' }
+        );
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['funnel', projectId] });
