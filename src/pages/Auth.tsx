@@ -38,7 +38,7 @@ const Auth = () => {
   const navigate = useNavigate();
 
   if (user) {
-    navigate("/dashboard");
+    navigate("/projects");
     return null;
   }
 
