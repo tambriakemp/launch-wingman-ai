@@ -15,6 +15,7 @@ import {
   Package,
   Kanban,
   Calendar,
+  Users,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
 import { Separator } from "@/components/ui/separator";
@@ -35,7 +36,11 @@ const createNavSections = (projectId: string): NavSection[] => [
   {
     heading: "Plan",
     items: [
-      { id: "offer", label: "Funnel Builder", icon: Rocket, href: `/projects/${projectId}/offer` },
+      { id: "offer", label: "Funnel Overview", icon: LayoutDashboard, href: `/projects/${projectId}/offer` },
+      { id: "funnel-type", label: "Funnel Type", icon: Rocket, href: `/projects/${projectId}/funnel-type` },
+      { id: "audience", label: "Audience", icon: Users, href: `/projects/${projectId}/audience` },
+      { id: "transformation", label: "Transformation", icon: Sparkles, href: `/projects/${projectId}/transformation` },
+      { id: "offers", label: "Offer Stack", icon: Package, href: `/projects/${projectId}/offers` },
     ],
   },
   {
