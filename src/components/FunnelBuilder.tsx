@@ -44,6 +44,7 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
   });
   const [offers, setOffers] = useState<OfferSlotData[]>([]);
   const [completedAssets, setCompletedAssets] = useState<Set<string>>(new Set());
+  const [isLoadingCompletions, setIsLoadingCompletions] = useState(true);
 
   // Fetch existing funnel data
   const { data: existingFunnel, isLoading } = useQuery({
@@ -77,6 +78,33 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
     },
     enabled: !!existingFunnel?.id,
   });
+
+  // Fetch asset completions
+  const { data: assetCompletions } = useQuery({
+    queryKey: ['asset-completions', projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('funnel_asset_completions')
+        .select('asset_id, is_completed')
+        .eq('project_id', projectId);
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Initialize completed assets from database
+  useEffect(() => {
+    if (assetCompletions) {
+      const completedSet = new Set<string>(
+        assetCompletions.filter(c => c.is_completed).map(c => c.asset_id)
+      );
+      setCompletedAssets(completedSet);
+      setIsLoadingCompletions(false);
+    } else {
+      setIsLoadingCompletions(false);
+    }
+  }, [assetCompletions]);
 
   // Initialize state from existing data
   useEffect(() => {
@@ -215,16 +243,54 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
     setFunnelType(type);
   };
 
-  const handleToggleAsset = (assetId: string) => {
+  const handleToggleAsset = async (assetId: string) => {
+    if (!user) return;
+
+    const isCurrentlyCompleted = completedAssets.has(assetId);
+    const newIsCompleted = !isCurrentlyCompleted;
+
+    // Optimistically update UI
     setCompletedAssets(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(assetId)) {
-        newSet.delete(assetId);
-      } else {
+      if (newIsCompleted) {
         newSet.add(assetId);
+      } else {
+        newSet.delete(assetId);
       }
       return newSet;
     });
+
+    try {
+      // Upsert completion status in database
+      const { error } = await supabase
+        .from('funnel_asset_completions')
+        .upsert({
+          project_id: projectId,
+          user_id: user.id,
+          asset_id: assetId,
+          is_completed: newIsCompleted,
+        }, {
+          onConflict: 'project_id,asset_id',
+        });
+
+      if (error) throw error;
+
+      // Invalidate query to keep in sync
+      queryClient.invalidateQueries({ queryKey: ['asset-completions', projectId] });
+    } catch (error) {
+      console.error("Error saving asset completion:", error);
+      // Revert optimistic update on error
+      setCompletedAssets(prev => {
+        const newSet = new Set(prev);
+        if (isCurrentlyCompleted) {
+          newSet.add(assetId);
+        } else {
+          newSet.delete(assetId);
+        }
+        return newSet;
+      });
+      toast.error("Failed to save progress");
+    }
   };
 
   const canProceed = () => {
@@ -260,7 +326,7 @@ export const FunnelBuilder = ({ projectId }: FunnelBuilderProps) => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingCompletions) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />

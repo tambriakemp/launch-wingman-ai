@@ -272,6 +272,44 @@ export type Database = {
           },
         ]
       }
+      funnel_asset_completions: {
+        Row: {
+          asset_id: string
+          created_at: string
+          id: string
+          is_completed: boolean
+          project_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          project_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          project_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funnel_asset_completions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       funnels: {
         Row: {
           community_platform: string | null
