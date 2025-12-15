@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut } from 'lucide-react';
 import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -127,10 +127,17 @@ const AdminDashboard = () => {
               <p className="text-sm text-muted-foreground">Manage users and subscriptions</p>
             </div>
           </div>
-          <Button variant="outline" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" asChild>
+              <Link to="/projects">
+                ← Back to Projects
+              </Link>
+            </Button>
+            <Button variant="outline" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </header>
 
