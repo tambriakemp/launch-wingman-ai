@@ -323,6 +323,8 @@ export type Database = {
           primary_pain_point: string | null
           problem_statement: string | null
           project_id: string
+          specificity_score: number | null
+          sub_audiences: Json | null
           target_audience: string | null
           updated_at: string
           user_id: string
@@ -339,6 +341,8 @@ export type Database = {
           primary_pain_point?: string | null
           problem_statement?: string | null
           project_id: string
+          specificity_score?: number | null
+          sub_audiences?: Json | null
           target_audience?: string | null
           updated_at?: string
           user_id: string
@@ -355,6 +359,8 @@ export type Database = {
           primary_pain_point?: string | null
           problem_statement?: string | null
           project_id?: string
+          specificity_score?: number | null
+          sub_audiences?: Json | null
           target_audience?: string | null
           updated_at?: string
           user_id?: string

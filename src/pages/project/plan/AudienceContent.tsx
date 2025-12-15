@@ -4,8 +4,9 @@ import { Loader2, Save, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { AudienceDiscovery, AudienceData } from "@/components/funnel/AudienceDiscovery";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
+import { AudienceProfileCard } from "@/components/audience/AudienceProfileCard";
+import { ValueEquationTabs, ValueEquationData } from "@/components/audience/ValueEquationTabs";
 import { useState, useEffect } from "react";
 
 interface Props {
@@ -16,12 +17,15 @@ const AudienceContent = ({ projectId }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState("who");
 
-  const [audienceData, setAudienceData] = useState<AudienceData>({
+  const [audienceData, setAudienceData] = useState<ValueEquationData>({
     niche: '',
     targetAudience: '',
-    primaryPainPoint: '',
+    subAudiences: [],
+    specificityScore: 0,
     desiredOutcome: '',
+    primaryPainPoint: '',
     problemStatement: '',
   });
 
@@ -43,11 +47,24 @@ const AudienceContent = ({ projectId }: Props) => {
   // Initialize from existing data
   useEffect(() => {
     if (funnel) {
+      // Parse sub_audiences from jsonb
+      let subAudiences: ValueEquationData['subAudiences'] = [];
+      if (funnel.sub_audiences) {
+        try {
+          const parsed = funnel.sub_audiences as unknown;
+          subAudiences = Array.isArray(parsed) ? parsed as ValueEquationData['subAudiences'] : [];
+        } catch {
+          subAudiences = [];
+        }
+      }
+
       setAudienceData({
         niche: funnel.niche || '',
         targetAudience: funnel.target_audience || '',
-        primaryPainPoint: funnel.primary_pain_point || '',
+        subAudiences,
+        specificityScore: (funnel as any).specificity_score || 0,
         desiredOutcome: funnel.desired_outcome || '',
+        primaryPainPoint: funnel.primary_pain_point || '',
         problemStatement: funnel.problem_statement || '',
       });
     }
@@ -64,10 +81,12 @@ const AudienceContent = ({ projectId }: Props) => {
           .update({
             niche: audienceData.niche,
             target_audience: audienceData.targetAudience,
-            primary_pain_point: audienceData.primaryPainPoint,
+            sub_audiences: audienceData.subAudiences,
+            specificity_score: audienceData.specificityScore,
             desired_outcome: audienceData.desiredOutcome,
+            primary_pain_point: audienceData.primaryPainPoint,
             problem_statement: audienceData.problemStatement,
-          })
+          } as any)
           .eq('id', funnel.id);
         if (error) throw error;
       } else {
@@ -107,21 +126,31 @@ const AudienceContent = ({ projectId }: Props) => {
     audienceData.niche &&
     audienceData.targetAudience &&
     audienceData.primaryPainPoint &&
-    audienceData.desiredOutcome &&
-    audienceData.problemStatement
+    audienceData.desiredOutcome
   );
 
   return (
     <div className="space-y-6">
       <PlanPageHeader
-        title="Audience & Strategy"
-        description="Define who you're serving and the transformation you provide"
+        title="Value Equation Builder"
+        description="Define your audience using Alex Hormozi's Value Equation framework"
       />
 
-      {/* Audience Form */}
-      <AudienceDiscovery
+      {/* Audience Profile Card - Live Preview */}
+      <AudienceProfileCard
+        niche={audienceData.niche}
+        targetAudience={audienceData.targetAudience}
+        primaryPainPoint={audienceData.primaryPainPoint}
+        desiredOutcome={audienceData.desiredOutcome}
+        specificityScore={audienceData.specificityScore}
+      />
+
+      {/* Tab-based Value Equation Form */}
+      <ValueEquationTabs
         data={audienceData}
         onChange={setAudienceData}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
       />
 
       {/* Navigation */}

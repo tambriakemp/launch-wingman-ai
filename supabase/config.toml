@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.generate-sales-copy]
 verify_jwt = false
+
+[functions.generate-sub-audiences]
+verify_jwt = false
