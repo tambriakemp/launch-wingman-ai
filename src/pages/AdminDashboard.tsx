@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -33,16 +33,26 @@ interface User {
 }
 
 const AdminDashboard = () => {
-  const { session, signOut } = useAuth();
+  const { session, signOut, startImpersonation, user: currentUser } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [impersonateLoading, setImpersonateLoading] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     action: 'cancel' | 'grant_pro';
     user: User | null;
   }>({ open: false, action: 'cancel', user: null });
+
+  const handleImpersonate = async (user: User) => {
+    setImpersonateLoading(user.id);
+    try {
+      await startImpersonation(user.id, user.email);
+    } finally {
+      setImpersonateLoading(null);
+    }
+  };
 
   const fetchUsers = async () => {
     if (!session?.access_token) return;
@@ -231,6 +241,22 @@ const AdminDashboard = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {/* View as User button - don't show for current user */}
+                          {user.id !== currentUser?.id && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleImpersonate(user)}
+                              disabled={impersonateLoading === user.id}
+                              title="View as this user"
+                            >
+                              {impersonateLoading === user.id ? (
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
                           {user.subscription_status === 'pro' ? (
                             <Button
                               variant="destructive"
