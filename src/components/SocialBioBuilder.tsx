@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Users, MoreHorizontal, Pencil, Trash2, Instagram, Facebook, Twitter, Linkedin, AtSign, X, Lock, Sparkles } from "lucide-react";
+import { Plus, Users, MoreHorizontal, Pencil, Trash2, Instagram, Facebook, Twitter, Linkedin, AtSign, X, Lock, Sparkles, Check, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -453,9 +453,11 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
                         : "border-border"
                     )}
                   >
-                    <Icon className="w-6 h-6 text-primary" />
-                    <span className="text-sm font-medium">{p.name}</span>
-                    <span className="text-xs text-muted-foreground">{p.maxChars} chars max</span>
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                      <Icon className="w-5 h-5 text-foreground" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">{p.name}</span>
+                    <span className="text-xs text-muted-foreground">{p.maxChars} chars</span>
                   </button>
                 );
               })}
@@ -463,116 +465,75 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
           )}
 
           {step === "formula" && (
-            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {bioFormulas.map((f) => (
                 <button
                   key={f.id}
                   onClick={() => handleFormulaSelect(f.id)}
                   className={cn(
-                    "w-full text-left p-4 rounded-lg border-2 transition-all",
+                    "text-left p-4 rounded-lg border-2 transition-all",
                     "hover:border-primary hover:bg-primary/5",
                     selectedFormula === f.id
                       ? "border-primary bg-primary/10"
                       : "border-border"
                   )}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-medium text-sm">{f.name}</h4>
-                    <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded">
-                      {f.bestFor}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground font-mono mb-2">{f.formula}</p>
-                  <p className="text-xs text-muted-foreground italic">"{f.example}"</p>
+                  <h4 className="font-medium text-foreground text-sm mb-1">{f.name}</h4>
+                  <p className="text-xs text-muted-foreground mb-2 italic">{f.formula}</p>
+                  <p className="text-xs text-muted-foreground">Best for: {f.bestFor}</p>
                 </button>
               ))}
             </div>
           )}
 
-          {step === "content" && formula && (
+          {step === "content" && (
             <div className="space-y-4">
-              {/* Transformation Reference Card */}
-              {transformationStatement && (
-                <div className={cn(
-                  "p-4 rounded-lg border",
-                  transformationLocked ? "bg-primary/5 border-primary/20" : "bg-muted/50"
-                )}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        {transformationLocked && <Lock className="w-3 h-3 text-primary" />}
-                        <p className="text-xs font-medium text-muted-foreground">
-                          {transformationLocked ? "Your Locked Transformation" : "Your Transformation"}
-                        </p>
-                      </div>
-                      <p className="text-sm text-foreground line-clamp-2">
-                        {transformationVersions?.one_liner || transformationStatement}
-                      </p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        // Smart pre-fill based on formula type
-                        const oneLiner = transformationVersions?.one_liner || transformationStatement;
-                        
-                        if (selectedFormula === "short-punchy") {
-                          setFieldData({ statement: oneLiner });
-                        } else if (selectedFormula === "who-result") {
-                          // Try to parse: "I help [who] [result] using [method]"
-                          setFieldData(prev => ({
-                            ...prev,
-                            who: prev.who || "",
-                            result: prev.result || "",
-                            method: prev.method || "",
-                          }));
-                          toast.success("Use your transformation as a guide to fill in the fields");
-                        } else if (selectedFormula === "identity-transformation") {
-                          setFieldData(prev => ({
-                            ...prev,
-                            identity: prev.identity || "",
-                            who: prev.who || "",
-                            pain: prev.pain || "",
-                            outcome: prev.outcome || "",
-                          }));
-                          toast.success("Use your transformation as a guide to fill in the fields");
-                        } else {
-                          // For other formulas, copy the one-liner to clipboard
-                          navigator.clipboard.writeText(oneLiner);
-                          toast.success("Transformation copied! Use it as reference for your bio");
-                        }
-                      }}
-                      className="shrink-0"
-                    >
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      Use
-                    </Button>
+              {/* Transformation Reference */}
+              {transformationStatement && transformationLocked && (
+                <div className="p-4 rounded-lg border bg-muted/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Lock className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">Your Transformation</span>
                   </div>
+                  <p className="text-sm text-muted-foreground mb-3">{transformationStatement}</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      // Pre-fill fields based on transformation
+                      if (formula?.id === "who-result" && transformationVersions?.one_liner) {
+                        // Try to extract who/result from transformation
+                        setFieldData(prev => ({
+                          ...prev,
+                          who: "your target audience",
+                          result: transformationVersions.one_liner || "",
+                        }));
+                      }
+                    }}
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Use Transformation
+                  </Button>
                 </div>
               )}
 
-              <div className="p-3 rounded-lg bg-muted/50 border">
-                <p className="text-xs font-medium text-muted-foreground mb-1">Formula:</p>
-                <p className="text-sm font-mono">{formula.formula}</p>
-              </div>
-
               {editingBio ? (
                 <div className="space-y-2">
-                  <Label htmlFor="finalContent">Bio Content</Label>
+                  <Label>Bio Content</Label>
                   <Textarea
-                    id="finalContent"
                     value={fieldData.finalContent || ""}
-                    onChange={(e) => setFieldData({ finalContent: e.target.value })}
+                    onChange={(e) =>
+                      setFieldData((prev) => ({ ...prev, finalContent: e.target.value }))
+                    }
+                    placeholder="Edit your bio content..."
                     rows={4}
-                    placeholder="Your bio content..."
                   />
                 </div>
               ) : (
-                formula.fields.map((field) => (
+                formula?.fields.map((field) => (
                   <div key={field.key} className="space-y-2">
-                    <Label htmlFor={field.key}>{field.label}</Label>
+                    <Label>{field.label}</Label>
                     <Input
-                      id={field.key}
                       value={fieldData[field.key] || ""}
                       onChange={(e) =>
                         setFieldData((prev) => ({ ...prev, [field.key]: e.target.value }))
@@ -633,92 +594,94 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
   }
 
   return (
-    <Card className="border bg-card">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Users className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-base">Social Media Bio</CardTitle>
-              <CardDescription className="text-sm">
-                Bio copy for Instagram, LinkedIn, and other platforms
-              </CardDescription>
-            </div>
+    <div className="space-y-4">
+      {/* Category Header */}
+      <div className="p-4 flex items-center gap-3 border-b border-border">
+        <Users className="w-5 h-5 text-purple-500" />
+        <span className="font-medium text-foreground flex-1">Bios</span>
+        <span className="text-sm text-muted-foreground">
+          {bios.length} bio{bios.length !== 1 ? 's' : ''}
+        </span>
+        <Button size="sm" variant="outline" onClick={handleAdd}>
+          <Plus className="w-4 h-4" />
+          Add New
+        </Button>
+      </div>
+
+      {/* List Items */}
+      {bios.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed rounded-lg">
+          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+            <Users className="w-5 h-5 text-muted-foreground" />
           </div>
-          <Button size="sm" variant="outline" onClick={handleAdd}>
+          <p className="text-sm text-muted-foreground mb-3">No social media bios added yet</p>
+          <Button size="sm" variant="ghost" onClick={handleAdd}>
             <Plus className="w-4 h-4" />
-            Add New
+            Add Your First
           </Button>
         </div>
-      </CardHeader>
-      <CardContent>
-        {bios.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed rounded-lg">
-            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
-              <Users className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">No social media bios added yet</p>
-            <Button size="sm" variant="ghost" onClick={handleAdd}>
-              <Plus className="w-4 h-4" />
-              Add Your First
-            </Button>
-          </div>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {bios.map((bio) => {
-              const p = platforms.find((pl) => pl.id === bio.platform);
-              const f = bioFormulas.find((fl) => fl.id === bio.formula);
-              const Icon = p?.icon || Users;
-              return (
-                <div
-                  key={bio.id}
-                  className="p-4 rounded-lg border bg-background hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Icon className="w-4 h-4 text-primary" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-foreground text-sm">{p?.name}</h4>
-                        <p className="text-xs text-muted-foreground">{f?.name}</p>
-                      </div>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(bio)}>
-                          <Pencil className="w-4 h-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => handleDelete(bio)}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <p className="text-sm text-muted-foreground whitespace-pre-line line-clamp-4">
-                    {bio.content}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {bio.content.length}/{p?.maxChars} characters
+      ) : (
+        <div>
+          {bios.map((bio, index) => {
+            const p = platforms.find((pl) => pl.id === bio.platform);
+            const f = bioFormulas.find((fl) => fl.id === bio.formula);
+            const Icon = p?.icon || Users;
+            return (
+              <div
+                key={bio.id}
+                className={`flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors ${
+                  index !== bios.length - 1 ? 'border-b border-border' : ''
+                }`}
+              >
+                {/* Platform Icon as circle */}
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-4 h-4 text-primary" />
+                </div>
+                
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm">{p?.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {f?.name} • {bio.content.length}/{p?.maxChars} chars
                   </p>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                
+                {/* Arrow Icon - Click to edit */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 flex-shrink-0"
+                  onClick={() => handleEdit(bio)}
+                >
+                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                </Button>
+                
+                {/* More options */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleEdit(bio)}>
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => handleDelete(bio)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 };
