@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { Plus, FileText, MoreHorizontal, Pencil, Trash2, X, Sparkles, RefreshCw, Eye, Check, Wand2, PenLine, ArrowLeft, GripVertical, Save, AlertTriangle, ArrowRight } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { Plus, FileText, MoreHorizontal, Pencil, Trash2, X, Sparkles, RefreshCw, Eye, Check, Wand2, PenLine, ArrowLeft, GripVertical, Save, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { FUNNEL_CONFIGS, AssetRequirement } from "@/data/funnelConfigs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
 
 // Section definitions with AI capability
 const DEFAULT_SECTIONS = [
@@ -203,6 +205,7 @@ const DELIVERABLE_NAMES: Record<string, string> = {
 export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) => {
   const { isSubscribed, user } = useAuth();
   const queryClient = useQueryClient();
+  const location = useLocation();
   const [isAddMode, setIsAddMode] = useState(false);
   const [editingItem, setEditingItem] = useState<SalesPageCopy | null>(null);
   const [selectedDeliverable, setSelectedDeliverable] = useState<string>("");
@@ -385,6 +388,47 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     const taskIsDone = tasks.some(t => t.title === pageTitle && t.column_id === 'done');
     return hasCopy || taskIsDone;
   };
+
+  // Toggle page completion status
+  const togglePageCompletion = async (pageId: string, pageTitle: string, isCustom: boolean = false) => {
+    if (!user) return;
+    
+    const currentlyComplete = isPageComplete(pageId, pageTitle);
+    const newColumnId = currentlyComplete ? 'todo' : 'done';
+    
+    // For funnel pages, update the task
+    if (!isCustom) {
+      await supabase
+        .from('tasks')
+        .update({ column_id: newColumnId })
+        .eq('project_id', projectId)
+        .eq('title', pageTitle)
+        .eq('user_id', user.id);
+    } else {
+      // For custom pages without tasks, create a task or toggle based on existing copy
+      const existingTask = tasks.find(t => t.title === pageTitle);
+      if (existingTask) {
+        await supabase
+          .from('tasks')
+          .update({ column_id: newColumnId })
+          .eq('id', existingTask.id);
+      }
+    }
+    
+    queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+  };
+
+  // Reset form when navigating away via sidebar
+  useEffect(() => {
+    if (isAddMode) {
+      // Check if we're on the sales-copy page but location changed
+      const isSalesCopyRoute = location.pathname.endsWith('/sales-copy');
+      if (isSalesCopyRoute) {
+        // User clicked sidebar link while in edit mode, reset
+        resetForm();
+      }
+    }
+  }, [location.key]); // Use location.key to detect navigation events
 
   // Handle updating pages to match new funnel
   const handleUpdatePages = async () => {
@@ -3491,6 +3535,30 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
         </Alert>
       )}
 
+      {/* Progress Indicator */}
+      {currentFunnelType && funnelPages.length > 0 && (
+        <div className="mb-4">
+          {(() => {
+            const customPages = items.filter(item => !funnelPages.some(p => p.id === item.deliverableId));
+            const totalPages = funnelPages.length + customPages.length;
+            const completedFunnelPages = funnelPages.filter(p => isPageComplete(p.id, p.title)).length;
+            const completedCustomPages = customPages.filter(item => isPageComplete(item.deliverableId, item.deliverableName)).length;
+            const completed = completedFunnelPages + completedCustomPages;
+            const percentage = totalPages > 0 ? Math.round((completed / totalPages) * 100) : 0;
+            
+            return (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Overall Progress</span>
+                  <span className="font-medium">{percentage}% Complete ({completed}/{totalPages} pages)</span>
+                </div>
+                <Progress value={percentage} className="h-2" />
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {/* Funnel pages list */}
       {!currentFunnelType ? (
         <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed rounded-lg">
@@ -3522,8 +3590,9 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
               {(() => {
                 const customPages = items.filter(item => !funnelPages.some(p => p.id === item.deliverableId));
                 const completedFunnelPages = funnelPages.filter(p => isPageComplete(p.id, p.title)).length;
+                const completedCustomPages = customPages.filter(item => isPageComplete(item.deliverableId, item.deliverableName)).length;
                 const total = funnelPages.length + customPages.length;
-                const completed = completedFunnelPages + customPages.length;
+                const completed = completedFunnelPages + completedCustomPages;
                 return `${completed}/${total}`;
               })()}
             </span>
@@ -3553,14 +3622,17 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                     !isLastItem ? 'border-b border-border' : ''
                   }`}
                 >
-                  {/* Circle Checkbox */}
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                    isComplete 
-                      ? 'border-primary bg-primary text-primary-foreground' 
-                      : 'border-muted-foreground/40'
-                  }`}>
+                  {/* Clickable Circle Checkbox */}
+                  <button
+                    onClick={() => togglePageCompletion(page.id, page.title, false)}
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 cursor-pointer transition-colors ${
+                      isComplete 
+                        ? 'border-primary bg-primary text-primary-foreground hover:bg-primary/80' 
+                        : 'border-muted-foreground/40 hover:border-primary/60'
+                    }`}
+                  >
                     {isComplete && <Check className="w-3 h-3" />}
-                  </div>
+                  </button>
                   
                   {/* Content */}
                   <div className="flex-1 min-w-0">
@@ -3575,36 +3647,50 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                     </p>
                   </div>
                   
-                  {/* Arrow Icon - Click to edit */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 flex-shrink-0"
-                    onClick={() => {
-                      if (existingCopy) {
-                        handleEdit(existingCopy);
-                      } else {
-                        setEditingItem(null);
-                        setSelectedDeliverable(page.id);
-                        setSections({});
-                        setSectionModes({});
-                        setSectionOrder(DEFAULT_SECTIONS.map(s => s.id));
-                        setGeneratedBenefits([]);
-                        setSavedBenefits([]);
-                        setGeneratedFaqs([]);
-                        setSavedFaqs([]);
-                        setGeneratedComparisonBullets([]);
-                        setSavedComparisonBullets([]);
-                        setGeneratedModules([]);
-                        setSavedModules([]);
-                        setGeneratedBonuses([]);
-                        setSavedBonuses([]);
-                        setIsAddMode(true);
-                      }
-                    }}
-                  >
-                    <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                  </Button>
+                  {/* Actions Menu */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => {
+                        if (existingCopy) {
+                          handleEdit(existingCopy);
+                        } else {
+                          setEditingItem(null);
+                          setSelectedDeliverable(page.id);
+                          setSections({});
+                          setSectionModes({});
+                          setSectionOrder(DEFAULT_SECTIONS.map(s => s.id));
+                          setGeneratedBenefits([]);
+                          setSavedBenefits([]);
+                          setGeneratedFaqs([]);
+                          setSavedFaqs([]);
+                          setGeneratedComparisonBullets([]);
+                          setSavedComparisonBullets([]);
+                          setGeneratedModules([]);
+                          setSavedModules([]);
+                          setGeneratedBonuses([]);
+                          setSavedBonuses([]);
+                          setIsAddMode(true);
+                        }
+                      }}>
+                        <Pencil className="w-4 h-4 mr-2" />
+                        {existingCopy ? 'Edit' : 'Add Copy'}
+                      </DropdownMenuItem>
+                      {existingCopy && (
+                        <DropdownMenuItem
+                          onClick={() => handleDelete(existingCopy)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               );
             })}
@@ -3614,6 +3700,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
               .filter(item => !funnelPages.some(p => p.id === item.deliverableId))
               .map((item, index, arr) => {
                 const isLastItem = index === arr.length - 1;
+                const isComplete = isPageComplete(item.deliverableId, item.deliverableName);
                 
                 return (
                   <div
@@ -3622,15 +3709,22 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                       !isLastItem ? 'border-b border-border' : ''
                     }`}
                   >
-                    {/* Circle Checkbox - Custom pages are always complete */}
-                    <div className="w-5 h-5 rounded-full border-2 border-primary bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0">
-                      <Check className="w-3 h-3" />
-                    </div>
+                    {/* Clickable Circle Checkbox */}
+                    <button
+                      onClick={() => togglePageCompletion(item.deliverableId, item.deliverableName, true)}
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 cursor-pointer transition-colors ${
+                        isComplete 
+                          ? 'border-primary bg-primary text-primary-foreground hover:bg-primary/80' 
+                          : 'border-muted-foreground/40 hover:border-primary/60'
+                      }`}
+                    >
+                      {isComplete && <Check className="w-3 h-3" />}
+                    </button>
                     
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="font-medium text-sm text-muted-foreground">
+                        <p className={`font-medium text-sm ${isComplete ? 'text-muted-foreground' : ''}`}>
                           {item.deliverableName}
                         </p>
                         <Badge variant="secondary" className="text-xs">Custom</Badge>
