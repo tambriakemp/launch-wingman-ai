@@ -592,6 +592,7 @@ export type Database = {
           created_at: string
           first_name: string | null
           id: string
+          last_active: string | null
           last_name: string | null
           updated_at: string
           user_id: string
@@ -600,6 +601,7 @@ export type Database = {
           created_at?: string
           first_name?: string | null
           id?: string
+          last_active?: string | null
           last_name?: string | null
           updated_at?: string
           user_id: string
@@ -608,6 +610,7 @@ export type Database = {
           created_at?: string
           first_name?: string | null
           id?: string
+          last_active?: string | null
           last_name?: string | null
           updated_at?: string
           user_id?: string
@@ -843,6 +846,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_activity: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

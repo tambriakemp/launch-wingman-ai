@@ -55,10 +55,10 @@ serve(async (req) => {
     if (authError) throw new Error(`Failed to list users: ${authError.message}`);
     logStep("Fetched auth users", { count: authUsers.users.length });
 
-    // Get all profiles
+    // Get all profiles with last_active
     const { data: profiles } = await supabaseClient
       .from('profiles')
-      .select('user_id, first_name, last_name');
+      .select('user_id, first_name, last_name, last_active');
 
     // Get Stripe subscription info for each user
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -108,6 +108,7 @@ serve(async (req) => {
           subscription_end: subscriptionEnd,
           stripe_customer_id: stripeCustomerId,
           stripe_subscription_id: stripeSubscriptionId,
+          last_active: profile?.last_active || null,
         };
       })
     );
