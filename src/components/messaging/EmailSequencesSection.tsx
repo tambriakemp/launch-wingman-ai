@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Mail, MoreHorizontal, Pencil, Trash2, X, Check, ArrowRight } from "lucide-react";
+import { Plus, Mail, MoreHorizontal, Pencil, Trash2, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -243,17 +243,7 @@ export const EmailSequencesSection = ({ projectId }: EmailSequencesSectionProps)
                 </p>
               </div>
               
-              {/* Arrow Icon - Click to edit */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 flex-shrink-0"
-                onClick={() => handleEdit(item)}
-              >
-                <ArrowRight className="w-4 h-4 text-muted-foreground" />
-              </Button>
-              
-              {/* More options */}
+              {/* More options dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
