@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, FileText, MoreHorizontal, Pencil, Trash2, Lock, X, Sparkles, RefreshCw, Eye, Check, Wand2, PenLine, ArrowLeft, GripVertical, Save } from "lucide-react";
+import React, { useState } from "react";
+import { Plus, FileText, MoreHorizontal, Pencil, Trash2, X, Sparkles, RefreshCw, Eye, Check, Wand2, PenLine, ArrowLeft, GripVertical, Save, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +41,8 @@ import type { Json } from "@/integrations/supabase/types";
 import { SalesPagePreview } from "./SalesPagePreview";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { FUNNEL_CONFIGS, AssetRequirement } from "@/data/funnelConfigs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Section definitions with AI capability
 const DEFAULT_SECTIONS = [
@@ -164,6 +166,7 @@ interface SalesPageCopyBuilderProps {
 }
 
 const DELIVERABLE_NAMES: Record<string, string> = {
+  // Original deliverables
   "step-by-step-tutorials": "Step-by-Step Tutorials",
   "checklists": "Checklists",
   "cheat-sheets": "Cheat Sheets",
@@ -180,6 +183,21 @@ const DELIVERABLE_NAMES: Record<string, string> = {
   "text-message-support": "Text Message Support",
   "email-support": "Email Support",
   "live-chat-support": "Live Chat Support",
+  // Funnel page IDs
+  "landing-page": "Opt-in Landing Page",
+  "thank-you-page": "Thank You Page",
+  "opt-in-page": "Opt-in Page",
+  "sales-page": "Sales Page",
+  "checkout-page": "Checkout Page",
+  "upsell-page": "Upsell Page",
+  "registration-page": "Registration Page",
+  "replay-page": "Webinar Replay Page",
+  "challenge-hub": "Challenge Hub/Portal",
+  "waitlist-page": "Waitlist Page",
+  "member-portal": "Member Portal",
+  "content-page": "Value Content Page",
+  "application-page": "Application Page",
+  "booking-page": "Call Booking Page",
 };
 
 export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) => {
@@ -253,6 +271,126 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   const [uniqueApproach, setUniqueApproach] = useState("");
   const [contextOpen, setContextOpen] = useState(false);
 
+  // Funnel change detection state
+  const [funnelTypeChanged, setFunnelTypeChanged] = useState(false);
+  const [currentFunnelType, setCurrentFunnelType] = useState<string | null>(null);
+  const [isUpdatingPages, setIsUpdatingPages] = useState(false);
+  const [selectedPageId, setSelectedPageId] = useState<string>("");
+
+  // Fetch funnel data
+  const { data: funnelData } = useQuery({
+    queryKey: ["funnel-for-sales-copy", projectId],
+    queryFn: async () => {
+      const { data: funnel, error } = await supabase
+        .from("funnels")
+        .select("id, funnel_type")
+        .eq("project_id", projectId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return funnel;
+    },
+    enabled: !!projectId,
+  });
+
+  // Fetch project snapshot for change detection
+  const { data: projectSnapshot } = useQuery({
+    queryKey: ["project-snapshot", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("sales_copy_funnel_snapshot, transformation_statement, transformation_locked")
+        .eq("id", projectId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!projectId,
+  });
+
+  // Fetch offers for linking pages to offers
+  const { data: funnelOffers = [] } = useQuery({
+    queryKey: ["offers-for-sales-copy", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("offers")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("slot_position");
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!projectId,
+  });
+
+  // Detect funnel type changes
+  React.useEffect(() => {
+    if (funnelData?.funnel_type) {
+      setCurrentFunnelType(funnelData.funnel_type);
+      if (projectSnapshot?.sales_copy_funnel_snapshot && 
+          funnelData.funnel_type !== projectSnapshot.sales_copy_funnel_snapshot) {
+        setFunnelTypeChanged(true);
+      }
+    }
+  }, [funnelData?.funnel_type, projectSnapshot?.sales_copy_funnel_snapshot]);
+
+  // Get funnel pages (assets with linkedSection = 'sales-copy')
+  const funnelPages: (AssetRequirement & { offerTitle?: string })[] = React.useMemo(() => {
+    if (!currentFunnelType) return [];
+    const config = FUNNEL_CONFIGS[currentFunnelType];
+    if (!config) return [];
+    
+    return config.assets
+      .filter(asset => asset.linkedSection === 'sales-copy')
+      .map(asset => {
+        // Find related offer for this asset
+        const relatedOffer = asset.offerSlotType 
+          ? funnelOffers.find(o => o.slot_type === asset.offerSlotType)
+          : null;
+        
+        return {
+          ...asset,
+          offerTitle: relatedOffer?.title || undefined,
+        };
+      });
+  }, [currentFunnelType, funnelOffers]);
+
+  // Check if a page has sales copy created
+  const getPageCopyStatus = (pageId: string) => {
+    return items.find(item => item.deliverableId === pageId);
+  };
+
+  // Handle updating pages to match new funnel
+  const handleUpdatePages = async () => {
+    if (!currentFunnelType || !user) return;
+    
+    setIsUpdatingPages(true);
+    
+    // Update the snapshot
+    await supabase
+      .from("projects")
+      .update({ sales_copy_funnel_snapshot: currentFunnelType })
+      .eq("id", projectId);
+    
+    setFunnelTypeChanged(false);
+    setIsUpdatingPages(false);
+    queryClient.invalidateQueries({ queryKey: ["project-snapshot", projectId] });
+    toast.success("Sales copy pages updated to match new funnel type");
+  };
+
+  // Handle dismissing the funnel change alert
+  const handleDismissFunnelChange = async () => {
+    await supabase
+      .from("projects")
+      .update({ sales_copy_funnel_snapshot: currentFunnelType })
+      .eq("id", projectId);
+    
+    setFunnelTypeChanged(false);
+    queryClient.invalidateQueries({ queryKey: ["project-snapshot", projectId] });
+  };
+
   // Fetch sales page copy from database
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["sales-page-copy", projectId],
@@ -273,7 +411,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     enabled: !!projectId,
   });
 
-  const canAddMore = isSubscribed || items.length < 1;
+  // Free plan restriction removed - all users can create unlimited sales copy pages
 
   // Fetch offer to get deliverables and other data
   const { data: offer } = useQuery({
@@ -291,24 +429,9 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     enabled: !!projectId,
   });
 
-  // Fetch project's transformation statement
-  const { data: project } = useQuery({
-    queryKey: ["project-transformation", projectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("transformation_statement, transformation_locked")
-        .eq("id", projectId)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!projectId,
-  });
-
-  const transformationStatement = project?.transformation_statement || '';
-  const transformationLocked = project?.transformation_locked || false;
+  // Use transformation from projectSnapshot query
+  const transformationStatement = projectSnapshot?.transformation_statement || '';
+  const transformationLocked = projectSnapshot?.transformation_locked || false;
 
   const deliverables = offer?.main_deliverables || [];
 
@@ -3279,93 +3402,197 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             <div>
               <CardTitle className="text-base">Sales Page Copy</CardTitle>
               <CardDescription className="text-sm">
-                AI-powered headlines, benefits, and persuasive copy
+                {currentFunnelType 
+                  ? `Pages for your ${FUNNEL_CONFIGS[currentFunnelType]?.name || 'funnel'}`
+                  : 'AI-powered headlines, benefits, and persuasive copy'}
               </CardDescription>
             </div>
           </div>
+          {/* Keep Add New for custom pages */}
           <Button
             size="sm"
             variant="outline"
             onClick={handleAdd}
-            disabled={deliverables.length === 0 || !canAddMore}
           >
-            {!canAddMore && <Lock className="w-4 h-4" />}
             <Plus className="w-4 h-4" />
-            Add New
+            Add Custom Page
           </Button>
         </div>
-        {!isSubscribed && items.length > 0 && (
-          <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-            <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-amber-600" />
-              <span className="text-xs text-amber-700 dark:text-amber-400">
-                Free plan: 1 sales page copy. Upgrade to Pro for unlimited.
-              </span>
-            </div>
-          </div>
-        )}
       </CardHeader>
-      <CardContent>
-        {deliverables.length === 0 ? (
+      <CardContent className="space-y-4">
+        {/* Funnel change detection alert */}
+        {funnelTypeChanged && (
+          <Alert className="border-amber-500/20 bg-amber-500/10">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="flex items-center justify-between">
+              <span className="text-sm text-amber-700 dark:text-amber-400">
+                Your funnel type has changed. Update your sales copy pages to match?
+              </span>
+              <div className="flex gap-2 ml-4">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={handleDismissFunnelChange}
+                  disabled={isUpdatingPages}
+                >
+                  Keep Current
+                </Button>
+                <Button 
+                  size="sm" 
+                  onClick={handleUpdatePages}
+                  disabled={isUpdatingPages}
+                >
+                  {isUpdatingPages ? "Updating..." : "Update Pages"}
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Funnel pages grid */}
+        {!currentFunnelType ? (
           <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed rounded-lg">
             <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
               <FileText className="w-5 h-5 text-muted-foreground" />
             </div>
-            <p className="text-sm text-muted-foreground mb-1">No deliverables found</p>
+            <p className="text-sm text-muted-foreground mb-1">No funnel configured</p>
             <p className="text-xs text-muted-foreground">
-              Add deliverables in the Offer Builder first
+              Select a funnel type first to see required pages
             </p>
           </div>
-        ) : items.length === 0 ? (
+        ) : funnelPages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed rounded-lg">
             <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
               <Sparkles className="w-5 h-5 text-muted-foreground" />
             </div>
-            <p className="text-sm text-muted-foreground mb-1">No sales page copy yet</p>
+            <p className="text-sm text-muted-foreground mb-1">No pages require copy</p>
             <p className="text-xs text-muted-foreground">
-              Click "Add New" to create compelling copy for your sales page
+              This funnel type doesn't have pages linked to sales copy
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between p-4 border rounded-lg bg-card hover:shadow-sm transition-shadow"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-primary" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {funnelPages.map((page) => {
+              const existingCopy = getPageCopyStatus(page.id);
+              const isComplete = !!existingCopy;
+              
+              return (
+                <div
+                  key={page.id}
+                  className={`relative p-4 border rounded-lg transition-all cursor-pointer hover:shadow-md ${
+                    isComplete 
+                      ? 'border-primary/30 bg-primary/5' 
+                      : 'border-dashed border-muted-foreground/30 hover:border-primary/50'
+                  }`}
+                  onClick={() => {
+                    if (existingCopy) {
+                      handleEdit(existingCopy);
+                    } else {
+                      setEditingItem(null);
+                      setSelectedDeliverable(page.id);
+                      setSections({});
+                      setSectionModes({});
+                      setSectionOrder(DEFAULT_SECTIONS.map(s => s.id));
+                      setGeneratedBenefits([]);
+                      setSavedBenefits([]);
+                      setGeneratedFaqs([]);
+                      setSavedFaqs([]);
+                      setGeneratedComparisonBullets([]);
+                      setSavedComparisonBullets([]);
+                      setGeneratedModules([]);
+                      setSavedModules([]);
+                      setGeneratedBonuses([]);
+                      setSavedBonuses([]);
+                      setIsAddMode(true);
+                    }
+                  }}
+                >
+                  {/* Status indicator */}
+                  <div className={`absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center ${
+                    isComplete 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {isComplete ? <Check className="w-3.5 h-3.5" /> : <span className="text-xs">○</span>}
                   </div>
-                  <div>
-                    <h4 className="font-medium text-sm">{item.deliverableName}</h4>
-                    <p className="text-xs text-muted-foreground">
-                      {Object.keys(item.sections).filter(k => !k.includes("Manual") && k !== "sectionOrder" && k !== "customSections").length} sections
-                    </p>
+
+                  <div className="pr-8">
+                    <h4 className="font-medium text-sm mb-1">{page.title}</h4>
+                    <p className="text-xs text-muted-foreground mb-2">{page.description}</p>
+                    
+                    {/* Offer badge */}
+                    {page.offerTitle && (
+                      <Badge variant="secondary" className="text-xs">
+                        {page.offerTitle}
+                      </Badge>
+                    )}
+                    
+                    {/* Offer slot type badge if no title */}
+                    {!page.offerTitle && page.offerSlotType && (
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {page.offerSlotType.replace('-', ' ')}
+                      </Badge>
+                    )}
+
+                    {/* Section count if complete */}
+                    {existingCopy && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {Object.keys(existingCopy.sections).filter(k => 
+                          !k.includes("Manual") && k !== "sectionOrder" && k !== "customSections" && k !== "sectionModes"
+                        ).length} sections
+                      </p>
+                    )}
                   </div>
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEdit(item)}>
-                      <Pencil className="w-4 h-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleDelete(item)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            ))}
+              );
+            })}
+          </div>
+        )}
+
+        {/* Existing custom pages (not in funnel config) */}
+        {items.filter(item => !funnelPages.some(p => p.id === item.deliverableId)).length > 0 && (
+          <div className="space-y-3 pt-4 border-t">
+            <Label className="text-sm font-medium text-muted-foreground">Custom Pages</Label>
+            {items
+              .filter(item => !funnelPages.some(p => p.id === item.deliverableId))
+              .map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between p-4 border rounded-lg bg-card hover:shadow-sm transition-shadow"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-sm">{item.deliverableName}</h4>
+                      <p className="text-xs text-muted-foreground">
+                        {Object.keys(item.sections).filter(k => !k.includes("Manual") && k !== "sectionOrder" && k !== "customSections").length} sections
+                      </p>
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEdit(item)}>
+                        <Pencil className="w-4 h-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(item)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ))}
           </div>
         )}
       </CardContent>
