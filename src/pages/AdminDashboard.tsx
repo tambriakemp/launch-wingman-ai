@@ -9,8 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -46,6 +47,7 @@ interface ImpersonationLog {
 }
 
 const LOGS_PER_PAGE = 10;
+const USERS_PER_PAGE = 10;
 
 const AdminDashboard = () => {
   const { session, signOut, startImpersonation, user: currentUser } = useAuth();
@@ -69,6 +71,99 @@ const AdminDashboard = () => {
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // User filtering state
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userDateFrom, setUserDateFrom] = useState<Date | undefined>(undefined);
+  const [userDateTo, setUserDateTo] = useState<Date | undefined>(undefined);
+  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'free' | 'pro'>('all');
+  const [userCurrentPage, setUserCurrentPage] = useState(1);
+
+  // Filter users based on search, date range, and status
+  const filteredUsers = useMemo(() => {
+    let result = users;
+    
+    // Text search filter
+    if (userSearchQuery.trim()) {
+      const query = userSearchQuery.toLowerCase();
+      result = result.filter(
+        user => 
+          user.email.toLowerCase().includes(query) ||
+          (user.first_name?.toLowerCase().includes(query)) ||
+          (user.last_name?.toLowerCase().includes(query))
+      );
+    }
+    
+    // Status filter
+    if (userStatusFilter !== 'all') {
+      result = result.filter(user => user.subscription_status === userStatusFilter);
+    }
+    
+    // Date range filter (joined date)
+    if (userDateFrom || userDateTo) {
+      result = result.filter(user => {
+        const joinedDate = new Date(user.created_at);
+        if (userDateFrom && userDateTo) {
+          return isWithinInterval(joinedDate, { start: startOfDay(userDateFrom), end: endOfDay(userDateTo) });
+        } else if (userDateFrom) {
+          return joinedDate >= startOfDay(userDateFrom);
+        } else if (userDateTo) {
+          return joinedDate <= endOfDay(userDateTo);
+        }
+        return true;
+      });
+    }
+    
+    return result;
+  }, [users, userSearchQuery, userStatusFilter, userDateFrom, userDateTo]);
+
+  // User pagination
+  const userTotalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (userCurrentPage - 1) * USERS_PER_PAGE;
+    return filteredUsers.slice(startIndex, startIndex + USERS_PER_PAGE);
+  }, [filteredUsers, userCurrentPage]);
+
+  // Reset user page when filters change
+  useEffect(() => {
+    setUserCurrentPage(1);
+  }, [userSearchQuery, userDateFrom, userDateTo, userStatusFilter]);
+
+  const clearUserDateFilters = () => {
+    setUserDateFrom(undefined);
+    setUserDateTo(undefined);
+  };
+
+  // Export users to CSV
+  const exportUsersToCSV = () => {
+    if (filteredUsers.length === 0) {
+      toast.error('No users to export');
+      return;
+    }
+
+    const headers = ['Name', 'Email', 'Joined', 'Status', 'Subscription End'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredUsers.map(user => [
+        `"${user.first_name || ''} ${user.last_name || ''}".trim() || '—'`,
+        `"${user.email}"`,
+        format(new Date(user.created_at), 'yyyy-MM-dd'),
+        user.subscription_status === 'pro' ? 'Pro' : 'Free',
+        user.subscription_end ? format(new Date(user.subscription_end), 'yyyy-MM-dd') : '—'
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `users-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Users exported successfully');
+  };
 
   // Filter logs based on search query and date range
   const filteredLogs = useMemo(() => {
@@ -322,118 +417,251 @@ const AdminDashboard = () => {
                 <CardTitle>User Accounts</CardTitle>
                 <CardDescription>Manage user subscriptions and access</CardDescription>
               </div>
-              <Button variant="outline" size="sm" onClick={fetchUsers} disabled={loading}>
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={exportUsersToCSV} disabled={filteredUsers.length === 0}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export CSV
+                </Button>
+                <Button variant="outline" size="sm" onClick={fetchUsers} disabled={loading}>
+                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
+            {/* User Filters */}
+            <div className="mb-4 flex flex-wrap items-end gap-4">
+              {/* Search */}
+              <div className="flex-1 min-w-[200px] max-w-sm">
+                <Label className="text-xs text-muted-foreground mb-1 block">Search</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name or email..."
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+
+              {/* Status Filter */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
+                <Select value={userStatusFilter} onValueChange={(v) => setUserStatusFilter(v as 'all' | 'free' | 'pro')}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="free">Free</SelectItem>
+                    <SelectItem value="pro">Pro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Joined From */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Joined From</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[140px] justify-start text-left font-normal",
+                        !userDateFrom && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {userDateFrom ? format(userDateFrom, "MMM d, yyyy") : "Select"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={userDateFrom}
+                      onSelect={setUserDateFrom}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Joined To */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Joined To</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[140px] justify-start text-left font-normal",
+                        !userDateTo && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {userDateTo ? format(userDateTo, "MMM d, yyyy") : "Select"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={userDateTo}
+                      onSelect={setUserDateTo}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Clear Date Filters */}
+              {(userDateFrom || userDateTo) && (
+                <Button variant="ghost" size="sm" onClick={clearUserDateFilters}>
+                  Clear dates
+                </Button>
+              )}
+            </div>
+
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Subscription End</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">
-                        {user.first_name || user.last_name
-                          ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
-                          : '—'}
-                      </TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        {format(new Date(user.created_at), 'MMM d, yyyy')}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={user.subscription_status === 'pro' ? 'default' : 'secondary'}
-                          className={user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
-                        >
-                          {user.subscription_status === 'pro' ? 'Pro' : 'Free'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {user.subscription_end
-                          ? format(new Date(user.subscription_end), 'MMM d, yyyy')
-                          : '—'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {/* View as User button - don't show for current user */}
-                          {user.id !== currentUser?.id && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleImpersonateClick(user)}
-                              disabled={impersonateLoading === user.id}
-                              title="View as this user"
-                            >
-                              {impersonateLoading === user.id ? (
-                                <RefreshCw className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Button>
-                          )}
-                          {user.subscription_status === 'pro' ? (
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleAction('cancel', user)}
-                              disabled={actionLoading === user.id}
-                            >
-                              {actionLoading === user.id ? (
-                                <RefreshCw className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <>
-                                  <X className="h-4 w-4 mr-1" />
-                                  Cancel
-                                </>
-                              )}
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => handleAction('grant_pro', user)}
-                              disabled={actionLoading === user.id}
-                            >
-                              {actionLoading === user.id ? (
-                                <RefreshCw className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <>
-                                  <Crown className="h-4 w-4 mr-1" />
-                                  Grant Pro
-                                </>
-                              )}
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {users.length === 0 && (
+              <>
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        No users found
-                      </TableCell>
+                      <TableHead>User</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Joined</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Subscription End</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">
+                          {user.first_name || user.last_name
+                            ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                            : '—'}
+                        </TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          {format(new Date(user.created_at), 'MMM d, yyyy')}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={user.subscription_status === 'pro' ? 'default' : 'secondary'}
+                            className={user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
+                          >
+                            {user.subscription_status === 'pro' ? 'Pro' : 'Free'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {user.subscription_end
+                            ? format(new Date(user.subscription_end), 'MMM d, yyyy')
+                            : '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {/* View as User button - don't show for current user */}
+                            {user.id !== currentUser?.id && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleImpersonateClick(user)}
+                                disabled={impersonateLoading === user.id}
+                                title="View as this user"
+                              >
+                                {impersonateLoading === user.id ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </Button>
+                            )}
+                            {user.subscription_status === 'pro' ? (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleAction('cancel', user)}
+                                disabled={actionLoading === user.id}
+                              >
+                                {actionLoading === user.id ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <X className="h-4 w-4 mr-1" />
+                                    Cancel
+                                  </>
+                                )}
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => handleAction('grant_pro', user)}
+                                disabled={actionLoading === user.id}
+                              >
+                                {actionLoading === user.id ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Crown className="h-4 w-4 mr-1" />
+                                    Grant Pro
+                                  </>
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {paginatedUsers.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          {userSearchQuery || userDateFrom || userDateTo || userStatusFilter !== 'all' 
+                            ? 'No matching users found' 
+                            : 'No users found'}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+
+                {/* User Pagination */}
+                {userTotalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {((userCurrentPage - 1) * USERS_PER_PAGE) + 1} to {Math.min(userCurrentPage * USERS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} users
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setUserCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={userCurrentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        Page {userCurrentPage} of {userTotalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setUserCurrentPage(p => Math.min(userTotalPages, p + 1))}
+                        disabled={userCurrentPage === userTotalPages}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
