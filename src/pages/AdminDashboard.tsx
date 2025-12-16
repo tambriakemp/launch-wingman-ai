@@ -44,8 +44,20 @@ const AdminDashboard = () => {
     action: 'cancel' | 'grant_pro';
     user: User | null;
   }>({ open: false, action: 'cancel', user: null });
+  const [impersonateDialog, setImpersonateDialog] = useState<{
+    open: boolean;
+    user: User | null;
+  }>({ open: false, user: null });
 
-  const handleImpersonate = async (user: User) => {
+  const handleImpersonateClick = (user: User) => {
+    setImpersonateDialog({ open: true, user });
+  };
+
+  const executeImpersonation = async () => {
+    const user = impersonateDialog.user;
+    if (!user) return;
+
+    setImpersonateDialog({ open: false, user: null });
     setImpersonateLoading(user.id);
     try {
       await startImpersonation(user.id, user.email);
@@ -246,7 +258,7 @@ const AdminDashboard = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleImpersonate(user)}
+                              onClick={() => handleImpersonateClick(user)}
                               disabled={impersonateLoading === user.id}
                               title="View as this user"
                             >
@@ -325,6 +337,25 @@ const AdminDashboard = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={executeAction}>
               {confirmDialog.action === 'cancel' ? 'Yes, Cancel Subscription' : 'Yes, Grant Pro'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Impersonation Confirmation Dialog */}
+      <AlertDialog open={impersonateDialog.open} onOpenChange={(open) => !open && setImpersonateDialog({ ...impersonateDialog, open: false })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>View as User</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to view the app as <strong>{impersonateDialog.user?.email}</strong>. 
+              This action will be logged for security purposes. You can return to your admin account at any time using the banner at the top of the screen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={executeImpersonation}>
+              Yes, View as User
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
