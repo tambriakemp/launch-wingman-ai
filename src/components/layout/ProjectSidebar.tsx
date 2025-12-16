@@ -52,7 +52,7 @@ const createNavSections = (projectId: string): NavSection[] => [
     ],
   },
   {
-    heading: "Brand",
+    heading: "Funnel Branding",
     items: [
       { id: "logos", label: "Logos", icon: Image, href: `/projects/${projectId}/logos` },
       { id: "colors", label: "Colors", icon: Palette, href: `/projects/${projectId}/colors` },
