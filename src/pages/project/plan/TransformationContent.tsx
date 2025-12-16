@@ -235,7 +235,7 @@ const TransformationContent = ({ projectId }: Props) => {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <PlanPageHeader
