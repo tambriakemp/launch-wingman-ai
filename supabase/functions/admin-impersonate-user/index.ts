@@ -105,7 +105,23 @@ serve(async (req) => {
       );
     }
 
-    console.log('[IMPERSONATE] Session generated successfully for:', targetUser.email);
+    // Log the impersonation event
+    const { error: logError } = await supabaseAdmin
+      .from('impersonation_logs')
+      .insert({
+        admin_user_id: callerUser.id,
+        admin_email: callerUser.email,
+        target_user_id: targetUser.id,
+        target_email: targetUser.email,
+        action: 'start',
+      });
+
+    if (logError) {
+      console.error('[IMPERSONATE] Failed to log impersonation event:', logError);
+      // Don't fail the request, just log the error
+    }
+
+    console.log('[IMPERSONATE] Session generated and logged for:', targetUser.email);
 
     // Return the session data (hashed_token can be used to verify OTP)
     return new Response(

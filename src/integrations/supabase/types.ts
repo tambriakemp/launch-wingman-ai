@@ -387,6 +387,36 @@ export type Database = {
           },
         ]
       }
+      impersonation_logs: {
+        Row: {
+          action: string
+          admin_email: string
+          admin_user_id: string
+          created_at: string
+          id: string
+          target_email: string
+          target_user_id: string
+        }
+        Insert: {
+          action?: string
+          admin_email: string
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          target_email: string
+          target_user_id: string
+        }
+        Update: {
+          action?: string
+          admin_email?: string
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          target_email?: string
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       launch_events: {
         Row: {
           content_creation_start: string | null
