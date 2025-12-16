@@ -593,6 +593,7 @@ export type Database = {
           launch_date: string | null
           name: string
           project_type: string
+          sales_copy_funnel_snapshot: string | null
           status: string
           transformation_locked: boolean | null
           transformation_statement: string | null
@@ -609,6 +610,7 @@ export type Database = {
           launch_date?: string | null
           name: string
           project_type?: string
+          sales_copy_funnel_snapshot?: string | null
           status?: string
           transformation_locked?: boolean | null
           transformation_statement?: string | null
@@ -625,6 +627,7 @@ export type Database = {
           launch_date?: string | null
           name?: string
           project_type?: string
+          sales_copy_funnel_snapshot?: string | null
           status?: string
           transformation_locked?: boolean | null
           transformation_statement?: string | null
