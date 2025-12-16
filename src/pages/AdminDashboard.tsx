@@ -6,9 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download } from 'lucide-react';
-import { format } from 'date-fns';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   AlertDialog,
@@ -20,6 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 
 interface User {
   id: string;
@@ -41,6 +45,8 @@ interface ImpersonationLog {
   created_at: string;
 }
 
+const LOGS_PER_PAGE = 10;
+
 const AdminDashboard = () => {
   const { session, signOut, startImpersonation, user: currentUser } = useAuth();
   const navigate = useNavigate();
@@ -60,17 +66,58 @@ const AdminDashboard = () => {
   const [impersonationLogs, setImpersonationLogs] = useState<ImpersonationLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logSearchQuery, setLogSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Filter logs based on search query
+  // Filter logs based on search query and date range
   const filteredLogs = useMemo(() => {
-    if (!logSearchQuery.trim()) return impersonationLogs;
-    const query = logSearchQuery.toLowerCase();
-    return impersonationLogs.filter(
-      log => 
-        log.admin_email.toLowerCase().includes(query) ||
-        log.target_email.toLowerCase().includes(query)
-    );
-  }, [impersonationLogs, logSearchQuery]);
+    let logs = impersonationLogs;
+    
+    // Text search filter
+    if (logSearchQuery.trim()) {
+      const query = logSearchQuery.toLowerCase();
+      logs = logs.filter(
+        log => 
+          log.admin_email.toLowerCase().includes(query) ||
+          log.target_email.toLowerCase().includes(query)
+      );
+    }
+    
+    // Date range filter
+    if (dateFrom || dateTo) {
+      logs = logs.filter(log => {
+        const logDate = new Date(log.created_at);
+        if (dateFrom && dateTo) {
+          return isWithinInterval(logDate, { start: startOfDay(dateFrom), end: endOfDay(dateTo) });
+        } else if (dateFrom) {
+          return logDate >= startOfDay(dateFrom);
+        } else if (dateTo) {
+          return logDate <= endOfDay(dateTo);
+        }
+        return true;
+      });
+    }
+    
+    return logs;
+  }, [impersonationLogs, logSearchQuery, dateFrom, dateTo]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredLogs.length / LOGS_PER_PAGE);
+  const paginatedLogs = useMemo(() => {
+    const startIndex = (currentPage - 1) * LOGS_PER_PAGE;
+    return filteredLogs.slice(startIndex, startIndex + LOGS_PER_PAGE);
+  }, [filteredLogs, currentPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [logSearchQuery, dateFrom, dateTo]);
+
+  const clearDateFilters = () => {
+    setDateFrom(undefined);
+    setDateTo(undefined);
+  };
 
   // Export logs to CSV
   const exportLogsToCSV = () => {
@@ -146,7 +193,7 @@ const AdminDashboard = () => {
         .from('impersonation_logs')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(500); // Fetch more logs for pagination/filtering
 
       if (error) throw error;
       setImpersonationLogs(data || []);
@@ -415,17 +462,82 @@ const AdminDashboard = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {/* Search/Filter */}
-            <div className="mb-4">
-              <div className="relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by admin or target email..."
-                  value={logSearchQuery}
-                  onChange={(e) => setLogSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
+            {/* Filters */}
+            <div className="mb-4 flex flex-wrap items-end gap-4">
+              {/* Search */}
+              <div className="flex-1 min-w-[200px] max-w-sm">
+                <Label className="text-xs text-muted-foreground mb-1 block">Search</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by admin or target email..."
+                    value={logSearchQuery}
+                    onChange={(e) => setLogSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
               </div>
+
+              {/* Date From */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">From</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[140px] justify-start text-left font-normal",
+                        !dateFrom && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateFrom ? format(dateFrom, "MMM d, yyyy") : "Select"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateFrom}
+                      onSelect={setDateFrom}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Date To */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">To</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[140px] justify-start text-left font-normal",
+                        !dateTo && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateTo ? format(dateTo, "MMM d, yyyy") : "Select"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateTo}
+                      onSelect={setDateTo}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Clear Dates */}
+              {(dateFrom || dateTo) && (
+                <Button variant="ghost" size="sm" onClick={clearDateFilters}>
+                  Clear dates
+                </Button>
+              )}
             </div>
 
             {logsLoading ? (
@@ -433,39 +545,71 @@ const AdminDashboard = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Admin</TableHead>
-                    <TableHead>Target User</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Timestamp</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredLogs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell className="font-medium">{log.admin_email}</TableCell>
-                      <TableCell>{log.target_email}</TableCell>
-                      <TableCell>
-                        <Badge variant={log.action === 'start' ? 'default' : 'secondary'}>
-                          {log.action === 'start' ? 'Started' : 'Ended'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(log.created_at), 'MMM d, yyyy h:mm a')}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredLogs.length === 0 && (
+              <>
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                        {logSearchQuery ? 'No matching logs found' : 'No impersonation activity'}
-                      </TableCell>
+                      <TableHead>Admin</TableHead>
+                      <TableHead>Target User</TableHead>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Timestamp</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell className="font-medium">{log.admin_email}</TableCell>
+                        <TableCell>{log.target_email}</TableCell>
+                        <TableCell>
+                          <Badge variant={log.action === 'start' ? 'default' : 'secondary'}>
+                            {log.action === 'start' ? 'Started' : 'Ended'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(log.created_at), 'MMM d, yyyy h:mm a')}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {paginatedLogs.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          {logSearchQuery || dateFrom || dateTo ? 'No matching logs found' : 'No impersonation activity'}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {((currentPage - 1) * LOGS_PER_PAGE) + 1} to {Math.min(currentPage * LOGS_PER_PAGE, filteredLogs.length)} of {filteredLogs.length} logs
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
