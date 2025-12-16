@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -58,6 +59,48 @@ const AdminDashboard = () => {
   }>({ open: false, user: null });
   const [impersonationLogs, setImpersonationLogs] = useState<ImpersonationLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [logSearchQuery, setLogSearchQuery] = useState('');
+
+  // Filter logs based on search query
+  const filteredLogs = useMemo(() => {
+    if (!logSearchQuery.trim()) return impersonationLogs;
+    const query = logSearchQuery.toLowerCase();
+    return impersonationLogs.filter(
+      log => 
+        log.admin_email.toLowerCase().includes(query) ||
+        log.target_email.toLowerCase().includes(query)
+    );
+  }, [impersonationLogs, logSearchQuery]);
+
+  // Export logs to CSV
+  const exportLogsToCSV = () => {
+    if (filteredLogs.length === 0) {
+      toast.error('No logs to export');
+      return;
+    }
+
+    const headers = ['Admin Email', 'Target User', 'Action', 'Timestamp'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredLogs.map(log => [
+        `"${log.admin_email}"`,
+        `"${log.target_email}"`,
+        log.action === 'start' ? 'Started' : 'Ended',
+        format(new Date(log.created_at), 'yyyy-MM-dd HH:mm:ss')
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `impersonation-logs-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Logs exported successfully');
+  };
 
   const handleImpersonateClick = (user: User) => {
     setImpersonateDialog({ open: true, user });
@@ -359,13 +402,32 @@ const AdminDashboard = () => {
                   <CardDescription>Recent admin impersonation sessions</CardDescription>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={fetchImpersonationLogs} disabled={logsLoading}>
-                <RefreshCw className={`h-4 w-4 mr-2 ${logsLoading ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={exportLogsToCSV} disabled={filteredLogs.length === 0}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export CSV
+                </Button>
+                <Button variant="outline" size="sm" onClick={fetchImpersonationLogs} disabled={logsLoading}>
+                  <RefreshCw className={`h-4 w-4 mr-2 ${logsLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
+            {/* Search/Filter */}
+            <div className="mb-4">
+              <div className="relative max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by admin or target email..."
+                  value={logSearchQuery}
+                  onChange={(e) => setLogSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+
             {logsLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -381,7 +443,7 @@ const AdminDashboard = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {impersonationLogs.map((log) => (
+                  {filteredLogs.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="font-medium">{log.admin_email}</TableCell>
                       <TableCell>{log.target_email}</TableCell>
@@ -395,10 +457,10 @@ const AdminDashboard = () => {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {impersonationLogs.length === 0 && (
+                  {filteredLogs.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                        No impersonation activity
+                        {logSearchQuery ? 'No matching logs found' : 'No impersonation activity'}
                       </TableCell>
                     </TableRow>
                   )}
