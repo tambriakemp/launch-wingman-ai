@@ -3392,214 +3392,194 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   }
 
   return (
-    <Card className="border bg-card">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <FileText className="w-5 h-5 text-primary" />
+    <div className="space-y-4">
+      {/* Funnel change detection alert */}
+      {funnelTypeChanged && (
+        <Alert className="border-amber-500/20 bg-amber-500/10">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-sm text-amber-700 dark:text-amber-400">
+              Your funnel type has changed. Update your sales copy pages to match?
+            </span>
+            <div className="flex gap-2 ml-4">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={handleDismissFunnelChange}
+                disabled={isUpdatingPages}
+              >
+                Keep Current
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={handleUpdatePages}
+                disabled={isUpdatingPages}
+              >
+                {isUpdatingPages ? "Updating..." : "Update Pages"}
+              </Button>
             </div>
-            <div>
-              <CardTitle className="text-base">Sales Page Copy</CardTitle>
-              <CardDescription className="text-sm">
-                {currentFunnelType 
-                  ? `Pages for your ${FUNNEL_CONFIGS[currentFunnelType]?.name || 'funnel'}`
-                  : 'AI-powered headlines, benefits, and persuasive copy'}
-              </CardDescription>
-            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Funnel pages list */}
+      {!currentFunnelType ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed rounded-lg">
+          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+            <FileText className="w-5 h-5 text-muted-foreground" />
           </div>
-          {/* Keep Add New for custom pages */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleAdd}
-          >
-            <Plus className="w-4 h-4" />
-            Add Custom Page
-          </Button>
+          <p className="text-sm text-muted-foreground mb-1">No funnel configured</p>
+          <p className="text-xs text-muted-foreground">
+            Select a funnel type first to see required pages
+          </p>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Funnel change detection alert */}
-        {funnelTypeChanged && (
-          <Alert className="border-amber-500/20 bg-amber-500/10">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="flex items-center justify-between">
-              <span className="text-sm text-amber-700 dark:text-amber-400">
-                Your funnel type has changed. Update your sales copy pages to match?
-              </span>
-              <div className="flex gap-2 ml-4">
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={handleDismissFunnelChange}
-                  disabled={isUpdatingPages}
-                >
-                  Keep Current
-                </Button>
-                <Button 
-                  size="sm" 
-                  onClick={handleUpdatePages}
-                  disabled={isUpdatingPages}
-                >
-                  {isUpdatingPages ? "Updating..." : "Update Pages"}
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Funnel pages grid */}
-        {!currentFunnelType ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed rounded-lg">
-            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
-              <FileText className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">No funnel configured</p>
-            <p className="text-xs text-muted-foreground">
-              Select a funnel type first to see required pages
-            </p>
+      ) : funnelPages.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed rounded-lg">
+          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+            <Sparkles className="w-5 h-5 text-muted-foreground" />
           </div>
-        ) : funnelPages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed rounded-lg">
-            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
-              <Sparkles className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">No pages require copy</p>
-            <p className="text-xs text-muted-foreground">
-              This funnel type doesn't have pages linked to sales copy
-            </p>
+          <p className="text-sm text-muted-foreground mb-1">No pages require copy</p>
+          <p className="text-xs text-muted-foreground">
+            This funnel type doesn't have pages linked to sales copy
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Category Header */}
+          <div className="p-4 flex items-center gap-3 border-b border-border">
+            <FileText className="w-5 h-5 text-blue-500" />
+            <span className="font-medium text-foreground flex-1">Pages</span>
+            <span className="text-sm text-muted-foreground">
+              {funnelPages.filter(p => !!getPageCopyStatus(p.id)).length}/{funnelPages.length}
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleAdd}
+            >
+              <Plus className="w-4 h-4" />
+              Add Custom
+            </Button>
           </div>
-        ) : (
-          <div className="border border-border rounded-xl overflow-hidden bg-card">
-            {/* Category Header */}
-            <div className="p-4 flex items-center gap-3 bg-muted/30 border-b border-border">
-              <FileText className="w-5 h-5 text-blue-500" />
-              <span className="font-medium text-foreground flex-1">Pages</span>
-              <span className="text-sm text-muted-foreground">
-                {funnelPages.filter(p => !!getPageCopyStatus(p.id)).length}/{funnelPages.length}
-              </span>
-            </div>
 
-            {/* List Items */}
-            <div>
-              {funnelPages.map((page, index) => {
-                const existingCopy = getPageCopyStatus(page.id);
-                const isComplete = !!existingCopy;
-                
-                return (
-                  <div 
-                    key={page.id}
-                    className={`flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors ${
-                      index !== funnelPages.length - 1 ? 'border-b border-border' : ''
-                    }`}
+          {/* List Items */}
+          <div>
+            {funnelPages.map((page, index) => {
+              const existingCopy = getPageCopyStatus(page.id);
+              const isComplete = !!existingCopy;
+              
+              return (
+                <div 
+                  key={page.id}
+                  className={`flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors ${
+                    index !== funnelPages.length - 1 ? 'border-b border-border' : ''
+                  }`}
+                >
+                  {/* Circle Checkbox */}
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                    isComplete 
+                      ? 'border-primary bg-primary text-primary-foreground' 
+                      : 'border-muted-foreground/40'
+                  }`}>
+                    {isComplete && <Check className="w-3 h-3" />}
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-medium text-sm ${isComplete ? 'text-muted-foreground' : ''}`}>
+                      {page.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {page.description}
+                      {page.offerTitle && (
+                        <span className="ml-1">• {page.offerTitle}</span>
+                      )}
+                    </p>
+                  </div>
+                  
+                  {/* Arrow Icon - Click to edit */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0"
+                    onClick={() => {
+                      if (existingCopy) {
+                        handleEdit(existingCopy);
+                      } else {
+                        setEditingItem(null);
+                        setSelectedDeliverable(page.id);
+                        setSections({});
+                        setSectionModes({});
+                        setSectionOrder(DEFAULT_SECTIONS.map(s => s.id));
+                        setGeneratedBenefits([]);
+                        setSavedBenefits([]);
+                        setGeneratedFaqs([]);
+                        setSavedFaqs([]);
+                        setGeneratedComparisonBullets([]);
+                        setSavedComparisonBullets([]);
+                        setGeneratedModules([]);
+                        setSavedModules([]);
+                        setGeneratedBonuses([]);
+                        setSavedBonuses([]);
+                        setIsAddMode(true);
+                      }
+                    }}
                   >
-                    {/* Circle Checkbox */}
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                      isComplete 
-                        ? 'border-primary bg-primary text-primary-foreground' 
-                        : 'border-muted-foreground/40'
-                    }`}>
-                      {isComplete && <Check className="w-3 h-3" />}
-                    </div>
-                    
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-medium text-sm ${isComplete ? 'text-muted-foreground' : ''}`}>
-                        {page.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {page.description}
-                        {page.offerTitle && (
-                          <span className="ml-1">• {page.offerTitle}</span>
-                        )}
-                      </p>
-                    </div>
-                    
-                    {/* Arrow Icon - Click to edit */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 flex-shrink-0"
-                      onClick={() => {
-                        if (existingCopy) {
-                          handleEdit(existingCopy);
-                        } else {
-                          setEditingItem(null);
-                          setSelectedDeliverable(page.id);
-                          setSections({});
-                          setSectionModes({});
-                          setSectionOrder(DEFAULT_SECTIONS.map(s => s.id));
-                          setGeneratedBenefits([]);
-                          setSavedBenefits([]);
-                          setGeneratedFaqs([]);
-                          setSavedFaqs([]);
-                          setGeneratedComparisonBullets([]);
-                          setSavedComparisonBullets([]);
-                          setGeneratedModules([]);
-                          setSavedModules([]);
-                          setGeneratedBonuses([]);
-                          setSavedBonuses([]);
-                          setIsAddMode(true);
-                        }
-                      }}
-                    >
-                      <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Existing custom pages (not in funnel config) */}
-        {items.filter(item => !funnelPages.some(p => p.id === item.deliverableId)).length > 0 && (
-          <div className="space-y-3 pt-4 border-t">
-            <Label className="text-sm font-medium text-muted-foreground">Custom Pages</Label>
-            {items
-              .filter(item => !funnelPages.some(p => p.id === item.deliverableId))
-              .map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between p-4 border rounded-lg bg-card hover:shadow-sm transition-shadow"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-sm">{item.deliverableName}</h4>
-                      <p className="text-xs text-muted-foreground">
-                        {Object.keys(item.sections).filter(k => !k.includes("Manual") && k !== "sectionOrder" && k !== "customSections").length} sections
-                      </p>
-                    </div>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(item)}>
-                        <Pencil className="w-4 h-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDelete(item)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                  </Button>
                 </div>
-              ))}
+              );
+            })}
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </>
+      )}
+
+      {/* Existing custom pages (not in funnel config) */}
+      {items.filter(item => !funnelPages.some(p => p.id === item.deliverableId)).length > 0 && (
+        <div className="space-y-3 pt-4 border-t">
+          <Label className="text-sm font-medium text-muted-foreground">Custom Pages</Label>
+          {items
+            .filter(item => !funnelPages.some(p => p.id === item.deliverableId))
+            .map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full border-2 border-primary bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0">
+                    <Check className="w-3 h-3" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-sm">{item.deliverableName}</h4>
+                    <p className="text-xs text-muted-foreground">
+                      {Object.keys(item.sections).filter(k => !k.includes("Manual") && k !== "sectionOrder" && k !== "customSections").length} sections
+                    </p>
+                  </div>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleEdit(item)}>
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleDelete(item)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
   );
 };
