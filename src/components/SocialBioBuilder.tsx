@@ -594,7 +594,7 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="border border-border rounded-xl overflow-hidden bg-card">
       {/* Category Header */}
       <div className="p-4 flex items-center gap-3 border-b border-border">
         <Users className="w-5 h-5 text-purple-500" />
