@@ -29,6 +29,11 @@ serve(async (req) => {
       offerType, 
       slotType,
       funnelType,
+      // Extended Value Equation data
+      painSymptoms,
+      mainObjections,
+      likelihoodElements,
+      timeEffortElements,
     } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -40,13 +45,60 @@ serve(async (req) => {
       ? `\n\nSlot Type Context: ${SLOT_TYPE_GUIDANCE[slotType]}`
       : "";
 
-    const systemPrompt = `You are an expert marketing strategist and offer creation consultant for coaches and digital marketers. Your job is to generate creative, compelling offer ideas based on the user's complete context.
+    // Build extended audience context
+    let extendedContext = "";
+    
+    if (painSymptoms && painSymptoms.length > 0) {
+      extendedContext += `\nPain Symptoms (specific manifestations of their pain):
+${painSymptoms.map((s: string, i: number) => `  ${i + 1}. ${s}`).join('\n')}`;
+    }
+    
+    if (mainObjections) {
+      extendedContext += `\n\nMain Objections/Doubts: ${mainObjections}`;
+    }
+    
+    if (likelihoodElements && likelihoodElements.length > 0) {
+      const objectionCounters = likelihoodElements.filter((e: {type: string; content: string}) => e.type === 'objection-counter');
+      const proofElements = likelihoodElements.filter((e: {type: string; content: string}) => e.type === 'proof');
+      const credibilityBuilders = likelihoodElements.filter((e: {type: string; content: string}) => e.type === 'credibility');
+      
+      if (objectionCounters.length > 0) {
+        extendedContext += `\n\nObjection Counters (ways to address doubts):
+${objectionCounters.map((e: {type: string; content: string}) => `  - ${e.content}`).join('\n')}`;
+      }
+      if (proofElements.length > 0) {
+        extendedContext += `\n\nProof Elements (evidence they need):
+${proofElements.map((e: {type: string; content: string}) => `  - ${e.content}`).join('\n')}`;
+      }
+      if (credibilityBuilders.length > 0) {
+        extendedContext += `\n\nCredibility Builders:
+${credibilityBuilders.map((e: {type: string; content: string}) => `  - ${e.content}`).join('\n')}`;
+      }
+    }
+    
+    if (timeEffortElements && timeEffortElements.length > 0) {
+      const quickWins = timeEffortElements.filter((e: {type: string; content: string}) => e.type === 'quick-win');
+      const frictionReducers = timeEffortElements.filter((e: {type: string; content: string}) => e.type === 'friction-reducer');
+      
+      if (quickWins.length > 0) {
+        extendedContext += `\n\nQuick Wins (what they want fast):
+${quickWins.map((e: {type: string; content: string}) => `  - ${e.content}`).join('\n')}`;
+      }
+      if (frictionReducers.length > 0) {
+        extendedContext += `\n\nFriction Reducers (what makes it easier):
+${frictionReducers.map((e: {type: string; content: string}) => `  - ${e.content}`).join('\n')}`;
+      }
+    }
+
+    const systemPrompt = `You are an expert marketing strategist and offer creation consultant for coaches and digital marketers. Your job is to generate creative, compelling offer ideas based on the user's complete audience context from the Value Equation framework.
 
 Generate exactly 3 unique offer ideas. Each idea should be:
 - Specific and actionable
-- Appealing to the target audience
+- Directly addressing the audience's pain points and symptoms
 - Aligned with the selected offer type (${offerType || "not specified"})
 - Appropriate for the slot position in the funnel
+- Incorporating quick wins and friction reducers where relevant
+- Addressing likely objections in the description
 - Include a catchy title and a 2-3 sentence description${slotGuidance}
 
 Return the response as a JSON object with this exact structure:
@@ -61,7 +113,7 @@ Return the response as a JSON object with this exact structure:
 
 Only return valid JSON, no additional text or markdown.`;
 
-    const userPrompt = `Generate 3 offer ideas with the following context:
+    const userPrompt = `Generate 3 offer ideas with the following complete audience context:
 
 Niche: ${niche || "Not specified"}
 Target Audience: ${targetAudience || "Not specified"}
@@ -70,10 +122,18 @@ Desired Outcome: ${desiredOutcome || "Not specified"}
 Offer Type: ${offerType || "Not specified"}
 Slot Type: ${slotType || "core"} (position in funnel)
 ${funnelType ? `Funnel Type: ${funnelType}` : ""}
+${extendedContext}
 
-Create 3 compelling offer ideas that align with ALL of this context. Make sure the titles are catchy and the descriptions clearly articulate the value.`;
+Create 3 compelling offer ideas that:
+1. Directly address the specific pain symptoms listed
+2. Promise the quick wins they want
+3. Counter their objections/doubts in the description
+4. Emphasize ease and reduced friction
+5. Build on the proof and credibility elements
 
-    console.log("Generating offer ideas with context:", { niche, slotType, offerType, funnelType });
+Make sure the titles are catchy and the descriptions clearly articulate the value while speaking to their specific situation.`;
+
+    console.log("Generating offer ideas with context:", { niche, slotType, offerType, funnelType, hasPainSymptoms: !!painSymptoms?.length, hasObjections: !!mainObjections });
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
