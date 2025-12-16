@@ -21,6 +21,11 @@ export interface AudienceData {
   primaryPainPoint: string;
   desiredOutcome: string;
   problemStatement: string;
+  // Extended Value Equation fields
+  painSymptoms?: string[];
+  mainObjections?: string;
+  likelihoodElements?: Array<{ type: string; content: string }>;
+  timeEffortElements?: Array<{ type: string; content: string }>;
 }
 
 interface AudienceDiscoveryProps {
@@ -64,7 +69,13 @@ export const AudienceDiscovery = ({ data, onChange }: AudienceDiscoveryProps) =>
     onChange({ ...data, [field]: value });
   };
 
-  const isFieldEmpty = (field: keyof AudienceData) => !data[field]?.trim();
+  const isFieldEmpty = (field: keyof AudienceData) => {
+    const value = data[field];
+    if (typeof value === 'string') {
+      return !value.trim();
+    }
+    return !value || (Array.isArray(value) && value.length === 0);
+  };
 
   const handleGenerateProblemStatement = async () => {
     if (!data.niche || !data.targetAudience || !data.primaryPainPoint || !data.desiredOutcome) {
