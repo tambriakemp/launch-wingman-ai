@@ -164,6 +164,7 @@ interface SalesPageCopySections {
   customSections?: CustomSection[];
   sectionOrder?: string[];
   sectionModes?: Record<string, "ai" | "manual">;
+  _customPageTitle?: string;  // Stores original custom page name for display
 }
 
 interface SalesPageCopy {
@@ -483,12 +484,19 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
         .eq("project_id", projectId);
 
       if (error) throw error;
-      return (data || []).map((item) => ({
-        id: item.id,
-        deliverableId: item.deliverable_id,
-        deliverableName: DELIVERABLE_NAMES[item.deliverable_id] || item.deliverable_id,
-        sections: (item.sections as SalesPageCopySections) || {},
-      }));
+      return (data || []).map((item) => {
+        const sections = (item.sections as SalesPageCopySections) || {};
+        // For custom pages, use stored title; otherwise use DELIVERABLE_NAMES or format the id
+        const deliverableName = sections._customPageTitle as string ||
+          DELIVERABLE_NAMES[item.deliverable_id] || 
+          item.deliverable_id.replace(/^custom_/, '').replace(/[-_]/g, ' ');
+        return {
+          id: item.id,
+          deliverableId: item.deliverable_id,
+          deliverableName,
+          sections,
+        };
+      });
     },
     enabled: !!projectId,
   });
@@ -683,7 +691,8 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     
     setEditingItem(null);
     setSelectedDeliverable(customId);
-    setSections({});
+    // Store original page name in sections for display
+    setSections({ _customPageTitle: customPageName.trim() });
     setSectionModes({});
     setSectionOrder(DEFAULT_SECTIONS.map(s => s.id));
     setGeneratedBenefits([]);
@@ -765,7 +774,9 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       return false;
     });
 
-    if (!hasContent) {
+    // Allow custom pages to be saved without content
+    const isCustomPage = selectedDeliverable.startsWith('custom_');
+    if (!hasContent && !isCustomPage) {
       toast.error("Please add content for at least one section");
       return;
     }
