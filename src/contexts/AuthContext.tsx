@@ -32,6 +32,7 @@ export const useAuth = () => {
 
 const ADMIN_SESSION_KEY = 'coach_hub_admin_session';
 const IMPERSONATION_KEY = 'coach_hub_impersonation';
+const ADMIN_INFO_KEY = 'coach_hub_admin_info';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -168,10 +169,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      // Store the current admin session before impersonating
+      // Store the current admin session and info before impersonating
       localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
         access_token: session.access_token,
         refresh_token: session.refresh_token,
+      }));
+      localStorage.setItem(ADMIN_INFO_KEY, JSON.stringify({
+        userId: user?.id,
+        email: user?.email,
       }));
 
       // Call edge function to get impersonation token
@@ -221,6 +226,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const stopImpersonation = async () => {
     try {
       const adminSessionData = localStorage.getItem(ADMIN_SESSION_KEY);
+      const adminInfoData = localStorage.getItem(ADMIN_INFO_KEY);
+      const impersonationData = localStorage.getItem(IMPERSONATION_KEY);
       
       if (!adminSessionData) {
         toast.error('No admin session to return to');
@@ -229,6 +236,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const { access_token, refresh_token } = JSON.parse(adminSessionData);
+
+      // Log the impersonation end event
+      if (adminInfoData && impersonationData) {
+        const adminInfo = JSON.parse(adminInfoData);
+        const impersonation = JSON.parse(impersonationData);
+        
+        // Call edge function to log end event (fire and forget)
+        supabase.functions.invoke('log-impersonation-end', {
+          body: {
+            adminUserId: adminInfo.userId,
+            adminEmail: adminInfo.email,
+            targetUserId: user?.id,
+            targetEmail: impersonation.email,
+          },
+        }).catch(err => console.error('Failed to log impersonation end:', err));
+      }
 
       // Sign out of impersonated user
       await supabase.auth.signOut();
@@ -243,6 +266,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Clear impersonation data
       localStorage.removeItem(ADMIN_SESSION_KEY);
+      localStorage.removeItem(ADMIN_INFO_KEY);
       localStorage.removeItem(IMPERSONATION_KEY);
       setIsImpersonating(false);
       setImpersonatedUserEmail(null);
