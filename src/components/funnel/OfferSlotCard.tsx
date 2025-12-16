@@ -277,28 +277,6 @@ export const OfferSlotCard = ({
                 </Select>
               </div>
 
-              {/* AI Generate Button */}
-              {audienceData && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerateTitleDescription}
-                  disabled={isGenerating || !data.offerType}
-                  className="w-full"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating 3 Ideas...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      {!data.offerType ? "Select Offer Type First" : "Generate Title & Description with AI"}
-                    </>
-                  )}
-                </Button>
-              )}
 
               {/* Generated Ideas Selection */}
               <AnimatePresence>
@@ -412,17 +390,41 @@ export const OfferSlotCard = ({
                   )}
                 </div>
 
-                {isRemovable && onRemove && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onRemove}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    Remove
-                  </Button>
-                )}
+                <div className="flex items-center gap-2">
+                  {/* AI Generate Button - positioned bottom right */}
+                  {audienceData && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGenerateTitleDescription}
+                      disabled={isGenerating || !data.offerType}
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Generate with AI
+                        </>
+                      )}
+                    </Button>
+                  )}
+
+                  {isRemovable && onRemove && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={onRemove}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Remove
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>

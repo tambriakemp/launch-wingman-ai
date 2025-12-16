@@ -43,6 +43,10 @@ const OffersContent = ({ projectId }: Props) => {
     primaryPainPoint: '',
     desiredOutcome: '',
     problemStatement: '',
+    painSymptoms: [],
+    mainObjections: '',
+    likelihoodElements: [],
+    timeEffortElements: [],
   });
 
   // Fetch funnel
@@ -85,6 +89,10 @@ const OffersContent = ({ projectId }: Props) => {
         primaryPainPoint: funnel.primary_pain_point || '',
         desiredOutcome: funnel.desired_outcome || '',
         problemStatement: funnel.problem_statement || '',
+        painSymptoms: (funnel.pain_symptoms as string[]) || [],
+        mainObjections: funnel.main_objections || '',
+        likelihoodElements: (funnel.likelihood_elements as Array<{ type: string; content: string }>) || [],
+        timeEffortElements: (funnel.time_effort_elements as Array<{ type: string; content: string }>) || [],
       });
     }
   }, [funnel]);
@@ -260,7 +268,7 @@ const OffersContent = ({ projectId }: Props) => {
   const hasConfiguredOffers = offers.some(o => o.isConfigured || o.title || o.isSkipped);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-3xl">
       <PlanPageHeader
         title="Offer Stack"
         description="Configure each offer in your funnel"
