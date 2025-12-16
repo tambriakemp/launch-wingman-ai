@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, FileText, MoreHorizontal, Pencil, Trash2, X, Sparkles, RefreshCw, Eye, Check, Wand2, PenLine, ArrowLeft, GripVertical, Save, AlertTriangle } from "lucide-react";
+import { Plus, FileText, MoreHorizontal, Pencil, Trash2, X, Sparkles, RefreshCw, Eye, Check, Wand2, PenLine, ArrowLeft, GripVertical, Save, AlertTriangle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -3471,81 +3471,85 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {funnelPages.map((page) => {
-              const existingCopy = getPageCopyStatus(page.id);
-              const isComplete = !!existingCopy;
-              
-              return (
-                <div
-                  key={page.id}
-                  className={`relative p-4 border rounded-lg transition-all cursor-pointer hover:shadow-md ${
-                    isComplete 
-                      ? 'border-primary/30 bg-primary/5' 
-                      : 'border-dashed border-muted-foreground/30 hover:border-primary/50'
-                  }`}
-                  onClick={() => {
-                    if (existingCopy) {
-                      handleEdit(existingCopy);
-                    } else {
-                      setEditingItem(null);
-                      setSelectedDeliverable(page.id);
-                      setSections({});
-                      setSectionModes({});
-                      setSectionOrder(DEFAULT_SECTIONS.map(s => s.id));
-                      setGeneratedBenefits([]);
-                      setSavedBenefits([]);
-                      setGeneratedFaqs([]);
-                      setSavedFaqs([]);
-                      setGeneratedComparisonBullets([]);
-                      setSavedComparisonBullets([]);
-                      setGeneratedModules([]);
-                      setSavedModules([]);
-                      setGeneratedBonuses([]);
-                      setSavedBonuses([]);
-                      setIsAddMode(true);
-                    }
-                  }}
-                >
-                  {/* Status indicator */}
-                  <div className={`absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center ${
-                    isComplete 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'bg-muted text-muted-foreground'
-                  }`}>
-                    {isComplete ? <Check className="w-3.5 h-3.5" /> : <span className="text-xs">○</span>}
-                  </div>
+          <div className="border border-border rounded-xl overflow-hidden bg-card">
+            {/* Category Header */}
+            <div className="p-4 flex items-center gap-3 bg-muted/30 border-b border-border">
+              <FileText className="w-5 h-5 text-blue-500" />
+              <span className="font-medium text-foreground flex-1">Pages</span>
+              <span className="text-sm text-muted-foreground">
+                {funnelPages.filter(p => !!getPageCopyStatus(p.id)).length}/{funnelPages.length}
+              </span>
+            </div>
 
-                  <div className="pr-8">
-                    <h4 className="font-medium text-sm mb-1">{page.title}</h4>
-                    <p className="text-xs text-muted-foreground mb-2">{page.description}</p>
+            {/* List Items */}
+            <div>
+              {funnelPages.map((page, index) => {
+                const existingCopy = getPageCopyStatus(page.id);
+                const isComplete = !!existingCopy;
+                
+                return (
+                  <div 
+                    key={page.id}
+                    className={`flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors ${
+                      index !== funnelPages.length - 1 ? 'border-b border-border' : ''
+                    }`}
+                  >
+                    {/* Circle Checkbox */}
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                      isComplete 
+                        ? 'border-primary bg-primary text-primary-foreground' 
+                        : 'border-muted-foreground/40'
+                    }`}>
+                      {isComplete && <Check className="w-3 h-3" />}
+                    </div>
                     
-                    {/* Offer badge */}
-                    {page.offerTitle && (
-                      <Badge variant="secondary" className="text-xs">
-                        {page.offerTitle}
-                      </Badge>
-                    )}
-                    
-                    {/* Offer slot type badge if no title */}
-                    {!page.offerTitle && page.offerSlotType && (
-                      <Badge variant="outline" className="text-xs capitalize">
-                        {page.offerSlotType.replace('-', ' ')}
-                      </Badge>
-                    )}
-
-                    {/* Section count if complete */}
-                    {existingCopy && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {Object.keys(existingCopy.sections).filter(k => 
-                          !k.includes("Manual") && k !== "sectionOrder" && k !== "customSections" && k !== "sectionModes"
-                        ).length} sections
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-medium text-sm ${isComplete ? 'text-muted-foreground' : ''}`}>
+                        {page.title}
                       </p>
-                    )}
+                      <p className="text-xs text-muted-foreground truncate">
+                        {page.description}
+                        {page.offerTitle && (
+                          <span className="ml-1">• {page.offerTitle}</span>
+                        )}
+                      </p>
+                    </div>
+                    
+                    {/* Arrow Icon - Click to edit */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 flex-shrink-0"
+                      onClick={() => {
+                        if (existingCopy) {
+                          handleEdit(existingCopy);
+                        } else {
+                          setEditingItem(null);
+                          setSelectedDeliverable(page.id);
+                          setSections({});
+                          setSectionModes({});
+                          setSectionOrder(DEFAULT_SECTIONS.map(s => s.id));
+                          setGeneratedBenefits([]);
+                          setSavedBenefits([]);
+                          setGeneratedFaqs([]);
+                          setSavedFaqs([]);
+                          setGeneratedComparisonBullets([]);
+                          setSavedComparisonBullets([]);
+                          setGeneratedModules([]);
+                          setSavedModules([]);
+                          setGeneratedBonuses([]);
+                          setSavedBonuses([]);
+                          setIsAddMode(true);
+                        }
+                      }}
+                    >
+                      <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                    </Button>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
 
