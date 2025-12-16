@@ -141,7 +141,7 @@ export const LikelihoodSection = ({
     <Card>
       <CardHeader className="pb-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold">
+          <div className="w-8 h-8 rounded-full bg-foreground flex items-center justify-center text-sm font-semibold text-background">
             4
           </div>
           <div className="flex-1">
