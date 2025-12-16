@@ -268,7 +268,7 @@ const OffersContent = ({ projectId }: Props) => {
   const hasConfiguredOffers = offers.some(o => o.isConfigured || o.title || o.isSkipped);
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <PlanPageHeader
         title="Offer Stack"
         description="Configure each offer in your funnel"
