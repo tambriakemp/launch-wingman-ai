@@ -231,8 +231,8 @@ export const OfferSlotCard = ({
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-          >
-            <div className="p-4 pt-0 space-y-4 border-t border-border">
+            >
+            <div className="p-4 pt-0 space-y-4 border-t border-border overflow-hidden">
               <p className="text-sm text-muted-foreground">
                 {slot.description}
                 {slot.priceRange && (
@@ -362,8 +362,8 @@ export const OfferSlotCard = ({
                 />
               </div>
 
-              <div className="flex items-center justify-between pt-2">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 gap-3">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -395,7 +395,7 @@ export const OfferSlotCard = ({
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {/* AI Generate Button - positioned bottom right */}
                   {audienceData && (
                     <Button
