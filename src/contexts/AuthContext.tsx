@@ -130,16 +130,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
     
     if (!error) {
+      // Track signup activity and notify admins
+      await trackActivity('signup', true);
       await navigateToProject();
     }
     
     return { error: error as Error | null };
   };
 
-  const trackActivity = async (eventType: string = 'login') => {
+  const trackActivity = async (eventType: string = 'login', isNewSignup: boolean = false) => {
     try {
       await supabase.functions.invoke('track-activity', {
-        body: { event_type: eventType }
+        body: { event_type: eventType, is_new_signup: isNewSignup }
       });
     } catch (error) {
       console.error('Error tracking activity:', error);

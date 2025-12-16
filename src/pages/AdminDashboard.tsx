@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, Filter, CheckSquare, Square } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, Filter, CheckSquare, Square, Activity } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
+import { UserActivityDialog } from '@/components/UserActivityDialog';
 
 interface User {
   id: string;
@@ -88,6 +89,12 @@ const AdminDashboard = () => {
     open: boolean;
     action: 'cancel' | 'grant_pro';
   }>({ open: false, action: 'grant_pro' });
+
+  // Activity dialog state
+  const [activityDialog, setActivityDialog] = useState<{
+    open: boolean;
+    user: User | null;
+  }>({ open: false, user: null });
 
   // Filter users based on search, date range, and status
   const filteredUsers = useMemo(() => {
@@ -720,6 +727,15 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
+                            {/* Activity Log button */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setActivityDialog({ open: true, user })}
+                              title="View activity log"
+                            >
+                              <Activity className="h-4 w-4" />
+                            </Button>
                             {/* View as User button - don't show for current user */}
                             {user.id !== currentUser?.id && (
                               <Button
@@ -1061,6 +1077,14 @@ const AdminDashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* User Activity Dialog */}
+      <UserActivityDialog
+        open={activityDialog.open}
+        onOpenChange={(open) => setActivityDialog({ ...activityDialog, open })}
+        user={activityDialog.user}
+        accessToken={session?.access_token || ''}
+      />
     </div>
   );
 };
