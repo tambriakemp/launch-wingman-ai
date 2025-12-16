@@ -34,6 +34,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -281,6 +291,9 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   const [currentFunnelType, setCurrentFunnelType] = useState<string | null>(null);
   const [isUpdatingPages, setIsUpdatingPages] = useState(false);
   const [selectedPageId, setSelectedPageId] = useState<string>("");
+  
+  // Delete confirmation state
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<SalesPageCopy | null>(null);
 
   // Fetch funnel data
   const { data: funnelData } = useQuery({
@@ -611,14 +624,14 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       queryClient.invalidateQueries({ queryKey: ["sales-page-copy", projectId] });
       toast.success("Sales page copy deleted");
       
-      // Sync with tasks - mark corresponding task back to todo
+      // Sync with tasks - delete the corresponding task entirely
       const funnelPage = funnelPages.find(p => p.id === item.deliverableId);
       const pageTitle = funnelPage?.title || item.deliverableId;
       
       if (pageTitle && user) {
         await supabase
           .from('tasks')
-          .update({ column_id: 'todo' })
+          .delete()
           .eq('project_id', projectId)
           .eq('title', pageTitle)
           .eq('user_id', user.id);
@@ -730,7 +743,14 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   };
 
   const handleDelete = (item: SalesPageCopy) => {
-    deleteMutation.mutate(item);
+    setDeleteConfirmItem(item);
+  };
+  
+  const confirmDelete = () => {
+    if (deleteConfirmItem) {
+      deleteMutation.mutate(deleteConfirmItem);
+      setDeleteConfirmItem(null);
+    }
   };
 
   const handleSave = () => {
@@ -3822,6 +3842,27 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmItem} onOpenChange={(open) => !open && setDeleteConfirmItem(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Page</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this page? This will remove the content and its task from the Project Board.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Yes, Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
