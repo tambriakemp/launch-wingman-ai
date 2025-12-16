@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -20,34 +19,6 @@ interface OutcomeVariation {
   label: string;
   statement: string;
 }
-
-const SectionHeader = ({
-  number,
-  title,
-  subtitle,
-  isComplete,
-}: {
-  number: number;
-  title: string;
-  subtitle: string;
-  isComplete: boolean;
-}) => (
-  <div className="flex items-center gap-3">
-    <div className="w-8 h-8 rounded-full bg-foreground flex items-center justify-center text-sm font-semibold text-background">
-      {number}
-    </div>
-    <div className="flex-1">
-      <h3 className="font-semibold text-base">{title}</h3>
-      <p className="text-sm text-muted-foreground">{subtitle}</p>
-    </div>
-    {isComplete && (
-      <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
-        <Check className="w-3 h-3 mr-1" />
-        Complete
-      </Badge>
-    )}
-  </div>
-);
 
 const getVariationIcon = (type: string) => {
   switch (type) {
@@ -75,7 +46,7 @@ const getVariationColor = (type: string) => {
   }
 };
 
-export const DreamOutcomeSection = ({
+export const DreamOutcomeSectionContent = ({
   desiredOutcome,
   niche,
   targetAudience,
@@ -118,103 +89,94 @@ export const DreamOutcomeSection = ({
     onChange(variation.statement);
   };
 
-
-  const isComplete = !!desiredOutcome;
   const hasContext = !!(niche || targetAudience);
 
   return (
-    <Card>
-      <CardHeader className="pb-4">
-        <SectionHeader
-          number={2}
-          title="DREAM OUTCOME"
-          subtitle="What does success look like for them?"
-          isComplete={isComplete}
+    <div className="space-y-4">
+      {/* Main Textarea at TOP */}
+      <div className="space-y-2">
+        <Label htmlFor="desiredOutcome" className="flex items-center gap-1">
+          Desired Outcome <span className="text-destructive">*</span>
+        </Label>
+        <Textarea
+          id="desiredOutcome"
+          placeholder="Describe the specific transformation or result your audience wants to achieve..."
+          value={desiredOutcome}
+          onChange={(e) => onChange(e.target.value)}
+          rows={3}
+          className="resize-none"
         />
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Main Textarea at TOP */}
+        <p className="text-xs text-muted-foreground">
+          Example: "Go from overwhelmed solopreneur to confident CEO running a 6-figure business with a team"
+        </p>
+      </div>
+
+      {/* Generated Variations in MIDDLE */}
+      {variations.length > 0 && (
         <div className="space-y-2">
-          <Label htmlFor="desiredOutcome" className="flex items-center gap-1">
-            Desired Outcome <span className="text-destructive">*</span>
+          <Label className="text-sm text-muted-foreground">
+            Click to use a variation:
           </Label>
-          <Textarea
-            id="desiredOutcome"
-            placeholder="Describe the specific transformation or result your audience wants to achieve..."
-            value={desiredOutcome}
-            onChange={(e) => onChange(e.target.value)}
-            rows={3}
-            className="resize-none"
-          />
-          <p className="text-xs text-muted-foreground">
-            Example: "Go from overwhelmed solopreneur to confident CEO running a 6-figure business with a team"
-          </p>
-        </div>
-
-        {/* Generated Variations in MIDDLE */}
-        {variations.length > 0 && (
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">
-              Click to use a variation:
-            </Label>
-            <div className="grid gap-2">
-              {variations.map((variation) => (
-                <button
-                  key={variation.type}
-                  onClick={() => handleSelectVariation(variation)}
-                  className={`p-3 rounded-lg border text-left transition-all hover:border-primary/50 ${
-                    selectedVariation === variation.type
-                      ? "border-primary bg-primary/5"
-                      : "border-border bg-card"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge
-                      variant="outline"
-                      className={`${getVariationColor(variation.type)} gap-1`}
-                    >
-                      {getVariationIcon(variation.type)}
-                      {variation.label}
-                    </Badge>
-                    {selectedVariation === variation.type && (
-                      <Check className="w-4 h-4 text-primary ml-auto" />
-                    )}
-                  </div>
-                  <p className="text-sm">{variation.statement}</p>
-                </button>
-              ))}
-            </div>
+          <div className="grid gap-2">
+            {variations.map((variation) => (
+              <button
+                key={variation.type}
+                onClick={() => handleSelectVariation(variation)}
+                className={`p-3 rounded-lg border text-left transition-all hover:border-primary/50 ${
+                  selectedVariation === variation.type
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-card"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge
+                    variant="outline"
+                    className={`${getVariationColor(variation.type)} gap-1`}
+                  >
+                    {getVariationIcon(variation.type)}
+                    {variation.label}
+                  </Badge>
+                  {selectedVariation === variation.type && (
+                    <Check className="w-4 h-4 text-primary ml-auto" />
+                  )}
+                </div>
+                <p className="text-sm">{variation.statement}</p>
+              </button>
+            ))}
           </div>
-        )}
-
-        {/* Buttons at BOTTOM RIGHT */}
-        <div className="flex justify-end items-center gap-2 pt-4 border-t border-border">
-          {!hasContext && (
-            <span className="text-xs text-muted-foreground mr-2">
-              Add niche or audience first
-            </span>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleGenerate}
-            disabled={isGenerating || !hasContext}
-            className="gap-2"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                Generate
-              </>
-            )}
-          </Button>
         </div>
-      </CardContent>
-    </Card>
+      )}
+
+      {/* Buttons at BOTTOM RIGHT */}
+      <div className="flex justify-end items-center gap-2 pt-4 border-t border-border">
+        {!hasContext && (
+          <span className="text-xs text-muted-foreground mr-2">
+            Add niche or audience first
+          </span>
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleGenerate}
+          disabled={isGenerating || !hasContext}
+          className="gap-2"
+        >
+          {isGenerating ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4" />
+              Generate
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
   );
 };
+
+// Keep backward compatibility alias
+export const DreamOutcomeSection = DreamOutcomeSectionContent;
