@@ -211,6 +211,8 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   const [showPreview, setShowPreview] = useState(false);
   const [showAddCustomSection, setShowAddCustomSection] = useState(false);
   const [customSectionName, setCustomSectionName] = useState("");
+  const [showAddCustomPageDialog, setShowAddCustomPageDialog] = useState(false);
+  const [customPageName, setCustomPageName] = useState("");
   
   // Section order state
   const [sectionOrder, setSectionOrder] = useState<string[]>(() => 
@@ -357,9 +359,31 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       });
   }, [currentFunnelType, funnelOffers]);
 
-  // Check if a page has sales copy created
+  // Fetch tasks for bidirectional sync
+  const { data: tasks = [] } = useQuery({
+    queryKey: ["tasks", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("id, title, column_id")
+        .eq("project_id", projectId);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!projectId,
+  });
+
+  // Check if a page has sales copy created OR task is marked done
   const getPageCopyStatus = (pageId: string) => {
     return items.find(item => item.deliverableId === pageId);
+  };
+
+  // Check if a page is complete (either has copy OR task is done)
+  const isPageComplete = (pageId: string, pageTitle: string) => {
+    const hasCopy = !!items.find(item => item.deliverableId === pageId);
+    const taskIsDone = tasks.some(t => t.title === pageTitle && t.column_id === 'done');
+    return hasCopy || taskIsDone;
   };
 
   // Handle updating pages to match new funnel
@@ -438,7 +462,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
   const getDeliverableName = (id: string) => DELIVERABLE_NAMES[id] || id;
 
-  // Create mutation
+  // Create mutation with task sync
   const createMutation = useMutation({
     mutationFn: async (data: { deliverableId: string; sections: SalesPageCopySections }) => {
       const { error } = await supabase.from("sales_page_copy").insert({
@@ -448,16 +472,29 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
         sections: { ...data.sections, sectionOrder } as unknown as Json,
       });
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["sales-page-copy", projectId] });
       toast.success("Sales page copy saved");
       setEditingSection(null);
+      
+      // Sync with tasks - mark corresponding task as done
+      const funnelPage = funnelPages.find(p => p.id === data.deliverableId);
+      if (funnelPage && user) {
+        await supabase
+          .from('tasks')
+          .update({ column_id: 'done' })
+          .eq('project_id', projectId)
+          .eq('title', funnelPage.title)
+          .eq('user_id', user.id);
+        queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+      }
     },
     onError: () => toast.error("Failed to save sales page copy"),
   });
 
-  // Update mutation
+  // Update mutation with task sync
   const updateMutation = useMutation({
     mutationFn: async (data: { id: string; deliverableId: string; sections: SalesPageCopySections }) => {
       const { error } = await supabase
@@ -468,24 +505,50 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
         })
         .eq("id", data.id);
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["sales-page-copy", projectId] });
       toast.success("Sales page copy updated");
       setEditingSection(null);
+      
+      // Sync with tasks - mark corresponding task as done
+      const funnelPage = funnelPages.find(p => p.id === data.deliverableId);
+      if (funnelPage && user) {
+        await supabase
+          .from('tasks')
+          .update({ column_id: 'done' })
+          .eq('project_id', projectId)
+          .eq('title', funnelPage.title)
+          .eq('user_id', user.id);
+        queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+      }
     },
     onError: () => toast.error("Failed to update sales page copy"),
   });
 
-  // Delete mutation
+  // Delete mutation with task sync
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("sales_page_copy").delete().eq("id", id);
+    mutationFn: async (item: SalesPageCopy) => {
+      const { error } = await supabase.from("sales_page_copy").delete().eq("id", item.id);
       if (error) throw error;
+      return item;
     },
-    onSuccess: () => {
+    onSuccess: async (item) => {
       queryClient.invalidateQueries({ queryKey: ["sales-page-copy", projectId] });
       toast.success("Sales page copy deleted");
+      
+      // Sync with tasks - mark corresponding task back to todo
+      const funnelPage = funnelPages.find(p => p.id === item.deliverableId);
+      if (funnelPage && user) {
+        await supabase
+          .from('tasks')
+          .update({ column_id: 'todo' })
+          .eq('project_id', projectId)
+          .eq('title', funnelPage.title)
+          .eq('user_id', user.id);
+        queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+      }
     },
     onError: () => toast.error("Failed to delete sales page copy"),
   });
@@ -517,8 +580,21 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   };
 
   const handleAdd = () => {
+    // Open the custom page dialog instead of immediately entering edit mode
+    setCustomPageName("");
+    setShowAddCustomPageDialog(true);
+  };
+
+  const handleCreateCustomPage = () => {
+    if (!customPageName.trim()) {
+      toast.error("Please enter a page name");
+      return;
+    }
+    
+    const customId = `custom_${customPageName.toLowerCase().replace(/\s+/g, '-')}`;
+    
     setEditingItem(null);
-    setSelectedDeliverable("");
+    setSelectedDeliverable(customId);
     setSections({});
     setSectionModes({});
     setSectionOrder(DEFAULT_SECTIONS.map(s => s.id));
@@ -532,6 +608,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     setSavedModules([]);
     setGeneratedBonuses([]);
     setSavedBonuses([]);
+    setShowAddCustomPageDialog(false);
     setIsAddMode(true);
   };
 
@@ -578,7 +655,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
   };
 
   const handleDelete = (item: SalesPageCopy) => {
-    deleteMutation.mutate(item.id);
+    deleteMutation.mutate(item);
   };
 
   const handleSave = () => {
@@ -3297,26 +3374,18 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Deliverable Selection */}
+            {/* Page Title Display (replaces deliverable selector) */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Select Deliverable</Label>
-              <Select value={selectedDeliverable} onValueChange={setSelectedDeliverable}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a deliverable..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableDeliverables.map((d) => (
-                    <SelectItem key={d} value={d}>
-                      {getDeliverableName(d)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {availableDeliverables.length === 0 && (
-                <p className="text-xs text-muted-foreground">
-                  All deliverables have sales page copy. Edit existing entries or add more deliverables in the Offer Builder.
-                </p>
-              )}
+              <Label className="text-sm font-medium">Page</Label>
+              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                <FileText className="w-4 h-4 text-muted-foreground" />
+                <span className="font-medium">
+                  {getDeliverableName(selectedDeliverable) || selectedDeliverable.replace('custom_', '').replace(/-/g, ' ')}
+                </span>
+                {selectedDeliverable.startsWith('custom_') && (
+                  <Badge variant="secondary" className="text-xs">Custom</Badge>
+                )}
+              </div>
             </div>
 
             {/* Sales Page Sections */}
@@ -3450,7 +3519,13 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             <FileText className="w-5 h-5 text-blue-500" />
             <span className="font-medium text-foreground flex-1">Pages</span>
             <span className="text-sm text-muted-foreground">
-              {funnelPages.filter(p => !!getPageCopyStatus(p.id)).length}/{funnelPages.length}
+              {(() => {
+                const customPages = items.filter(item => !funnelPages.some(p => p.id === item.deliverableId));
+                const completedFunnelPages = funnelPages.filter(p => isPageComplete(p.id, p.title)).length;
+                const total = funnelPages.length + customPages.length;
+                const completed = completedFunnelPages + customPages.length;
+                return `${completed}/${total}`;
+              })()}
             </span>
             <Button
               size="sm"
@@ -3462,17 +3537,20 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
             </Button>
           </div>
 
-          {/* List Items */}
+          {/* List Items - Combined funnel pages and custom pages */}
           <div>
+            {/* Funnel Pages */}
             {funnelPages.map((page, index) => {
               const existingCopy = getPageCopyStatus(page.id);
-              const isComplete = !!existingCopy;
+              const isComplete = isPageComplete(page.id, page.title);
+              const customPages = items.filter(item => !funnelPages.some(p => p.id === item.deliverableId));
+              const isLastItem = index === funnelPages.length - 1 && customPages.length === 0;
               
               return (
                 <div 
                   key={page.id}
                   className={`flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors ${
-                    index !== funnelPages.length - 1 ? 'border-b border-border' : ''
+                    !isLastItem ? 'border-b border-border' : ''
                   }`}
                 >
                   {/* Circle Checkbox */}
@@ -3530,56 +3608,95 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                 </div>
               );
             })}
+            
+            {/* Custom Pages - Merged into same list */}
+            {items
+              .filter(item => !funnelPages.some(p => p.id === item.deliverableId))
+              .map((item, index, arr) => {
+                const isLastItem = index === arr.length - 1;
+                
+                return (
+                  <div
+                    key={item.id}
+                    className={`flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors ${
+                      !isLastItem ? 'border-b border-border' : ''
+                    }`}
+                  >
+                    {/* Circle Checkbox - Custom pages are always complete */}
+                    <div className="w-5 h-5 rounded-full border-2 border-primary bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0">
+                      <Check className="w-3 h-3" />
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm text-muted-foreground">
+                          {item.deliverableName}
+                        </p>
+                        <Badge variant="secondary" className="text-xs">Custom</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {Object.keys(item.sections).filter(k => !k.includes("Manual") && k !== "sectionOrder" && k !== "customSections" && k !== "sectionModes").length} sections
+                      </p>
+                    </div>
+                    
+                    {/* Actions Menu */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(item)}>
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleDelete(item)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                );
+              })}
           </div>
         </div>
       )}
 
-      {/* Existing custom pages (not in funnel config) */}
-      {items.filter(item => !funnelPages.some(p => p.id === item.deliverableId)).length > 0 && (
-        <div className="space-y-3 pt-4 border-t">
-          <Label className="text-sm font-medium text-muted-foreground">Custom Pages</Label>
-          {items
-            .filter(item => !funnelPages.some(p => p.id === item.deliverableId))
-            .map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full border-2 border-primary bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0">
-                    <Check className="w-3 h-3" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-sm">{item.deliverableName}</h4>
-                    <p className="text-xs text-muted-foreground">
-                      {Object.keys(item.sections).filter(k => !k.includes("Manual") && k !== "sectionOrder" && k !== "customSections").length} sections
-                    </p>
-                  </div>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEdit(item)}>
-                      <Pencil className="w-4 h-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleDelete(item)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            ))}
-        </div>
-      )}
+      {/* Add Custom Page Dialog */}
+      <Dialog open={showAddCustomPageDialog} onOpenChange={setShowAddCustomPageDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Custom Page</DialogTitle>
+            <DialogDescription>
+              Enter a name for your custom sales page.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Page Name</Label>
+              <Input
+                value={customPageName}
+                onChange={(e) => setCustomPageName(e.target.value)}
+                placeholder="e.g., Bonus Page, Downsell Page"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddCustomPageDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateCustomPage}>
+              Create Page
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
