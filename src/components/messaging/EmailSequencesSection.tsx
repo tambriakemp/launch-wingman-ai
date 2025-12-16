@@ -195,7 +195,7 @@ export const EmailSequencesSection = ({ projectId }: EmailSequencesSectionProps)
   }
 
   return (
-    <div className="space-y-4">
+    <div className="border border-border rounded-xl overflow-hidden bg-card">
       {/* Category Header */}
       <div className="p-4 flex items-center gap-3 border-b border-border">
         <Mail className="w-5 h-5 text-blue-500" />

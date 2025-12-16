@@ -3444,7 +3444,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           </p>
         </div>
       ) : (
-        <>
+        <div className="border border-border rounded-xl overflow-hidden bg-card">
           {/* Category Header */}
           <div className="p-4 flex items-center gap-3 border-b border-border">
             <FileText className="w-5 h-5 text-blue-500" />
@@ -3531,7 +3531,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
               );
             })}
           </div>
-        </>
+        </div>
       )}
 
       {/* Existing custom pages (not in funnel config) */}

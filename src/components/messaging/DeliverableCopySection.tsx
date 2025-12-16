@@ -195,7 +195,7 @@ export const DeliverableCopySection = ({ projectId }: DeliverableCopySectionProp
   }
 
   return (
-    <div className="space-y-4">
+    <div className="border border-border rounded-xl overflow-hidden bg-card">
       {/* Category Header */}
       <div className="p-4 flex items-center gap-3 border-b border-border">
         <Package className="w-5 h-5 text-green-500" />
