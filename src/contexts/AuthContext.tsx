@@ -136,6 +136,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error as Error | null };
   };
 
+  const trackActivity = async (eventType: string = 'login') => {
+    try {
+      await supabase.functions.invoke('track-activity', {
+        body: { event_type: eventType }
+      });
+    } catch (error) {
+      console.error('Error tracking activity:', error);
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -143,6 +153,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
     
     if (!error) {
+      // Track login activity
+      await trackActivity('login');
       await navigateToProject();
     }
     

@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.log-impersonation-end]
 verify_jwt = false
+
+[functions.track-activity]
+verify_jwt = false

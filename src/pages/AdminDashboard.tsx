@@ -11,8 +11,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
-import { format, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, Filter, CheckSquare, Square } from 'lucide-react';
+import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   AlertDialog,
@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface User {
   id: string;
@@ -36,6 +37,7 @@ interface User {
   subscription_end: string | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
+  last_active: string | null;
 }
 
 interface ImpersonationLog {
@@ -78,6 +80,14 @@ const AdminDashboard = () => {
   const [userDateTo, setUserDateTo] = useState<Date | undefined>(undefined);
   const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'free' | 'pro'>('all');
   const [userCurrentPage, setUserCurrentPage] = useState(1);
+
+  // Bulk selection state
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [bulkConfirmDialog, setBulkConfirmDialog] = useState<{
+    open: boolean;
+    action: 'cancel' | 'grant_pro';
+  }>({ open: false, action: 'grant_pro' });
 
   // Filter users based on search, date range, and status
   const filteredUsers = useMemo(() => {
@@ -141,7 +151,7 @@ const AdminDashboard = () => {
       return;
     }
 
-    const headers = ['Name', 'Email', 'Joined', 'Status', 'Subscription End'];
+    const headers = ['Name', 'Email', 'Joined', 'Status', 'Subscription End', 'Last Active'];
     const csvContent = [
       headers.join(','),
       ...filteredUsers.map(user => [
@@ -149,7 +159,8 @@ const AdminDashboard = () => {
         `"${user.email}"`,
         format(new Date(user.created_at), 'yyyy-MM-dd'),
         user.subscription_status === 'pro' ? 'Pro' : 'Free',
-        user.subscription_end ? format(new Date(user.subscription_end), 'yyyy-MM-dd') : '—'
+        user.subscription_end ? format(new Date(user.subscription_end), 'yyyy-MM-dd') : '—',
+        user.last_active ? format(new Date(user.last_active), 'yyyy-MM-dd HH:mm') : 'Never'
       ].join(','))
     ].join('\n');
 
@@ -163,6 +174,93 @@ const AdminDashboard = () => {
     link.click();
     document.body.removeChild(link);
     toast.success('Users exported successfully');
+  };
+
+  // Bulk selection functions
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUsers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedUsers.size === paginatedUsers.length) {
+      setSelectedUsers(new Set());
+    } else {
+      setSelectedUsers(new Set(paginatedUsers.map(u => u.id)));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedUsers(new Set());
+  };
+
+  // Get selected users that can have the action applied
+  const getEligibleUsers = (action: 'cancel' | 'grant_pro') => {
+    return paginatedUsers.filter(user => {
+      if (!selectedUsers.has(user.id)) return false;
+      if (action === 'cancel') return user.subscription_status === 'pro';
+      if (action === 'grant_pro') return user.subscription_status === 'free';
+      return false;
+    });
+  };
+
+  const executeBulkAction = async () => {
+    const { action } = bulkConfirmDialog;
+    if (!session?.access_token) return;
+
+    const eligibleUsers = getEligibleUsers(action);
+    if (eligibleUsers.length === 0) {
+      toast.error(`No eligible users for this action`);
+      setBulkConfirmDialog({ open: false, action: 'grant_pro' });
+      return;
+    }
+
+    setBulkActionLoading(true);
+    setBulkConfirmDialog({ open: false, action: 'grant_pro' });
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const user of eligibleUsers) {
+      try {
+        const { error } = await supabase.functions.invoke('admin-manage-subscription', {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: {
+            action,
+            user_email: user.email,
+            stripe_subscription_id: user.stripe_subscription_id,
+          },
+        });
+
+        if (error) {
+          failCount++;
+        } else {
+          successCount++;
+        }
+      } catch {
+        failCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`Successfully updated ${successCount} user(s)`);
+    }
+    if (failCount > 0) {
+      toast.error(`Failed to update ${failCount} user(s)`);
+    }
+
+    clearSelection();
+    await fetchUsers();
+    setBulkActionLoading(false);
   };
 
   // Filter logs based on search query and date range
@@ -523,6 +621,39 @@ const AdminDashboard = () => {
               )}
             </div>
 
+            {/* Bulk Actions Bar */}
+            {selectedUsers.size > 0 && (
+              <div className="mb-4 p-3 bg-muted/50 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckSquare className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">{selectedUsers.size} user(s) selected</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBulkConfirmDialog({ open: true, action: 'grant_pro' })}
+                    disabled={bulkActionLoading || getEligibleUsers('grant_pro').length === 0}
+                  >
+                    <Crown className="h-4 w-4 mr-1" />
+                    Grant Pro ({getEligibleUsers('grant_pro').length})
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setBulkConfirmDialog({ open: true, action: 'cancel' })}
+                    disabled={bulkActionLoading || getEligibleUsers('cancel').length === 0}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Cancel Sub ({getEligibleUsers('cancel').length})
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={clearSelection}>
+                    Clear
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -532,17 +663,30 @@ const AdminDashboard = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={paginatedUsers.length > 0 && selectedUsers.size === paginatedUsers.length}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
                       <TableHead>User</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Joined</TableHead>
+                      <TableHead>Last Active</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Subscription End</TableHead>
+                      <TableHead>Sub End</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedUsers.map((user) => (
-                      <TableRow key={user.id}>
+                      <TableRow key={user.id} className={selectedUsers.has(user.id) ? 'bg-muted/30' : ''}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedUsers.has(user.id)}
+                            onCheckedChange={() => toggleUserSelection(user.id)}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">
                           {user.first_name || user.last_name
                             ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
@@ -551,6 +695,15 @@ const AdminDashboard = () => {
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
                           {format(new Date(user.created_at), 'MMM d, yyyy')}
+                        </TableCell>
+                        <TableCell>
+                          {user.last_active ? (
+                            <span className="text-muted-foreground text-sm">
+                              {formatDistanceToNow(new Date(user.last_active), { addSuffix: true })}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground/50 text-sm">Never</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge
@@ -562,7 +715,7 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell>
                           {user.subscription_end
-                            ? format(new Date(user.subscription_end), 'MMM d, yyyy')
+                            ? format(new Date(user.subscription_end), 'MMM d')
                             : '—'}
                         </TableCell>
                         <TableCell className="text-right">
@@ -622,7 +775,7 @@ const AdminDashboard = () => {
                     ))}
                     {paginatedUsers.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                           {userSearchQuery || userDateFrom || userDateTo || userStatusFilter !== 'all' 
                             ? 'No matching users found' 
                             : 'No users found'}
@@ -879,6 +1032,31 @@ const AdminDashboard = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={executeImpersonation}>
               Yes, View as User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Action Confirmation Dialog */}
+      <AlertDialog open={bulkConfirmDialog.open} onOpenChange={(open) => !open && setBulkConfirmDialog({ ...bulkConfirmDialog, open: false })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {bulkConfirmDialog.action === 'cancel' ? 'Bulk Cancel Subscriptions' : 'Bulk Grant Pro Access'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkConfirmDialog.action === 'cancel'
+                ? `Are you sure you want to cancel subscriptions for ${getEligibleUsers('cancel').length} user(s)? This action cannot be undone.`
+                : `Are you sure you want to grant free Pro access to ${getEligibleUsers('grant_pro').length} user(s)?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={executeBulkAction} disabled={bulkActionLoading}>
+              {bulkActionLoading ? (
+                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              {bulkConfirmDialog.action === 'cancel' ? 'Yes, Cancel All' : 'Yes, Grant Pro'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
