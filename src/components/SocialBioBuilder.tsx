@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Users, MoreHorizontal, Pencil, Trash2, Instagram, Facebook, Twitter, Linkedin, AtSign, X, Lock, Sparkles, Check, ArrowRight } from "lucide-react";
+import { Plus, Users, MoreHorizontal, Pencil, Trash2, Instagram, Facebook, Twitter, Linkedin, AtSign, X, Lock, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -646,17 +646,7 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
                   </p>
                 </div>
                 
-                {/* Arrow Icon - Click to edit */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 flex-shrink-0"
-                  onClick={() => handleEdit(bio)}
-                >
-                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                </Button>
-                
-                {/* More options */}
+                {/* More options dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">

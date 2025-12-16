@@ -382,11 +382,10 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     return items.find(item => item.deliverableId === pageId);
   };
 
-  // Check if a page is complete (either has copy OR task is done)
+  // Check if a page is complete (based ONLY on task status for bidirectional sync)
   const isPageComplete = (pageId: string, pageTitle: string) => {
-    const hasCopy = !!items.find(item => item.deliverableId === pageId);
     const taskIsDone = tasks.some(t => t.title === pageTitle && t.column_id === 'done');
-    return hasCopy || taskIsDone;
+    return taskIsDone;
   };
 
   // Toggle page completion status
@@ -396,23 +395,25 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     const currentlyComplete = isPageComplete(pageId, pageTitle);
     const newColumnId = currentlyComplete ? 'todo' : 'done';
     
-    // For funnel pages, update the task
-    if (!isCustom) {
+    const existingTask = tasks.find(t => t.title === pageTitle);
+    
+    if (existingTask) {
+      // Update existing task
       await supabase
         .from('tasks')
         .update({ column_id: newColumnId })
-        .eq('project_id', projectId)
-        .eq('title', pageTitle)
-        .eq('user_id', user.id);
+        .eq('id', existingTask.id);
     } else {
-      // For custom pages without tasks, create a task or toggle based on existing copy
-      const existingTask = tasks.find(t => t.title === pageTitle);
-      if (existingTask) {
-        await supabase
-          .from('tasks')
-          .update({ column_id: newColumnId })
-          .eq('id', existingTask.id);
-      }
+      // Create new task for this page (typically for custom pages)
+      await supabase
+        .from('tasks')
+        .insert({
+          project_id: projectId,
+          user_id: user.id,
+          title: pageTitle,
+          column_id: newColumnId,
+          labels: ['Pages'],
+        });
     }
     
     queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
@@ -525,13 +526,28 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       
       // Sync with tasks - mark corresponding task as done
       const funnelPage = funnelPages.find(p => p.id === data.deliverableId);
-      if (funnelPage && user) {
-        await supabase
-          .from('tasks')
-          .update({ column_id: 'done' })
-          .eq('project_id', projectId)
-          .eq('title', funnelPage.title)
-          .eq('user_id', user.id);
+      // For custom pages, use deliverableId as-is to match how deliverableName is derived in items query
+      const pageTitle = funnelPage?.title || data.deliverableId;
+      
+      if (pageTitle && user) {
+        const existingTask = tasks.find(t => t.title === pageTitle);
+        if (existingTask) {
+          await supabase
+            .from('tasks')
+            .update({ column_id: 'done' })
+            .eq('id', existingTask.id);
+        } else {
+          // Create task for custom pages
+          await supabase
+            .from('tasks')
+            .insert({
+              project_id: projectId,
+              user_id: user.id,
+              title: pageTitle,
+              column_id: 'done',
+              labels: ['Pages'],
+            });
+        }
         queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
       }
     },
@@ -558,13 +574,26 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       
       // Sync with tasks - mark corresponding task as done
       const funnelPage = funnelPages.find(p => p.id === data.deliverableId);
-      if (funnelPage && user) {
-        await supabase
-          .from('tasks')
-          .update({ column_id: 'done' })
-          .eq('project_id', projectId)
-          .eq('title', funnelPage.title)
-          .eq('user_id', user.id);
+      const pageTitle = funnelPage?.title || data.deliverableId;
+      
+      if (pageTitle && user) {
+        const existingTask = tasks.find(t => t.title === pageTitle);
+        if (existingTask) {
+          await supabase
+            .from('tasks')
+            .update({ column_id: 'done' })
+            .eq('id', existingTask.id);
+        } else {
+          await supabase
+            .from('tasks')
+            .insert({
+              project_id: projectId,
+              user_id: user.id,
+              title: pageTitle,
+              column_id: 'done',
+              labels: ['Pages'],
+            });
+        }
         queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
       }
     },
@@ -584,12 +613,14 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       
       // Sync with tasks - mark corresponding task back to todo
       const funnelPage = funnelPages.find(p => p.id === item.deliverableId);
-      if (funnelPage && user) {
+      const pageTitle = funnelPage?.title || item.deliverableId;
+      
+      if (pageTitle && user) {
         await supabase
           .from('tasks')
           .update({ column_id: 'todo' })
           .eq('project_id', projectId)
-          .eq('title', funnelPage.title)
+          .eq('title', pageTitle)
           .eq('user_id', user.id);
         queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
       }
