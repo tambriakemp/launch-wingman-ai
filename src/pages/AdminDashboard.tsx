@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -32,6 +32,14 @@ interface User {
   stripe_subscription_id: string | null;
 }
 
+interface ImpersonationLog {
+  id: string;
+  admin_email: string;
+  target_email: string;
+  action: string;
+  created_at: string;
+}
+
 const AdminDashboard = () => {
   const { session, signOut, startImpersonation, user: currentUser } = useAuth();
   const navigate = useNavigate();
@@ -48,6 +56,8 @@ const AdminDashboard = () => {
     open: boolean;
     user: User | null;
   }>({ open: false, user: null });
+  const [impersonationLogs, setImpersonationLogs] = useState<ImpersonationLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
 
   const handleImpersonateClick = (user: User) => {
     setImpersonateDialog({ open: true, user });
@@ -86,8 +96,27 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchImpersonationLogs = async () => {
+    setLogsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('impersonation_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      setImpersonationLogs(data || []);
+    } catch (error: any) {
+      console.error('Failed to fetch impersonation logs:', error);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchImpersonationLogs();
   }, [session?.access_token]);
 
   const handleAction = async (action: 'cancel' | 'grant_pro', user: User) => {
@@ -310,6 +339,66 @@ const AdminDashboard = () => {
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         No users found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Impersonation Logs */}
+        <Card className="mt-8">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <History className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <CardTitle>Impersonation Activity</CardTitle>
+                  <CardDescription>Recent admin impersonation sessions</CardDescription>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={fetchImpersonationLogs} disabled={logsLoading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${logsLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {logsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Admin</TableHead>
+                    <TableHead>Target User</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Timestamp</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {impersonationLogs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="font-medium">{log.admin_email}</TableCell>
+                      <TableCell>{log.target_email}</TableCell>
+                      <TableCell>
+                        <Badge variant={log.action === 'start' ? 'default' : 'secondary'}>
+                          {log.action === 'start' ? 'Started' : 'Ended'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {format(new Date(log.created_at), 'MMM d, yyyy h:mm a')}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {impersonationLogs.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        No impersonation activity
                       </TableCell>
                     </TableRow>
                   )}
