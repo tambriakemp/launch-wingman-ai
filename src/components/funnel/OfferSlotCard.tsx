@@ -112,6 +112,11 @@ export const OfferSlotCard = ({
             offerType: data.offerType,
             slotType: slot.type,
             funnelType: funnelType,
+            // Extended Value Equation data
+            painSymptoms: audienceData.painSymptoms || [],
+            mainObjections: audienceData.mainObjections || "",
+            likelihoodElements: audienceData.likelihoodElements || [],
+            timeEffortElements: audienceData.timeEffortElements || [],
           },
         }
       );
