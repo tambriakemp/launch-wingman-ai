@@ -287,7 +287,7 @@ const Pricing = () => {
             <p className="text-xl text-primary-foreground/70 mb-8">
               Start free and upgrade when you're ready.
             </p>
-            <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button asChild size="lg" variant="accent">
               <Link to="/auth">Get Started Free</Link>
             </Button>
           </motion.div>

@@ -140,9 +140,11 @@ const Landing = () => {
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
                 Stop Buying Courses.
                 <br />
-                Start{" "}
-                <span className="bg-accent text-accent-foreground px-4 py-1 rounded-lg">
-                  Launching.
+                <span className="inline-flex items-baseline gap-3 md:gap-4">
+                  Start
+                  <span className="bg-accent text-accent-foreground px-4 py-1 rounded-lg">
+                    Launching.
+                  </span>
                 </span>
               </h1>
               <p className="text-xl md:text-2xl text-primary-foreground/70 mb-8 max-w-3xl mx-auto">
@@ -170,7 +172,8 @@ const Landing = () => {
                 <Button
                   asChild
                   size="lg"
-                  className="bg-accent text-accent-foreground hover:bg-accent/90 text-lg px-8"
+                  variant="accent"
+                  className="text-lg px-8"
                 >
                   <Link to="/auth">Start Free Today</Link>
                 </Button>
@@ -180,7 +183,7 @@ const Landing = () => {
                   variant="outline"
                   className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 text-lg"
                 >
-                  <Link to="/features/plan" className="flex items-center gap-2">
+                  <Link to="/how-it-works" className="flex items-center gap-2">
                     See How It Works <ArrowRight className="w-5 h-5" />
                   </Link>
                 </Button>

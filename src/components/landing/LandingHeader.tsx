@@ -57,6 +57,10 @@ export const LandingHeader = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-8">
+            <Link to="/how-it-works" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium">
+              How It Works
+            </Link>
+            
             {/* Features Dropdown */}
             <div 
               className="relative"
@@ -107,7 +111,7 @@ export const LandingHeader = () => {
           {/* Desktop CTA */}
           <div className="hidden lg:flex items-center gap-4">
             {user ? (
-              <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Button asChild variant="accent">
                 <Link to="/app">Go to App</Link>
               </Button>
             ) : (
@@ -115,7 +119,7 @@ export const LandingHeader = () => {
                 <Button variant="ghost" asChild className="text-primary-foreground hover:bg-primary-foreground/10">
                   <Link to="/auth">Sign In</Link>
                 </Button>
-                <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
+                <Button asChild variant="accent">
                   <Link to="/auth">Get Started Free</Link>
                 </Button>
               </>
@@ -183,9 +187,17 @@ export const LandingHeader = () => {
                 Pricing
               </Link>
 
+              <Link
+                to="/how-it-works"
+                className="block py-2 text-primary-foreground font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                How It Works
+              </Link>
+
               <div className="pt-4 border-t border-border/10 space-y-2">
                 {user ? (
-                  <Button asChild className="w-full bg-accent text-accent-foreground">
+                  <Button asChild variant="accent" className="w-full">
                     <Link to="/app">Go to App</Link>
                   </Button>
                 ) : (
@@ -193,7 +205,7 @@ export const LandingHeader = () => {
                     <Button variant="outline" asChild className="w-full border-primary-foreground/20 text-primary-foreground">
                       <Link to="/auth">Sign In</Link>
                     </Button>
-                    <Button asChild className="w-full bg-accent text-accent-foreground">
+                    <Button asChild variant="accent" className="w-full">
                       <Link to="/auth">Get Started Free</Link>
                     </Button>
                   </>

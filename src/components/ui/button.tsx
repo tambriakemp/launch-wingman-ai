@@ -18,6 +18,7 @@ const buttonVariants = cva(
         success: "gradient-secondary text-secondary-foreground shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
         glass: "glass text-foreground hover:bg-card/90 border border-border/50",
         hero: "gradient-primary text-primary-foreground shadow-lg hover:shadow-glow hover:scale-[1.03] active:scale-[0.98]",
+        accent: "gradient-accent text-accent-foreground shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
       },
       size: {
         default: "h-10 px-5 py-2",
