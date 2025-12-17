@@ -287,7 +287,10 @@ const Settings = () => {
       
       if (error) throw error;
       if (data?.url) {
-        window.location.href = data.url;
+        // Open in new tab since OAuth can't run in iframes
+        window.open(data.url, '_blank');
+        toast.info("Pinterest login opened in a new tab. Complete the authorization there.");
+        setIsConnectingPinterest(false);
       }
     } catch (error) {
       console.error('Pinterest connect error:', error);
