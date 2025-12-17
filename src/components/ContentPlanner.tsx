@@ -194,7 +194,7 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [bulkActionOpen, setBulkActionOpen] = useState(false);
   const [isPostingToPinterest, setIsPostingToPinterest] = useState(false);
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     phase: "week1",
     day_number: 1,
     time_of_day: "morning",
@@ -208,6 +208,7 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
     media_type: null as string | null,
     scheduled_platforms: [] as string[],
     pinterest_board_id: null as string | null,
+    link_url: "",
   });
   const [draggedItem, setDraggedItem] = useState<ContentItem | null>(null);
 
@@ -393,6 +394,7 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
       media_type: null,
       scheduled_platforms: [],
       pinterest_board_id: null,
+      link_url: "",
     });
   };
 
@@ -420,6 +422,7 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
       media_type: item.media_type,
       scheduled_platforms: item.scheduled_platforms || [],
       pinterest_board_id: null,
+      link_url: "",
     });
     setDialogOpen(true);
   };
@@ -479,6 +482,7 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
           title: formData.title,
           description: formData.content || formData.description,
           media_url: formData.media_url,
+          link: formData.link_url || undefined,
         },
       });
 
@@ -1121,11 +1125,19 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
             </div>
 
             <div className="space-y-2">
-              <Label>Title</Label>
+              <div className="flex items-center justify-between">
+                <Label>Title</Label>
+                {formData.scheduled_platforms.includes('pinterest') && (
+                  <span className={`text-xs ${formData.title.length > 100 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {formData.title.length}/100 (Pinterest limit)
+                  </span>
+                )}
+              </div>
               <Input
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="Enter content title"
+                maxLength={formData.scheduled_platforms.includes('pinterest') ? 100 : undefined}
               />
             </div>
 
@@ -1139,14 +1151,39 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
             </div>
 
             <div className="space-y-2">
-              <Label>Content / Copy</Label>
+              <div className="flex items-center justify-between">
+                <Label>Content / Copy</Label>
+                {formData.scheduled_platforms.includes('pinterest') && (
+                  <span className={`text-xs ${formData.content.length > 500 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {formData.content.length}/500 (Pinterest limit)
+                  </span>
+                )}
+              </div>
               <Textarea
                 value={formData.content}
                 onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                placeholder="Write your content here..."
+                placeholder={formData.scheduled_platforms.includes('pinterest') 
+                  ? "Write your pin description here (used as caption)..." 
+                  : "Write your content here..."}
                 rows={6}
               />
             </div>
+
+            {/* Destination Link for Pinterest */}
+            {formData.scheduled_platforms.includes('pinterest') && (
+              <div className="space-y-2">
+                <Label>Destination Link (optional)</Label>
+                <Input
+                  value={formData.link_url}
+                  onChange={(e) => setFormData(prev => ({ ...prev, link_url: e.target.value }))}
+                  placeholder="https://example.com/your-page"
+                  type="url"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Where users will be directed when they click your pin
+                </p>
+              </div>
+            )}
 
             <Separator />
 
@@ -1197,6 +1234,7 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
                     content={formData.content}
                     mediaUrl={formData.media_url}
                     mediaType={formData.media_type}
+                    linkUrl={formData.link_url}
                   />
                 </div>
               </div>
