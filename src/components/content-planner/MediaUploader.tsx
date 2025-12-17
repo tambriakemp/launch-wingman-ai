@@ -125,37 +125,51 @@ export function MediaUploader({
 
   if (mediaUrl) {
     return (
-      <div className="relative rounded-lg overflow-hidden border border-border bg-muted">
-        {mediaType === "video" ? (
-          <video
-            src={mediaUrl}
-            controls
-            className="w-full max-h-64 object-contain bg-black"
-          />
-        ) : (
-          <img
-            src={mediaUrl}
-            alt="Uploaded media"
-            className="w-full max-h-64 object-contain"
-          />
-        )}
+      <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/50">
+        {/* Compact thumbnail */}
+        <div className="relative w-12 h-12 rounded-md overflow-hidden bg-muted shrink-0">
+          {mediaType === "video" ? (
+            <video
+              src={mediaUrl}
+              className="w-full h-full object-cover"
+              muted
+            />
+          ) : (
+            <img
+              src={mediaUrl}
+              alt="Uploaded media"
+              className="w-full h-full object-cover"
+            />
+          )}
+        </div>
+        
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            {mediaType === "video" ? (
+              <Film className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <Image className="w-4 h-4 text-muted-foreground" />
+            )}
+            <span className="text-sm font-medium">
+              {mediaType === "video" ? "Video" : "Image"} uploaded
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            View in preview section below
+          </p>
+        </div>
+        
+        {/* Remove button */}
         <Button
           type="button"
-          variant="destructive"
+          variant="ghost"
           size="icon"
-          className="absolute top-2 right-2"
+          className="shrink-0 text-muted-foreground hover:text-destructive"
           onClick={removeMedia}
         >
           <X className="w-4 h-4" />
         </Button>
-        <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/70 text-white px-2 py-1 rounded text-xs">
-          {mediaType === "video" ? (
-            <Film className="w-3 h-3" />
-          ) : (
-            <Image className="w-3 h-3" />
-          )}
-          {mediaType === "video" ? "Video" : "Image"}
-        </div>
       </div>
     );
   }

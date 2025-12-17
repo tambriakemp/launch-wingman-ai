@@ -1253,6 +1253,18 @@ const [formData, setFormData] = useState({
               </Select>
             </div>
 
+            {/* Social Media Section - Post To */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Share2 className="w-4 h-4 text-muted-foreground" />
+                <Label className="text-base font-medium">Post To</Label>
+              </div>
+              <PlatformSelector
+                selected={formData.scheduled_platforms}
+                onChange={(platforms) => setFormData(prev => ({ ...prev, scheduled_platforms: platforms }))}
+              />
+            </div>
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Title</Label>
@@ -1314,45 +1326,31 @@ const [formData, setFormData] = useState({
               </div>
             )}
 
-            <Separator />
-
-            {/* Social Media Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Share2 className="w-4 h-4 text-muted-foreground" />
-                <Label className="text-base font-medium">Post To</Label>
-              </div>
-              <PlatformSelector
-                selected={formData.scheduled_platforms}
-                onChange={(platforms) => setFormData(prev => ({ ...prev, scheduled_platforms: platforms }))}
+            {/* Pinterest Board Selector */}
+            {formData.scheduled_platforms.includes('pinterest') && pinterestConnection && (
+              <PinterestBoardSelector
+                selectedBoard={formData.pinterest_board_id}
+                onBoardChange={(boardId) => setFormData(prev => ({ ...prev, pinterest_board_id: boardId }))}
               />
-              
-              {/* Pinterest Board Selector */}
-              {formData.scheduled_platforms.includes('pinterest') && pinterestConnection && (
-                <PinterestBoardSelector
-                  selectedBoard={formData.pinterest_board_id}
-                  onBoardChange={(boardId) => setFormData(prev => ({ ...prev, pinterest_board_id: boardId }))}
-                />
-              )}
-              
-              {formData.scheduled_platforms.includes('pinterest') && !pinterestConnection && (
-                <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
-                  Pinterest is not connected. Go to Settings → Connected Accounts to connect.
-                </div>
-              )}
-              
-              {/* Scheduling Section */}
-              {formData.scheduled_platforms.includes('pinterest') && pinterestConnection && formData.media_url && (
-                <ScheduleDateTimePicker
-                  mode={scheduleMode}
-                  onModeChange={setScheduleMode}
-                  date={scheduledDate}
-                  onDateChange={setScheduledDate}
-                  time={scheduledTime}
-                  onTimeChange={setScheduledTime}
-                />
-              )}
-            </div>
+            )}
+            
+            {formData.scheduled_platforms.includes('pinterest') && !pinterestConnection && (
+              <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+                Pinterest is not connected. Go to Settings → Connected Accounts to connect.
+              </div>
+            )}
+            
+            {/* Scheduling Section - When to Post */}
+            {formData.scheduled_platforms.includes('pinterest') && pinterestConnection && formData.media_url && (
+              <ScheduleDateTimePicker
+                mode={scheduleMode}
+                onModeChange={setScheduleMode}
+                date={scheduledDate}
+                onDateChange={setScheduledDate}
+                time={scheduledTime}
+                onTimeChange={setScheduledTime}
+              />
+            )}
 
             {/* Media Upload Section */}
             <div className="space-y-2">
@@ -1376,6 +1374,7 @@ const [formData, setFormData] = useState({
                     mediaUrl={formData.media_url}
                     mediaType={formData.media_type}
                     linkUrl={formData.link_url}
+                    title={formData.title}
                   />
                 </div>
               </div>
