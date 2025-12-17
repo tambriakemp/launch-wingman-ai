@@ -6,7 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const logStep = (step: string, details?: any) => {
+// Sanitize user ID for logging (show only first 8 chars)
+const sanitizeId = (id: string) => id ? `${id.substring(0, 8)}...` : 'unknown';
+
+const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[TRACK-ACTIVITY] ${step}${detailsStr}`);
 };
@@ -14,10 +17,8 @@ const logStep = (step: string, details?: any) => {
 // Check for suspicious activity patterns
 async function checkSuspiciousActivity(
   supabaseClient: any,
-  userId: string,
-  userEmail: string,
-  currentIp: string | null
-): Promise<{ isSuspicious: boolean; reason?: string; details?: any }> {
+  userId: string
+): Promise<{ isSuspicious: boolean; reason?: string; uniqueIpCount?: number; loginCount?: number }> {
   try {
     // Get login activity from the last 24 hours
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -31,7 +32,7 @@ async function checkSuspiciousActivity(
       .order('created_at', { ascending: false });
 
     if (error) {
-      logStep("Error checking suspicious activity", { error: error.message });
+      logStep("Error checking suspicious activity");
       return { isSuspicious: false };
     }
 
@@ -45,12 +46,8 @@ async function checkSuspiciousActivity(
       return {
         isSuspicious: true,
         reason: 'Multiple IP addresses detected in short time period',
-        details: {
-          unique_ips_count: uniqueIPs.length,
-          login_count: loginCount,
-          time_window: '24 hours',
-          ip_address: currentIp,
-        }
+        uniqueIpCount: uniqueIPs.length,
+        loginCount,
       };
     }
 
@@ -58,18 +55,14 @@ async function checkSuspiciousActivity(
       return {
         isSuspicious: true,
         reason: 'Unusually high number of login attempts',
-        details: {
-          unique_ips_count: uniqueIPs.length,
-          login_count: loginCount,
-          time_window: '24 hours',
-          ip_address: currentIp,
-        }
+        uniqueIpCount: uniqueIPs.length,
+        loginCount,
       };
     }
 
     return { isSuspicious: false };
   } catch (error) {
-    logStep("Error in suspicious activity check", { error });
+    logStep("Error in suspicious activity check");
     return { isSuspicious: false };
   }
 }
@@ -100,13 +93,12 @@ async function notifyAdmins(
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      logStep("Admin notification failed", { status: response.status, error: errorText });
+      logStep("Admin notification failed", { status: response.status });
     } else {
       logStep("Admin notification sent", { type });
     }
   } catch (error) {
-    logStep("Error sending admin notification", { error });
+    logStep("Error sending admin notification");
   }
 }
 
@@ -132,7 +124,7 @@ serve(async (req) => {
     if (userError) throw new Error(`Authentication error: ${userError.message}`);
     const user = userData.user;
     if (!user) throw new Error("User not authenticated");
-    logStep("User authenticated", { userId: user.id });
+    logStep("User authenticated", { userId: sanitizeId(user.id) });
 
     const body = await req.json().catch(() => ({}));
     const eventType = body.event_type || 'login';
@@ -152,7 +144,7 @@ serve(async (req) => {
       });
 
     if (activityError) {
-      logStep("Error inserting activity", { error: activityError.message });
+      logStep("Error inserting activity");
     } else {
       logStep("Activity recorded", { eventType });
     }
@@ -164,7 +156,7 @@ serve(async (req) => {
       .eq('user_id', user.id);
 
     if (profileError) {
-      logStep("Error updating last_active", { error: profileError.message });
+      logStep("Error updating last_active");
     } else {
       logStep("Profile last_active updated");
     }
@@ -173,8 +165,8 @@ serve(async (req) => {
     if (isNewSignup && user.email) {
       logStep("New signup detected, notifying admins");
       await notifyAdmins('new_signup', user.email, user.id, {
-        ip_address: ipAddress,
-        user_agent: userAgent,
+        // Don't log IP in details sent to admins
+        signup_time: new Date().toISOString(),
       });
     }
 
@@ -182,16 +174,20 @@ serve(async (req) => {
     if (eventType === 'login' && user.email) {
       const suspiciousCheck = await checkSuspiciousActivity(
         supabaseClient,
-        user.id,
-        user.email,
-        ipAddress
+        user.id
       );
 
       if (suspiciousCheck.isSuspicious) {
-        logStep("Suspicious activity detected", suspiciousCheck);
-        await notifyAdmins('suspicious_activity', user.email, user.id, {
-          ...suspiciousCheck.details,
+        logStep("Suspicious activity detected", { 
           reason: suspiciousCheck.reason,
+          uniqueIpCount: suspiciousCheck.uniqueIpCount,
+          loginCount: suspiciousCheck.loginCount
+        });
+        await notifyAdmins('suspicious_activity', user.email, user.id, {
+          reason: suspiciousCheck.reason,
+          unique_ips_count: suspiciousCheck.uniqueIpCount,
+          login_count: suspiciousCheck.loginCount,
+          time_window: '24 hours',
         });
       }
     }
