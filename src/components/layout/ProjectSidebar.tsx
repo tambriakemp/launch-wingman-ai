@@ -174,10 +174,35 @@ const SidebarContent = ({
           )}
         </div>
 
-        {/* Empty nav area for consistency */}
-        <nav className="flex-1 overflow-y-auto px-3 py-2">
-          <p className="px-2 py-4 text-xs text-sidebar-foreground/60">
-            Select a project to see navigation options.
+        {/* Navigation - Show Assessments section even without project */}
+        <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-3">
+          {/* Assessments Section */}
+          <div>
+            <div className="mb-1.5 px-2">
+              <span className="text-[11px] font-semibold text-sidebar-foreground uppercase tracking-wider">
+                Assessments
+              </span>
+            </div>
+            <div className="space-y-0.5">
+              <button
+                onClick={() => handleNavClick("/assessments")}
+                className={cn(
+                  "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
+                  isActiveRoute("/assessments")
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                )}
+              >
+                <ClipboardCheck className={cn("w-4 h-4", isActiveRoute("/assessments") && "text-sidebar-primary")} />
+                <span>All Assessments</span>
+              </button>
+            </div>
+          </div>
+          
+          <Separator className="bg-sidebar-border" />
+          
+          <p className="px-2 py-2 text-xs text-sidebar-foreground/60">
+            Select a project to see more options.
           </p>
         </nav>
       </>

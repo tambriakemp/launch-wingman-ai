@@ -1,6 +1,5 @@
-import { Link, useLocation } from "react-router-dom";
-import { ClipboardCheck, Settings, Shield, LogOut, Menu } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
+import { Settings, Shield, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,12 +17,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export const TopBar = () => {
-  const location = useLocation();
   const { user, signOut } = useAuth();
   const { isAdmin } = useAdmin();
   const isMobile = useIsMobile();
   const { toggle } = useMobileSidebar();
-  const isAssessmentsActive = location.pathname.startsWith("/assessments");
 
   // Fetch user profile for first name
   const { data: profile } = useQuery({
@@ -60,21 +57,6 @@ export const TopBar = () => {
       </div>
 
       <nav className="flex items-center gap-1 md:gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          asChild
-          className={cn(
-            "gap-1.5 h-8 text-sm",
-            isAssessmentsActive && "bg-accent text-accent-foreground"
-          )}
-        >
-          <Link to="/assessments">
-            <ClipboardCheck className="w-4 h-4" />
-            <span className="hidden sm:inline">Assessments</span>
-          </Link>
-        </Button>
-
         {/* Profile Avatar Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
