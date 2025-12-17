@@ -22,6 +22,7 @@ import {
   FolderOpen,
   Crown,
   Server,
+  ClipboardCheck,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
 import { Separator } from "@/components/ui/separator";
@@ -50,6 +51,12 @@ interface NavSection {
 }
 
 const createNavSections = (projectId: string): NavSection[] => [
+  {
+    heading: "Assessments",
+    items: [
+      { id: "assessments", label: "All Assessments", icon: ClipboardCheck, href: "/assessments" },
+    ],
+  },
   {
     heading: "Plan",
     items: [

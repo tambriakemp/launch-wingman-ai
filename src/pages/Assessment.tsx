@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -365,7 +365,7 @@ const Assessment = () => {
   // Start screen
   if (!hasStarted) {
     return (
-      <DashboardLayout>
+      <ProjectLayout>
         <div className="max-w-3xl mx-auto space-y-6">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -458,14 +458,14 @@ const Assessment = () => {
             </Card>
           </motion.div>
         </div>
-      </DashboardLayout>
+      </ProjectLayout>
     );
   }
 
   // Results screen
   if (showResults) {
     return (
-      <DashboardLayout>
+      <ProjectLayout>
         <div className="max-w-3xl mx-auto space-y-6">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -603,13 +603,13 @@ const Assessment = () => {
             </Button>
           </motion.div>
         </div>
-      </DashboardLayout>
+      </ProjectLayout>
     );
   }
 
   // Quiz screen
   return (
-    <DashboardLayout>
+    <ProjectLayout>
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Progress Stepper */}
         <AssessmentProgressStepper
@@ -699,7 +699,7 @@ const Assessment = () => {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </ProjectLayout>
   );
 };
 
