@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import Landing from "./pages/Landing";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Auth from "./pages/Auth";
 import AppRedirect from "./pages/AppRedirect";
 import Settings from "./pages/Settings";
@@ -36,6 +37,7 @@ const App = () => (
           <ImpersonationBanner />
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/auth" element={<Auth />} />
             {/* Smart redirect to last used project */}
             <Route path="/app" element={<ProtectedRoute><AppRedirect /></ProtectedRoute>} />
