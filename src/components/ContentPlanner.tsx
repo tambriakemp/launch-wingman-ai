@@ -72,6 +72,7 @@ import { PlatformSelector } from "./content-planner/PlatformSelector";
 import { MediaUploader } from "./content-planner/MediaUploader";
 import { SocialPostPreview } from "./content-planner/SocialPostPreview";
 import { PinterestBoardSelector } from "./content-planner/PinterestBoardSelector";
+import { ScheduleDateTimePicker } from "./content-planner/ScheduleDateTimePicker";
 
 interface ContentItem {
   id: string;
@@ -194,6 +195,10 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [bulkActionOpen, setBulkActionOpen] = useState(false);
   const [isPostingToPinterest, setIsPostingToPinterest] = useState(false);
+  const [isSchedulingPost, setIsSchedulingPost] = useState(false);
+  const [scheduleMode, setScheduleMode] = useState<"now" | "schedule">("now");
+  const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
+  const [scheduledTime, setScheduledTime] = useState("09:00");
 const [formData, setFormData] = useState({
     phase: "week1",
     day_number: 1,
@@ -396,6 +401,9 @@ const [formData, setFormData] = useState({
       pinterest_board_id: null,
       link_url: "",
     });
+    setScheduleMode("now");
+    setScheduledDate(null);
+    setScheduledTime("09:00");
   };
 
   const togglePhase = (phaseId: string) => {
@@ -501,6 +509,121 @@ const [formData, setFormData] = useState({
       toast.error(error instanceof Error ? error.message : "Failed to post to Pinterest");
     } finally {
       setIsPostingToPinterest(false);
+    }
+  };
+
+  const handleSchedulePost = async () => {
+    if (!formData.scheduled_platforms.includes('pinterest')) {
+      toast.error("Please select Pinterest as platform");
+      return;
+    }
+    
+    if (!pinterestConnection) {
+      toast.error("Pinterest is not connected. Go to Settings to connect.");
+      return;
+    }
+
+    if (!formData.pinterest_board_id) {
+      toast.error("Please select a Pinterest board");
+      return;
+    }
+
+    if (!formData.media_url) {
+      toast.error("Pinterest requires an image. Please upload media.");
+      return;
+    }
+
+    if (!scheduledDate) {
+      toast.error("Please select a date for scheduling");
+      return;
+    }
+
+    // Combine date and time
+    const [hours, minutes] = scheduledTime.split(":").map(Number);
+    const scheduledFor = new Date(scheduledDate);
+    scheduledFor.setHours(hours, minutes, 0, 0);
+
+    // Check if scheduled time is in the past
+    if (scheduledFor <= new Date()) {
+      toast.error("Scheduled time must be in the future");
+      return;
+    }
+
+    setIsSchedulingPost(true);
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) throw new Error("Not authenticated");
+
+      // First save the content item if not already saved
+      let contentItemId = editingItem?.id;
+      if (!contentItemId) {
+        const { data: savedItem, error: saveError } = await supabase
+          .from("content_planner")
+          .insert({
+            user_id: currentUser.id,
+            project_id: projectId,
+            phase: formData.phase,
+            day_number: formData.day_number,
+            time_of_day: formData.time_of_day,
+            content_type: formData.content_type,
+            title: formData.title,
+            description: formData.description || null,
+            content: formData.content || null,
+            status: formData.status,
+            labels: formData.labels,
+            media_url: formData.media_url,
+            media_type: formData.media_type,
+            scheduled_platforms: formData.scheduled_platforms,
+            scheduled_at: scheduledFor.toISOString(),
+          })
+          .select()
+          .single();
+
+        if (saveError) throw saveError;
+        contentItemId = savedItem.id;
+      } else {
+        // Update existing content item with scheduled_at
+        await supabase
+          .from("content_planner")
+          .update({ scheduled_at: scheduledFor.toISOString() })
+          .eq("id", contentItemId);
+      }
+
+      // Create scheduled post record
+      const { error: scheduleError } = await supabase
+        .from("scheduled_posts")
+        .insert({
+          user_id: currentUser.id,
+          project_id: projectId,
+          content_item_id: contentItemId,
+          platform: "pinterest",
+          scheduled_for: scheduledFor.toISOString(),
+          post_data: {
+            board_id: formData.pinterest_board_id,
+            title: formData.title,
+            description: formData.content || formData.description,
+            media_url: formData.media_url,
+            link: formData.link_url || undefined,
+          },
+          status: "pending",
+        });
+
+      if (scheduleError) throw scheduleError;
+
+      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+      
+      toast.success("Post scheduled!", {
+        description: `Will post on ${scheduledFor.toLocaleDateString()} at ${scheduledFor.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+      });
+      
+      setDialogOpen(false);
+      resetForm();
+      setEditingItem(null);
+    } catch (error) {
+      console.error('Schedule post error:', error);
+      toast.error(error instanceof Error ? error.message : "Failed to schedule post");
+    } finally {
+      setIsSchedulingPost(false);
     }
   };
 
@@ -1217,6 +1340,18 @@ const [formData, setFormData] = useState({
                   Pinterest is not connected. Go to Settings → Connected Accounts to connect.
                 </div>
               )}
+              
+              {/* Scheduling Section */}
+              {formData.scheduled_platforms.includes('pinterest') && pinterestConnection && formData.media_url && (
+                <ScheduleDateTimePicker
+                  mode={scheduleMode}
+                  onModeChange={setScheduleMode}
+                  date={scheduledDate}
+                  onDateChange={setScheduledDate}
+                  time={scheduledTime}
+                  onTimeChange={setScheduledTime}
+                />
+              )}
             </div>
 
             {/* Media Upload Section */}
@@ -1276,20 +1411,35 @@ const [formData, setFormData] = useState({
               </Button>
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
-              {/* Post Now Button for Pinterest */}
+              {/* Post Now / Schedule Button for Pinterest */}
               {formData.scheduled_platforms.includes('pinterest') && pinterestConnection && formData.media_url && (
-                <Button 
-                  variant="secondary"
-                  onClick={handlePostToPinterest}
-                  disabled={isPostingToPinterest || !formData.pinterest_board_id}
-                >
-                  {isPostingToPinterest ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <Send className="w-4 h-4 mr-2" />
-                  )}
-                  Post Now
-                </Button>
+                scheduleMode === "now" ? (
+                  <Button 
+                    variant="secondary"
+                    onClick={handlePostToPinterest}
+                    disabled={isPostingToPinterest || !formData.pinterest_board_id}
+                  >
+                    {isPostingToPinterest ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <Send className="w-4 h-4 mr-2" />
+                    )}
+                    Post Now
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="secondary"
+                    onClick={handleSchedulePost}
+                    disabled={isSchedulingPost || !formData.pinterest_board_id || !scheduledDate}
+                  >
+                    {isSchedulingPost ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <Clock className="w-4 h-4 mr-2" />
+                    )}
+                    Schedule Post
+                  </Button>
+                )
               )}
               <Button onClick={handleSave} disabled={saveMutation.isPending}>
                 {saveMutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
