@@ -163,7 +163,6 @@ export const WhoSection = ({
   onSpecificityScoreChange,
 }: WhoSectionProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [specificityFeedback, setSpecificityFeedback] = useState<string>("");
   const [analysisFeedback, setAnalysisFeedback] = useState<string>("");
   const [selectedSubAudience, setSelectedSubAudience] = useState<string | null>(null);
   const [isExamplesOpen, setIsExamplesOpen] = useState(false);
@@ -194,9 +193,6 @@ export const WhoSection = ({
       }
       if (typeof data.specificityScore === 'number') {
         onSpecificityScoreChange(data.specificityScore);
-      }
-      if (data.specificityFeedback) {
-        setSpecificityFeedback(data.specificityFeedback);
       }
     } catch (error) {
       console.error("Error generating audience refinements:", error);
@@ -325,13 +321,6 @@ export const WhoSection = ({
         </div>
       </div>
 
-      {/* Specificity Feedback */}
-      {specificityFeedback && (
-        <div className="flex items-start gap-2 p-3 rounded-md bg-muted/50 border border-border">
-          <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-muted-foreground">{specificityFeedback}</p>
-        </div>
-      )}
 
       {/* Need Inspiration Section - Template Examples Only */}
       {niche && (
