@@ -292,6 +292,8 @@ const AudienceContent = ({ projectId }: Props) => {
         desiredOutcome={audienceData.desiredOutcome}
         specificityScore={audienceData.specificityScore}
         likelihoodElements={audienceData.likelihoodElements}
+        painSymptoms={audienceData.painSymptoms}
+        timeEffortElements={audienceData.timeEffortElements}
       />
 
       {/* Value Equation Sections */}
