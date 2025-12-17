@@ -331,7 +331,7 @@ export const WhoSection = ({
         </div>
       )}
 
-      {/* Need Inspiration Section with Examples AND Refined Variations */}
+      {/* Need Inspiration Section - Template Examples Only */}
       {niche && (
         <Collapsible open={isExamplesOpen} onOpenChange={setIsExamplesOpen}>
           <CollapsibleTrigger asChild>
@@ -344,75 +344,12 @@ export const WhoSection = ({
               <ChevronDown className={`w-4 h-4 transition-transform ${isExamplesOpen ? "rotate-180" : ""}`} />
             </Button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="pt-2 space-y-4">
-            {/* AI-Generated Refined Variations */}
-            {refinedVariations.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm text-muted-foreground">
-                    AI-refined variations (click to use):
-                  </Label>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleGenerateRefinements}
-                    disabled={!hasContext || isGeneratingRefinements}
-                    className="h-7 text-xs gap-1"
-                  >
-                    {isGeneratingRefinements ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Sparkles className="w-3 h-3" />
-                    )}
-                    Regenerate
-                  </Button>
-                </div>
-                <div className="grid gap-2">
-                  {refinedVariations.map((variation) => (
-                    <button
-                      key={variation.type}
-                      onClick={() => handleSelectVariation(variation)}
-                      className={`p-3 rounded-lg border text-left transition-all hover:border-primary/50 ${
-                        selectedVariation === variation.type
-                          ? "border-primary bg-primary/5"
-                          : "border-border bg-card"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge
-                          variant="outline"
-                          className={`${getVariationColor(variation.type)} gap-1`}
-                        >
-                          {getVariationIcon(variation.type)}
-                          {variation.label}
-                        </Badge>
-                        {selectedVariation === variation.type && (
-                          <Check className="w-4 h-4 text-primary ml-auto" />
-                        )}
-                      </div>
-                      <p className="text-sm">{variation.statement}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Divider if both sections exist */}
-            {refinedVariations.length > 0 && (
-              <div className="border-t border-border pt-3">
-                <Label className="text-sm text-muted-foreground">
-                  Or use a template example:
-                </Label>
-              </div>
-            )}
-
+          <CollapsibleContent className="pt-2">
             {/* Static Niche Examples */}
             <div className="space-y-2">
-              {refinedVariations.length === 0 && (
-                <Label className="text-sm text-muted-foreground">
-                  Click to use an example:
-                </Label>
-              )}
+              <Label className="text-sm text-muted-foreground">
+                Click to use an example:
+              </Label>
               {currentExamples.map((example, index) => (
                 <div
                   key={index}
@@ -430,13 +367,63 @@ export const WhoSection = ({
         </Collapsible>
       )}
 
-      {/* AI Sub-Audience Generator */}
+      {/* AI-Refined Variations Section - Outside Dropdown */}
+      {refinedVariations.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm">AI-Refined Variations</Label>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleGenerateRefinements}
+              disabled={!hasContext || isGeneratingRefinements}
+              className="h-7 text-xs gap-1"
+            >
+              {isGeneratingRefinements ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Sparkles className="w-3 h-3" />
+              )}
+              Regenerate
+            </Button>
+          </div>
+          <div className="grid gap-2">
+            {refinedVariations.map((variation) => (
+              <button
+                key={variation.type}
+                onClick={() => handleSelectVariation(variation)}
+                className={`p-3 rounded-lg border text-left transition-all hover:border-primary/50 ${
+                  selectedVariation === variation.type
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-card"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge
+                    variant="outline"
+                    className={`${getVariationColor(variation.type)} gap-1`}
+                  >
+                    {getVariationIcon(variation.type)}
+                    {variation.label}
+                  </Badge>
+                  {selectedVariation === variation.type && (
+                    <Check className="w-4 h-4 text-primary ml-auto" />
+                  )}
+                </div>
+                <p className="text-sm">{variation.statement}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Analyze Audience Section */}
       <div className="pt-3 border-t border-border space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <Label className="text-sm">AI Sub-Audience Suggestions</Label>
+            <Label className="text-sm">Analyze Audience</Label>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Get specific audience segments based on your description
+              Get refined audience segments and analysis
             </p>
           </div>
           <Button
@@ -448,12 +435,12 @@ export const WhoSection = ({
             {isGenerating ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generating...
+                Analyzing...
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4 mr-2" />
-                {subAudiences.length > 0 ? "Regenerate" : "Generate"}
+                {subAudiences.length > 0 ? "Re-analyze" : "Analyze"}
               </>
             )}
           </Button>
