@@ -21,6 +21,8 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
+    const hasUserInput = currentOutcome && currentOutcome.trim().length > 0;
+    
     const systemPrompt = `You are an expert copywriter specializing in transformation statements for coaches and digital course creators. You help craft compelling "dream outcome" statements that resonate deeply with target audiences.
 
 Your task is to generate 3 different style variations of a dream outcome statement:
@@ -28,11 +30,14 @@ Your task is to generate 3 different style variations of a dream outcome stateme
 2. EMOTION-FOCUSED: Emphasizes feelings, emotional transformation, and internal shifts  
 3. IDENTITY-FOCUSED: Emphasizes who they become, their new identity and self-image
 
+${hasUserInput ? `CRITICAL INSTRUCTION: The user has provided their specific desired outcome. You MUST preserve and enhance their core theme/desire in ALL variations. Do NOT replace it with generic outcomes related to their niche. If they said "take more vacations", all 3 variations MUST be about vacations/travel/freedom - just expressed through different lenses.` : ''}
+
 Each variation should:
 - Be specific and vivid (avoid vague language)
 - Feel achievable yet aspirational
 - Speak directly to what the target audience truly wants
 - Be 1-2 sentences maximum
+${hasUserInput ? '- MUST incorporate the user\'s specific desired outcome as the central theme' : ''}
 
 Return ONLY valid JSON in this exact format:
 {
@@ -43,11 +48,21 @@ Return ONLY valid JSON in this exact format:
   ]
 }`;
 
-    const userPrompt = `Generate 3 dream outcome variations for:
+    const userPrompt = hasUserInput 
+      ? `The user wants this specific outcome: "${currentOutcome}"
+
+IMPORTANT: Your variations MUST keep this desire as the central theme. Enhance and refine it, but do NOT replace it with something else.
+
+Use this context to make the variations more specific and compelling:
+- Niche: ${niche || 'Not specified'}
+- Target Audience: ${targetAudience || 'Not specified'}  
+- Pain Point: ${painPoint || 'Not specified'}
+
+Generate 3 variations that all revolve around "${currentOutcome}" but expressed through results, emotion, and identity lenses.`
+      : `Generate 3 dream outcome variations from scratch for:
 - Niche: ${niche || 'Not specified'}
 - Target Audience: ${targetAudience || 'Not specified'}
 - Pain Point: ${painPoint || 'Not specified'}
-- Current Draft (enhance this): ${currentOutcome || 'Not provided - create from scratch based on context'}
 
 Create compelling, specific dream outcome statements that would resonate with this audience.`;
 
