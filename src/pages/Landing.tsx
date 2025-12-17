@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { MarqueeStrip } from "@/components/landing/MarqueeStrip";
+import { DashboardMockup } from "@/components/landing/screenshots/DashboardMockup";
+import { FunnelBuilderMockup } from "@/components/landing/screenshots/FunnelBuilderMockup";
+import { TransformationMockup } from "@/components/landing/screenshots/TransformationMockup";
+import { ProjectBoardMockup } from "@/components/landing/screenshots/ProjectBoardMockup";
 import {
   ClipboardCheck,
   Layout,
@@ -162,7 +166,7 @@ const Landing = () => {
               </div>
 
               {/* CTAs */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
                 <Button
                   asChild
                   size="lg"
@@ -180,6 +184,18 @@ const Landing = () => {
                     See How It Works <ArrowRight className="w-5 h-5" />
                   </Link>
                 </Button>
+              </div>
+            </motion.div>
+
+            {/* Hero Screenshot */}
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="max-w-4xl mx-auto mt-8"
+            >
+              <div className="transform perspective-1000 rotate-x-2 hover:rotate-x-0 transition-transform duration-500">
+                <DashboardMockup />
               </div>
             </motion.div>
           </div>
@@ -324,21 +340,60 @@ const Landing = () => {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {steps.map((step, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="text-center"
-              >
-                <div className="text-6xl font-bold text-accent/20 mb-4">{step.number}</div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">{step.title}</h3>
-                <p className="text-muted-foreground">{step.description}</p>
-              </motion.div>
-            ))}
+          <div className="space-y-20 max-w-5xl mx-auto">
+            {/* Step 1 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              viewport={{ once: true }}
+              className="grid md:grid-cols-2 gap-8 items-center"
+            >
+              <div className="text-center md:text-left">
+                <div className="text-6xl font-bold text-accent/20 mb-4">01</div>
+                <h3 className="text-2xl font-semibold text-foreground mb-3">Define Your Offer</h3>
+                <p className="text-muted-foreground text-lg">Choose your funnel type, define your audience, and configure your offer stack with AI-powered suggestions.</p>
+              </div>
+              <div className="transform hover:scale-[1.02] transition-transform duration-300">
+                <FunnelBuilderMockup />
+              </div>
+            </motion.div>
+
+            {/* Step 2 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              viewport={{ once: true }}
+              className="grid md:grid-cols-2 gap-8 items-center"
+            >
+              <div className="order-2 md:order-1 transform hover:scale-[1.02] transition-transform duration-300">
+                <TransformationMockup />
+              </div>
+              <div className="order-1 md:order-2 text-center md:text-left">
+                <div className="text-6xl font-bold text-accent/20 mb-4">02</div>
+                <h3 className="text-2xl font-semibold text-foreground mb-3">Generate Your Assets</h3>
+                <p className="text-muted-foreground text-lg">Use AI to create transformation statements, sales copy, and marketing content that converts.</p>
+              </div>
+            </motion.div>
+
+            {/* Step 3 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="grid md:grid-cols-2 gap-8 items-center"
+            >
+              <div className="text-center md:text-left">
+                <div className="text-6xl font-bold text-accent/20 mb-4">03</div>
+                <h3 className="text-2xl font-semibold text-foreground mb-3">Launch With Confidence</h3>
+                <p className="text-muted-foreground text-lg">Execute with a clear checklist, project board, and launch calendar that keeps everything on track.</p>
+              </div>
+              <div className="transform hover:scale-[1.02] transition-transform duration-300">
+                <ProjectBoardMockup />
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
