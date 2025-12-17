@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Instagram, Facebook, Twitter, Linkedin, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPlatformById } from "./platformConfigs";
@@ -239,6 +240,17 @@ export function SocialPostPreview({
   linkUrl,
   title,
 }: SocialPostPreviewProps) {
+  const [activePlatform, setActivePlatform] = useState<string>(platforms[0] || "");
+
+  // Reset active platform when platforms change
+  useEffect(() => {
+    if (platforms.length > 0 && !platforms.includes(activePlatform)) {
+      setActivePlatform(platforms[0]);
+    } else if (platforms.length > 0 && !activePlatform) {
+      setActivePlatform(platforms[0]);
+    }
+  }, [platforms, activePlatform]);
+
   if (platforms.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-center p-4">
@@ -250,11 +262,10 @@ export function SocialPostPreview({
     );
   }
 
-  // Show first selected platform's preview
-  const activePlatform = platforms[0];
+  const currentPlatform = activePlatform || platforms[0];
 
   const renderPreviewContent = () => {
-    switch (activePlatform) {
+    switch (currentPlatform) {
       case "instagram":
         return <InstagramPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} />;
       case "twitter":
@@ -262,7 +273,7 @@ export function SocialPostPreview({
       case "pinterest":
         return <PinterestPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} linkUrl={linkUrl} title={title} />;
       default:
-        return <GenericPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} platform={activePlatform} />;
+        return <GenericPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} platform={currentPlatform} />;
     }
   };
 
@@ -275,22 +286,24 @@ export function SocialPostPreview({
             const IconComponent = getIconComponent(p);
             const config = getPlatformById(p);
             return (
-              <div
+              <button
                 key={p}
+                type="button"
+                onClick={() => setActivePlatform(p)}
                 className={cn(
-                  "w-5 h-5 rounded-full flex items-center justify-center text-white",
-                  p === activePlatform ? "ring-2 ring-primary" : "opacity-50"
+                  "w-6 h-6 rounded-full flex items-center justify-center text-white cursor-pointer transition-all",
+                  p === currentPlatform ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "opacity-50 hover:opacity-75"
                 )}
                 style={{ backgroundColor: config?.color }}
               >
                 {IconComponent && <IconComponent className="w-3 h-3" />}
-              </div>
+              </button>
             );
           })}
         </div>
       </div>
       
-      <PhoneFrame platform={activePlatform}>
+      <PhoneFrame platform={currentPlatform}>
         {renderPreviewContent()}
       </PhoneFrame>
     </div>
