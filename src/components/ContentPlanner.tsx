@@ -25,7 +25,8 @@ import {
   List,
   CheckSquare,
   Square,
-  Share2
+  Share2,
+  Send
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -66,9 +67,11 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import { PlatformSelector } from "./content-planner/PlatformSelector";
 import { MediaUploader } from "./content-planner/MediaUploader";
 import { SocialPostPreview } from "./content-planner/SocialPostPreview";
+import { PinterestBoardSelector } from "./content-planner/PinterestBoardSelector";
 
 interface ContentItem {
   id: string;
@@ -183,12 +186,14 @@ const TEMPLATE_CONTENT: Array<Omit<ContentItem, "id" | "media_url" | "media_type
 
 export function ContentPlanner({ projectId }: ContentPlannerProps) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [expandedPhases, setExpandedPhases] = useState<string[]>(["week1"]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ContentItem | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [bulkActionOpen, setBulkActionOpen] = useState(false);
+  const [isPostingToPinterest, setIsPostingToPinterest] = useState(false);
   const [formData, setFormData] = useState({
     phase: "week1",
     day_number: 1,
@@ -202,8 +207,26 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
     media_url: null as string | null,
     media_type: null as string | null,
     scheduled_platforms: [] as string[],
+    pinterest_board_id: null as string | null,
   });
   const [draggedItem, setDraggedItem] = useState<ContentItem | null>(null);
+
+  // Check if Pinterest is connected
+  const { data: pinterestConnection } = useQuery({
+    queryKey: ["pinterest-connection", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("social_connections")
+        .select("id, account_name")
+        .eq("user_id", user!.id)
+        .eq("platform", "pinterest")
+        .single();
+      
+      if (error) return null;
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const { data: contentItems = [], isLoading } = useQuery({
     queryKey: ["content-planner", projectId],
@@ -369,6 +392,7 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
       media_url: null,
       media_type: null,
       scheduled_platforms: [],
+      pinterest_board_id: null,
     });
   };
 
@@ -395,6 +419,7 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
       media_url: item.media_url,
       media_type: item.media_type,
       scheduled_platforms: item.scheduled_platforms || [],
+      pinterest_board_id: null,
     });
     setDialogOpen(true);
   };
@@ -417,6 +442,62 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
       content: formData.content || null,
       scheduled_at: null,
     });
+  };
+
+  const handlePostToPinterest = async () => {
+    if (!formData.scheduled_platforms.includes('pinterest')) {
+      toast.error("Pinterest is not selected");
+      return;
+    }
+    
+    if (!pinterestConnection) {
+      toast.error("Pinterest is not connected. Go to Settings to connect.");
+      return;
+    }
+
+    if (!formData.pinterest_board_id) {
+      toast.error("Please select a Pinterest board");
+      return;
+    }
+
+    if (!formData.media_url) {
+      toast.error("Pinterest requires an image. Please upload media.");
+      return;
+    }
+
+    setIsPostingToPinterest(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase.functions.invoke('post-to-pinterest', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: {
+          board_id: formData.pinterest_board_id,
+          title: formData.title,
+          description: formData.content || formData.description,
+          media_url: formData.media_url,
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      toast.success("Posted to Pinterest!", {
+        description: "Your pin has been created successfully.",
+        action: data.pin_url ? {
+          label: "View Pin",
+          onClick: () => window.open(data.pin_url, '_blank'),
+        } : undefined,
+      });
+    } catch (error) {
+      console.error('Pinterest post error:', error);
+      toast.error(error instanceof Error ? error.message : "Failed to post to Pinterest");
+    } finally {
+      setIsPostingToPinterest(false);
+    }
   };
 
   const toggleLabel = (label: string) => {
@@ -1079,6 +1160,20 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
                 selected={formData.scheduled_platforms}
                 onChange={(platforms) => setFormData(prev => ({ ...prev, scheduled_platforms: platforms }))}
               />
+              
+              {/* Pinterest Board Selector */}
+              {formData.scheduled_platforms.includes('pinterest') && pinterestConnection && (
+                <PinterestBoardSelector
+                  selectedBoard={formData.pinterest_board_id}
+                  onBoardChange={(boardId) => setFormData(prev => ({ ...prev, pinterest_board_id: boardId }))}
+                />
+              )}
+              
+              {formData.scheduled_platforms.includes('pinterest') && !pinterestConnection && (
+                <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+                  Pinterest is not connected. Go to Settings → Connected Accounts to connect.
+                </div>
+              )}
             </div>
 
             {/* Media Upload Section */}
@@ -1130,14 +1225,33 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={saveMutation.isPending}>
-              {saveMutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              {editingItem ? "Update" : "Add"} Content
-            </Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto">
+              {/* Post Now Button for Pinterest */}
+              {formData.scheduled_platforms.includes('pinterest') && pinterestConnection && formData.media_url && (
+                <Button 
+                  variant="secondary"
+                  onClick={handlePostToPinterest}
+                  disabled={isPostingToPinterest || !formData.pinterest_board_id}
+                >
+                  {isPostingToPinterest ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-2" />
+                  )}
+                  Post Now
+                </Button>
+              )}
+              <Button onClick={handleSave} disabled={saveMutation.isPending}>
+                {saveMutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                {editingItem ? "Update" : "Add"} Content
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
