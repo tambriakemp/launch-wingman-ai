@@ -23,7 +23,15 @@ serve(async (req) => {
 
     const hasUserInput = currentOutcome && currentOutcome.trim().length > 0;
     
-    const systemPrompt = `You are an expert copywriter specializing in transformation statements for coaches and digital course creators. You help craft compelling "dream outcome" statements that resonate deeply with target audiences.
+    const systemPrompt = `You are helping a real person describe what success looks like in plain, everyday language.
+
+Write like a human talking to a friend — not a coach, not a marketer, not a brand.
+
+Avoid buzzwords, hype, luxury language, or generic motivational phrases.
+
+Be specific, grounded, and realistic.
+
+The outcome should feel achievable, personal, and emotionally relatable.
 
 Your task is to generate 3 different style variations of a dream outcome statement:
 1. RESULTS-FOCUSED: Emphasizes tangible, measurable outcomes and achievements
