@@ -191,6 +191,60 @@ export const OfferSlotSheet = ({
             </Select>
           </div>
 
+          {/* Title */}
+          <div className="space-y-2">
+            <Label>Offer Title</Label>
+            <Input
+              value={data.title}
+              onChange={(e) => handleFieldChange("title", e.target.value)}
+              placeholder={`e.g., "Ultimate ${slot.label} Guide"`}
+            />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea
+              value={data.description}
+              onChange={(e) => handleFieldChange("description", e.target.value)}
+              placeholder="Briefly describe what this offer includes..."
+              className="min-h-[80px] resize-none field-sizing-content"
+              style={{ fieldSizing: 'content' } as React.CSSProperties}
+            />
+          </div>
+
+          {/* Price & Price Type */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Price</Label>
+              <Input
+                value={data.price}
+                onChange={(e) => handleFieldChange("price", e.target.value)}
+                placeholder="e.g., 297"
+                type="text"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Price Type</Label>
+              <Select
+                value={data.priceType}
+                onValueChange={(value) => handleFieldChange("priceType", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRICE_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           {/* AI Generate Button */}
           {audienceData && (
             <Button
@@ -198,7 +252,6 @@ export const OfferSlotSheet = ({
               size="sm"
               onClick={handleGenerateTitleDescription}
               disabled={isGenerating || !data.offerType}
-              className="w-full"
             >
               {isGenerating ? (
                 <>
@@ -239,59 +292,6 @@ export const OfferSlotSheet = ({
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Title */}
-          <div className="space-y-2">
-            <Label>Offer Title</Label>
-            <Input
-              value={data.title}
-              onChange={(e) => handleFieldChange("title", e.target.value)}
-              placeholder={`e.g., "Ultimate ${slot.label} Guide"`}
-            />
-          </div>
-
-          {/* Price & Price Type */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Price</Label>
-              <Input
-                value={data.price}
-                onChange={(e) => handleFieldChange("price", e.target.value)}
-                placeholder="e.g., 297"
-                type="text"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Price Type</Label>
-              <Select
-                value={data.priceType}
-                onValueChange={(value) => handleFieldChange("priceType", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRICE_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Textarea
-              value={data.description}
-              onChange={(e) => handleFieldChange("description", e.target.value)}
-              placeholder="Briefly describe what this offer includes..."
-              rows={3}
-            />
-          </div>
 
           {/* Actions */}
           <div className="flex flex-col gap-3 pt-4 border-t border-border">
