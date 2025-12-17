@@ -180,9 +180,34 @@ export const OfferStackBuilder = ({
                                   Skipped
                                 </span>
                               ) : offer.title ? (
-                                <span className="text-sm font-medium text-foreground truncate block">
-                                  {offer.title}
-                                </span>
+                                <div className="space-y-1">
+                                  <span className="text-sm font-medium text-foreground truncate block">
+                                    {offer.title}
+                                  </span>
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    {offer.offerType && (
+                                      <span>{offer.offerType}</span>
+                                    )}
+                                    {offer.offerType && (offer.price || offer.priceType) && (
+                                      <span>•</span>
+                                    )}
+                                    {offer.priceType === 'free' ? (
+                                      <span>Free</span>
+                                    ) : offer.price ? (
+                                      <span>
+                                        ${offer.price}
+                                        {offer.priceType && offer.priceType !== 'one-time' && (
+                                          <span className="ml-1">
+                                            ({offer.priceType === 'monthly' ? '/mo' : 
+                                              offer.priceType === 'annual' ? '/yr' : 
+                                              offer.priceType === 'quarterly' ? '/qtr' : 
+                                              offer.priceType})
+                                          </span>
+                                        )}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </div>
                               ) : (
                                 <span className="text-sm text-muted-foreground italic">
                                   Not configured
