@@ -6,11 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function refreshPinterestToken(userId: string, currentRefreshToken: string) {
+async function refreshPinterestToken(supabase: any, userId: string, currentRefreshToken: string) {
   const PINTEREST_APP_ID = Deno.env.get('PINTEREST_APP_ID');
   const PINTEREST_APP_SECRET = Deno.env.get('PINTEREST_APP_SECRET');
-  const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
   const credentials = btoa(`${PINTEREST_APP_ID}:${PINTEREST_APP_SECRET}`);
   
@@ -32,16 +30,24 @@ async function refreshPinterestToken(userId: string, currentRefreshToken: string
 
   const tokenData = await response.json();
   
-  const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
   const expiresAt = tokenData.expires_in 
     ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
     : null;
 
+  // Encrypt the new tokens
+  const { data: encryptedAccessToken } = await supabase.rpc('encrypt_token', { 
+    plain_token: tokenData.access_token 
+  });
+  
+  const { data: encryptedRefreshToken } = tokenData.refresh_token 
+    ? await supabase.rpc('encrypt_token', { plain_token: tokenData.refresh_token })
+    : await supabase.rpc('encrypt_token', { plain_token: currentRefreshToken });
+
   await supabase
     .from('social_connections')
     .update({
-      access_token: tokenData.access_token,
-      refresh_token: tokenData.refresh_token || currentRefreshToken,
+      access_token: encryptedAccessToken,
+      refresh_token: encryptedRefreshToken,
       token_expires_at: expiresAt,
       updated_at: new Date().toISOString(),
     })
@@ -78,15 +84,16 @@ serve(async (req) => {
 
     console.log('[PINTEREST-GET-BOARDS] Fetching boards for user:', user.id);
 
-    // Get Pinterest connection
+    // Get Pinterest connection using decrypted view
     const { data: connection, error: connError } = await supabase
-      .from('social_connections')
+      .from('social_connections_decrypted')
       .select('access_token, refresh_token, token_expires_at')
       .eq('user_id', user.id)
       .eq('platform', 'pinterest')
       .single();
 
     if (connError || !connection) {
+      console.error('[PINTEREST-GET-BOARDS] Connection error:', connError);
       throw new Error('Pinterest not connected');
     }
 
@@ -98,7 +105,7 @@ serve(async (req) => {
 
     if (isExpired && connection.refresh_token) {
       console.log('[PINTEREST-GET-BOARDS] Token expired, refreshing...');
-      const newToken = await refreshPinterestToken(user.id, connection.refresh_token);
+      const newToken = await refreshPinterestToken(supabase, user.id, connection.refresh_token);
       if (newToken) {
         accessToken = newToken;
       } else {

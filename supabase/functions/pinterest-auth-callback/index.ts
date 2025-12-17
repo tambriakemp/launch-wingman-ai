@@ -11,7 +11,7 @@ serve(async (req) => {
     console.log('[PINTEREST-AUTH-CALLBACK] Received callback');
 
     // Get app origin for redirects
-    const APP_URL = Deno.env.get('APP_URL') || 'https://coach-hub.lovable.app';
+    const APP_URL = Deno.env.get('APP_URL') || 'https://launchely.lovable.app';
 
     if (error) {
       console.error('[PINTEREST-AUTH-CALLBACK] OAuth error:', error);
@@ -89,7 +89,7 @@ serve(async (req) => {
       console.log('[PINTEREST-AUTH-CALLBACK] Got user info:', accountName);
     }
 
-    // Store tokens in database
+    // Store tokens in database with encryption
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -98,14 +98,25 @@ serve(async (req) => {
       ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
       : null;
 
-    // Upsert the connection
+    // Encrypt tokens using database function
+    const { data: encryptedAccessToken } = await supabase.rpc('encrypt_token', { 
+      plain_token: tokenData.access_token 
+    });
+    
+    const { data: encryptedRefreshToken } = tokenData.refresh_token 
+      ? await supabase.rpc('encrypt_token', { plain_token: tokenData.refresh_token })
+      : { data: null };
+
+    console.log('[PINTEREST-AUTH-CALLBACK] Tokens encrypted successfully');
+
+    // Upsert the connection with encrypted tokens
     const { error: dbError } = await supabase
       .from('social_connections')
       .upsert({
         user_id,
         platform: 'pinterest',
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token || null,
+        access_token: encryptedAccessToken,
+        refresh_token: encryptedRefreshToken,
         token_expires_at: expiresAt,
         account_name: accountName,
         account_id: accountId,
@@ -119,7 +130,7 @@ serve(async (req) => {
       return Response.redirect(`${APP_URL}/settings?pinterest_error=db_error`);
     }
 
-    console.log('[PINTEREST-AUTH-CALLBACK] Connection saved successfully');
+    console.log('[PINTEREST-AUTH-CALLBACK] Connection saved successfully with encrypted tokens');
     
     // Redirect back to app with success
     const finalRedirect = redirect_url || '/settings';
@@ -127,7 +138,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[PINTEREST-AUTH-CALLBACK] Unexpected error:', error);
-    const APP_URL = Deno.env.get('APP_URL') || 'https://coach-hub.lovable.app';
+    const APP_URL = Deno.env.get('APP_URL') || 'https://launchely.lovable.app';
     return Response.redirect(`${APP_URL}/settings?pinterest_error=unexpected`);
   }
 });

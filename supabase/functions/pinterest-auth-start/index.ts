@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,23 +15,46 @@ serve(async (req) => {
   try {
     const PINTEREST_APP_ID = Deno.env.get('PINTEREST_APP_ID');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!PINTEREST_APP_ID) {
       console.error('[PINTEREST-AUTH-START] Missing PINTEREST_APP_ID');
       throw new Error('Pinterest App ID not configured');
     }
 
-    // Get user_id from request body to pass as state
-    const { user_id, redirect_url } = await req.json();
-    
-    if (!user_id) {
-      throw new Error('User ID is required');
+    // SECURITY: Validate the user's JWT token instead of accepting user_id from client
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('[PINTEREST-AUTH-START] No authorization header');
+      throw new Error('Unauthorized');
     }
 
-    console.log('[PINTEREST-AUTH-START] Starting OAuth for user:', user_id);
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    
+    // Verify the JWT and get the authenticated user
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error('[PINTEREST-AUTH-START] Invalid token:', authError?.message);
+      throw new Error('Unauthorized');
+    }
 
-    // Build state parameter with user info
-    const state = btoa(JSON.stringify({ user_id, redirect_url: redirect_url || '/settings' }));
+    // Get optional redirect_url from request body (but NOT user_id - we use the authenticated user)
+    let redirect_url = '/settings';
+    try {
+      const body = await req.json();
+      if (body.redirect_url) {
+        redirect_url = body.redirect_url;
+      }
+    } catch {
+      // No body or invalid JSON is fine, use defaults
+    }
+
+    console.log('[PINTEREST-AUTH-START] Starting OAuth for authenticated user:', user.id);
+
+    // Build state parameter with authenticated user info
+    const state = btoa(JSON.stringify({ user_id: user.id, redirect_url }));
     
     // Pinterest OAuth scopes
     const scopes = 'boards:read,pins:read,pins:write';
@@ -56,11 +80,12 @@ serve(async (req) => {
   } catch (error) {
     console.error('[PINTEREST-AUTH-START] Error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
+    const status = message === 'Unauthorized' ? 401 : 400;
     return new Response(
       JSON.stringify({ error: message }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
+        status
       }
     );
   }
