@@ -265,7 +265,7 @@ const AudienceContent = ({ projectId }: Props) => {
       <div className="flex items-start justify-between">
         <PlanPageHeader
           title="Value Equation Builder"
-          description="Define your audience using Alex Hormozi's Value Equation framework"
+          description="Define your audience using the Value Equation framework"
         />
         {/* Auto-save Status Indicator */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-[100px] justify-end">
