@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, Filter, CheckSquare, Square, Activity } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Menu } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -51,6 +51,117 @@ interface ImpersonationLog {
 
 const LOGS_PER_PAGE = 10;
 const USERS_PER_PAGE = 10;
+
+// Mobile user card component
+const MobileUserCard = ({ 
+  user, 
+  isSelected, 
+  onToggleSelect, 
+  onActivity, 
+  onImpersonate, 
+  onAction, 
+  actionLoading, 
+  impersonateLoading, 
+  currentUserId 
+}: {
+  user: User;
+  isSelected: boolean;
+  onToggleSelect: () => void;
+  onActivity: () => void;
+  onImpersonate: () => void;
+  onAction: (action: 'cancel' | 'grant_pro') => void;
+  actionLoading: string | null;
+  impersonateLoading: string | null;
+  currentUserId: string | undefined;
+}) => (
+  <Card className={cn("mb-3", isSelected && "ring-2 ring-primary")}>
+    <CardContent className="p-4">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <Checkbox checked={isSelected} onCheckedChange={onToggleSelect} />
+          <div>
+            <p className="font-medium">
+              {user.first_name || user.last_name
+                ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                : '—'}
+            </p>
+            <p className="text-sm text-muted-foreground truncate max-w-[180px]">{user.email}</p>
+          </div>
+        </div>
+        <Badge
+          variant={user.subscription_status === 'pro' ? 'default' : 'secondary'}
+          className={user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
+        >
+          {user.subscription_status === 'pro' ? 'Pro' : 'Free'}
+        </Badge>
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+        <div>
+          <span className="text-muted-foreground">Joined:</span>{' '}
+          {format(new Date(user.created_at), 'MMM d, yyyy')}
+        </div>
+        <div>
+          <span className="text-muted-foreground">Last Active:</span>{' '}
+          {user.last_active ? formatDistanceToNow(new Date(user.last_active), { addSuffix: true }) : 'Never'}
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" onClick={onActivity}>
+          <Activity className="h-4 w-4 mr-1" />
+          Activity
+        </Button>
+        {user.id !== currentUserId && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onImpersonate}
+            disabled={impersonateLoading === user.id}
+          >
+            {impersonateLoading === user.id ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <Eye className="h-4 w-4 mr-1" />
+            )}
+            View
+          </Button>
+        )}
+        {user.subscription_status === 'pro' ? (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => onAction('cancel')}
+            disabled={actionLoading === user.id}
+          >
+            {actionLoading === user.id ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <X className="h-4 w-4 mr-1" />
+                Cancel
+              </>
+            )}
+          </Button>
+        ) : (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => onAction('grant_pro')}
+            disabled={actionLoading === user.id}
+          >
+            {actionLoading === user.id ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <Crown className="h-4 w-4 mr-1" />
+                Grant Pro
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+    </CardContent>
+  </Card>
+);
 
 const AdminDashboard = () => {
   const { session, signOut, startImpersonation, user: currentUser } = useAuth();
@@ -100,7 +211,6 @@ const AdminDashboard = () => {
   const filteredUsers = useMemo(() => {
     let result = users;
     
-    // Text search filter
     if (userSearchQuery.trim()) {
       const query = userSearchQuery.toLowerCase();
       result = result.filter(
@@ -111,12 +221,10 @@ const AdminDashboard = () => {
       );
     }
     
-    // Status filter
     if (userStatusFilter !== 'all') {
       result = result.filter(user => user.subscription_status === userStatusFilter);
     }
     
-    // Date range filter (joined date)
     if (userDateFrom || userDateTo) {
       result = result.filter(user => {
         const joinedDate = new Date(user.created_at);
@@ -134,14 +242,12 @@ const AdminDashboard = () => {
     return result;
   }, [users, userSearchQuery, userStatusFilter, userDateFrom, userDateTo]);
 
-  // User pagination
   const userTotalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
   const paginatedUsers = useMemo(() => {
     const startIndex = (userCurrentPage - 1) * USERS_PER_PAGE;
     return filteredUsers.slice(startIndex, startIndex + USERS_PER_PAGE);
   }, [filteredUsers, userCurrentPage]);
 
-  // Reset user page when filters change
   useEffect(() => {
     setUserCurrentPage(1);
   }, [userSearchQuery, userDateFrom, userDateTo, userStatusFilter]);
@@ -151,7 +257,6 @@ const AdminDashboard = () => {
     setUserDateTo(undefined);
   };
 
-  // Export users to CSV
   const exportUsersToCSV = () => {
     if (filteredUsers.length === 0) {
       toast.error('No users to export');
@@ -183,7 +288,6 @@ const AdminDashboard = () => {
     toast.success('Users exported successfully');
   };
 
-  // Bulk selection functions
   const toggleUserSelection = (userId: string) => {
     setSelectedUsers(prev => {
       const newSet = new Set(prev);
@@ -208,7 +312,6 @@ const AdminDashboard = () => {
     setSelectedUsers(new Set());
   };
 
-  // Get selected users that can have the action applied
   const getEligibleUsers = (action: 'cancel' | 'grant_pro') => {
     return paginatedUsers.filter(user => {
       if (!selectedUsers.has(user.id)) return false;
@@ -270,11 +373,9 @@ const AdminDashboard = () => {
     setBulkActionLoading(false);
   };
 
-  // Filter logs based on search query and date range
   const filteredLogs = useMemo(() => {
     let logs = impersonationLogs;
     
-    // Text search filter
     if (logSearchQuery.trim()) {
       const query = logSearchQuery.toLowerCase();
       logs = logs.filter(
@@ -284,7 +385,6 @@ const AdminDashboard = () => {
       );
     }
     
-    // Date range filter
     if (dateFrom || dateTo) {
       logs = logs.filter(log => {
         const logDate = new Date(log.created_at);
@@ -302,14 +402,12 @@ const AdminDashboard = () => {
     return logs;
   }, [impersonationLogs, logSearchQuery, dateFrom, dateTo]);
 
-  // Pagination
   const totalPages = Math.ceil(filteredLogs.length / LOGS_PER_PAGE);
   const paginatedLogs = useMemo(() => {
     const startIndex = (currentPage - 1) * LOGS_PER_PAGE;
     return filteredLogs.slice(startIndex, startIndex + LOGS_PER_PAGE);
   }, [filteredLogs, currentPage]);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [logSearchQuery, dateFrom, dateTo]);
@@ -319,7 +417,6 @@ const AdminDashboard = () => {
     setDateTo(undefined);
   };
 
-  // Export logs to CSV
   const exportLogsToCSV = () => {
     if (filteredLogs.length === 0) {
       toast.error('No logs to export');
@@ -393,7 +490,7 @@ const AdminDashboard = () => {
         .from('impersonation_logs')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(500); // Fetch more logs for pagination/filtering
+        .limit(500);
 
       if (error) throw error;
       setImpersonationLogs(data || []);
@@ -457,86 +554,90 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Shield className="h-6 w-6 text-primary" />
+      <header className="border-b border-border bg-card sticky top-0 z-40">
+        <div className="container mx-auto px-4 py-3 md:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
+              <Shield className="h-5 w-5 md:h-6 md:w-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">Admin Dashboard</h1>
-              <p className="text-sm text-muted-foreground">Manage users and subscriptions</p>
+              <h1 className="text-lg md:text-xl font-bold text-foreground">Admin Dashboard</h1>
+              <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">Manage users and subscriptions</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" asChild>
-              <Link to="/app">
-                ← Back to App
-              </Link>
+            <Button variant="outline" size="sm" asChild className="hidden sm:inline-flex">
+              <Link to="/app">← Back to App</Link>
             </Button>
-            <Button variant="outline" onClick={handleSignOut}>
+            <Button variant="outline" size="sm" asChild className="sm:hidden">
+              <Link to="/app">← Back</Link>
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleSignOut} className="hidden sm:inline-flex">
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
+            </Button>
+            <Button variant="outline" size="icon" onClick={handleSignOut} className="sm:hidden h-9 w-9">
+              <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-4 md:py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-3 gap-2 md:gap-4 mb-4 md:mb-8">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-center justify-between pb-1 md:pb-2 p-3 md:p-6">
+              <CardTitle className="text-xs md:text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground hidden sm:block" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalUsers}</div>
+            <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+              <div className="text-xl md:text-2xl font-bold">{stats.totalUsers}</div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Pro Subscribers</CardTitle>
-              <Crown className="h-4 w-4 text-amber-500" />
+            <CardHeader className="flex flex-row items-center justify-between pb-1 md:pb-2 p-3 md:p-6">
+              <CardTitle className="text-xs md:text-sm font-medium">Pro</CardTitle>
+              <Crown className="h-3 w-3 md:h-4 md:w-4 text-amber-500 hidden sm:block" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.proUsers}</div>
+            <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+              <div className="text-xl md:text-2xl font-bold">{stats.proUsers}</div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Free Users</CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-center justify-between pb-1 md:pb-2 p-3 md:p-6">
+              <CardTitle className="text-xs md:text-sm font-medium">Free</CardTitle>
+              <CreditCard className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground hidden sm:block" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.freeUsers}</div>
+            <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+              <div className="text-xl md:text-2xl font-bold">{stats.freeUsers}</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Users Table */}
+        {/* Users Card */}
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
+          <CardHeader className="p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <CardTitle>User Accounts</CardTitle>
-                <CardDescription>Manage user subscriptions and access</CardDescription>
+                <CardTitle className="text-base md:text-lg">User Accounts</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Manage user subscriptions and access</CardDescription>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={exportUsersToCSV} disabled={filteredUsers.length === 0}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
+                <Button variant="outline" size="sm" onClick={exportUsersToCSV} disabled={filteredUsers.length === 0} className="text-xs md:text-sm">
+                  <Download className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                  <span className="hidden sm:inline">Export CSV</span>
+                  <span className="sm:hidden">Export</span>
                 </Button>
                 <Button variant="outline" size="sm" onClick={fetchUsers} disabled={loading}>
-                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                  Refresh
+                  <RefreshCw className={cn("h-3 w-3 md:h-4 md:w-4", loading && 'animate-spin')} />
                 </Button>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 md:p-6 pt-0">
             {/* User Filters */}
-            <div className="mb-4 flex flex-wrap items-end gap-4">
+            <div className="mb-4 space-y-3 md:space-y-0 md:flex md:flex-wrap md:items-end md:gap-4">
               {/* Search */}
               <div className="flex-1 min-w-[200px] max-w-sm">
                 <Label className="text-xs text-muted-foreground mb-1 block">Search</Label>
@@ -546,96 +647,100 @@ const AdminDashboard = () => {
                     placeholder="Search by name or email..."
                     value={userSearchQuery}
                     onChange={(e) => setUserSearchQuery(e.target.value)}
-                    className="pl-9"
+                    className="pl-9 h-9"
                   />
                 </div>
               </div>
 
-              {/* Status Filter */}
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
-                <Select value={userStatusFilter} onValueChange={(v) => setUserStatusFilter(v as 'all' | 'free' | 'pro')}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="free">Free</SelectItem>
-                    <SelectItem value="pro">Pro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <div className="flex flex-wrap items-end gap-2 md:gap-4">
+                {/* Status Filter */}
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
+                  <Select value={userStatusFilter} onValueChange={(v) => setUserStatusFilter(v as 'all' | 'free' | 'pro')}>
+                    <SelectTrigger className="w-[100px] md:w-[120px] h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="free">Free</SelectItem>
+                      <SelectItem value="pro">Pro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              {/* Joined From */}
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">Joined From</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-[140px] justify-start text-left font-normal",
-                        !userDateFrom && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {userDateFrom ? format(userDateFrom, "MMM d, yyyy") : "Select"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={userDateFrom}
-                      onSelect={setUserDateFrom}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+                {/* Date filters - hidden on mobile, shown in popover */}
+                <div className="hidden md:block">
+                  <Label className="text-xs text-muted-foreground mb-1 block">Joined From</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          "w-[130px] justify-start text-left font-normal h-9",
+                          !userDateFrom && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {userDateFrom ? format(userDateFrom, "MMM d") : "Select"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={userDateFrom}
+                        onSelect={setUserDateFrom}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
-              {/* Joined To */}
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">Joined To</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-[140px] justify-start text-left font-normal",
-                        !userDateTo && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {userDateTo ? format(userDateTo, "MMM d, yyyy") : "Select"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={userDateTo}
-                      onSelect={setUserDateTo}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+                <div className="hidden md:block">
+                  <Label className="text-xs text-muted-foreground mb-1 block">Joined To</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          "w-[130px] justify-start text-left font-normal h-9",
+                          !userDateTo && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {userDateTo ? format(userDateTo, "MMM d") : "Select"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={userDateTo}
+                        onSelect={setUserDateTo}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
-              {/* Clear Date Filters */}
-              {(userDateFrom || userDateTo) && (
-                <Button variant="ghost" size="sm" onClick={clearUserDateFilters}>
-                  Clear dates
-                </Button>
-              )}
+                {(userDateFrom || userDateTo) && (
+                  <Button variant="ghost" size="sm" onClick={clearUserDateFilters} className="h-9">
+                    Clear
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Bulk Actions Bar */}
             {selectedUsers.size > 0 && (
-              <div className="mb-4 p-3 bg-muted/50 rounded-lg flex items-center justify-between">
+              <div className="mb-4 p-3 bg-muted/50 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <CheckSquare className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium">{selectedUsers.size} user(s) selected</span>
+                  <span className="text-sm font-medium">{selectedUsers.size} selected</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -652,7 +757,7 @@ const AdminDashboard = () => {
                     disabled={bulkActionLoading || getEligibleUsers('cancel').length === 0}
                   >
                     <X className="h-4 w-4 mr-1" />
-                    Cancel Sub ({getEligibleUsers('cancel').length})
+                    Cancel ({getEligibleUsers('cancel').length})
                   </Button>
                   <Button variant="ghost" size="sm" onClick={clearSelection}>
                     Clear
@@ -667,145 +772,178 @@ const AdminDashboard = () => {
               </div>
             ) : (
               <>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-10">
-                        <Checkbox
-                          checked={paginatedUsers.length > 0 && selectedUsers.size === paginatedUsers.length}
-                          onCheckedChange={toggleSelectAll}
-                        />
-                      </TableHead>
-                      <TableHead>User</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Joined</TableHead>
-                      <TableHead>Last Active</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Sub End</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedUsers.map((user) => (
-                      <TableRow key={user.id} className={selectedUsers.has(user.id) ? 'bg-muted/30' : ''}>
-                        <TableCell>
+                {/* Mobile card view */}
+                <div className="md:hidden">
+                  <div className="mb-3 flex items-center gap-2">
+                    <Checkbox
+                      checked={paginatedUsers.length > 0 && selectedUsers.size === paginatedUsers.length}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                    <span className="text-sm text-muted-foreground">Select all</span>
+                  </div>
+                  {paginatedUsers.map((user) => (
+                    <MobileUserCard
+                      key={user.id}
+                      user={user}
+                      isSelected={selectedUsers.has(user.id)}
+                      onToggleSelect={() => toggleUserSelection(user.id)}
+                      onActivity={() => setActivityDialog({ open: true, user })}
+                      onImpersonate={() => handleImpersonateClick(user)}
+                      onAction={(action) => handleAction(action, user)}
+                      actionLoading={actionLoading}
+                      impersonateLoading={impersonateLoading}
+                      currentUserId={currentUser?.id}
+                    />
+                  ))}
+                  {paginatedUsers.length === 0 && (
+                    <p className="text-center py-8 text-muted-foreground">
+                      {userSearchQuery || userDateFrom || userDateTo || userStatusFilter !== 'all' 
+                        ? 'No matching users found' 
+                        : 'No users found'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Desktop table view */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-10">
                           <Checkbox
-                            checked={selectedUsers.has(user.id)}
-                            onCheckedChange={() => toggleUserSelection(user.id)}
+                            checked={paginatedUsers.length > 0 && selectedUsers.size === paginatedUsers.length}
+                            onCheckedChange={toggleSelectAll}
                           />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {user.first_name || user.last_name
-                            ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
-                            : '—'}
-                        </TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          {format(new Date(user.created_at), 'MMM d, yyyy')}
-                        </TableCell>
-                        <TableCell>
-                          {user.last_active ? (
-                            <span className="text-muted-foreground text-sm">
-                              {formatDistanceToNow(new Date(user.last_active), { addSuffix: true })}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground/50 text-sm">Never</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={user.subscription_status === 'pro' ? 'default' : 'secondary'}
-                            className={user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
-                          >
-                            {user.subscription_status === 'pro' ? 'Pro' : 'Free'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {user.subscription_end
-                            ? format(new Date(user.subscription_end), 'MMM d')
-                            : '—'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            {/* Activity Log button */}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setActivityDialog({ open: true, user })}
-                              title="View activity log"
+                        </TableHead>
+                        <TableHead>User</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Joined</TableHead>
+                        <TableHead>Last Active</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Sub End</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedUsers.map((user) => (
+                        <TableRow key={user.id} className={selectedUsers.has(user.id) ? 'bg-muted/30' : ''}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedUsers.has(user.id)}
+                              onCheckedChange={() => toggleUserSelection(user.id)}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {user.first_name || user.last_name
+                              ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                              : '—'}
+                          </TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>
+                            {format(new Date(user.created_at), 'MMM d, yyyy')}
+                          </TableCell>
+                          <TableCell>
+                            {user.last_active ? (
+                              <span className="text-muted-foreground text-sm">
+                                {formatDistanceToNow(new Date(user.last_active), { addSuffix: true })}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground/50 text-sm">Never</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={user.subscription_status === 'pro' ? 'default' : 'secondary'}
+                              className={user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
                             >
-                              <Activity className="h-4 w-4" />
-                            </Button>
-                            {/* View as User button - don't show for current user */}
-                            {user.id !== currentUser?.id && (
+                              {user.subscription_status === 'pro' ? 'Pro' : 'Free'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {user.subscription_end
+                              ? format(new Date(user.subscription_end), 'MMM d')
+                              : '—'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleImpersonateClick(user)}
-                                disabled={impersonateLoading === user.id}
-                                title="View as this user"
+                                onClick={() => setActivityDialog({ open: true, user })}
+                                title="View activity log"
                               >
-                                {impersonateLoading === user.id ? (
-                                  <RefreshCw className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Eye className="h-4 w-4" />
-                                )}
+                                <Activity className="h-4 w-4" />
                               </Button>
-                            )}
-                            {user.subscription_status === 'pro' ? (
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleAction('cancel', user)}
-                                disabled={actionLoading === user.id}
-                              >
-                                {actionLoading === user.id ? (
-                                  <RefreshCw className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <>
-                                    <X className="h-4 w-4 mr-1" />
-                                    Cancel
-                                  </>
-                                )}
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => handleAction('grant_pro', user)}
-                                disabled={actionLoading === user.id}
-                              >
-                                {actionLoading === user.id ? (
-                                  <RefreshCw className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <>
-                                    <Crown className="h-4 w-4 mr-1" />
-                                    Grant Pro
-                                  </>
-                                )}
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {paginatedUsers.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                          {userSearchQuery || userDateFrom || userDateTo || userStatusFilter !== 'all' 
-                            ? 'No matching users found' 
-                            : 'No users found'}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                              {user.id !== currentUser?.id && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleImpersonateClick(user)}
+                                  disabled={impersonateLoading === user.id}
+                                  title="View as this user"
+                                >
+                                  {impersonateLoading === user.id ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Eye className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              )}
+                              {user.subscription_status === 'pro' ? (
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleAction('cancel', user)}
+                                  disabled={actionLoading === user.id}
+                                >
+                                  {actionLoading === user.id ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <X className="h-4 w-4 mr-1" />
+                                      Cancel
+                                    </>
+                                  )}
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => handleAction('grant_pro', user)}
+                                  disabled={actionLoading === user.id}
+                                >
+                                  {actionLoading === user.id ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <Crown className="h-4 w-4 mr-1" />
+                                      Grant Pro
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {paginatedUsers.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                            {userSearchQuery || userDateFrom || userDateTo || userStatusFilter !== 'all' 
+                              ? 'No matching users found' 
+                              : 'No users found'}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
 
-                {/* User Pagination */}
+                {/* Pagination */}
                 {userTotalPages > 1 && (
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                    <p className="text-sm text-muted-foreground">
-                      Showing {((userCurrentPage - 1) * USERS_PER_PAGE) + 1} to {Math.min(userCurrentPage * USERS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} users
+                  <div className="flex flex-col sm:flex-row items-center justify-between mt-4 pt-4 border-t gap-3">
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      {((userCurrentPage - 1) * USERS_PER_PAGE) + 1}–{Math.min(userCurrentPage * USERS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length}
                     </p>
                     <div className="flex items-center gap-2">
                       <Button
@@ -816,8 +954,8 @@ const AdminDashboard = () => {
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
-                      <span className="text-sm text-muted-foreground">
-                        Page {userCurrentPage} of {userTotalPages}
+                      <span className="text-xs md:text-sm text-muted-foreground">
+                        {userCurrentPage} / {userTotalPages}
                       </span>
                       <Button
                         variant="outline"
@@ -836,105 +974,107 @@ const AdminDashboard = () => {
         </Card>
 
         {/* Impersonation Logs */}
-        <Card className="mt-8">
-          <CardHeader>
-            <div className="flex items-center justify-between">
+        <Card className="mt-4 md:mt-8">
+          <CardHeader className="p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <History className="h-5 w-5 text-muted-foreground" />
+                <History className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
                 <div>
-                  <CardTitle>Impersonation Activity</CardTitle>
-                  <CardDescription>Recent admin impersonation sessions</CardDescription>
+                  <CardTitle className="text-base md:text-lg">Impersonation Activity</CardTitle>
+                  <CardDescription className="text-xs md:text-sm">Recent admin impersonation sessions</CardDescription>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={exportLogsToCSV} disabled={filteredLogs.length === 0}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
+                <Button variant="outline" size="sm" onClick={exportLogsToCSV} disabled={filteredLogs.length === 0} className="text-xs md:text-sm">
+                  <Download className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                  <span className="hidden sm:inline">Export CSV</span>
+                  <span className="sm:hidden">Export</span>
                 </Button>
                 <Button variant="outline" size="sm" onClick={fetchImpersonationLogs} disabled={logsLoading}>
-                  <RefreshCw className={`h-4 w-4 mr-2 ${logsLoading ? 'animate-spin' : ''}`} />
-                  Refresh
+                  <RefreshCw className={cn("h-3 w-3 md:h-4 md:w-4", logsLoading && 'animate-spin')} />
                 </Button>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 md:p-6 pt-0">
             {/* Filters */}
-            <div className="mb-4 flex flex-wrap items-end gap-4">
-              {/* Search */}
+            <div className="mb-4 space-y-3 md:space-y-0 md:flex md:flex-wrap md:items-end md:gap-4">
               <div className="flex-1 min-w-[200px] max-w-sm">
                 <Label className="text-xs text-muted-foreground mb-1 block">Search</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search by admin or target email..."
+                    placeholder="Search by email..."
                     value={logSearchQuery}
                     onChange={(e) => setLogSearchQuery(e.target.value)}
-                    className="pl-9"
+                    className="pl-9 h-9"
                   />
                 </div>
               </div>
 
-              {/* Date From */}
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">From</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-[140px] justify-start text-left font-normal",
-                        !dateFrom && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateFrom ? format(dateFrom, "MMM d, yyyy") : "Select"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={dateFrom}
-                      onSelect={setDateFrom}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+              <div className="hidden md:flex md:items-end md:gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">From</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          "w-[130px] justify-start text-left font-normal h-9",
+                          !dateFrom && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateFrom ? format(dateFrom, "MMM d") : "Select"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dateFrom}
+                        onSelect={setDateFrom}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
-              {/* Date To */}
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">To</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-[140px] justify-start text-left font-normal",
-                        !dateTo && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateTo ? format(dateTo, "MMM d, yyyy") : "Select"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={dateTo}
-                      onSelect={setDateTo}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">To</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          "w-[130px] justify-start text-left font-normal h-9",
+                          !dateTo && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateTo ? format(dateTo, "MMM d") : "Select"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dateTo}
+                        onSelect={setDateTo}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
-              {/* Clear Dates */}
-              {(dateFrom || dateTo) && (
-                <Button variant="ghost" size="sm" onClick={clearDateFilters}>
-                  Clear dates
-                </Button>
-              )}
+                {(dateFrom || dateTo) && (
+                  <Button variant="ghost" size="sm" onClick={clearDateFilters} className="h-9">
+                    Clear
+                  </Button>
+                )}
+              </div>
             </div>
 
             {logsLoading ? (
@@ -943,45 +1083,73 @@ const AdminDashboard = () => {
               </div>
             ) : (
               <>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Admin</TableHead>
-                      <TableHead>Target User</TableHead>
-                      <TableHead>Action</TableHead>
-                      <TableHead>Timestamp</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedLogs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell className="font-medium">{log.admin_email}</TableCell>
-                        <TableCell>{log.target_email}</TableCell>
-                        <TableCell>
+                {/* Mobile card view for logs */}
+                <div className="md:hidden space-y-3">
+                  {paginatedLogs.map((log) => (
+                    <Card key={log.id}>
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between mb-2">
                           <Badge variant={log.action === 'start' ? 'default' : 'secondary'}>
                             {log.action === 'start' ? 'Started' : 'Ended'}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {format(new Date(log.created_at), 'MMM d, yyyy h:mm a')}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {paginatedLogs.length === 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(log.created_at), 'MMM d, h:mm a')}
+                          </span>
+                        </div>
+                        <p className="text-sm"><span className="text-muted-foreground">Admin:</span> {log.admin_email}</p>
+                        <p className="text-sm"><span className="text-muted-foreground">Target:</span> {log.target_email}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {paginatedLogs.length === 0 && (
+                    <p className="text-center py-8 text-muted-foreground">
+                      {logSearchQuery || dateFrom || dateTo ? 'No matching logs found' : 'No impersonation activity'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Desktop table view */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                          {logSearchQuery || dateFrom || dateTo ? 'No matching logs found' : 'No impersonation activity'}
-                        </TableCell>
+                        <TableHead>Admin</TableHead>
+                        <TableHead>Target User</TableHead>
+                        <TableHead>Action</TableHead>
+                        <TableHead>Timestamp</TableHead>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedLogs.map((log) => (
+                        <TableRow key={log.id}>
+                          <TableCell className="font-medium">{log.admin_email}</TableCell>
+                          <TableCell>{log.target_email}</TableCell>
+                          <TableCell>
+                            <Badge variant={log.action === 'start' ? 'default' : 'secondary'}>
+                              {log.action === 'start' ? 'Started' : 'Ended'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(log.created_at), 'MMM d, yyyy h:mm a')}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {paginatedLogs.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                            {logSearchQuery || dateFrom || dateTo ? 'No matching logs found' : 'No impersonation activity'}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                    <p className="text-sm text-muted-foreground">
-                      Showing {((currentPage - 1) * LOGS_PER_PAGE) + 1} to {Math.min(currentPage * LOGS_PER_PAGE, filteredLogs.length)} of {filteredLogs.length} logs
+                  <div className="flex flex-col sm:flex-row items-center justify-between mt-4 pt-4 border-t gap-3">
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      {((currentPage - 1) * LOGS_PER_PAGE) + 1}–{Math.min(currentPage * LOGS_PER_PAGE, filteredLogs.length)} of {filteredLogs.length}
                     </p>
                     <div className="flex items-center gap-2">
                       <Button
@@ -992,8 +1160,8 @@ const AdminDashboard = () => {
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
-                      <span className="text-sm text-muted-foreground">
-                        Page {currentPage} of {totalPages}
+                      <span className="text-xs md:text-sm text-muted-foreground">
+                        {currentPage} / {totalPages}
                       </span>
                       <Button
                         variant="outline"
@@ -1014,21 +1182,21 @@ const AdminDashboard = () => {
 
       {/* Confirmation Dialog */}
       <AlertDialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ ...confirmDialog, open: false })}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {confirmDialog.action === 'cancel' ? 'Cancel Subscription' : 'Grant Pro Access'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmDialog.action === 'cancel'
-                ? `Are you sure you want to cancel the subscription for ${confirmDialog.user?.email}? This action cannot be undone.`
-                : `Are you sure you want to grant free Pro access to ${confirmDialog.user?.email}? This will create a 100% discounted subscription.`}
+                ? `Are you sure you want to cancel the subscription for ${confirmDialog.user?.email}?`
+                : `Are you sure you want to grant free Pro access to ${confirmDialog.user?.email}?`}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={executeAction}>
-              {confirmDialog.action === 'cancel' ? 'Yes, Cancel Subscription' : 'Yes, Grant Pro'}
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={executeAction} className="w-full sm:w-auto">
+              {confirmDialog.action === 'cancel' ? 'Yes, Cancel' : 'Yes, Grant Pro'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1036,17 +1204,17 @@ const AdminDashboard = () => {
 
       {/* Impersonation Confirmation Dialog */}
       <AlertDialog open={impersonateDialog.open} onOpenChange={(open) => !open && setImpersonateDialog({ ...impersonateDialog, open: false })}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>View as User</AlertDialogTitle>
             <AlertDialogDescription>
               You are about to view the app as <strong>{impersonateDialog.user?.email}</strong>. 
-              This action will be logged for security purposes. You can return to your admin account at any time using the banner at the top of the screen.
+              This action will be logged for security purposes.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={executeImpersonation}>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={executeImpersonation} className="w-full sm:w-auto">
               Yes, View as User
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -1055,20 +1223,20 @@ const AdminDashboard = () => {
 
       {/* Bulk Action Confirmation Dialog */}
       <AlertDialog open={bulkConfirmDialog.open} onOpenChange={(open) => !open && setBulkConfirmDialog({ ...bulkConfirmDialog, open: false })}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {bulkConfirmDialog.action === 'cancel' ? 'Bulk Cancel Subscriptions' : 'Bulk Grant Pro Access'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {bulkConfirmDialog.action === 'cancel'
-                ? `Are you sure you want to cancel subscriptions for ${getEligibleUsers('cancel').length} user(s)? This action cannot be undone.`
+                ? `Are you sure you want to cancel subscriptions for ${getEligibleUsers('cancel').length} user(s)?`
                 : `Are you sure you want to grant free Pro access to ${getEligibleUsers('grant_pro').length} user(s)?`}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={executeBulkAction} disabled={bulkActionLoading}>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={executeBulkAction} disabled={bulkActionLoading} className="w-full sm:w-auto">
               {bulkActionLoading ? (
                 <RefreshCw className="h-4 w-4 animate-spin mr-2" />
               ) : null}
