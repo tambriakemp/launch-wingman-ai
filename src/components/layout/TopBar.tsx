@@ -1,10 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
-import { ClipboardCheck, Settings, Shield, LogOut } from "lucide-react";
+import { ClipboardCheck, Settings, Shield, LogOut, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +21,8 @@ export const TopBar = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { isAdmin } = useAdmin();
+  const isMobile = useIsMobile();
+  const { toggle } = useMobileSidebar();
   const isAssessmentsActive = location.pathname.startsWith("/assessments");
 
   // Fetch user profile for first name
@@ -39,12 +43,23 @@ export const TopBar = () => {
   const userInitial = profile?.first_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U";
 
   return (
-    <header className="h-12 border-b border-border bg-background flex items-center justify-between px-4 sticky top-0 z-40">
-      <div className="flex items-center">
-        {/* Left side - can add breadcrumbs here later */}
+    <header className="h-12 border-b border-border bg-background flex items-center justify-between px-3 md:px-4 sticky top-0 z-40">
+      <div className="flex items-center gap-2">
+        {/* Mobile hamburger menu */}
+        {isMobile && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 w-9 p-0"
+            onClick={toggle}
+            aria-label="Toggle menu"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
       </div>
 
-      <nav className="flex items-center gap-2">
+      <nav className="flex items-center gap-1 md:gap-2">
         <Button
           variant="ghost"
           size="sm"
@@ -56,7 +71,7 @@ export const TopBar = () => {
         >
           <Link to="/assessments">
             <ClipboardCheck className="w-4 h-4" />
-            Assessments
+            <span className="hidden sm:inline">Assessments</span>
           </Link>
         </Button>
 

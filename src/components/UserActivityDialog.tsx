@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +14,7 @@ import { format, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { CalendarIcon, ChevronLeft, ChevronRight, Search, Download, RefreshCw, Monitor, Smartphone, Tablet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface UserActivity {
   id: string;
@@ -70,48 +73,30 @@ const getOSInfo = (userAgent: string | null): string => {
   return 'Other';
 };
 
-export const UserActivityDialog = ({ open, onOpenChange, user, accessToken }: UserActivityDialogProps) => {
-  const [activities, setActivities] = useState<UserActivity[]>([]);
-  const [loading, setLoading] = useState(false);
+const ActivityContent = ({ 
+  user, 
+  accessToken,
+  activities,
+  setActivities,
+  loading,
+  setLoading,
+  fetchActivities
+}: {
+  user: UserActivityDialogProps['user'];
+  accessToken: string;
+  activities: UserActivity[];
+  setActivities: React.Dispatch<React.SetStateAction<UserActivity[]>>;
+  loading: boolean;
+  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  fetchActivities: () => Promise<void>;
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
-
-  const fetchActivities = async () => {
-    if (!user || !accessToken) return;
-    
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('user_activity')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(500);
-
-      if (error) throw error;
-      setActivities(data || []);
-    } catch (error: any) {
-      console.error('Failed to fetch user activity:', error);
-      toast.error('Failed to load activity');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (open && user) {
-      fetchActivities();
-      setCurrentPage(1);
-      setSearchQuery('');
-      setDateFrom(undefined);
-      setDateTo(undefined);
-    }
-  }, [open, user?.id]);
+  const isMobile = useIsMobile();
 
   const filteredActivities = activities.filter(activity => {
-    // Text search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       const matchesIP = activity.ip_address?.toLowerCase().includes(query);
@@ -120,7 +105,6 @@ export const UserActivityDialog = ({ open, onOpenChange, user, accessToken }: Us
       if (!matchesIP && !matchesEvent && !matchesBrowser) return false;
     }
     
-    // Date range filter
     if (dateFrom || dateTo) {
       const activityDate = new Date(activity.created_at);
       if (dateFrom && dateTo) {
@@ -175,199 +159,309 @@ export const UserActivityDialog = ({ open, onOpenChange, user, accessToken }: Us
   const uniqueIPs = [...new Set(activities.map(a => a.ip_address).filter(Boolean))];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            Activity Log: {user?.email}
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            {user?.first_name && user?.last_name 
-              ? `${user.first_name} ${user.last_name}` 
-              : 'Full login history with IP addresses and timestamps'}
-          </p>
-        </DialogHeader>
+    <div className="flex flex-col h-full">
+      {/* Summary Stats */}
+      <div className="flex gap-4 py-2 border-b text-sm">
+        <div>
+          <span className="text-muted-foreground">Total Logins:</span>{' '}
+          <span className="font-medium">{activities.length}</span>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Unique IPs:</span>{' '}
+          <span className="font-medium">{uniqueIPs.length}</span>
+        </div>
+      </div>
 
-        {/* Summary Stats */}
-        <div className="flex gap-4 py-2 border-b">
-          <div className="text-sm">
-            <span className="text-muted-foreground">Total Logins:</span>{' '}
-            <span className="font-medium">{activities.length}</span>
-          </div>
-          <div className="text-sm">
-            <span className="text-muted-foreground">Unique IPs:</span>{' '}
-            <span className="font-medium">{uniqueIPs.length}</span>
+      {/* Filters */}
+      <div className="flex flex-col gap-3 py-3">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by IP, event, browser..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              className="pl-9 h-9"
+            />
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-end gap-3 py-2">
-          <div className="flex-1 min-w-[180px] max-w-xs">
-            <Label className="text-xs text-muted-foreground mb-1 block">Search</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by IP, event, browser..."
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                className="pl-9 h-9"
-              />
-            </div>
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {!isMobile && (
+            <>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "w-[110px] justify-start text-left font-normal",
+                      !dateFrom && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFrom ? format(dateFrom, "MMM d") : "From"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateFrom}
+                    onSelect={(d) => { setDateFrom(d); setCurrentPage(1); }}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
 
-          <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">From</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn(
-                    "w-[130px] justify-start text-left font-normal",
-                    !dateFrom && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateFrom ? format(dateFrom, "MMM d") : "Select"}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "w-[110px] justify-start text-left font-normal",
+                      !dateTo && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateTo ? format(dateTo, "MMM d") : "To"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateTo}
+                    onSelect={(d) => { setDateTo(d); setCurrentPage(1); }}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+
+              {(dateFrom || dateTo) && (
+                <Button variant="ghost" size="sm" onClick={clearDateFilters}>
+                  Clear
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dateFrom}
-                  onSelect={(d) => { setDateFrom(d); setCurrentPage(1); }}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">To</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn(
-                    "w-[130px] justify-start text-left font-normal",
-                    !dateTo && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateTo ? format(dateTo, "MMM d") : "Select"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dateTo}
-                  onSelect={(d) => { setDateTo(d); setCurrentPage(1); }}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {(dateFrom || dateTo) && (
-            <Button variant="ghost" size="sm" onClick={clearDateFilters}>
-              Clear
-            </Button>
+              )}
+            </>
           )}
 
           <div className="ml-auto flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={exportToCSV} disabled={filteredActivities.length === 0}>
               <Download className="h-4 w-4 mr-1" />
-              Export
+              <span className="hidden sm:inline">Export</span>
             </Button>
             <Button variant="outline" size="sm" onClick={fetchActivities} disabled={loading}>
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             </Button>
           </div>
         </div>
+      </div>
 
-        {/* Activity Table */}
-        <div className="flex-1 overflow-auto">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Event</TableHead>
-                  <TableHead>IP Address</TableHead>
-                  <TableHead>Device</TableHead>
-                  <TableHead>Browser / OS</TableHead>
-                  <TableHead>Timestamp</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedActivities.map((activity) => (
-                  <TableRow key={activity.id}>
-                    <TableCell>
+      {/* Activity List */}
+      <div className="flex-1 overflow-auto">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          <>
+            {/* Mobile card view */}
+            <div className="md:hidden space-y-2">
+              {paginatedActivities.map((activity) => (
+                <Card key={activity.id}>
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-2">
                       <Badge variant="outline" className="capitalize">
                         {activity.event_type}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {activity.ip_address || <span className="text-muted-foreground">Unknown</span>}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        {getDeviceIcon(activity.user_agent)}
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(activity.created_at), 'MMM d, h:mm a')}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">IP:</span>{' '}
+                        <span className="font-mono text-xs">{activity.ip_address || 'Unknown'}</span>
                       </div>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {getBrowserInfo(activity.user_agent)} / {getOSInfo(activity.user_agent)}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(activity.created_at), 'MMM d, yyyy h:mm a')}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {paginatedActivities.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      {searchQuery || dateFrom || dateTo ? 'No matching activity found' : 'No activity recorded'}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-3 border-t">
-            <p className="text-sm text-muted-foreground">
-              Showing {((currentPage - 1) * ACTIVITY_PER_PAGE) + 1} to {Math.min(currentPage * ACTIVITY_PER_PAGE, filteredActivities.length)} of {filteredActivities.length}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                {currentPage} / {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+                      <div className="flex items-center gap-1">
+                        {getDeviceIcon(activity.user_agent)}
+                        <span>{getBrowserInfo(activity.user_agent)}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {paginatedActivities.length === 0 && (
+                <p className="text-center py-8 text-muted-foreground">
+                  {searchQuery || dateFrom || dateTo ? 'No matching activity found' : 'No activity recorded'}
+                </p>
+              )}
             </div>
-          </div>
+
+            {/* Desktop table view */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Event</TableHead>
+                    <TableHead>IP Address</TableHead>
+                    <TableHead>Device</TableHead>
+                    <TableHead>Browser / OS</TableHead>
+                    <TableHead>Timestamp</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedActivities.map((activity) => (
+                    <TableRow key={activity.id}>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize">
+                          {activity.event_type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {activity.ip_address || <span className="text-muted-foreground">Unknown</span>}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          {getDeviceIcon(activity.user_agent)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {getBrowserInfo(activity.user_agent)} / {getOSInfo(activity.user_agent)}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {format(new Date(activity.created_at), 'MMM d, yyyy h:mm a')}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {paginatedActivities.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        {searchQuery || dateFrom || dateTo ? 'No matching activity found' : 'No activity recorded'}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-3 border-t mt-auto">
+          <p className="text-xs md:text-sm text-muted-foreground">
+            {((currentPage - 1) * ACTIVITY_PER_PAGE) + 1}–{Math.min(currentPage * ACTIVITY_PER_PAGE, filteredActivities.length)} of {filteredActivities.length}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-xs md:text-sm text-muted-foreground">
+              {currentPage} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const UserActivityDialog = ({ open, onOpenChange, user, accessToken }: UserActivityDialogProps) => {
+  const [activities, setActivities] = useState<UserActivity[]>([]);
+  const [loading, setLoading] = useState(false);
+  const isMobile = useIsMobile();
+
+  const fetchActivities = async () => {
+    if (!user || !accessToken) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('user_activity')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(500);
+
+      if (error) throw error;
+      setActivities(data || []);
+    } catch (error: any) {
+      console.error('Failed to fetch user activity:', error);
+      toast.error('Failed to load activity');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open && user) {
+      fetchActivities();
+    }
+  }, [open, user?.id]);
+
+  const title = `Activity Log: ${user?.email || ''}`;
+  const description = user?.first_name && user?.last_name 
+    ? `${user.first_name} ${user.last_name}` 
+    : 'Full login history with IP addresses and timestamps';
+
+  // Use Drawer on mobile, Dialog on desktop
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="h-[90vh]">
+          <DrawerHeader className="text-left">
+            <DrawerTitle className="text-base">{title}</DrawerTitle>
+            <p className="text-sm text-muted-foreground">{description}</p>
+          </DrawerHeader>
+          <div className="px-4 pb-4 flex-1 overflow-hidden">
+            <ActivityContent
+              user={user}
+              accessToken={accessToken}
+              activities={activities}
+              setActivities={setActivities}
+              loading={loading}
+              setLoading={setLoading}
+              fetchActivities={fetchActivities}
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">{title}</DialogTitle>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </DialogHeader>
+        <ActivityContent
+          user={user}
+          accessToken={accessToken}
+          activities={activities}
+          setActivities={setActivities}
+          loading={loading}
+          setLoading={setLoading}
+          fetchActivities={fetchActivities}
+        />
       </DialogContent>
     </Dialog>
   );

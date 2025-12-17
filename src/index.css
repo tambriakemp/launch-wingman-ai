@@ -188,6 +188,24 @@
   .content-gap {
     @apply space-y-4;
   }
+
+  /* Mobile responsive utilities */
+  .mobile-card-list {
+    @apply md:hidden space-y-3;
+  }
+
+  .desktop-table {
+    @apply hidden md:table;
+  }
+
+  .table-responsive {
+    @apply overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0;
+  }
+
+  /* Touch-friendly tap targets */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
 }
 
 @keyframes fadeIn {
