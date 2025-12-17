@@ -153,7 +153,7 @@ const Auth = () => {
               <div className="w-14 h-14 bg-primary-foreground/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
                 <Sparkles className="w-7 h-7" />
               </div>
-              <span className="text-3xl font-bold">Coach Hub</span>
+              <span className="text-3xl font-bold">Launchely</span>
             </Link>
             <h1 className="text-5xl font-bold mb-6 leading-tight">
               Launch Your Programs<br />With Confidence

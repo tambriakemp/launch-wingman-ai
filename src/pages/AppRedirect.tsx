@@ -141,7 +141,7 @@ const AppRedirect = () => {
             <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center mx-auto mb-4">
               <Sparkles className="w-6 h-6 text-primary-foreground" />
             </div>
-            <CardTitle className="text-2xl">Welcome to Coach Hub!</CardTitle>
+            <CardTitle className="text-2xl">Welcome to Launchely!</CardTitle>
             <CardDescription>
               Let's create your first project to get started.
             </CardDescription>

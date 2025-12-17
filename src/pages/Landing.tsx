@@ -74,7 +74,7 @@ const Landing = () => {
             <div className="w-8 h-8 md:w-10 md:h-10 gradient-primary rounded-xl flex items-center justify-center shadow-md">
               <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground" />
             </div>
-            <span className="text-lg md:text-xl font-bold text-foreground">Coach Hub</span>
+            <span className="text-lg md:text-xl font-bold text-foreground">Launchely</span>
           </Link>
           
           {/* Desktop Nav */}
@@ -332,7 +332,7 @@ const Landing = () => {
               Ready to Launch with Confidence?
             </h2>
             <p className="text-base md:text-xl opacity-90 max-w-2xl mx-auto mb-6 md:mb-8">
-              Join hundreds of coaches and marketers who trust Coach Hub for their launches.
+              Join hundreds of coaches and marketers who trust Launchely for their launches.
             </p>
             <Button size="lg" variant="glass" asChild className="w-full sm:w-auto">
               <Link to="/auth?tab=signup">
@@ -350,10 +350,10 @@ const Landing = () => {
             <div className="w-7 h-7 md:w-8 md:h-8 gradient-primary rounded-lg flex items-center justify-center">
               <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary-foreground" />
             </div>
-            <span className="font-semibold text-foreground">Coach Hub</span>
+            <span className="font-semibold text-foreground">Launchely</span>
           </div>
           <p className="text-xs md:text-sm text-muted-foreground">
-            © 2024 Coach Hub. All rights reserved.
+            © 2024 Launchely. All rights reserved.
           </p>
         </div>
       </footer>

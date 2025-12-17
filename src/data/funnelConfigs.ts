@@ -12,7 +12,7 @@ export interface AssetRequirement {
   category: 'pages' | 'emails' | 'content' | 'deliverables';
   title: string;
   description: string;
-  linkedSection?: string; // Route to Coach Hub section
+  linkedSection?: string; // Route to Launchely section
   offerSlotType?: string; // Which offer slot this relates to
 }
 
