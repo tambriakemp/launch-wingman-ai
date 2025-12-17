@@ -127,7 +127,7 @@ const SidebarContent = ({
             <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-sidebar-primary-foreground" />
             </div>
-            <span className="text-base font-semibold text-sidebar-accent-foreground">Coach Hub</span>
+            <span className="text-base font-semibold text-sidebar-accent-foreground">Launchely</span>
           </Link>
         </div>
 
@@ -170,7 +170,7 @@ const SidebarContent = ({
           <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-sidebar-primary-foreground" />
           </div>
-          <span className="text-base font-semibold text-sidebar-accent-foreground">Coach Hub</span>
+          <span className="text-base font-semibold text-sidebar-accent-foreground">Launchely</span>
         </Link>
       </div>
 

@@ -106,7 +106,7 @@ serve(async (req) => {
               ${notification.details.login_count ? `<p><strong>Login Attempts:</strong> ${notification.details.login_count}</p>` : ''}
             </div>
             <p>Please review this activity in the admin dashboard.</p>
-            <p style="color: #6b7280; font-size: 12px;">This is an automated security notification from Coach Hub.</p>
+            <p style="color: #6b7280; font-size: 12px;">This is an automated security notification from Launchely.</p>
           </div>
         `;
         break;
@@ -116,13 +116,13 @@ serve(async (req) => {
         htmlContent = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #059669;">🎉 New User Registration</h2>
-            <p>A new user has signed up for Coach Hub:</p>
+            <p>A new user has signed up for Launchely:</p>
             <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 16px 0;">
               <p><strong>Email:</strong> ${notification.user_email}</p>
               ${notification.details.ip_address ? `<p><strong>IP Address:</strong> ${notification.details.ip_address}</p>` : ''}
             </div>
             <p>You can view and manage this user in the admin dashboard.</p>
-            <p style="color: #6b7280; font-size: 12px;">This is an automated notification from Coach Hub.</p>
+            <p style="color: #6b7280; font-size: 12px;">This is an automated notification from Launchely.</p>
           </div>
         `;
         break;
@@ -137,7 +137,7 @@ serve(async (req) => {
               <p><strong>Email:</strong> ${notification.user_email}</p>
               <p><strong>New Status:</strong> ${notification.details.subscription_status || 'Unknown'}</p>
             </div>
-            <p style="color: #6b7280; font-size: 12px;">This is an automated notification from Coach Hub.</p>
+            <p style="color: #6b7280; font-size: 12px;">This is an automated notification from Launchely.</p>
           </div>
         `;
         break;
@@ -160,7 +160,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: "Coach Hub <onboarding@resend.dev>",
+        from: "Launchely <onboarding@resend.dev>",
         to: adminEmails,
         subject,
         html: htmlContent,

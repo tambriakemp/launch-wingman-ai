@@ -37,7 +37,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Coach Hub <onboarding@resend.dev>",
+        from: "Launchely <onboarding@resend.dev>",
         to: [email],
         subject: `Reminder Scheduled: Revisit "${assessmentType}" in 90 Days`,
         html: `
@@ -81,7 +81,7 @@ const handler = async (req: Request): Promise<Response> => {
                 <p>Keep up the great work on your coaching journey!</p>
                 
                 <div class="footer">
-                  <p>— The Coach Hub Team</p>
+                  <p>— The Launchely Team</p>
                 </div>
               </div>
             </div>
