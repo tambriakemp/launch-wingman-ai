@@ -93,6 +93,17 @@ export const DreamOutcomeSectionContent = ({
 
   return (
     <div className="space-y-4">
+      {/* Instructions */}
+      <div className="text-sm text-muted-foreground space-y-2 pb-2 border-b border-border">
+        <p>Describe the specific result or transformation your audience wants to achieve.</p>
+        <p>Write in plain language what success looks like for them — not what you offer, but what they'll experience after working with you. Consider:</p>
+        <ul className="list-disc list-inside space-y-1 ml-2">
+          <li>What does their ideal "after" state look like?</li>
+          <li>How will their daily life be different?</li>
+          <li>What will they be able to do that they can't do now?</li>
+        </ul>
+      </div>
+
       {/* Main Textarea at TOP */}
       <div className="space-y-2">
         <Label htmlFor="desiredOutcome" className="flex items-center gap-1">
