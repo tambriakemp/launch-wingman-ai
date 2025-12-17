@@ -119,6 +119,17 @@ export const PainSectionContent = ({
 
   return (
     <div className="space-y-4">
+      {/* Instructions */}
+      <div className="text-sm text-muted-foreground space-y-2 pb-2 border-b border-border">
+        <p>Identify the core struggle and specific symptoms your audience experiences.</p>
+        <p>Understanding their pain helps you speak directly to what they're feeling right now. Think about:</p>
+        <ul className="list-disc list-inside space-y-1 ml-2">
+          <li>What keeps them up at night?</li>
+          <li>What have they already tried that didn't work?</li>
+          <li>What frustrations do they experience daily because of this problem?</li>
+        </ul>
+      </div>
+
       {/* Primary Pain Point */}
       <div className="space-y-2">
         <Label htmlFor="primaryPainPoint" className="flex items-center gap-1">

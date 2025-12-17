@@ -125,10 +125,16 @@ export const TimeEffortSectionContent = ({
 
   return (
     <div className="space-y-6">
-      {/* Intro Text */}
-      <p className="text-sm text-muted-foreground">
-        Show your audience the path is easier than they think. Quick wins build momentum, friction reducers remove obstacles.
-      </p>
+      {/* Instructions */}
+      <div className="text-sm text-muted-foreground space-y-2 pb-2 border-b border-border">
+        <p>Show your audience the path is easier than they think.</p>
+        <p>People overestimate how hard change will be. Quick wins build momentum, friction reducers remove obstacles. Think about:</p>
+        <ul className="list-disc list-inside space-y-1 ml-2">
+          <li>What early results can they see quickly?</li>
+          <li>What common obstacles can you help them avoid?</li>
+          <li>How can you make the process feel less overwhelming?</li>
+        </ul>
+      </div>
 
       {/* Saved Elements Section */}
       <div className="space-y-3">
