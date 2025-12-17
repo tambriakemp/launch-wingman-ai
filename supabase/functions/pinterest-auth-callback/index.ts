@@ -99,13 +99,26 @@ serve(async (req) => {
       : null;
 
     // Encrypt tokens using database function
-    const { data: encryptedAccessToken } = await supabase.rpc('encrypt_token', { 
+    const { data: encryptedAccessToken, error: encryptAccessError } = await supabase.rpc('encrypt_token', { 
       plain_token: tokenData.access_token 
     });
     
-    const { data: encryptedRefreshToken } = tokenData.refresh_token 
-      ? await supabase.rpc('encrypt_token', { plain_token: tokenData.refresh_token })
-      : { data: null };
+    if (encryptAccessError || !encryptedAccessToken) {
+      console.error('[PINTEREST-AUTH-CALLBACK] Failed to encrypt access token:', encryptAccessError);
+      return Response.redirect(`${APP_URL}/settings?pinterest_error=encryption_failed`);
+    }
+    
+    let encryptedRefreshToken = null;
+    if (tokenData.refresh_token) {
+      const { data: encryptedRefresh, error: encryptRefreshError } = await supabase.rpc('encrypt_token', { 
+        plain_token: tokenData.refresh_token 
+      });
+      if (encryptRefreshError) {
+        console.error('[PINTEREST-AUTH-CALLBACK] Failed to encrypt refresh token:', encryptRefreshError);
+      } else {
+        encryptedRefreshToken = encryptedRefresh;
+      }
+    }
 
     console.log('[PINTEREST-AUTH-CALLBACK] Tokens encrypted successfully');
 
@@ -130,7 +143,7 @@ serve(async (req) => {
       return Response.redirect(`${APP_URL}/settings?pinterest_error=db_error`);
     }
 
-    console.log('[PINTEREST-AUTH-CALLBACK] Connection saved successfully with encrypted tokens');
+    console.log('[PINTEREST-AUTH-CALLBACK] Connection saved successfully');
     
     // Redirect back to app with success
     const finalRedirect = redirect_url || '/settings';
