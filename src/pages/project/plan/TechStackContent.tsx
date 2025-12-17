@@ -1,20 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Check, Globe, Mail, UsersRound, MessageCircleMore, MessageSquare } from "lucide-react";
+import { Check } from "lucide-react";
 
 interface Platform {
   id: string;
   name: string;
   description: string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-  bgColor: string;
+  logoUrl?: string;
+  fallbackColor: string;
 }
 
 const FUNNEL_BUILDERS: Platform[] = [
@@ -22,57 +20,50 @@ const FUNNEL_BUILDERS: Platform[] = [
     id: "clickfunnels",
     name: "ClickFunnels",
     description: "One of the most well-known sales funnel builders with drag-and-drop pages, order forms, upsells/downsells, and funnel templates.",
-    icon: Globe,
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
+    logoUrl: "https://logo.clearbit.com/clickfunnels.com",
+    fallbackColor: "bg-blue-500",
   },
   {
     id: "kartra",
     name: "Kartra",
     description: "All-in-one platform with landing pages, email automation, carts, affiliate tracking, membership sites, and funnels.",
-    icon: Globe,
-    color: "text-purple-500",
-    bgColor: "bg-purple-500/10",
+    logoUrl: "https://logo.clearbit.com/kartra.com",
+    fallbackColor: "bg-purple-500",
   },
   {
     id: "systeme-io",
     name: "Systeme.io",
     description: "Affordable and user-friendly funnel builder with email automation, membership support, and courses.",
-    icon: Globe,
-    color: "text-green-500",
-    bgColor: "bg-green-500/10",
+    logoUrl: "https://logo.clearbit.com/systeme.io",
+    fallbackColor: "bg-green-500",
   },
   {
     id: "getresponse",
     name: "GetResponse",
     description: "Marketing suite with funnel visualization, landing pages, webinars, and email automation.",
-    icon: Globe,
-    color: "text-cyan-500",
-    bgColor: "bg-cyan-500/10",
+    logoUrl: "https://logo.clearbit.com/getresponse.com",
+    fallbackColor: "bg-cyan-500",
   },
   {
     id: "leadpages",
     name: "Leadpages",
     description: "Strong landing page and conversion page builder that integrates with email and CRM tools.",
-    icon: Globe,
-    color: "text-orange-500",
-    bgColor: "bg-orange-500/10",
+    logoUrl: "https://logo.clearbit.com/leadpages.com",
+    fallbackColor: "bg-orange-500",
   },
   {
     id: "kajabi",
     name: "Kajabi",
     description: "All-in-one creator platform with courses, funnels, memberships, and email automations.",
-    icon: Globe,
-    color: "text-indigo-500",
-    bgColor: "bg-indigo-500/10",
+    logoUrl: "https://logo.clearbit.com/kajabi.com",
+    fallbackColor: "bg-indigo-500",
   },
   {
     id: "activecampaign",
     name: "ActiveCampaign",
     description: "More advanced automation and CRM-driven funnels with behavior-based triggers.",
-    icon: Globe,
-    color: "text-rose-500",
-    bgColor: "bg-rose-500/10",
+    logoUrl: "https://logo.clearbit.com/activecampaign.com",
+    fallbackColor: "bg-rose-500",
   },
 ];
 
@@ -81,89 +72,78 @@ const EMAIL_PLATFORMS: Platform[] = [
     id: "mailchimp",
     name: "Mailchimp",
     description: "Classic choice, beginner-friendly, lots of templates.",
-    icon: Mail,
-    color: "text-yellow-500",
-    bgColor: "bg-yellow-500/10",
+    logoUrl: "https://logo.clearbit.com/mailchimp.com",
+    fallbackColor: "bg-yellow-500",
   },
   {
     id: "constant-contact",
     name: "Constant Contact",
     description: "Simple setup + event marketing tools.",
-    icon: Mail,
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
+    logoUrl: "https://logo.clearbit.com/constantcontact.com",
+    fallbackColor: "bg-blue-500",
   },
   {
     id: "sendinblue",
-    name: "Sendinblue",
+    name: "Brevo (Sendinblue)",
     description: "Email + SMS in one place with strong automation.",
-    icon: Mail,
-    color: "text-sky-500",
-    bgColor: "bg-sky-500/10",
+    logoUrl: "https://logo.clearbit.com/brevo.com",
+    fallbackColor: "bg-sky-500",
   },
   {
     id: "activecampaign",
     name: "ActiveCampaign",
     description: "Powerful automation with CRM and segmentation.",
-    icon: Mail,
-    color: "text-rose-500",
-    bgColor: "bg-rose-500/10",
+    logoUrl: "https://logo.clearbit.com/activecampaign.com",
+    fallbackColor: "bg-rose-500",
   },
   {
     id: "getresponse",
     name: "GetResponse",
     description: "Good automation, webinars, and landing pages too.",
-    icon: Mail,
-    color: "text-cyan-500",
-    bgColor: "bg-cyan-500/10",
+    logoUrl: "https://logo.clearbit.com/getresponse.com",
+    fallbackColor: "bg-cyan-500",
   },
   {
     id: "aweber",
     name: "AWeber",
     description: "Great for creators and small businesses just starting out.",
-    icon: Mail,
-    color: "text-blue-600",
-    bgColor: "bg-blue-600/10",
+    logoUrl: "https://logo.clearbit.com/aweber.com",
+    fallbackColor: "bg-blue-600",
   },
   {
     id: "convertkit",
     name: "ConvertKit",
     description: "Easy automations and tagging — popular with bloggers & creators.",
-    icon: Mail,
-    color: "text-red-500",
-    bgColor: "bg-red-500/10",
+    logoUrl: "https://logo.clearbit.com/convertkit.com",
+    fallbackColor: "bg-red-500",
   },
   {
     id: "mailerlite",
     name: "MailerLite",
     description: "Clean interface, affordable, great for simple funnels.",
-    icon: Mail,
-    color: "text-green-500",
-    bgColor: "bg-green-500/10",
+    logoUrl: "https://logo.clearbit.com/mailerlite.com",
+    fallbackColor: "bg-green-500",
   },
   {
     id: "kajabi",
-    name: "Kajabi (Email + CRM)",
+    name: "Kajabi",
     description: "All-in-one with email + courses + landing pages.",
-    icon: Mail,
-    color: "text-indigo-500",
-    bgColor: "bg-indigo-500/10",
+    logoUrl: "https://logo.clearbit.com/kajabi.com",
+    fallbackColor: "bg-indigo-500",
   },
   {
     id: "flodesk",
     name: "Flodesk",
     description: "Beautiful design templates, flat pricing, simple interface.",
-    icon: Mail,
-    color: "text-pink-500",
-    bgColor: "bg-pink-500/10",
+    logoUrl: "https://logo.clearbit.com/flodesk.com",
+    fallbackColor: "bg-pink-500",
   },
   {
     id: "hubspot",
-    name: "HubSpot Marketing Hub",
+    name: "HubSpot",
     description: "Enterprise features + CRM + automation.",
-    icon: Mail,
-    color: "text-orange-500",
-    bgColor: "bg-orange-500/10",
+    logoUrl: "https://logo.clearbit.com/hubspot.com",
+    fallbackColor: "bg-orange-500",
   },
 ];
 
@@ -172,102 +152,121 @@ const COMMUNITY_PLATFORMS: Platform[] = [
     id: "kajabi",
     name: "Kajabi",
     description: "All-in-one creator platform with courses, funnels, memberships, and email automations.",
-    icon: UsersRound,
-    color: "text-indigo-500",
-    bgColor: "bg-indigo-500/10",
+    logoUrl: "https://logo.clearbit.com/kajabi.com",
+    fallbackColor: "bg-indigo-500",
   },
   {
     id: "mighty-networks",
     name: "Mighty Networks",
     description: "Community and membership platform for creators with network features.",
-    icon: UsersRound,
-    color: "text-purple-500",
-    bgColor: "bg-purple-500/10",
+    logoUrl: "https://logo.clearbit.com/mightynetworks.com",
+    fallbackColor: "bg-purple-500",
   },
   {
     id: "circle",
     name: "Circle",
     description: "Community hub integrated with membership and course sales.",
-    icon: MessageCircleMore,
-    color: "text-teal-500",
-    bgColor: "bg-teal-500/10",
+    logoUrl: "https://logo.clearbit.com/circle.so",
+    fallbackColor: "bg-teal-500",
   },
   {
     id: "discord",
     name: "Discord",
     description: "Real-time community used for cohorts, launch groups, and engagement.",
-    icon: MessageCircleMore,
-    color: "text-violet-500",
-    bgColor: "bg-violet-500/10",
+    logoUrl: "https://logo.clearbit.com/discord.com",
+    fallbackColor: "bg-violet-500",
   },
   {
     id: "slack",
     name: "Slack",
     description: "Professional community space often used for paid membership groups.",
-    icon: MessageSquare,
-    color: "text-pink-500",
-    bgColor: "bg-pink-500/10",
+    logoUrl: "https://logo.clearbit.com/slack.com",
+    fallbackColor: "bg-pink-500",
   },
   {
     id: "facebook-groups",
     name: "Facebook Groups",
     description: "Still widely used for community building and launch cohorts.",
-    icon: UsersRound,
-    color: "text-blue-600",
-    bgColor: "bg-blue-600/10",
+    logoUrl: "https://logo.clearbit.com/facebook.com",
+    fallbackColor: "bg-blue-600",
+  },
+  {
+    id: "skool",
+    name: "Skool",
+    description: "Community platform combining courses, discussions, and gamification.",
+    logoUrl: "https://logo.clearbit.com/skool.com",
+    fallbackColor: "bg-yellow-500",
   },
 ];
 
-interface PlatformSelectorProps {
-  title: string;
+interface PlatformListProps {
   platforms: Platform[];
   selectedPlatform: string | null;
   onSelect: (platformId: string) => void;
 }
 
-const PlatformSelector = ({ title, platforms, selectedPlatform, onSelect }: PlatformSelectorProps) => {
+const PlatformList = ({ platforms, selectedPlatform, onSelect }: PlatformListProps) => {
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+
+  const handleImageError = (platformId: string) => {
+    setFailedImages(prev => new Set(prev).add(platformId));
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {platforms.map((platform) => {
-            const Icon = platform.icon;
-            const isSelected = selectedPlatform === platform.id;
-            
-            return (
-              <button
-                key={platform.id}
-                onClick={() => onSelect(platform.id)}
-                className={cn(
-                  "relative flex flex-col items-start gap-2 p-4 rounded-lg border text-left transition-all hover:border-primary/50",
-                  isSelected
-                    ? "border-primary bg-primary/5 ring-1 ring-primary"
-                    : "border-border bg-card hover:bg-accent/50"
-                )}
-              >
-                {isSelected && (
-                  <div className="absolute top-2 right-2">
-                    <Check className="h-4 w-4 text-primary" />
-                  </div>
-                )}
-                <div className={cn("p-2 rounded-md", platform.bgColor)}>
-                  <Icon className={cn("h-4 w-4", platform.color)} />
-                </div>
-                <div className="space-y-1 pr-6">
-                  <h4 className="font-medium text-sm">{platform.name}</h4>
-                  <p className="text-xs text-muted-foreground line-clamp-2">
-                    {platform.description}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+    <div className="divide-y divide-border rounded-xl border bg-card overflow-hidden">
+      {platforms.map((platform) => {
+        const isSelected = selectedPlatform === platform.id;
+        const showFallback = failedImages.has(platform.id) || !platform.logoUrl;
+        
+        return (
+          <button
+            key={platform.id}
+            onClick={() => onSelect(platform.id)}
+            className={cn(
+              "flex items-center gap-4 w-full p-4 text-left transition-colors hover:bg-muted/50",
+              isSelected && "bg-muted/30"
+            )}
+          >
+            {/* Selection indicator */}
+            <div className={cn(
+              "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
+              isSelected 
+                ? "border-primary bg-primary" 
+                : "border-muted-foreground/30"
+            )}>
+              {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+            </div>
+
+            {/* Logo */}
+            <div className={cn(
+              "w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden",
+              showFallback ? platform.fallbackColor : "bg-white"
+            )}>
+              {showFallback ? (
+                <span className="text-white font-semibold text-sm">
+                  {platform.name.charAt(0)}
+                </span>
+              ) : (
+                <img
+                  src={platform.logoUrl}
+                  alt={platform.name}
+                  className="w-6 h-6 object-contain"
+                  onError={() => handleImageError(platform.id)}
+                />
+              )}
+            </div>
+
+            {/* Text */}
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-sm text-foreground">{platform.name}</h4>
+              <p className="text-xs text-muted-foreground line-clamp-1">
+                {platform.description}
+              </p>
+            </div>
+          </button>
+        );
+      })}
+    </div>
   );
 };
 
@@ -362,19 +361,17 @@ const TechStackContent = ({ projectId }: TechStackContentProps) => {
           title="Tech Stack"
           description="Select the tools you'll use to build and run your funnel"
         />
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">
-              Please complete the Funnel Type step first to configure your tech stack.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border bg-card p-12 text-center">
+          <p className="text-muted-foreground">
+            Please complete the Funnel Type step first to configure your tech stack.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <PlanPageHeader
           title="Tech Stack"
@@ -387,23 +384,36 @@ const TechStackContent = ({ projectId }: TechStackContentProps) => {
         )}
       </div>
 
-      <div className="space-y-6">
-        <PlatformSelector
-          title="Funnel Builder"
+      {/* Funnel Builder Section */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+          Funnel Builder
+        </h3>
+        <PlatformList
           platforms={FUNNEL_BUILDERS}
           selectedPlatform={funnel.funnel_platform}
           onSelect={handleSelectFunnelBuilder}
         />
+      </div>
 
-        <PlatformSelector
-          title="Email Marketing Platform"
+      {/* Email Marketing Section */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+          Email Marketing Platform
+        </h3>
+        <PlatformList
           platforms={EMAIL_PLATFORMS}
           selectedPlatform={funnel.email_platform}
           onSelect={handleSelectEmailPlatform}
         />
+      </div>
 
-        <PlatformSelector
-          title="Community Platform"
+      {/* Community Platform Section */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+          Community Platform
+        </h3>
+        <PlatformList
           platforms={COMMUNITY_PLATFORMS}
           selectedPlatform={funnel.community_platform}
           onSelect={handleSelectCommunityPlatform}
