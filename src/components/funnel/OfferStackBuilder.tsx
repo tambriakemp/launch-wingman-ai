@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Info } from "lucide-react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import { Plus, Info, GripVertical, ChevronRight, Check, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { 
   FUNNEL_CONFIGS, 
-  OfferSlotConfig 
+  OfferSlotConfig,
+  SLOT_TYPE_COLORS 
 } from "@/data/funnelConfigs";
-import { OfferSlotCard, OfferSlotData } from "./OfferSlotCard";
+import { OfferSlotData } from "./OfferSlotCard";
+import { OfferSlotSheet } from "./OfferSlotSheet";
 import {
   Select,
   SelectContent,
@@ -14,8 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import { AudienceData } from "./AudienceDiscovery";
+import { cn } from "@/lib/utils";
 
 interface OfferStackBuilderProps {
   funnelType: string;
@@ -30,21 +33,21 @@ export const OfferStackBuilder = ({
   onChange,
   audienceData,
 }: OfferStackBuilderProps) => {
-  const [expandedSlots, setExpandedSlots] = useState<Set<number>>(new Set([0]));
+  const [activeOfferIndex, setActiveOfferIndex] = useState<number | null>(null);
   const [showAddSlot, setShowAddSlot] = useState(false);
 
   const funnelConfig = FUNNEL_CONFIGS[funnelType];
 
   if (!funnelConfig) return null;
 
-  const toggleSlot = (index: number) => {
-    const newExpanded = new Set(expandedSlots);
-    if (newExpanded.has(index)) {
-      newExpanded.delete(index);
-    } else {
-      newExpanded.add(index);
-    }
-    setExpandedSlots(newExpanded);
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const items = Array.from(offers);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    onChange(items);
   };
 
   const handleOfferChange = (index: number, data: OfferSlotData) => {
@@ -56,14 +59,7 @@ export const OfferStackBuilder = ({
   const handleRemoveOffer = (index: number) => {
     const newOffers = offers.filter((_, i) => i !== index);
     onChange(newOffers);
-    
-    // Update expanded slots
-    const newExpanded = new Set<number>();
-    expandedSlots.forEach((i) => {
-      if (i < index) newExpanded.add(i);
-      else if (i > index) newExpanded.add(i - 1);
-    });
-    setExpandedSlots(newExpanded);
+    setActiveOfferIndex(null);
   };
 
   const handleAddCustomSlot = (slotType: string) => {
@@ -88,11 +84,10 @@ export const OfferStackBuilder = ({
     };
 
     onChange([...offers, newOffer]);
-    setExpandedSlots(new Set([...expandedSlots, offers.length]));
+    setActiveOfferIndex(offers.length);
     setShowAddSlot(false);
   };
 
-  // Get slot config for each offer
   const getSlotConfig = (offer: OfferSlotData): OfferSlotConfig => {
     const config = funnelConfig.offerSlots.find(s => s.type === offer.slotType);
     return config || {
@@ -107,6 +102,9 @@ export const OfferStackBuilder = ({
   const configuredCount = offers.filter(o => o.isConfigured && !o.isSkipped).length;
   const activeOffers = offers.filter(o => !o.isSkipped);
 
+  const activeOffer = activeOfferIndex !== null ? offers[activeOfferIndex] : null;
+  const activeSlot = activeOffer ? getSlotConfig(activeOffer) : null;
+
   return (
     <div className="space-y-6">
       {/* Info Banner */}
@@ -117,7 +115,7 @@ export const OfferStackBuilder = ({
             How offer slots work
           </p>
           <p className="text-muted-foreground">
-            Each slot represents a position in your funnel. Select an offer type first, then use AI to generate titles and descriptions. 
+            Each slot represents a position in your funnel. Click to configure, drag to reorder.
             You can skip optional slots if they don't fit your strategy.
           </p>
         </div>
@@ -131,36 +129,98 @@ export const OfferStackBuilder = ({
         </div>
       </div>
 
-      {/* Offer Slots */}
-      <div className="space-y-3">
-        <AnimatePresence mode="popLayout">
-          {offers.map((offer, index) => (
-            <OfferSlotCard
-              key={`${offer.slotType}-${index}`}
-              slot={getSlotConfig(offer)}
-              data={offer}
-              position={index}
-              isExpanded={expandedSlots.has(index)}
-              onToggle={() => toggleSlot(index)}
-              onChange={(data) => handleOfferChange(index, data)}
-              onRemove={() => handleRemoveOffer(index)}
-              isRemovable={!getSlotConfig(offer).isRequired || 
-                offers.filter(o => o.slotType === offer.slotType).length > 1}
-              audienceData={audienceData}
-              funnelType={funnelType}
-            />
-          ))}
-        </AnimatePresence>
+      {/* Offer List */}
+      <div className="border border-border rounded-xl overflow-hidden bg-card">
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="offers">
+            {(provided) => (
+              <div ref={provided.innerRef} {...provided.droppableProps}>
+                {offers.map((offer, index) => {
+                  const slot = getSlotConfig(offer);
+                  const colorClasses = SLOT_TYPE_COLORS[slot.type] || SLOT_TYPE_COLORS['core'];
+                  const isSkipped = offer.isSkipped;
+
+                  return (
+                    <Draggable
+                      key={`${offer.slotType}-${index}`}
+                      draggableId={`${offer.slotType}-${index}`}
+                      index={index}
+                    >
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className={cn(
+                            "flex items-center gap-3 p-4 border-b border-border last:border-b-0 transition-colors",
+                            snapshot.isDragging && "bg-muted shadow-lg",
+                            isSkipped && "opacity-50 bg-muted/30"
+                          )}
+                        >
+                          {/* Drag Handle */}
+                          <div
+                            {...provided.dragHandleProps}
+                            className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+                          >
+                            <GripVertical className="w-4 h-4" />
+                          </div>
+
+                          {/* Content - Clickable */}
+                          <button
+                            onClick={() => setActiveOfferIndex(index)}
+                            className="flex-1 flex items-center gap-3 text-left min-w-0"
+                          >
+                            <Badge variant="outline" className={cn("shrink-0", colorClasses)}>
+                              {slot.label.replace(" (Optional)", "")}
+                            </Badge>
+
+                            <div className="flex-1 min-w-0">
+                              {isSkipped ? (
+                                <span className="text-sm text-muted-foreground italic flex items-center gap-1">
+                                  <SkipForward className="w-3 h-3" />
+                                  Skipped
+                                </span>
+                              ) : offer.title ? (
+                                <span className="text-sm font-medium text-foreground truncate block">
+                                  {offer.title}
+                                </span>
+                              ) : (
+                                <span className="text-sm text-muted-foreground italic">
+                                  Not configured
+                                </span>
+                              )}
+                            </div>
+                          </button>
+
+                          {/* Status & Arrow */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            {offer.isConfigured && !isSkipped && (
+                              <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                                <Check className="w-3 h-3 text-white" />
+                              </div>
+                            )}
+                            <button
+                              onClick={() => setActiveOfferIndex(index)}
+                              className="text-muted-foreground hover:text-foreground"
+                            >
+                              <ChevronRight className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  );
+                })}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       </div>
 
       {/* Add Slot */}
       <div className="pt-2">
         {showAddSlot ? (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3 p-4 border border-dashed border-border rounded-xl bg-muted/30"
-          >
+          <div className="flex items-center gap-3 p-4 border border-dashed border-border rounded-xl bg-muted/30">
             <Select onValueChange={handleAddCustomSlot}>
               <SelectTrigger className="w-[250px]">
                 <SelectValue placeholder="Select slot type..." />
@@ -181,7 +241,7 @@ export const OfferStackBuilder = ({
             >
               Cancel
             </Button>
-          </motion.div>
+          </div>
         ) : (
           <Button
             variant="outline"
@@ -193,6 +253,24 @@ export const OfferStackBuilder = ({
           </Button>
         )}
       </div>
+
+      {/* Sheet for editing */}
+      {activeOffer && activeSlot && (
+        <OfferSlotSheet
+          isOpen={activeOfferIndex !== null}
+          onClose={() => setActiveOfferIndex(null)}
+          slot={activeSlot}
+          data={activeOffer}
+          onChange={(data) => handleOfferChange(activeOfferIndex!, data)}
+          onRemove={() => handleRemoveOffer(activeOfferIndex!)}
+          isRemovable={
+            !activeSlot.isRequired || 
+            offers.filter(o => o.slotType === activeOffer.slotType).length > 1
+          }
+          audienceData={audienceData}
+          funnelType={funnelType}
+        />
+      )}
     </div>
   );
 };
