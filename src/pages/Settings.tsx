@@ -26,6 +26,8 @@ import {
   Lock,
   FolderOpen,
   Trash2,
+  Link2,
+  Unlink,
 } from "lucide-react";
 
 interface Profile {
@@ -37,6 +39,13 @@ interface Project {
   id: string;
   name: string;
   status: string;
+  created_at: string;
+}
+
+interface SocialConnection {
+  id: string;
+  platform: string;
+  account_name: string | null;
   created_at: string;
 }
 
@@ -62,6 +71,10 @@ const Settings = () => {
   // Delete project state
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
+  // Social connections state
+  const [isConnectingPinterest, setIsConnectingPinterest] = useState(false);
+  const [isDisconnectingPinterest, setIsDisconnectingPinterest] = useState(false);
+
   // Fetch projects for management
   const { data: projects = [], isLoading: isLoadingProjects } = useQuery({
     queryKey: ["all-projects", user?.id],
@@ -75,6 +88,22 @@ const Settings = () => {
     },
     enabled: !!user,
   });
+
+  // Fetch social connections
+  const { data: socialConnections = [], isLoading: isLoadingConnections, refetch: refetchConnections } = useQuery({
+    queryKey: ["social-connections", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("social_connections")
+        .select("id, platform, account_name, created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as SocialConnection[];
+    },
+    enabled: !!user,
+  });
+
+  const pinterestConnection = socialConnections.find(c => c.platform === 'pinterest');
 
   // Delete project mutation
   const deleteProjectMutation = useMutation({
@@ -127,7 +156,7 @@ const Settings = () => {
     fetchOrCreateProfile();
   }, [user]);
 
-  // Handle success/cancel redirects from Stripe
+  // Handle success/cancel redirects from Stripe and Pinterest
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
       toast.success("Subscription successful! Welcome to Pro.");
@@ -135,7 +164,16 @@ const Settings = () => {
     } else if (searchParams.get('canceled') === 'true') {
       toast.info("Checkout canceled.");
     }
-  }, [searchParams, checkSubscription]);
+    
+    // Handle Pinterest OAuth callback
+    if (searchParams.get('pinterest_connected') === 'true') {
+      toast.success("Pinterest connected successfully!");
+      refetchConnections();
+    } else if (searchParams.get('pinterest_error')) {
+      const error = searchParams.get('pinterest_error');
+      toast.error(`Failed to connect Pinterest: ${error}`);
+    }
+  }, [searchParams, checkSubscription, refetchConnections]);
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -232,6 +270,51 @@ const Settings = () => {
       toast.error("Failed to open subscription management. Please try again.");
     } finally {
       setIsOpeningPortal(false);
+    }
+  };
+
+  const handleConnectPinterest = async () => {
+    if (!user) return;
+    
+    setIsConnectingPinterest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('pinterest-auth-start', {
+        body: { 
+          user_id: user.id, 
+          redirect_url: '/settings' 
+        }
+      });
+      
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Pinterest connect error:', error);
+      toast.error("Failed to connect Pinterest. Please try again.");
+      setIsConnectingPinterest(false);
+    }
+  };
+
+  const handleDisconnectPinterest = async () => {
+    if (!user || !pinterestConnection) return;
+    
+    setIsDisconnectingPinterest(true);
+    try {
+      const { error } = await supabase
+        .from('social_connections')
+        .delete()
+        .eq('id', pinterestConnection.id);
+      
+      if (error) throw error;
+      
+      toast.success("Pinterest disconnected");
+      refetchConnections();
+    } catch (error) {
+      console.error('Pinterest disconnect error:', error);
+      toast.error("Failed to disconnect Pinterest");
+    } finally {
+      setIsDisconnectingPinterest(false);
     }
   };
 
@@ -506,6 +589,89 @@ const Settings = () => {
                   </div>
                 </>
               )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Connected Accounts Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.22 }}
+        >
+          <Card variant="elevated">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-rose-500/10 rounded-xl flex items-center justify-center">
+                  <Link2 className="w-5 h-5 text-rose-500" />
+                </div>
+                <div>
+                  <CardTitle>Connected Accounts</CardTitle>
+                  <CardDescription>Connect social media accounts for content posting</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {/* Pinterest Connection */}
+                <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#E60023]/10 flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#E60023]" fill="currentColor">
+                        <path d="M12 0a12 12 0 0 0-4.37 23.17c-.1-.94-.2-2.38.04-3.4l1.43-6.05s-.36-.73-.36-1.8c0-1.69.98-2.95 2.2-2.95 1.04 0 1.54.78 1.54 1.71 0 1.04-.66 2.6-1 4.05-.29 1.2.6 2.19 1.79 2.19 2.14 0 3.79-2.26 3.79-5.52 0-2.89-2.08-4.91-5.04-4.91-3.43 0-5.45 2.57-5.45 5.23 0 1.04.4 2.15.9 2.75a.36.36 0 0 1 .08.35l-.33 1.36c-.05.22-.18.27-.4.16-1.5-.7-2.44-2.88-2.44-4.64 0-3.78 2.74-7.24 7.91-7.24 4.15 0 7.38 2.96 7.38 6.92 0 4.13-2.6 7.45-6.22 7.45-1.21 0-2.36-.63-2.75-1.38l-.75 2.85c-.27 1.04-1 2.35-1.49 3.15A12 12 0 1 0 12 0z"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Pinterest</p>
+                      {pinterestConnection ? (
+                        <p className="text-sm text-muted-foreground">
+                          Connected as {pinterestConnection.account_name || 'Pinterest User'}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Not connected</p>
+                      )}
+                    </div>
+                  </div>
+                  {pinterestConnection ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDisconnectPinterest}
+                      disabled={isDisconnectingPinterest}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      {isDisconnectingPinterest ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Unlink className="w-4 h-4 mr-1" />
+                          Disconnect
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={handleConnectPinterest}
+                      disabled={isConnectingPinterest}
+                    >
+                      {isConnectingPinterest ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Link2 className="w-4 h-4 mr-1" />
+                          Connect
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+
+                {/* Future platforms placeholder */}
+                <p className="text-xs text-muted-foreground pt-2">
+                  More platforms coming soon: Twitter/X, Instagram, Facebook
+                </p>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
