@@ -297,23 +297,7 @@ export const WhoSection = ({
         {/* AI-Refined Variations - Between textarea and Generate button */}
         {refinedVariations.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm">AI-Refined Variations</Label>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleGenerateRefinements}
-                disabled={!hasContext || isGeneratingRefinements}
-                className="h-7 text-xs gap-1"
-              >
-                {isGeneratingRefinements ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Sparkles className="w-3 h-3" />
-                )}
-                Regenerate
-              </Button>
-            </div>
+            <Label className="text-sm">AI-Refined Variations</Label>
             <div className="grid gap-2">
               {refinedVariations.map((variation) => (
                 <button
@@ -364,7 +348,7 @@ export const WhoSection = ({
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                Generate
+                {refinedVariations.length > 0 ? "Regenerate" : "Generate"}
               </>
             )}
           </Button>
