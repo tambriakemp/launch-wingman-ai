@@ -206,8 +206,7 @@ const Landing = () => {
                 <Button
                   asChild
                   size="lg"
-                  variant="accent"
-                  className="text-lg px-8"
+                  className="bg-accent text-accent-foreground hover:bg-accent/90 text-lg px-8"
                 >
                   <Link to="/auth">Start Free Today</Link>
                 </Button>

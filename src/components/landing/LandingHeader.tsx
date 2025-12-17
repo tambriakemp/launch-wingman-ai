@@ -111,7 +111,7 @@ export const LandingHeader = () => {
           {/* Desktop CTA */}
           <div className="hidden lg:flex items-center gap-4">
             {user ? (
-              <Button asChild variant="accent">
+              <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
                 <Link to="/app">Go to App</Link>
               </Button>
             ) : (
@@ -119,7 +119,7 @@ export const LandingHeader = () => {
                 <Button variant="ghost" asChild className="text-primary-foreground hover:bg-primary-foreground/10">
                   <Link to="/auth">Sign In</Link>
                 </Button>
-                <Button asChild variant="accent">
+                <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
                   <Link to="/auth">Get Started Free</Link>
                 </Button>
               </>
@@ -197,7 +197,7 @@ export const LandingHeader = () => {
 
               <div className="pt-4 border-t border-border/10 space-y-2">
                 {user ? (
-                  <Button asChild variant="accent" className="w-full">
+                  <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
                     <Link to="/app">Go to App</Link>
                   </Button>
                 ) : (
@@ -205,7 +205,7 @@ export const LandingHeader = () => {
                     <Button variant="outline" asChild className="w-full border-primary-foreground/20 text-primary-foreground">
                       <Link to="/auth">Sign In</Link>
                     </Button>
-                    <Button asChild variant="accent" className="w-full">
+                    <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
                       <Link to="/auth">Get Started Free</Link>
                     </Button>
                   </>
