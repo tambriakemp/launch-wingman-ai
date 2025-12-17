@@ -126,7 +126,7 @@ export const TimeEffortSectionContent = ({
   return (
     <div className="space-y-6">
       {/* Instructions */}
-      <div className="text-sm text-muted-foreground space-y-2 pb-4 mb-2 border-b border-border">
+      <div className="text-sm text-muted-foreground space-y-2 pb-4 mb-4 border-b border-border">
         <p>Show your audience the path is easier than they think.</p>
         <p>People overestimate how hard change will be. Quick wins build momentum, friction reducers remove obstacles. Think about:</p>
         <ul className="list-disc list-inside space-y-1 ml-2">

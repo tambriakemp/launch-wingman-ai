@@ -255,7 +255,7 @@ export const WhoSection = ({
   return (
     <div className="space-y-5">
       {/* Instructions */}
-      <div className="text-sm text-muted-foreground space-y-2 pb-4 mb-2 border-b border-border">
+      <div className="text-sm text-muted-foreground space-y-2 pb-4 mb-4 border-b border-border">
         <p>Define who you serve so your message resonates deeply.</p>
         <p>Start with a rough description of your ideal client, then use AI to refine it. The more specific you are, the more your messaging will connect. Think about:</p>
         <ul className="list-disc list-inside space-y-1 ml-2">
