@@ -20,6 +20,7 @@ import {
   Lock,
   ArrowLeft,
   FolderOpen,
+  Crown,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
 import { Separator } from "@/components/ui/separator";
@@ -29,6 +30,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 
 interface NavItem {
   id: string;
@@ -36,11 +39,13 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   href: string;
   requiresStep?: string;
+  isProOnly?: boolean;
 }
 
 interface NavSection {
   heading: string;
   items: NavItem[];
+  isProOnly?: boolean;
 }
 
 const createNavSections = (projectId: string): NavSection[] => [
@@ -56,27 +61,30 @@ const createNavSections = (projectId: string): NavSection[] => [
   },
   {
     heading: "Funnel Branding",
+    isProOnly: true,
     items: [
-      { id: "logos", label: "Logos", icon: Image, href: `/projects/${projectId}/logos` },
-      { id: "colors", label: "Colors", icon: Palette, href: `/projects/${projectId}/colors` },
-      { id: "fonts", label: "Fonts", icon: Type, href: `/projects/${projectId}/fonts` },
-      { id: "photos", label: "Photos", icon: Camera, href: `/projects/${projectId}/photos` },
+      { id: "logos", label: "Logos", icon: Image, href: `/projects/${projectId}/logos`, isProOnly: true },
+      { id: "colors", label: "Colors", icon: Palette, href: `/projects/${projectId}/colors`, isProOnly: true },
+      { id: "fonts", label: "Fonts", icon: Type, href: `/projects/${projectId}/fonts`, isProOnly: true },
+      { id: "photos", label: "Photos", icon: Camera, href: `/projects/${projectId}/photos`, isProOnly: true },
     ],
   },
   {
     heading: "Messaging",
+    isProOnly: true,
     items: [
-      { id: "sales-copy", label: "Sales Copy", icon: FileText, href: `/projects/${projectId}/sales-copy` },
-      { id: "social-bio", label: "Social Bio", icon: AtSign, href: `/projects/${projectId}/social-bio` },
-      { id: "emails", label: "Emails", icon: Mail, href: `/projects/${projectId}/emails` },
-      { id: "deliverables", label: "Deliverables", icon: Package, href: `/projects/${projectId}/deliverables` },
+      { id: "sales-copy", label: "Sales Copy", icon: FileText, href: `/projects/${projectId}/sales-copy`, isProOnly: true },
+      { id: "social-bio", label: "Social Bio", icon: AtSign, href: `/projects/${projectId}/social-bio`, isProOnly: true },
+      { id: "emails", label: "Emails", icon: Mail, href: `/projects/${projectId}/emails`, isProOnly: true },
+      { id: "deliverables", label: "Deliverables", icon: Package, href: `/projects/${projectId}/deliverables`, isProOnly: true },
     ],
   },
   {
     heading: "Execute",
+    isProOnly: true,
     items: [
-      { id: "board", label: "Project Board", icon: Kanban, href: `/projects/${projectId}/board` },
-      { id: "social", label: "Social Media Hub", icon: Calendar, href: `/projects/${projectId}/social` },
+      { id: "board", label: "Project Board", icon: Kanban, href: `/projects/${projectId}/board`, isProOnly: true },
+      { id: "social", label: "Social Media Hub", icon: Calendar, href: `/projects/${projectId}/social`, isProOnly: true },
     ],
   },
 ];
@@ -100,7 +108,9 @@ const SidebarContent = ({
   getLockedMessage, 
   isActiveRoute,
   lastProject,
-  onNavigate
+  onNavigate,
+  isSubscribed,
+  onUpgradeClick
 }: {
   projectId?: string;
   navSections: NavSection[];
@@ -110,6 +120,8 @@ const SidebarContent = ({
   isActiveRoute: (href: string) => boolean;
   lastProject: LastProjectInfo | null;
   onNavigate?: () => void;
+  isSubscribed: boolean;
+  onUpgradeClick: (feature: string) => void;
 }) => {
   const navigate = useNavigate();
 
@@ -184,17 +196,46 @@ const SidebarContent = ({
         {navSections.map((section, sectionIndex) => (
           <div key={section.heading}>
             {sectionIndex > 0 && <Separator className="mb-3 bg-sidebar-border" />}
-            <div className="mb-1.5 px-2">
+            <div className="mb-1.5 px-2 flex items-center gap-1.5">
               <span className="text-[11px] font-semibold text-sidebar-foreground uppercase tracking-wider">
                 {section.heading}
               </span>
+              {section.isProOnly && !isSubscribed && (
+                <Crown className="w-3 h-3 text-primary" />
+              )}
             </div>
             <div className="space-y-0.5">
               {section.items.map((item) => {
                 const isActive = isActiveRoute(item.href);
                 const isAccessible = isStepAccessible(item.requiresStep);
                 const isLocked = !isAccessible;
+                const isProLocked = item.isProOnly && !isSubscribed;
 
+                // Pro-locked items
+                if (isProLocked) {
+                  return (
+                    <Tooltip key={item.id}>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => onUpgradeClick(item.label)}
+                          className={cn(
+                            "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm w-full text-left",
+                            "text-sidebar-foreground/40 hover:bg-sidebar-accent/30 cursor-pointer"
+                          )}
+                        >
+                          <item.icon className="w-4 h-4" />
+                          <span className="flex-1">{item.label}</span>
+                          <Crown className="w-3 h-3 text-primary" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <p>Pro feature - Click to upgrade</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                }
+
+                // Step-locked items
                 if (isLocked) {
                   return (
                     <Tooltip key={item.id}>
@@ -244,8 +285,11 @@ export const ProjectSidebar = () => {
   const location = useLocation();
   const { id: projectId } = useParams();
   const [lastProject, setLastProject] = useState<LastProjectInfo | null>(null);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [upgradeFeature, setUpgradeFeature] = useState("");
   const isMobile = useIsMobile();
   const { isOpen, close } = useMobileSidebar();
+  const { isSubscribed } = useAuth();
 
   // Load last project from localStorage on mount
   useEffect(() => {
@@ -337,6 +381,11 @@ export const ProjectSidebar = () => {
     return false;
   };
 
+  const handleUpgradeClick = (feature: string) => {
+    setUpgradeFeature(feature);
+    setShowUpgradeDialog(true);
+  };
+
   const sidebarContentProps = {
     projectId,
     navSections,
@@ -345,6 +394,8 @@ export const ProjectSidebar = () => {
     getLockedMessage,
     isActiveRoute,
     lastProject,
+    isSubscribed,
+    onUpgradeClick: handleUpgradeClick,
   };
 
   // Mobile: render as Sheet
@@ -361,6 +412,11 @@ export const ProjectSidebar = () => {
             </div>
           </SheetContent>
         </Sheet>
+        <UpgradeDialog 
+          open={showUpgradeDialog} 
+          onOpenChange={setShowUpgradeDialog} 
+          feature={upgradeFeature}
+        />
       </TooltipProvider>
     );
   }
@@ -375,6 +431,11 @@ export const ProjectSidebar = () => {
       >
         <SidebarContent {...sidebarContentProps} />
       </motion.aside>
+      <UpgradeDialog 
+        open={showUpgradeDialog} 
+        onOpenChange={setShowUpgradeDialog} 
+        feature={upgradeFeature}
+      />
     </TooltipProvider>
   );
 };

@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 import {
   User,
   CreditCard,
@@ -74,6 +75,7 @@ const Settings = () => {
   // Social connections state
   const [isConnectingPinterest, setIsConnectingPinterest] = useState(false);
   const [isDisconnectingPinterest, setIsDisconnectingPinterest] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   // Fetch projects for management
   const { data: projects = [], isLoading: isLoadingProjects } = useQuery({
@@ -559,7 +561,7 @@ const Settings = () => {
                       <span className="font-semibold text-foreground">Upgrade to Pro</span>
                     </div>
                     <div className="flex items-baseline gap-1 mb-4">
-                      <span className="text-3xl font-bold text-foreground">$15</span>
+                      <span className="text-3xl font-bold text-foreground">$20</span>
                       <span className="text-muted-foreground">/month</span>
                     </div>
                     <ul className="space-y-2 mb-4">
@@ -651,7 +653,7 @@ const Settings = () => {
                         </>
                       )}
                     </Button>
-                  ) : (
+                  ) : isSubscribed ? (
                     <Button
                       size="sm"
                       onClick={handleConnectPinterest}
@@ -665,6 +667,16 @@ const Settings = () => {
                           Connect
                         </>
                       )}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowUpgradeDialog(true)}
+                      className="gap-1.5"
+                    >
+                      <Crown className="w-3.5 h-3.5 text-primary" />
+                      Pro
                     </Button>
                   )}
                 </div>
@@ -801,6 +813,13 @@ const Settings = () => {
         title="Delete Project"
         description={`This will permanently delete "${projectToDelete?.name}" and all its data including tasks, content, and launch events. This action cannot be undone.`}
         isDeleting={deleteProjectMutation.isPending}
+      />
+
+      {/* Upgrade Dialog for Pro Features */}
+      <UpgradeDialog 
+        open={showUpgradeDialog} 
+        onOpenChange={setShowUpgradeDialog} 
+        feature="Social Media Connections"
       />
     </ProjectLayout>
   );
