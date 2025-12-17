@@ -6,6 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Sanitize ID for logging (show only first 8 chars)
+const sanitizeId = (id: string) => id ? `${id.substring(0, 8)}...` : 'unknown';
+
 async function refreshPinterestToken(supabase: any, userId: string, currentRefreshToken: string) {
   const PINTEREST_APP_ID = Deno.env.get('PINTEREST_APP_ID');
   const PINTEREST_APP_SECRET = Deno.env.get('PINTEREST_APP_SECRET');
@@ -92,7 +95,7 @@ serve(async (req) => {
       throw new Error('Media URL is required for Pinterest pins');
     }
 
-    console.log('[POST-TO-PINTEREST] Creating pin for user:', user.id);
+    console.log('[POST-TO-PINTEREST] Creating pin for user:', sanitizeId(user.id));
 
     // Get Pinterest connection using decrypted view
     const { data: connection, error: connError } = await supabase
@@ -143,7 +146,7 @@ serve(async (req) => {
       pinData.link = link;
     }
 
-    console.log('[POST-TO-PINTEREST] Creating pin with data:', JSON.stringify(pinData));
+    console.log('[POST-TO-PINTEREST] Creating pin');
 
     const pinResponse = await fetch('https://api.pinterest.com/v5/pins', {
       method: 'POST',
@@ -156,7 +159,7 @@ serve(async (req) => {
 
     if (!pinResponse.ok) {
       const errorText = await pinResponse.text();
-      console.error('[POST-TO-PINTEREST] API error:', errorText);
+      console.error('[POST-TO-PINTEREST] API error:', pinResponse.status);
       
       // Check if it's an auth error that might need reconnection
       if (pinResponse.status === 401) {
@@ -167,7 +170,7 @@ serve(async (req) => {
     }
 
     const pinResult = await pinResponse.json();
-    console.log('[POST-TO-PINTEREST] Pin created successfully:', pinResult.id);
+    console.log('[POST-TO-PINTEREST] Pin created successfully');
 
     return new Response(
       JSON.stringify({ 
@@ -179,7 +182,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('[POST-TO-PINTEREST] Error:', error);
+    console.error('[POST-TO-PINTEREST] Error occurred');
     const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: message }),

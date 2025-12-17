@@ -6,6 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Sanitize user ID for logging (show only first 8 chars)
+const sanitizeId = (id: string) => id ? `${id.substring(0, 8)}...` : 'unknown';
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -38,14 +41,14 @@ serve(async (req) => {
     const { data: { user: callerUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
     if (authError || !callerUser) {
-      console.error('Auth error:', authError);
+      console.error('[IMPERSONATE] Auth error');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('[IMPERSONATE] Caller user:', callerUser.id, callerUser.email);
+    console.log('[IMPERSONATE] Caller authenticated:', sanitizeId(callerUser.id));
 
     // Verify the caller is an admin using the user_roles table
     const { data: roleData, error: roleError } = await supabaseAdmin
@@ -56,14 +59,14 @@ serve(async (req) => {
       .single();
 
     if (roleError || !roleData) {
-      console.error('[IMPERSONATE] User is not an admin:', callerUser.email);
+      console.error('[IMPERSONATE] Admin verification failed for user:', sanitizeId(callerUser.id));
       return new Response(
         JSON.stringify({ error: 'Forbidden: Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('[IMPERSONATE] Admin verified:', callerUser.email);
+    console.log('[IMPERSONATE] Admin verified:', sanitizeId(callerUser.id));
 
     // Get the target user ID from the request body
     const { targetUserId } = await req.json();
@@ -79,14 +82,14 @@ serve(async (req) => {
     const { data: { user: targetUser }, error: targetUserError } = await supabaseAdmin.auth.admin.getUserById(targetUserId);
 
     if (targetUserError || !targetUser) {
-      console.error('[IMPERSONATE] Target user not found:', targetUserId);
+      console.error('[IMPERSONATE] Target user not found:', sanitizeId(targetUserId));
       return new Response(
         JSON.stringify({ error: 'Target user not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('[IMPERSONATE] Target user found:', targetUser.email);
+    console.log('[IMPERSONATE] Target user found:', sanitizeId(targetUser.id));
 
     // Generate a magic link for the target user using the admin API
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
@@ -98,7 +101,7 @@ serve(async (req) => {
     });
 
     if (linkError || !linkData) {
-      console.error('[IMPERSONATE] Error generating link:', linkError);
+      console.error('[IMPERSONATE] Error generating link');
       return new Response(
         JSON.stringify({ error: 'Failed to generate impersonation session' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -117,11 +120,11 @@ serve(async (req) => {
       });
 
     if (logError) {
-      console.error('[IMPERSONATE] Failed to log impersonation event:', logError);
+      console.error('[IMPERSONATE] Failed to log impersonation event');
       // Don't fail the request, just log the error
     }
 
-    console.log('[IMPERSONATE] Session generated and logged for:', targetUser.email);
+    console.log('[IMPERSONATE] Session generated successfully');
 
     // Return the session data (hashed_token can be used to verify OTP)
     return new Response(
@@ -140,7 +143,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('[IMPERSONATE] Unexpected error:', error);
+    console.error('[IMPERSONATE] Unexpected error');
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

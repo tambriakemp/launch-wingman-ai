@@ -7,6 +7,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Sanitize user ID for logging (show only first 8 chars)
+const sanitizeId = (id: string) => id ? `${id.substring(0, 8)}...` : 'unknown';
+
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[ADMIN-LIST-USERS] ${step}${detailsStr}`);
@@ -48,7 +51,7 @@ serve(async (req) => {
     if (roleError || !roleData) {
       throw new Error("Unauthorized: Admin access required");
     }
-    logStep("Admin verified", { adminEmail: adminUser.email });
+    logStep("Admin verified", { adminId: sanitizeId(adminUser.id) });
 
     // Get all users from auth.users
     const { data: authUsers, error: authError } = await supabaseClient.auth.admin.listUsers();
@@ -93,8 +96,8 @@ serve(async (req) => {
               }
             }
           } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : String(err);
-            logStep("Error fetching Stripe data for user", { email: user.email, error: errorMessage });
+            // Log error without user-identifying information
+            logStep("Error fetching Stripe data for user", { userId: sanitizeId(user.id) });
           }
         }
 
