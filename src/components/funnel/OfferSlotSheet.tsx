@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Check, Trash2, Loader2, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,15 @@ export const OfferSlotSheet = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedIdeas, setGeneratedIdeas] = useState<GeneratedIdea[]>([]);
   const [showIdeas, setShowIdeas] = useState(false);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea when sheet opens or description changes
+  useEffect(() => {
+    if (descriptionRef.current && isOpen) {
+      descriptionRef.current.style.height = 'auto';
+      descriptionRef.current.style.height = descriptionRef.current.scrollHeight + 'px';
+    }
+  }, [isOpen, data.description]);
 
   const handleFieldChange = (field: keyof OfferSlotData, value: string | boolean) => {
     onChange({ ...data, [field]: value });
@@ -206,14 +215,10 @@ export const OfferSlotSheet = ({
           <div className="space-y-2">
             <Label>Description</Label>
             <Textarea
+              ref={descriptionRef}
               value={data.description}
               onChange={(e) => {
                 handleFieldChange("description", e.target.value);
-                // Auto-resize
-                e.target.style.height = 'auto';
-                e.target.style.height = e.target.scrollHeight + 'px';
-              }}
-              onFocus={(e) => {
                 e.target.style.height = 'auto';
                 e.target.style.height = e.target.scrollHeight + 'px';
               }}
