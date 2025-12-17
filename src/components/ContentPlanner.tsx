@@ -1148,7 +1148,7 @@ const [formData, setFormData] = useState({
 
       {/* Add/Edit Sheet */}
       <Sheet open={dialogOpen} onOpenChange={setDialogOpen}>
-        <SheetContent side="right" className="w-[70vw] min-w-[700px] p-0 flex flex-col">
+        <SheetContent side="right" className="w-[50vw] min-w-[700px] p-0 flex flex-col">
           <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
             <SheetTitle>{editingItem ? "Edit Content" : "Add Content"}</SheetTitle>
             <SheetDescription>
