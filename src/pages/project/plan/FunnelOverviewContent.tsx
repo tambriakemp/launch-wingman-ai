@@ -157,7 +157,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
                 {!isLast && (
                   <div
                     className={cn(
-                      "h-0.5 mx-2 flex-1 min-w-0",
+                      "h-0.5 mx-2 w-8 shrink-0",
                       step.complete ? "bg-foreground/40" : "bg-muted"
                     )}
                   />
