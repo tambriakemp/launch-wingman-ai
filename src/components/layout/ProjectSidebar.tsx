@@ -372,13 +372,7 @@ export const ProjectSidebar = () => {
   };
 
   const isActiveRoute = (href: string) => {
-    if (href === `/projects/${projectId}` && location.pathname === `/projects/${projectId}`) {
-      return true;
-    }
-    if (href !== `/projects/${projectId}` && location.pathname.startsWith(href)) {
-      return true;
-    }
-    return false;
+    return location.pathname === href;
   };
 
   const handleUpgradeClick = (feature: string) => {
