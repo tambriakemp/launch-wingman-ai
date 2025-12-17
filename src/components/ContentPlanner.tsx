@@ -64,11 +64,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -1153,28 +1148,24 @@ const [formData, setFormData] = useState({
 
       {/* Add/Edit Sheet */}
       <Sheet open={dialogOpen} onOpenChange={setDialogOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-[900px] p-0 flex flex-col">
-          <SheetHeader className="px-6 pt-6 pb-4 border-b">
+        <SheetContent side="right" className="w-[50vw] min-w-[700px] p-0 flex flex-col">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
             <SheetTitle>{editingItem ? "Edit Content" : "Add Content"}</SheetTitle>
             <SheetDescription>
               Plan your content for your pre-launch and launch phases.
             </SheetDescription>
           </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
-            {/* Planning Details - Collapsible Section */}
-            <Collapsible defaultOpen={!!editingItem}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg border hover:bg-muted/70 transition-colors">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">📋</span>
-                  <span className="font-medium text-sm">Planning Details</span>
-                  <span className="text-xs text-muted-foreground">
-                    ({PHASES.find(p => p.id === formData.phase)?.shortLabel} • Day {formData.day_number} • {formData.time_of_day})
-                  </span>
+          {/* Two Column Layout - Full Height */}
+          <div className="flex-1 overflow-hidden flex">
+            {/* Left Column - Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+              {/* Planning Details Card */}
+              <div className="p-4 bg-muted/30 rounded-lg border space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <span>📋</span>
+                  <span>Planning Details</span>
                 </div>
-                <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform [[data-state=open]_&]:rotate-180" />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pt-4 space-y-4">
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Phase</Label>
@@ -1287,19 +1278,18 @@ const [formData, setFormData] = useState({
                     ))}
                   </div>
                 </div>
-              </CollapsibleContent>
-            </Collapsible>
+              </div>
 
-            {/* Social Media Section - Two Column Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-6">
-              {/* Left Column - Content Editing */}
+              {/* Social Post Content */}
               <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Share2 className="w-4 h-4" />
+                  <span>Social Post</span>
+                </div>
+
                 {/* Post To */}
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Share2 className="w-4 h-4 text-muted-foreground" />
-                    <Label>Post To</Label>
-                  </div>
+                  <Label>Post To</Label>
                   <PlatformSelector
                     selected={formData.scheduled_platforms}
                     onChange={(platforms) => setFormData(prev => ({ ...prev, scheduled_platforms: platforms }))}
@@ -1407,33 +1397,33 @@ const [formData, setFormData] = useState({
                   />
                 </div>
               </div>
+            </div>
 
-              {/* Right Column - Preview (Sticky) */}
-              <div className="lg:sticky lg:top-0 space-y-3">
-                <Label className="text-sm font-medium">Preview</Label>
-                <div className="border border-border rounded-lg p-4 bg-muted/30">
-                  {formData.scheduled_platforms.length > 0 || formData.media_url ? (
-                    <SocialPostPreview
-                      platforms={formData.scheduled_platforms}
-                      content={formData.content}
-                      mediaUrl={formData.media_url}
-                      mediaType={formData.media_type}
-                      linkUrl={formData.link_url}
-                      title={formData.title}
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-[300px] text-center text-muted-foreground">
-                      <Share2 className="w-10 h-10 mb-3 opacity-40" />
-                      <p className="text-sm">Select a platform to see preview</p>
-                    </div>
-                  )}
-                </div>
+            {/* Right Column - Preview (Fixed Width, Full Height) */}
+            <div className="w-[340px] border-l bg-muted/20 p-4 flex flex-col shrink-0">
+              <Label className="text-sm font-medium mb-3">Preview</Label>
+              <div className="flex-1 flex items-start justify-center">
+                {formData.scheduled_platforms.length > 0 || formData.media_url ? (
+                  <SocialPostPreview
+                    platforms={formData.scheduled_platforms}
+                    content={formData.content}
+                    mediaUrl={formData.media_url}
+                    mediaType={formData.media_type}
+                    linkUrl={formData.link_url}
+                    title={formData.title}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-[300px] text-center text-muted-foreground">
+                    <Share2 className="w-10 h-10 mb-3 opacity-40" />
+                    <p className="text-sm">Select a platform to see preview</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Footer */}
-          <SheetFooter className="px-6 py-4 border-t bg-background">
+          <SheetFooter className="px-6 py-4 border-t bg-background shrink-0">
             <div className="flex justify-between w-full">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
                 Cancel
