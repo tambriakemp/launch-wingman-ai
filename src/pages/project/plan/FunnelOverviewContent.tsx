@@ -124,7 +124,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       <LaunchTimeline projectId={projectId} projectType={project?.project_type as "launch" | "prelaunch" || "launch"} />
 
       {/* Inline Progress Stepper */}
-      <div className="relative max-w-4xl mx-auto">
+      <div className="relative max-w-4xl mx-auto hidden lg:block">
         <div className="flex items-center justify-center">
           {steps.map((step, index) => {
             const StepIcon = step.icon;
