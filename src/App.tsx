@@ -170,12 +170,17 @@ const App = () => (
               }
             />
             <Route
-              path="/projects/:id/content"
+              path="/projects/:id/social"
               element={
                 <ProtectedRoute>
                   <ProjectExecute />
                 </ProtectedRoute>
               }
+            />
+            {/* Legacy redirect */}
+            <Route
+              path="/projects/:id/content"
+              element={<Navigate to={`/projects/:id/social`} replace />}
             />
 
             <Route

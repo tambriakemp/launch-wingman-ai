@@ -35,7 +35,7 @@ const ProjectExecute = () => {
     <ProjectLayout>
       {section === "board" ? (
         <ProjectBoard projectId={id} projectType={projectType} />
-      ) : section === "content" ? (
+      ) : section === "social" ? (
         <ContentPlanner projectId={id} />
       ) : null}
     </ProjectLayout>
