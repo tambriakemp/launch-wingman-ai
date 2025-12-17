@@ -172,7 +172,7 @@ export const FeaturePageLayout = ({
               Join thousands of coaches and creators who are launching smarter, not harder.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Button asChild size="lg" variant="accent">
                 <Link to="/auth">Start Free Today</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10">

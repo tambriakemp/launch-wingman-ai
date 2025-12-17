@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import Landing from "./pages/Landing";
+import HowItWorks from "./pages/HowItWorks";
 import Pricing from "./pages/Pricing";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Auth from "./pages/Auth";
@@ -60,6 +61,7 @@ const App = () => (
           <Routes>
             {/* Public marketing pages */}
             <Route path="/" element={<Landing />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
