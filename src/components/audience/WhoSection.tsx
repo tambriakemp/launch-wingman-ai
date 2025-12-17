@@ -16,7 +16,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Sparkles, Loader2, Check, AlertCircle, ChevronDown, Copy } from "lucide-react";
+import { Sparkles, Loader2, Check, AlertCircle, ChevronDown, Copy, Target, Heart, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const NICHES = [
@@ -109,6 +109,12 @@ interface SubAudience {
   painTrigger: string;
 }
 
+interface AudienceVariation {
+  type: string;
+  label: string;
+  statement: string;
+}
+
 interface WhoSectionProps {
   niche: string;
   targetAudience: string;
@@ -119,6 +125,32 @@ interface WhoSectionProps {
   onSubAudiencesChange: (value: SubAudience[]) => void;
   onSpecificityScoreChange: (value: number) => void;
 }
+
+const getVariationIcon = (type: string) => {
+  switch (type) {
+    case "specific":
+      return <Target className="w-4 h-4" />;
+    case "aspirational":
+      return <Heart className="w-4 h-4" />;
+    case "pain":
+      return <User className="w-4 h-4" />;
+    default:
+      return <Target className="w-4 h-4" />;
+  }
+};
+
+const getVariationColor = (type: string) => {
+  switch (type) {
+    case "specific":
+      return "bg-blue-500/10 text-blue-600 border-blue-500/30";
+    case "aspirational":
+      return "bg-pink-500/10 text-pink-600 border-pink-500/30";
+    case "pain":
+      return "bg-orange-500/10 text-orange-600 border-orange-500/30";
+    default:
+      return "bg-muted text-muted-foreground";
+  }
+};
 
 export const WhoSection = ({
   niche,
@@ -134,6 +166,48 @@ export const WhoSection = ({
   const [specificityFeedback, setSpecificityFeedback] = useState<string>("");
   const [selectedSubAudience, setSelectedSubAudience] = useState<string | null>(null);
   const [isExamplesOpen, setIsExamplesOpen] = useState(false);
+  
+  // New state for refined variations
+  const [refinedVariations, setRefinedVariations] = useState<AudienceVariation[]>([]);
+  const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
+  const [isGeneratingRefinements, setIsGeneratingRefinements] = useState(false);
+
+  const handleGenerateRefinements = async () => {
+    if (!niche || !targetAudience) return;
+
+    setIsGeneratingRefinements(true);
+    setRefinedVariations([]);
+    setSelectedVariation(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-audience-refinements', {
+        body: { niche, targetAudience }
+      });
+
+      if (error) throw error;
+
+      if (data.variations) {
+        setRefinedVariations(data.variations);
+        // Auto-open the examples/suggestions section
+        setIsExamplesOpen(true);
+      }
+      if (typeof data.specificityScore === 'number') {
+        onSpecificityScoreChange(data.specificityScore);
+      }
+      if (data.specificityFeedback) {
+        setSpecificityFeedback(data.specificityFeedback);
+      }
+    } catch (error) {
+      console.error("Error generating audience refinements:", error);
+    } finally {
+      setIsGeneratingRefinements(false);
+    }
+  };
+
+  const handleSelectVariation = (variation: AudienceVariation) => {
+    setSelectedVariation(variation.type);
+    onTargetAudienceChange(variation.statement);
+  };
 
   const handleGenerateSubAudiences = async () => {
     if (!niche) return;
@@ -169,7 +243,6 @@ export const WhoSection = ({
 
   const handleUseExample = (example: string) => {
     onTargetAudienceChange(example);
-    setIsExamplesOpen(false);
   };
 
   const getScoreColor = (score: number) => {
@@ -179,6 +252,7 @@ export const WhoSection = ({
   };
 
   const currentExamples = AUDIENCE_EXAMPLES[niche] || AUDIENCE_EXAMPLES["Other"];
+  const hasContext = !!(niche && targetAudience);
 
   return (
     <div className="space-y-5">
@@ -221,13 +295,43 @@ export const WhoSection = ({
           rows={3}
           className="resize-none"
         />
-        <p className="text-xs text-muted-foreground">
-          💡 Don't worry about perfection - AI will help refine your description
-        </p>
         
+        {/* Generate button right below textarea */}
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            💡 Type your rough description, then click Generate to refine it
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleGenerateRefinements}
+            disabled={!hasContext || isGeneratingRefinements}
+            className="gap-2"
+          >
+            {isGeneratingRefinements ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Generate
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
-      {/* Niche-Specific Examples */}
+      {/* Specificity Feedback */}
+      {specificityFeedback && (
+        <div className="flex items-start gap-2 p-3 rounded-md bg-muted/50 border border-border">
+          <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-muted-foreground">{specificityFeedback}</p>
+        </div>
+      )}
+
+      {/* Need Inspiration Section with Examples AND Refined Variations */}
       {niche && (
         <Collapsible open={isExamplesOpen} onOpenChange={setIsExamplesOpen}>
           <CollapsibleTrigger asChild>
@@ -240,8 +344,75 @@ export const WhoSection = ({
               <ChevronDown className={`w-4 h-4 transition-transform ${isExamplesOpen ? "rotate-180" : ""}`} />
             </Button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="pt-2">
+          <CollapsibleContent className="pt-2 space-y-4">
+            {/* AI-Generated Refined Variations */}
+            {refinedVariations.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm text-muted-foreground">
+                    AI-refined variations (click to use):
+                  </Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleGenerateRefinements}
+                    disabled={!hasContext || isGeneratingRefinements}
+                    className="h-7 text-xs gap-1"
+                  >
+                    {isGeneratingRefinements ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3 h-3" />
+                    )}
+                    Regenerate
+                  </Button>
+                </div>
+                <div className="grid gap-2">
+                  {refinedVariations.map((variation) => (
+                    <button
+                      key={variation.type}
+                      onClick={() => handleSelectVariation(variation)}
+                      className={`p-3 rounded-lg border text-left transition-all hover:border-primary/50 ${
+                        selectedVariation === variation.type
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-card"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge
+                          variant="outline"
+                          className={`${getVariationColor(variation.type)} gap-1`}
+                        >
+                          {getVariationIcon(variation.type)}
+                          {variation.label}
+                        </Badge>
+                        {selectedVariation === variation.type && (
+                          <Check className="w-4 h-4 text-primary ml-auto" />
+                        )}
+                      </div>
+                      <p className="text-sm">{variation.statement}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Divider if both sections exist */}
+            {refinedVariations.length > 0 && (
+              <div className="border-t border-border pt-3">
+                <Label className="text-sm text-muted-foreground">
+                  Or use a template example:
+                </Label>
+              </div>
+            )}
+
+            {/* Static Niche Examples */}
             <div className="space-y-2">
+              {refinedVariations.length === 0 && (
+                <Label className="text-sm text-muted-foreground">
+                  Click to use an example:
+                </Label>
+              )}
               {currentExamples.map((example, index) => (
                 <div
                   key={index}
@@ -261,12 +432,6 @@ export const WhoSection = ({
 
       {/* AI Sub-Audience Generator */}
       <div className="pt-3 border-t border-border space-y-3">
-        {specificityFeedback && (
-          <div className="flex items-start gap-2 p-3 rounded-md bg-muted/50 border border-border">
-            <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-muted-foreground">{specificityFeedback}</p>
-          </div>
-        )}
         <div className="flex items-center justify-between">
           <div>
             <Label className="text-sm">AI Sub-Audience Suggestions</Label>
