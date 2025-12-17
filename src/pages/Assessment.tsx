@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { AssessmentProgressStepper } from "@/components/AssessmentProgressStepper";
+import { AssessmentProgressBar } from "@/components/AssessmentProgressBar";
 import {
   ClipboardCheck,
   ArrowRight,
@@ -611,17 +611,11 @@ const Assessment = () => {
   return (
     <ProjectLayout>
       <div className="max-w-3xl mx-auto space-y-6">
-        {/* Progress Stepper */}
-        <AssessmentProgressStepper
-          steps={questions.map((q, i) => ({ 
-            key: `q${q.id}`, 
-            title: i === 0 || questions[i - 1]?.section !== q.section 
-              ? q.section.split(" ").slice(0, 2).join(" ") 
-              : `Q${i + 1}` 
-          }))}
+        {/* Progress Bar */}
+        <AssessmentProgressBar
           currentStep={currentQuestion}
-          onStepClick={handleQuestionClick}
-          completedSteps={Object.keys(answers).map(id => questions.findIndex(q => q.id === parseInt(id)))}
+          totalSteps={questions.length}
+          stepLabel={`Question ${currentQuestion + 1} of ${questions.length} • ${currentSection}`}
         />
 
         {/* Question Card */}
