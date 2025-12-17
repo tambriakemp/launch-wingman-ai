@@ -24,7 +24,8 @@ import {
   Calendar,
   List,
   CheckSquare,
-  Square
+  Square,
+  Share2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,8 +63,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { PlatformSelector } from "./content-planner/PlatformSelector";
+import { MediaUploader } from "./content-planner/MediaUploader";
+import { SocialPostPreview } from "./content-planner/SocialPostPreview";
 
 interface ContentItem {
   id: string;
@@ -76,6 +81,10 @@ interface ContentItem {
   content: string | null;
   status: string;
   labels: string[];
+  media_url: string | null;
+  media_type: string | null;
+  scheduled_platforms: string[];
+  scheduled_at: string | null;
 }
 
 interface ContentPlannerProps {
@@ -118,7 +127,7 @@ const STATUS_OPTIONS = [
 ];
 
 // Template content based on the Trello board
-const TEMPLATE_CONTENT: Omit<ContentItem, "id">[] = [
+const TEMPLATE_CONTENT: Array<Omit<ContentItem, "id" | "media_url" | "media_type" | "scheduled_platforms" | "scheduled_at">> = [
   // Week 1
   { phase: "week1", day_number: 1, time_of_day: "morning", content_type: "high-value", title: "High-Value Content related to one pain point your launch is going to be solving", description: "Share valuable content that addresses a key pain point", status: "planned", labels: ["Post", "Email"], content: null },
   { phase: "week1", day_number: 2, time_of_day: "morning", content_type: "story", title: "Share your own story around your launch topic", description: "Connect personally with your audience", status: "planned", labels: ["Post"], content: null },
@@ -190,6 +199,9 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
     content: "",
     status: "planned",
     labels: [] as string[],
+    media_url: null as string | null,
+    media_type: null as string | null,
+    scheduled_platforms: [] as string[],
   });
   const [draggedItem, setDraggedItem] = useState<ContentItem | null>(null);
 
@@ -225,6 +237,9 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
             content: item.content,
             status: item.status,
             labels: item.labels,
+            media_url: item.media_url,
+            media_type: item.media_type,
+            scheduled_platforms: item.scheduled_platforms,
           })
           .eq("id", item.id);
         if (error) throw error;
@@ -243,6 +258,9 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
             content: item.content,
             status: item.status,
             labels: item.labels,
+            media_url: item.media_url,
+            media_type: item.media_type,
+            scheduled_platforms: item.scheduled_platforms,
           });
         if (error) throw error;
       }
@@ -348,6 +366,9 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
       content: "",
       status: "planned",
       labels: [],
+      media_url: null,
+      media_type: null,
+      scheduled_platforms: [],
     });
   };
 
@@ -371,6 +392,9 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
       content: item.content || "",
       status: item.status,
       labels: item.labels || [],
+      media_url: item.media_url,
+      media_type: item.media_type,
+      scheduled_platforms: item.scheduled_platforms || [],
     });
     setDialogOpen(true);
   };
@@ -391,6 +415,7 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
       id: editingItem?.id,
       description: formData.description || null,
       content: formData.content || null,
+      scheduled_at: null,
     });
   };
 
@@ -1041,6 +1066,48 @@ export function ContentPlanner({ projectId }: ContentPlannerProps) {
                 rows={6}
               />
             </div>
+
+            <Separator />
+
+            {/* Social Media Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Share2 className="w-4 h-4 text-muted-foreground" />
+                <Label className="text-base font-medium">Post To</Label>
+              </div>
+              <PlatformSelector
+                selected={formData.scheduled_platforms}
+                onChange={(platforms) => setFormData(prev => ({ ...prev, scheduled_platforms: platforms }))}
+              />
+            </div>
+
+            {/* Media Upload Section */}
+            <div className="space-y-2">
+              <Label>Media</Label>
+              <MediaUploader
+                mediaUrl={formData.media_url}
+                mediaType={formData.media_type}
+                onMediaChange={(url, type) => setFormData(prev => ({ ...prev, media_url: url, media_type: type }))}
+                projectId={projectId}
+              />
+            </div>
+
+            {/* Preview Section */}
+            {(formData.scheduled_platforms.length > 0 || formData.media_url) && (
+              <div className="space-y-2">
+                <Label>Preview</Label>
+                <div className="border border-border rounded-lg p-4 bg-muted/30">
+                  <SocialPostPreview
+                    platforms={formData.scheduled_platforms}
+                    content={formData.content}
+                    mediaUrl={formData.media_url}
+                    mediaType={formData.media_type}
+                  />
+                </div>
+              </div>
+            )}
+
+            <Separator />
 
             <div className="space-y-2">
               <Label>Labels</Label>

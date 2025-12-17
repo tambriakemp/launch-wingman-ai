@@ -146,8 +146,12 @@ export type Database = {
           description: string | null
           id: string
           labels: string[] | null
+          media_type: string | null
+          media_url: string | null
           phase: string
           project_id: string
+          scheduled_at: string | null
+          scheduled_platforms: string[] | null
           status: string
           time_of_day: string
           title: string
@@ -162,8 +166,12 @@ export type Database = {
           description?: string | null
           id?: string
           labels?: string[] | null
+          media_type?: string | null
+          media_url?: string | null
           phase: string
           project_id: string
+          scheduled_at?: string | null
+          scheduled_platforms?: string[] | null
           status?: string
           time_of_day?: string
           title: string
@@ -178,8 +186,12 @@ export type Database = {
           description?: string | null
           id?: string
           labels?: string[] | null
+          media_type?: string | null
+          media_url?: string | null
           phase?: string
           project_id?: string
+          scheduled_at?: string | null
+          scheduled_platforms?: string[] | null
           status?: string
           time_of_day?: string
           title?: string
