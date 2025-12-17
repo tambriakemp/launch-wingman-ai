@@ -124,39 +124,51 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       <LaunchTimeline projectId={projectId} projectType={project?.project_type as "launch" | "prelaunch" || "launch"} />
 
       {/* Inline Progress Stepper */}
-      <div className="relative max-w-2xl mx-auto">
-        <div className="flex items-center justify-between">
-          {steps.map((step, index) => {
-            const StepIcon = step.icon;
-            const isLast = index === steps.length - 1;
-            return (
-              <div key={step.id} className="flex items-center flex-1">
-                <button
-                  onClick={() => navigate(`/projects/${projectId}/${step.route}`)}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-full transition-all",
-                    step.complete 
-                      ? "bg-foreground text-background hover:bg-foreground/90" 
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  )}
+      <div className="relative max-w-3xl mx-auto">
+        <div className="overflow-x-auto">
+          <div className="flex items-center min-w-max">
+            {steps.map((step, index) => {
+              const StepIcon = step.icon;
+              const isLast = index === steps.length - 1;
+
+              return (
+                <div
+                  key={step.id}
+                  className={cn("flex items-center", !isLast && "flex-1")}
                 >
-                  {step.complete ? (
-                    <CheckCircle className="w-4 h-4" />
-                  ) : (
-                    <StepIcon className="w-4 h-4" />
+                  <button
+                    onClick={() => navigate(`/projects/${projectId}/${step.route}`)}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-full transition-all shrink-0",
+                      step.complete
+                        ? "bg-foreground text-background hover:bg-foreground/90"
+                        : "bg-card text-muted-foreground border border-border hover:bg-muted/50"
+                    )}
+                  >
+                    {step.complete ? (
+                      <CheckCircle className="w-4 h-4" />
+                    ) : (
+                      <StepIcon className="w-4 h-4" />
+                    )}
+                    <span className="text-sm font-medium hidden sm:inline whitespace-nowrap">
+                      {step.label}
+                    </span>
+                  </button>
+
+                  {!isLast && (
+                    <div
+                      className={cn(
+                        "flex-1 h-0.5 mx-2 min-w-6",
+                        step.complete ? "bg-foreground/40" : "bg-muted"
+                      )}
+                    />
                   )}
-                  <span className="text-sm font-medium hidden sm:inline">{step.label}</span>
-                </button>
-                {!isLast && (
-                  <div className={cn(
-                    "flex-1 h-0.5 mx-2",
-                    step.complete ? "bg-foreground/40" : "bg-muted"
-                  )} />
-                )}
-              </div>
-            );
-          })}
+                </div>
+              );
+            })}
+          </div>
         </div>
+
         <p className="text-center text-xs text-muted-foreground mt-3">
           {completedSteps}/{steps.length} complete
         </p>
