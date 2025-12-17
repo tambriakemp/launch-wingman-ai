@@ -1,362 +1,429 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { LandingHeader } from "@/components/landing/LandingHeader";
+import { LandingFooter } from "@/components/landing/LandingFooter";
+import { MarqueeStrip } from "@/components/landing/MarqueeStrip";
 import {
+  ClipboardCheck,
+  Layout,
+  Palette,
+  MessageSquare,
+  Rocket,
   Sparkles,
-  ArrowRight,
-  Calendar,
-  Kanban,
-  FileText,
-  Zap,
-  Check,
-  Star,
-  Menu,
   X,
+  Check,
+  ArrowRight,
+  Zap,
+  Target,
+  Users,
+  FileText,
+  Wand2,
+  Brain,
 } from "lucide-react";
 
 const features = [
   {
-    icon: Zap,
-    title: "AI Transformation Statements",
-    description: "Generate compelling transformation statements that resonate with your audience.",
+    icon: ClipboardCheck,
+    title: "Assessments",
+    description: "Know where you stand with launch readiness quizzes and coaching style assessments.",
+    href: "/features/assessments",
   },
   {
-    icon: Calendar,
-    title: "Launch Calendar",
-    description: "Plan your quarterly launches with an intuitive visual calendar.",
+    icon: Layout,
+    title: "Plan",
+    description: "Build your funnel foundation with AI-powered audience insights and offer configuration.",
+    href: "/features/plan",
   },
   {
-    icon: Kanban,
-    title: "Project Management",
-    description: "Kanban boards with tasks and due dates to keep launches on track.",
+    icon: Palette,
+    title: "Branding",
+    description: "Organize your logos, colors, fonts, and photos in one professional brand hub.",
+    href: "/features/branding",
   },
   {
-    icon: FileText,
-    title: "Content Planner",
-    description: "Organize your launch content tied to your calendar milestones.",
+    icon: MessageSquare,
+    title: "Messaging",
+    description: "Generate sales copy, social bios, and email sequences with AI that gets your voice.",
+    href: "/features/messaging",
+  },
+  {
+    icon: Rocket,
+    title: "Execute",
+    description: "Manage tasks, schedule social posts, and track your launch timeline visually.",
+    href: "/features/execute",
+  },
+  {
+    icon: Sparkles,
+    title: "AI Everywhere",
+    description: "AI-powered tools throughout—from transformation statements to complete sales pages.",
+    href: "/features/messaging",
   },
 ];
 
-const pricingPlans = [
+const oldVsNew = {
+  old: [
+    "Buy a $2,000 course",
+    "Watch 40+ hours of videos",
+    "Figure it out yourself",
+    "Piece together templates",
+    "Hope you don't miss anything",
+  ],
+  new: [
+    "Start in 5 minutes",
+    "AI generates your assets",
+    "Guided step-by-step process",
+    "Everything in one place",
+    "Clear checklist of what to do",
+  ],
+};
+
+const aiFeatures = [
   {
-    name: "Free",
-    price: "$0",
-    description: "Perfect for getting started",
-    features: ["1 active project", "AI transformation generator", "Basic calendar", "Kanban board"],
-    cta: "Get Started",
-    popular: false,
+    icon: Brain,
+    title: "AI Transformation Statements",
+    description: "Generate compelling transformation language in multiple styles—punchy for bios, detailed for sales pages.",
   },
   {
-    name: "Pro",
-    price: "$20",
-    period: "/month",
-    description: "For serious coaches and marketers",
-    features: ["Unlimited projects", "AI transformation generator", "Advanced calendar", "Kanban board", "Content planner", "Priority support"],
-    cta: "Start Free Trial",
-    popular: true,
+    icon: FileText,
+    title: "AI Sales Copy",
+    description: "Complete sales page copy generated from your audience data and transformation statement.",
+  },
+  {
+    icon: Users,
+    title: "AI Audience Insights",
+    description: "Refine your target audience and generate sub-audience variations with AI suggestions.",
+  },
+  {
+    icon: Wand2,
+    title: "AI Offer Ideas",
+    description: "Get AI-generated offer titles and descriptions based on your funnel type and audience.",
+  },
+];
+
+const steps = [
+  {
+    number: "01",
+    title: "Define Your Offer",
+    description: "Choose your funnel type, define your audience, and configure your offer stack.",
+  },
+  {
+    number: "02",
+    title: "Generate Your Assets",
+    description: "Use AI to create transformation statements, sales copy, and marketing content.",
+  },
+  {
+    number: "03",
+    title: "Launch With Confidence",
+    description: "Execute with a clear checklist, project board, and launch calendar.",
   },
 ];
 
 const Landing = () => {
-  const { user } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
-        <div className="container mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 md:gap-3">
-            <div className="w-8 h-8 md:w-10 md:h-10 gradient-primary rounded-xl flex items-center justify-center shadow-md">
-              <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground" />
-            </div>
-            <span className="text-lg md:text-xl font-bold text-foreground">Launchely</span>
-          </Link>
-          
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
-            <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
-          </nav>
-          
-          {/* Desktop Auth Buttons */}
-          <div className="hidden md:flex items-center gap-4">
-            {user ? (
-              <Button asChild>
-                <Link to="/app">Go to App</Link>
-              </Button>
-            ) : (
-              <>
-                <Button variant="ghost" asChild>
-                  <Link to="/auth">Sign In</Link>
-                </Button>
-                <Button variant="hero" asChild>
-                  <Link to="/auth?tab=signup">Get Started</Link>
-                </Button>
-              </>
-            )}
-          </div>
-
-          {/* Mobile Menu */}
-          <div className="md:hidden flex items-center gap-2">
-            {user ? (
-              <Button size="sm" asChild>
-                <Link to="/app">App</Link>
-              </Button>
-            ) : (
-              <Button size="sm" variant="hero" asChild>
-                <Link to="/auth?tab=signup">Get Started</Link>
-              </Button>
-            )}
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[280px]">
-                <nav className="flex flex-col gap-4 mt-8">
-                  <a 
-                    href="#features" 
-                    className="text-lg font-medium text-foreground hover:text-primary transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Features
-                  </a>
-                  <a 
-                    href="#pricing" 
-                    className="text-lg font-medium text-foreground hover:text-primary transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Pricing
-                  </a>
-                  {!user && (
-                    <>
-                      <hr className="my-2" />
-                      <Link 
-                        to="/auth" 
-                        className="text-lg font-medium text-foreground hover:text-primary transition-colors"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        Sign In
-                      </Link>
-                    </>
-                  )}
-                </nav>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </div>
-      </header>
+      <LandingHeader />
 
       {/* Hero Section */}
-      <section className="pt-24 md:pt-32 pb-12 md:pb-20 px-4 md:px-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.08),transparent_50%)]" />
-        <div className="container mx-auto text-center relative z-10">
+      <section className="pt-32 pb-20 lg:pt-40 lg:pb-32 bg-primary text-primary-foreground">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+                Stop Buying Courses.
+                <br />
+                Start{" "}
+                <span className="bg-accent text-accent-foreground px-4 py-1 rounded-lg">
+                  Launching.
+                </span>
+              </h1>
+              <p className="text-xl md:text-2xl text-primary-foreground/70 mb-8 max-w-3xl mx-auto">
+                The AI-powered platform that replaces expensive launch courses. Plan, brand, write, and execute your next digital product launch—all in one place.
+              </p>
+
+              {/* Stats */}
+              <div className="flex flex-wrap justify-center gap-4 md:gap-6 mb-10">
+                <div className="flex items-center gap-2 bg-primary-foreground/10 px-4 py-2 rounded-full">
+                  <Zap className="w-5 h-5 text-accent" />
+                  <span className="text-sm font-medium">AI-Powered</span>
+                </div>
+                <div className="flex items-center gap-2 bg-primary-foreground/10 px-4 py-2 rounded-full">
+                  <Target className="w-5 h-5 text-accent" />
+                  <span className="text-sm font-medium">8+ Funnel Types</span>
+                </div>
+                <div className="flex items-center gap-2 bg-primary-foreground/10 px-4 py-2 rounded-full">
+                  <Users className="w-5 h-5 text-accent" />
+                  <span className="text-sm font-medium">Built for Coaches</span>
+                </div>
+              </div>
+
+              {/* CTAs */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-accent text-accent-foreground hover:bg-accent/90 text-lg px-8"
+                >
+                  <Link to="/auth">Start Free Today</Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 text-lg"
+                >
+                  <Link to="/features/plan" className="flex items-center gap-2">
+                    See How It Works <ArrowRight className="w-5 h-5" />
+                  </Link>
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Marquee Strip */}
+      <MarqueeStrip />
+
+      {/* No More Courses Section */}
+      <section className="py-20 lg:py-32 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
           >
-            <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-accent text-accent-foreground text-xs md:text-sm font-medium mb-4 md:mb-6">
-              <Star className="w-3 h-3 md:w-4 md:h-4" />
-              Trusted by 500+ coaches and marketers
-            </div>
-            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-foreground mb-4 md:mb-6 leading-tight">
-              Launch Your Programs
-              <br />
-              <span className="gradient-primary bg-clip-text text-transparent">With Confidence</span>
-            </h1>
-            <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto mb-6 md:mb-10 px-4">
-              The all-in-one platform for coaches and digital marketers to plan, organize, and execute successful program launches. Powered by AI.
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
+              Everything You Need.{" "}
+              <span className="bg-accent text-accent-foreground px-3 py-1 rounded-lg">Nothing</span>{" "}
+              You Don't.
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Launch courses taught you what to do. Launchely helps you actually do it.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
-              <Button size="lg" variant="hero" asChild className="w-full sm:w-auto">
-                <Link to="/auth?tab=signup">
-                  Start Free <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild className="w-full sm:w-auto">
-                <a href="#features">See How It Works</a>
-              </Button>
-            </div>
           </motion.div>
 
-          {/* Dashboard Preview */}
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Old Way */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4 }}
+              viewport={{ once: true }}
+              className="bg-card border border-border rounded-2xl p-8"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <X className="w-5 h-5 text-destructive" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground">The Old Way</h3>
+              </div>
+              <ul className="space-y-4">
+                {oldVsNew.old.map((item, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <X className="w-5 h-5 text-destructive/60 flex-shrink-0 mt-0.5" />
+                    <span className="text-muted-foreground">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            {/* New Way */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              viewport={{ once: true }}
+              className="bg-primary text-primary-foreground rounded-2xl p-8"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center">
+                  <Check className="w-5 h-5 text-accent-foreground" />
+                </div>
+                <h3 className="text-xl font-bold">The Launchely Way</h3>
+              </div>
+              <ul className="space-y-4">
+                {oldVsNew.new.map((item, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                    <span className="text-primary-foreground/80">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section className="py-20 lg:py-32 bg-accent">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="mt-12 md:mt-20 relative"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
           >
-            <div className="absolute inset-0 gradient-primary rounded-3xl blur-3xl opacity-20 -z-10 scale-95" />
-            <Card variant="elevated" className="overflow-hidden border-0 shadow-2xl">
-              <div className="bg-card p-2">
-                <div className="flex items-center gap-2 px-2 md:px-4 py-1 md:py-2">
-                  <div className="flex gap-1 md:gap-1.5">
-                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-destructive/80" />
-                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-warning/80" />
-                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-success/80" />
+            <h2 className="text-3xl md:text-5xl font-bold text-accent-foreground mb-4">
+              One Platform. Complete Launch System.
+            </h2>
+            <p className="text-xl text-accent-foreground/70 max-w-2xl mx-auto">
+              From initial planning to execution—everything you need to launch successfully.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {features.map((feature, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                viewport={{ once: true }}
+              >
+                <Link
+                  to={feature.href}
+                  className="block bg-card border border-border rounded-2xl p-6 h-full hover:shadow-lg transition-all hover:-translate-y-1 group"
+                >
+                  <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
+                    <feature.icon className="w-6 h-6 text-accent" />
                   </div>
-                  <div className="flex-1 h-4 md:h-6 bg-muted rounded-md mx-4 md:mx-20" />
+                  <h3 className="text-xl font-semibold text-foreground mb-2">
+                    {feature.title}
+                  </h3>
+                  <p className="text-muted-foreground">{feature.description}</p>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-20 lg:py-32">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
+              How It <span className="bg-accent text-accent-foreground px-3 py-1 rounded-lg">Works</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Three simple steps from idea to launch.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {steps.map((step, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="text-center"
+              >
+                <div className="text-6xl font-bold text-accent/20 mb-4">{step.number}</div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">{step.title}</h3>
+                <p className="text-muted-foreground">{step.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* AI Features */}
+      <section className="py-20 lg:py-32 bg-primary text-primary-foreground">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center gap-2 bg-accent/20 text-accent px-4 py-2 rounded-full mb-6">
+              <Sparkles className="w-5 h-5" />
+              <span className="font-medium">Powered by AI</span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              AI That Actually{" "}
+              <span className="bg-accent text-accent-foreground px-3 py-1 rounded-lg">Helps</span>
+            </h2>
+            <p className="text-xl text-primary-foreground/70 max-w-2xl mx-auto">
+              Not just buzzwords. Real AI tools that save you hours of work on every launch.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {aiFeatures.map((feature, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="bg-primary-foreground/5 border border-primary-foreground/10 rounded-2xl p-6"
+              >
+                <div className="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center mb-4">
+                  <feature.icon className="w-6 h-6 text-accent" />
                 </div>
-              </div>
-              <div className="p-4 md:p-8 bg-background/50">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 md:mb-6">
-                  {[
-                    { label: "Active Projects", value: "3" },
-                    { label: "Tasks Due", value: "12" },
-                    { label: "Content Pieces", value: "24" },
-                    { label: "Launch Days", value: "45" },
-                  ].map((stat, i) => (
-                    <Card key={i} className="p-2 md:p-4">
-                      <p className="text-lg md:text-2xl font-bold text-foreground">{stat.value}</p>
-                      <p className="text-xs md:text-sm text-muted-foreground">{stat.label}</p>
-                    </Card>
-                  ))}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4">
-                  <Card className="md:col-span-2 h-24 md:h-48" />
-                  <Card className="h-24 md:h-48" />
-                </div>
-              </div>
-            </Card>
+                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                <p className="text-primary-foreground/70">{feature.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-20 lg:py-32 bg-accent">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl md:text-5xl font-bold text-accent-foreground mb-4">
+              Ready to Launch Without the Learning Curve?
+            </h2>
+            <p className="text-xl text-accent-foreground/70 mb-8 max-w-2xl mx-auto">
+              Join thousands of coaches and creators who are launching smarter, not harder.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                asChild
+                size="lg"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 text-lg px-8"
+              >
+                <Link to="/auth">Start Free Today</Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="border-accent-foreground/20 text-accent-foreground hover:bg-accent-foreground/10 text-lg"
+              >
+                <Link to="/pricing">View Pricing</Link>
+              </Button>
+            </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-12 md:py-20 px-4 md:px-6">
-        <div className="container mx-auto">
-          <div className="text-center mb-10 md:mb-16">
-            <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-3 md:mb-4">
-              Everything You Need to Launch
-            </h2>
-            <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto">
-              Powerful tools designed specifically for coaches and digital marketers.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {features.map((feature, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <Card variant="elevated" className="h-full hover:shadow-xl transition-shadow">
-                  <CardContent className="pt-6">
-                    <div className="w-10 h-10 md:w-12 md:h-12 gradient-primary rounded-xl flex items-center justify-center mb-3 md:mb-4 shadow-md">
-                      <feature.icon className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
-                    </div>
-                    <h3 className="text-base md:text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
-                    <p className="text-sm md:text-base text-muted-foreground">{feature.description}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-12 md:py-20 px-4 md:px-6 bg-muted/30">
-        <div className="container mx-auto">
-          <div className="text-center mb-10 md:mb-16">
-            <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-3 md:mb-4">
-              Simple, Transparent Pricing
-            </h2>
-            <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto">
-              Start free, upgrade when you need more.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-4xl mx-auto">
-            {pricingPlans.map((plan, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <Card
-                  variant={plan.popular ? "gradient" : "elevated"}
-                  className={`h-full relative ${plan.popular ? "md:scale-105" : ""}`}
-                >
-                  {plan.popular && (
-                    <div className="absolute -top-3 md:-top-4 left-1/2 -translate-x-1/2 px-3 md:px-4 py-1 bg-secondary text-secondary-foreground text-xs md:text-sm font-medium rounded-full shadow-md">
-                      Most Popular
-                    </div>
-                  )}
-                  <CardContent className="pt-6 md:pt-8 pb-6 md:pb-8">
-                    <h3 className="text-xl md:text-2xl font-bold mb-2">{plan.name}</h3>
-                    <div className="flex items-baseline gap-1 mb-2">
-                      <span className="text-4xl md:text-5xl font-bold">{plan.price}</span>
-                      {plan.period && <span className="text-base md:text-lg opacity-80">{plan.period}</span>}
-                    </div>
-                    <p className="opacity-80 mb-4 md:mb-6 text-sm md:text-base">{plan.description}</p>
-                    <Button
-                      size="lg"
-                      variant={plan.popular ? "glass" : "default"}
-                      className="w-full mb-4 md:mb-6"
-                      asChild
-                    >
-                      <Link to="/auth">{plan.cta}</Link>
-                    </Button>
-                    <ul className="space-y-2 md:space-y-3">
-                      {plan.features.map((feature, j) => (
-                        <li key={j} className="flex items-center gap-2 md:gap-3 text-sm md:text-base">
-                          <Check className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-12 md:py-20 px-4 md:px-6">
-        <div className="container mx-auto text-center">
-          <Card variant="gradient" className="p-8 md:p-12 lg:p-20">
-            <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6">
-              Ready to Launch with Confidence?
-            </h2>
-            <p className="text-base md:text-xl opacity-90 max-w-2xl mx-auto mb-6 md:mb-8">
-              Join hundreds of coaches and marketers who trust Launchely for their launches.
-            </p>
-            <Button size="lg" variant="glass" asChild className="w-full sm:w-auto">
-              <Link to="/auth?tab=signup">
-                Start Your Free Account <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
-              </Link>
-            </Button>
-          </Card>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-8 md:py-12 px-4 md:px-6 border-t border-border">
-        <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="w-7 h-7 md:w-8 md:h-8 gradient-primary rounded-lg flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary-foreground" />
-            </div>
-            <span className="font-semibold text-foreground">Launchely</span>
-          </div>
-          <p className="text-xs md:text-sm text-muted-foreground">
-            © 2024 Launchely. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <LandingFooter />
     </div>
   );
 };

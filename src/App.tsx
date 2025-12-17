@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import Landing from "./pages/Landing";
+import Pricing from "./pages/Pricing";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Auth from "./pages/Auth";
 import AppRedirect from "./pages/AppRedirect";
@@ -18,6 +19,13 @@ import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+
+// Feature pages
+import AssessmentsFeature from "./pages/features/AssessmentsFeature";
+import PlanFeature from "./pages/features/PlanFeature";
+import BrandingFeature from "./pages/features/BrandingFeature";
+import MessagingFeature from "./pages/features/MessagingFeature";
+import ExecuteFeature from "./pages/features/ExecuteFeature";
 
 // Project-specific pages
 import ProjectPlan from "./pages/project/ProjectPlan";
@@ -43,9 +51,19 @@ const App = () => (
         <AuthProvider>
           <ImpersonationBanner />
           <Routes>
+            {/* Public marketing pages */}
             <Route path="/" element={<Landing />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/auth" element={<Auth />} />
+            
+            {/* Feature pages */}
+            <Route path="/features/assessments" element={<AssessmentsFeature />} />
+            <Route path="/features/plan" element={<PlanFeature />} />
+            <Route path="/features/branding" element={<BrandingFeature />} />
+            <Route path="/features/messaging" element={<MessagingFeature />} />
+            <Route path="/features/execute" element={<ExecuteFeature />} />
+            
             {/* Smart redirect to last used project */}
             <Route path="/app" element={<ProtectedRoute><AppRedirect /></ProtectedRoute>} />
             {/* Legacy redirects */}
