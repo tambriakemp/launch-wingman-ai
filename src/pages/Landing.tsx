@@ -132,26 +132,56 @@ const Landing = () => {
       <section className="pt-32 pb-20 lg:pt-40 lg:pb-32 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-5xl mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
+            <div>
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6">
-                <span className="block mb-2 md:mb-4">Stop Buying Courses.</span>
+                <motion.span 
+                  className="block mb-2 md:mb-4"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                >
+                  Stop Buying Courses.
+                </motion.span>
                 <span className="inline-flex items-baseline gap-3 md:gap-4">
-                  Start
-                  <span className="bg-accent text-accent-foreground px-4 py-1 rounded-lg">
+                  <motion.span
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
+                  >
+                    Start
+                  </motion.span>
+                  <motion.span 
+                    className="bg-accent text-accent-foreground px-4 py-1 rounded-lg"
+                    initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
+                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                    transition={{ 
+                      duration: 0.5, 
+                      delay: 0.5, 
+                      ease: "easeOut",
+                      scale: { type: "spring", stiffness: 200, damping: 15 }
+                    }}
+                  >
                     Launching.
-                  </span>
+                  </motion.span>
                 </span>
               </h1>
-              <p className="text-xl md:text-2xl text-primary-foreground/70 mb-8 max-w-3xl mx-auto">
+              
+              <motion.p 
+                className="text-xl md:text-2xl text-primary-foreground/70 mb-8 max-w-3xl mx-auto"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.7 }}
+              >
                 The AI-powered platform that replaces expensive launch courses. Plan, brand, write, and execute your next digital product launch—all in one place.
-              </p>
+              </motion.p>
 
               {/* Stats */}
-              <div className="flex flex-wrap justify-center gap-4 md:gap-6 mb-10">
+              <motion.div 
+                className="flex flex-wrap justify-center gap-4 md:gap-6 mb-10"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.9 }}
+              >
                 <div className="flex items-center gap-2 bg-primary-foreground/10 px-4 py-2 rounded-full">
                   <Zap className="w-5 h-5 text-accent" />
                   <span className="text-sm font-medium">AI-Powered</span>
@@ -164,10 +194,15 @@ const Landing = () => {
                   <Users className="w-5 h-5 text-accent" />
                   <span className="text-sm font-medium">Built for Coaches</span>
                 </div>
-              </div>
+              </motion.div>
 
               {/* CTAs */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+              <motion.div 
+                className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 1.1 }}
+              >
                 <Button
                   asChild
                   size="lg"
@@ -186,8 +221,8 @@ const Landing = () => {
                     See How It Works <ArrowRight className="w-5 h-5" />
                   </Link>
                 </Button>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
 
             {/* Hero Screenshot */}
             <motion.div
