@@ -21,6 +21,7 @@ import {
   ArrowLeft,
   FolderOpen,
   Crown,
+  Server,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
 import { Separator } from "@/components/ui/separator";
@@ -57,6 +58,7 @@ const createNavSections = (projectId: string): NavSection[] => [
       { id: "audience", label: "Audience", icon: Users, href: `/projects/${projectId}/audience`, requiresStep: "funnel-type" },
       { id: "transformation", label: "Transformation", icon: Sparkles, href: `/projects/${projectId}/transformation`, requiresStep: "audience" },
       { id: "offers", label: "Offer Stack", icon: Package, href: `/projects/${projectId}/offers`, requiresStep: "transformation" },
+      { id: "tech-stack", label: "Tech Stack", icon: Server, href: `/projects/${projectId}/tech-stack`, requiresStep: "offers" },
     ],
   },
   {

@@ -5,6 +5,7 @@ import ProjectFunnelTypeContent from "./plan/FunnelTypeContent";
 import ProjectAudienceContent from "./plan/AudienceContent";
 import ProjectTransformationContent from "./plan/TransformationContent";
 import ProjectOffersContent from "./plan/OffersContent";
+import TechStackContent from "./plan/TechStackContent";
 
 const sectionMap: Record<string, React.ComponentType<{ projectId: string }>> = {
   offer: ProjectFunnelOverviewContent,
@@ -12,6 +13,7 @@ const sectionMap: Record<string, React.ComponentType<{ projectId: string }>> = {
   audience: ProjectAudienceContent,
   transformation: ProjectTransformationContent,
   offers: ProjectOffersContent,
+  "tech-stack": TechStackContent,
 };
 
 const ProjectPlan = () => {
