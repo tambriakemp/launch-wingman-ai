@@ -293,8 +293,58 @@ export const WhoSection = ({
           rows={3}
           className="resize-none"
         />
+
+        {/* AI-Refined Variations - Between textarea and Generate button */}
+        {refinedVariations.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">AI-Refined Variations</Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleGenerateRefinements}
+                disabled={!hasContext || isGeneratingRefinements}
+                className="h-7 text-xs gap-1"
+              >
+                {isGeneratingRefinements ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3 h-3" />
+                )}
+                Regenerate
+              </Button>
+            </div>
+            <div className="grid gap-2">
+              {refinedVariations.map((variation) => (
+                <button
+                  key={variation.type}
+                  onClick={() => handleSelectVariation(variation)}
+                  className={`p-3 rounded-lg border text-left transition-all hover:border-primary/50 ${
+                    selectedVariation === variation.type
+                      ? "border-primary bg-primary/5"
+                      : "border-border bg-card"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge
+                      variant="outline"
+                      className={`${getVariationColor(variation.type)} gap-1`}
+                    >
+                      {getVariationIcon(variation.type)}
+                      {variation.label}
+                    </Badge>
+                    {selectedVariation === variation.type && (
+                      <Check className="w-4 h-4 text-primary ml-auto" />
+                    )}
+                  </div>
+                  <p className="text-sm">{variation.statement}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         
-        {/* Generate button right below textarea */}
+        {/* Generate button right below textarea/variations */}
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted-foreground">
             💡 Type your rough description, then click Generate to refine it
@@ -356,56 +406,6 @@ export const WhoSection = ({
             </div>
           </CollapsibleContent>
         </Collapsible>
-      )}
-
-      {/* AI-Refined Variations Section - Outside Dropdown */}
-      {refinedVariations.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm">AI-Refined Variations</Label>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleGenerateRefinements}
-              disabled={!hasContext || isGeneratingRefinements}
-              className="h-7 text-xs gap-1"
-            >
-              {isGeneratingRefinements ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Sparkles className="w-3 h-3" />
-              )}
-              Regenerate
-            </Button>
-          </div>
-          <div className="grid gap-2">
-            {refinedVariations.map((variation) => (
-              <button
-                key={variation.type}
-                onClick={() => handleSelectVariation(variation)}
-                className={`p-3 rounded-lg border text-left transition-all hover:border-primary/50 ${
-                  selectedVariation === variation.type
-                    ? "border-primary bg-primary/5"
-                    : "border-border bg-card"
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge
-                    variant="outline"
-                    className={`${getVariationColor(variation.type)} gap-1`}
-                  >
-                    {getVariationIcon(variation.type)}
-                    {variation.label}
-                  </Badge>
-                  {selectedVariation === variation.type && (
-                    <Check className="w-4 h-4 text-primary ml-auto" />
-                  )}
-                </div>
-                <p className="text-sm">{variation.statement}</p>
-              </button>
-            ))}
-          </div>
-        </div>
       )}
 
       {/* Analyze Audience Section */}
