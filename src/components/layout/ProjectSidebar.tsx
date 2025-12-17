@@ -152,11 +152,6 @@ const SidebarContent = ({
           )}
         </div>
 
-        {/* Project Selector */}
-        <div className="px-3 py-2 border-b border-sidebar-border">
-          <ProjectSelector />
-        </div>
-
         {/* Empty nav area for consistency */}
         <nav className="flex-1 overflow-y-auto px-3 py-2">
           <p className="px-2 py-4 text-xs text-sidebar-foreground/60">
