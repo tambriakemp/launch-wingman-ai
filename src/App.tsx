@@ -27,6 +27,13 @@ import BrandingFeature from "./pages/features/BrandingFeature";
 import MessagingFeature from "./pages/features/MessagingFeature";
 import ExecuteFeature from "./pages/features/ExecuteFeature";
 
+// Additional public pages
+import About from "./pages/About";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
+import Contact from "./pages/Contact";
+import TermsOfService from "./pages/TermsOfService";
+
 // Project-specific pages
 import ProjectPlan from "./pages/project/ProjectPlan";
 import ProjectBrand from "./pages/project/ProjectBrand";
@@ -55,6 +62,11 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="/auth" element={<Auth />} />
             
             {/* Feature pages */}
