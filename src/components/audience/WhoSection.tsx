@@ -164,6 +164,7 @@ export const WhoSection = ({
 }: WhoSectionProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [specificityFeedback, setSpecificityFeedback] = useState<string>("");
+  const [analysisFeedback, setAnalysisFeedback] = useState<string>("");
   const [selectedSubAudience, setSelectedSubAudience] = useState<string | null>(null);
   const [isExamplesOpen, setIsExamplesOpen] = useState(false);
   
@@ -213,6 +214,7 @@ export const WhoSection = ({
     if (!niche) return;
 
     setIsGenerating(true);
+    setAnalysisFeedback("");
     try {
       const { data, error } = await supabase.functions.invoke('generate-sub-audiences', {
         body: { niche, targetAudience }
@@ -227,7 +229,7 @@ export const WhoSection = ({
         onSpecificityScoreChange(data.specificityScore);
       }
       if (data.specificityFeedback) {
-        setSpecificityFeedback(data.specificityFeedback);
+        setAnalysisFeedback(data.specificityFeedback);
       }
     } catch (error) {
       console.error("Error generating sub-audiences:", error);
@@ -445,6 +447,14 @@ export const WhoSection = ({
             )}
           </Button>
         </div>
+
+        {/* Analysis Feedback */}
+        {analysisFeedback && (
+          <div className="flex items-start gap-2 p-3 rounded-md bg-muted/50 border border-border">
+            <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-muted-foreground">{analysisFeedback}</p>
+          </div>
+        )}
 
         {subAudiences.length > 0 && (
           <div className="grid gap-2">
