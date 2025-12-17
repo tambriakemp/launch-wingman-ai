@@ -326,6 +326,9 @@ export const ProjectSidebar = () => {
   const { isOpen, close } = useMobileSidebar();
   const { isSubscribed } = useAuth();
 
+  // Determine if we're on an assessment page
+  const isOnAssessmentPage = location.pathname.startsWith('/assessments');
+
   // Load last project from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem("lastProjectInfo");
@@ -338,54 +341,57 @@ export const ProjectSidebar = () => {
     }
   }, []);
 
+  // Use lastProject.id when on assessment pages to show full navigation
+  const effectiveProjectId = projectId || (isOnAssessmentPage ? lastProject?.id : undefined);
+
   // Fetch funnel data to determine step completion
   const { data: funnel } = useQuery({
-    queryKey: ['funnel', projectId],
+    queryKey: ['funnel', effectiveProjectId],
     queryFn: async () => {
-      if (!projectId) return null;
+      if (!effectiveProjectId) return null;
       const { data, error } = await supabase
         .from('funnels')
         .select('*')
-        .eq('project_id', projectId)
+        .eq('project_id', effectiveProjectId)
         .maybeSingle();
       if (error) throw error;
       return data;
     },
-    enabled: !!projectId,
+    enabled: !!effectiveProjectId,
   });
 
   // Fetch offers data to determine offers step completion
   const { data: offers } = useQuery({
-    queryKey: ['offers', projectId],
+    queryKey: ['offers', effectiveProjectId],
     queryFn: async () => {
-      if (!projectId) return [];
+      if (!effectiveProjectId) return [];
       const { data, error } = await supabase
         .from('offers')
         .select('title')
-        .eq('project_id', projectId);
+        .eq('project_id', effectiveProjectId);
       if (error) throw error;
       return data;
     },
-    enabled: !!projectId,
+    enabled: !!effectiveProjectId,
   });
 
   // Fetch project data for transformation statement and name
   const { data: project } = useQuery({
-    queryKey: ['project', projectId],
+    queryKey: ['project', effectiveProjectId],
     queryFn: async () => {
-      if (!projectId) return null;
+      if (!effectiveProjectId) return null;
       const { data, error } = await supabase
         .from('projects')
         .select('transformation_statement, name')
-        .eq('id', projectId)
+        .eq('id', effectiveProjectId)
         .single();
       if (error) throw error;
       return data;
     },
-    enabled: !!projectId,
+    enabled: !!effectiveProjectId,
   });
 
-  // Save current project to localStorage when on a project page
+  // Save current project to localStorage when on a project page (not assessment pages)
   useEffect(() => {
     if (projectId && project?.name) {
       const projectInfo: LastProjectInfo = { id: projectId, name: project.name };
@@ -394,7 +400,7 @@ export const ProjectSidebar = () => {
     }
   }, [projectId, project?.name]);
 
-  const navSections = projectId ? createNavSections(projectId) : [];
+  const navSections = effectiveProjectId ? createNavSections(effectiveProjectId) : [];
 
   // Determine step completion status
   const stepCompletion: StepCompletion = {
@@ -434,7 +440,7 @@ export const ProjectSidebar = () => {
   };
 
   const sidebarContentProps = {
-    projectId,
+    projectId: effectiveProjectId,
     navSections,
     stepCompletion,
     isStepAccessible,
