@@ -207,9 +207,18 @@ export const OfferSlotSheet = ({
             <Label>Description</Label>
             <Textarea
               value={data.description}
-              onChange={(e) => handleFieldChange("description", e.target.value)}
+              onChange={(e) => {
+                handleFieldChange("description", e.target.value);
+                // Auto-resize
+                e.target.style.height = 'auto';
+                e.target.style.height = e.target.scrollHeight + 'px';
+              }}
+              onFocus={(e) => {
+                e.target.style.height = 'auto';
+                e.target.style.height = e.target.scrollHeight + 'px';
+              }}
               placeholder="Briefly describe what this offer includes..."
-              className="min-h-[80px] max-h-[200px] resize-none bg-muted/50"
+              className="min-h-[80px] resize-none bg-muted/50 overflow-hidden"
             />
           </div>
 
