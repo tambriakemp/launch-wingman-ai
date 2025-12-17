@@ -312,22 +312,8 @@ export const OfferSlotSheet = ({
 
           {/* Actions */}
           <div className="flex flex-col gap-3 pt-4 border-t border-border">
-            <Button
-              variant="outline"
-              onClick={() => handleFieldChange("isConfigured", !data.isConfigured)}
-              className={cn(
-                "w-full",
-                data.isConfigured && "bg-emerald-500/10 border-emerald-500/50 text-emerald-600"
-              )}
-            >
-              {data.isConfigured ? (
-                <>
-                  <Check className="w-4 h-4 mr-2" />
-                  Configured
-                </>
-              ) : (
-                "Mark as Configured"
-              )}
+            <Button onClick={onClose} className="w-full">
+              Save
             </Button>
 
             <div className="flex gap-2">
