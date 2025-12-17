@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AssessmentProgressStepper } from "@/components/AssessmentProgressStepper";
+import { AssessmentProgressBar } from "@/components/AssessmentProgressBar";
 import {
   Users,
   ArrowRight,
@@ -888,12 +888,11 @@ const CoachAssessment = () => {
   return (
     <ProjectLayout>
       <div className="max-w-3xl mx-auto space-y-6">
-        {/* Progress Stepper */}
-        <AssessmentProgressStepper
-          steps={setQuestions.map((q) => ({ key: q.part, title: q.part.replace("Set ", "").split(":")[0] }))}
+        {/* Progress Bar */}
+        <AssessmentProgressBar
           currentStep={currentStep}
-          onStepClick={handleStepClick}
-          completedSteps={Object.keys(setAnswers).map(key => parseInt(key.replace("part_", "")))}
+          totalSteps={setQuestions.length}
+          stepLabel={`Part ${currentStep + 1} of ${setQuestions.length} • ${currentPart.part}`}
         />
 
         {/* Sets */}

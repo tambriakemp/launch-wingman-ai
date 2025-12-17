@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
@@ -11,7 +12,53 @@ import {
   Target,
   Heart,
   Clock,
+  CheckCircle2,
+  Trophy,
+  Rocket,
+  DollarSign,
+  Package,
 } from "lucide-react";
+
+interface SavedLaunchAssessment {
+  answers: Record<number, number>;
+  reflections: Record<string, string>;
+  score: number;
+  completedAt: string;
+}
+
+interface SavedCoachAssessment {
+  setAnswers: Record<string, string>;
+  reflections: Record<string, string>;
+  barriers: string[];
+  barrierExpansion: string;
+  commitment: Record<string, string>;
+  primaryApproach: "maya" | "derek" | "lauren";
+  completedAt: string;
+}
+
+interface SavedWhyStatement {
+  completedAt: string;
+  whyStatement?: string;
+}
+
+const getLaunchResultSummary = (score: number) => {
+  if (score <= 15) {
+    return { title: "The Announcer", icon: Target, color: "text-warning", range: "0-15" };
+  } else if (score <= 30) {
+    return { title: "The Partial Prelauncher", icon: Rocket, color: "text-secondary", range: "16-30" };
+  } else {
+    return { title: "The Strategic Prelauncher", icon: Trophy, color: "text-success", range: "31-45" };
+  }
+};
+
+const getCoachResultSummary = (primaryApproach: "maya" | "derek" | "lauren") => {
+  const profiles = {
+    maya: { title: "Maya - The Community Builder", icon: Heart, color: "text-success" },
+    derek: { title: "Derek - The Direct Seller", icon: DollarSign, color: "text-warning" },
+    lauren: { title: "Lauren - The Product-Centric Coach", icon: Package, color: "text-secondary" },
+  };
+  return profiles[primaryApproach];
+};
 
 const assessments = [
   {
@@ -25,6 +72,7 @@ const assessments = [
     color: "text-primary",
     bgColor: "bg-primary/10",
     categories: ["Pre-Launch Content", "Engagement", "Trust Building", "Data Gathering", "Launch Mindset"],
+    storageKey: "coach_hub_launch_assessment",
   },
   {
     id: "coach",
@@ -37,6 +85,7 @@ const assessments = [
     color: "text-secondary",
     bgColor: "bg-secondary/10",
     categories: ["Maya (Community Builder)", "Derek (Direct Seller)", "Lauren (Product-Centric)"],
+    storageKey: "coach_hub_coach_assessment",
   },
   {
     id: "why-statement",
@@ -49,10 +98,77 @@ const assessments = [
     color: "text-accent",
     bgColor: "bg-accent/10",
     categories: ["Current Reality", "Desired Future", "8 Benefits", "Deeper Why", "Commitment"],
+    storageKey: "coach_hub_why_statement",
   },
 ];
 
 const Assessments = () => {
+  const [savedResults, setSavedResults] = useState<{
+    launch: SavedLaunchAssessment | null;
+    coach: SavedCoachAssessment | null;
+    whyStatement: SavedWhyStatement | null;
+  }>({
+    launch: null,
+    coach: null,
+    whyStatement: null,
+  });
+
+  useEffect(() => {
+    // Load saved assessments from localStorage
+    const launchData = localStorage.getItem("coach_hub_launch_assessment");
+    const coachData = localStorage.getItem("coach_hub_coach_assessment");
+    const whyData = localStorage.getItem("coach_hub_why_statement");
+
+    setSavedResults({
+      launch: launchData ? JSON.parse(launchData) : null,
+      coach: coachData ? JSON.parse(coachData) : null,
+      whyStatement: whyData ? JSON.parse(whyData) : null,
+    });
+  }, []);
+
+  const getAssessmentResult = (assessmentId: string) => {
+    switch (assessmentId) {
+      case "launch":
+        if (savedResults.launch?.score !== undefined) {
+          return getLaunchResultSummary(savedResults.launch.score);
+        }
+        return null;
+      case "coach":
+        if (savedResults.coach?.primaryApproach) {
+          return getCoachResultSummary(savedResults.coach.primaryApproach);
+        }
+        return null;
+      case "why-statement":
+        if (savedResults.whyStatement?.completedAt) {
+          return { title: "Why Statement Created", icon: CheckCircle2, color: "text-success" };
+        }
+        return null;
+      default:
+        return null;
+    }
+  };
+
+  const getCompletedDate = (assessmentId: string) => {
+    switch (assessmentId) {
+      case "launch":
+        return savedResults.launch?.completedAt;
+      case "coach":
+        return savedResults.coach?.completedAt;
+      case "why-statement":
+        return savedResults.whyStatement?.completedAt;
+      default:
+        return null;
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
   return (
     <ProjectLayout>
       <div className="max-w-4xl mx-auto space-y-8">
@@ -92,59 +208,93 @@ const Assessments = () => {
         </motion.div>
 
         <div className="grid gap-6">
-          {assessments.map((assessment, index) => (
-            <motion.div
-              key={assessment.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + index * 0.1 }}
-            >
-              <Card variant="elevated" className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-14 h-14 rounded-xl ${assessment.bgColor} flex items-center justify-center`}>
-                        <assessment.icon className={`w-7 h-7 ${assessment.color}`} />
-                      </div>
-                      <div>
-                        <CardTitle className="text-xl">{assessment.title}</CardTitle>
-                        <div className="flex items-center gap-3 mt-1">
-                          <Badge variant="outline" className="text-xs">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {assessment.duration}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">
-                            <Target className="w-3 h-3 mr-1" />
-                            {assessment.questions} {assessment.questions === 1 ? "part" : assessment.questions > 10 ? "questions" : "parts"}
-                          </Badge>
+          {assessments.map((assessment, index) => {
+            const result = getAssessmentResult(assessment.id);
+            const completedDate = getCompletedDate(assessment.id);
+            const isCompleted = !!result;
+            const ResultIcon = result?.icon;
+
+            return (
+              <motion.div
+                key={assessment.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + index * 0.1 }}
+              >
+                <Card variant="elevated" className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-14 h-14 rounded-xl ${assessment.bgColor} flex items-center justify-center`}>
+                          <assessment.icon className={`w-7 h-7 ${assessment.color}`} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <CardTitle className="text-xl">{assessment.title}</CardTitle>
+                            {isCompleted && (
+                              <Badge variant="outline" className="text-success border-success/30 bg-success/10">
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                Completed
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1">
+                            <Badge variant="outline" className="text-xs">
+                              <Clock className="w-3 h-3 mr-1" />
+                              {assessment.duration}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              <Target className="w-3 h-3 mr-1" />
+                              {assessment.questions} {assessment.questions === 1 ? "part" : assessment.questions > 10 ? "questions" : "parts"}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <CardDescription className="text-base">
-                    {assessment.description}
-                  </CardDescription>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    {assessment.categories.map((category) => (
-                      <Badge key={category} variant="secondary" className="text-xs">
-                        {category}
-                      </Badge>
-                    ))}
-                  </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <CardDescription className="text-base">
+                      {assessment.description}
+                    </CardDescription>
 
-                  <Button asChild className="w-full sm:w-auto">
-                    <Link to={assessment.href}>
-                      View Assessment
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                    {/* Result Summary when completed */}
+                    {isCompleted && result && (
+                      <div className="p-4 bg-muted/50 rounded-lg border border-border">
+                        <div className="flex items-center gap-3">
+                          {ResultIcon && <ResultIcon className={`w-5 h-5 ${result.color}`} />}
+                          <div>
+                            <p className={`font-medium ${result.color}`}>{result.title}</p>
+                            {completedDate && (
+                              <p className="text-xs text-muted-foreground">
+                                Completed on {formatDate(completedDate)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="flex flex-wrap gap-2">
+                      {assessment.categories.map((category) => (
+                        <Badge key={category} variant="secondary" className="text-xs">
+                          {category}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button asChild className="w-full sm:w-auto">
+                        <Link to={assessment.href}>
+                          {isCompleted ? "View Results" : "Start Assessment"}
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </ProjectLayout>
