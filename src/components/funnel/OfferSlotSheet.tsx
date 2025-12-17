@@ -135,12 +135,12 @@ export const OfferSlotSheet = ({
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="sm:max-w-xl overflow-y-auto">
+      <SheetContent side="right" className="sm:max-w-xl overflow-y-auto bg-background">
         <SheetHeader>
           <SheetTitle>{slot.label.replace(" (Optional)", "")}</SheetTitle>
         </SheetHeader>
 
-        <div className="mt-6 space-y-6">
+        <div className="mt-6 space-y-5">
           {/* Description */}
           <p className="text-sm text-muted-foreground">
             {slot.description}
@@ -160,7 +160,7 @@ export const OfferSlotSheet = ({
               value={data.offerType}
               onValueChange={(value) => handleFieldChange("offerType", value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="bg-muted/50">
                 <SelectValue placeholder="Select type first..." />
               </SelectTrigger>
               <SelectContent>
@@ -198,6 +198,7 @@ export const OfferSlotSheet = ({
               value={data.title}
               onChange={(e) => handleFieldChange("title", e.target.value)}
               placeholder={`e.g., "Ultimate ${slot.label} Guide"`}
+              className="bg-muted/50"
             />
           </div>
 
@@ -208,8 +209,7 @@ export const OfferSlotSheet = ({
               value={data.description}
               onChange={(e) => handleFieldChange("description", e.target.value)}
               placeholder="Briefly describe what this offer includes..."
-              className="min-h-[80px] resize-none field-sizing-content"
-              style={{ fieldSizing: 'content' } as React.CSSProperties}
+              className="min-h-[80px] max-h-[200px] resize-none bg-muted/50"
             />
           </div>
 
@@ -222,6 +222,7 @@ export const OfferSlotSheet = ({
                 onChange={(e) => handleFieldChange("price", e.target.value)}
                 placeholder="e.g., 297"
                 type="text"
+                className="bg-muted/50"
               />
             </div>
 
@@ -231,7 +232,7 @@ export const OfferSlotSheet = ({
                 value={data.priceType}
                 onValueChange={(value) => handleFieldChange("priceType", value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-muted/50">
                   <SelectValue placeholder="Select..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -247,24 +248,26 @@ export const OfferSlotSheet = ({
 
           {/* AI Generate Button */}
           {audienceData && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGenerateTitleDescription}
-              disabled={isGenerating || !data.offerType}
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Generate with AI
-                </>
-              )}
-            </Button>
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateTitleDescription}
+                disabled={isGenerating || !data.offerType}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3 h-3 mr-1.5" />
+                    Generate with AI
+                  </>
+                )}
+              </Button>
+            </div>
           )}
 
           {/* Generated Ideas */}

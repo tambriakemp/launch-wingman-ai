@@ -151,7 +151,7 @@ export const OfferStackBuilder = ({
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           className={cn(
-                            "flex items-center gap-3 p-4 border-b border-border last:border-b-0 transition-colors",
+                            "flex items-center gap-3 px-4 py-5 border-b border-border last:border-b-0 transition-colors",
                             snapshot.isDragging && "bg-muted shadow-lg",
                             isSkipped && "opacity-50 bg-muted/30"
                           )}
