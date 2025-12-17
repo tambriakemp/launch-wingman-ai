@@ -948,9 +948,49 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      social_connections_decrypted: {
+        Row: {
+          access_token: string | null
+          account_id: string | null
+          account_name: string | null
+          created_at: string | null
+          id: string | null
+          platform: string | null
+          refresh_token: string | null
+          token_expires_at: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_token?: never
+          account_id?: string | null
+          account_name?: string | null
+          created_at?: string | null
+          id?: string | null
+          platform?: string | null
+          refresh_token?: never
+          token_expires_at?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_token?: never
+          account_id?: string | null
+          account_name?: string | null
+          created_at?: string | null
+          id?: string | null
+          platform?: string | null
+          refresh_token?: never
+          token_expires_at?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      decrypt_token: { Args: { encrypted_token: string }; Returns: string }
+      encrypt_token: { Args: { plain_token: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

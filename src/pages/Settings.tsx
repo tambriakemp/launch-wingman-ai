@@ -280,7 +280,6 @@ const Settings = () => {
     try {
       const { data, error } = await supabase.functions.invoke('pinterest-auth-start', {
         body: { 
-          user_id: user.id, 
           redirect_url: '/settings' 
         }
       });
