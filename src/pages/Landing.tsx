@@ -213,8 +213,7 @@ const Landing = () => {
                 <Button
                   asChild
                   size="lg"
-                  variant="outline"
-                  className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 text-lg"
+                  className="bg-accent text-accent-foreground hover:bg-accent/90 text-lg px-8"
                 >
                   <Link to="/how-it-works" className="flex items-center gap-2">
                     See How It Works <ArrowRight className="w-5 h-5" />
