@@ -137,9 +137,8 @@ const Landing = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-                Stop Buying Courses.
-                <br />
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6">
+                <span className="block mb-2 md:mb-4">Stop Buying Courses.</span>
                 <span className="inline-flex items-baseline gap-3 md:gap-4">
                   Start
                   <span className="bg-accent text-accent-foreground px-4 py-1 rounded-lg">
