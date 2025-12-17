@@ -8,6 +8,7 @@ interface SocialPostPreviewProps {
   mediaUrl: string | null;
   mediaType: string | null;
   linkUrl?: string;
+  title?: string;
 }
 
 // Custom icons for platforms not in Lucide
@@ -47,29 +48,29 @@ function PhoneFrame({ children, platform }: { children: React.ReactNode; platfor
   const IconComponent = getIconComponent(platform);
 
   return (
-    <div className="relative mx-auto w-[200px]">
+    <div className="relative mx-auto w-[280px]">
       {/* Phone frame */}
-      <div className="relative bg-background border-4 border-foreground/20 rounded-[24px] overflow-hidden shadow-xl">
+      <div className="relative bg-background border-4 border-foreground/20 rounded-[28px] overflow-hidden shadow-xl">
         {/* Status bar */}
         <div
-          className="h-6 flex items-center justify-between px-3 text-white text-[8px]"
+          className="h-7 flex items-center justify-between px-4 text-white text-[9px]"
           style={{ backgroundColor: platformConfig?.color || "#000" }}
         >
           <span>9:41</span>
-          <div className="flex items-center gap-1">
-            {IconComponent && <IconComponent className="w-3 h-3" />}
+          <div className="flex items-center gap-1.5">
+            {IconComponent && <IconComponent className="w-3.5 h-3.5" />}
             <span className="font-medium">{platformConfig?.name}</span>
           </div>
         </div>
 
         {/* Content area */}
-        <div className="bg-card min-h-[280px] max-h-[280px] overflow-hidden">
+        <div className="bg-card min-h-[380px] max-h-[380px] overflow-hidden">
           {children}
         </div>
 
         {/* Home indicator */}
-        <div className="h-5 flex items-center justify-center bg-card">
-          <div className="w-24 h-1 bg-foreground/20 rounded-full" />
+        <div className="h-6 flex items-center justify-center bg-card">
+          <div className="w-28 h-1 bg-foreground/20 rounded-full" />
         </div>
       </div>
     </div>
@@ -146,7 +147,7 @@ function TwitterPreview({ content, mediaUrl, mediaType }: { content: string; med
   );
 }
 
-function PinterestPreview({ content, mediaUrl, mediaType, linkUrl }: { content: string; mediaUrl: string | null; mediaType: string | null; linkUrl?: string }) {
+function PinterestPreview({ content, mediaUrl, mediaType, linkUrl, title }: { content: string; mediaUrl: string | null; mediaType: string | null; linkUrl?: string; title?: string }) {
   const getHostname = (url: string) => {
     try {
       return new URL(url).hostname;
@@ -161,27 +162,33 @@ function PinterestPreview({ content, mediaUrl, mediaType, linkUrl }: { content: 
       {mediaUrl ? (
         <div className="relative">
           {mediaType === "video" ? (
-            <video src={mediaUrl} className="w-full aspect-[2/3] object-cover bg-black" muted />
+            <video src={mediaUrl} className="w-full aspect-[3/4] object-cover bg-black" muted />
           ) : (
-            <img src={mediaUrl} alt="" className="w-full aspect-[2/3] object-cover" />
+            <img src={mediaUrl} alt="" className="w-full aspect-[3/4] object-cover" />
           )}
           {linkUrl && (
             <div className="absolute bottom-2 left-2 right-2">
-              <div className="bg-white/90 rounded-full px-2 py-0.5 text-[8px] text-gray-700 truncate">
-                🔗 {getHostname(linkUrl)}
+              <div className="bg-white/90 rounded-full px-2.5 py-1 text-[9px] text-gray-700 truncate flex items-center gap-1">
+                <span>🔗</span>
+                <span>{getHostname(linkUrl)}</span>
               </div>
             </div>
           )}
         </div>
       ) : (
-        <div className="w-full aspect-[2/3] bg-muted flex items-center justify-center">
-          <span className="text-[10px] text-muted-foreground">Add image</span>
+        <div className="w-full aspect-[3/4] bg-muted flex items-center justify-center">
+          <span className="text-xs text-muted-foreground">Add image</span>
         </div>
       )}
 
       {/* Pin Title & Description */}
-      <div className="p-2 flex-1 overflow-hidden bg-white">
-        <p className="text-[9px] font-medium line-clamp-2 text-gray-900">
+      <div className="p-3 flex-1 overflow-hidden bg-white">
+        {title && (
+          <h3 className="text-sm font-bold line-clamp-2 text-gray-900 mb-1">
+            {title}
+          </h3>
+        )}
+        <p className="text-[11px] text-gray-600 line-clamp-3">
           {content || "Pin description..."}
         </p>
       </div>
@@ -230,6 +237,7 @@ export function SocialPostPreview({
   mediaUrl,
   mediaType,
   linkUrl,
+  title,
 }: SocialPostPreviewProps) {
   if (platforms.length === 0) {
     return (
@@ -252,7 +260,7 @@ export function SocialPostPreview({
       case "twitter":
         return <TwitterPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} />;
       case "pinterest":
-        return <PinterestPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} linkUrl={linkUrl} />;
+        return <PinterestPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} linkUrl={linkUrl} title={title} />;
       default:
         return <GenericPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} platform={activePlatform} />;
     }

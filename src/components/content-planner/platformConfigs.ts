@@ -11,6 +11,7 @@ export interface PlatformConfig {
   maxMedia: number;
   supportsVideo: boolean;
   maxCaptionLength: number;
+  hidden?: boolean;
 }
 
 export const PLATFORMS: PlatformConfig[] = [
@@ -23,6 +24,7 @@ export const PLATFORMS: PlatformConfig[] = [
     maxMedia: 10,
     supportsVideo: true,
     maxCaptionLength: 2200,
+    hidden: true,
   },
   {
     id: "facebook",
@@ -33,6 +35,7 @@ export const PLATFORMS: PlatformConfig[] = [
     maxMedia: 10,
     supportsVideo: true,
     maxCaptionLength: 63206,
+    hidden: true,
   },
   {
     id: "twitter",
@@ -43,6 +46,7 @@ export const PLATFORMS: PlatformConfig[] = [
     maxMedia: 4,
     supportsVideo: true,
     maxCaptionLength: 280,
+    hidden: false,
   },
   {
     id: "linkedin",
@@ -53,6 +57,7 @@ export const PLATFORMS: PlatformConfig[] = [
     maxMedia: 9,
     supportsVideo: true,
     maxCaptionLength: 3000,
+    hidden: true,
   },
   {
     id: "pinterest",
@@ -64,6 +69,7 @@ export const PLATFORMS: PlatformConfig[] = [
     maxMedia: 1,
     supportsVideo: true,
     maxCaptionLength: 500,
+    hidden: false,
   },
   {
     id: "tiktok",
@@ -75,6 +81,7 @@ export const PLATFORMS: PlatformConfig[] = [
     maxMedia: 1,
     supportsVideo: true,
     maxCaptionLength: 2200,
+    hidden: true,
   },
 ];
 

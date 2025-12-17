@@ -62,10 +62,12 @@ export function PlatformSelector({ selected, onChange }: PlatformSelectorProps) 
     }
   };
 
+  const visiblePlatforms = PLATFORMS.filter(p => !p.hidden);
+
   return (
     <TooltipProvider>
       <div className="flex flex-wrap gap-3">
-        {PLATFORMS.map((platform) => {
+        {visiblePlatforms.map((platform) => {
           const isSelected = selected.includes(platform.id);
           const IconComponent = getIconComponent(platform.id);
 
