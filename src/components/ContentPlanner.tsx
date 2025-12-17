@@ -33,13 +33,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,7 +64,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Separator } from "@/components/ui/separator";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1146,308 +1151,333 @@ const [formData, setFormData] = useState({
       {/* Content Views */}
       {viewMode === "calendar" ? <CalendarView /> : <ListView />}
 
-      {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingItem ? "Edit Content" : "Add Content"}</DialogTitle>
-            <DialogDescription>
+      {/* Add/Edit Sheet */}
+      <Sheet open={dialogOpen} onOpenChange={setDialogOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-[900px] p-0 flex flex-col">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b">
+            <SheetTitle>{editingItem ? "Edit Content" : "Add Content"}</SheetTitle>
+            <SheetDescription>
               Plan your content for your pre-launch and launch phases.
-            </DialogDescription>
-          </DialogHeader>
+            </SheetDescription>
+          </SheetHeader>
 
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Phase</Label>
-                <Select
-                  value={formData.phase}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, phase: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PHASES.map(phase => (
-                      <SelectItem key={phase.id} value={phase.id}>{phase.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Day</Label>
-                <Select
-                  value={formData.day_number.toString()}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, day_number: parseInt(value) }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 4, 5, 6, 7].map(day => (
-                      <SelectItem key={day} value={day.toString()}>Day {day}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Time of Day</Label>
-                <Select
-                  value={formData.time_of_day}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, time_of_day: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="morning">Morning</SelectItem>
-                    <SelectItem value="evening">Evening</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Content Type</Label>
-                <Select
-                  value={formData.content_type}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, content_type: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CONTENT_TYPES.map(type => (
-                      <SelectItem key={type.id} value={type.id}>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded ${type.color}`} />
-                          {type.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map(status => (
-                    <SelectItem key={status.id} value={status.id}>
-                      <div className="flex items-center gap-2">
-                        <status.icon className={`w-4 h-4 ${status.color}`} />
-                        {status.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Social Media Section - Post To */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Share2 className="w-4 h-4 text-muted-foreground" />
-                <Label className="text-base font-medium">Post To</Label>
-              </div>
-              <PlatformSelector
-                selected={formData.scheduled_platforms}
-                onChange={(platforms) => setFormData(prev => ({ ...prev, scheduled_platforms: platforms }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Title</Label>
-                {formData.scheduled_platforms.includes('pinterest') && (
-                  <span className={`text-xs ${formData.title.length > 100 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                    {formData.title.length}/100 (Pinterest limit)
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+            {/* Planning Details - Collapsible Section */}
+            <Collapsible defaultOpen={!!editingItem}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg border hover:bg-muted/70 transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">📋</span>
+                  <span className="font-medium text-sm">Planning Details</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({PHASES.find(p => p.id === formData.phase)?.shortLabel} • Day {formData.day_number} • {formData.time_of_day})
                   </span>
-                )}
-              </div>
-              <Input
-                value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Enter content title"
-                maxLength={formData.scheduled_platforms.includes('pinterest') ? 100 : undefined}
-              />
-            </div>
+                </div>
+                <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform [[data-state=open]_&]:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-4 space-y-4">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Phase</Label>
+                    <Select
+                      value={formData.phase}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, phase: value }))}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PHASES.map(phase => (
+                          <SelectItem key={phase.id} value={phase.id}>{phase.shortLabel}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Day</Label>
+                    <Select
+                      value={formData.day_number.toString()}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, day_number: parseInt(value) }))}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4, 5, 6, 7].map(day => (
+                          <SelectItem key={day} value={day.toString()}>Day {day}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Time</Label>
+                    <Select
+                      value={formData.time_of_day}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, time_of_day: value }))}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="morning">Morning</SelectItem>
+                        <SelectItem value="evening">Evening</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Content Type</Label>
+                    <Select
+                      value={formData.content_type}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, content_type: value }))}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CONTENT_TYPES.map(type => (
+                          <SelectItem key={type.id} value={type.id}>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2.5 h-2.5 rounded ${type.color}`} />
+                              {type.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Status</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map(status => (
+                          <SelectItem key={status.id} value={status.id}>
+                            <div className="flex items-center gap-2">
+                              <status.icon className={`w-3.5 h-3.5 ${status.color}`} />
+                              {status.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Labels</Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {LABELS.map(label => (
+                      <Badge
+                        key={label.id}
+                        variant="outline"
+                        className={`cursor-pointer transition-all text-xs ${
+                          formData.labels.includes(label.id)
+                            ? label.color
+                            : "opacity-50 hover:opacity-100"
+                        }`}
+                        onClick={() => toggleLabel(label.id)}
+                      >
+                        {label.id}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Input
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Brief description (optional)"
-              />
-            </div>
+            {/* Social Media Section - Two Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-6">
+              {/* Left Column - Content Editing */}
+              <div className="space-y-4">
+                {/* Post To */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Share2 className="w-4 h-4 text-muted-foreground" />
+                    <Label>Post To</Label>
+                  </div>
+                  <PlatformSelector
+                    selected={formData.scheduled_platforms}
+                    onChange={(platforms) => setFormData(prev => ({ ...prev, scheduled_platforms: platforms }))}
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Content / Copy</Label>
+                {/* Title */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label>Title</Label>
+                    {formData.scheduled_platforms.includes('pinterest') && (
+                      <span className={`text-xs ${formData.title.length > 100 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        {formData.title.length}/100
+                      </span>
+                    )}
+                  </div>
+                  <Input
+                    value={formData.title}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Enter content title"
+                    maxLength={formData.scheduled_platforms.includes('pinterest') ? 100 : undefined}
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="space-y-1.5">
+                  <Label>Description</Label>
+                  <Input
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Brief description (optional)"
+                  />
+                </div>
+
+                {/* Content / Copy */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label>Content / Copy</Label>
+                    {formData.scheduled_platforms.includes('pinterest') && (
+                      <span className={`text-xs ${formData.content.length > 500 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        {formData.content.length}/500
+                      </span>
+                    )}
+                  </div>
+                  <Textarea
+                    value={formData.content}
+                    onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                    placeholder={formData.scheduled_platforms.includes('pinterest') 
+                      ? "Write your pin description here (used as caption)..." 
+                      : "Write your content here..."}
+                    rows={5}
+                  />
+                </div>
+
+                {/* Destination Link for Pinterest */}
                 {formData.scheduled_platforms.includes('pinterest') && (
-                  <span className={`text-xs ${formData.content.length > 500 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                    {formData.content.length}/500 (Pinterest limit)
-                  </span>
+                  <div className="space-y-1.5">
+                    <Label>Destination Link</Label>
+                    <Input
+                      value={formData.link_url}
+                      onChange={(e) => setFormData(prev => ({ ...prev, link_url: e.target.value }))}
+                      placeholder="https://example.com/your-page"
+                      type="url"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Where users will be directed when they click your pin
+                    </p>
+                  </div>
                 )}
-              </div>
-              <Textarea
-                value={formData.content}
-                onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                placeholder={formData.scheduled_platforms.includes('pinterest') 
-                  ? "Write your pin description here (used as caption)..." 
-                  : "Write your content here..."}
-                rows={6}
-              />
-            </div>
 
-            {/* Destination Link for Pinterest */}
-            {formData.scheduled_platforms.includes('pinterest') && (
-              <div className="space-y-2">
-                <Label>Destination Link (optional)</Label>
-                <Input
-                  value={formData.link_url}
-                  onChange={(e) => setFormData(prev => ({ ...prev, link_url: e.target.value }))}
-                  placeholder="https://example.com/your-page"
-                  type="url"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Where users will be directed when they click your pin
-                </p>
-              </div>
-            )}
+                {/* Pinterest Board Selector */}
+                {formData.scheduled_platforms.includes('pinterest') && pinterestConnection && (
+                  <PinterestBoardSelector
+                    selectedBoard={formData.pinterest_board_id}
+                    onBoardChange={(boardId) => setFormData(prev => ({ ...prev, pinterest_board_id: boardId }))}
+                  />
+                )}
+                
+                {formData.scheduled_platforms.includes('pinterest') && !pinterestConnection && (
+                  <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+                    Pinterest is not connected. Go to Settings → Connected Accounts to connect.
+                  </div>
+                )}
+                
+                {/* Scheduling Section - When to Post */}
+                {formData.scheduled_platforms.includes('pinterest') && pinterestConnection && formData.media_url && (
+                  <ScheduleDateTimePicker
+                    mode={scheduleMode}
+                    onModeChange={setScheduleMode}
+                    date={scheduledDate}
+                    onDateChange={setScheduledDate}
+                    time={scheduledTime}
+                    onTimeChange={setScheduledTime}
+                  />
+                )}
 
-            {/* Pinterest Board Selector */}
-            {formData.scheduled_platforms.includes('pinterest') && pinterestConnection && (
-              <PinterestBoardSelector
-                selectedBoard={formData.pinterest_board_id}
-                onBoardChange={(boardId) => setFormData(prev => ({ ...prev, pinterest_board_id: boardId }))}
-              />
-            )}
-            
-            {formData.scheduled_platforms.includes('pinterest') && !pinterestConnection && (
-              <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
-                Pinterest is not connected. Go to Settings → Connected Accounts to connect.
-              </div>
-            )}
-            
-            {/* Scheduling Section - When to Post */}
-            {formData.scheduled_platforms.includes('pinterest') && pinterestConnection && formData.media_url && (
-              <ScheduleDateTimePicker
-                mode={scheduleMode}
-                onModeChange={setScheduleMode}
-                date={scheduledDate}
-                onDateChange={setScheduledDate}
-                time={scheduledTime}
-                onTimeChange={setScheduledTime}
-              />
-            )}
-
-            {/* Media Upload Section */}
-            <div className="space-y-2">
-              <Label>Media</Label>
-              <MediaUploader
-                mediaUrl={formData.media_url}
-                mediaType={formData.media_type}
-                onMediaChange={(url, type) => setFormData(prev => ({ ...prev, media_url: url, media_type: type }))}
-                projectId={projectId}
-              />
-            </div>
-
-            {/* Preview Section */}
-            {(formData.scheduled_platforms.length > 0 || formData.media_url) && (
-              <div className="space-y-2">
-                <Label>Preview</Label>
-                <div className="border border-border rounded-lg p-4 bg-muted/30">
-                  <SocialPostPreview
-                    platforms={formData.scheduled_platforms}
-                    content={formData.content}
+                {/* Media Upload Section */}
+                <div className="space-y-1.5">
+                  <Label>Media</Label>
+                  <MediaUploader
                     mediaUrl={formData.media_url}
                     mediaType={formData.media_type}
-                    linkUrl={formData.link_url}
-                    title={formData.title}
+                    onMediaChange={(url, type) => setFormData(prev => ({ ...prev, media_url: url, media_type: type }))}
+                    projectId={projectId}
                   />
                 </div>
               </div>
-            )}
 
-            <Separator />
-
-            <div className="space-y-2">
-              <Label>Labels</Label>
-              <div className="flex flex-wrap gap-2">
-                {LABELS.map(label => (
-                  <Badge
-                    key={label.id}
-                    variant="outline"
-                    className={`cursor-pointer transition-all ${
-                      formData.labels.includes(label.id)
-                        ? label.color
-                        : "opacity-50 hover:opacity-100"
-                    }`}
-                    onClick={() => toggleLabel(label.id)}
-                  >
-                    {label.id}
-                  </Badge>
-                ))}
+              {/* Right Column - Preview (Sticky) */}
+              <div className="lg:sticky lg:top-0 space-y-3">
+                <Label className="text-sm font-medium">Preview</Label>
+                <div className="border border-border rounded-lg p-4 bg-muted/30">
+                  {formData.scheduled_platforms.length > 0 || formData.media_url ? (
+                    <SocialPostPreview
+                      platforms={formData.scheduled_platforms}
+                      content={formData.content}
+                      mediaUrl={formData.media_url}
+                      mediaType={formData.media_type}
+                      linkUrl={formData.link_url}
+                      title={formData.title}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-[300px] text-center text-muted-foreground">
+                      <Share2 className="w-10 h-10 mb-3 opacity-40" />
+                      <p className="text-sm">Select a platform to see preview</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <div className="flex gap-2 w-full sm:w-auto">
+          {/* Footer */}
+          <SheetFooter className="px-6 py-4 border-t bg-background">
+            <div className="flex justify-between w-full">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
                 Cancel
               </Button>
+              <div className="flex gap-2">
+                {/* Post Now / Schedule Button for Pinterest */}
+                {formData.scheduled_platforms.includes('pinterest') && pinterestConnection && formData.media_url && (
+                  scheduleMode === "now" ? (
+                    <Button 
+                      variant="secondary"
+                      onClick={handlePostToPinterest}
+                      disabled={isPostingToPinterest || !formData.pinterest_board_id}
+                    >
+                      {isPostingToPinterest ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      ) : (
+                        <Send className="w-4 h-4 mr-2" />
+                      )}
+                      Post Now
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="secondary"
+                      onClick={handleSchedulePost}
+                      disabled={isSchedulingPost || !formData.pinterest_board_id || !scheduledDate}
+                    >
+                      {isSchedulingPost ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      ) : (
+                        <Clock className="w-4 h-4 mr-2" />
+                      )}
+                      Schedule
+                    </Button>
+                  )
+                )}
+                <Button onClick={handleSave} disabled={saveMutation.isPending}>
+                  {saveMutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                  {editingItem ? "Update" : "Save"}
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
-              {/* Post Now / Schedule Button for Pinterest */}
-              {formData.scheduled_platforms.includes('pinterest') && pinterestConnection && formData.media_url && (
-                scheduleMode === "now" ? (
-                  <Button 
-                    variant="secondary"
-                    onClick={handlePostToPinterest}
-                    disabled={isPostingToPinterest || !formData.pinterest_board_id}
-                  >
-                    {isPostingToPinterest ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : (
-                      <Send className="w-4 h-4 mr-2" />
-                    )}
-                    Post Now
-                  </Button>
-                ) : (
-                  <Button 
-                    variant="secondary"
-                    onClick={handleSchedulePost}
-                    disabled={isSchedulingPost || !formData.pinterest_board_id || !scheduledDate}
-                  >
-                    {isSchedulingPost ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : (
-                      <Clock className="w-4 h-4 mr-2" />
-                    )}
-                    Schedule Post
-                  </Button>
-                )
-              )}
-              <Button onClick={handleSave} disabled={saveMutation.isPending}>
-                {saveMutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                {editingItem ? "Update" : "Add"} Content
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
