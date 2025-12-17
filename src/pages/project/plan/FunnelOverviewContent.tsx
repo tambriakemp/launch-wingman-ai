@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Eye, Rocket, Users, Sparkles, Package, CheckCircle, ArrowRight, Edit2, Target, Lightbulb } from "lucide-react";
+import { Loader2, Eye, Rocket, Users, Sparkles, Package, CheckCircle, ArrowRight, Edit2, Target, Lightbulb, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -101,12 +101,14 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
   const hasAudience = !!(funnel.niche && funnel.target_audience && funnel.primary_pain_point && funnel.desired_outcome && funnel.problem_statement);
   const hasTransformation = !!project?.transformation_statement;
   const hasOffers = offers.some(o => o.title);
+  const hasTechStack = !!(funnel.funnel_platform || funnel.email_platform || funnel.community_platform);
 
   const steps = [
     { id: 'funnel-type', label: 'Funnel Type', complete: !!funnel.funnel_type, route: 'funnel-type', icon: Rocket },
     { id: 'audience', label: 'Audience', complete: hasAudience, route: 'audience', icon: Users },
     { id: 'transformation', label: 'Transformation', complete: hasTransformation, route: 'transformation', icon: Sparkles },
     { id: 'offers', label: 'Offers', complete: hasOffers, route: 'offers', icon: Package },
+    { id: 'tech-stack', label: 'Tech Stack', complete: hasTechStack, route: 'tech-stack', icon: Server },
   ];
 
   const completedSteps = steps.filter(s => s.complete).length;

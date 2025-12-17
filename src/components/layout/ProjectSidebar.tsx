@@ -95,6 +95,7 @@ interface StepCompletion {
   "funnel-type": boolean;
   audience: boolean;
   transformation: boolean;
+  offers: boolean;
 }
 
 interface LastProjectInfo {
@@ -321,6 +322,21 @@ export const ProjectSidebar = () => {
     enabled: !!projectId,
   });
 
+  // Fetch offers data to determine offers step completion
+  const { data: offers } = useQuery({
+    queryKey: ['offers', projectId],
+    queryFn: async () => {
+      if (!projectId) return [];
+      const { data, error } = await supabase
+        .from('offers')
+        .select('title')
+        .eq('project_id', projectId);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!projectId,
+  });
+
   // Fetch project data for transformation statement and name
   const { data: project } = useQuery({
     queryKey: ['project', projectId],
@@ -353,6 +369,7 @@ export const ProjectSidebar = () => {
     "funnel-type": !!funnel?.funnel_type,
     audience: !!(funnel?.niche && funnel?.target_audience),
     transformation: !!(funnel?.niche && funnel?.target_audience),
+    offers: offers?.some(o => o.title) ?? false,
   };
 
   const isStepAccessible = (requiresStep?: string): boolean => {
@@ -368,6 +385,8 @@ export const ProjectSidebar = () => {
         return "Complete Audience first";
       case "transformation":
         return "Complete Audience first";
+      case "offers":
+        return "Complete Offer Stack first";
       default:
         return "Complete previous step first";
     }
