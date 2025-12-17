@@ -125,7 +125,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
 
       {/* Inline Progress Stepper */}
       <div className="relative max-w-4xl mx-auto">
-        <div className="flex items-center w-full min-w-0">
+        <div className="flex items-center justify-center">
           {steps.map((step, index) => {
             const StepIcon = step.icon;
             const isLast = index === steps.length - 1;
@@ -133,7 +133,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
             return (
               <div
                 key={step.id}
-                className={cn("flex items-center min-w-0", !isLast && "flex-1")}
+                className="flex items-center"
               >
                 <button
                   onClick={() => navigate(`/projects/${projectId}/${step.route}`)}
@@ -149,7 +149,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
                   ) : (
                     <StepIcon className="w-4 h-4 shrink-0" />
                   )}
-                  <span className="text-sm font-medium hidden sm:inline truncate">
+                  <span className="text-sm font-medium hidden sm:inline whitespace-nowrap">
                     {step.label}
                   </span>
                 </button>
