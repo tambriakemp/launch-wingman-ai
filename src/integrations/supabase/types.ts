@@ -721,6 +721,66 @@ export type Database = {
           },
         ]
       }
+      scheduled_posts: {
+        Row: {
+          content_item_id: string | null
+          created_at: string
+          id: string
+          platform: string
+          post_data: Json
+          posted_at: string | null
+          project_id: string
+          result: Json | null
+          scheduled_for: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_item_id?: string | null
+          created_at?: string
+          id?: string
+          platform: string
+          post_data?: Json
+          posted_at?: string | null
+          project_id: string
+          result?: Json | null
+          scheduled_for: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_item_id?: string | null
+          created_at?: string
+          id?: string
+          platform?: string
+          post_data?: Json
+          posted_at?: string | null
+          project_id?: string
+          result?: Json | null
+          scheduled_for?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_posts_content_item_id_fkey"
+            columns: ["content_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_planner"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_posts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_bios: {
         Row: {
           bio_content: string

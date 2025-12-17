@@ -76,7 +76,7 @@ const createNavSections = (projectId: string): NavSection[] => [
     heading: "Execute",
     items: [
       { id: "board", label: "Project Board", icon: Kanban, href: `/projects/${projectId}/board` },
-      { id: "content", label: "Content Planner", icon: Calendar, href: `/projects/${projectId}/content` },
+      { id: "social", label: "Social Media Hub", icon: Calendar, href: `/projects/${projectId}/social` },
     ],
   },
 ];
