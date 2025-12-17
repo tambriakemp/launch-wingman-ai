@@ -177,7 +177,7 @@ export const ValueEquationSections = ({
           <SheetHeader>
             <SheetTitle>{getSheetTitle()}</SheetTitle>
           </SheetHeader>
-          <div className="mt-6 flex-1">
+          <div className="mt-2 flex-1">
             {renderSectionContent()}
           </div>
           {/* Save & Close button at bottom */}

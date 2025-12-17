@@ -137,7 +137,7 @@ export const LikelihoodSectionContent = ({
   return (
     <div className="space-y-6">
       {/* Instructions */}
-      <div className="text-sm text-muted-foreground space-y-2 pb-4 mb-2 border-b border-border">
+      <div className="text-sm text-muted-foreground space-y-2 pb-4 mb-4 border-b border-border">
         <p>Address why your audience believes (or doubts) they can achieve the outcome.</p>
         <p>Even if your solution works, your audience may doubt it will work for them. This section helps you build trust by countering objections and showing proof. Consider:</p>
         <ul className="list-disc list-inside space-y-1 ml-2">
