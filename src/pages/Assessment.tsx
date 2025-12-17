@@ -280,7 +280,16 @@ const Assessment = () => {
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      setSavedAssessment(JSON.parse(saved));
+      const parsed = JSON.parse(saved);
+      setSavedAssessment(parsed);
+      
+      // Auto-show results if assessment was completed
+      if (parsed.completedAt) {
+        setAnswers(parsed.answers);
+        setReflections(parsed.reflections || {});
+        setShowResults(true);
+        setHasStarted(true);
+      }
     }
   }, []);
 
@@ -612,11 +621,10 @@ const Assessment = () => {
     <ProjectLayout>
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Progress Bar */}
-        <AssessmentProgressBar
-          currentStep={currentQuestion}
-          totalSteps={questions.length}
-          stepLabel={`Question ${currentQuestion + 1} of ${questions.length} • ${currentSection}`}
-        />
+              <AssessmentProgressBar
+                currentStep={currentQuestion}
+                totalSteps={questions.length}
+              />
 
         {/* Question Card */}
         <AnimatePresence mode="wait">
