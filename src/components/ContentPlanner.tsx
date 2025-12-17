@@ -1,9 +1,6 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
 import { 
-  ChevronDown, 
-  ChevronRight, 
   Plus, 
   FileText, 
   Video, 
@@ -15,9 +12,6 @@ import {
   CheckCircle2,
   Clock,
   Circle,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
   Loader2,
   Rocket,
   Download,
@@ -30,8 +24,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Sheet,
   SheetContent,
@@ -56,14 +48,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -73,6 +58,8 @@ import { MediaUploader } from "./content-planner/MediaUploader";
 import { SocialPostPreview } from "./content-planner/SocialPostPreview";
 import { PinterestBoardSelector } from "./content-planner/PinterestBoardSelector";
 import { ScheduleDateTimePicker } from "./content-planner/ScheduleDateTimePicker";
+import { ListView } from "./content-planner/ListView";
+import { CalendarView } from "./content-planner/CalendarView";
 
 interface ContentItem {
   id: string;
@@ -406,15 +393,15 @@ const [formData, setFormData] = useState({
     setScheduledTime("09:00");
   };
 
-  const togglePhase = (phaseId: string) => {
+  const togglePhase = useCallback((phaseId: string) => {
     setExpandedPhases(prev =>
       prev.includes(phaseId)
         ? prev.filter(p => p !== phaseId)
         : [...prev, phaseId]
     );
-  };
+  }, []);
 
-  const handleEdit = (item: ContentItem) => {
+  const handleEdit = useCallback((item: ContentItem) => {
     setEditingItem(item);
     setFormData({
       phase: item.phase,
@@ -433,13 +420,13 @@ const [formData, setFormData] = useState({
       link_url: "",
     });
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleAddNew = (phase: string) => {
+  const handleAddNew = useCallback((phase: string) => {
     resetForm();
     setFormData(prev => ({ ...prev, phase }));
     setDialogOpen(true);
-  };
+  }, []);
 
   const handleSave = () => {
     if (!formData.title.trim()) {
@@ -636,15 +623,15 @@ const [formData, setFormData] = useState({
     }));
   };
 
-  const toggleItemSelection = (id: string) => {
+  const toggleItemSelection = useCallback((id: string) => {
     setSelectedItems(prev =>
       prev.includes(id)
         ? prev.filter(i => i !== id)
         : [...prev, id]
     );
-  };
+  }, []);
 
-  const selectAllInPhase = (phaseId: string) => {
+  const selectAllInPhase = useCallback((phaseId: string) => {
     const phaseItems = contentItems.filter(item => item.phase === phaseId);
     const phaseIds = phaseItems.map(item => item.id);
     const allSelected = phaseIds.every(id => selectedItems.includes(id));
@@ -654,7 +641,7 @@ const [formData, setFormData] = useState({
     } else {
       setSelectedItems(prev => [...new Set([...prev, ...phaseIds])]);
     }
-  };
+  }, [contentItems, selectedItems]);
 
   const selectAll = () => {
     if (selectedItems.length === contentItems.length) {
@@ -719,17 +706,17 @@ const [formData, setFormData] = useState({
     );
   }
 
-  const handleDragStart = (e: React.DragEvent, item: ContentItem) => {
+  const handleDragStart = useCallback((e: React.DragEvent, item: ContentItem) => {
     setDraggedItem(item);
     e.dataTransfer.effectAllowed = "move";
-  };
+  }, []);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-  };
+  }, []);
 
-  const handleDrop = (e: React.DragEvent, targetPhase: string, targetDay: number) => {
+  const handleDrop = useCallback((e: React.DragEvent, targetPhase: string, targetDay: number) => {
     e.preventDefault();
     if (draggedItem && (draggedItem.phase !== targetPhase || draggedItem.day_number !== targetDay)) {
       moveItemMutation.mutate({
@@ -739,310 +726,15 @@ const [formData, setFormData] = useState({
       });
     }
     setDraggedItem(null);
-  };
+  }, [draggedItem, moveItemMutation]);
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     setDraggedItem(null);
-  };
+  }, []);
 
-  // Calendar View Component
-  const CalendarView = () => (
-    <div className="space-y-4">
-      {/* Timeline Header */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-        <span>Timeline showing all {contentItems.length} content items across {PHASES.length} phases. Drag items to move them.</span>
-      </div>
-      
-      {/* Content Type Legend */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {CONTENT_TYPES.map(type => (
-          <Badge key={type.id} variant="outline" className="gap-1">
-            <div className={`w-2 h-2 rounded-full ${type.color}`} />
-            {type.label}
-          </Badge>
-        ))}
-      </div>
-
-      <ScrollArea className="w-full">
-        <div className="min-w-[1100px]">
-          {/* Day Headers */}
-          <div className="flex border-b pb-2 mb-2">
-            <div className="w-24 flex-shrink-0 font-medium text-muted-foreground text-sm">Phase</div>
-            {[1, 2, 3, 4, 5, 6, 7].map(day => (
-              <div key={day} className="flex-1 text-center font-medium text-sm text-muted-foreground">
-                Day {day}
-              </div>
-            ))}
-          </div>
-
-          {/* Phase Rows */}
-          {PHASES.map(phase => {
-            const phaseItems = getPhaseItems(phase.id);
-            
-            return (
-              <div key={phase.id} className="flex border-b last:border-0 py-2 min-h-[80px]">
-                <div className="w-24 flex-shrink-0 flex items-center">
-                  <Badge variant="outline" className="text-xs">
-                    <div className={`w-2 h-2 rounded-full ${phase.color} mr-1`} />
-                    {phase.shortLabel}
-                  </Badge>
-                </div>
-                {[1, 2, 3, 4, 5, 6, 7].map(day => {
-                  const dayItems = phaseItems.filter(item => item.day_number === day);
-                  const isDropTarget = draggedItem && (draggedItem.phase !== phase.id || draggedItem.day_number !== day);
-                  
-                  return (
-                    <div 
-                      key={day} 
-                      className={`flex-1 px-1 flex flex-col gap-1 min-h-[60px] rounded transition-colors ${
-                        isDropTarget ? "bg-primary/10 border-2 border-dashed border-primary/30" : ""
-                      }`}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, phase.id, day)}
-                    >
-                      {dayItems.map(item => {
-                        const typeInfo = getContentTypeInfo(item.content_type);
-                        const statusInfo = getStatusInfo(item.status);
-                        
-                        return (
-                          <TooltipProvider key={item.id}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div
-                                  draggable
-                                  onDragStart={(e) => handleDragStart(e, item)}
-                                  onDragEnd={handleDragEnd}
-                                  onClick={() => handleEdit(item)}
-                                  className={`p-1.5 rounded text-xs cursor-grab active:cursor-grabbing transition-all hover:scale-105 ${typeInfo.color} text-white flex flex-col gap-0.5 ${
-                                    item.status === "completed" ? "opacity-60" : ""
-                                  } ${draggedItem?.id === item.id ? "opacity-50 scale-95" : ""}`}
-                                >
-                                  <div className="flex items-center gap-1">
-                                    <typeInfo.icon className="w-3 h-3 flex-shrink-0" />
-                                    <span className="truncate font-medium">{typeInfo.label}</span>
-                                    {item.status === "completed" && (
-                                      <CheckCircle2 className="w-3 h-3 flex-shrink-0 ml-auto" />
-                                    )}
-                                  </div>
-                                  <span className="text-[10px] opacity-80 capitalize">{item.time_of_day}</span>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-xs">
-                                <div className="space-y-1">
-                                  <p className="font-medium">{item.title}</p>
-                                  <p className="text-xs text-muted-foreground">{item.description}</p>
-                                  <div className="flex items-center gap-2 text-xs">
-                                    <Badge variant="secondary" className="text-xs">{typeInfo.label}</Badge>
-                                    <span className={statusInfo.color}>{statusInfo.label}</span>
-                                  </div>
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        );
-                      })}
-                      {dayItems.length === 0 && (
-                        <div className={`h-full min-h-[40px] rounded border border-dashed ${
-                          isDropTarget ? "border-primary/50" : "border-muted-foreground/20"
-                        }`} />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
-    </div>
-  );
-
-  // List View Component
-  const ListView = () => (
-    <div className="space-y-3">
-      {PHASES.map((phase) => {
-        const isExpanded = expandedPhases.includes(phase.id);
-        const phaseItems = getPhaseItems(phase.id);
-        const completionPercent = getCompletionPercentage(phase.id);
-        const phaseIds = phaseItems.map(item => item.id);
-        const allSelected = phaseIds.length > 0 && phaseIds.every(id => selectedItems.includes(id));
-
-        return (
-          <Card key={phase.id} variant="elevated">
-            <div
-              className="flex items-center justify-between p-4 cursor-pointer hover:bg-accent/50 transition-colors"
-              onClick={() => togglePhase(phase.id)}
-            >
-              <div className="flex items-center gap-3">
-                {selectedItems.length > 0 && (
-                  <Checkbox
-                    checked={allSelected}
-                    onCheckedChange={() => selectAllInPhase(phase.id)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                )}
-                {isExpanded ? (
-                  <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                )}
-                <div className={`w-3 h-3 rounded-full ${phase.color}`} />
-                <div>
-                  <h3 className="font-semibold text-foreground">{phase.label}</h3>
-                  <p className="text-sm text-muted-foreground">{phase.description}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <p className="text-sm font-medium">{phaseItems.length} items</p>
-                  <p className="text-xs text-muted-foreground">{completionPercent}% complete</p>
-                </div>
-                <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all"
-                    style={{ width: `${completionPercent}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <AnimatePresence>
-              {isExpanded && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <CardContent className="pt-0">
-                    {phaseItems.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <p className="mb-2">No content for this phase</p>
-                        <Button size="sm" variant="outline" onClick={() => handleAddNew(phase.id)}>
-                          <Plus className="w-4 h-4" />
-                          Add Content
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {/* Group by day */}
-                        {[1, 2, 3, 4, 5, 6, 7].map(day => {
-                          const dayItems = phaseItems.filter(item => item.day_number === day);
-                          if (dayItems.length === 0) return null;
-
-                          return (
-                            <div key={day} className="space-y-2">
-                              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground pt-2">
-                                <span>Day {day}</span>
-                                <div className="flex-1 h-px bg-border" />
-                              </div>
-                              {dayItems.map(item => {
-                                const typeInfo = getContentTypeInfo(item.content_type);
-                                const statusInfo = getStatusInfo(item.status);
-                                const StatusIcon = statusInfo.icon;
-                                const isSelected = selectedItems.includes(item.id);
-
-                                return (
-                                  <div
-                                    key={item.id}
-                                    className={`flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors group ${
-                                      isSelected ? "ring-2 ring-primary" : ""
-                                    }`}
-                                  >
-                                    <Checkbox
-                                      checked={isSelected}
-                                      onCheckedChange={() => toggleItemSelection(item.id)}
-                                    />
-                                    <div className={`w-8 h-8 rounded-lg ${typeInfo.color} flex items-center justify-center flex-shrink-0`}>
-                                      <typeInfo.icon className="w-4 h-4 text-white" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-start justify-between gap-2">
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-xs text-muted-foreground capitalize">
-                                              {item.time_of_day}
-                                            </span>
-                                            <StatusIcon className={`w-4 h-4 ${statusInfo.color}`} />
-                                          </div>
-                                          <h4 className="font-medium text-foreground text-sm line-clamp-1">
-                                            {item.title}
-                                          </h4>
-                                          {item.description && (
-                                            <p className="text-xs text-muted-foreground line-clamp-1">
-                                              {item.description}
-                                            </p>
-                                          )}
-                                        </div>
-                                        <DropdownMenu>
-                                          <DropdownMenuTrigger asChild>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-8 w-8 opacity-0 group-hover:opacity-100"
-                                            >
-                                              <MoreHorizontal className="w-4 h-4" />
-                                            </Button>
-                                          </DropdownMenuTrigger>
-                                          <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => handleEdit(item)}>
-                                              <Pencil className="w-4 h-4 mr-2" />
-                                              Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                              className="text-destructive"
-                                              onClick={() => deleteMutation.mutate(item.id)}
-                                            >
-                                              <Trash2 className="w-4 h-4 mr-2" />
-                                              Delete
-                                            </DropdownMenuItem>
-                                          </DropdownMenuContent>
-                                        </DropdownMenu>
-                                      </div>
-                                      {item.labels && item.labels.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mt-2">
-                                          {item.labels.map(label => {
-                                            const labelInfo = LABELS.find(l => l.id === label);
-                                            return (
-                                              <Badge
-                                                key={label}
-                                                variant="outline"
-                                                className={`text-xs ${labelInfo?.color || ""}`}
-                                              >
-                                                {label}
-                                              </Badge>
-                                            );
-                                          })}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          );
-                        })}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full mt-2"
-                          onClick={() => handleAddNew(phase.id)}
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add to {phase.label}
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Card>
-        );
-      })}
-    </div>
-  );
+  const handleDelete = useCallback((id: string) => {
+    deleteMutation.mutate(id);
+  }, [deleteMutation]);
 
   return (
     <div className="space-y-6">
@@ -1144,7 +836,36 @@ const [formData, setFormData] = useState({
       </div>
 
       {/* Content Views */}
-      {viewMode === "calendar" ? <CalendarView /> : <ListView />}
+      {viewMode === "calendar" ? (
+        <CalendarView
+          contentItems={contentItems}
+          phases={PHASES}
+          contentTypes={CONTENT_TYPES}
+          statusOptions={STATUS_OPTIONS}
+          draggedItem={draggedItem}
+          onEdit={handleEdit}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          onDragEnd={handleDragEnd}
+        />
+      ) : (
+        <ListView
+          contentItems={contentItems}
+          expandedPhases={expandedPhases}
+          selectedItems={selectedItems}
+          phases={PHASES}
+          contentTypes={CONTENT_TYPES}
+          statusOptions={STATUS_OPTIONS}
+          labels={LABELS}
+          onTogglePhase={togglePhase}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onAddNew={handleAddNew}
+          onToggleItemSelection={toggleItemSelection}
+          onSelectAllInPhase={selectAllInPhase}
+        />
+      )}
 
       {/* Add/Edit Sheet */}
       <Sheet open={dialogOpen} onOpenChange={setDialogOpen}>
