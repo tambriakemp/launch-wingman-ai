@@ -338,7 +338,22 @@ const CoachAssessment = () => {
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      setSavedAssessment(JSON.parse(saved));
+      const parsed = JSON.parse(saved);
+      setSavedAssessment(parsed);
+      
+      // Auto-show results if assessment was completed
+      if (parsed.completedAt) {
+        if (parsed.checkedStatements) setCheckedStatements(parsed.checkedStatements);
+        if (parsed.setAnswers) setSetAnswers(parsed.setAnswers);
+        if (parsed.reflections) setReflections(parsed.reflections);
+        if (parsed.barriers) setBarriers(parsed.barriers);
+        if (parsed.barrierOther) setBarrierOther(parsed.barrierOther);
+        if (parsed.barrierExpansion) setBarrierExpansion(parsed.barrierExpansion);
+        if (parsed.commitment) setCommitment(parsed.commitment);
+        setShowResults(true);
+        setHasStarted(true);
+        return;
+      }
     }
     // Also check for in-progress data
     const progressData = localStorage.getItem(STORAGE_KEY + "_progress");
@@ -892,7 +907,6 @@ const CoachAssessment = () => {
         <AssessmentProgressBar
           currentStep={currentStep}
           totalSteps={setQuestions.length}
-          stepLabel={`Part ${currentStep + 1} of ${setQuestions.length} • ${currentPart.part}`}
         />
 
         {/* Sets */}
