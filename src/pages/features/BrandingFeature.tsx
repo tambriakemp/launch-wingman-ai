@@ -1,5 +1,6 @@
 import { Palette, Image, Type, Pipette, FolderOpen, Download, Upload, Eye } from "lucide-react";
 import { FeaturePageLayout } from "@/components/landing/FeaturePageLayout";
+import { BrandingMockup } from "@/components/landing/screenshots/BrandingMockup";
 
 const features = [
   {
@@ -51,6 +52,7 @@ const BrandingFeature = () => {
       description="Professional branding doesn't require a design degree. Organize your logos, colors, fonts, and photos in one place so you always have what you need for consistent, polished launch materials."
       features={features}
       benefits={benefits}
+      screenshot={<BrandingMockup />}
     />
   );
 };

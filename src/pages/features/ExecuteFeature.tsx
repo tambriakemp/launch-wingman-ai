@@ -1,5 +1,8 @@
 import { Rocket, KanbanSquare, Calendar, Share2, CheckSquare, Clock, ListTodo, Timer } from "lucide-react";
 import { FeaturePageLayout } from "@/components/landing/FeaturePageLayout";
+import { ProjectBoardMockup } from "@/components/landing/screenshots/ProjectBoardMockup";
+import { SocialHubMockup } from "@/components/landing/screenshots/SocialHubMockup";
+import { motion } from "framer-motion";
 
 const features = [
   {
@@ -51,7 +54,37 @@ const ExecuteFeature = () => {
       description="Planning is nothing without execution. Our project management and scheduling tools help you stay on track, hit your deadlines, and launch with the confidence that everything is in place."
       features={features}
       benefits={benefits}
-    />
+      screenshot={<ProjectBoardMockup />}
+    >
+      {/* Additional Screenshot */}
+      <section className="py-16 bg-background">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Social Media Scheduling
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Plan and schedule your launch content across multiple platforms from one unified dashboard.
+            </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="max-w-4xl mx-auto transform hover:scale-[1.01] transition-transform duration-300"
+          >
+            <SocialHubMockup />
+          </motion.div>
+        </div>
+      </section>
+    </FeaturePageLayout>
   );
 };
 

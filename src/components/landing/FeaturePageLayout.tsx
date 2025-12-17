@@ -21,6 +21,7 @@ interface FeaturePageLayoutProps {
   features: Feature[];
   benefits: string[];
   children?: ReactNode;
+  screenshot?: ReactNode;
 }
 
 export const FeaturePageLayout = ({
@@ -32,6 +33,7 @@ export const FeaturePageLayout = ({
   features,
   benefits,
   children,
+  screenshot,
 }: FeaturePageLayoutProps) => {
   return (
     <div className="min-h-screen bg-background">
@@ -65,6 +67,23 @@ export const FeaturePageLayout = ({
           </motion.div>
         </div>
       </section>
+
+      {/* Screenshot Section */}
+      {screenshot && (
+        <section className="py-12 bg-muted/30">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+              className="max-w-4xl mx-auto transform hover:scale-[1.01] transition-transform duration-300"
+            >
+              {screenshot}
+            </motion.div>
+          </div>
+        </section>
+      )}
 
       {/* Benefits Section */}
       <section className="py-16 bg-muted/30">
