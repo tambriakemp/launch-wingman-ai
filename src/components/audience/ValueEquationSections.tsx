@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Check, ChevronRight } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { WhoSection } from "./WhoSection";
@@ -71,6 +72,10 @@ export const ValueEquationSections = ({
   const getSheetTitle = () => {
     const section = sections.find(s => s.id === activeSection);
     return section?.title || "";
+  };
+
+  const handleSaveAndClose = () => {
+    setActiveSection(null);
   };
 
   const renderSectionContent = () => {
@@ -168,12 +173,18 @@ export const ValueEquationSections = ({
       </div>
 
       <Sheet open={!!activeSection} onOpenChange={(open) => !open && setActiveSection(null)}>
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-xl overflow-y-auto flex flex-col">
           <SheetHeader>
             <SheetTitle>{getSheetTitle()}</SheetTitle>
           </SheetHeader>
-          <div className="mt-6">
+          <div className="mt-6 flex-1">
             {renderSectionContent()}
+          </div>
+          {/* Save & Close button at bottom */}
+          <div className="flex justify-end pt-4 border-t border-border mt-6">
+            <Button onClick={handleSaveAndClose}>
+              Save & Close
+            </Button>
           </div>
         </SheetContent>
       </Sheet>
