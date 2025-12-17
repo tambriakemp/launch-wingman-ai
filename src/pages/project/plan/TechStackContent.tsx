@@ -1,11 +1,30 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Check } from "lucide-react";
+import { Check, ArrowLeft, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
+
+// Map asset categories to task phases
+const ASSET_PHASE_MAP: Record<string, string> = {
+  'pages': 'technical',
+  'emails': 'emails',
+  'content': 'prelaunch',
+  'deliverables': 'delivery',
+};
+
+// Map asset categories to task labels
+const ASSET_LABEL_MAP: Record<string, string[]> = {
+  'pages': ['technical'],
+  'emails': ['copy'],
+  'content': ['creative', 'marketing'],
+  'deliverables': ['creative'],
+};
 
 interface Platform {
   id: string;
@@ -275,6 +294,7 @@ interface TechStackContentProps {
 }
 
 const TechStackContent = ({ projectId }: TechStackContentProps) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
@@ -293,6 +313,22 @@ const TechStackContent = ({ projectId }: TechStackContentProps) => {
       return data;
     },
     enabled: !!projectId && !!user,
+  });
+
+  // Fetch existing offers for task generation
+  const { data: existingOffers } = useQuery({
+    queryKey: ['funnel-offers', projectId],
+    queryFn: async () => {
+      if (!funnel?.id) return [];
+      const { data, error } = await supabase
+        .from('offers')
+        .select('*')
+        .eq('funnel_id', funnel.id)
+        .order('slot_position');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!funnel?.id,
   });
 
   // Mutation to update tech stack
@@ -325,6 +361,96 @@ const TechStackContent = ({ projectId }: TechStackContentProps) => {
       console.error("Error updating tech stack:", error);
       toast.error("Failed to save selection");
       setSaveStatus("idle");
+    },
+  });
+
+  // Generate tasks from funnel assets
+  const generateTasksFromFunnel = async (funnelTypeKey: string) => {
+    if (!user || !projectId || !existingOffers) return;
+    
+    const config = FUNNEL_CONFIGS[funnelTypeKey];
+    if (!config) return;
+
+    // Check if there are already tasks for this project
+    const { data: existingTasks } = await supabase
+      .from('tasks')
+      .select('id')
+      .eq('project_id', projectId)
+      .limit(1);
+
+    // Only generate tasks if none exist
+    if (existingTasks && existingTasks.length > 0) return;
+
+    const offers = existingOffers.map(offer => ({
+      slotType: offer.slot_type,
+      title: offer.title || '',
+      isSkipped: false,
+      isConfigured: true,
+    }));
+
+    const tasksToInsert = config.assets
+      .filter(asset => {
+        if (!asset.offerSlotType) return true;
+        return offers.some(offer => 
+          offer.slotType === asset.offerSlotType && 
+          !offer.isSkipped &&
+          (offer.isConfigured || offer.title)
+        );
+      })
+      .map((asset, index) => {
+        const relatedOffer = asset.offerSlotType 
+          ? offers.find(o => o.slotType === asset.offerSlotType && !o.isSkipped)
+          : null;
+        
+        const description = relatedOffer?.title 
+          ? `${asset.description} • ${relatedOffer.title}`
+          : asset.description;
+
+        return {
+          project_id: projectId,
+          user_id: user.id,
+          title: asset.title,
+          description: description,
+          column_id: 'todo',
+          phase: ASSET_PHASE_MAP[asset.category] || null,
+          labels: ASSET_LABEL_MAP[asset.category] || [],
+          position: index,
+        };
+      });
+
+    if (tasksToInsert.length > 0) {
+      const { error } = await supabase.from('tasks').insert(tasksToInsert);
+      if (error) {
+        console.error('Error generating tasks:', error);
+      }
+    }
+  };
+
+  // Complete setup mutation
+  const completeSetupMutation = useMutation({
+    mutationFn: async () => {
+      if (!funnel?.funnel_type) throw new Error("No funnel type");
+      
+      // Generate tasks
+      await generateTasksFromFunnel(funnel.funnel_type);
+      
+      // Update funnel_type_snapshot on the project
+      const { error } = await supabase
+        .from('projects')
+        .update({ funnel_type_snapshot: funnel.funnel_type })
+        .eq('id', projectId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+      toast.success("Setup complete!");
+      navigate(`/projects/${projectId}/offer`);
+    },
+    onError: (error) => {
+      console.error("Error completing setup:", error);
+      toast.error("Failed to complete setup");
     },
   });
 
@@ -418,6 +544,34 @@ const TechStackContent = ({ projectId }: TechStackContentProps) => {
           selectedPlatform={funnel.community_platform}
           onSelect={handleSelectCommunityPlatform}
         />
+      </div>
+
+      {/* Navigation */}
+      <div className="flex items-center justify-between pt-4 border-t border-border">
+        <Button
+          variant="outline"
+          onClick={() => navigate(`/projects/${projectId}/offers`)}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Offer Stack
+        </Button>
+
+        <Button
+          onClick={() => completeSetupMutation.mutate()}
+          disabled={completeSetupMutation.isPending}
+        >
+          {completeSetupMutation.isPending ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Completing...
+            </>
+          ) : (
+            <>
+              <Check className="w-4 h-4 mr-2" />
+              Complete Setup
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );

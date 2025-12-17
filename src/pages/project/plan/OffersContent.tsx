@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Save, ArrowLeft, Check } from "lucide-react";
+import { Loader2, ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,27 +9,13 @@ import { OfferSlotData } from "@/components/funnel/OfferSlotCard";
 import { AudienceData } from "@/components/funnel/AudienceDiscovery";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
-import { useState, useEffect } from "react";
-
-// Map asset categories to task phases
-const ASSET_PHASE_MAP: Record<string, string> = {
-  'pages': 'technical',
-  'emails': 'emails',
-  'content': 'prelaunch',
-  'deliverables': 'delivery',
-};
-
-// Map asset categories to task labels
-const ASSET_LABEL_MAP: Record<string, string[]> = {
-  'pages': ['technical'],
-  'emails': ['copy'],
-  'content': ['creative', 'marketing'],
-  'deliverables': ['creative'],
-};
+import { useState, useEffect, useRef, useCallback } from "react";
 
 interface Props {
   projectId: string;
 }
+
+type SaveStatus = 'idle' | 'saving' | 'saved';
 
 const OffersContent = ({ projectId }: Props) => {
   const navigate = useNavigate();
@@ -48,6 +34,11 @@ const OffersContent = ({ projectId }: Props) => {
     likelihoodElements: [],
     timeEffortElements: [],
   });
+
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [isInitialized, setIsInitialized] = useState(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch funnel
   const { data: funnel, isLoading } = useQuery({
@@ -111,6 +102,7 @@ const OffersContent = ({ projectId }: Props) => {
         isConfigured: true,
         isSkipped: false,
       })));
+      setTimeout(() => setIsInitialized(true), 100);
     } else if (funnel?.funnel_type && FUNNEL_CONFIGS[funnel.funnel_type]) {
       const config = FUNNEL_CONFIGS[funnel.funnel_type];
       setOffers(config.offerSlots.map(slot => ({
@@ -123,69 +115,17 @@ const OffersContent = ({ projectId }: Props) => {
         isConfigured: false,
         isSkipped: false,
       })));
+      setTimeout(() => setIsInitialized(true), 100);
     }
   }, [funnel?.funnel_type, existingOffers]);
 
-  // Generate tasks from funnel assets
-  const generateTasksFromFunnel = async (funnelTypeKey: string) => {
-    if (!user || !projectId) return;
-    
-    const config = FUNNEL_CONFIGS[funnelTypeKey];
-    if (!config) return;
+  // Auto-save function
+  const performSave = useCallback(async () => {
+    if (!user || !projectId || !funnel) return;
 
-    // Check if there are already tasks for this project
-    const { data: existingTasks } = await supabase
-      .from('tasks')
-      .select('id')
-      .eq('project_id', projectId)
-      .limit(1);
+    setSaveStatus('saving');
 
-    // Only generate tasks if none exist
-    if (existingTasks && existingTasks.length > 0) return;
-
-    const tasksToInsert = config.assets
-      .filter(asset => {
-        if (!asset.offerSlotType) return true;
-        return offers.some(offer => 
-          offer.slotType === asset.offerSlotType && 
-          !offer.isSkipped &&
-          (offer.isConfigured || offer.title)
-        );
-      })
-      .map((asset, index) => {
-        const relatedOffer = asset.offerSlotType 
-          ? offers.find(o => o.slotType === asset.offerSlotType && !o.isSkipped)
-          : null;
-        
-        const description = relatedOffer?.title 
-          ? `${asset.description} • ${relatedOffer.title}`
-          : asset.description;
-
-        return {
-          project_id: projectId,
-          user_id: user.id,
-          title: asset.title,
-          description: description,
-          column_id: 'todo',
-          phase: ASSET_PHASE_MAP[asset.category] || null,
-          labels: ASSET_LABEL_MAP[asset.category] || [],
-          position: index,
-        };
-      });
-
-    if (tasksToInsert.length > 0) {
-      const { error } = await supabase.from('tasks').insert(tasksToInsert);
-      if (error) {
-        console.error('Error generating tasks:', error);
-      }
-    }
-  };
-
-  // Save mutation
-  const saveMutation = useMutation({
-    mutationFn: async (completeSetup: boolean = false) => {
-      if (!user || !projectId || !funnel) throw new Error("Missing required data");
-
+    try {
       // Save offers (only non-skipped)
       const activeOffers = offers.filter(o => !o.isSkipped);
       for (let i = 0; i < activeOffers.length; i++) {
@@ -216,34 +156,65 @@ const OffersContent = ({ projectId }: Props) => {
             .eq('id', offer.id);
           if (error) throw error;
         } else {
-          const { error } = await supabase
+          const { data: inserted, error } = await supabase
             .from('offers')
-            .insert(offerData);
+            .insert(offerData)
+            .select('id')
+            .single();
           if (error) throw error;
+          // Update local state with new ID
+          if (inserted) {
+            setOffers(prev => prev.map(o => 
+              o.slotType === offer.slotType && !o.id ? { ...o, id: inserted.id } : o
+            ));
+          }
         }
       }
 
-      // Generate tasks if completing setup
-      if (completeSetup && funnel.funnel_type) {
-        await generateTasksFromFunnel(funnel.funnel_type);
-        
-        // Update funnel_type_snapshot on the project
-        await supabase
-          .from('projects')
-          .update({ funnel_type_snapshot: funnel.funnel_type })
-          .eq('id', projectId);
-      }
-    },
-    onSuccess: (_, completeSetup) => {
+      setSaveStatus('saved');
       queryClient.invalidateQueries({ queryKey: ['funnel-offers', projectId] });
-      if (completeSetup) {
-        navigate(`/projects/${projectId}/offer`);
+
+      // Reset to idle after 2 seconds
+      statusTimeoutRef.current = setTimeout(() => {
+        setSaveStatus('idle');
+      }, 2000);
+    } catch (error) {
+      console.error("Error auto-saving:", error);
+      setSaveStatus('idle');
+    }
+  }, [offers, funnel, projectId, user, audienceData, queryClient]);
+
+  // Debounced auto-save effect
+  useEffect(() => {
+    if (!isInitialized || !funnel) return;
+
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    if (statusTimeoutRef.current) {
+      clearTimeout(statusTimeoutRef.current);
+    }
+
+    // Set new timeout for auto-save (1.5 seconds)
+    saveTimeoutRef.current = setTimeout(() => {
+      performSave();
+    }, 1500);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
-    },
-    onError: (error) => {
-      console.error("Error saving:", error);
-    },
-  });
+    };
+  }, [offers, isInitialized, funnel, performSave]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      if (statusTimeoutRef.current) clearTimeout(statusTimeoutRef.current);
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -265,14 +236,30 @@ const OffersContent = ({ projectId }: Props) => {
     return null;
   }
 
-  const hasConfiguredOffers = offers.some(o => o.isConfigured || o.title || o.isSkipped);
-
   return (
     <div className="space-y-6">
-      <PlanPageHeader
-        title="Offer Stack"
-        description="Configure each offer in your funnel"
-      />
+      {/* Header with Save Status */}
+      <div className="flex items-start justify-between">
+        <PlanPageHeader
+          title="Offer Stack"
+          description="Configure each offer in your funnel"
+        />
+        {/* Auto-save Status Indicator */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-[100px] justify-end">
+          {saveStatus === 'saving' && (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Saving...</span>
+            </>
+          )}
+          {saveStatus === 'saved' && (
+            <>
+              <Check className="w-4 h-4 text-green-500" />
+              <span className="text-green-500">Saved</span>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Offer Stack Builder */}
       <OfferStackBuilder
@@ -292,33 +279,10 @@ const OffersContent = ({ projectId }: Props) => {
           Transformation
         </Button>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => saveMutation.mutate(false)}
-            disabled={saveMutation.isPending}
-          >
-            {saveMutation.isPending ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4 mr-2" />
-            )}
-            Save
-          </Button>
-          <Button
-            onClick={() => saveMutation.mutate(true)}
-            disabled={!hasConfiguredOffers || saveMutation.isPending}
-          >
-            {saveMutation.isPending ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <>
-                <Check className="w-4 h-4 mr-2" />
-                Complete Setup
-              </>
-            )}
-          </Button>
-        </div>
+        <Button onClick={() => navigate(`/projects/${projectId}/tech-stack`)}>
+          Continue
+          <ArrowRight className="w-4 h-4 ml-2" />
+        </Button>
       </div>
     </div>
   );
