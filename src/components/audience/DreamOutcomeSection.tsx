@@ -169,7 +169,7 @@ export const DreamOutcomeSectionContent = ({
           ) : (
             <>
               <Sparkles className="w-4 h-4" />
-              Generate
+              {variations.length > 0 ? "Regenerate" : "Generate"}
             </>
           )}
         </Button>

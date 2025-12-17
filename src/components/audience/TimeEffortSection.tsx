@@ -309,7 +309,7 @@ export const TimeEffortSectionContent = ({
           ) : (
             <>
               <Sparkles className="w-4 h-4" />
-              Generate with AI
+              {timeEffortElements.length > 0 ? "Regenerate with AI" : "Generate with AI"}
             </>
           )}
         </Button>

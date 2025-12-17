@@ -337,7 +337,7 @@ export const LikelihoodSectionContent = ({
           ) : (
             <>
               <Sparkles className="w-4 h-4" />
-              Generate with AI
+              {likelihoodElements.length > 0 ? "Regenerate with AI" : "Generate with AI"}
             </>
           )}
         </Button>
