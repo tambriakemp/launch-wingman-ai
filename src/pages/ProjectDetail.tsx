@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -233,11 +233,11 @@ const ProjectDetail = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
+      <ProjectLayout>
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
-      </DashboardLayout>
+      </ProjectLayout>
     );
   }
 
@@ -257,7 +257,7 @@ const ProjectDetail = () => {
   ];
 
   return (
-    <DashboardLayout>
+    <ProjectLayout>
       <div className="space-y-8">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
@@ -529,7 +529,7 @@ const ProjectDetail = () => {
         description={`Are you sure you want to delete "${eventToDelete?.title}"? This action cannot be undone.`}
         isDeleting={isDeleting}
       />
-    </DashboardLayout>
+    </ProjectLayout>
   );
 };
 
