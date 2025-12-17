@@ -421,6 +421,14 @@ export const WhoSection = ({
 
       {/* Analyze Audience Section */}
       <div className="pt-3 border-t border-border space-y-3">
+        {/* Analysis Feedback - shows between divider and button */}
+        {analysisFeedback && (
+          <div className="flex items-start gap-2 p-3 rounded-md bg-muted/50 border border-border">
+            <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-muted-foreground">{analysisFeedback}</p>
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <div>
             <Label className="text-sm">Analyze Audience</Label>
@@ -447,14 +455,6 @@ export const WhoSection = ({
             )}
           </Button>
         </div>
-
-        {/* Analysis Feedback */}
-        {analysisFeedback && (
-          <div className="flex items-start gap-2 p-3 rounded-md bg-muted/50 border border-border">
-            <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-muted-foreground">{analysisFeedback}</p>
-          </div>
-        )}
 
         {subAudiences.length > 0 && (
           <div className="grid gap-2">
