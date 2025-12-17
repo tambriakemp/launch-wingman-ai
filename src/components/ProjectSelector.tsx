@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronsUpDown, Plus, Check, Loader2, CalendarIcon, Rocket, Clock, Coffee, Package, Sparkles } from "lucide-react";
+import { ChevronsUpDown, Plus, Check, Loader2, CalendarIcon, Rocket, Clock, Coffee, Package, Sparkles, Crown } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, addWeeks, subWeeks } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +33,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 
 interface ProjectSelectorProps {
   currentProjectId?: string;
@@ -58,6 +59,7 @@ const CONTENT_CREATION_WEEKS = 2;
 export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [showNameDialog, setShowNameDialog] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const [projectName, setProjectName] = useState("");
   const [programWeeks, setProgramWeeks] = useState(DEFAULT_PROGRAM_WEEKS);
@@ -73,7 +75,7 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
     restPeriodEnd: undefined,
   });
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isSubscribed } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: projects, isLoading } = useQuery({
@@ -206,6 +208,13 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
 
   const handleOpenCreateDialog = () => {
     setOpen(false);
+    
+    // Free users limited to 1 project
+    if (!isSubscribed && projects && projects.length >= 1) {
+      setShowUpgradeDialog(true);
+      return;
+    }
+    
     setProjectName("");
     setStep(1);
     setShowNameDialog(true);
@@ -534,6 +543,13 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Upgrade Dialog for Project Limit */}
+      <UpgradeDialog 
+        open={showUpgradeDialog} 
+        onOpenChange={setShowUpgradeDialog} 
+        feature="Unlimited Projects"
+      />
     </>
   );
 };

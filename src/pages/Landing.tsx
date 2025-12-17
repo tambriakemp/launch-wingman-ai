@@ -52,7 +52,7 @@ const pricingPlans = [
   },
   {
     name: "Pro",
-    price: "$10",
+    price: "$20",
     period: "/month",
     description: "For serious coaches and marketers",
     features: ["Unlimited projects", "AI transformation generator", "Advanced calendar", "Kanban board", "Content planner", "Priority support"],
