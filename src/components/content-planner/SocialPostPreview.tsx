@@ -7,6 +7,7 @@ interface SocialPostPreviewProps {
   content: string;
   mediaUrl: string | null;
   mediaType: string | null;
+  linkUrl?: string;
 }
 
 // Custom icons for platforms not in Lucide
@@ -145,6 +146,49 @@ function TwitterPreview({ content, mediaUrl, mediaType }: { content: string; med
   );
 }
 
+function PinterestPreview({ content, mediaUrl, mediaType, linkUrl }: { content: string; mediaUrl: string | null; mediaType: string | null; linkUrl?: string }) {
+  const getHostname = (url: string) => {
+    try {
+      return new URL(url).hostname;
+    } catch {
+      return url;
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Pin Image */}
+      {mediaUrl ? (
+        <div className="relative">
+          {mediaType === "video" ? (
+            <video src={mediaUrl} className="w-full aspect-[2/3] object-cover bg-black" muted />
+          ) : (
+            <img src={mediaUrl} alt="" className="w-full aspect-[2/3] object-cover" />
+          )}
+          {linkUrl && (
+            <div className="absolute bottom-2 left-2 right-2">
+              <div className="bg-white/90 rounded-full px-2 py-0.5 text-[8px] text-gray-700 truncate">
+                🔗 {getHostname(linkUrl)}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="w-full aspect-[2/3] bg-muted flex items-center justify-center">
+          <span className="text-[10px] text-muted-foreground">Add image</span>
+        </div>
+      )}
+
+      {/* Pin Title & Description */}
+      <div className="p-2 flex-1 overflow-hidden bg-white">
+        <p className="text-[9px] font-medium line-clamp-2 text-gray-900">
+          {content || "Pin description..."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function GenericPreview({ content, mediaUrl, mediaType, platform }: { content: string; mediaUrl: string | null; mediaType: string | null; platform: string }) {
   const platformConfig = getPlatformById(platform);
 
@@ -185,6 +229,7 @@ export function SocialPostPreview({
   content,
   mediaUrl,
   mediaType,
+  linkUrl,
 }: SocialPostPreviewProps) {
   if (platforms.length === 0) {
     return (
@@ -206,6 +251,8 @@ export function SocialPostPreview({
         return <InstagramPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} />;
       case "twitter":
         return <TwitterPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} />;
+      case "pinterest":
+        return <PinterestPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} linkUrl={linkUrl} />;
       default:
         return <GenericPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} platform={activePlatform} />;
     }
