@@ -121,7 +121,7 @@ serve(async (req) => {
       const subscription = await stripe.subscriptions.create({
         customer: customerId,
         items: [{ price: proPrice.id }],
-        coupon: coupon.id,
+        discounts: [{ coupon: coupon.id }],
       });
 
       logStep("Pro subscription granted", { customerId, subscriptionId: subscription.id });
