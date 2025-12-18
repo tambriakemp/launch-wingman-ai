@@ -109,7 +109,12 @@ serve(async (req) => {
       const coupon = await stripe.coupons.create({
         percent_off: 100,
         duration: 'forever',
-        name: `Admin granted pro - ${user_email}`,
+        name: `Pro grant - ${user_email.substring(0, 25)}`,
+        metadata: {
+          granted_to: user_email,
+          granted_by: adminUser.email,
+          granted_at: new Date().toISOString(),
+        }
       });
 
       // Create subscription with the coupon
