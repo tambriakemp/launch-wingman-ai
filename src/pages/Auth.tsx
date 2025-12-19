@@ -51,7 +51,14 @@ const Auth = () => {
           const { data, error } = await supabase.functions.invoke("create-checkout");
           if (error) throw error;
           if (data?.url) {
-            window.location.href = data.url;
+            // Open in new tab to avoid iframe issues
+            const checkoutWindow = window.open(data.url, "_blank");
+            if (!checkoutWindow) {
+              // Fallback if popup blocked
+              window.location.href = data.url;
+            }
+            toast.info("Complete your payment in the new tab, then return here.");
+            setCheckoutInProgress(false);
             return;
           }
           throw new Error("No checkout URL returned");
@@ -160,14 +167,21 @@ const Auth = () => {
       toast.success("Account created successfully!");
 
       if (isProSignup) {
-        toast.info("Redirecting to checkout...");
+        toast.info("Opening checkout...");
         try {
           const { data, error: checkoutError } = await supabase.functions.invoke("create-checkout");
           if (checkoutError) throw checkoutError;
           if (!data?.url) throw new Error("No checkout URL returned");
 
-          // Direct navigation - works in iframes and avoids cross-origin issues
-          window.location.href = data.url;
+          // Open in new tab to avoid iframe issues
+          const checkoutWindow = window.open(data.url, "_blank");
+          if (!checkoutWindow) {
+            // Fallback if popup blocked
+            window.location.href = data.url;
+          }
+          toast.info("Complete your payment in the new tab, then return here.");
+          setCheckoutInProgress(false);
+          setLoading(false);
           return;
         } catch (checkoutErr) {
           console.error("Checkout error:", checkoutErr);
