@@ -72,7 +72,7 @@ const faqs = [
   },
   {
     question: "Do you offer refunds?",
-    answer: "If you're not satisfied within the first 14 days of your Pro subscription, contact us for a full refund. We want you to be confident in your investment.",
+    answer: "We do not offer refunds. We provide a free plan so you can experience our features before upgrading, and due to the digital nature of our software, all sales are final.",
   },
 ];
 
