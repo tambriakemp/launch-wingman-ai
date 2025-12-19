@@ -224,6 +224,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       setIsImpersonating(true);
       setImpersonatedUserEmail(targetEmail);
+
+      // Explicitly check subscription for the impersonated user's new session
+      const { data: subData, error: subError } = await supabase.functions.invoke('check-subscription');
+      if (subError) {
+        console.error('Error checking subscription during impersonation:', subError);
+      } else {
+        console.log('Subscription check for impersonated user:', subData);
+        setIsSubscribed(subData?.subscribed ?? false);
+        setSubscriptionEnd(subData?.subscription_end ?? null);
+      }
+
       toast.success(`Now viewing as ${targetEmail}`);
       
       // Navigate to app
