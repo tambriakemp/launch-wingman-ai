@@ -156,7 +156,7 @@ const Pricing = () => {
                   variant={plan.ctaVariant}
                   size="lg"
                 >
-                  <Link to="/auth">{plan.cta}</Link>
+                  <Link to="/auth?tab=signup">{plan.cta}</Link>
                 </Button>
               </motion.div>
             ))}

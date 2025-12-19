@@ -259,7 +259,7 @@ const HowItWorks = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" variant="accent">
-                <Link to="/auth">Start Free Today</Link>
+                <Link to="/auth?tab=signup">Start Free Today</Link>
               </Button>
               <Button
                 asChild
