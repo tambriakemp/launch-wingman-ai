@@ -145,7 +145,8 @@ const Auth = () => {
     }
 
     setLoading(true);
-    const { error } = await signUp(email, password, firstName, lastName);
+    // Pass skipNavigation=true for Pro signups to prevent AuthContext from navigating before checkout
+    const { error } = await signUp(email, password, firstName, lastName, isProSignup);
 
     if (error) {
       setLoading(false);
