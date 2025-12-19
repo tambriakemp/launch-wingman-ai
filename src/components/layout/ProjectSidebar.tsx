@@ -147,8 +147,8 @@ const SidebarContent = ({
         {/* Logo */}
         <div className="px-4 py-3 border-b border-sidebar-border">
           <Link to="/app" className="flex items-center gap-2" onClick={onNavigate}>
-            <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-sidebar-primary-foreground" />
+            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+              <Rocket className="w-5 h-5 text-accent-foreground" />
             </div>
             <span className="text-base font-semibold text-sidebar-accent-foreground">Launchely</span>
           </Link>
@@ -215,8 +215,8 @@ const SidebarContent = ({
       {/* Logo */}
       <div className="px-4 py-3 border-b border-sidebar-border">
         <Link to="/app" className="flex items-center gap-2" onClick={onNavigate}>
-          <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-sidebar-primary-foreground" />
+          <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+            <Rocket className="w-5 h-5 text-accent-foreground" />
           </div>
           <span className="text-base font-semibold text-sidebar-accent-foreground">Launchely</span>
         </Link>
