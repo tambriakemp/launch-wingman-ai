@@ -53,9 +53,9 @@ export const StyleSelector = ({ selectedStyle, onChange, disabled }: StyleSelect
               disabled={disabled}
               className={cn(
                 "relative p-3 rounded-lg border-2 text-left transition-all",
-                "hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20",
+                "hover:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20",
                 isSelected
-                  ? "border-primary bg-primary/5"
+                  ? "border-accent bg-accent/10"
                   : "border-border bg-card",
                 disabled && "opacity-50 cursor-not-allowed"
               )}
@@ -63,7 +63,7 @@ export const StyleSelector = ({ selectedStyle, onChange, disabled }: StyleSelect
               <div className="flex items-center gap-2">
                 <div className={cn(
                   "w-7 h-7 rounded-full flex items-center justify-center shrink-0",
-                  isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  isSelected ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
                 )}>
                   <Icon className="w-3.5 h-3.5" />
                 </div>
@@ -71,7 +71,7 @@ export const StyleSelector = ({ selectedStyle, onChange, disabled }: StyleSelect
                   <div className="flex items-center gap-1.5">
                     <span className="font-medium text-xs">{style.name}</span>
                     {isSelected && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent" />
                     )}
                   </div>
                   <p className="text-[10px] text-muted-foreground">

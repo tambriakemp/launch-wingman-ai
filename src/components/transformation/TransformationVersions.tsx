@@ -83,7 +83,7 @@ export const TransformationVersions = ({
             key={key}
             className={cn(
               "transition-all cursor-pointer group",
-              isPrimary ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border hover:border-primary/30"
+              isPrimary ? "border-accent bg-accent/10 ring-1 ring-accent/20" : "border-border hover:border-accent/30"
             )}
             onClick={() => !isLocked && !isEditing && onSelectPrimary(key)}
           >
@@ -91,7 +91,7 @@ export const TransformationVersions = ({
               {/* Header */}
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
-                  {isPrimary && <Star className="w-3.5 h-3.5 text-primary fill-primary" />}
+                  {isPrimary && <Star className="w-3.5 h-3.5 text-accent fill-accent" />}
                   <span className="font-medium text-xs">{config.label}</span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -147,7 +147,7 @@ export const TransformationVersions = ({
 
               {/* Primary Badge */}
               {isPrimary && !isEditing && (
-                <Badge className="mt-2 bg-primary/10 text-primary border-primary/20 text-[10px] px-1.5 py-0">
+                <Badge className="mt-2 bg-accent/10 text-accent border-accent/20 text-[10px] px-1.5 py-0">
                   Primary
                 </Badge>
               )}
