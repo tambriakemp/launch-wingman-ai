@@ -36,19 +36,24 @@ serve(async (req) => {
       });
     }
 
+    console.log('Checking admin for user:', userData.user.id, userData.user.email);
+
     // Check if user has admin role
-    const { data: roleData } = await supabaseClient
+    const { data: roleData, error: roleError } = await supabaseClient
       .from('user_roles')
       .select('role')
       .eq('user_id', userData.user.id)
       .eq('role', 'admin')
-      .single();
+      .maybeSingle();
+
+    console.log('Role query result:', { roleData, roleError, isAdmin: !!roleData });
 
     return new Response(JSON.stringify({ isAdmin: !!roleData }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
+    console.error('Check admin error:', error);
     return new Response(JSON.stringify({ isAdmin: false }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
