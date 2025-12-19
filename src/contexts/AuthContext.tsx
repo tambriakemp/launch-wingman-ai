@@ -13,7 +13,7 @@ interface AuthContextType {
   isImpersonating: boolean;
   impersonatedUserEmail: string | null;
   checkSubscription: () => Promise<void>;
-  signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, firstName?: string, lastName?: string, skipNavigation?: boolean) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   startImpersonation: (targetUserId: string, targetEmail: string) => Promise<void>;
@@ -114,7 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
+  const signUp = async (email: string, password: string, firstName?: string, lastName?: string, skipNavigation?: boolean) => {
     const redirectUrl = `${window.location.origin}/projects`;
     
     const { error } = await supabase.auth.signUp({
@@ -132,7 +132,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!error) {
       // Track signup activity and notify admins
       await trackActivity('signup', true);
-      await navigateToProject();
+      // Only navigate if not explicitly skipped (e.g., for Pro checkout flow)
+      if (!skipNavigation) {
+        await navigateToProject();
+      }
     }
     
     return { error: error as Error | null };
