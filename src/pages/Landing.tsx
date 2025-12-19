@@ -208,7 +208,7 @@ const Landing = () => {
                   size="lg"
                   className="!bg-[#FACC15] !text-black hover:!bg-[#EAB308] text-lg px-8"
                 >
-                  <Link to="/auth">Start Free Today</Link>
+                  <Link to="/auth?tab=signup">Start Free Today</Link>
                 </Button>
                 <Button
                   asChild

@@ -288,7 +288,7 @@ const Pricing = () => {
               Start free and upgrade when you're ready.
             </p>
             <Button asChild size="lg" variant="accent">
-              <Link to="/auth">Get Started Free</Link>
+              <Link to="/auth?tab=signup">Get Started Free</Link>
             </Button>
           </motion.div>
         </div>
