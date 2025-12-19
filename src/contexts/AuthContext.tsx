@@ -167,13 +167,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Clear impersonation data if exists
     localStorage.removeItem(ADMIN_SESSION_KEY);
     localStorage.removeItem(IMPERSONATION_KEY);
+    localStorage.removeItem(ADMIN_INFO_KEY);
     setIsImpersonating(false);
     setImpersonatedUserEmail(null);
-    
-    await supabase.auth.signOut();
     setIsSubscribed(false);
     setSubscriptionEnd(null);
-    navigate("/");
+    
+    // Navigate first, then sign out to prevent race conditions
+    navigate("/", { replace: true });
+    
+    await supabase.auth.signOut();
   };
 
   const startImpersonation = async (targetUserId: string, targetEmail: string) => {
