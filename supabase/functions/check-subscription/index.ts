@@ -64,8 +64,30 @@ serve(async (req) => {
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
+      
+      // Try to get current_period_end - it might be at subscription level or items level
+      let periodEnd = subscription.current_period_end;
+      
+      // If not at subscription level, try getting from items
+      if (!periodEnd && subscription.items?.data?.[0]?.current_period_end) {
+        periodEnd = subscription.items.data[0].current_period_end;
+      }
+      
+      // Safely convert to ISO string
+      try {
+        if (periodEnd && typeof periodEnd === 'number') {
+          subscriptionEnd = new Date(periodEnd * 1000).toISOString();
+        }
+      } catch (dateError) {
+        logStep("Warning: Could not parse subscription end date", { periodEnd, error: String(dateError) });
+        // Continue anyway - user still has a valid subscription
+      }
+      
+      logStep("Active subscription found", { 
+        subscriptionId: subscription.id, 
+        endDate: subscriptionEnd,
+        rawPeriodEnd: periodEnd 
+      });
     } else {
       logStep("No active subscription found");
     }
