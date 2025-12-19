@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -196,13 +196,12 @@ export const TransformationBuilder = ({
           <Label htmlFor="transformationStatement" className="flex items-center gap-1">
             Your Transformation Statement <span className="text-destructive">*</span>
           </Label>
-          <Textarea
+          <AutoResizeTextarea
             id="transformationStatement"
             placeholder={formulaPlaceholder}
             value={transformationStatement}
             onChange={(e) => onStatementChange(e.target.value)}
-            rows={3}
-            className="resize-none"
+            minRows={3}
             disabled={isLocked}
           />
           <p className="text-xs text-muted-foreground">

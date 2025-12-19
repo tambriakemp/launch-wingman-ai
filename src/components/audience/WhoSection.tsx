@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDebouncedInput } from "@/hooks/useDebouncedInput";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -298,13 +298,12 @@ export const WhoSection = ({
             </Badge>
           )}
         </div>
-        <Textarea
+        <AutoResizeTextarea
           id="targetAudience"
           placeholder="Describe your ideal client - who they are, their situation, what they want..."
           value={localTargetAudience}
           onChange={(e) => setLocalTargetAudience(e.target.value)}
-          rows={3}
-          className="resize-none"
+          minRows={3}
         />
 
         {/* AI-Refined Variations - Between textarea and Generate button */}
