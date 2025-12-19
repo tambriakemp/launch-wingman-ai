@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,14 +33,22 @@ const Auth = () => {
   const [resetLoading, setResetLoading] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
+  const [checkoutInProgress, setCheckoutInProgress] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; firstName?: string; lastName?: string }>({});
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") === "signup" ? "signup" : "signin";
 
-  if (user) {
-    navigate("/app");
+  // Redirect authenticated users to app, but skip if checkout is in progress
+  useEffect(() => {
+    if (user && !checkoutInProgress) {
+      navigate("/app");
+    }
+  }, [user, checkoutInProgress, navigate]);
+
+  // Don't render auth form if user is logged in and not in checkout flow
+  if (user && !checkoutInProgress) {
     return null;
   }
 
@@ -117,6 +125,7 @@ const Auth = () => {
       // Check if user came from Pro signup flow
       const plan = searchParams.get("plan");
       if (plan === "pro") {
+        setCheckoutInProgress(true); // Prevent auto-redirect to /app
         toast.info("Redirecting to checkout...");
         try {
           const { data, error: checkoutError } = await supabase.functions.invoke('create-checkout');
@@ -128,6 +137,7 @@ const Auth = () => {
         } catch (checkoutErr) {
           console.error('Checkout error:', checkoutErr);
           toast.error("Failed to start checkout. You can upgrade from Settings.");
+          setCheckoutInProgress(false); // Allow redirect on error
         }
       }
       setLoading(false);
