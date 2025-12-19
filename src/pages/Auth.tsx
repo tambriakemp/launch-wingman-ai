@@ -103,9 +103,9 @@ const Auth = () => {
 
     setLoading(true);
     const { error } = await signUp(email, password, firstName, lastName);
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       if (error.message.includes("already registered")) {
         toast.error("This email is already registered. Try signing in instead.");
       } else {
@@ -113,6 +113,24 @@ const Auth = () => {
       }
     } else {
       toast.success("Account created successfully!");
+      
+      // Check if user came from Pro signup flow
+      const plan = searchParams.get("plan");
+      if (plan === "pro") {
+        toast.info("Redirecting to checkout...");
+        try {
+          const { data, error: checkoutError } = await supabase.functions.invoke('create-checkout');
+          if (checkoutError) throw checkoutError;
+          if (data?.url) {
+            window.location.href = data.url;
+            return;
+          }
+        } catch (checkoutErr) {
+          console.error('Checkout error:', checkoutErr);
+          toast.error("Failed to start checkout. You can upgrade from Settings.");
+        }
+      }
+      setLoading(false);
     }
   };
 
