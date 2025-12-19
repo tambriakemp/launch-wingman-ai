@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Settings, Shield, LogOut, Menu } from "lucide-react";
+import { Settings, Shield, LogOut, Menu, ArrowLeftCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,7 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export const TopBar = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isImpersonating, impersonatedUserEmail, stopImpersonation } = useAuth();
   const { isAdmin } = useAdmin();
   const isMobile = useIsMobile();
   const { toggle } = useMobileSidebar();
@@ -71,12 +71,31 @@ export const TopBar = () => {
           <DropdownMenuContent align="end" className="w-48">
             {user && (
               <>
-                <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium">
-                    {profile?.first_name} {profile?.last_name}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                </div>
+                {isImpersonating ? (
+                  <div className="px-2 py-1.5 bg-amber-500/10 border-b border-amber-500/20">
+                    <p className="text-xs text-amber-600 font-medium">Viewing as:</p>
+                    <p className="text-sm text-amber-700 truncate">{impersonatedUserEmail}</p>
+                  </div>
+                ) : (
+                  <div className="px-2 py-1.5">
+                    <p className="text-sm font-medium">
+                      {profile?.first_name} {profile?.last_name}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </div>
+                )}
+                <DropdownMenuSeparator />
+              </>
+            )}
+            {isImpersonating && (
+              <>
+                <DropdownMenuItem 
+                  onClick={stopImpersonation} 
+                  className="flex items-center gap-2 cursor-pointer text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
+                >
+                  <ArrowLeftCircle className="w-4 h-4" />
+                  Return to Admin
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>
             )}
@@ -86,7 +105,7 @@ export const TopBar = () => {
                 Settings
               </Link>
             </DropdownMenuItem>
-            {isAdmin && (
+            {isAdmin && !isImpersonating && (
               <DropdownMenuItem asChild>
                 <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
                   <Shield className="w-4 h-4" />
