@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Check, X, Plus, Sparkles, Loader2, Shield, BarChart3, GraduationCap } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface LikelihoodElement {
@@ -200,26 +207,35 @@ export const LikelihoodSectionContent = ({
         {/* Manual Add Section */}
         {showManualInput ? (
           <div className="p-3 border rounded-lg bg-muted/30 space-y-3">
-            <div className="flex flex-wrap gap-2">
-              {(Object.keys(TYPE_CONFIG) as Array<LikelihoodElement['type']>).map((typeKey) => {
-                const config = TYPE_CONFIG[typeKey];
-                const IconComponent = config.icon;
-                return (
-                  <button
-                    key={typeKey}
-                    type="button"
-                    onClick={() => setManualType(typeKey)}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                      manualType === typeKey
-                        ? "bg-accent text-accent-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
-                  >
-                    <IconComponent className="w-4 h-4" />
-                    <span>{config.label}</span>
-                  </button>
-                );
-              })}
+            <div className="flex items-center gap-2">
+              <Select
+                value={manualType}
+                onValueChange={(v) => setManualType(v as LikelihoodElement['type'])}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="objection_counter">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-3 h-3" />
+                      Objection Counter
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="proof">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="w-3 h-3" />
+                      Proof
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="credibility">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="w-3 h-3" />
+                      Credibility
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <Input
               placeholder="Enter your proof or credibility element..."

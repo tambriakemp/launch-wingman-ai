@@ -3,8 +3,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Sparkles, Loader2, Zap, FileText, BookOpen, Lock, Unlock } from "lucide-react";
+import { Check, Sparkles, Loader2, Zap, FileText, BookOpen, Lock, Unlock } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { TransformationStyle } from "./StyleSelector";
 import { TransformationVersionsData } from "./TransformationVersions";
@@ -208,30 +216,34 @@ export const TransformationBuilder = ({
             <Label className="text-sm text-muted-foreground">
               Click to use a variation:
             </Label>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2">
               {variations.map((variation) => (
                 <button
                   key={variation.type}
                   onClick={() => handleSelectVariation(variation)}
                   disabled={isLocked}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                  className={`p-3 rounded-lg border text-left transition-all hover:border-primary/50 ${
                     primaryVersion === variation.type
-                      ? "bg-accent text-accent-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      ? "border-primary bg-primary/5"
+                      : "border-border bg-card"
                   } ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
-                  {getVersionIcon(variation.type)}
-                  <span>{variation.label}</span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge
+                      variant="outline"
+                      className={`${getVersionColor(variation.type)} gap-1`}
+                    >
+                      {getVersionIcon(variation.type)}
+                      {variation.label}
+                    </Badge>
+                    {primaryVersion === variation.type && (
+                      <Check className="w-4 h-4 text-primary ml-auto" />
+                    )}
+                  </div>
+                  <p className="text-sm">{variation.statement}</p>
                 </button>
               ))}
             </div>
-            {primaryVersion && (
-              <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
-                <p className="text-sm">
-                  {variations.find(v => v.type === primaryVersion)?.statement}
-                </p>
-              </div>
-            )}
           </div>
         )}
 
@@ -254,49 +266,47 @@ export const TransformationBuilder = ({
           </div>
         )}
 
-        {/* Style Pills + Generate Button at BOTTOM */}
-        <div className="space-y-3 pt-4 border-t border-border">
-          <div className="flex flex-wrap gap-2">
-            {styleOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => onStyleChange(option.value as TransformationStyle)}
-                disabled={isLocked || isGenerating}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                  transformationStyle === option.value
-                    ? "bg-accent text-accent-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
-                } ${isLocked || isGenerating ? 'opacity-60 cursor-not-allowed' : ''}`}
-              >
-                <span>{option.label}</span>
-              </button>
-            ))}
-          </div>
-          <div className="flex justify-end items-center gap-2">
-            {!isAudienceComplete && (
-              <span className="text-xs text-muted-foreground mr-2">
-                Complete audience first
-              </span>
+        {/* Style Dropdown + Generate Button at BOTTOM */}
+        <div className="flex justify-end items-center gap-2 pt-4 border-t border-border">
+          {!isAudienceComplete && (
+            <span className="text-xs text-muted-foreground mr-2">
+              Complete audience first
+            </span>
+          )}
+          <Select
+            value={transformationStyle}
+            onValueChange={(value) => onStyleChange(value as TransformationStyle)}
+            disabled={isLocked || isGenerating}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select style" />
+            </SelectTrigger>
+            <SelectContent>
+              {styleOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            onClick={handleGenerate}
+            disabled={isGenerating || !isAudienceComplete || isLocked}
+            className="gap-2"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Generate
+              </>
             )}
-            <Button
-              variant="outline"
-              onClick={handleGenerate}
-              disabled={isGenerating || !isAudienceComplete || isLocked}
-              className="gap-2"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Generate
-                </>
-              )}
-            </Button>
-          </div>
+          </Button>
         </div>
       </CardContent>
     </Card>

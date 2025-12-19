@@ -3,6 +3,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Check, X, Plus, Sparkles, Loader2, Zap, ArrowDownCircle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface TimeEffortElement {
@@ -171,26 +178,29 @@ export const TimeEffortSectionContent = ({
         {/* Manual Add Section */}
         {showManualInput ? (
           <div className="p-3 border rounded-lg bg-muted/30 space-y-3">
-            <div className="flex flex-wrap gap-2">
-              {(Object.keys(TYPE_CONFIG) as Array<TimeEffortElement['type']>).map((typeKey) => {
-                const config = TYPE_CONFIG[typeKey];
-                const IconComponent = config.icon;
-                return (
-                  <button
-                    key={typeKey}
-                    type="button"
-                    onClick={() => setManualType(typeKey)}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                      manualType === typeKey
-                        ? "bg-accent text-accent-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
-                  >
-                    <IconComponent className="w-4 h-4" />
-                    <span>{config.label}</span>
-                  </button>
-                );
-              })}
+            <div className="flex items-center gap-2">
+              <Select
+                value={manualType}
+                onValueChange={(v) => setManualType(v as TimeEffortElement['type'])}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="quick_win">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-3 h-3" />
+                      Quick Win
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="friction_reducer">
+                    <div className="flex items-center gap-2">
+                      <ArrowDownCircle className="w-3 h-3" />
+                      Friction Reducer
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <Input
               placeholder="Enter a quick win or friction reducer..."

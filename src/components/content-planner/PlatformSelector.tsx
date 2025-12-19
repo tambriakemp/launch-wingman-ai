@@ -1,6 +1,12 @@
 import { Instagram, Facebook, Twitter, Linkedin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PLATFORMS } from "./platformConfigs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface PlatformSelectorProps {
   selected: string[];
@@ -59,30 +65,36 @@ export function PlatformSelector({ selected, onChange }: PlatformSelectorProps) 
   const visiblePlatforms = PLATFORMS.filter(p => !p.hidden);
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {visiblePlatforms.map((platform) => {
-        const isSelected = selected.includes(platform.id);
-        const IconComponent = getIconComponent(platform.id);
+    <TooltipProvider>
+      <div className="flex flex-wrap gap-3">
+        {visiblePlatforms.map((platform) => {
+          const isSelected = selected.includes(platform.id);
+          const IconComponent = getIconComponent(platform.id);
 
-        return (
-          <button
-            key={platform.id}
-            type="button"
-            onClick={() => togglePlatform(platform.id)}
-            className={cn(
-              "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all",
-              "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-              isSelected
-                ? "text-white"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            )}
-            style={isSelected ? { backgroundColor: platform.color } : {}}
-          >
-            {IconComponent && <IconComponent className="w-4 h-4" />}
-            <span>{platform.name}</span>
-          </button>
-        );
-      })}
-    </div>
+          return (
+            <Tooltip key={platform.id}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => togglePlatform(platform.id)}
+                  className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 border-2",
+                    isSelected
+                      ? "text-white border-transparent shadow-lg scale-110"
+                      : "bg-muted text-muted-foreground border-transparent hover:border-border hover:bg-accent"
+                  )}
+                  style={isSelected ? { backgroundColor: platform.color } : {}}
+                >
+                  {IconComponent && <IconComponent className="w-5 h-5" />}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{platform.name}</p>
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
+      </div>
+    </TooltipProvider>
   );
 }

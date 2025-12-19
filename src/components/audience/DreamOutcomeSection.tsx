@@ -3,7 +3,8 @@ import { useDebouncedInput } from "@/hooks/useDebouncedInput";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2, Target, Heart, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Check, Sparkles, Loader2, Target, Heart, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface DreamOutcomeSectionProps {
@@ -129,29 +130,33 @@ export const DreamOutcomeSectionContent = ({
           <Label className="text-sm text-muted-foreground">
             Click to use a variation:
           </Label>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid gap-2">
             {variations.map((variation) => (
               <button
                 key={variation.type}
                 onClick={() => handleSelectVariation(variation)}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                className={`p-3 rounded-lg border text-left transition-all hover:border-primary/50 ${
                   selectedVariation === variation.type
-                    ? "bg-accent text-accent-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-card"
                 }`}
               >
-                {getVariationIcon(variation.type)}
-                <span>{variation.label}</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge
+                    variant="outline"
+                    className={`${getVariationColor(variation.type)} gap-1`}
+                  >
+                    {getVariationIcon(variation.type)}
+                    {variation.label}
+                  </Badge>
+                  {selectedVariation === variation.type && (
+                    <Check className="w-4 h-4 text-primary ml-auto" />
+                  )}
+                </div>
+                <p className="text-sm">{variation.statement}</p>
               </button>
             ))}
           </div>
-          {selectedVariation && (
-            <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
-              <p className="text-sm">
-                {variations.find(v => v.type === selectedVariation)?.statement}
-              </p>
-            </div>
-          )}
         </div>
       )}
 
