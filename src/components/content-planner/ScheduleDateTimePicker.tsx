@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Clock } from "lucide-react";
+import { CalendarIcon, Clock, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -17,7 +17,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface ScheduleDateTimePickerProps {
   mode: "now" | "schedule";
@@ -85,24 +84,37 @@ export function ScheduleDateTimePicker({
         <Label className="text-base font-medium">When to Post</Label>
       </div>
 
-      <RadioGroup
-        value={mode}
-        onValueChange={(value) => onModeChange(value as "now" | "schedule")}
-        className="flex gap-4"
-      >
-        <div className="flex items-center space-x-2">
-          <RadioGroupItem value="now" id="post-now" />
-          <Label htmlFor="post-now" className="cursor-pointer font-normal">
-            Post Now
-          </Label>
-        </div>
-        <div className="flex items-center space-x-2">
-          <RadioGroupItem value="schedule" id="post-schedule" />
-          <Label htmlFor="post-schedule" className="cursor-pointer font-normal">
-            Schedule for Later
-          </Label>
-        </div>
-      </RadioGroup>
+      {/* Pill Selector for Mode */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => onModeChange("now")}
+          className={cn(
+            "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all",
+            "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+            mode === "now"
+              ? "bg-accent text-accent-foreground"
+              : "bg-muted text-muted-foreground hover:bg-muted/80"
+          )}
+        >
+          <Zap className="w-4 h-4" />
+          <span>Post Now</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onModeChange("schedule")}
+          className={cn(
+            "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all",
+            "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+            mode === "schedule"
+              ? "bg-accent text-accent-foreground"
+              : "bg-muted text-muted-foreground hover:bg-muted/80"
+          )}
+        >
+          <CalendarIcon className="w-4 h-4" />
+          <span>Schedule for Later</span>
+        </button>
+      </div>
 
       {mode === "schedule" && (
         <div className="space-y-3 pl-6 border-l-2 border-muted">
