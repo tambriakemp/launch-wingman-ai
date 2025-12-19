@@ -103,6 +103,7 @@ interface StepCompletion {
   audience: boolean;
   transformation: boolean;
   offers: boolean;
+  "tech-stack": boolean;
 }
 
 interface LastProjectInfo {
@@ -405,9 +406,10 @@ export const ProjectSidebar = () => {
   // Determine step completion status
   const stepCompletion: StepCompletion = {
     "funnel-type": !!funnel?.funnel_type,
-    audience: !!(funnel?.niche && funnel?.target_audience),
-    transformation: !!(funnel?.niche && funnel?.target_audience),
-    offers: offers?.some(o => o.title) ?? false,
+    audience: !!(funnel?.niche && funnel?.target_audience && funnel?.primary_pain_point && funnel?.desired_outcome),
+    transformation: !!project?.transformation_statement,
+    offers: (offers && offers.length > 0) ?? false,
+    "tech-stack": !!(funnel?.funnel_platform || funnel?.email_platform || funnel?.community_platform),
   };
 
   const isStepAccessible = (requiresStep?: string): boolean => {

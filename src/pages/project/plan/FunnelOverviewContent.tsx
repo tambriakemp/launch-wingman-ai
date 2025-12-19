@@ -98,7 +98,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
   const Icon = funnelConfig ? ICON_MAP[funnelConfig.icon] || Layers : Layers;
 
   // Calculate completion status
-  const hasAudience = !!(funnel.niche && funnel.target_audience && funnel.primary_pain_point && funnel.desired_outcome && funnel.problem_statement);
+  const hasAudience = !!(funnel.niche && funnel.target_audience && funnel.primary_pain_point && funnel.desired_outcome);
   const hasTransformation = !!project?.transformation_statement;
   const hasOffers = offers.some(o => o.title);
   const hasTechStack = !!(funnel.funnel_platform || funnel.email_platform || funnel.community_platform);
