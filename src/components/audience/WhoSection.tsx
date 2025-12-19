@@ -311,33 +311,29 @@ export const WhoSection = ({
         {refinedVariations.length > 0 && (
           <div className="space-y-2">
             <Label className="text-sm">AI-Refined Variations</Label>
-            <div className="grid gap-2">
+            <div className="flex flex-wrap gap-2">
               {refinedVariations.map((variation) => (
                 <button
                   key={variation.type}
                   onClick={() => handleSelectVariation(variation)}
-                  className={`p-3 rounded-lg border text-left transition-all hover:border-primary/50 ${
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
                     selectedVariation === variation.type
-                      ? "border-primary bg-primary/5"
-                      : "border-border bg-card"
+                      ? "bg-accent text-accent-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
                   }`}
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge
-                      variant="outline"
-                      className={`${getVariationColor(variation.type)} gap-1`}
-                    >
-                      {getVariationIcon(variation.type)}
-                      {variation.label}
-                    </Badge>
-                    {selectedVariation === variation.type && (
-                      <Check className="w-4 h-4 text-primary ml-auto" />
-                    )}
-                  </div>
-                  <p className="text-sm">{variation.statement}</p>
+                  {getVariationIcon(variation.type)}
+                  <span>{variation.label}</span>
                 </button>
               ))}
             </div>
+            {selectedVariation && (
+              <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
+                <p className="text-sm">
+                  {refinedVariations.find(v => v.type === selectedVariation)?.statement}
+                </p>
+              </div>
+            )}
           </div>
         )}
         
