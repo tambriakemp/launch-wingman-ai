@@ -80,8 +80,8 @@ const Contact = () => {
                   <Mail className="w-8 h-8 text-primary mb-4" />
                   <h3 className="font-semibold mb-2">Email Us</h3>
                   <p className="text-muted-foreground text-sm mb-2">For general inquiries and support</p>
-                  <a href="mailto:support@launchely.com" className="text-primary hover:underline">
-                    support@launchely.com
+                  <a href="mailto:hello@launchely.com" className="text-primary hover:underline">
+                    hello@launchely.com
                   </a>
                 </CardContent>
               </Card>
