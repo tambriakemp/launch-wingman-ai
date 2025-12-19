@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useDebouncedInput } from "@/hooks/useDebouncedInput";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -162,6 +163,7 @@ export const WhoSection = ({
   onSubAudiencesChange,
   onSpecificityScoreChange,
 }: WhoSectionProps) => {
+  const [localTargetAudience, setLocalTargetAudience] = useDebouncedInput(targetAudience, onTargetAudienceChange);
   const [isGenerating, setIsGenerating] = useState(false);
   const [analysisFeedback, setAnalysisFeedback] = useState<string>("");
   const [selectedSubAudience, setSelectedSubAudience] = useState<string | null>(null);
@@ -299,8 +301,8 @@ export const WhoSection = ({
         <Textarea
           id="targetAudience"
           placeholder="Describe your ideal client - who they are, their situation, what they want..."
-          value={targetAudience}
-          onChange={(e) => onTargetAudienceChange(e.target.value)}
+          value={localTargetAudience}
+          onChange={(e) => setLocalTargetAudience(e.target.value)}
           rows={3}
           className="resize-none"
         />

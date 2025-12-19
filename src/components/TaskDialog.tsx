@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useDebouncedInput } from "@/hooks/useDebouncedInput";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, X, Plus, Trash2, CheckCircle2, Circle, ListTodo } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -112,8 +113,8 @@ export const TaskDialog = ({
   onSubtasksChange,
 }: TaskDialogProps) => {
   const { user } = useAuth();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [titleState, setTitleState] = useState("");
+  const [descriptionState, setDescriptionState] = useState("");
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [columnId, setColumnId] = useState("todo");
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
@@ -144,16 +145,16 @@ export const TaskDialog = ({
 
   useEffect(() => {
     if (editTask) {
-      setTitle(editTask.title);
-      setDescription(editTask.description || "");
+      setTitleState(editTask.title);
+      setDescriptionState(editTask.description || "");
       setDueDate(editTask.due_date ? new Date(editTask.due_date) : undefined);
       setColumnId(editTask.column_id);
       setSelectedLabels(editTask.labels || []);
       setSelectedPhase(editTask.phase || null);
       fetchSubtasks();
     } else {
-      setTitle("");
-      setDescription("");
+      setTitleState("");
+      setDescriptionState("");
       setDueDate(undefined);
       setColumnId("todo");
       setSelectedLabels([]);
@@ -240,7 +241,7 @@ export const TaskDialog = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title.trim()) {
+    if (!titleState.trim()) {
       toast.error("Task title is required");
       return;
     }
@@ -248,8 +249,8 @@ export const TaskDialog = ({
     setIsSubmitting(true);
     try {
       await onSubmit({
-        title: title.trim(),
-        description: description.trim(),
+        title: titleState.trim(),
+        description: descriptionState.trim(),
         due_date: dueDate || null,
         column_id: columnId,
         labels: selectedLabels,
@@ -281,8 +282,8 @@ export const TaskDialog = ({
               <Label htmlFor="title">Title *</Label>
               <Input
                 id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                value={titleState}
+                onChange={(e) => setTitleState(e.target.value)}
                 placeholder="Enter task title"
                 maxLength={200}
               />
@@ -291,8 +292,8 @@ export const TaskDialog = ({
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                value={descriptionState}
+                onChange={(e) => setDescriptionState(e.target.value)}
                 placeholder="Enter task description"
                 rows={3}
                 maxLength={1000}
