@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown, ClipboardCheck, Layout, Palette, MessageSquare, Rocket } from "lucide-react";
+import { Menu, X, ChevronDown, ClipboardCheck, Layout, Palette, MessageSquare, Rocket, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const featureLinks = [
@@ -39,9 +39,14 @@ const featureLinks = [
 ];
 
 export const LandingHeader = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    setMobileMenuOpen(false);
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-primary/95 backdrop-blur-md border-b border-border/10">
@@ -111,9 +116,20 @@ export const LandingHeader = () => {
           {/* Desktop CTA */}
           <div className="hidden lg:flex items-center gap-4">
             {user ? (
-              <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
-                <Link to="/app">Go to App</Link>
-              </Button>
+              <>
+                <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
+                  <Link to="/app">Go to App</Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleSignOut}
+                  className="text-primary-foreground hover:bg-primary-foreground/10"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-5 h-5" />
+                </Button>
+              </>
             ) : (
               <>
                 <Button variant="ghost" asChild className="text-primary-foreground hover:bg-primary-foreground/10">
@@ -197,9 +213,19 @@ export const LandingHeader = () => {
 
               <div className="pt-4 border-t border-border/10 space-y-2">
                 {user ? (
-                  <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-                    <Link to="/app">Go to App</Link>
-                  </Button>
+                  <>
+                    <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                      <Link to="/app">Go to App</Link>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleSignOut}
+                      className="w-full border-primary-foreground/20 text-primary-foreground"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
+                    </Button>
+                  </>
                 ) : (
                   <>
                     <Button variant="outline" asChild className="w-full border-primary-foreground/20 text-primary-foreground">
