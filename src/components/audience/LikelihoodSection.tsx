@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useDebouncedInput } from "@/hooks/useDebouncedInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
 import { Input } from "@/components/ui/input";
 import { Check, X, Plus, Sparkles, Loader2, Shield, BarChart3, GraduationCap } from "lucide-react";
 import {
@@ -157,11 +157,11 @@ export const LikelihoodSectionContent = ({
         <p className="text-xs text-muted-foreground">
           What objections or doubts does your audience have about achieving their desired outcome?
         </p>
-        <Textarea
+        <AutoResizeTextarea
           placeholder="e.g., 'They don't have time, they've tried before and failed, they think it's too expensive, they're not sure if it will work for their specific situation...'"
           value={localObjections}
           onChange={(e) => setLocalObjections(e.target.value)}
-          className="min-h-[100px]"
+          minRows={4}
         />
       </div>
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDebouncedInput } from "@/hooks/useDebouncedInput";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Sparkles, Loader2, Target, Heart, User } from "lucide-react";
@@ -111,13 +111,12 @@ export const DreamOutcomeSectionContent = ({
         <Label htmlFor="desiredOutcome" className="flex items-center gap-1">
           Desired Outcome <span className="text-destructive">*</span>
         </Label>
-        <Textarea
+        <AutoResizeTextarea
           id="desiredOutcome"
           placeholder="Describe the specific transformation or result your audience wants to achieve..."
           value={localDesiredOutcome}
           onChange={(e) => setLocalDesiredOutcome(e.target.value)}
-          rows={3}
-          className="resize-none"
+          minRows={3}
         />
         <p className="text-xs text-muted-foreground">
           Example: "Go from overwhelmed solopreneur to confident CEO running a 6-figure business with a team"

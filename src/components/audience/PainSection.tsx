@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDebouncedInput } from "@/hooks/useDebouncedInput";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -137,13 +137,12 @@ export const PainSectionContent = ({
         <Label htmlFor="primaryPainPoint" className="flex items-center gap-1">
           Primary Pain Point <span className="text-destructive">*</span>
         </Label>
-        <Textarea
+        <AutoResizeTextarea
           id="primaryPainPoint"
           placeholder="What's the biggest frustration, challenge, or obstacle they face?"
           value={localPainPoint}
           onChange={(e) => setLocalPainPoint(e.target.value)}
-          rows={3}
-          className="resize-none"
+          minRows={3}
         />
         <p className="text-xs text-muted-foreground">
           Example: "Constantly juggling tasks, never finishing what they start, feeling like they're falling behind"
