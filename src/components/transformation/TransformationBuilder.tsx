@@ -222,9 +222,9 @@ export const TransformationBuilder = ({
                   key={variation.type}
                   onClick={() => handleSelectVariation(variation)}
                   disabled={isLocked}
-                  className={`p-3 rounded-lg border text-left transition-all hover:border-primary/50 ${
+                  className={`p-3 rounded-lg border text-left transition-all hover:border-accent/50 ${
                     primaryVersion === variation.type
-                      ? "border-primary bg-primary/5"
+                      ? "border-accent bg-accent/10"
                       : "border-border bg-card"
                   } ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
@@ -237,7 +237,7 @@ export const TransformationBuilder = ({
                       {variation.label}
                     </Badge>
                     {primaryVersion === variation.type && (
-                      <Check className="w-4 h-4 text-primary ml-auto" />
+                      <Check className="w-4 h-4 text-accent ml-auto" />
                     )}
                   </div>
                   <p className="text-sm">{variation.statement}</p>

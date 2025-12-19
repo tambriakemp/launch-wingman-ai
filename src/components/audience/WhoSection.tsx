@@ -316,9 +316,9 @@ export const WhoSection = ({
                 <button
                   key={variation.type}
                   onClick={() => handleSelectVariation(variation)}
-                  className={`p-3 rounded-lg border text-left transition-all hover:border-primary/50 ${
+                  className={`p-3 rounded-lg border text-left transition-all hover:border-accent/50 ${
                     selectedVariation === variation.type
-                      ? "border-primary bg-primary/5"
+                      ? "border-accent bg-accent/10"
                       : "border-border bg-card"
                   }`}
                 >
@@ -331,7 +331,7 @@ export const WhoSection = ({
                       {variation.label}
                     </Badge>
                     {selectedVariation === variation.type && (
-                      <Check className="w-4 h-4 text-primary ml-auto" />
+                      <Check className="w-4 h-4 text-accent ml-auto" />
                     )}
                   </div>
                   <p className="text-sm">{variation.statement}</p>
@@ -447,9 +447,9 @@ export const WhoSection = ({
             {subAudiences.map((sub, index) => (
               <Card
                 key={index}
-                className={`p-3 cursor-pointer transition-all hover:border-primary/50 ${
+                className={`p-3 cursor-pointer transition-all hover:border-accent/50 ${
                   selectedSubAudience === sub.name
-                    ? "border-primary bg-primary/5"
+                    ? "border-accent bg-accent/10"
                     : ""
                 }`}
                 onClick={() => handleSelectSubAudience(sub)}
