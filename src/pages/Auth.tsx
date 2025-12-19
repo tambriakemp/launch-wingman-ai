@@ -39,16 +39,17 @@ const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") === "signup" ? "signup" : "signin";
+  const isProCheckoutRoute = searchParams.get("plan") === "pro";
 
-  // Redirect authenticated users to app, but skip if checkout is in progress
+  // Redirect authenticated users to app, but skip if checkout is in progress (or we're in the Pro checkout route)
   useEffect(() => {
-    if (user && !checkoutInProgress) {
+    if (user && !checkoutInProgress && !isProCheckoutRoute) {
       navigate("/app");
     }
-  }, [user, checkoutInProgress, navigate]);
+  }, [user, checkoutInProgress, isProCheckoutRoute, navigate]);
 
   // Don't render auth form if user is logged in and not in checkout flow
-  if (user && !checkoutInProgress) {
+  if (user && !checkoutInProgress && !isProCheckoutRoute) {
     return null;
   }
 
@@ -109,11 +110,27 @@ const Auth = () => {
     e.preventDefault();
     if (!validateSignUp()) return;
 
+    const plan = searchParams.get("plan");
+    const isProSignup = plan === "pro";
+
+    // Stripe Checkout won't load inside the preview iframe. Open a new tab *synchronously*
+    // (before awaits) to avoid popup blockers, then navigate it once we have the URL.
+    let checkoutWindow: Window | null = null;
+    if (isProSignup) {
+      checkoutWindow = window.open("about:blank", "_blank");
+      if (checkoutWindow) checkoutWindow.opener = null;
+
+      // Prevent the authenticated-user redirect racing ahead of checkout.
+      setCheckoutInProgress(true);
+    }
+
     setLoading(true);
     const { error } = await signUp(email, password, firstName, lastName);
 
     if (error) {
       setLoading(false);
+      if (checkoutWindow && !checkoutWindow.closed) checkoutWindow.close();
+      if (isProSignup) setCheckoutInProgress(false);
       if (error.message.includes("already registered")) {
         toast.error("This email is already registered. Try signing in instead.");
       } else {
@@ -121,25 +138,28 @@ const Auth = () => {
       }
     } else {
       toast.success("Account created successfully!");
-      
-      // Check if user came from Pro signup flow
-      const plan = searchParams.get("plan");
-      if (plan === "pro") {
-        setCheckoutInProgress(true); // Prevent auto-redirect to /app
-        toast.info("Redirecting to checkout...");
+
+      if (isProSignup) {
+        toast.info("Opening checkout...");
         try {
-          const { data, error: checkoutError } = await supabase.functions.invoke('create-checkout');
+          const { data, error: checkoutError } = await supabase.functions.invoke("create-checkout");
           if (checkoutError) throw checkoutError;
-          if (data?.url) {
+          if (!data?.url) throw new Error("No checkout URL returned");
+
+          if (checkoutWindow && !checkoutWindow.closed) {
+            checkoutWindow.location.href = data.url;
+          } else {
             window.location.href = data.url;
-            return;
           }
+          return;
         } catch (checkoutErr) {
-          console.error('Checkout error:', checkoutErr);
+          console.error("Checkout error:", checkoutErr);
           toast.error("Failed to start checkout. You can upgrade from Settings.");
-          setCheckoutInProgress(false); // Allow redirect on error
+          if (checkoutWindow && !checkoutWindow.closed) checkoutWindow.close();
+          setCheckoutInProgress(false);
         }
       }
+
       setLoading(false);
     }
   };
