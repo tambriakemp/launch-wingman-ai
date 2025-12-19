@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useDebouncedInput } from "@/hooks/useDebouncedInput";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ export const PainSectionContent = ({
   onPainPointChange,
   onSymptomsChange,
 }: PainSectionProps) => {
+  const [localPainPoint, setLocalPainPoint] = useDebouncedInput(primaryPainPoint, onPainPointChange);
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
@@ -37,7 +39,7 @@ export const PainSectionContent = ({
   const remainingSlots = MAX_SYMPTOMS - painSymptoms.length;
 
   const handleGenerate = async () => {
-    if (!primaryPainPoint.trim()) {
+    if (!localPainPoint.trim()) {
       setError("Please enter a primary pain point first");
       return;
     }
@@ -138,8 +140,8 @@ export const PainSectionContent = ({
         <Textarea
           id="primaryPainPoint"
           placeholder="What's the biggest frustration, challenge, or obstacle they face?"
-          value={primaryPainPoint}
-          onChange={(e) => onPainPointChange(e.target.value)}
+          value={localPainPoint}
+          onChange={(e) => setLocalPainPoint(e.target.value)}
           rows={3}
           className="resize-none"
         />
@@ -305,7 +307,7 @@ export const PainSectionContent = ({
           variant="outline"
           size="sm"
           onClick={handleGenerate}
-          disabled={isGenerating || !primaryPainPoint.trim() || !canAddMore}
+          disabled={isGenerating || !localPainPoint.trim() || !canAddMore}
           className="gap-2"
         >
           {isGenerating ? (

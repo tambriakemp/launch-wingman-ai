@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useDebouncedInput } from "@/hooks/useDebouncedInput";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,7 @@ export const DreamOutcomeSectionContent = ({
   painPoint,
   onChange,
 }: DreamOutcomeSectionProps) => {
+  const [localDesiredOutcome, setLocalDesiredOutcome] = useDebouncedInput(desiredOutcome, onChange);
   const [isGenerating, setIsGenerating] = useState(false);
   const [variations, setVariations] = useState<OutcomeVariation[]>([]);
   const [selectedVariation, setSelectedVariation] = useState<string | null>(null);
@@ -112,8 +114,8 @@ export const DreamOutcomeSectionContent = ({
         <Textarea
           id="desiredOutcome"
           placeholder="Describe the specific transformation or result your audience wants to achieve..."
-          value={desiredOutcome}
-          onChange={(e) => onChange(e.target.value)}
+          value={localDesiredOutcome}
+          onChange={(e) => setLocalDesiredOutcome(e.target.value)}
           rows={3}
           className="resize-none"
         />

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useDebouncedInput } from "@/hooks/useDebouncedInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -59,6 +60,7 @@ export const LikelihoodSectionContent = ({
   onObjectionsChange,
   onElementsChange,
 }: LikelihoodSectionProps) => {
+  const [localObjections, setLocalObjections] = useDebouncedInput(mainObjections, onObjectionsChange);
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestions, setSuggestions] = useState<LikelihoodElement[]>([]);
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<number>>(new Set());
@@ -69,7 +71,7 @@ export const LikelihoodSectionContent = ({
   const canAddMore = likelihoodElements.length < MAX_ELEMENTS;
 
   const handleGenerate = async () => {
-    if (!mainObjections.trim()) return;
+    if (!localObjections.trim()) return;
 
     setIsGenerating(true);
     setSuggestions([]);
@@ -157,8 +159,8 @@ export const LikelihoodSectionContent = ({
         </p>
         <Textarea
           placeholder="e.g., 'They don't have time, they've tried before and failed, they think it's too expensive, they're not sure if it will work for their specific situation...'"
-          value={mainObjections}
-          onChange={(e) => onObjectionsChange(e.target.value)}
+          value={localObjections}
+          onChange={(e) => setLocalObjections(e.target.value)}
           className="min-h-[100px]"
         />
       </div>
@@ -335,7 +337,7 @@ export const LikelihoodSectionContent = ({
       <div className="flex justify-end pt-2">
         <Button
           onClick={handleGenerate}
-          disabled={!mainObjections.trim() || isGenerating || !canAddMore}
+          disabled={!localObjections.trim() || isGenerating || !canAddMore}
           variant="outline"
           size="sm"
           className="gap-2"
