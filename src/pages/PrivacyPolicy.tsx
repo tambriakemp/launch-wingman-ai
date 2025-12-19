@@ -1,19 +1,23 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LandingHeader } from "@/components/landing/LandingHeader";
+import { LandingFooter } from "@/components/landing/LandingFooter";
 
 const PrivacyPolicy = () => {
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-4xl mx-auto px-4 py-12">
-        <Link to="/">
-          <Button variant="ghost" className="mb-8">
-            <ArrowLeft className="h-4 w-4 mr-2" />
+      <LandingHeader />
+      
+      <div className="container mx-auto px-4 pt-32 pb-16 max-w-4xl">
+        <Button variant="ghost" asChild className="mb-8">
+          <Link to="/" className="flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4" />
             Back to Home
-          </Button>
-        </Link>
+          </Link>
+        </Button>
 
-        <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
+        <h1 className="text-4xl font-bold mb-4">Privacy Policy</h1>
         <p className="text-muted-foreground mb-8">Last updated: December 17, 2025</p>
 
         <div className="prose prose-neutral dark:prose-invert max-w-none space-y-8">
@@ -115,13 +119,9 @@ const PrivacyPolicy = () => {
             </p>
           </section>
         </div>
-
-        <div className="mt-12 pt-8 border-t border-border">
-          <p className="text-sm text-muted-foreground text-center">
-            © {new Date().getFullYear()} Launchely. All rights reserved.
-          </p>
-        </div>
       </div>
+
+      <LandingFooter />
     </div>
   );
 };
