@@ -26,6 +26,12 @@ export interface FunnelConfig {
   bgColor: string;
   offerSlots: OfferSlotConfig[];
   assets: AssetRequirement[];
+  /** Who this funnel is best suited for */
+  bestFor: string;
+  /** Complexity level for beginners */
+  complexity: 'beginner' | 'intermediate' | 'advanced';
+  /** Typical timeline to set up */
+  typicalSetupTime?: string;
 }
 
 export const FUNNEL_CONFIGS: Record<string, FunnelConfig> = {
@@ -34,6 +40,9 @@ export const FUNNEL_CONFIGS: Record<string, FunnelConfig> = {
     name: 'Freebie Funnel',
     description: 'Build your email list with a free lead magnet that converts to a low-ticket or core offer',
     icon: 'Gift',
+    bestFor: 'Building an audience from scratch',
+    complexity: 'beginner',
+    typicalSetupTime: '1-2 weeks',
     steps: ['Social/Ads Traffic', 'Opt-in Page', 'Lead Magnet Delivery', 'Welcome Sequence', 'Tripwire Offer (Optional)'],
     color: 'text-emerald-600',
     bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
@@ -69,6 +78,9 @@ export const FUNNEL_CONFIGS: Record<string, FunnelConfig> = {
     name: 'Low-Ticket Funnel',
     description: 'Convert leads to paying customers with an irresistible low-priced offer',
     icon: 'DollarSign',
+    bestFor: 'Creators with a product ready to sell',
+    complexity: 'beginner',
+    typicalSetupTime: '2-3 weeks',
     steps: ['Traffic Source', 'Opt-in Page', 'Sales Page', 'Checkout + Order Bump', 'Upsell Page', 'Confirmation'],
     color: 'text-amber-600',
     bgColor: 'bg-amber-50 dark:bg-amber-950/30',
@@ -115,6 +127,9 @@ export const FUNNEL_CONFIGS: Record<string, FunnelConfig> = {
     name: 'Webinar Funnel',
     description: 'Educate and pitch at scale with a live or evergreen webinar',
     icon: 'Video',
+    bestFor: 'Selling courses or coaching programs',
+    complexity: 'intermediate',
+    typicalSetupTime: '3-4 weeks',
     steps: ['Registration Page', 'Thank You + Calendar', 'Reminder Emails', 'Live/Evergreen Webinar', 'Sales Page', 'Cart Close Sequence'],
     color: 'text-blue-600',
     bgColor: 'bg-blue-50 dark:bg-blue-950/30',
@@ -162,6 +177,9 @@ export const FUNNEL_CONFIGS: Record<string, FunnelConfig> = {
     name: 'Challenge Funnel',
     description: 'Engage your audience with a multi-day challenge that leads to a core offer',
     icon: 'Trophy',
+    bestFor: 'Building engagement and community',
+    complexity: 'intermediate',
+    typicalSetupTime: '3-5 weeks',
     steps: ['Registration Page', 'Welcome + Prep', 'Daily Challenge Content', 'Community Engagement', 'Pitch Sequence', 'Sales Page'],
     color: 'text-purple-600',
     bgColor: 'bg-purple-50 dark:bg-purple-950/30',
@@ -208,6 +226,9 @@ export const FUNNEL_CONFIGS: Record<string, FunnelConfig> = {
     name: 'Launch Funnel',
     description: 'Open/close cart launch with urgency and scarcity',
     icon: 'Rocket',
+    bestFor: 'Experienced creators with an audience',
+    complexity: 'advanced',
+    typicalSetupTime: '4-8 weeks',
     steps: ['Waitlist/Pre-Launch', 'Pre-Launch Content', 'Cart Open Announcement', 'Sales Page', 'Cart Close Urgency', 'Onboarding'],
     color: 'text-rose-600',
     bgColor: 'bg-rose-50 dark:bg-rose-950/30',
@@ -263,6 +284,9 @@ export const FUNNEL_CONFIGS: Record<string, FunnelConfig> = {
     name: 'Membership Funnel',
     description: 'Build recurring revenue with a membership or subscription offer',
     icon: 'Users',
+    bestFor: 'Recurring revenue and community',
+    complexity: 'intermediate',
+    typicalSetupTime: '4-6 weeks',
     steps: ['Lead Magnet', 'Nurture Sequence', 'Sales Page', 'Checkout', 'Member Portal', 'Retention Loop'],
     color: 'text-teal-600',
     bgColor: 'bg-teal-50 dark:bg-teal-950/30',
@@ -308,6 +332,9 @@ export const FUNNEL_CONFIGS: Record<string, FunnelConfig> = {
     name: 'Application Funnel',
     description: 'Qualify high-ticket clients with an application process',
     icon: 'ClipboardCheck',
+    bestFor: 'High-ticket coaching or services',
+    complexity: 'advanced',
+    typicalSetupTime: '2-4 weeks',
     steps: ['Value Content', 'Application Page', 'Call Booking', 'Discovery Call', 'Proposal/Close'],
     color: 'text-indigo-600',
     bgColor: 'bg-indigo-50 dark:bg-indigo-950/30',

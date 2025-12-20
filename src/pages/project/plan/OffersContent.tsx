@@ -242,7 +242,10 @@ const OffersContent = ({ projectId }: Props) => {
       <div className="flex items-start justify-between">
         <PlanPageHeader
           title="Offer Stack"
-          description="Configure each offer in your funnel"
+          description="Each offer in your funnel has a job - some build trust, some generate revenue, some maximize lifetime value."
+          whyItMatters="A well-designed offer stack guides customers through a natural journey from free to paid, increasing both conversions and revenue per customer."
+          estimatedTime="10-15 min"
+          tipText="Start with your core offer, then work backwards. What free content would attract your ideal customer? What upsell would help them succeed faster?"
         />
         {/* Auto-save Status Indicator */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-[100px] justify-end">
