@@ -1538,6 +1538,26 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     );
   };
 
+  // Get AI description for each section type
+  const getAiDescription = (sectionId: string): string => {
+    switch (sectionId) {
+      case "hero":
+        return "AI will generate 3 compelling headline options, a supporting subheadline, and an action-driven CTA button based on your offer and transformation statement.";
+      case "whyDifferent":
+        return "AI will create an opening paragraph, comparison bullets showing why other solutions fail, and a bridge sentence that positions your offer as the solution.";
+      case "benefits":
+        return "AI will generate key benefits that highlight the transformation your audience will experience, with clear titles and compelling descriptions.";
+      case "offerDetails":
+        return "AI will create an introduction, module breakdown, bonus descriptions, and a guarantee statement that builds trust and showcases value.";
+      case "testimonials":
+        return "AI will help structure your testimonials with compelling quotes, names, and results that resonate with your target audience.";
+      case "faqs":
+        return "AI will generate frequently asked questions with clear, objection-handling answers that address your audience's concerns.";
+      default:
+        return "AI will generate compelling copy tailored to your offer and audience.";
+    }
+  };
+
   // ============ FULL-SCREEN SECTION EDITOR ============
   const renderFullSectionEditor = () => {
     if (!editingSection) return null;
@@ -1570,32 +1590,43 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           <div className="flex flex-col overflow-y-auto">
             <div className="p-6 space-y-6">
               {!isCustom && section.aiEnabled && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">How would you like to create this section?</Label>
-                  <div className="flex gap-3">
+                <div className="space-y-4">
+                  {/* Pill-style mode tabs */}
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setSectionModes(prev => ({ ...prev, [editingSection]: "ai" }))}
-                      className={`flex-1 p-4 rounded-lg border-2 text-left transition-all ${
-                        mode === "ai" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                        mode === "ai" 
+                          ? "bg-primary text-primary-foreground" 
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent"
                       }`}
                     >
-                      <Wand2 className="w-5 h-5 mb-2 text-primary" />
-                      <div className="font-medium text-sm">AI Generate</div>
-                      <p className="text-xs text-muted-foreground mt-1">Let AI create compelling copy</p>
+                      <Sparkles className="w-4 h-4" />
+                      AI Generate
                     </button>
                     <button
                       type="button"
                       onClick={() => setSectionModes(prev => ({ ...prev, [editingSection]: "manual" }))}
-                      className={`flex-1 p-4 rounded-lg border-2 text-left transition-all ${
-                        mode === "manual" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                        mode === "manual" 
+                          ? "bg-primary text-primary-foreground" 
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent"
                       }`}
                     >
-                      <PenLine className="w-5 h-5 mb-2 text-primary" />
-                      <div className="font-medium text-sm">Write My Own</div>
-                      <p className="text-xs text-muted-foreground mt-1">Write from scratch</p>
+                      <PenLine className="w-4 h-4" />
+                      Write My Own
                     </button>
                   </div>
+                  
+                  {/* AI Description - only show when AI mode is selected */}
+                  {mode === "ai" && (
+                    <div className="p-4 bg-muted/50 rounded-lg border border-border/50">
+                      <p className="text-sm text-muted-foreground">
+                        {getAiDescription(editingSection)}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -2106,9 +2137,14 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
     );
   };
 
-  // Hero Editor Inputs - Simplified with just part selector
+  // Hero Editor Inputs - Only show part selector after generation
   const renderHeroEditorInputs = () => {
     const heroData = sections.hero;
+    
+    // Don't show part selector before generation - AI will generate all parts at once
+    if (!heroData?.headlines?.length) {
+      return null;
+    }
     
     const parts = [
       { id: "headlines", label: "Headlines", hasContent: !!heroData?.headlines?.length },
@@ -2151,6 +2187,82 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
       { id: "bridgeSentence", label: "Bridge Sentence", hasContent: !!whyDifferentData?.bridgeSentences?.length },
     ];
 
+    // Show context inputs before generation
+    if (!whyDifferentData) {
+      return (
+        <div className="space-y-4">
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Context Source</Label>
+            <RadioGroup
+              value={contextMode}
+              onValueChange={(v) => setContextMode(v as "infer" | "provide")}
+              className="grid grid-cols-2 gap-3"
+            >
+              <Label
+                htmlFor="infer"
+                className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                  contextMode === "infer" ? "border-primary bg-primary/5" : "hover:bg-accent"
+                }`}
+              >
+                <RadioGroupItem value="infer" id="infer" />
+                <span className="text-sm">Let AI infer</span>
+              </Label>
+              <Label
+                htmlFor="provide"
+                className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                  contextMode === "provide" ? "border-primary bg-primary/5" : "hover:bg-accent"
+                }`}
+              >
+                <RadioGroupItem value="provide" id="provide" />
+                <span className="text-sm">I'll provide details</span>
+              </Label>
+            </RadioGroup>
+          </div>
+
+          {contextMode === "provide" && (
+            <Collapsible open={contextOpen} onOpenChange={setContextOpen} className="space-y-2">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="w-full justify-between">
+                  <span>Provide Context Details</span>
+                  {contextOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-3 pt-2">
+                <div className="space-y-2">
+                  <Label className="text-xs">What has your audience tried before?</Label>
+                  <Textarea
+                    value={attemptedSolutions}
+                    onChange={(e) => setAttemptedSolutions(e.target.value)}
+                    placeholder="e.g., Other courses, DIY methods, generic advice..."
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Why did those approaches fail? (optional)</Label>
+                  <Textarea
+                    value={whyFails}
+                    onChange={(e) => setWhyFails(e.target.value)}
+                    placeholder="e.g., Too complicated, not personalized, missing key elements..."
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">What makes your approach unique?</Label>
+                  <Textarea
+                    value={uniqueApproach}
+                    onChange={(e) => setUniqueApproach(e.target.value)}
+                    placeholder="e.g., Step-by-step guidance, proven framework, community support..."
+                    rows={2}
+                  />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+        </div>
+      );
+    }
+
+    // Show part selector after generation
     return (
       <div className="space-y-4">
         <div className="space-y-1">
@@ -2237,78 +2349,6 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
               </Button>
             )}
           </div>
-        )}
-
-        {!whyDifferentData && (
-          <>
-            <div className="pt-4 border-t space-y-3">
-              <Label className="text-sm font-medium">Context Source</Label>
-              <RadioGroup
-                value={contextMode}
-                onValueChange={(v) => setContextMode(v as "infer" | "provide")}
-                className="grid grid-cols-2 gap-3"
-              >
-                <Label
-                  htmlFor="infer"
-                  className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${
-                    contextMode === "infer" ? "border-primary bg-primary/5" : "hover:bg-accent"
-                  }`}
-                >
-                  <RadioGroupItem value="infer" id="infer" />
-                  <span className="text-sm">Let AI infer</span>
-                </Label>
-                <Label
-                  htmlFor="provide"
-                  className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${
-                    contextMode === "provide" ? "border-primary bg-primary/5" : "hover:bg-accent"
-                  }`}
-                >
-                  <RadioGroupItem value="provide" id="provide" />
-                  <span className="text-sm">I'll provide details</span>
-                </Label>
-              </RadioGroup>
-            </div>
-
-            {contextMode === "provide" && (
-              <Collapsible open={contextOpen} onOpenChange={setContextOpen} className="space-y-2">
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm" className="w-full justify-between">
-                    <span>Provide Context Details</span>
-                    {contextOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-3 pt-2">
-                  <div className="space-y-2">
-                    <Label className="text-xs">What has your audience tried before?</Label>
-                    <Textarea
-                      value={attemptedSolutions}
-                      onChange={(e) => setAttemptedSolutions(e.target.value)}
-                      placeholder="e.g., Other courses, DIY methods, generic advice..."
-                      rows={2}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Why did those approaches fail? (optional)</Label>
-                    <Textarea
-                      value={whyFails}
-                      onChange={(e) => setWhyFails(e.target.value)}
-                      placeholder="e.g., Too complicated, not personalized, missing key elements..."
-                      rows={2}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">What makes your approach unique?</Label>
-                    <Textarea
-                      value={uniqueApproach}
-                      onChange={(e) => setUniqueApproach(e.target.value)}
-                      placeholder="e.g., Step-by-step guidance, proven framework, community support..."
-                      rows={2}
-                    />
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-          </>
         )}
       </div>
     );

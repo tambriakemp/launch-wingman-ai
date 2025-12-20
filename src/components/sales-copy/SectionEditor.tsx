@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { OutputCard } from "./OutputCard";
-import { PartSelector, ModeCard } from "./PartSelector";
+import { PartSelector, ModeTabs } from "./PartSelector";
 import {
   Collapsible,
   CollapsibleContent,
@@ -26,6 +26,7 @@ interface SectionEditorProps {
   onCancel: () => void;
   offer: any;
   children: React.ReactNode;
+  aiDescription?: string;
 }
 
 export const SectionEditor = ({
@@ -40,6 +41,7 @@ export const SectionEditor = ({
   onCancel,
   offer,
   children,
+  aiDescription,
 }: SectionEditorProps) => {
   return (
     <div className="h-full flex flex-col bg-card">
@@ -64,14 +66,12 @@ export const SectionEditor = ({
         {/* Left Panel - Inputs */}
         <div className="flex flex-col overflow-y-auto">
           <div className="p-6 space-y-6">
-            {/* Mode Selection */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">How would you like to create this section?</Label>
-              <div className="flex gap-3">
-                <ModeCard mode="ai" selected={mode === "ai"} onClick={() => onModeChange("ai")} />
-                <ModeCard mode="manual" selected={mode === "manual"} onClick={() => onModeChange("manual")} />
-              </div>
-            </div>
+            {/* Mode Selection - Pill Tabs */}
+            <ModeTabs 
+              mode={mode} 
+              onModeChange={onModeChange} 
+              aiDescription={aiDescription}
+            />
 
             {/* Section-specific content */}
             {children}
@@ -158,6 +158,11 @@ export const HeroEditorContent = ({
     );
   }
 
+  // AI mode - only show editing UI after generation
+  if (!heroData) {
+    return null;
+  }
+
   return (
     <div className="space-y-4">
       <PartSelector parts={parts} selectedPart={selectedPart} onSelectPart={setSelectedPart} />
@@ -207,12 +212,6 @@ export const HeroEditorContent = ({
               placeholder="e.g., Get Started Now"
             />
           </div>
-        )}
-
-        {!heroData && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Click "Generate" to create headline options
-          </p>
         )}
       </div>
     </div>

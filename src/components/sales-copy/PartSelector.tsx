@@ -40,6 +40,54 @@ export const PartSelector = ({ parts, selectedPart, onSelectPart }: PartSelector
   );
 };
 
+interface ModeTabsProps {
+  mode: "ai" | "manual";
+  onModeChange: (mode: "ai" | "manual") => void;
+  aiDescription?: string;
+}
+
+export const ModeTabs = ({ mode, onModeChange, aiDescription }: ModeTabsProps) => {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onModeChange("ai")}
+          className={cn(
+            "inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors",
+            mode === "ai"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-accent"
+          )}
+        >
+          <Sparkles className="w-4 h-4" />
+          AI Generate
+        </button>
+        <button
+          type="button"
+          onClick={() => onModeChange("manual")}
+          className={cn(
+            "inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors",
+            mode === "manual"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-accent"
+          )}
+        >
+          <PenLine className="w-4 h-4" />
+          Write My Own
+        </button>
+      </div>
+      
+      {mode === "ai" && aiDescription && (
+        <div className="p-4 bg-muted/50 rounded-lg border border-border/50">
+          <p className="text-sm text-muted-foreground">{aiDescription}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Keep ModeCard for backward compatibility
 interface ModeCardProps {
   mode: "ai" | "manual";
   selected: boolean;
