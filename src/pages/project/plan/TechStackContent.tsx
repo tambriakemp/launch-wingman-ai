@@ -501,7 +501,10 @@ const TechStackContent = ({ projectId }: TechStackContentProps) => {
       <div className="flex items-center justify-between">
         <PlanPageHeader
           title="Tech Stack"
-          description="Select the tools you'll use to build and run your funnel"
+          description="Choose the tools that will power your funnel - where you'll build pages, send emails, and host your community."
+          whyItMatters="The right tools make your funnel actually work. Choose based on your budget, tech comfort, and whether you want an all-in-one solution or best-of-breed tools."
+          estimatedTime="5-10 min"
+          tipText="If you're just starting out, simpler is better. You can always upgrade later as you grow."
         />
         {saveStatus !== "idle" && (
           <span className="text-sm text-muted-foreground">

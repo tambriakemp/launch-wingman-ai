@@ -265,7 +265,10 @@ const AudienceContent = ({ projectId }: Props) => {
       <div className="flex items-start justify-between">
         <PlanPageHeader
           title="Value Equation Builder"
-          description="The Value Equation measures how valuable your offer feels to your audience. It's calculated by: (Dream Outcome × Perceived Likelihood) ÷ (Time × Effort). Complete each section to maximize perceived value and create irresistible messaging."
+          description="Define who you serve and what transformation you provide. This becomes the foundation for all your marketing."
+          whyItMatters="When you deeply understand your audience's pain and desires, your messaging practically writes itself. This is the #1 factor in whether your marketing resonates or falls flat."
+          estimatedTime="15-30 min"
+          tipText="Be as specific as possible. 'Busy working moms over 40 struggling with weight loss' beats 'women who want to get fit' every time."
         />
         {/* Auto-save Status Indicator */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-[100px] justify-end">

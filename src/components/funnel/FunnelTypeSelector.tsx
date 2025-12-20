@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { 
   Gift, DollarSign, Video, Trophy, Rocket, Users, ClipboardCheck,
-  Check
+  Check, Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
@@ -13,6 +13,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Gift,
@@ -22,6 +23,21 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Rocket,
   Users,
   ClipboardCheck,
+};
+
+const COMPLEXITY_CONFIG = {
+  beginner: {
+    label: "Beginner",
+    color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  },
+  intermediate: {
+    label: "Intermediate",
+    color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  },
+  advanced: {
+    label: "Advanced",
+    color: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
+  },
 };
 
 interface FunnelTypeSelectorProps {
@@ -59,6 +75,7 @@ export const FunnelTypeSelector = ({
         {funnels.map((funnel) => {
           const Icon = ICON_MAP[funnel.icon] || Gift;
           const isSelected = selectedFunnelType === funnel.id;
+          const complexityConfig = COMPLEXITY_CONFIG[funnel.complexity];
 
           return (
             <AccordionItem
@@ -85,9 +102,17 @@ export const FunnelTypeSelector = ({
                     <Icon className="w-5 h-5" />
                   </div>
                   <div className="flex-1 text-left min-w-0">
-                    <h3 className="font-semibold text-foreground text-sm">
-                      {funnel.name}
-                    </h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold text-foreground text-sm">
+                        {funnel.name}
+                      </h3>
+                      <Badge 
+                        variant="secondary" 
+                        className={cn("text-[10px] px-1.5 py-0 h-4 font-medium", complexityConfig.color)}
+                      >
+                        {complexityConfig.label}
+                      </Badge>
+                    </div>
                     <p className="text-xs text-muted-foreground line-clamp-1">
                       {funnel.description}
                     </p>
@@ -120,6 +145,20 @@ export const FunnelTypeSelector = ({
                   <p className="text-sm text-muted-foreground">
                     {funnel.description}
                   </p>
+                  
+                  {/* Best For & Setup Time badges */}
+                  <div className="flex flex-wrap gap-2">
+                    <div className="inline-flex items-center gap-1.5 text-xs bg-muted px-2 py-1 rounded-md">
+                      <span className="font-medium text-foreground">Best for:</span>
+                      <span className="text-muted-foreground">{funnel.bestFor}</span>
+                    </div>
+                    {funnel.typicalSetupTime && (
+                      <div className="inline-flex items-center gap-1.5 text-xs bg-muted px-2 py-1 rounded-md">
+                        <Clock className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">{funnel.typicalSetupTime} to set up</span>
+                      </div>
+                    )}
+                  </div>
                   
                   <div className="text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">

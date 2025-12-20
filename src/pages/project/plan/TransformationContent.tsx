@@ -240,7 +240,10 @@ const TransformationContent = ({ projectId }: Props) => {
       <div className="flex items-center justify-between">
         <PlanPageHeader
           title="Transformation Statement"
-          description="Turn your audience insights into powerful messaging"
+          description="Craft a clear, compelling promise that shows the before/after journey your offer provides."
+          whyItMatters="This statement becomes the heart of your marketing - it will appear in your headlines, emails, sales pages, and social posts. A strong transformation statement can 2-3x your conversions."
+          estimatedTime="10-20 min"
+          tipText="Focus on the emotional journey: what painful state do they escape, and what amazing state do they achieve?"
         />
         {saveStatus !== 'idle' && (
           <span className="text-xs text-muted-foreground">

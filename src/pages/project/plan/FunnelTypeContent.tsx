@@ -84,6 +84,9 @@ const FunnelTypeContent = ({ projectId }: Props) => {
       <PlanPageHeader
         title="Select Funnel Type"
         description="Choose the type of funnel that best fits your business model"
+        whyItMatters="Your funnel type determines what assets you'll create and how you'll guide customers from discovery to purchase. Pick the one that matches your current offer and business stage."
+        estimatedTime="2-5 min"
+        tipText="Not sure which to pick? Start with a Freebie Funnel if you're building an audience, or a Low-Ticket Funnel if you have a product ready to sell."
       />
 
       {/* Funnel Type Selector */}
