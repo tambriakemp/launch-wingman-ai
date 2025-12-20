@@ -670,6 +670,36 @@ const [formData, setFormData] = useState({
     return Math.round((completed / items.length) * 100);
   };
 
+  const handleDragStart = useCallback((e: React.DragEvent, item: ContentItem) => {
+    setDraggedItem(item);
+    e.dataTransfer.effectAllowed = "move";
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent, targetPhase: string, targetDay: number) => {
+    e.preventDefault();
+    if (draggedItem && (draggedItem.phase !== targetPhase || draggedItem.day_number !== targetDay)) {
+      moveItemMutation.mutate({
+        itemId: draggedItem.id,
+        phase: targetPhase,
+        day_number: targetDay,
+      });
+    }
+    setDraggedItem(null);
+  }, [draggedItem, moveItemMutation]);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedItem(null);
+  }, []);
+
+  const handleDelete = useCallback((id: string) => {
+    deleteMutation.mutate(id);
+  }, [deleteMutation]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -705,36 +735,6 @@ const [formData, setFormData] = useState({
       </div>
     );
   }
-
-  const handleDragStart = useCallback((e: React.DragEvent, item: ContentItem) => {
-    setDraggedItem(item);
-    e.dataTransfer.effectAllowed = "move";
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent, targetPhase: string, targetDay: number) => {
-    e.preventDefault();
-    if (draggedItem && (draggedItem.phase !== targetPhase || draggedItem.day_number !== targetDay)) {
-      moveItemMutation.mutate({
-        itemId: draggedItem.id,
-        phase: targetPhase,
-        day_number: targetDay,
-      });
-    }
-    setDraggedItem(null);
-  }, [draggedItem, moveItemMutation]);
-
-  const handleDragEnd = useCallback(() => {
-    setDraggedItem(null);
-  }, []);
-
-  const handleDelete = useCallback((id: string) => {
-    deleteMutation.mutate(id);
-  }, [deleteMutation]);
 
   return (
     <div className="space-y-6">
