@@ -13,6 +13,9 @@ export default {
       },
     },
     extend: {
+      fontSize: {
+        'xs': ['0.8125rem', { lineHeight: '1.25rem' }], // 13px instead of default 12px
+      },
       fontFamily: {
         sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
       },
