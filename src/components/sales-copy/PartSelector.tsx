@@ -79,8 +79,14 @@ export const ModeTabs = ({ mode, onModeChange, aiDescription }: ModeTabsProps) =
       </div>
       
       {mode === "ai" && aiDescription && (
-        <div className="p-4 bg-muted/50 rounded-lg border border-border/50">
-          <p className="text-sm text-muted-foreground">{aiDescription}</p>
+        <div className="flex gap-3 p-4 bg-primary/5 rounded-lg border border-primary/20">
+          <div className="flex-shrink-0 mt-0.5">
+            <Sparkles className="w-4 h-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-foreground mb-1">What AI will create</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">{aiDescription}</p>
+          </div>
         </div>
       )}
     </div>
