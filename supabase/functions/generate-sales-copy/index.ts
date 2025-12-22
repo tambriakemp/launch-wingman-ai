@@ -119,6 +119,9 @@ Return ONLY valid JSON in this exact format:
 ${transformationContext}
 Generate compelling, specific copy that speaks directly to the audience's pain and desired transformation.`;
       }
+
+    } else if (sectionType === "whyDifferent") {
+      // Build context section for whyDifferent
       let contextSection = "";
       
       if (inferContext) {
