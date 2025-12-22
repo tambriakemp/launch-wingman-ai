@@ -503,7 +503,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
 
   // Free plan restriction removed - all users can create unlimited sales copy pages
 
-  // Fetch offer to get deliverables and other data
+  // Fetch offer to get deliverables and other data (get first offer by slot position)
   const { data: offer } = useQuery({
     queryKey: ["offer", projectId],
     queryFn: async () => {
@@ -511,10 +511,11 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
         .from("offers")
         .select("*")
         .eq("project_id", projectId)
-        .maybeSingle();
+        .order("slot_position")
+        .limit(1);
 
       if (error) throw error;
-      return data;
+      return data?.[0] || null;
     },
     enabled: !!projectId,
   });
@@ -1621,10 +1622,16 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
                   
                   {/* AI Description - only show when AI mode is selected */}
                   {mode === "ai" && (
-                    <div className="p-4 bg-muted/50 rounded-lg border border-border/50">
-                      <p className="text-sm text-muted-foreground">
-                        {getAiDescription(editingSection)}
-                      </p>
+                    <div className="flex gap-3 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                      <div className="flex-shrink-0 mt-0.5">
+                        <Sparkles className="w-4 h-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground mb-1">What AI will create</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {getAiDescription(editingSection)}
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
