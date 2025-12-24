@@ -13,9 +13,10 @@ import {
   StuckHelpCard,
   StuckHelpDialog,
   DailyMotivationCard,
+  PhaseCelebrationCard,
 } from "@/components/dashboard";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
-import { PHASE_LABELS } from "@/types/tasks";
+import { PHASE_LABELS, PHASES, Phase } from "@/types/tasks";
 
 interface Props {
   projectId: string;
@@ -134,8 +135,16 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
   // Get phase display info
   const currentPhaseLabel = PHASE_LABELS[activePhase] || "Planning";
   const isPhaseComplete = phaseStatuses[activePhase] === "complete";
-  const nextPhaseIndex = Object.keys(phaseStatuses).indexOf(activePhase) + 1;
-  const nextPhase = Object.keys(phaseStatuses)[nextPhaseIndex];
+  
+  // Find the most recently completed phase (for celebration)
+  const completedPhases = PHASES.filter(p => phaseStatuses[p] === "complete");
+  const mostRecentlyCompletedPhase = completedPhases.length > 0 
+    ? completedPhases[completedPhases.length - 1] 
+    : null;
+  
+  // Get next phase after active phase
+  const activePhaseIndex = PHASES.indexOf(activePhase);
+  const nextPhase: Phase | undefined = PHASES[activePhaseIndex + 1];
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 py-6 px-4">
@@ -143,6 +152,14 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
         firstName={profile?.first_name}
         projectName={project?.name}
       />
+
+      {/* Show celebration card if a phase was recently completed */}
+      {mostRecentlyCompletedPhase && (
+        <PhaseCelebrationCard
+          completedPhase={mostRecentlyCompletedPhase}
+          nextPhase={activePhase !== mostRecentlyCompletedPhase ? activePhase : nextPhase}
+        />
+      )}
 
       {nextBestTask ? (
         <NextBestTaskCard
