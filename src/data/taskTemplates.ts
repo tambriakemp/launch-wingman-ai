@@ -38,7 +38,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
   },
   {
     taskId: 'planning_define_problem',
-    title: 'Identify their main problem',
+    title: "Identify your audience's main problem",
     phase: 'planning',
     funnelTypes: ['all'],
     order: 2,
@@ -71,7 +71,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
   },
   {
     taskId: 'planning_define_dream_outcome',
-    title: 'Define the dream outcome',
+    title: "Define your audience's dream outcome",
     phase: 'planning',
     funnelTypes: ['all'],
     order: 3,
@@ -285,7 +285,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
   },
   {
     taskId: 'identify-pain-points',
-    title: 'List their biggest pain points',
+    title: "List your audience's biggest pain points",
     phase: 'messaging',
     funnelTypes: ['all'],
     order: 2,
