@@ -26,8 +26,8 @@ const STEP_DEFINITIONS = [
     label: "Funnel Type",
     route: "funnel-type",
     icon: Rocket,
-    title: "Choose your funnel type",
-    whyItMatters: "Your funnel type determines the journey your customers will take. This is the foundation of your entire launch strategy.",
+    title: "Choose how you'll sell your offer",
+    whyItMatters: "This decides the path your audience will take from discovering your offer to buying it.",
     estimatedMinutes: 10,
   },
   {
