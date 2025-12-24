@@ -1,72 +1,92 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2, Circle } from "lucide-react";
+import { ArrowLeft, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { StuckHelpDialog } from "@/components/dashboard/StuckHelpDialog";
 import { toast } from "sonner";
-
-// Mock data - will be replaced with real data
-const MOCK_TASK = {
-  id: "funnel-type",
-  title: "Choose how you'll sell your offer",
-  phase: "Planning",
-  estimatedTimeRange: "10–20 minutes",
-  whyItMatters: "This decides the path your audience will take from discovering your offer to buying it. Getting this right means your marketing efforts all work together toward one clear goal.",
-  instructions: [
-    "Review the three launch path options below",
-    "Consider your audience size and how warm they are to your offer",
-    "Think about how much time you have before your launch date",
-    "Select the option that feels most aligned with your current situation",
-  ],
-  completionCriteria: [
-    "I've reviewed all the options",
-    "I understand the differences between each path",
-    "I've selected the path that fits my situation",
-  ],
-  // Task-specific options for this selection task
-  options: [
-    {
-      id: "waitlist",
-      label: "Waitlist Launch",
-      description: "Build anticipation by collecting interest before you open doors. Great if you're still refining your offer.",
-    },
-    {
-      id: "challenge",
-      label: "Challenge Launch",
-      description: "Engage your audience with a free challenge that leads naturally into your paid offer.",
-    },
-    {
-      id: "webinar",
-      label: "Webinar Launch",
-      description: "Teach something valuable live, then invite attendees to join your program.",
-    },
-  ],
-};
-
-const MOCK_PROJECT = {
-  id: "123",
-  name: "My First Course Launch",
-};
-
-const MOCK_USER = {
-  firstName: "Sarah",
-};
+import { useTaskEngine } from "@/hooks/useTaskEngine";
+import { PHASE_LABELS, TaskTemplate } from "@/types/tasks";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function TaskDetail() {
   const { id: projectId, taskId } = useParams();
   const navigate = useNavigate();
   
+  const [formData, setFormData] = useState<Record<string, string>>({});
   const [selectedOption, setSelectedOption] = useState<string>("");
+  const [checklistItems, setChecklistItems] = useState<string[]>([]);
   const [completedCriteria, setCompletedCriteria] = useState<string[]>([]);
   const [isStuckDialogOpen, setIsStuckDialogOpen] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState<string | null>(null);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const task = MOCK_TASK;
-  const project = MOCK_PROJECT;
+  // Use task engine
+  const {
+    isLoading: engineLoading,
+    getTaskTemplate,
+    startTask,
+    completeTask,
+    projectTasks,
+  } = useTaskEngine({ projectId: projectId || "" });
+
+  // Get task template
+  const taskTemplate = useMemo(() => {
+    if (!taskId) return null;
+    return getTaskTemplate(taskId);
+  }, [taskId, getTaskTemplate]);
+
+  // Get project task (if exists)
+  const projectTask = useMemo(() => {
+    if (!taskId) return null;
+    return projectTasks.find(pt => pt.taskId === taskId);
+  }, [taskId, projectTasks]);
+
+  // Fetch project
+  const { data: project } = useQuery({
+    queryKey: ["project", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("id", projectId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!projectId,
+  });
+
+  // Load existing input data if available
+  useEffect(() => {
+    if (projectTask?.inputData) {
+      const data = projectTask.inputData as Record<string, string>;
+      setFormData(data);
+      
+      // Handle selection type
+      if (taskTemplate?.inputType === 'selection' && data.selected) {
+        setSelectedOption(data.selected);
+      }
+      
+      // Handle checklist type
+      if (taskTemplate?.inputType === 'checklist' && data.checkedItems) {
+        setChecklistItems(Array.isArray(data.checkedItems) ? data.checkedItems : []);
+      }
+    }
+  }, [projectTask, taskTemplate]);
+
+  // Mark task as started when user opens it
+  useEffect(() => {
+    if (taskId && !projectTask && !engineLoading) {
+      startTask(taskId);
+    }
+  }, [taskId, projectTask, engineLoading, startTask]);
 
   const handleCriteriaToggle = (criteriaText: string) => {
     setCompletedCriteria((prev) =>
@@ -76,20 +96,73 @@ export default function TaskDetail() {
     );
   };
 
-  const allCriteriaComplete = completedCriteria.length === task.completionCriteria.length;
+  const handleChecklistToggle = (value: string) => {
+    setChecklistItems((prev) =>
+      prev.includes(value)
+        ? prev.filter((v) => v !== value)
+        : [...prev, value]
+    );
+  };
 
-  const handleSaveAndComplete = () => {
-    if (!selectedOption) {
-      toast.error("Please select an option before continuing");
+  const handleFormChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const isTaskComplete = useMemo(() => {
+    if (!taskTemplate) return false;
+    
+    switch (taskTemplate.inputType) {
+      case 'selection':
+        return !!selectedOption;
+      case 'checklist':
+        const requiredCount = taskTemplate.inputSchema?.options?.length || 0;
+        return checklistItems.length >= requiredCount;
+      case 'form':
+        const fields = taskTemplate.inputSchema?.fields || [];
+        const requiredFields = fields.filter(f => f.required);
+        return requiredFields.every(f => formData[f.name]?.trim());
+      default:
+        return true;
+    }
+  }, [taskTemplate, selectedOption, checklistItems, formData]);
+
+  const handleSaveAndComplete = async () => {
+    if (!isTaskComplete || !taskId) {
+      toast.error("Please complete the required fields before continuing");
       return;
     }
 
-    // In real implementation: save the selection and mark task complete
-    toast.success("Great work! Task saved and marked complete.");
-    navigate(`/projects/${projectId}/board`);
+    setIsSaving(true);
+
+    try {
+      // Build input data based on task type
+      let inputData: Record<string, unknown> = {};
+      
+      switch (taskTemplate?.inputType) {
+        case 'selection':
+          inputData = { selected: selectedOption };
+          break;
+        case 'checklist':
+          inputData = { checkedItems: checklistItems };
+          break;
+        case 'form':
+          inputData = { ...formData };
+          break;
+      }
+
+      await completeTask(taskId, inputData);
+      
+      toast.success("Great work! Task saved and marked complete.");
+      navigate(`/projects/${projectId}/deliverables`);
+    } catch (error) {
+      console.error("Error saving task:", error);
+      toast.error("Failed to save task. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleAiAssist = async (type: "help-choose" | "examples" | "simplify") => {
+  const handleAiAssist = async (type: string) => {
     setIsAiLoading(type);
     setAiResponse(null);
     
@@ -97,14 +170,28 @@ export default function TaskDetail() {
     await new Promise((resolve) => setTimeout(resolve, 1500));
     
     const responses: Record<string, string> = {
-      "help-choose": `Based on what I know about your project, I'd suggest starting with the **Waitlist Launch**. It's the simplest path and gives you time to refine your offer based on real interest. You can always add a webinar or challenge later once you know what resonates with your audience.`,
-      "examples": `Here's a real example: A fitness coach with 500 email subscribers used a Waitlist Launch to sell her first group program. She collected 89 signups in 2 weeks, then opened enrollment to her waitlist first. 34 people joined her $297 program—that's over $10K from a simple waitlist.`,
-      "simplify": `Think of it this way:\n\n• **Waitlist** = "Sign up to be first in line"\n• **Challenge** = "Join my free 5-day experience"\n• **Webinar** = "Come to my free workshop"\n\nAll three work. Pick the one that feels easiest to you right now.`,
+      "help_me_choose": `Based on your project, I'd recommend focusing on what feels most natural to you. The best choice is often the one you can start on immediately without overthinking it.`,
+      "examples": `Here's an example:\n\nA health coach helping busy professionals might describe their audience as: "Corporate employees in their 30s-40s who want to lose weight but feel too exhausted after work to exercise."`,
+      "simplify": `Think of it simply:\n\n• Who do you want to help?\n• What problem do they have?\n• What will be different for them after?\n\nStart there. You can always refine later.`,
     };
     
-    setAiResponse(responses[type]);
+    setAiResponse(responses[type] || "I'm here to help you move forward. What specifically is confusing?");
     setIsAiLoading(null);
   };
+
+  if (engineLoading || !taskTemplate) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span>Loading your task...</span>
+        </div>
+      </div>
+    );
+  }
+
+  const phaseLabel = PHASE_LABELS[taskTemplate.phase] || taskTemplate.phase;
+  const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -112,7 +199,7 @@ export default function TaskDetail() {
         {/* Header / Context Section */}
         <div className="mb-10">
           <Link
-            to={`/projects/${projectId}/board`}
+            to={`/projects/${projectId}/deliverables`}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -121,16 +208,16 @@ export default function TaskDetail() {
 
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
             <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-              {task.phase} Phase
+              {phaseLabel} Phase
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" />
-              Estimated time: {task.estimatedTimeRange}
+              Estimated time: {timeRange}
             </span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
-            {task.title}
+            {taskTemplate.title}
           </h1>
         </div>
 
@@ -140,7 +227,7 @@ export default function TaskDetail() {
             Why this matters
           </h2>
           <p className="text-foreground/80 leading-relaxed">
-            {task.whyItMatters}
+            {taskTemplate.whyItMatters}
           </p>
         </section>
 
@@ -152,7 +239,7 @@ export default function TaskDetail() {
             What to do
           </h2>
           <ol className="space-y-3">
-            {task.instructions.map((instruction, index) => (
+            {taskTemplate.instructions.map((instruction, index) => (
               <li key={index} className="flex gap-3 items-start">
                 <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0 text-xs font-medium text-muted-foreground">
                   {index + 1}
@@ -168,84 +255,140 @@ export default function TaskDetail() {
         {/* Task Input Area */}
         <section className="mb-10">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">
-            Choose your path
+            Your response
           </h2>
           
-          <RadioGroup value={selectedOption} onValueChange={setSelectedOption} className="space-y-3">
-            {task.options.map((option) => (
-              <div key={option.id}>
-                <Label
-                  htmlFor={option.id}
+          {/* Selection Input */}
+          {taskTemplate.inputType === 'selection' && taskTemplate.inputSchema?.options && (
+            <RadioGroup value={selectedOption} onValueChange={setSelectedOption} className="space-y-3">
+              {taskTemplate.inputSchema.options.map((option) => (
+                <div key={option.value}>
+                  <Label
+                    htmlFor={option.value}
+                    className={`flex items-start gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
+                      selectedOption === option.value
+                        ? "border-primary bg-primary/5 ring-1 ring-primary"
+                        : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
+                    }`}
+                  >
+                    <RadioGroupItem value={option.value} id={option.value} className="mt-0.5" />
+                    <div className="space-y-1">
+                      <span className="font-medium text-foreground">{option.label}</span>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {option.description}
+                      </p>
+                    </div>
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+          )}
+
+          {/* Checklist Input */}
+          {taskTemplate.inputType === 'checklist' && taskTemplate.inputSchema?.options && (
+            <div className="space-y-3">
+              {taskTemplate.inputSchema.options.map((option) => (
+                <div
+                  key={option.value}
                   className={`flex items-start gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
-                    selectedOption === option.id
-                      ? "border-primary bg-primary/5 ring-1 ring-primary"
+                    checklistItems.includes(option.value)
+                      ? "border-primary bg-primary/5"
                       : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
                   }`}
+                  onClick={() => handleChecklistToggle(option.value)}
                 >
-                  <RadioGroupItem value={option.id} id={option.id} className="mt-0.5" />
+                  <Checkbox
+                    id={option.value}
+                    checked={checklistItems.includes(option.value)}
+                    onCheckedChange={() => handleChecklistToggle(option.value)}
+                    className="mt-0.5"
+                  />
                   <div className="space-y-1">
-                    <span className="font-medium text-foreground">{option.label}</span>
+                    <Label htmlFor={option.value} className="font-medium text-foreground cursor-pointer">
+                      {option.label}
+                    </Label>
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       {option.description}
                     </p>
                   </div>
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
-        </section>
+                </div>
+              ))}
+            </div>
+          )}
 
-        {/* AI Assist Section */}
-        <section className="mb-10 p-5 rounded-xl bg-muted/30 border border-border/50">
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-medium text-foreground">Need help deciding?</h2>
-          </div>
-          
-          <div className="flex flex-wrap gap-2 mb-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleAiAssist("help-choose")}
-              disabled={isAiLoading !== null}
-            >
-              {isAiLoading === "help-choose" ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              ) : null}
-              Help me choose
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleAiAssist("examples")}
-              disabled={isAiLoading !== null}
-            >
-              {isAiLoading === "examples" ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              ) : null}
-              Show examples
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleAiAssist("simplify")}
-              disabled={isAiLoading !== null}
-            >
-              {isAiLoading === "simplify" ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              ) : null}
-              Simplify this
-            </Button>
-          </div>
-
-          {aiResponse && (
-            <div className="p-4 rounded-lg bg-background border border-border/50">
-              <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">
-                {aiResponse}
-              </p>
+          {/* Form Input */}
+          {taskTemplate.inputType === 'form' && taskTemplate.inputSchema?.fields && (
+            <div className="space-y-6">
+              {taskTemplate.inputSchema.fields.map((field) => (
+                <div key={field.name} className="space-y-2">
+                  <Label htmlFor={field.name} className="text-sm font-medium">
+                    {field.label}
+                    {field.required && <span className="text-destructive ml-1">*</span>}
+                  </Label>
+                  {field.type === 'textarea' ? (
+                    <Textarea
+                      id={field.name}
+                      placeholder={field.placeholder}
+                      value={formData[field.name] || ''}
+                      onChange={(e) => handleFormChange(field.name, e.target.value)}
+                      className="min-h-[120px]"
+                    />
+                  ) : (
+                    <Input
+                      id={field.name}
+                      type={field.type}
+                      placeholder={field.placeholder}
+                      value={formData[field.name] || ''}
+                      onChange={(e) => handleFormChange(field.name, e.target.value)}
+                    />
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </section>
+
+        {/* AI Assist Section */}
+        {taskTemplate.aiAssistModes.length > 0 && (
+          <section className="mb-10 p-5 rounded-xl bg-muted/30 border border-border/50">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <h2 className="text-sm font-medium text-foreground">Need help?</h2>
+            </div>
+            
+            <div className="flex flex-wrap gap-2 mb-4">
+              {taskTemplate.aiAssistModes.map((mode) => {
+                const labels: Record<string, string> = {
+                  help_me_choose: "Help me choose",
+                  examples: "Show examples",
+                  simplify: "Simplify this",
+                };
+                return (
+                  <Button
+                    key={mode}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAiAssist(mode)}
+                    disabled={isAiLoading !== null}
+                  >
+                    {isAiLoading === mode && (
+                      <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    )}
+                    {labels[mode] || mode}
+                  </Button>
+                );
+              })}
+            </div>
+
+            {aiResponse && (
+              <div className="p-4 rounded-lg bg-background border border-border/50">
+                <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">
+                  {aiResponse}
+                </p>
+              </div>
+            )}
+          </section>
+        )}
 
         <div className="h-px bg-border mb-10" />
 
@@ -256,7 +399,7 @@ export default function TaskDetail() {
           </h2>
           
           <div className="space-y-3">
-            {task.completionCriteria.map((criteria, index) => (
+            {taskTemplate.completionCriteria.map((criteria, index) => (
               <div
                 key={index}
                 className="flex items-center gap-3 cursor-pointer group"
@@ -281,7 +424,7 @@ export default function TaskDetail() {
             ))}
           </div>
 
-          {allCriteriaComplete && selectedOption && (
+          {isTaskComplete && completedCriteria.length === taskTemplate.completionCriteria.length && (
             <div className="mt-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <p className="text-sm text-emerald-700 dark:text-emerald-400">
@@ -297,9 +440,16 @@ export default function TaskDetail() {
             size="lg"
             className="w-full sm:w-auto"
             onClick={handleSaveAndComplete}
-            disabled={!selectedOption}
+            disabled={!isTaskComplete || isSaving}
           >
-            Save & mark complete →
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save & mark complete →"
+            )}
           </Button>
         </section>
 
@@ -330,10 +480,10 @@ export default function TaskDetail() {
         open={isStuckDialogOpen}
         onOpenChange={setIsStuckDialogOpen}
         currentTask={{
-          title: task.title,
-          whyItMatters: task.whyItMatters,
+          title: taskTemplate.title,
+          whyItMatters: taskTemplate.whyItMatters,
         }}
-        projectContext={`Project: ${project.name}`}
+        projectContext={`Project: ${project?.name || 'My Project'}`}
       />
     </div>
   );
