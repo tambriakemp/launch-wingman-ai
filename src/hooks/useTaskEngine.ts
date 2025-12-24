@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -468,12 +468,14 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
     fetchData();
   }, [fetchData]);
 
-  // Recalculate phases when tasks change to fix stale phase data
+  // Recalculate phases once when tasks are first loaded
+  const hasRecalculated = useRef(false);
   useEffect(() => {
-    if (!isLoading && projectTasks.length > 0) {
+    if (!isLoading && projectTasks.length > 0 && !hasRecalculated.current) {
+      hasRecalculated.current = true;
       recalculatePhases();
     }
-  }, [isLoading, projectTasks.length, recalculatePhases]);
+  }, [isLoading, projectTasks.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize project tasks if needed
   useEffect(() => {
