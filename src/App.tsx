@@ -41,6 +41,7 @@ import ProjectPlan from "./pages/project/ProjectPlan";
 import ProjectBrand from "./pages/project/ProjectBrand";
 import ProjectMessaging from "./pages/project/ProjectMessaging";
 import ProjectExecute from "./pages/project/ProjectExecute";
+import TaskDetail from "./pages/project/TaskDetail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -215,6 +216,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ProjectExecute />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id/tasks/:taskId"
+              element={
+                <ProtectedRoute>
+                  <TaskDetail />
                 </ProtectedRoute>
               }
             />
