@@ -1,22 +1,18 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { CheckCircle2 } from "lucide-react";
 
 interface ProgressSnapshotCardProps {
-  stageLabel: string;
-  currentStep: number;
-  totalSteps: number;
+  currentPhase: string;
+  isPhaseComplete: boolean;
   reassuranceText: string;
 }
 
 export const ProgressSnapshotCard = ({
-  stageLabel,
-  currentStep,
-  totalSteps,
+  currentPhase,
+  isPhaseComplete,
   reassuranceText,
 }: ProgressSnapshotCardProps) => {
-  const progressPercentage = Math.round((currentStep / totalSteps) * 100);
-
   return (
     <Card className="border bg-card">
       <CardContent className="p-6 space-y-4">
@@ -29,18 +25,18 @@ export const ProgressSnapshotCard = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Launch stage:</span>
-            <span className="font-medium text-foreground">{stageLabel}</span>
+            <span className="font-medium text-foreground">{currentPhase}</span>
           </div>
 
-          <div className="space-y-2">
+          {isPhaseComplete && (
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Progress:</span>
-              <span className="font-medium text-foreground">
-                Step {currentStep} of {totalSteps}
+              <span className="text-muted-foreground">Status:</span>
+              <span className="font-medium text-green-600 dark:text-green-400 flex items-center gap-1.5">
+                <CheckCircle2 className="h-4 w-4" />
+                Complete
               </span>
             </div>
-            <Progress value={progressPercentage} className="h-2" />
-          </div>
+          )}
 
           <p className="text-sm text-muted-foreground italic pt-1">
             {reassuranceText}
