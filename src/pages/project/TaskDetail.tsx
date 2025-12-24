@@ -224,7 +224,7 @@ export default function TaskDetail() {
         {/* Header / Context Section */}
         <div className="mb-10">
           <Link
-            to={`/projects/${projectId}/deliverables`}
+            to={`/projects/${projectId}/offer`}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
