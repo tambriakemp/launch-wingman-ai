@@ -629,16 +629,69 @@ export type Database = {
         }
         Relationships: []
       }
+      project_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          input_data: Json | null
+          project_id: string
+          skip_reason: string | null
+          started_at: string | null
+          status: string
+          task_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          input_data?: Json | null
+          project_id: string
+          skip_reason?: string | null
+          started_at?: string | null
+          status?: string
+          task_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          input_data?: Json | null
+          project_id?: string
+          skip_reason?: string | null
+          started_at?: string | null
+          status?: string
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
+          active_phase: string | null
           created_at: string
           description: string | null
           funnel_type_snapshot: string | null
           id: string
           launch_date: string | null
           name: string
+          phase_statuses: Json | null
           project_type: string
           sales_copy_funnel_snapshot: string | null
+          selected_funnel_type: string | null
           status: string
           transformation_locked: boolean | null
           transformation_statement: string | null
@@ -648,14 +701,17 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active_phase?: string | null
           created_at?: string
           description?: string | null
           funnel_type_snapshot?: string | null
           id?: string
           launch_date?: string | null
           name: string
+          phase_statuses?: Json | null
           project_type?: string
           sales_copy_funnel_snapshot?: string | null
+          selected_funnel_type?: string | null
           status?: string
           transformation_locked?: boolean | null
           transformation_statement?: string | null
@@ -665,14 +721,17 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active_phase?: string | null
           created_at?: string
           description?: string | null
           funnel_type_snapshot?: string | null
           id?: string
           launch_date?: string | null
           name?: string
+          phase_statuses?: Json | null
           project_type?: string
           sales_copy_funnel_snapshot?: string | null
+          selected_funnel_type?: string | null
           status?: string
           transformation_locked?: boolean | null
           transformation_statement?: string | null
