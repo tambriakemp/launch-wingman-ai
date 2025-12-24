@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Rocket, Users, Sparkles, Package, Server } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
-import { format, isToday, isTomorrow, parseISO } from "date-fns";
+import { isToday, isTomorrow, parseISO } from "date-fns";
 import {
   GreetingHeader,
   NextBestTaskCard,
@@ -14,89 +14,50 @@ import {
   StuckHelpDialog,
   DailyMotivationCard,
 } from "@/components/dashboard";
+import { useTaskEngine } from "@/hooks/useTaskEngine";
+import { PHASE_LABELS } from "@/types/tasks";
 
 interface Props {
   projectId: string;
 }
 
-// Step definitions with metadata
-const STEP_DEFINITIONS = [
-  {
-    id: "funnel-type",
-    label: "Funnel Type",
-    route: "funnel-type",
-    icon: Rocket,
-    title: "Choose how you'll sell your offer",
-    whyItMatters: "This decides the path your audience will take from discovering your offer to buying it.",
-    estimatedMinutes: "10–15",
-  },
-  {
-    id: "audience",
-    label: "Audience",
-    route: "audience",
-    icon: Users,
-    title: "Define your ideal audience",
-    whyItMatters: "Understanding exactly who you're serving helps you create messaging that resonates deeply and converts better.",
-    estimatedMinutes: "20–30",
-  },
-  {
-    id: "transformation",
-    label: "Transformation",
-    route: "transformation",
-    icon: Sparkles,
-    title: "Craft your transformation statement",
-    whyItMatters: "A clear transformation statement shows your audience the bridge from where they are to where they want to be.",
-    estimatedMinutes: "15–25",
-  },
-  {
-    id: "offers",
-    label: "Offers",
-    route: "offers",
-    icon: Package,
-    title: "Configure your offers",
-    whyItMatters: "Your offer stack is how you deliver value. Well-structured offers make it easy for people to say yes.",
-    estimatedMinutes: "20–30",
-  },
-  {
-    id: "tech-stack",
-    label: "Tech Stack",
-    route: "tech-stack",
-    icon: Server,
-    title: "Set up your tech stack",
-    whyItMatters: "Choosing the right tools ensures a smooth experience for your customers and makes your life easier.",
-    estimatedMinutes: "10–15",
-  },
-];
-
-const getPhaseInfo = (completedSteps: number, totalSteps: number): { phase: string; isComplete: boolean; nextPhase?: string } => {
-  // Planning phase: steps 0-4 (funnel-type, audience, transformation, offers, tech-stack)
-  if (completedSteps < totalSteps) {
-    return { phase: "Planning", isComplete: false };
-  }
-  // Planning complete, messaging unlocked
-  return { phase: "Planning", isComplete: true, nextPhase: "Messaging" };
-};
-
-const getReassuranceText = (phaseInfo: { phase: string; isComplete: boolean; nextPhase?: string }): string => {
-  if (!phaseInfo.isComplete) {
-    return "You're laying the groundwork. Take your time with each piece.";
+const getReassuranceText = (activePhase: string, isComplete: boolean, nextPhase?: string): string => {
+  if (!isComplete) {
+    const phaseMessages: Record<string, string> = {
+      planning: "You're laying the groundwork. Take your time with each piece.",
+      messaging: "Now you're crafting your message. This is where your offer starts to take shape.",
+      build: "You're building the assets for your launch. One step at a time.",
+      content: "Content creation time. This is how you'll connect with your audience.",
+      launch: "Launch time! You've got this.",
+      "post-launch": "Keep the momentum going. Follow up and optimize.",
+    };
+    return phaseMessages[activePhase] || "You're making progress. Keep going!";
   }
   
-  if (phaseInfo.nextPhase === "Messaging") {
+  if (nextPhase === "messaging") {
     return "Amazing work! Your planning phase is complete. You're ready to move into messaging.";
   }
   
-  if (phaseInfo.nextPhase === "Execution") {
-    return "Great progress! Your messaging is ready. Time to execute your launch.";
+  if (nextPhase === "build") {
+    return "Great progress! Your messaging is ready. Time to build your assets.";
   }
   
-  return "Amazing work! You're ready to launch.";
+  return "Amazing work! You're making great progress.";
 };
+
 
 const FunnelOverviewContent = ({ projectId }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [stuckModalOpen, setStuckModalOpen] = useState(false);
+
+  // Use the task engine to get the next best task
+  const {
+    isLoading: taskEngineLoading,
+    nextBestTask,
+    activePhase,
+    phaseStatuses,
+  } = useTaskEngine({ projectId });
 
   // Fetch user profile
   const { data: profile } = useQuery({
@@ -115,7 +76,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
   });
 
   // Fetch project
-  const { data: project } = useQuery({
+  const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ["project", projectId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -127,37 +88,6 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       return data;
     },
     enabled: !!projectId,
-  });
-
-  // Fetch funnel
-  const { data: funnel, isLoading } = useQuery({
-    queryKey: ["funnel", projectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("funnels")
-        .select("*")
-        .eq("project_id", projectId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!projectId,
-  });
-
-  // Fetch offers
-  const { data: offers = [] } = useQuery({
-    queryKey: ["funnel-offers", projectId],
-    queryFn: async () => {
-      if (!funnel?.id) return [];
-      const { data, error } = await supabase
-        .from("offers")
-        .select("*")
-        .eq("funnel_id", funnel.id)
-        .order("slot_position");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!funnel?.id,
   });
 
   // Fetch upcoming content
@@ -178,6 +108,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     enabled: !!projectId,
   });
 
+  const isLoading = taskEngineLoading || projectLoading;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -185,35 +117,6 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       </div>
     );
   }
-
-  // Calculate completion status
-  const hasAudience = !!(
-    funnel?.niche &&
-    funnel?.target_audience &&
-    funnel?.primary_pain_point &&
-    funnel?.desired_outcome
-  );
-  const hasTransformation = !!project?.transformation_statement;
-  const hasOffers = offers.some((o) => o.title);
-  const hasTechStack = !!(
-    funnel?.funnel_platform ||
-    funnel?.email_platform ||
-    funnel?.community_platform
-  );
-
-  const stepCompletionMap: Record<string, boolean> = {
-    "funnel-type": !!funnel?.funnel_type,
-    audience: hasAudience,
-    transformation: hasTransformation,
-    offers: hasOffers,
-    "tech-stack": hasTechStack,
-  };
-
-  const completedSteps = Object.values(stepCompletionMap).filter(Boolean).length;
-  const totalSteps = STEP_DEFINITIONS.length;
-
-  // Find the next incomplete step
-  const nextStep = STEP_DEFINITIONS.find((step) => !stepCompletionMap[step.id]) || STEP_DEFINITIONS[0];
 
   // Organize content by day
   const todayContent = (contentData || []).filter((item) => {
@@ -228,6 +131,12 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
 
   const hasContent = todayContent.length > 0 || tomorrowContent.length > 0;
 
+  // Get phase display info
+  const currentPhaseLabel = PHASE_LABELS[activePhase] || "Planning";
+  const isPhaseComplete = phaseStatuses[activePhase] === "complete";
+  const nextPhaseIndex = Object.keys(phaseStatuses).indexOf(activePhase) + 1;
+  const nextPhase = Object.keys(phaseStatuses)[nextPhaseIndex];
+
   return (
     <div className="max-w-2xl mx-auto space-y-6 py-6 px-4">
       <GreetingHeader
@@ -235,17 +144,27 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
         projectName={project?.name}
       />
 
-      <NextBestTaskCard
-        title={nextStep.title}
-        whyItMatters={nextStep.whyItMatters}
-        estimatedMinutes={nextStep.estimatedMinutes}
-        route={`/projects/${projectId}/${nextStep.route}`}
-      />
+      {nextBestTask ? (
+        <NextBestTaskCard
+          title={nextBestTask.title}
+          whyItMatters={nextBestTask.whyItMatters}
+          estimatedMinutes={nextBestTask.estimatedTimeRange}
+          route={nextBestTask.route}
+        />
+      ) : (
+        <div className="p-6 rounded-lg border border-border bg-card text-center">
+          <p className="text-muted-foreground">
+            {isPhaseComplete 
+              ? "All tasks in this phase are complete! You're ready to move forward."
+              : "No tasks available right now. Check back soon!"}
+          </p>
+        </div>
+      )}
 
       <ProgressSnapshotCard
-        currentPhase={getPhaseInfo(completedSteps, totalSteps).phase}
-        isPhaseComplete={getPhaseInfo(completedSteps, totalSteps).isComplete}
-        reassuranceText={getReassuranceText(getPhaseInfo(completedSteps, totalSteps))}
+        currentPhase={currentPhaseLabel}
+        isPhaseComplete={isPhaseComplete}
+        reassuranceText={getReassuranceText(activePhase, isPhaseComplete, nextPhase)}
       />
 
       {hasContent && (
@@ -264,8 +183,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
         open={stuckModalOpen}
         onOpenChange={setStuckModalOpen}
         currentTask={{
-          title: nextStep.title,
-          whyItMatters: nextStep.whyItMatters,
+          title: nextBestTask?.title || "Getting started",
+          whyItMatters: nextBestTask?.whyItMatters || "This helps you move forward with your launch.",
         }}
         projectContext={project?.name}
       />
