@@ -21,7 +21,7 @@ export const GreetingHeader = ({ firstName, projectName }: GreetingHeaderProps) 
       </h1>
       {projectName && (
         <p className="text-muted-foreground">
-          You're working on: <span className="text-foreground font-medium">{projectName}</span>
+          You're building: <span className="text-foreground font-medium">{projectName}</span>
         </p>
       )}
     </div>

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 interface NextBestTaskCardProps {
   title: string;
   whyItMatters: string;
-  estimatedMinutes: number;
+  estimatedMinutes: string;
   route: string;
 }
 
