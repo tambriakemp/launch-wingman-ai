@@ -890,3 +890,13 @@ export function getUniversalTasks(): TaskTemplate[] {
 export function getPlanningTasks(): TaskTemplate[] {
   return TASK_TEMPLATES.filter(task => task.phase === 'planning');
 }
+
+// Get messaging phase tasks specifically
+export function getMessagingTasks(): TaskTemplate[] {
+  return TASK_TEMPLATES.filter(task => task.phase === 'messaging');
+}
+
+// Get tasks by phase
+export function getTasksByPhase(phase: string): TaskTemplate[] {
+  return TASK_TEMPLATES.filter(task => task.phase === phase);
+}
