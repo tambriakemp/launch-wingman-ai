@@ -162,21 +162,46 @@ export default function TaskDetail() {
     }
   };
 
-  const handleAiAssist = async (type: string) => {
-    setIsAiLoading(type);
+  const handleAiAssist = async (mode: string) => {
+    if (!taskTemplate || !projectId) return;
+    
+    setIsAiLoading(mode);
     setAiResponse(null);
     
-    // Simulate AI response - in real implementation, call the edge function
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    const responses: Record<string, string> = {
-      "help_me_choose": `Based on your project, I'd recommend focusing on what feels most natural to you. The best choice is often the one you can start on immediately without overthinking it.`,
-      "examples": `Here's an example:\n\nA health coach helping busy professionals might describe their audience as: "Corporate employees in their 30s-40s who want to lose weight but feel too exhausted after work to exercise."`,
-      "simplify": `Think of it simply:\n\n• Who do you want to help?\n• What problem do they have?\n• What will be different for them after?\n\nStart there. You can always refine later.`,
-    };
-    
-    setAiResponse(responses[type] || "I'm here to help you move forward. What specifically is confusing?");
-    setIsAiLoading(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('task-ai-assist', {
+        body: {
+          mode,
+          taskId: taskTemplate.taskId,
+          taskTitle: taskTemplate.title,
+          taskInstructions: taskTemplate.instructions,
+          projectId,
+        },
+      });
+
+      if (error) {
+        console.error('AI assist error:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        if (data.error.includes('Rate limit')) {
+          toast.error('Too many requests. Please wait a moment and try again.');
+        } else if (data.error.includes('usage limit')) {
+          toast.error('AI usage limit reached. Please try again later.');
+        } else {
+          toast.error('Failed to get AI help. Please try again.');
+        }
+        return;
+      }
+
+      setAiResponse(data.response);
+    } catch (error) {
+      console.error('AI assist error:', error);
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setIsAiLoading(null);
+    }
   };
 
   if (engineLoading || !taskTemplate) {

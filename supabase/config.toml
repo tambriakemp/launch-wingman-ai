@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.get-stuck-help]
 verify_jwt = false
+
+[functions.task-ai-assist]
+verify_jwt = false
