@@ -68,22 +68,20 @@ const STEP_DEFINITIONS = [
   },
 ];
 
-const getStageLabel = (completedSteps: number): string => {
-  if (completedSteps <= 1) return "Planning";
-  if (completedSteps <= 3) return "Building";
-  return "Ready to Launch";
+const getPhaseInfo = (completedSteps: number, totalSteps: number): { phase: string; isComplete: boolean } => {
+  if (completedSteps === 0) return { phase: "Planning", isComplete: false };
+  if (completedSteps < 2) return { phase: "Planning", isComplete: false };
+  if (completedSteps < 4) return { phase: "Build", isComplete: false };
+  if (completedSteps < totalSteps) return { phase: "Prep", isComplete: false };
+  return { phase: "Planning", isComplete: true };
 };
 
 const getReassuranceText = (completedSteps: number, totalSteps: number): string => {
-  const messages = [
-    "Every journey starts with a single step. You've got this.",
-    "You're making great progress. Take your time with each step.",
-    "Halfway there! Your foundation is coming together nicely.",
-    "Almost there! Just a few more details to fill in.",
-    "You're so close! One more step and you're ready to launch.",
-    "Amazing work! Your launch plan is complete.",
-  ];
-  return messages[Math.min(completedSteps, messages.length - 1)];
+  if (completedSteps === 0) return "Every journey starts with a single step. You've got this.";
+  if (completedSteps < 2) return "You're laying the groundwork. Take your time with each piece.";
+  if (completedSteps < 4) return "Great progress! Your foundation is coming together nicely.";
+  if (completedSteps < totalSteps) return "Almost there! Just a few more details to prepare.";
+  return "Amazing work! Your launch plan is complete.";
 };
 
 const FunnelOverviewContent = ({ projectId }: Props) => {
@@ -236,9 +234,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       />
 
       <ProgressSnapshotCard
-        stageLabel={getStageLabel(completedSteps)}
-        currentStep={completedSteps + 1}
-        totalSteps={totalSteps}
+        currentPhase={getPhaseInfo(completedSteps, totalSteps).phase}
+        isPhaseComplete={getPhaseInfo(completedSteps, totalSteps).isComplete}
         reassuranceText={getReassuranceText(completedSteps, totalSteps)}
       />
 
