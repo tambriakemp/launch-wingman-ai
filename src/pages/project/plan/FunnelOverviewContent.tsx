@@ -228,8 +228,6 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
         projectName={project?.name}
       />
 
-      <DailyMotivationCard />
-
       <NextBestTaskCard
         title={nextStep.title}
         whyItMatters={nextStep.whyItMatters}
@@ -253,6 +251,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       )}
 
       <StuckHelpCard onOpenModal={() => setStuckModalOpen(true)} />
+
+      <DailyMotivationCard />
 
       <StuckHelpDialog
         open={stuckModalOpen}
