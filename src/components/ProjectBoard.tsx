@@ -25,8 +25,8 @@ import { FilterPopover } from "@/components/FilterPopover";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 import { AssetChecklist } from "@/components/funnel/AssetChecklist";
 import { PhaseSection } from "@/components/PhaseSection";
-import { getPlanningTasks, getMessagingTasks, getBuildTasks } from "@/data/taskTemplates";
-import { ClipboardList, MessageSquare, Wrench } from "lucide-react";
+import { getPlanningTasks, getMessagingTasks, getBuildTasks, getContentTasks } from "@/data/taskTemplates";
+import { ClipboardList, MessageSquare, Wrench, PenTool } from "lucide-react";
 
 const COLUMNS = [
   { id: "todo", label: "To Do" },
@@ -578,6 +578,14 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
           icon={Wrench}
           tasks={getBuildTasks()}
           prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks()]}
+        />
+
+        <PhaseSection
+          projectId={projectId}
+          label="Content"
+          icon={PenTool}
+          tasks={getContentTasks()}
+          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasks()]}
         />
       </div>
 
