@@ -200,6 +200,7 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
   // Update phase statuses based on completion
   const recalculatePhases = useCallback(async () => {
     const newStatuses: Record<Phase, PhaseStatus> = { ...DEFAULT_PHASE_STATUSES };
+    let newActivePhase: Phase = 'planning'; // Track locally to avoid stale state
     let foundActive = false;
 
     for (const phase of PHASES) {
@@ -208,26 +209,27 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
       } else if (!foundActive) {
         newStatuses[phase] = 'active';
         foundActive = true;
-        setActivePhase(phase);
+        newActivePhase = phase; // Update local variable
       } else {
         newStatuses[phase] = 'locked';
       }
     }
 
+    setActivePhase(newActivePhase);
     setPhaseStatuses(newStatuses);
 
-    // Update project in database
+    // Update project in database using local variable (not stale state)
     if (user) {
       await supabase
         .from('projects')
         .update({
-          active_phase: foundActive ? activePhase : 'planning',
+          active_phase: newActivePhase,
           phase_statuses: newStatuses,
         })
         .eq('id', projectId)
         .eq('user_id', user.id);
     }
-  }, [isPhaseComplete, projectId, user, activePhase]);
+  }, [isPhaseComplete, projectId, user]);
 
   // Fetch project and tasks data
   const fetchData = useCallback(async () => {
@@ -291,8 +293,10 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
   const initializeProjectTasks = useCallback(async () => {
     if (!user || !projectId || projectTasks.length > 0) return;
 
-    // Create tasks for universal templates (planning phase)
-    const universalTasks = getUniversalTasks().filter(t => t.phase === 'planning');
+    // Create tasks for universal templates (planning AND messaging phases)
+    const universalTasks = getUniversalTasks().filter(
+      t => t.phase === 'planning' || t.phase === 'messaging'
+    );
     
     for (const template of universalTasks) {
       const exists = projectTasks.find(pt => pt.taskId === template.taskId);
@@ -463,6 +467,13 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Recalculate phases when tasks change to fix stale phase data
+  useEffect(() => {
+    if (!isLoading && projectTasks.length > 0) {
+      recalculatePhases();
+    }
+  }, [isLoading, projectTasks.length, recalculatePhases]);
 
   // Initialize project tasks if needed
   useEffect(() => {
