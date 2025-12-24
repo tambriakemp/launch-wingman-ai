@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.post-to-pinterest]
 verify_jwt = false
+
+[functions.get-stuck-help]
+verify_jwt = false
