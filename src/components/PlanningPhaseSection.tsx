@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Circle, Lock, ChevronRight, Clock, Sparkles } from "lucide-react";
+import { Check, Circle, Lock, ChevronRight, ChevronDown, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { getPlanningTasks } from "@/data/taskTemplates";
 import { TaskTemplate, ProjectTask, TaskStatus } from "@/types/tasks";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface PlanningPhaseSectionProps {
   projectId: string;
@@ -20,6 +21,7 @@ export const PlanningPhaseSection = ({ projectId }: PlanningPhaseSectionProps) =
   const { user } = useAuth();
   const [projectTasks, setProjectTasks] = useState<ProjectTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isOpen, setIsOpen] = useState(true);
 
   const planningTasks = getPlanningTasks();
 
@@ -77,99 +79,47 @@ export const PlanningPhaseSection = ({ projectId }: PlanningPhaseSectionProps) =
     t => getTaskStatus(t.taskId) === "completed"
   ).length;
 
-  const progressPercent = (completedCount / planningTasks.length) * 100;
-
   const handleTaskClick = (task: TaskTemplate) => {
     if (isTaskLocked(task)) return;
-    const route = task.route.replace(":id", projectId);
-    navigate(route);
-  };
-
-  const getStatusIcon = (task: TaskTemplate) => {
-    const status = getTaskStatus(task.taskId);
-    const locked = isTaskLocked(task);
-
-    if (locked) {
-      return <Lock className="w-4 h-4 text-muted-foreground/50" />;
-    }
-    if (status === "completed") {
-      return <Check className="w-4 h-4 text-primary" />;
-    }
-    if (status === "in_progress") {
-      return <Sparkles className="w-4 h-4 text-warning animate-pulse" />;
-    }
-    return <Circle className="w-4 h-4 text-muted-foreground" />;
-  };
-
-  const getStatusBadge = (task: TaskTemplate) => {
-    const status = getTaskStatus(task.taskId);
-    const locked = isTaskLocked(task);
-
-    if (locked) {
-      return (
-        <Badge variant="outline" className="text-xs text-muted-foreground">
-          Locked
-        </Badge>
-      );
-    }
-    if (status === "completed") {
-      return (
-        <Badge className="text-xs bg-primary/10 text-primary border-primary/20">
-          Complete
-        </Badge>
-      );
-    }
-    if (status === "in_progress") {
-      return (
-        <Badge className="text-xs bg-warning/10 text-warning border-warning/20">
-          In Progress
-        </Badge>
-      );
-    }
-    return null;
+    navigate(task.route.replace(":id", projectId));
   };
 
   if (isLoading) {
     return (
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg">Planning Phase</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="rounded-lg border bg-card">
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="mb-6 border-primary/20 bg-gradient-to-br from-background to-primary/5">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
-              <Sparkles className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-lg font-semibold">Planning Phase</CardTitle>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Know who this is for, what they want, and how you'll sell it
-              </p>
-            </div>
-          </div>
-          <Badge variant="outline" className="text-xs">
-            {completedCount} / {planningTasks.length} complete
-          </Badge>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="rounded-lg border bg-card">
+      <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-muted/50 transition-colors">
+        <div className="flex items-center gap-3">
+          <ClipboardList className="w-5 h-5 text-muted-foreground" />
+          <span className="font-medium">Planning</span>
         </div>
-        <Progress value={progressPercent} className="h-1.5 mt-4" />
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="space-y-2">
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">
+            {completedCount}/{planningTasks.length}
+          </span>
+          <ChevronDown 
+            className={cn(
+              "w-4 h-4 text-muted-foreground transition-transform",
+              !isOpen && "-rotate-90"
+            )} 
+          />
+        </div>
+      </CollapsibleTrigger>
+      
+      <CollapsibleContent>
+        <div className="border-t">
           {planningTasks.map((task, index) => {
             const status = getTaskStatus(task.taskId);
             const locked = isTaskLocked(task);
+            const isCompleted = status === "completed";
 
             return (
               <button
@@ -177,59 +127,51 @@ export const PlanningPhaseSection = ({ projectId }: PlanningPhaseSectionProps) =
                 onClick={() => handleTaskClick(task)}
                 disabled={locked}
                 className={cn(
-                  "w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all",
-                  "border border-transparent",
+                  "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors",
+                  "border-b last:border-b-0",
                   locked
-                    ? "opacity-50 cursor-not-allowed bg-muted/30"
-                    : status === "completed"
-                    ? "bg-primary/5 hover:bg-primary/10"
-                    : status === "in_progress"
-                    ? "bg-warning/5 hover:bg-warning/10 border-warning/20"
-                    : "bg-background hover:bg-accent"
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-muted/50"
                 )}
               >
-                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-background border border-border">
-                  {getStatusIcon(task)}
+                {/* Checkbox */}
+                <div className="flex-shrink-0">
+                  {isCompleted ? (
+                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                      <Check className="w-3 h-3 text-primary-foreground" />
+                    </div>
+                  ) : (
+                    <Circle className="w-5 h-5 text-muted-foreground/40" />
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "font-medium text-sm",
-                        status === "completed" && "text-primary",
-                        locked && "text-muted-foreground"
-                      )}
-                    >
-                      {task.title}
-                    </span>
-                    {getStatusBadge(task)}
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <Clock className="w-3 h-3 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">
-                      {task.estimatedMinutesMin}–{task.estimatedMinutesMax} min
-                    </span>
-                  </div>
+
+                {/* Title and time */}
+                <div className="flex-1 min-w-0 flex items-center gap-2">
+                  <span className={cn(
+                    "font-medium text-sm",
+                    isCompleted && "text-muted-foreground line-through"
+                  )}>
+                    {task.title}
+                  </span>
+                  
+                  {locked && (
+                    <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                  )}
+                  
+                  <span className="text-xs text-muted-foreground">
+                    • {task.estimatedMinutesMin}–{task.estimatedMinutesMax} min
+                  </span>
                 </div>
-                {!locked && status !== "completed" && (
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+
+                {/* Arrow for actionable tasks */}
+                {!locked && !isCompleted && (
+                  <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 )}
               </button>
             );
           })}
         </div>
-
-        {completedCount === planningTasks.length && (
-          <div className="mt-4 p-3 rounded-lg bg-primary/10 border border-primary/20">
-            <div className="flex items-center gap-2 text-primary">
-              <Check className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                Planning complete — time to clarify your messaging
-              </span>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      </CollapsibleContent>
+    </Collapsible>
   );
 };
