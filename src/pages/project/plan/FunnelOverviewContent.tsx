@@ -68,20 +68,29 @@ const STEP_DEFINITIONS = [
   },
 ];
 
-const getPhaseInfo = (completedSteps: number, totalSteps: number): { phase: string; isComplete: boolean } => {
-  if (completedSteps === 0) return { phase: "Planning", isComplete: false };
-  if (completedSteps < 2) return { phase: "Planning", isComplete: false };
-  if (completedSteps < 4) return { phase: "Build", isComplete: false };
-  if (completedSteps < totalSteps) return { phase: "Prep", isComplete: false };
-  return { phase: "Planning", isComplete: true };
+const getPhaseInfo = (completedSteps: number, totalSteps: number): { phase: string; isComplete: boolean; nextPhase?: string } => {
+  // Planning phase: steps 0-4 (funnel-type, audience, transformation, offers, tech-stack)
+  if (completedSteps < totalSteps) {
+    return { phase: "Planning", isComplete: false };
+  }
+  // Planning complete, messaging unlocked
+  return { phase: "Planning", isComplete: true, nextPhase: "Messaging" };
 };
 
-const getReassuranceText = (completedSteps: number, totalSteps: number): string => {
-  if (completedSteps === 0) return "Every journey starts with a single step. You've got this.";
-  if (completedSteps < 2) return "You're laying the groundwork. Take your time with each piece.";
-  if (completedSteps < 4) return "Great progress! Your foundation is coming together nicely.";
-  if (completedSteps < totalSteps) return "Almost there! Just a few more details to prepare.";
-  return "Amazing work! Your launch plan is complete.";
+const getReassuranceText = (phaseInfo: { phase: string; isComplete: boolean; nextPhase?: string }): string => {
+  if (!phaseInfo.isComplete) {
+    return "You're laying the groundwork. Take your time with each piece.";
+  }
+  
+  if (phaseInfo.nextPhase === "Messaging") {
+    return "Amazing work! Your planning phase is complete. You're ready to move into messaging.";
+  }
+  
+  if (phaseInfo.nextPhase === "Execution") {
+    return "Great progress! Your messaging is ready. Time to execute your launch.";
+  }
+  
+  return "Amazing work! You're ready to launch.";
 };
 
 const FunnelOverviewContent = ({ projectId }: Props) => {
@@ -236,7 +245,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       <ProgressSnapshotCard
         currentPhase={getPhaseInfo(completedSteps, totalSteps).phase}
         isPhaseComplete={getPhaseInfo(completedSteps, totalSteps).isComplete}
-        reassuranceText={getReassuranceText(completedSteps, totalSteps)}
+        reassuranceText={getReassuranceText(getPhaseInfo(completedSteps, totalSteps))}
       />
 
       {hasContent && (
