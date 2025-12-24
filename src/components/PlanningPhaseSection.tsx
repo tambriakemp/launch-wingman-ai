@@ -120,6 +120,13 @@ export const PlanningPhaseSection = ({ projectId }: PlanningPhaseSectionProps) =
             const status = getTaskStatus(task.taskId);
             const locked = isTaskLocked(task);
             const isCompleted = status === "completed";
+            
+            // Find if this is the next best task (first unlocked, not completed)
+            const isNextBestTask = !locked && !isCompleted && 
+              planningTasks.findIndex(t => {
+                const s = getTaskStatus(t.taskId);
+                return !isTaskLocked(t) && s !== "completed";
+              }) === index;
 
             return (
               <button
@@ -131,15 +138,18 @@ export const PlanningPhaseSection = ({ projectId }: PlanningPhaseSectionProps) =
                   "border-b last:border-b-0",
                   locked
                     ? "opacity-50 cursor-not-allowed"
-                    : "hover:bg-muted/50"
+                    : "hover:bg-muted/50",
+                  isNextBestTask && "bg-primary/5 border-l-2 border-l-primary"
                 )}
               >
                 {/* Checkbox */}
                 <div className="flex-shrink-0">
                   {isCompleted ? (
-                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                      <Check className="w-3 h-3 text-primary-foreground" />
+                    <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
+                      <Check className="w-3 h-3 text-muted-foreground" />
                     </div>
+                  ) : isNextBestTask ? (
+                    <div className="w-5 h-5 rounded-full border-2 border-primary" />
                   ) : (
                     <Circle className="w-5 h-5 text-muted-foreground/40" />
                   )}
@@ -149,7 +159,8 @@ export const PlanningPhaseSection = ({ projectId }: PlanningPhaseSectionProps) =
                 <div className="flex-1 min-w-0 flex items-center gap-2">
                   <span className={cn(
                     "font-medium text-sm",
-                    isCompleted && "text-muted-foreground line-through"
+                    isCompleted && "text-muted-foreground line-through",
+                    isNextBestTask && "text-foreground"
                   )}>
                     {task.title}
                   </span>
@@ -158,15 +169,22 @@ export const PlanningPhaseSection = ({ projectId }: PlanningPhaseSectionProps) =
                     <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                   )}
                   
-                  <span className="text-xs text-muted-foreground">
+                  <span className={cn(
+                    "text-xs text-muted-foreground",
+                    isCompleted && "opacity-60"
+                  )}>
                     • {task.estimatedMinutesMin}–{task.estimatedMinutesMax} min
                   </span>
                 </div>
 
-                {/* Arrow for actionable tasks */}
-                {!locked && !isCompleted && (
+                {/* CTA for next best task, arrow for other actionable tasks */}
+                {isNextBestTask ? (
+                  <span className="text-xs font-medium text-primary flex items-center gap-1">
+                    Start <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                ) : !locked && !isCompleted ? (
                   <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                )}
+                ) : null}
               </button>
             );
           })}
