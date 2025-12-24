@@ -28,7 +28,7 @@ const STEP_DEFINITIONS = [
     icon: Rocket,
     title: "Choose how you'll sell your offer",
     whyItMatters: "This decides the path your audience will take from discovering your offer to buying it.",
-    estimatedMinutes: 10,
+    estimatedMinutes: "10–15",
   },
   {
     id: "audience",
@@ -37,7 +37,7 @@ const STEP_DEFINITIONS = [
     icon: Users,
     title: "Define your ideal audience",
     whyItMatters: "Understanding exactly who you're serving helps you create messaging that resonates deeply and converts better.",
-    estimatedMinutes: 20,
+    estimatedMinutes: "20–30",
   },
   {
     id: "transformation",
@@ -46,7 +46,7 @@ const STEP_DEFINITIONS = [
     icon: Sparkles,
     title: "Craft your transformation statement",
     whyItMatters: "A clear transformation statement shows your audience the bridge from where they are to where they want to be.",
-    estimatedMinutes: 15,
+    estimatedMinutes: "15–25",
   },
   {
     id: "offers",
@@ -55,7 +55,7 @@ const STEP_DEFINITIONS = [
     icon: Package,
     title: "Configure your offers",
     whyItMatters: "Your offer stack is how you deliver value. Well-structured offers make it easy for people to say yes.",
-    estimatedMinutes: 25,
+    estimatedMinutes: "20–30",
   },
   {
     id: "tech-stack",
@@ -64,7 +64,7 @@ const STEP_DEFINITIONS = [
     icon: Server,
     title: "Set up your tech stack",
     whyItMatters: "Choosing the right tools ensures a smooth experience for your customers and makes your life easier.",
-    estimatedMinutes: 15,
+    estimatedMinutes: "10–15",
   },
 ];
 
