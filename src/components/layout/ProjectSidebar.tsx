@@ -60,7 +60,7 @@ const createNavSections = (projectId: string): NavSection[] => [
   {
     heading: "Plan",
     items: [
-      { id: "offer", label: "Funnel Overview", icon: LayoutDashboard, href: `/projects/${projectId}/offer` },
+      { id: "offer", label: "Dashboard", icon: LayoutDashboard, href: `/projects/${projectId}/offer` },
       { id: "funnel-type", label: "Funnel Type", icon: Rocket, href: `/projects/${projectId}/funnel-type` },
       { id: "audience", label: "Audience", icon: Users, href: `/projects/${projectId}/audience`, requiresStep: "funnel-type" },
       { id: "transformation", label: "Transformation", icon: Sparkles, href: `/projects/${projectId}/transformation`, requiresStep: "audience" },
