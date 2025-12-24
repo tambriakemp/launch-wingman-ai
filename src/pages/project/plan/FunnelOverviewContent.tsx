@@ -12,6 +12,7 @@ import {
   UpcomingContentCard,
   StuckHelpCard,
   StuckHelpDialog,
+  DailyMotivationCard,
 } from "@/components/dashboard";
 
 interface Props {
@@ -226,6 +227,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
         firstName={profile?.first_name}
         projectName={project?.name}
       />
+
+      <DailyMotivationCard />
 
       <NextBestTaskCard
         title={nextStep.title}
