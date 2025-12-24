@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Circle, Lock, ChevronRight, ChevronDown, MessageSquare } from "lucide-react";
+import { Check, Circle, Lock, ChevronRight, ChevronDown, LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { getMessagingTasks, getPlanningTasks } from "@/data/taskTemplates";
 import { TaskTemplate, ProjectTask, TaskStatus } from "@/types/tasks";
 import {
   Collapsible,
@@ -12,19 +11,28 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-interface MessagingPhaseSectionProps {
+interface PhaseSectionProps {
   projectId: string;
+  label: string;
+  icon: LucideIcon;
+  tasks: TaskTemplate[];
+  prerequisiteTasks?: TaskTemplate[];
+  defaultOpen?: boolean;
 }
 
-export const MessagingPhaseSection = ({ projectId }: MessagingPhaseSectionProps) => {
+export const PhaseSection = ({
+  projectId,
+  label,
+  icon: Icon,
+  tasks,
+  prerequisiteTasks = [],
+  defaultOpen = true,
+}: PhaseSectionProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [projectTasks, setProjectTasks] = useState<ProjectTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isOpen, setIsOpen] = useState(true);
-
-  const messagingTasks = getMessagingTasks();
-  const planningTasks = getPlanningTasks();
+  const [isOpen, setIsOpen] = useState(defaultOpen);
 
   useEffect(() => {
     const fetchProjectTasks = async () => {
@@ -64,13 +72,15 @@ export const MessagingPhaseSection = ({ projectId }: MessagingPhaseSectionProps)
     return projectTask?.status || "not_started";
   };
 
-  // Check if planning phase is complete (required to unlock messaging)
-  const isPlanningComplete = planningTasks.every(
-    t => getTaskStatus(t.taskId) === "completed"
-  );
+  // Check if prerequisite phase is complete
+  const isPrerequisiteComplete = prerequisiteTasks.length === 0 || 
+    prerequisiteTasks.every(t => getTaskStatus(t.taskId) === "completed");
 
   const areDependenciesCompleted = (task: TaskTemplate): boolean => {
-    if (task.dependencies.length === 0) return isPlanningComplete;
+    // If no dependencies, only check if phase prerequisite is complete
+    if (task.dependencies.length === 0) return isPrerequisiteComplete;
+    
+    // Check all dependencies are completed
     return task.dependencies.every(depId => {
       const status = getTaskStatus(depId);
       return status === "completed";
@@ -78,26 +88,36 @@ export const MessagingPhaseSection = ({ projectId }: MessagingPhaseSectionProps)
   };
 
   const isTaskLocked = (task: TaskTemplate): boolean => {
-    if (!isPlanningComplete) return true;
+    if (!isPrerequisiteComplete) return true;
     return !areDependenciesCompleted(task);
   };
 
-  const completedCount = messagingTasks.filter(
+  const completedCount = tasks.filter(
     t => getTaskStatus(t.taskId) === "completed"
   ).length;
 
   // Find the next best task for the focus indicator
-  const nextBestTaskIndex = messagingTasks.findIndex(t => {
+  const nextBestTaskIndex = tasks.findIndex(t => {
     const status = getTaskStatus(t.taskId);
     return !isTaskLocked(t) && status !== "completed";
   });
   
-  const allComplete = completedCount === messagingTasks.length;
-  const isPhaseActive = isPlanningComplete && !allComplete;
+  const allComplete = completedCount === tasks.length;
 
   const handleTaskClick = (task: TaskTemplate) => {
     if (isTaskLocked(task)) return;
     navigate(task.route.replace(":id", projectId));
+  };
+
+  // Determine status text
+  const getStatusText = () => {
+    if (!isPrerequisiteComplete) {
+      return "Complete previous phase first";
+    }
+    if (allComplete) {
+      return "Complete";
+    }
+    return `Step ${nextBestTaskIndex + 1}`;
   };
 
   if (isLoading) {
@@ -114,20 +134,15 @@ export const MessagingPhaseSection = ({ projectId }: MessagingPhaseSectionProps)
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="rounded-lg border bg-card">
       <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-muted/50 transition-colors">
         <div className="flex items-center gap-3">
-          <MessageSquare className="w-5 h-5 text-muted-foreground" />
-          <span className="font-medium">Messaging</span>
-          {!isPlanningComplete && (
+          <Icon className="w-5 h-5 text-muted-foreground" />
+          <span className="font-medium">{label}</span>
+          {!isPrerequisiteComplete && (
             <Lock className="w-3.5 h-3.5 text-muted-foreground" />
           )}
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">
-            {!isPlanningComplete 
-              ? "Complete Planning first"
-              : allComplete 
-                ? "Complete" 
-                : `Step ${nextBestTaskIndex + 1}`
-            }
+            {getStatusText()}
           </span>
           <ChevronDown 
             className={cn(
@@ -140,14 +155,14 @@ export const MessagingPhaseSection = ({ projectId }: MessagingPhaseSectionProps)
       
       <CollapsibleContent>
         <div className="border-t">
-          {messagingTasks.map((task, index) => {
+          {tasks.map((task, index) => {
             const status = getTaskStatus(task.taskId);
             const locked = isTaskLocked(task);
             const isCompleted = status === "completed";
             
             // Find if this is the next best task (first unlocked, not completed)
             const isNextBestTask = !locked && !isCompleted && 
-              messagingTasks.findIndex(t => {
+              tasks.findIndex(t => {
                 const s = getTaskStatus(t.taskId);
                 return !isTaskLocked(t) && s !== "completed";
               }) === index;

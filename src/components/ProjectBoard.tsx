@@ -24,8 +24,9 @@ import { LoadLaunchTasksDialog } from "@/components/LoadLaunchTasksDialog";
 import { FilterPopover } from "@/components/FilterPopover";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 import { AssetChecklist } from "@/components/funnel/AssetChecklist";
-import { PlanningPhaseSection } from "@/components/PlanningPhaseSection";
-import { MessagingPhaseSection } from "@/components/MessagingPhaseSection";
+import { PhaseSection } from "@/components/PhaseSection";
+import { getPlanningTasks, getMessagingTasks } from "@/data/taskTemplates";
+import { ClipboardList, MessageSquare } from "lucide-react";
 
 const COLUMNS = [
   { id: "todo", label: "To Do" },
@@ -558,8 +559,19 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
 
       {/* Phase Task Sections */}
       <div className="space-y-4 mb-6">
-        <PlanningPhaseSection projectId={projectId} />
-        <MessagingPhaseSection projectId={projectId} />
+        <PhaseSection
+          projectId={projectId}
+          label="Planning"
+          icon={ClipboardList}
+          tasks={getPlanningTasks()}
+        />
+        <PhaseSection
+          projectId={projectId}
+          label="Messaging"
+          icon={MessageSquare}
+          tasks={getMessagingTasks()}
+          prerequisiteTasks={getPlanningTasks()}
+        />
       </div>
 
       {/* Checklist View */}
