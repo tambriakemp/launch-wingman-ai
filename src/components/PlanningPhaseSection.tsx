@@ -79,6 +79,14 @@ export const PlanningPhaseSection = ({ projectId }: PlanningPhaseSectionProps) =
     t => getTaskStatus(t.taskId) === "completed"
   ).length;
 
+  // Find the next best task for the focus indicator
+  const nextBestTaskIndex = planningTasks.findIndex(t => {
+    const status = getTaskStatus(t.taskId);
+    return !isTaskLocked(t) && status !== "completed";
+  });
+  
+  const allComplete = completedCount === planningTasks.length;
+
   const handleTaskClick = (task: TaskTemplate) => {
     if (isTaskLocked(task)) return;
     navigate(task.route.replace(":id", projectId));
@@ -103,7 +111,10 @@ export const PlanningPhaseSection = ({ projectId }: PlanningPhaseSectionProps) =
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">
-            {completedCount}/{planningTasks.length}
+            {allComplete 
+              ? "Complete" 
+              : `Step ${nextBestTaskIndex + 1}`
+            }
           </span>
           <ChevronDown 
             className={cn(
