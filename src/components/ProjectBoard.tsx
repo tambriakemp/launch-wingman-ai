@@ -25,6 +25,7 @@ import { FilterPopover } from "@/components/FilterPopover";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 import { AssetChecklist } from "@/components/funnel/AssetChecklist";
 import { PlanningPhaseSection } from "@/components/PlanningPhaseSection";
+import { MessagingPhaseSection } from "@/components/MessagingPhaseSection";
 
 const COLUMNS = [
   { id: "todo", label: "To Do" },
@@ -555,8 +556,11 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
         </div>
       </div>
 
-      {/* Planning Phase Section */}
-      <PlanningPhaseSection projectId={projectId} />
+      {/* Phase Task Sections */}
+      <div className="space-y-4 mb-6">
+        <PlanningPhaseSection projectId={projectId} />
+        <MessagingPhaseSection projectId={projectId} />
+      </div>
 
       {/* Checklist View */}
       {currentFunnelType ? (
