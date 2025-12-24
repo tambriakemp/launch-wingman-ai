@@ -5,3 +5,4 @@ export { UpcomingContentCard } from "./UpcomingContentCard";
 export { StuckHelpCard } from "./StuckHelpCard";
 export { StuckHelpDialog } from "./StuckHelpDialog";
 export { DailyMotivationCard } from "./DailyMotivationCard";
+export { PhaseCelebrationCard } from "./PhaseCelebrationCard";
