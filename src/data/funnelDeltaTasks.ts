@@ -345,7 +345,7 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
         { value: 'offer_shared', label: 'Offer was shared', description: 'I invited attendees to learn more about my offer' },
       ],
     },
-    aiAssistModes: ['reassurance'],
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
     route: '/projects/:id/tasks/launch_host_training',
   },
 ];
@@ -505,7 +505,7 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
         { value: 'invitation_feels_right', label: 'Invitation feels inviting', description: 'The tone is warm and welcoming' },
       ],
     },
-    aiAssistModes: ['simplify', 'reassurance'],
+    aiAssistModes: ['help_me_choose', 'simplify'],
     route: '/projects/:id/tasks/launch_invite_applications',
   },
   {
@@ -540,7 +540,7 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
         { value: 'present_and_helpful', label: 'Was present and helpful', description: 'I focused on connection, not closing' },
       ],
     },
-    aiAssistModes: ['reassurance'],
+    aiAssistModes: ['help_me_choose', 'simplify'],
     route: '/projects/:id/tasks/launch_hold_calls',
   },
 ];

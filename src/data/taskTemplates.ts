@@ -71,7 +71,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
         { name: 'primary_problem', label: 'What is their main problem?', type: 'textarea', required: true, placeholder: 'Describe the core problem your audience faces...' },
       ],
     },
-    aiAssistModes: ['examples', 'simplify'],
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
     route: '/projects/:id/tasks/planning_define_problem',
   },
   {
@@ -104,7 +104,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
         { name: 'dream_outcome', label: 'What is their dream outcome?', type: 'textarea', required: true, placeholder: 'Describe what success looks like for them...' },
       ],
     },
-    aiAssistModes: ['examples', 'simplify'],
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
     route: '/projects/:id/tasks/planning_define_dream_outcome',
   },
   {
@@ -173,7 +173,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
         { name: 'offer_description', label: 'What does your offer help people do?', type: 'textarea', required: true, placeholder: 'Describe your offer in 1-2 sentences...' },
       ],
     },
-    aiAssistModes: ['simplify', 'examples'],
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
     route: '/projects/:id/tasks/planning_offer_snapshot',
   },
   {
@@ -283,7 +283,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
         { name: 'core_message', label: 'What is your core message?', type: 'textarea', required: true, placeholder: 'The one thing you want people to understand about your offer...' },
       ],
     },
-    aiAssistModes: ['simplify', 'examples'],
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
     route: '/projects/:id/tasks/messaging_core_message',
   },
   {
@@ -316,7 +316,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
         { name: 'transformation_statement', label: 'Your transformation statement', type: 'textarea', required: true, placeholder: 'I help [audience] go from [current state] to [desired state]...' },
       ],
     },
-    aiAssistModes: ['results_focused', 'emotion_focused', 'identity_focused', 'simplify'],
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
     route: '/projects/:id/tasks/messaging_transformation_statement',
   },
   {
@@ -353,7 +353,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
         { name: 'talking_point_5', label: 'Talking point #5 (optional)', type: 'textarea', required: false, placeholder: 'Optional additional point...' },
       ],
     },
-    aiAssistModes: ['examples', 'simplify'],
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
     route: '/projects/:id/tasks/messaging_talking_points',
   },
   {
@@ -881,7 +881,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
         { value: 'shared_confirmation', label: 'I\'ve shared my offer', description: 'My announcement is live' },
       ],
     },
-    aiAssistModes: ['reassurance', 'simplify'],
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
     route: '/projects/:id/tasks/launch_share_offer',
   },
   {
@@ -948,7 +948,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
         { name: 'launch_reflection', label: 'Any reflections on this launch? (optional)', type: 'textarea', required: false, placeholder: 'What felt good? What was challenging?' },
       ],
     },
-    aiAssistModes: ['reassurance', 'simplify'],
+    aiAssistModes: ['help_me_choose', 'simplify'],
     route: '/projects/:id/tasks/launch_phase_review',
   },
 
@@ -984,7 +984,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
         { value: 'acknowledged', label: 'I acknowledge my launch is complete', description: 'Take a moment to recognize everything you accomplished' },
       ],
     },
-    aiAssistModes: ['reassurance'],
+    aiAssistModes: ['simplify'],
     route: '/projects/:id/tasks/postlaunch_acknowledge_completion',
   },
   {
@@ -1018,7 +1018,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
         { name: 'felt_more_challenging', label: 'What felt more challenging?', type: 'textarea', required: false, placeholder: 'Optional — share anything that was harder than you thought' },
       ],
     },
-    aiAssistModes: ['reassurance', 'simplify'],
+    aiAssistModes: ['help_me_choose', 'simplify'],
     route: '/projects/:id/tasks/postlaunch_reflection',
   },
   {
@@ -1055,7 +1055,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
         { name: 'what_worked_5', label: 'One more', type: 'text', required: false },
       ],
     },
-    aiAssistModes: ['reassurance', 'examples'],
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
     route: '/projects/:id/tasks/postlaunch_what_worked',
   },
   {
@@ -1091,7 +1091,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
         { value: 'new_project', label: 'Start a new project', description: 'Begin something fresh with what you learned' },
       ],
     },
-    aiAssistModes: ['help_me_choose', 'reassurance'],
+    aiAssistModes: ['help_me_choose', 'simplify'],
     route: '/projects/:id/tasks/postlaunch_next_step',
   },
 ];
