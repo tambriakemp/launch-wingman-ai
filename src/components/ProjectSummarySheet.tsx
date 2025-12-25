@@ -253,10 +253,15 @@ export function ProjectSummarySheet({
 
               {/* Launch Window */}
               <SummarySection icon={Calendar} title="Launch Window" delay={0.4}>
-                {data.launchDate ? (
-                  <div className="p-3 rounded-lg bg-accent/30 border border-border/30">
-                    <p className="text-sm font-medium text-foreground">
-                      {format(parseISO(data.launchDate), "MMMM d, yyyy")}
+                {data.launchWindow?.enrollmentOpens ? (
+                  <div className="space-y-2">
+                    {data.launchWindow.durationDays && (
+                      <p className="text-sm font-medium text-foreground">
+                        {data.launchWindow.durationDays} day{data.launchWindow.durationDays !== 1 ? "s" : ""}
+                      </p>
+                    )}
+                    <p className="text-sm text-foreground">
+                      {format(parseISO(data.launchWindow.enrollmentOpens), "MMMM d, yyyy")}
                     </p>
                   </div>
                 ) : (

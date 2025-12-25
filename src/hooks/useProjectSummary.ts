@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { ProjectState } from "@/types/projectLifecycle";
 
 export interface ProjectSummaryData {
   // Project info
   projectName: string;
+  projectStatus: ProjectState;
   transformationStatement: string | null;
-  launchDate: string | null;
   
   // Audience & Problem
   niche: string | null;
@@ -23,17 +24,29 @@ export interface ProjectSummaryData {
   offers: Array<{
     title: string | null;
     offerType: string;
+    offerCategory: string | null;
     priceType: string | null;
     price: number | null;
+    description: string | null;
   }>;
+  
+  // Messaging highlights
+  coreMessage: string | null;
+  talkingPoints: string[];
+  hasEmailSequences: boolean;
+  hasSalesCopy: boolean;
+  hasDeliverableCopy: boolean;
   
   // Content themes (unique labels from content planner)
   contentThemes: string[];
   
-  // Messaging highlights
-  hasEmailSequences: boolean;
-  hasSalesCopy: boolean;
-  hasDeliverableCopy: boolean;
+  // Launch window
+  launchWindow: {
+    enrollmentOpens: string | null;
+    enrollmentCloses: string | null;
+    prelaunchStart: string | null;
+    durationDays: number | null;
+  } | null;
 }
 
 export function useProjectSummary(projectId: string | undefined) {
@@ -52,10 +65,11 @@ export function useProjectSummary(projectId: string | undefined) {
         emailsResult,
         salesCopyResult,
         deliverablesResult,
+        messagingTasksResult,
       ] = await Promise.all([
         supabase
           .from("projects")
-          .select("name, transformation_statement")
+          .select("name, transformation_statement, status")
           .eq("id", projectId)
           .single(),
         supabase
@@ -65,7 +79,7 @@ export function useProjectSummary(projectId: string | undefined) {
           .maybeSingle(),
         supabase
           .from("offers")
-          .select("title, offer_type, price_type, price")
+          .select("title, offer_type, offer_category, price_type, price, description")
           .eq("project_id", projectId)
           .order("slot_position"),
         supabase
@@ -74,7 +88,7 @@ export function useProjectSummary(projectId: string | undefined) {
           .eq("project_id", projectId),
         supabase
           .from("launch_events")
-          .select("enrollment_opens, prelaunch_start")
+          .select("enrollment_opens, enrollment_closes, prelaunch_start")
           .eq("project_id", projectId)
           .order("prelaunch_start", { ascending: true })
           .limit(1),
@@ -93,6 +107,12 @@ export function useProjectSummary(projectId: string | undefined) {
           .select("id")
           .eq("project_id", projectId)
           .limit(1),
+        // Fetch messaging tasks for core message and talking points
+        supabase
+          .from("project_tasks")
+          .select("task_id, input_data")
+          .eq("project_id", projectId)
+          .in("task_id", ["messaging_core_message", "messaging_talking_points"]),
       ]);
 
       if (projectResult.error) throw projectResult.error;
@@ -109,14 +129,55 @@ export function useProjectSummary(projectId: string | undefined) {
             .slice(0, 3)
         : [];
 
-      // Get launch date
+      // Parse messaging data
+      let coreMessage: string | null = null;
+      let talkingPoints: string[] = [];
+
+      if (messagingTasksResult.data) {
+        for (const task of messagingTasksResult.data) {
+          const inputData = task.input_data as Record<string, unknown> | null;
+          if (task.task_id === "messaging_core_message" && inputData?.core_message) {
+            coreMessage = inputData.core_message as string;
+          }
+          if (task.task_id === "messaging_talking_points" && inputData?.talking_points) {
+            // talking_points might be stored as array or comma-separated string
+            const tp = inputData.talking_points;
+            if (Array.isArray(tp)) {
+              talkingPoints = tp.filter((t): t is string => typeof t === "string" && t.trim() !== "");
+            } else if (typeof tp === "string") {
+              talkingPoints = tp.split(/[,\n]/).map(t => t.trim()).filter(Boolean);
+            }
+          }
+        }
+      }
+
+      // Calculate launch window
+      let launchWindow: ProjectSummaryData["launchWindow"] = null;
       const launchEvent = launchEventResult.data?.[0];
-      const launchDate = launchEvent?.enrollment_opens || launchEvent?.prelaunch_start || null;
+      if (launchEvent) {
+        const enrollmentOpens = launchEvent.enrollment_opens;
+        const enrollmentCloses = launchEvent.enrollment_closes;
+        const prelaunchStart = launchEvent.prelaunch_start;
+        
+        let durationDays: number | null = null;
+        if (enrollmentOpens && enrollmentCloses) {
+          const start = new Date(enrollmentOpens);
+          const end = new Date(enrollmentCloses);
+          durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        }
+
+        launchWindow = {
+          enrollmentOpens,
+          enrollmentCloses,
+          prelaunchStart,
+          durationDays,
+        };
+      }
 
       return {
         projectName: projectResult.data.name,
+        projectStatus: (projectResult.data.status || "draft") as ProjectState,
         transformationStatement: projectResult.data.transformation_statement,
-        launchDate,
         niche: funnelResult.data?.niche || null,
         targetAudience: funnelResult.data?.target_audience || null,
         primaryPainPoint: funnelResult.data?.primary_pain_point || null,
@@ -126,13 +187,18 @@ export function useProjectSummary(projectId: string | undefined) {
         offers: (offersResult.data || []).map((o) => ({
           title: o.title,
           offerType: o.offer_type,
+          offerCategory: o.offer_category,
           priceType: o.price_type,
           price: o.price,
+          description: o.description,
         })),
+        coreMessage,
+        talkingPoints,
         contentThemes: uniqueThemes,
         hasEmailSequences: (emailsResult.data?.length || 0) > 0,
         hasSalesCopy: (salesCopyResult.data?.length || 0) > 0,
         hasDeliverableCopy: (deliverablesResult.data?.length || 0) > 0,
+        launchWindow,
       };
     },
     enabled: !!projectId,
