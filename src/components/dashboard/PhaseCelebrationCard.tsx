@@ -1,8 +1,10 @@
+import { Link, useParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PartyPopper, Sparkles, Rocket, Megaphone, Hammer, PenTool, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phase, PHASE_LABELS } from "@/types/tasks";
+import { APP_LEVEL_LEARN_MORE } from "@/data/taskLearnMoreLinks";
 
 interface PhaseCelebrationCardProps {
   completedPhase: Phase;
@@ -59,6 +61,7 @@ export const PhaseCelebrationCard = ({
   nextPhase,
   onDismiss,
 }: PhaseCelebrationCardProps) => {
+  const { id: projectId } = useParams();
   const celebration = PHASE_CELEBRATIONS[completedPhase];
   const Icon = celebration.icon;
 
@@ -111,14 +114,24 @@ export const PhaseCelebrationCard = ({
               </motion.p>
               
               {nextPhase && (
-                <motion.p
+                <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3 }}
-                  className="text-sm font-medium text-primary pt-1"
+                  className="flex items-center justify-between pt-1"
                 >
-                  → Next up: {PHASE_LABELS[nextPhase] || nextPhase.charAt(0).toUpperCase() + nextPhase.slice(1)}
-                </motion.p>
+                  <p className="text-sm font-medium text-primary">
+                    → Next up: {PHASE_LABELS[nextPhase] || nextPhase.charAt(0).toUpperCase() + nextPhase.slice(1)}
+                  </p>
+                  {projectId && (
+                    <Link
+                      to={`/projects/${projectId}/library?article=${APP_LEVEL_LEARN_MORE.phaseIntro}`}
+                      className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                    >
+                      How phases work
+                    </Link>
+                  )}
+                </motion.div>
               )}
             </div>
           </div>
