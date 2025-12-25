@@ -205,7 +205,7 @@ export const PhaseSection = ({
                   </span>
                   
                   {/* Funnel-specific task indicator */}
-                  {task.funnelTypes && task.funnelTypes.length > 0 && (
+                  {task.funnelTypes && task.funnelTypes.length > 0 && !task.funnelTypes.includes('all') && (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium flex-shrink-0">
                       <Sparkles className="w-2.5 h-2.5" />
                       Funnel
