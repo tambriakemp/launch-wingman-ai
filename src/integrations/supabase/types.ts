@@ -1210,6 +1210,90 @@ export type Database = {
         }
         Relationships: []
       }
+      user_tone_profiles: {
+        Row: {
+          avoided_phrases: string[]
+          cooldown_until: string | null
+          created_at: string
+          directness: number
+          emoji_usage: number
+          energy: number
+          evidence_directness: number
+          evidence_emoji_usage: number
+          evidence_energy: number
+          evidence_formality: number
+          evidence_salesy_tolerance: number
+          evidence_sentence_length: number
+          evidence_warmth: number
+          formality: number
+          id: string
+          last_updated_source: string | null
+          preferred_phrases: string[]
+          salesy_tolerance: number
+          sentence_length: number
+          tone_learning_enabled: boolean
+          updated_at: string
+          user_id: string
+          version: number
+          warmth: number
+          writing_style: string
+        }
+        Insert: {
+          avoided_phrases?: string[]
+          cooldown_until?: string | null
+          created_at?: string
+          directness?: number
+          emoji_usage?: number
+          energy?: number
+          evidence_directness?: number
+          evidence_emoji_usage?: number
+          evidence_energy?: number
+          evidence_formality?: number
+          evidence_salesy_tolerance?: number
+          evidence_sentence_length?: number
+          evidence_warmth?: number
+          formality?: number
+          id?: string
+          last_updated_source?: string | null
+          preferred_phrases?: string[]
+          salesy_tolerance?: number
+          sentence_length?: number
+          tone_learning_enabled?: boolean
+          updated_at?: string
+          user_id: string
+          version?: number
+          warmth?: number
+          writing_style?: string
+        }
+        Update: {
+          avoided_phrases?: string[]
+          cooldown_until?: string | null
+          created_at?: string
+          directness?: number
+          emoji_usage?: number
+          energy?: number
+          evidence_directness?: number
+          evidence_emoji_usage?: number
+          evidence_energy?: number
+          evidence_formality?: number
+          evidence_salesy_tolerance?: number
+          evidence_sentence_length?: number
+          evidence_warmth?: number
+          formality?: number
+          id?: string
+          last_updated_source?: string | null
+          preferred_phrases?: string[]
+          salesy_tolerance?: number
+          sentence_length?: number
+          tone_learning_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+          version?: number
+          warmth?: number
+          writing_style?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       social_connections_decrypted: {

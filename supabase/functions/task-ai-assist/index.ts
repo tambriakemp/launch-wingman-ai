@@ -12,6 +12,7 @@ interface TaskAssistRequest {
   taskTitle: string;
   taskInstructions: string[];
   projectId: string;
+  toneModifiers?: string; // Optional tone modifiers from user's tone profile
 }
 
 interface ProjectContext {
@@ -34,9 +35,9 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const { mode, taskId, taskTitle, taskInstructions, projectId } = await req.json() as TaskAssistRequest;
+    const { mode, taskId, taskTitle, taskInstructions, projectId, toneModifiers } = await req.json() as TaskAssistRequest;
 
-    console.log('[TASK-AI-ASSIST] Request received:', { mode, taskId, projectId });
+    console.log('[TASK-AI-ASSIST] Request received:', { mode, taskId, projectId, hasToneModifiers: !!toneModifiers });
 
     // Create Supabase client to fetch project context
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -113,13 +114,18 @@ serve(async (req) => {
 
     console.log('[TASK-AI-ASSIST] Project context built:', projectContext);
 
+    // Build tone guidance from user's learned preferences
+    const toneGuidance = toneModifiers 
+      ? `\n\nIMPORTANT - Writing Style Preferences:\n${toneModifiers}`
+      : '';
+
     // Build the system prompt based on mode
     const baseContext = `Project context:
 ${projectContext.audienceDescription ? `- Target audience: ${projectContext.audienceDescription}` : ''}
 ${projectContext.primaryProblem ? `- Main problem they solve: ${projectContext.primaryProblem}` : ''}
 ${projectContext.dreamOutcome ? `- Dream outcome: ${projectContext.dreamOutcome}` : ''}
 ${projectContext.offerName ? `- Offer name: ${projectContext.offerName}` : ''}
-${projectContext.funnelType ? `- Launch path: ${projectContext.funnelType}` : ''}`;
+${projectContext.funnelType ? `- Launch path: ${projectContext.funnelType}` : ''}${toneGuidance}`;
 
     const systemPrompts: Record<string, string> = {
       help_me_choose: `You are a friendly, calm assistant helping a beginner digital marketer complete a task in their launch planning journey. They need help making a decision.
