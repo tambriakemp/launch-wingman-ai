@@ -3,7 +3,13 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowRight, ArrowLeft } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { ArrowRight, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 export type RelaunchSection = 
   | "target_audience"
@@ -16,34 +22,39 @@ export type RelaunchSection =
   | "launch_window";
 
 interface RelaunchSelectionScreenProps {
-  onContinue: (keptSections: RelaunchSection[], revisitSections: RelaunchSection[]) => void;
+  onContinue: (keptSections: RelaunchSection[], revisitSections: RelaunchSection[], skipMemory: boolean) => void;
   onBack: () => void;
 }
 
-const KEEP_SECTIONS: { id: RelaunchSection; label: string }[] = [
-  { id: "target_audience", label: "Target audience" },
-  { id: "core_problem", label: "Core problem" },
-  { id: "dream_outcome", label: "Dream outcome" },
-  { id: "offer_format", label: "Offer format" },
+// Foundational sections - always kept by default (identity-level)
+const KEEP_SECTIONS: { id: RelaunchSection; label: string; description: string }[] = [
+  { id: "target_audience", label: "Target audience", description: "Who your offer serves" },
+  { id: "core_problem", label: "Core problem", description: "The main struggle you solve" },
+  { id: "dream_outcome", label: "Dream outcome", description: "What success looks like for them" },
+  { id: "offer_format", label: "Offer format", description: "Course, service, program, etc." },
 ];
 
-const REVISIT_SECTIONS: { id: RelaunchSection; label: string }[] = [
-  { id: "messaging", label: "Messaging" },
-  { id: "funnel_path", label: "Funnel path" },
-  { id: "content_direction", label: "Content direction" },
-  { id: "launch_window", label: "Launch window" },
+// Adaptive sections - often evolve, surfaced for review
+const REVISIT_SECTIONS: { id: RelaunchSection; label: string; description: string }[] = [
+  { id: "messaging", label: "Messaging", description: "Your core message and voice" },
+  { id: "funnel_path", label: "Funnel path", description: "How you guide people to your offer" },
+  { id: "content_direction", label: "Content direction", description: "Topics and themes" },
+  { id: "launch_window", label: "Launch window", description: "Duration and timing" },
 ];
 
 export function RelaunchSelectionScreen({
   onContinue,
   onBack,
 }: RelaunchSelectionScreenProps) {
-  // Keep sections are pre-selected by default
+  // Keep sections are pre-selected by default (foundational memory)
   const [keptSections, setKeptSections] = useState<RelaunchSection[]>(
     KEEP_SECTIONS.map((s) => s.id)
   );
-  // Revisit sections are unchecked by default
+  // Revisit sections are unchecked by default (adaptive memory)
   const [revisitSections, setRevisitSections] = useState<RelaunchSection[]>([]);
+  // Memory consent - defaults to ON
+  const [skipMemory, setSkipMemory] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const toggleKeep = (id: RelaunchSection) => {
     setKeptSections((prev) =>
@@ -58,7 +69,7 @@ export function RelaunchSelectionScreen({
   };
 
   const handleContinue = () => {
-    onContinue(keptSections, revisitSections);
+    onContinue(keptSections, revisitSections, skipMemory);
   };
 
   return (
@@ -78,7 +89,7 @@ export function RelaunchSelectionScreen({
         </p>
       </div>
 
-      {/* Keep by default section */}
+      {/* Keep by default section (Foundational Memory) */}
       <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-medium">
@@ -92,47 +103,81 @@ export function RelaunchSelectionScreen({
           {KEEP_SECTIONS.map((section) => (
             <label
               key={section.id}
-              className="flex items-center gap-3 cursor-pointer group"
+              className="flex items-start gap-3 cursor-pointer group"
             >
               <Checkbox
                 checked={keptSections.includes(section.id)}
                 onCheckedChange={() => toggleKeep(section.id)}
+                className="mt-0.5"
               />
-              <span className="text-sm text-foreground group-hover:text-primary transition-colors">
-                {section.label}
-              </span>
+              <div>
+                <span className="text-sm text-foreground group-hover:text-primary transition-colors">
+                  {section.label}
+                </span>
+                <p className="text-xs text-muted-foreground">{section.description}</p>
+              </div>
             </label>
           ))}
         </CardContent>
       </Card>
 
-      {/* Revisit section */}
+      {/* Revisit section (Adaptive Memory) */}
       <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-medium">
             We'll gently revisit these
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            You can keep these as-is or make small adjustments.
+            Check the ones you'd like to look at again.
           </p>
         </CardHeader>
         <CardContent className="space-y-3">
           {REVISIT_SECTIONS.map((section) => (
             <label
               key={section.id}
-              className="flex items-center gap-3 cursor-pointer group"
+              className="flex items-start gap-3 cursor-pointer group"
             >
               <Checkbox
                 checked={revisitSections.includes(section.id)}
                 onCheckedChange={() => toggleRevisit(section.id)}
+                className="mt-0.5"
               />
-              <span className="text-sm text-foreground group-hover:text-primary transition-colors">
-                {section.label}
-              </span>
+              <div>
+                <span className="text-sm text-foreground group-hover:text-primary transition-colors">
+                  {section.label}
+                </span>
+                <p className="text-xs text-muted-foreground">{section.description}</p>
+              </div>
             </label>
           ))}
         </CardContent>
       </Card>
+
+      {/* Advanced option - subtle, no guilt */}
+      <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+        <CollapsibleTrigger asChild>
+          <button className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors mx-auto">
+            {showAdvanced ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+            {showAdvanced ? "Hide options" : "More options"}
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-4">
+          <Card className="border-border/30 bg-card/50">
+            <CardContent className="pt-4">
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <p className="text-sm text-foreground">Start without using past projects</p>
+                  <p className="text-xs text-muted-foreground">Begin fresh without any carried-over data</p>
+                </div>
+                <Switch
+                  checked={skipMemory}
+                  onCheckedChange={setSkipMemory}
+                />
+              </label>
+            </CardContent>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* CTAs */}
       <div className="flex items-center justify-between pt-4">

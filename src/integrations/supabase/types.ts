@@ -653,6 +653,47 @@ export type Database = {
         }
         Relationships: []
       }
+      project_memory: {
+        Row: {
+          created_at: string
+          id: string
+          memory_key: string
+          needs_review: boolean
+          project_id: string
+          reviewed_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          memory_key: string
+          needs_review?: boolean
+          project_id: string
+          reviewed_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          memory_key?: string
+          needs_review?: boolean
+          project_id?: string
+          reviewed_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_memory_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_tasks: {
         Row: {
           completed_at: string | null
@@ -720,6 +761,7 @@ export type Database = {
           relaunch_revisit_sections: string[] | null
           sales_copy_funnel_snapshot: string | null
           selected_funnel_type: string | null
+          skip_memory: boolean
           status: string
           transformation_locked: boolean | null
           transformation_statement: string | null
@@ -744,6 +786,7 @@ export type Database = {
           relaunch_revisit_sections?: string[] | null
           sales_copy_funnel_snapshot?: string | null
           selected_funnel_type?: string | null
+          skip_memory?: boolean
           status?: string
           transformation_locked?: boolean | null
           transformation_statement?: string | null
@@ -768,6 +811,7 @@ export type Database = {
           relaunch_revisit_sections?: string[] | null
           sales_copy_funnel_snapshot?: string | null
           selected_funnel_type?: string | null
+          skip_memory?: boolean
           status?: string
           transformation_locked?: boolean | null
           transformation_statement?: string | null
