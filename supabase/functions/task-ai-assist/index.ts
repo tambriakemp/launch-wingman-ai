@@ -205,6 +205,20 @@ ${projectContext.dreamOutcome ? `- Dream outcome: ${projectContext.dreamOutcome}
 ${projectContext.offerName ? `- Offer name: ${projectContext.offerName}` : ''}
 ${projectContext.funnelType ? `- Launch path: ${projectContext.funnelType}` : ''}${nicheContextStr}${toneGuidance}`;
 
+    // Build niche-aware context for Help Me Choose (only for EMPTY and PARTIAL modes)
+    const nicheAwareContext = nicheLabel ? `
+
+NICHE CONTEXT (OPTIONAL - Use subtly, never authoritatively):
+Selected niche: ${nicheLabel}
+
+NICHE RULES:
+- Niche is contextual, NEVER authoritative
+- User-written input ALWAYS has priority over niche
+- Niche may only guide examples and framing, never conclusions
+- Do NOT say "Because you chose this niche…" or "Most people in this niche…"
+- Approved phrasing: "Since you selected…", "If helpful…", "Some people start by…"
+- If niche conflicts with user input, IGNORE niche completely` : '';
+
     // Help Me Choose prompts based on input state
     const helpMeChoosePrompts: Record<InputState, string> = {
       EMPTY: `You are a calm, supportive assistant helping a beginner find a starting point. You are NOT a recommendation engine.
@@ -215,12 +229,20 @@ CRITICAL RULES:
 - Do NOT assume you know what they should choose
 - Your job is to help them THINK, not decide for them
 - Keep tone calm, supportive, and non-authoritative
+${nicheLabel ? `
+NICHE-AWARE BEHAVIOR (since user selected "${nicheLabel}"):
+- Use niche ONLY as a lens to anchor examples lightly
+- Do NOT say "Since you chose [niche], you should…"
+- Do NOT treat niche as the user's final decision
+- Reference niche subtly to reduce blank-page anxiety
+- Examples should loosely relate to niche but remain generic` : ''}
 
 REQUIRED OUTPUT FORMAT - You MUST respond with valid JSON:
 \`\`\`json
 {
   "mode": "prompting",
-  "opening": "Let's find a starting point. You don't need the perfect answer yet.",
+  "opening": "Let's find a starting point. You don't need the perfect answer yet.",${nicheLabel ? `
+  "nicheContext": "Since you selected ${nicheLabel}, here are a few example directions some people start with:",` : ''}
   "clarifyingQuestions": [
     "Who do you most enjoy helping right now?",
     "What problem do people already come to you about?"
@@ -228,22 +250,22 @@ REQUIRED OUTPUT FORMAT - You MUST respond with valid JSON:
   "exampleDirections": [
     {
       "label": "Example A",
-      "content": "Busy professionals feeling overwhelmed by money decisions"
+      "content": "${nicheLabel ? `People in ${nicheLabel} feeling overwhelmed by early decisions` : 'Busy professionals feeling overwhelmed by money decisions'}"
     },
     {
       "label": "Example B", 
-      "content": "Beginners trying to make their first online income"
+      "content": "${nicheLabel ? `Beginners in ${nicheLabel} trying to get unstuck and move forward` : 'Beginners trying to make their first online income'}"
     },
     {
       "label": "Example C",
-      "content": "Women rebuilding confidence after burnout"
+      "content": "${nicheLabel ? `People exploring ${nicheLabel} who want clarity before committing` : 'Women rebuilding confidence after burnout'}"
     }
   ],
-  "closing": "Choose one to edit, or answer one question above — either is enough to move forward."
+  "closing": "${nicheLabel ? 'These are just examples — you can adapt one, or ignore them completely.' : 'Choose one to edit, or answer one question above — either is enough to move forward.'}"
 }
 \`\`\`
 
-Tailor the clarifying questions and examples to the specific task at hand. Use language that matches the task context.
+Tailor the clarifying questions and examples to the specific task at hand.${nicheLabel ? ` Anchor examples lightly to "${nicheLabel}" but keep them generic and non-prescriptive.` : ' Use language that matches the task context.'}
 
 ${baseContext}`,
 
@@ -256,6 +278,12 @@ CRITICAL RULES:
 - Do NOT give definitive recommendations
 - Keep tone calm and supportive
 - Avoid words like "best", "ideal", "perfect"
+${nicheLabel ? `
+NICHE-AWARE BEHAVIOR (since user selected "${nicheLabel}"):
+- User input ALWAYS takes priority over niche
+- Mention niche ONLY if it adds clarity to their input
+- Never imply niche is "correct" or that user should align with it
+- If user's input conflicts with niche, IGNORE niche completely` : ''}
 
 The user has provided this input: "${currentInput}"
 
@@ -264,11 +292,11 @@ REQUIRED OUTPUT FORMAT - You MUST respond with valid JSON:
 {
   "mode": "refinement",
   "reflection": "You mentioned: \\"${currentInput?.replace(/"/g, '\\"')}\\"",
-  "guidance": "That's a good starting point. Let's make it a little more specific so your messaging is clearer.",
+  "guidance": "That's a good starting point. Let's make it a little more specific so your messaging is clearer.",${nicheLabel ? `
+  "nicheContext": "Since this sits within ${nicheLabel}, you might narrow it by:",` : ''}
   "refinementOptions": [
     "Their current situation or stage",
-    "The main problem they're struggling with",
-    "What they want but haven't figured out yet"
+    "The main problem they're struggling with"
   ],
   "exampleRefinements": [
     {
@@ -280,21 +308,25 @@ REQUIRED OUTPUT FORMAT - You MUST respond with valid JSON:
       "content": "[More specific version focusing on problem]"
     }
   ],
-  "closing": "Which direction feels closer? You can tweak it in your own words."
+  "closing": "${nicheLabel ? 'You can keep it broad or narrow it — either works.' : 'Which direction feels closer? You can tweak it in your own words.'}"
 }
 \`\`\`
 
-Generate refinement options that build on what they wrote - don't start from scratch.
+Generate refinement options that build on what they wrote - don't start from scratch.${nicheLabel ? ` If their input doesn't align with "${nicheLabel}", ignore the niche and focus only on their words.` : ''}
 
 ${baseContext}`,
 
       CLEAR: `You are a calm, supportive assistant helping a beginner polish their thinking. You may now offer suggestions, but still with soft language.
+
+IMPORTANT: When input is CLEAR, IGNORE any niche context entirely. The user's written input is authoritative.
 
 RULES:
 - Use soft language like "You could phrase it like…" not "You should"
 - Explain WHY your suggestion works
 - Always invite edits or rejection
 - Preserve the user's ownership of the decision
+- Do NOT reference or adjust based on any niche selection
+- Treat the user's input as the final authority
 
 The user has provided this clear input: "${currentInput}"
 
