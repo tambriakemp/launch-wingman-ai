@@ -222,6 +222,11 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
       }
     }
 
+    // If all phases are complete, set active_phase to 'post-launch'
+    if (!foundActive) {
+      newActivePhase = 'post-launch';
+    }
+
     setActivePhase(newActivePhase);
     setPhaseStatuses(newStatuses);
 

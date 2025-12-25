@@ -46,6 +46,14 @@ function determineProjectState(
     return currentStatus as ProjectState;
   }
 
+  // Check if launch phase is complete - this means the project has launched
+  if (phaseStatuses) {
+    const launchComplete = phaseStatuses['launch'] === 'complete';
+    if (launchComplete) {
+      return 'launched';
+    }
+  }
+
   // Legacy status migration
   if (currentStatus === 'active') {
     // Determine if draft or in_progress based on activity
