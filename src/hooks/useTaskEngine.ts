@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   Phase,
   PHASES,
-  PHASE_LABELS,
   TaskStatus,
   PhaseStatus,
   ProjectTask,
@@ -13,7 +12,8 @@ import {
   FunnelType,
   SkipReason,
 } from '@/types/tasks';
-import { TASK_TEMPLATES, getTasksForFunnelType, getUniversalTasks } from '@/data/taskTemplates';
+import { TASK_TEMPLATES, getUniversalTasks } from '@/data/taskTemplates';
+import { useFunnelTaskInjection } from './useFunnelTaskInjection';
 
 interface ProjectPhaseData {
   active_phase: Phase;
@@ -39,6 +39,7 @@ interface UseTaskEngineReturn {
   skipTask: (taskId: string, reason: SkipReason) => Promise<void>;
   selectFunnelType: (funnelType: FunnelType) => Promise<void>;
   refreshTasks: () => Promise<void>;
+  canChangeFunnelType: boolean;
 }
 
 const DEFAULT_PHASE_STATUSES: Record<Phase, PhaseStatus> = {
@@ -59,13 +60,19 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
   const [phaseStatuses, setPhaseStatuses] = useState<Record<Phase, PhaseStatus>>(DEFAULT_PHASE_STATUSES);
   const [selectedFunnelType, setSelectedFunnelType] = useState<FunnelType | null>(null);
 
-  // Get applicable task templates based on funnel type
+  // Use the funnel task injection hook
+  const { 
+    normalizeFunnelType,
+    injectFunnelTasks, 
+    handleFunnelTypeChange, 
+    canChangeFunnelType: checkCanChangeFunnelType,
+    getApplicableTemplates,
+  } = useFunnelTaskInjection({ projectId });
+
+  // Get applicable task templates based on funnel type (includes delta tasks)
   const applicableTemplates = useMemo(() => {
-    if (!selectedFunnelType) {
-      return getUniversalTasks();
-    }
-    return getTasksForFunnelType(selectedFunnelType);
-  }, [selectedFunnelType]);
+    return getApplicableTemplates(selectedFunnelType);
+  }, [selectedFunnelType, getApplicableTemplates]);
 
   // Get task template by ID
   const getTaskTemplate = useCallback((taskId: string): TaskTemplate | undefined => {
@@ -408,35 +415,38 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
     [user, projectId, projectTasks, fetchData, recalculatePhases]
   );
 
-  // Select funnel type and generate funnel-specific tasks
+  // Select funnel type and inject funnel-specific tasks using the injection system
   const selectFunnelType = useCallback(
     async (funnelType: FunnelType) => {
       if (!user) return;
 
-      // Update project
+      // Normalize the funnel type (handle legacy types)
+      const normalizedType = normalizeFunnelType(funnelType) || funnelType;
+
+      // Check if we can change the funnel type
+      if (selectedFunnelType && !checkCanChangeFunnelType(activePhase)) {
+        console.warn('Cannot change funnel type during or after launch phase');
+        return;
+      }
+
+      // Update project with the new funnel type
       await supabase
         .from('projects')
-        .update({ selected_funnel_type: funnelType })
+        .update({ selected_funnel_type: normalizedType })
         .eq('id', projectId)
         .eq('user_id', user.id);
 
-      setSelectedFunnelType(funnelType);
-
-      // Generate funnel-specific tasks for build, content, launch, post-launch phases
-      const funnelTasks = getTasksForFunnelType(funnelType).filter(
-        t => t.phase !== 'planning' && t.phase !== 'messaging'
-      );
-
-      for (const template of funnelTasks) {
-        const exists = projectTasks.find(pt => pt.taskId === template.taskId);
-        if (!exists) {
-          await supabase.from('project_tasks').insert({
-            project_id: projectId,
-            user_id: user.id,
-            task_id: template.taskId,
-            status: 'not_started',
-          });
-        }
+      // Handle the change - this removes old funnel tasks and injects new ones
+      if (selectedFunnelType && selectedFunnelType !== normalizedType) {
+        await handleFunnelTypeChange(
+          selectedFunnelType,
+          normalizedType,
+          projectTasks,
+          activePhase
+        );
+      } else {
+        // First time selecting - just inject
+        await injectFunnelTasks(normalizedType, projectTasks);
       }
 
       // Also ensure messaging tasks exist
@@ -453,9 +463,11 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
         }
       }
 
+      setSelectedFunnelType(normalizedType);
       await fetchData();
     },
-    [user, projectId, projectTasks, fetchData]
+    [user, projectId, projectTasks, fetchData, selectedFunnelType, activePhase, 
+     normalizeFunnelType, checkCanChangeFunnelType, handleFunnelTypeChange, injectFunnelTasks]
   );
 
   // Refresh tasks
@@ -484,6 +496,11 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
     }
   }, [isLoading, projectTasks.length, initializeProjectTasks]);
 
+  // Memoize whether funnel type can be changed
+  const canChangeFunnelType = useMemo(() => {
+    return checkCanChangeFunnelType(activePhase);
+  }, [checkCanChangeFunnelType, activePhase]);
+
   return {
     isLoading,
     error,
@@ -498,5 +515,6 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
     skipTask,
     selectFunnelType,
     refreshTasks,
+    canChangeFunnelType,
   };
 }
