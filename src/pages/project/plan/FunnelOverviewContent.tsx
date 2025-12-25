@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { isToday, isTomorrow, parseISO } from "date-fns";
 import {
   GreetingHeader,
@@ -55,7 +55,23 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [stuckModalOpen, setStuckModalOpen] = useState(false);
-  const [celebrationDismissed, setCelebrationDismissed] = useState(false);
+  
+  // Persist celebration dismissal per phase in localStorage
+  const celebrationStorageKey = `celebration-dismissed-${projectId}`;
+  const [dismissedPhases, setDismissedPhases] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem(celebrationStorageKey);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const handleDismissCelebration = (phase: string) => {
+    const updated = [...dismissedPhases, phase];
+    setDismissedPhases(updated);
+    localStorage.setItem(celebrationStorageKey, JSON.stringify(updated));
+  };
 
   // Use the project lifecycle hook
   const {
@@ -215,11 +231,11 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       />
 
       {/* Show celebration card if a phase was recently completed and not dismissed */}
-      {mostRecentlyCompletedPhase && !celebrationDismissed && (
+      {mostRecentlyCompletedPhase && !dismissedPhases.includes(mostRecentlyCompletedPhase) && (
         <PhaseCelebrationCard
           completedPhase={mostRecentlyCompletedPhase}
           nextPhase={nextPhaseAfterCompleted}
-          onDismiss={() => setCelebrationDismissed(true)}
+          onDismiss={() => handleDismissCelebration(mostRecentlyCompletedPhase)}
         />
       )}
 
