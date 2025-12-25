@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Circle, Lock, ChevronRight, ChevronDown, LucideIcon } from "lucide-react";
+import { Check, Circle, Lock, ChevronRight, ChevronDown, LucideIcon, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -203,6 +203,14 @@ export const PhaseSection = ({
                   )}>
                     {task.title}
                   </span>
+                  
+                  {/* Funnel-specific task indicator */}
+                  {task.funnelTypes && task.funnelTypes.length > 0 && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium flex-shrink-0">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      Funnel
+                    </span>
+                  )}
                   
                   {locked && (
                     <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
