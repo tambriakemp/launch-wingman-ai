@@ -18,6 +18,7 @@ import {
   ProjectPausedView,
   ProjectLaunchedView,
 } from "@/components/dashboard";
+import { CheckInBanner, CheckInFlow } from "@/components/check-in";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
 import { useProjectLifecycle } from "@/hooks/useProjectLifecycle";
 import { PHASE_LABELS, PHASES, Phase } from "@/types/tasks";
@@ -56,6 +57,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
   const { user } = useAuth();
   const [stuckModalOpen, setStuckModalOpen] = useState(false);
   const [showPostLaunchTasks, setShowPostLaunchTasks] = useState(false);
+  const [checkInOpen, setCheckInOpen] = useState(false);
   
   // Persist celebration dismissal per phase in localStorage
   const celebrationStorageKey = `celebration-dismissed-${projectId}`;
@@ -229,6 +231,9 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 py-6 px-4">
+      {/* Check-in banner - soft, dismissible */}
+      <CheckInBanner onStartCheckIn={() => setCheckInOpen(true)} />
+
       <GreetingHeader
         firstName={profile?.first_name}
         projectName={project?.name}
@@ -248,6 +253,9 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
           onDismiss={() => handleDismissCelebration(mostRecentlyCompletedPhase)}
         />
       )}
+
+      {/* Check-in flow dialog */}
+      <CheckInFlow open={checkInOpen} onOpenChange={setCheckInOpen} />
 
       {nextBestTask ? (
         <NextBestTaskCard
