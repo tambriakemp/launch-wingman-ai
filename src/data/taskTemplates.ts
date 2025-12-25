@@ -777,46 +777,44 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
   },
 
   // ==================== LAUNCH PHASE ====================
+  // Goal: "Share your offer intentionally and complete your launch — without pressure, urgency, or burnout."
   {
-    taskId: 'final-checklist',
-    title: 'Complete your launch checklist',
+    taskId: 'launch_set_window',
+    title: 'Set your launch window',
     phase: 'launch',
     funnelTypes: ['all'],
     order: 1,
     priority: 1,
-    estimatedMinutesMin: 30,
-    estimatedMinutesMax: 60,
+    estimatedMinutesMin: 5,
+    estimatedMinutesMax: 15,
     blocking: true,
     dependencies: ['content_phase_review'],
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'All launch assets are ready',
-      'Payment processing is tested',
-      'You have a plan for launch day',
+      'You\'ve chosen a clear launch window',
+      'You know when your launch starts and ends',
     ],
-    whyItMatters: 'A thorough pre-launch check prevents embarrassing issues and ensures a smooth experience for your buyers.',
+    whyItMatters: 'This step gives your launch a clear beginning and end. Having a defined window reduces stress and prevents your launch from dragging on indefinitely.',
     instructions: [
-      'Test all links and forms',
-      'Verify payment processing works',
-      'Confirm email automations are active',
+      'Choose how many days you\'ll actively talk about your offer',
+      'Pick a window that feels manageable',
+      'Remember: this is flexible — not a rule',
     ],
-    inputType: 'checklist',
+    inputType: 'form',
     inputSchema: {
-      type: 'checkbox',
-      options: [
-        { value: 'links_tested', label: 'All links tested', description: 'Every link works correctly' },
-        { value: 'payments_tested', label: 'Payments tested', description: 'You can receive payments' },
-        { value: 'emails_tested', label: 'Emails tested', description: 'Automations are working' },
-        { value: 'assets_ready', label: 'All assets ready', description: 'Graphics, copy, etc. are complete' },
+      type: 'form',
+      fields: [
+        { name: 'launch_window_days', label: 'How long will your launch window be?', type: 'select', required: true, placeholder: 'Choose 3, 5, or 7 days' },
+        { name: 'launch_start_date', label: 'When does your launch start? (optional)', type: 'text', required: false, placeholder: 'e.g., Monday, January 15' },
       ],
     },
-    aiAssistModes: ['simplify'],
-    route: '/projects/:id/tasks/final-checklist',
+    aiAssistModes: ['simplify', 'help_me_choose'],
+    route: '/projects/:id/tasks/launch_set_window',
   },
   {
-    taskId: 'launch-announcement',
-    title: 'Announce your launch',
+    taskId: 'launch_prepare_announcement',
+    title: 'Prepare your main announcement',
     phase: 'launch',
     funnelTypes: ['all'],
     order: 2,
@@ -824,31 +822,129 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
     estimatedMinutesMin: 15,
     estimatedMinutesMax: 30,
     blocking: true,
-    dependencies: ['final-checklist'],
+    dependencies: ['launch_set_window'],
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You\'ve sent your launch email',
-      'You\'ve posted on your main social platform',
-      'Your offer is live and accepting customers',
+      'You have one clear announcement ready',
+      'It sounds like something you\'d actually say',
     ],
-    whyItMatters: 'This is the moment! Your announcement lets your audience know your offer is available and creates excitement.',
+    whyItMatters: 'This is the message where you tell people your offer exists. It doesn\'t need to be perfect — it just needs to be clear.',
     instructions: [
-      'Send your launch email to your list',
-      'Post your announcement on social media',
-      'Make sure your offer page is live',
+      'Decide where you\'ll share your main announcement',
+      'Write a simple message using your existing messaging',
+      'Focus on clarity, not hype',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { name: 'announcement_platform', label: 'Where will you share your main announcement?', type: 'text', required: true, placeholder: 'e.g., Instagram, Email, both...' },
+        { name: 'announcement_copy', label: 'Draft your announcement message', type: 'textarea', required: true, placeholder: 'Write a simple, clear message about your offer...' },
+      ],
+    },
+    aiAssistModes: ['simplify', 'examples'],
+    route: '/projects/:id/tasks/launch_prepare_announcement',
+  },
+  {
+    taskId: 'launch_share_offer',
+    title: 'Share your offer',
+    phase: 'launch',
+    funnelTypes: ['all'],
+    order: 3,
+    priority: 1,
+    estimatedMinutesMin: 5,
+    estimatedMinutesMax: 15,
+    blocking: true,
+    dependencies: ['launch_prepare_announcement'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Your offer has been shared publicly or privately',
+      'You\'ve taken action, regardless of the response',
+    ],
+    whyItMatters: 'This is the moment your launch becomes real. Sharing your offer is the most important step — everything else supports this.',
+    instructions: [
+      'Post or send your announcement',
+      'Share the link or next step',
+      'Take a breath — this part counts',
     ],
     inputType: 'checklist',
     inputSchema: {
       type: 'checkbox',
       options: [
-        { value: 'email_sent', label: 'Launch email sent', description: 'Your list knows about the offer' },
-        { value: 'social_posted', label: 'Social announcement posted', description: 'You\'ve shared the news publicly' },
-        { value: 'offer_live', label: 'Offer is live', description: 'People can purchase' },
+        { value: 'shared_confirmation', label: 'I\'ve shared my offer', description: 'My announcement is live' },
+      ],
+    },
+    aiAssistModes: ['reassurance', 'simplify'],
+    route: '/projects/:id/tasks/launch_share_offer',
+  },
+  {
+    taskId: 'launch_follow_up',
+    title: 'Follow up during your launch',
+    phase: 'launch',
+    funnelTypes: ['all'],
+    order: 4,
+    priority: 2,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: false,
+    dependencies: ['launch_share_offer'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You know how and when you\'ll follow up',
+      'Follow-ups feel natural, not forced',
+    ],
+    whyItMatters: 'Most people don\'t see things the first time. Following up helps remind people — without being pushy.',
+    instructions: [
+      'Plan 2–3 follow-up reminders',
+      'Reuse your existing content themes',
+      'Keep it conversational and supportive',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { name: 'follow_up_count', label: 'How many follow-up reminders will you send?', type: 'select', required: true, placeholder: 'Choose 2 or 3' },
+        { name: 'follow_up_notes', label: 'Notes on your follow-up plan (optional)', type: 'textarea', required: false, placeholder: 'When and where will you follow up?' },
       ],
     },
     aiAssistModes: ['examples', 'simplify'],
-    route: '/projects/:id/tasks/launch-announcement',
+    route: '/projects/:id/tasks/launch_follow_up',
+  },
+  {
+    taskId: 'launch_phase_review',
+    title: 'Review & close your launch',
+    phase: 'launch',
+    funnelTypes: ['all'],
+    order: 5,
+    priority: 2,
+    estimatedMinutesMin: 5,
+    estimatedMinutesMax: 15,
+    blocking: false,
+    dependencies: ['launch_follow_up'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You\'ve marked your launch as complete',
+      'You feel ready to move forward',
+    ],
+    whyItMatters: 'This step helps you intentionally end your launch so you don\'t stay in "launch mode" forever.',
+    instructions: [
+      'Acknowledge that this launch is complete',
+      'Note anything that felt good or challenging',
+      'Close this chapter — you can always launch again',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { name: 'launch_reflection', label: 'Any reflections on this launch? (optional)', type: 'textarea', required: false, placeholder: 'What felt good? What was challenging?' },
+      ],
+    },
+    aiAssistModes: ['reassurance', 'simplify'],
+    route: '/projects/:id/tasks/launch_phase_review',
   },
 
   // ==================== POST-LAUNCH PHASE ====================
@@ -956,6 +1052,11 @@ export function getBuildTasks(): TaskTemplate[] {
 // Get content phase tasks specifically
 export function getContentTasks(): TaskTemplate[] {
   return TASK_TEMPLATES.filter(task => task.phase === 'content' && task.funnelTypes.includes('all'));
+}
+
+// Get launch phase tasks specifically
+export function getLaunchTasks(): TaskTemplate[] {
+  return TASK_TEMPLATES.filter(task => task.phase === 'launch' && task.funnelTypes.includes('all'));
 }
 
 // Get tasks by phase

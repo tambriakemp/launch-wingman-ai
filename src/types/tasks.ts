@@ -23,7 +23,7 @@ export type TaskStatus = 'not_started' | 'in_progress' | 'completed' | 'skipped'
 
 export type PhaseStatus = 'locked' | 'active' | 'complete';
 
-export type AIAssistMode = 'help_me_choose' | 'examples' | 'simplify' | 'results_focused' | 'emotion_focused' | 'identity_focused';
+export type AIAssistMode = 'help_me_choose' | 'examples' | 'simplify' | 'results_focused' | 'emotion_focused' | 'identity_focused' | 'reassurance';
 
 export type SkipReason = 'not_relevant' | 'already_completed' | 'doing_later';
 
