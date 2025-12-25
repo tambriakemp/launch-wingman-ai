@@ -307,18 +307,6 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
               </CommandGroup>
               <CommandSeparator className="bg-[#333]" />
               <CommandGroup className="p-1">
-                {currentProjectId && (
-                  <CommandItem 
-                    onSelect={() => {
-                      setOpen(false);
-                      setShowSummarySheet(true);
-                    }} 
-                    className="cursor-pointer py-2 px-2 text-white hover:bg-[#2a2a2a] rounded-md mx-1 aria-selected:bg-[#2a2a2a]"
-                  >
-                    <Eye className="mr-2 h-4 w-4" />
-                    <span className="text-sm">View Summary</span>
-                  </CommandItem>
-                )}
                 <CommandItem 
                   onSelect={handleOpenCreateDialog} 
                   className="cursor-pointer py-2 px-2 text-white hover:bg-[#2a2a2a] rounded-md mx-1 aria-selected:bg-[#2a2a2a]"
