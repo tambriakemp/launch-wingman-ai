@@ -164,87 +164,89 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
 // LIVE TRAINING OFFER DELTA TASKS
 // ============================================
 // Path: Live training/webinar → Offer
+// Philosophy: Teaching as the bridge to the offer, not automation or optimization.
+// Guardrails: No webinar tech setup, no slide builders, no email sequences,
+// no reminders logic, no performance metrics. Goal is confidence and connection.
 
 export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
   // BUILD Phase Additions
   {
-    taskId: 'build_prepare_training',
-    title: 'Prepare your live training',
+    taskId: 'build_define_training_focus',
+    title: 'Define your live training focus',
     phase: 'build',
     funnelTypes: ['live_training_offer'],
-    order: 1.5,
+    order: 1.5, // Insert after universal Build tasks
     priority: 1,
-    estimatedMinutesMin: 30,
-    estimatedMinutesMax: 60,
+    estimatedMinutesMin: 20,
+    estimatedMinutesMax: 40,
     blocking: true,
     dependencies: ['build_choose_platform'],
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You have a clear outline for your training',
-      'You know what you\'ll teach and how it connects to your offer',
+      'You know exactly what you\'ll teach',
+      'Your training naturally leads into your offer',
     ],
-    whyItMatters: 'Your live training is where you provide value and build trust. A clear outline helps you teach confidently and transition naturally to your offer.',
+    whyItMatters: 'Your live training is where you teach something genuinely helpful. When you\'re clear on your focus, you\'ll teach with confidence and your audience will see how your offer can take them further.',
     instructions: [
-      'Create a simple outline of what you\'ll cover',
-      'Focus on teaching something valuable and actionable',
-      'Plan how your training leads to your offer',
+      'Pick one topic you can teach in a single session',
+      'Focus on teaching over pitching — this is about helping first',
+      'Your slides don\'t need to be perfect. You do.',
     ],
     inputType: 'form',
     inputSchema: {
       type: 'form',
       fields: [
-        { name: 'training_title', label: 'What will you call your training?', type: 'text', required: true, placeholder: 'e.g., How to [achieve outcome] in [timeframe]' },
-        { name: 'training_outline', label: 'Main topics you\'ll cover', type: 'textarea', required: true, placeholder: 'List 3-5 main points or sections...' },
-        { name: 'training_to_offer', label: 'How does this lead to your offer?', type: 'textarea', required: true, placeholder: 'Describe the natural connection...' },
+        { name: 'training_topic', label: 'What topic will you teach?', type: 'text', required: true, placeholder: 'e.g., How to create a content plan in 30 minutes' },
+        { name: 'training_promise', label: 'What\'s the one thing they\'ll learn or walk away with?', type: 'textarea', required: true, placeholder: 'Describe the single key takeaway...' },
+        { name: 'training_to_offer', label: 'How does this training connect to your offer?', type: 'textarea', required: true, placeholder: 'Explain the natural bridge from what you teach to what you sell...' },
       ],
     },
     aiAssistModes: ['simplify', 'examples'],
-    route: '/projects/:id/tasks/build_prepare_training',
+    route: '/projects/:id/tasks/build_define_training_focus',
   },
   {
-    taskId: 'build_training_registration',
-    title: 'Set up training registration',
+    taskId: 'build_choose_training_host',
+    title: 'Choose how you\'ll host your training',
     phase: 'build',
     funnelTypes: ['live_training_offer'],
     order: 1.6,
     priority: 1,
-    estimatedMinutesMin: 20,
-    estimatedMinutesMax: 45,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
     blocking: true,
-    dependencies: ['build_prepare_training'],
+    dependencies: ['build_define_training_focus'],
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'People can register for your training',
-      'You can collect their email addresses',
+      'You\'ve decided where your training will happen',
+      'You feel comfortable with your choice',
     ],
-    whyItMatters: 'Registration lets you know who\'s coming and gives you a way to follow up with attendees before and after your training.',
+    whyItMatters: 'Choosing a platform you\'re comfortable with means you can focus on teaching, not troubleshooting. Use what you know.',
     instructions: [
-      'Create a simple registration page',
-      'Include the date, time, and topic',
-      'Connect it to your email platform',
+      'Pick a platform where you can go live with your audience',
+      'Examples: Zoom, Instagram Live, YouTube Live, Facebook Live',
+      'Choose what feels simplest for you right now',
     ],
-    inputType: 'checklist',
+    inputType: 'form',
     inputSchema: {
-      type: 'checkbox',
-      options: [
-        { value: 'registration_page_ready', label: 'Registration page ready', description: 'People can sign up for the training' },
-        { value: 'date_time_set', label: 'Date and time confirmed', description: 'I know when the training will happen' },
-        { value: 'email_connected', label: 'Email collection set up', description: 'Registrants are added to my email list' },
+      type: 'form',
+      fields: [
+        { name: 'training_platform', label: 'Where will you host your training?', type: 'text', required: true, placeholder: 'e.g., Zoom, Instagram Live, YouTube Live' },
+        { name: 'why_this_platform', label: 'Why this platform? (optional)', type: 'textarea', required: false, placeholder: 'What makes this feel like the right choice?' },
       ],
     },
     aiAssistModes: ['simplify', 'help_me_choose'],
-    route: '/projects/:id/tasks/build_training_registration',
+    route: '/projects/:id/tasks/build_choose_training_host',
   },
 
   // CONTENT Phase Additions
   {
     taskId: 'content_training_invitation',
-    title: 'Write your training invitation',
+    title: 'Write your live training invitation',
     phase: 'content',
     funnelTypes: ['live_training_offer'],
-    order: 0.5,
+    order: 0.5, // Insert before "Plan your launch content"
     priority: 1,
     estimatedMinutesMin: 15,
     estimatedMinutesMax: 30,
@@ -253,22 +255,22 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You have a clear invitation for your training',
-      'People understand what they\'ll learn and why it matters',
+      'You can clearly explain what your training is about',
+      'People will understand who it\'s for and what they\'ll learn',
     ],
-    whyItMatters: 'Your training invitation needs to excite people about attending. Focus on the value they\'ll receive and the outcome they\'ll walk away with.',
+    whyItMatters: 'Your invitation is how people decide to show up. When it\'s clear and welcoming, the right people will save their spot.',
     instructions: [
-      'Write a compelling description of what they\'ll learn',
-      'Include the transformation or outcome they\'ll get',
-      'Make registering feel like an easy yes',
+      'Write a short paragraph explaining what the training is',
+      'Be clear about who it\'s for',
+      'Include a simple call to action (e.g., "Save your spot")',
+      'No urgency, hype, or countdown language needed',
     ],
     inputType: 'form',
     inputSchema: {
       type: 'form',
       fields: [
-        { name: 'invitation_headline', label: 'Headline for your training invitation', type: 'text', required: true, placeholder: 'e.g., Join me for a free training on...' },
-        { name: 'invitation_body', label: 'What will they learn? (2-3 sentences)', type: 'textarea', required: true, placeholder: 'Describe the value and outcome...' },
-        { name: 'invitation_cta', label: 'Call to action', type: 'text', required: true, placeholder: 'e.g., Reserve your spot, Save your seat' },
+        { name: 'invitation_paragraph', label: 'Describe your training in one short paragraph', type: 'textarea', required: true, placeholder: 'What is it? Who is it for? What will they learn?' },
+        { name: 'invitation_cta', label: 'Your call to action', type: 'text', required: true, placeholder: 'e.g., Save your spot, Register now, Join me live' },
       ],
     },
     aiAssistModes: ['simplify', 'examples'],
@@ -277,39 +279,74 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
 
   // LAUNCH Phase Additions
   {
-    taskId: 'launch_share_training_offer',
-    title: 'Share your offer during training',
+    taskId: 'launch_schedule_training',
+    title: 'Schedule your live training',
     phase: 'launch',
     funnelTypes: ['live_training_offer'],
-    order: 3.5,
+    order: 2.5, // Before main announcement tasks
     priority: 1,
     estimatedMinutesMin: 10,
     estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['content_phase_review'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Your training has a date and time',
+      'You know where it will happen',
+    ],
+    whyItMatters: 'Setting a date makes it real. Once you have a time on the calendar, you can invite people with confidence.',
+    instructions: [
+      'Pick a date and time that works for you',
+      'Consider when your audience is most available',
+      'You don\'t need calendar integrations or reminders set up',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { name: 'training_date', label: 'What date will you host your training?', type: 'text', required: true, placeholder: 'e.g., Saturday, February 15th' },
+        { name: 'training_time', label: 'What time?', type: 'text', required: true, placeholder: 'e.g., 11am EST' },
+        { name: 'training_platform_confirmed', label: 'Where will it happen? (confirm platform)', type: 'text', required: true, placeholder: 'e.g., Zoom, Instagram Live' },
+      ],
+    },
+    aiAssistModes: ['simplify'],
+    route: '/projects/:id/tasks/launch_schedule_training',
+  },
+  {
+    taskId: 'launch_host_training',
+    title: 'Host your live training',
+    phase: 'launch',
+    funnelTypes: ['live_training_offer'],
+    order: 3.5, // After sharing the training announcement
+    priority: 2,
+    estimatedMinutesMin: 30,
+    estimatedMinutesMax: 90,
     blocking: false,
     dependencies: ['launch_share_offer'],
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You\'ve planned how to present your offer during the training',
-      'The transition feels natural, not salesy',
+      'You showed up and taught',
+      'You confirmed the training was delivered',
     ],
-    whyItMatters: 'The live training is where you demonstrate your expertise. Presenting your offer as the natural next step helps attendees who want more from you.',
+    whyItMatters: 'This is the moment you\'ve been building toward. You don\'t need to be perfect — just present and helpful. Show up, teach, and connect.',
     instructions: [
-      'Plan a brief, clear presentation of your offer',
-      'Focus on the continued transformation, not features',
-      'Make it easy for people to take the next step',
+      'Show up at the scheduled time',
+      'Teach what you planned',
+      'Invite attendees to your offer at the end',
+      'No need to track attendance or create a replay',
     ],
     inputType: 'checklist',
     inputSchema: {
       type: 'checkbox',
       options: [
-        { value: 'offer_pitch_planned', label: 'Offer presentation planned', description: 'I know how I\'ll present my offer' },
-        { value: 'transition_natural', label: 'Transition feels natural', description: 'The move from teaching to offering is smooth' },
-        { value: 'next_step_clear', label: 'Next step is clear', description: 'Attendees know how to join or buy' },
+        { value: 'training_delivered', label: 'Training delivered', description: 'I showed up and taught my training' },
+        { value: 'offer_shared', label: 'Offer was shared', description: 'I invited attendees to learn more about my offer' },
       ],
     },
-    aiAssistModes: ['simplify', 'examples'],
-    route: '/projects/:id/tasks/launch_share_training_offer',
+    aiAssistModes: ['reassurance'],
+    route: '/projects/:id/tasks/launch_host_training',
   },
 ];
 
@@ -508,10 +545,33 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
     deltaTasks: LIVE_TRAINING_OFFER_DELTA_TASKS,
     modifiedTasks: [
       {
+        taskId: 'build_choose_platform',
+        changes: {
+          whyItMatters: 'This is where you\'ll invite people at the end of your training. Keep it simple — you just need somewhere to send them.',
+        },
+      },
+      {
+        taskId: 'content_plan_content',
+        changes: {
+          instructions: [
+            'Most of your content will invite people to your live training, not directly to your offer',
+            'Focus on building anticipation for what you\'ll teach',
+            'Share why this training matters and who it\'s for',
+          ],
+        },
+      },
+      {
+        taskId: 'launch_main_announcement',
+        changes: {
+          title: 'Announce your live training',
+          whyItMatters: 'This is your moment to let people know about your training. Focus on what they\'ll learn and how to join — no sales language needed.',
+        },
+      },
+      {
         taskId: 'launch_share_offer',
         changes: {
-          title: 'Invite people to your training',
-          whyItMatters: 'This is when you invite people to register for your live training. The training is where you\'ll teach and present your offer.',
+          title: 'Invite attendees to your offer',
+          whyItMatters: 'After teaching, you\'ll invite people who want to go deeper. This should feel clear, warm, and optional — not pushy.',
         },
       },
     ],
