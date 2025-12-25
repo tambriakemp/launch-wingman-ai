@@ -1,4 +1,6 @@
-import { Target, Heart, User, Lightbulb, Sparkles, CheckCircle, AlertCircle, ArrowRight, Zap, HelpCircle, MessageCircle, Edit3 } from "lucide-react";
+import { Target, Heart, User, Lightbulb, Sparkles, CheckCircle, AlertCircle, ArrowRight, Zap, HelpCircle, MessageCircle, Edit3, Copy, Check } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface ExampleItem {
   type: string;
@@ -280,6 +282,40 @@ function WhyThisWorksList({ items }: { items: string[] }) {
   );
 }
 
+function SimplifiedTextCard({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success("Copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+  
+  return (
+    <div className="relative p-4 rounded-lg bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950/30 dark:to-cyan-950/30 border border-sky-200/50 dark:border-sky-800/30">
+      <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap pr-8">
+        {text}
+      </p>
+      <button
+        onClick={handleCopy}
+        className="absolute top-3 right-3 p-1.5 rounded-md hover:bg-sky-100 dark:hover:bg-sky-900/50 text-sky-600 dark:text-sky-400 transition-colors"
+        title="Copy simplified text"
+      >
+        {copied ? (
+          <Check className="w-4 h-4" />
+        ) : (
+          <Copy className="w-4 h-4" />
+        )}
+      </button>
+    </div>
+  );
+}
+
 function parseStructuredResponse(response: string): Record<string, unknown> | null {
   try {
     // Try to extract JSON from the response
@@ -531,11 +567,7 @@ export function AIResponseRenderer({ response, mode }: AIResponseRendererProps) 
             {data.opening}
           </p>
           
-          <div className="p-4 rounded-lg bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950/30 dark:to-cyan-950/30 border border-sky-200/50 dark:border-sky-800/30">
-            <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-              {data.simplifiedText}
-            </p>
-          </div>
+          <SimplifiedTextCard text={data.simplifiedText} />
           
           {data.note && (
             <p className="text-sm text-muted-foreground italic">
