@@ -815,6 +815,7 @@ export type Database = {
           phase_statuses: Json | null
           project_type: string
           relaunch_kept_sections: string[] | null
+          relaunch_nudge_dismissed: boolean
           relaunch_revisit_sections: string[] | null
           sales_copy_funnel_snapshot: string | null
           selected_funnel_type: string | null
@@ -840,6 +841,7 @@ export type Database = {
           phase_statuses?: Json | null
           project_type?: string
           relaunch_kept_sections?: string[] | null
+          relaunch_nudge_dismissed?: boolean
           relaunch_revisit_sections?: string[] | null
           sales_copy_funnel_snapshot?: string | null
           selected_funnel_type?: string | null
@@ -865,6 +867,7 @@ export type Database = {
           phase_statuses?: Json | null
           project_type?: string
           relaunch_kept_sections?: string[] | null
+          relaunch_nudge_dismissed?: boolean
           relaunch_revisit_sections?: string[] | null
           sales_copy_funnel_snapshot?: string | null
           selected_funnel_type?: string | null

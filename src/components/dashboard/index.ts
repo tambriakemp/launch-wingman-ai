@@ -10,3 +10,4 @@ export { ProjectCompletedView } from "./ProjectCompletedView";
 export { ProjectPausedView } from "./ProjectPausedView";
 export { ProjectLaunchedView } from "./ProjectLaunchedView";
 export { ProjectMenu } from "./ProjectMenu";
+export { RelaunchNudgeBanner } from "./RelaunchNudgeBanner";

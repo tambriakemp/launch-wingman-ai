@@ -29,6 +29,10 @@ import { useProjectLifecycle } from "@/hooks/useProjectLifecycle";
 import { PROJECT_STATE_LABELS, ProjectState } from "@/types/projectLifecycle";
 import { ProjectComparisonDialog } from "@/components/ProjectComparisonDialog";
 import { ProjectComparisonView } from "@/components/ProjectComparisonView";
+import { RelaunchNudgeBanner } from "@/components/dashboard/RelaunchNudgeBanner";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // Map funnel types to human-readable descriptions
 const FUNNEL_TYPE_LABELS: Record<string, { label: string; description: string }> = {
@@ -147,8 +151,9 @@ function LoadingSkeleton() {
 export default function ProjectSummary() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data, isLoading } = useProjectSummary(id);
-  const { projectState, resume } = useProjectLifecycle({ projectId: id || "" });
+  const { projectState, resume, archive } = useProjectLifecycle({ projectId: id || "" });
   
   // Comparison state
   const [comparisonDialogOpen, setComparisonDialogOpen] = useState(false);
@@ -159,6 +164,23 @@ export default function ProjectSummary() {
   
   // Check if comparison is available (only for completed projects)
   const canCompare = projectState === "completed";
+
+  // Handler for nudge dismissal
+  const handleNudgeDismiss = () => {
+    queryClient.invalidateQueries({ queryKey: ["project-summary", id] });
+  };
+
+  // Handler for nudge archive action
+  const handleNudgeArchive = async () => {
+    try {
+      await archive();
+      toast.success("Project archived");
+      navigate("/");
+    } catch (err) {
+      console.error("Failed to archive:", err);
+      toast.error("Failed to archive project");
+    }
+  };
 
   // Get lifecycle-aware CTA
   const getPrimaryCta = () => {
@@ -260,6 +282,18 @@ export default function ProjectSummary() {
             This is a snapshot of your project so far.
           </p>
         </motion.header>
+
+        {/* Relaunch Readiness Nudge - only for completed projects 30+ days old */}
+        {id && data && (
+          <RelaunchNudgeBanner
+            projectId={id}
+            projectUpdatedAt={data.projectUpdatedAt}
+            projectStatus={data.projectStatus}
+            relaunchNudgeDismissed={data.relaunchNudgeDismissed}
+            onDismiss={handleNudgeDismiss}
+            onArchive={handleNudgeArchive}
+          />
+        )}
 
         {/* Summary Sections Grid */}
         <div className="grid gap-5 md:grid-cols-2">

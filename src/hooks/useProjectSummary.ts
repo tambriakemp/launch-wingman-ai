@@ -7,6 +7,8 @@ export interface ProjectSummaryData {
   projectName: string;
   projectStatus: ProjectState;
   transformationStatement: string | null;
+  projectUpdatedAt: string;
+  relaunchNudgeDismissed: boolean;
   
   // Relaunch info
   isRelaunch: boolean;
@@ -74,7 +76,7 @@ export function useProjectSummary(projectId: string | undefined) {
       ] = await Promise.all([
         supabase
           .from("projects")
-          .select("name, transformation_statement, status, is_relaunch, parent_project_id")
+          .select("name, transformation_statement, status, is_relaunch, parent_project_id, updated_at, relaunch_nudge_dismissed")
           .eq("id", projectId)
           .single(),
         supabase
@@ -194,6 +196,8 @@ export function useProjectSummary(projectId: string | undefined) {
         projectName: projectResult.data.name,
         projectStatus: (projectResult.data.status || "draft") as ProjectState,
         transformationStatement: projectResult.data.transformation_statement,
+        projectUpdatedAt: projectResult.data.updated_at,
+        relaunchNudgeDismissed: projectResult.data.relaunch_nudge_dismissed || false,
         isRelaunch: projectResult.data.is_relaunch || false,
         parentProjectId: projectResult.data.parent_project_id || null,
         parentProjectName,
