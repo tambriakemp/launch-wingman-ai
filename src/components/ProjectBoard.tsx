@@ -25,7 +25,7 @@ import { FilterPopover } from "@/components/FilterPopover";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 import { AssetChecklist } from "@/components/funnel/AssetChecklist";
 import { PhaseSection } from "@/components/PhaseSection";
-import { getPlanningTasks, getMessagingTasks, getBuildTasks, getContentTasks, getLaunchTasks, getPostLaunchTasks } from "@/data/taskTemplates";
+import { getPlanningTasks, getMessagingTasks, getBuildTasksForFunnel, getContentTasksForFunnel, getLaunchTasksForFunnel, getPostLaunchTasks } from "@/data/taskTemplates";
 import { ClipboardList, MessageSquare, Wrench, PenTool, Rocket, Flag } from "lucide-react";
 
 const COLUMNS = [
@@ -137,47 +137,52 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
     const checkFunnelAndFetchOffers = async () => {
       if (!projectId) return;
 
-      // Fetch current funnel type
+      // Fetch current funnel type from funnels table
       const { data: funnel } = await supabase
         .from('funnels')
         .select('id, funnel_type')
         .eq('project_id', projectId)
         .maybeSingle();
 
-      // Fetch project snapshot
+      // Fetch project data including selected_funnel_type and snapshot
       const { data: project } = await supabase
         .from('projects')
-        .select('funnel_type_snapshot')
+        .select('funnel_type_snapshot, selected_funnel_type')
         .eq('id', projectId)
         .single();
 
-      if (funnel?.funnel_type) {
-        setCurrentFunnelType(funnel.funnel_type);
+      // Use funnel.funnel_type first, then project.selected_funnel_type as fallback
+      const activeFunnelType = funnel?.funnel_type || project?.selected_funnel_type || null;
+
+      if (activeFunnelType) {
+        setCurrentFunnelType(activeFunnelType);
         
         // Check if funnel type changed
-        if (project?.funnel_type_snapshot && funnel.funnel_type !== project.funnel_type_snapshot) {
+        if (project?.funnel_type_snapshot && activeFunnelType !== project.funnel_type_snapshot) {
           setFunnelTypeChanged(true);
         }
 
-        // Fetch offers for checklist view
-        const { data: projectOffers } = await supabase
-          .from('offers')
-          .select('*')
-          .eq('funnel_id', funnel.id)
-          .order('slot_position');
-        
-        if (projectOffers) {
-          setOffers(projectOffers.map(offer => ({
-            id: offer.id,
-            slotType: offer.slot_type,
-            title: offer.title || '',
-            description: offer.description || '',
-            offerType: offer.offer_type,
-            price: offer.price?.toString() || '',
-            priceType: offer.price_type || 'one-time',
-            isConfigured: true,
-            isSkipped: false,
-          })));
+        // Fetch offers for checklist view (only if we have a funnel record)
+        if (funnel?.id) {
+          const { data: projectOffers } = await supabase
+            .from('offers')
+            .select('*')
+            .eq('funnel_id', funnel.id)
+            .order('slot_position');
+          
+          if (projectOffers) {
+            setOffers(projectOffers.map(offer => ({
+              id: offer.id,
+              slotType: offer.slot_type,
+              title: offer.title || '',
+              description: offer.description || '',
+              offerType: offer.offer_type,
+              price: offer.price?.toString() || '',
+              priceType: offer.price_type || 'one-time',
+              isConfigured: true,
+              isSkipped: false,
+            })));
+          }
         }
       }
 
@@ -576,7 +581,7 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
           projectId={projectId}
           label="Build"
           icon={Wrench}
-          tasks={getBuildTasks()}
+          tasks={getBuildTasksForFunnel(currentFunnelType)}
           prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks()]}
         />
 
@@ -584,16 +589,16 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
           projectId={projectId}
           label="Content"
           icon={PenTool}
-          tasks={getContentTasks()}
-          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasks()]}
+          tasks={getContentTasksForFunnel(currentFunnelType)}
+          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasksForFunnel(currentFunnelType)]}
         />
 
         <PhaseSection
           projectId={projectId}
           label="Launch"
           icon={Rocket}
-          tasks={getLaunchTasks()}
-          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasks(), ...getContentTasks()]}
+          tasks={getLaunchTasksForFunnel(currentFunnelType)}
+          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType)]}
         />
 
         <PhaseSection
@@ -601,7 +606,7 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
           label="Post-Launch"
           icon={Flag}
           tasks={getPostLaunchTasks()}
-          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasks(), ...getContentTasks(), ...getLaunchTasks()]}
+          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType), ...getLaunchTasksForFunnel(currentFunnelType)]}
         />
       </div>
 
