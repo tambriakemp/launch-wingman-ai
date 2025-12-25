@@ -354,9 +354,12 @@ export const LIVE_TRAINING_OFFER_DELTA_TASKS: TaskTemplate[] = [
 // APPLICATION CALL DELTA TASKS
 // ============================================
 // Path: Application → Call → Offer
+// Philosophy: Inviting conversations, not closing deals.
+// Guardrails: No CRM, no pipelines, no lead scoring, no call scripts,
+// no automation, no performance tracking. Launchely guides clarity and readiness.
 
 export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
-  // BUILD Phase Additions
+  // ==================== BUILD Phase Additions ====================
   {
     taskId: 'build_clarify_applicants',
     title: 'Clarify who should apply',
@@ -373,28 +376,30 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
     completionCriteria: [
       'You\'re clear on who your ideal applicant is',
       'You can articulate who is NOT a good fit',
+      'You have a simple readiness qualifier',
     ],
-    whyItMatters: 'Clarity on your ideal applicant helps you attract the right people and have more productive conversations. It also helps people self-select.',
+    whyItMatters: 'Clarity on your ideal applicant helps you attract the right people and have more productive conversations. It also helps people self-select out if they\'re not ready.',
     instructions: [
-      'Describe your ideal applicant in detail',
-      'Identify who this is NOT for',
-      'Think about readiness signals',
+      'Describe your ideal applicant — be specific about their situation',
+      'Identify who this is NOT for (this protects both of you)',
+      'Think of one simple readiness qualifier (e.g., "willing to take action")',
+      'Focus on clarity over persuasion — no pressure language',
     ],
     inputType: 'form',
     inputSchema: {
       type: 'form',
       fields: [
-        { name: 'ideal_applicant', label: 'Who is your ideal applicant?', type: 'textarea', required: true, placeholder: 'Describe the person who\'s ready for this...' },
-        { name: 'not_a_fit', label: 'Who is this NOT for?', type: 'textarea', required: true, placeholder: 'Describe who shouldn\'t apply...' },
-        { name: 'readiness_signals', label: 'What shows they\'re ready?', type: 'textarea', required: true, placeholder: 'What indicates they\'re a good fit?' },
+        { name: 'ideal_applicant', label: 'Who is your ideal applicant?', type: 'textarea', required: true, placeholder: 'Describe the person who\'s ready for this conversation...' },
+        { name: 'not_a_fit', label: 'Who is this NOT for?', type: 'textarea', required: true, placeholder: 'Describe who shouldn\'t apply right now...' },
+        { name: 'readiness_qualifier', label: 'What\'s one sign they\'re ready?', type: 'text', required: true, placeholder: 'e.g., Willing to take action, Already has some experience...' },
       ],
     },
     aiAssistModes: ['simplify', 'examples'],
     route: '/projects/:id/tasks/build_clarify_applicants',
   },
   {
-    taskId: 'build_application_form',
-    title: 'Set up your application form',
+    taskId: 'build_create_application',
+    title: 'Create your application form',
     phase: 'build',
     funnelTypes: ['application_call'],
     order: 1.6,
@@ -406,35 +411,37 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'Your application form is ready to receive submissions',
-      'Questions help you qualify applicants',
+      'You\'ve decided how people will apply',
+      'You have 3–5 simple questions ready',
+      'You know where applications will be submitted',
     ],
-    whyItMatters: 'Your application form is the first step in qualifying leads. Good questions help you understand who you\'re talking to before the call.',
+    whyItMatters: 'Your application is the first step in the conversation. Simple questions help you understand who you\'re talking to — without automation or scoring systems.',
     instructions: [
-      'Create a simple form with 5-10 questions',
-      'Focus on questions that reveal readiness',
-      'Include a way to schedule a call',
+      'Decide on your format: form, DM, or email',
+      'Write 3–5 simple questions that reveal readiness',
+      'Choose where applications will land (no automation needed)',
+      'Keep it human — no lead scoring or integrations',
     ],
-    inputType: 'checklist',
+    inputType: 'form',
     inputSchema: {
-      type: 'checkbox',
-      options: [
-        { value: 'form_created', label: 'Application form created', description: 'The form exists and is accessible' },
-        { value: 'qualifying_questions', label: 'Qualifying questions added', description: 'Questions help me understand fit' },
-        { value: 'scheduling_ready', label: 'Call scheduling set up', description: 'Qualified applicants can book a call' },
+      type: 'form',
+      fields: [
+        { name: 'application_format', label: 'How will people apply?', type: 'select', required: true, placeholder: 'Choose a format...' },
+        { name: 'application_questions', label: 'What questions will you ask? (3-5 questions)', type: 'textarea', required: true, placeholder: 'List your application questions...' },
+        { name: 'application_destination', label: 'Where will applications be submitted?', type: 'text', required: true, placeholder: 'e.g., Google Form, DM on Instagram, email to...' },
       ],
     },
-    aiAssistModes: ['simplify', 'help_me_choose'],
-    route: '/projects/:id/tasks/build_application_form',
+    aiAssistModes: ['simplify', 'examples', 'help_me_choose'],
+    route: '/projects/:id/tasks/build_create_application',
   },
 
-  // CONTENT Phase Additions
+  // ==================== CONTENT Phase Additions ====================
   {
     taskId: 'content_application_invitation',
     title: 'Write your application invitation',
     phase: 'content',
     funnelTypes: ['application_call'],
-    order: 0.5,
+    order: 0.5, // Before "Plan your launch content"
     priority: 1,
     estimatedMinutesMin: 15,
     estimatedMinutesMax: 30,
@@ -443,63 +450,98 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You have a clear way to invite people to apply',
-      'The invitation creates the right expectations',
+      'You can clearly explain who the conversation is for',
+      'You\'ve described what the call helps with',
+      'You have a simple call to action',
     ],
-    whyItMatters: 'Your application invitation sets the tone for the entire process. It should feel exclusive but accessible to the right people.',
+    whyItMatters: 'Your invitation sets the tone for the entire process. It should feel warm and clear — inviting the right people into a genuine conversation.',
     instructions: [
-      'Describe what they\'re applying for',
-      'Be clear about who this is for',
-      'Explain what happens after they apply',
+      'Write one short paragraph explaining who this is for',
+      'Describe what happens on the call and after applying',
+      'Include a simple CTA (e.g., "Apply to work together")',
+      'No urgency, scarcity, or pressure language',
     ],
     inputType: 'form',
     inputSchema: {
       type: 'form',
       fields: [
-        { name: 'invitation_headline', label: 'Headline for your application invitation', type: 'text', required: true, placeholder: 'e.g., Apply to work with me...' },
-        { name: 'invitation_body', label: 'What are they applying for? (2-3 sentences)', type: 'textarea', required: true, placeholder: 'Describe the opportunity and who it\'s for...' },
-        { name: 'invitation_cta', label: 'Call to action', type: 'text', required: true, placeholder: 'e.g., Apply now, Submit your application' },
+        { name: 'invitation_paragraph', label: 'Describe who this is for and what the call helps with', type: 'textarea', required: true, placeholder: 'One short paragraph explaining the opportunity...' },
+        { name: 'invitation_cta', label: 'Your call to action', type: 'text', required: true, placeholder: 'e.g., Apply to work together, Start the conversation' },
       ],
     },
     aiAssistModes: ['simplify', 'examples'],
     route: '/projects/:id/tasks/content_application_invitation',
   },
 
-  // LAUNCH Phase Additions
+  // ==================== LAUNCH Phase Additions ====================
   {
-    taskId: 'launch_invite_conversations',
-    title: 'Invite conversations',
+    taskId: 'launch_invite_applications',
+    title: 'Invite applications',
     phase: 'launch',
     funnelTypes: ['application_call'],
-    order: 3.5,
-    priority: 1,
+    order: 3.3, // After main announcement
+    priority: 2,
     estimatedMinutesMin: 10,
     estimatedMinutesMax: 20,
     blocking: false,
-    dependencies: ['launch_share_offer'],
+    dependencies: ['launch_main_announcement'],
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
-      'You\'ve made it clear that you\'re open to applications',
-      'Qualified leads know how to start the conversation',
+      'Application link or instructions have been shared',
+      'People who are interested know how to raise their hand',
     ],
-    whyItMatters: 'Launching an application-based offer is about starting the right conversations. Make it easy for qualified people to take the first step.',
+    whyItMatters: 'This is about inviting aligned people into a conversation — not running a sales process. Make it easy for the right people to take the first step.',
     instructions: [
-      'Share your application openly',
-      'Make the process feel welcoming, not intimidating',
-      'Follow up with applicants promptly',
+      'Share your application link or instructions publicly or privately',
+      'Keep the invitation warm and clear',
+      'No deadlines or countdowns needed',
     ],
     inputType: 'checklist',
     inputSchema: {
       type: 'checkbox',
       options: [
-        { value: 'applications_open', label: 'Applications are open', description: 'I\'ve announced that I\'m accepting applications' },
-        { value: 'process_clear', label: 'Process is clear', description: 'People know what to expect after applying' },
-        { value: 'ready_to_respond', label: 'Ready to respond', description: 'I\'m prepared to follow up with applicants' },
+        { value: 'application_shared', label: 'Application link/instructions shared', description: 'I\'ve made it clear how to apply' },
+        { value: 'invitation_feels_right', label: 'Invitation feels inviting', description: 'The tone is warm and welcoming' },
       ],
     },
     aiAssistModes: ['simplify', 'reassurance'],
-    route: '/projects/:id/tasks/launch_invite_conversations',
+    route: '/projects/:id/tasks/launch_invite_applications',
+  },
+  {
+    taskId: 'launch_hold_calls',
+    title: 'Hold calls',
+    phase: 'launch',
+    funnelTypes: ['application_call'],
+    order: 4.5, // Near end of launch phase
+    priority: 2,
+    estimatedMinutesMin: 30,
+    estimatedMinutesMax: 120,
+    blocking: false,
+    dependencies: ['launch_invite_applications'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Calls were held, OR the launch window ended',
+      'You showed up for the conversations',
+    ],
+    whyItMatters: 'This is about showing up for conversations with people who raised their hand. You don\'t need to track outcomes or conversions — just be present and helpful.',
+    instructions: [
+      'Show up for scheduled calls',
+      'Listen and be present',
+      'No tracking outcomes or conversion metrics required',
+      'No notes or CRM entries needed',
+    ],
+    inputType: 'checklist',
+    inputSchema: {
+      type: 'checkbox',
+      options: [
+        { value: 'calls_held', label: 'Calls held or launch window ended', description: 'I showed up for the conversations' },
+        { value: 'present_and_helpful', label: 'Was present and helpful', description: 'I focused on connection, not closing' },
+      ],
+    },
+    aiAssistModes: ['reassurance'],
+    route: '/projects/:id/tasks/launch_hold_calls',
   },
 ];
 
@@ -581,10 +623,39 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
     deltaTasks: APPLICATION_CALL_DELTA_TASKS,
     modifiedTasks: [
       {
+        taskId: 'build_choose_platform',
+        changes: {
+          whyItMatters: 'This is where people will be directed after the call if it\'s a fit. Keep it simple.',
+        },
+      },
+      {
+        taskId: 'build_payment_setup',
+        changes: {
+          whyItMatters: 'Payments typically happen after the call for this type of offer. You don\'t need a checkout page — just a way to collect payment when the time is right.',
+        },
+      },
+      {
+        taskId: 'content_plan_content',
+        changes: {
+          instructions: [
+            'Your content will invite people to apply for a conversation, not directly to purchase',
+            'Focus on sharing who this is for and what the conversation helps with',
+            'Keep it clear, warm, and invitational',
+          ],
+        },
+      },
+      {
+        taskId: 'launch_main_announcement',
+        changes: {
+          title: 'Announce that you\'re opening applications',
+          whyItMatters: 'This is when you let people know you\'re accepting applications. The tone should be clear, warm, and invitational — not sales-y.',
+        },
+      },
+      {
         taskId: 'launch_share_offer',
         changes: {
-          title: 'Open applications',
-          whyItMatters: 'This is when you let people know you\'re accepting applications. It\'s the beginning of the conversation that leads to your offer.',
+          title: 'Share application details',
+          whyItMatters: 'This is about making it easy for aligned people to start the conversation. Focus on clarity, not closing.',
         },
       },
     ],
