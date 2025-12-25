@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { StuckHelpDialog } from "@/components/dashboard/StuckHelpDialog";
+import { AIResponseRenderer } from "@/components/ui/ai-response-renderer";
 import { toast } from "sonner";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
 import { PHASE_LABELS, TaskTemplate } from "@/types/tasks";
@@ -25,6 +26,7 @@ export default function TaskDetail() {
   const [isStuckDialogOpen, setIsStuckDialogOpen] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState<string | null>(null);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [lastAiMode, setLastAiMode] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Use task engine
@@ -167,6 +169,7 @@ export default function TaskDetail() {
     
     setIsAiLoading(mode);
     setAiResponse(null);
+    setLastAiMode(mode);
     
     try {
       const { data, error } = await supabase.functions.invoke('task-ai-assist', {
@@ -406,11 +409,7 @@ export default function TaskDetail() {
             </div>
 
             {aiResponse && (
-              <div className="p-4 rounded-lg bg-background border border-border/50">
-                <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">
-                  {aiResponse}
-                </p>
-              </div>
+              <AIResponseRenderer response={aiResponse} mode={lastAiMode || undefined} />
             )}
           </section>
         )}
