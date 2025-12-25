@@ -36,6 +36,7 @@ interface StructuredChooseResponse {
 interface PromptingModeResponse {
   mode: 'prompting';
   opening: string;
+  nicheContext?: string; // Optional niche-aware context line
   clarifyingQuestions: string[];
   exampleDirections: Array<{ label: string; content: string }>;
   closing: string;
@@ -45,6 +46,7 @@ interface RefinementModeResponse {
   mode: 'refinement';
   reflection: string;
   guidance: string;
+  nicheContext?: string; // Optional niche-aware context line
   refinementOptions: string[];
   exampleRefinements: Array<{ label: string; content: string }>;
   closing: string;
@@ -480,9 +482,16 @@ export function AIResponseRenderer({ response, mode }: AIResponseRendererProps) 
             
             {data.exampleDirections && data.exampleDirections.length > 0 && (
               <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Example starting points (pick one to adapt)
-                </p>
+                {/* Show niche context as subtle intro if available */}
+                {data.nicheContext ? (
+                  <p className="text-sm text-muted-foreground">
+                    {data.nicheContext}
+                  </p>
+                ) : (
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Example starting points (pick one to adapt)
+                  </p>
+                )}
                 <div className="space-y-3">
                   {data.exampleDirections.map((example, index) => (
                     <ExampleDirectionCard 
@@ -516,9 +525,16 @@ export function AIResponseRenderer({ response, mode }: AIResponseRendererProps) 
             
             {data.refinementOptions && data.refinementOptions.length > 0 && (
               <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  You could narrow this by
-                </p>
+                {/* Show niche context as subtle intro if available */}
+                {data.nicheContext ? (
+                  <p className="text-sm text-muted-foreground">
+                    {data.nicheContext}
+                  </p>
+                ) : (
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    You could narrow this by
+                  </p>
+                )}
                 <ul className="space-y-1.5 pl-1">
                   {data.refinementOptions.map((option, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm text-foreground/80">
