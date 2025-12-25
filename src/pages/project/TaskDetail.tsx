@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
-import { ArrowLeft, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -16,10 +16,13 @@ import { PHASE_LABELS, TaskTemplate } from "@/types/tasks";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getLearnMoreArticleId } from "@/data/taskLearnMoreLinks";
+import { useAuth } from "@/contexts/AuthContext";
+
 export default function TaskDetail() {
   const { id: projectId, taskId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [selectedOption, setSelectedOption] = useState<string>("");
@@ -30,6 +33,9 @@ export default function TaskDetail() {
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [lastAiMode, setLastAiMode] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const isInitialized = useRef(false);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Use task engine
   const {
@@ -83,6 +89,8 @@ export default function TaskDetail() {
         setChecklistItems(Array.isArray(data.checkedItems) ? data.checkedItems : []);
       }
     }
+    // Mark as initialized after loading data
+    isInitialized.current = true;
   }, [projectTask, taskTemplate]);
 
   // Mark task as started when user opens it
@@ -91,6 +99,95 @@ export default function TaskDetail() {
       startTask(taskId);
     }
   }, [taskId, projectTask, engineLoading, startTask]);
+
+  // Auto-save function
+  const saveInputData = useCallback(async () => {
+    if (!user || !projectId || !taskId) return;
+
+    // Build input data based on task type
+    let inputData: Record<string, unknown> = {};
+    
+    switch (taskTemplate?.inputType) {
+      case 'selection':
+        inputData = { selected: selectedOption };
+        break;
+      case 'checklist':
+        inputData = { checkedItems: checklistItems };
+        break;
+      case 'form':
+        inputData = { ...formData };
+        break;
+    }
+
+    // Check if there's meaningful data to save
+    const hasData = Object.keys(inputData).some(key => {
+      const value = inputData[key];
+      if (Array.isArray(value)) return value.length > 0;
+      return value && String(value).trim() !== '';
+    });
+
+    if (!hasData) return;
+
+    try {
+      const existingTask = projectTasks.find(pt => pt.taskId === taskId);
+
+      if (existingTask) {
+        // Update existing task - preserve status, just update input_data
+        await supabase
+          .from('project_tasks')
+          .update({
+            input_data: JSON.parse(JSON.stringify(inputData)),
+          })
+          .eq('id', existingTask.id)
+          .eq('user_id', user.id);
+      } else {
+        // Create new task as in_progress with input_data
+        await supabase.from('project_tasks').insert({
+          project_id: projectId,
+          user_id: user.id,
+          task_id: taskId,
+          status: 'in_progress',
+          started_at: new Date().toISOString(),
+          input_data: JSON.parse(JSON.stringify(inputData)),
+        });
+      }
+    } catch (error) {
+      console.error('Auto-save error:', error);
+    }
+  }, [user, projectId, taskId, taskTemplate, selectedOption, checklistItems, formData, projectTasks]);
+
+  // Debounced auto-save effect
+  useEffect(() => {
+    if (!isInitialized.current || !projectId || !taskId || !user) return;
+
+    // Clear any pending save
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Check if there's any data to save
+    const hasData = Object.keys(formData).some(k => formData[k]?.trim()) || 
+                    selectedOption || 
+                    checklistItems.length > 0;
+
+    if (!hasData) return;
+
+    setAutoSaveStatus('saving');
+
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      await saveInputData();
+      setAutoSaveStatus('saved');
+      
+      // Reset to idle after 2 seconds
+      setTimeout(() => setAutoSaveStatus('idle'), 2000);
+    }, 800);
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [formData, selectedOption, checklistItems, projectId, taskId, user, saveInputData]);
 
   const handleCriteriaToggle = (criteriaText: string) => {
     setCompletedCriteria((prev) =>
@@ -322,9 +419,28 @@ export default function TaskDetail() {
 
         {/* Task Input Area */}
         <section className="mb-10">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">
-            Your response
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Your response
+            </h2>
+            {/* Auto-save status indicator */}
+            {autoSaveStatus !== 'idle' && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                {autoSaveStatus === 'saving' && (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Saving...
+                  </>
+                )}
+                {autoSaveStatus === 'saved' && (
+                  <>
+                    <Check className="w-3 h-3 text-emerald-500" />
+                    Saved
+                  </>
+                )}
+              </span>
+            )}
+          </div>
           
           {/* Selection Input */}
           {taskTemplate.inputType === 'selection' && taskTemplate.inputSchema?.options && (
