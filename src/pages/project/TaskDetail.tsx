@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { ArrowLeft, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2, Check } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StuckHelpDialog } from "@/components/dashboard/StuckHelpDialog";
 import { AIResponseRenderer } from "@/components/ui/ai-response-renderer";
+import { FunnelDiagram } from "@/components/funnel/FunnelDiagram";
+import { LAUNCH_PATH_FUNNEL_STEPS } from "@/data/launchPathFunnels";
 import { toast } from "sonner";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
 import { PHASE_LABELS, TaskTemplate } from "@/types/tasks";
@@ -451,26 +454,57 @@ export default function TaskDetail() {
           {/* Selection Input */}
           {taskTemplate.inputType === 'selection' && taskTemplate.inputSchema?.options && (
             <RadioGroup value={selectedOption} onValueChange={setSelectedOption} className="space-y-3">
-              {taskTemplate.inputSchema.options.map((option) => (
-                <div key={option.value}>
-                  <Label
-                    htmlFor={option.value}
-                    className={`flex items-start gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
-                      selectedOption === option.value
-                        ? "border-primary bg-primary/5 ring-1 ring-primary"
-                        : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
-                    }`}
-                  >
-                    <RadioGroupItem value={option.value} id={option.value} className="mt-0.5" />
-                    <div className="space-y-1">
-                      <span className="font-medium text-foreground">{option.label}</span>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {option.description}
-                      </p>
-                    </div>
-                  </Label>
-                </div>
-              ))}
+              {taskTemplate.inputSchema.options.map((option) => {
+                const funnelConfig = LAUNCH_PATH_FUNNEL_STEPS[option.value];
+                const isSelected = selectedOption === option.value;
+                
+                return (
+                  <div key={option.value}>
+                    <Label
+                      htmlFor={option.value}
+                      className={`flex flex-col p-4 rounded-lg border cursor-pointer transition-all ${
+                        isSelected
+                          ? "border-primary bg-primary/5 ring-1 ring-primary"
+                          : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
+                      }`}
+                    >
+                      <div className="flex items-start gap-4">
+                        <RadioGroupItem value={option.value} id={option.value} className="mt-0.5" />
+                        <div className="space-y-1 flex-1">
+                          <span className="font-medium text-foreground">{option.label}</span>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {option.description}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Expandable Funnel Diagram */}
+                      <AnimatePresence>
+                        {isSelected && funnelConfig && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2, ease: 'easeInOut' }}
+                            className="overflow-hidden"
+                          >
+                            <div className="mt-4 pt-4 border-t border-border/50">
+                              <FunnelDiagram
+                                steps={funnelConfig.steps}
+                                color={funnelConfig.color}
+                                bgColor={funnelConfig.bgColor}
+                              />
+                              <p className="text-xs text-muted-foreground text-center mt-3">
+                                Offer Slots: {funnelConfig.offerSlots}
+                              </p>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </Label>
+                  </div>
+                );
+              })}
             </RadioGroup>
           )}
 
