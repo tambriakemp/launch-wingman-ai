@@ -256,14 +256,6 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
 
       if (projectError) throw projectError;
 
-      if (project) {
-        setActivePhase((project.active_phase as Phase) || 'planning');
-        setSelectedFunnelType(project.selected_funnel_type as FunnelType | null);
-        setPhaseStatuses(
-          (project.phase_statuses as Record<Phase, PhaseStatus>) || DEFAULT_PHASE_STATUSES
-        );
-      }
-
       // Fetch project tasks
       const { data: tasks, error: tasksError } = await supabase
         .from('project_tasks')
@@ -287,6 +279,37 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
         createdAt: t.created_at,
       }));
 
+      // Backfill: If selected_funnel_type is null but the planning task has a selected value
+      let effectiveFunnelType = project?.selected_funnel_type as FunnelType | null;
+      
+      if (!effectiveFunnelType) {
+        const planningTask = mappedTasks.find(t => t.taskId === 'planning_choose_launch_path');
+        if (planningTask?.status === 'completed' && planningTask.inputData?.selected) {
+          const selectedFromTask = normalizeFunnelType(planningTask.inputData.selected as FunnelType) 
+            || (planningTask.inputData.selected as FunnelType);
+          
+          // Update the project with the correct funnel type
+          await supabase
+            .from('projects')
+            .update({ selected_funnel_type: selectedFromTask })
+            .eq('id', projectId)
+            .eq('user_id', user.id);
+          
+          // Inject any missing funnel tasks
+          await injectFunnelTasks(selectedFromTask, mappedTasks);
+          
+          effectiveFunnelType = selectedFromTask;
+        }
+      }
+
+      if (project) {
+        setActivePhase((project.active_phase as Phase) || 'planning');
+        setSelectedFunnelType(effectiveFunnelType);
+        setPhaseStatuses(
+          (project.phase_statuses as Record<Phase, PhaseStatus>) || DEFAULT_PHASE_STATUSES
+        );
+      }
+
       setProjectTasks(mappedTasks);
     } catch (err) {
       console.error('Error fetching task engine data:', err);
@@ -294,7 +317,7 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
     } finally {
       setIsLoading(false);
     }
-  }, [user, projectId]);
+  }, [user, projectId, normalizeFunnelType, injectFunnelTasks]);
 
   // Initialize tasks for a new project
   const initializeProjectTasks = useCallback(async () => {
@@ -377,10 +400,26 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
         }]);
       }
 
+      // If this is the "Choose how you'll sell" task, set the funnel type and inject tasks
+      if (taskId === 'planning_choose_launch_path' && inputData?.selected) {
+        const selectedType = normalizeFunnelType(inputData.selected as FunnelType) || (inputData.selected as FunnelType);
+        
+        // Update project with selected funnel type
+        await supabase
+          .from('projects')
+          .update({ selected_funnel_type: selectedType })
+          .eq('id', projectId)
+          .eq('user_id', user.id);
+
+        // Inject funnel-specific tasks
+        await injectFunnelTasks(selectedType, projectTasks);
+        setSelectedFunnelType(selectedType);
+      }
+
       await fetchData();
       await recalculatePhases();
     },
-    [user, projectId, projectTasks, fetchData, recalculatePhases]
+    [user, projectId, projectTasks, fetchData, recalculatePhases, normalizeFunnelType, injectFunnelTasks]
   );
 
   // Skip a task

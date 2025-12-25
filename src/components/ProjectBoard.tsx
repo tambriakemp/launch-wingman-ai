@@ -137,7 +137,7 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
     const checkFunnelAndFetchOffers = async () => {
       if (!projectId) return;
 
-      // Fetch current funnel type from funnels table
+      // Fetch current funnel type from funnels table (for asset checklist)
       const { data: funnel } = await supabase
         .from('funnels')
         .select('id, funnel_type')
@@ -151,8 +151,35 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
         .eq('id', projectId)
         .single();
 
-      // Use funnel.funnel_type first, then project.selected_funnel_type as fallback
-      const activeFunnelType = funnel?.funnel_type || project?.selected_funnel_type || null;
+      // Backfill check: if selected_funnel_type is null, check the planning task
+      let selectedFunnelType = project?.selected_funnel_type;
+      
+      if (!selectedFunnelType) {
+        const { data: planningTask } = await supabase
+          .from('project_tasks')
+          .select('input_data')
+          .eq('project_id', projectId)
+          .eq('task_id', 'planning_choose_launch_path')
+          .eq('status', 'completed')
+          .maybeSingle();
+        
+        if (planningTask?.input_data && typeof planningTask.input_data === 'object') {
+          const inputData = planningTask.input_data as Record<string, unknown>;
+          if (inputData.selected) {
+            selectedFunnelType = inputData.selected as string;
+            
+            // Update the project with the correct funnel type
+            await supabase
+              .from('projects')
+              .update({ selected_funnel_type: selectedFunnelType })
+              .eq('id', projectId);
+          }
+        }
+      }
+
+      // Use project.selected_funnel_type for task phases (the "sell path")
+      // Use funnel.funnel_type only for asset checklist (legacy marketing funnel)
+      const activeFunnelType = selectedFunnelType || null;
 
       if (activeFunnelType) {
         setCurrentFunnelType(activeFunnelType);
