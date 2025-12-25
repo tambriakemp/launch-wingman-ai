@@ -79,6 +79,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     isLoading: lifecycleLoading,
     dashboardViewType,
     resume,
+    pause,
+    archive,
     markCompleted,
     transitionTo,
   } = useProjectLifecycle({ projectId });
@@ -188,6 +190,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
           // Mark as in_progress to continue with post-launch tasks
           await transitionTo('in_progress');
         }}
+        onMarkComplete={markCompleted}
       />
     );
   }
@@ -229,6 +232,11 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
         firstName={profile?.first_name}
         projectName={project?.name}
         projectId={projectId}
+        projectState={projectState}
+        onPause={pause}
+        onResume={resume}
+        onArchive={archive}
+        onMarkComplete={projectState === 'launched' ? markCompleted : undefined}
       />
 
       {/* Show celebration card if a phase was recently completed and not dismissed */}
