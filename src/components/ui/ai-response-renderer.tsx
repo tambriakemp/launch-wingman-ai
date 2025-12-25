@@ -50,7 +50,15 @@ interface RecommendationModeResponse {
 
 type HelpMeChooseResponse = PromptingModeResponse | RefinementModeResponse | RecommendationModeResponse | StructuredChooseResponse;
 
-interface StructuredSimplifyResponse {
+// New Simplify response format (rewriting only)
+interface NewSimplifyResponse {
+  opening: string;
+  simplifiedText: string;
+  note?: string;
+}
+
+// Legacy Simplify response format (deprecated)
+interface LegacySimplifyResponse {
   intro?: string;
   mainPoint?: {
     title: string;
@@ -513,7 +521,33 @@ export function AIResponseRenderer({ response, mode }: AIResponseRendererProps) 
 
   // Handle "simplify" mode
   if (mode === 'simplify' && parsed) {
-    const structured = parsed as StructuredSimplifyResponse;
+    // Check for new simplify format
+    const hasSimplifiedText = 'simplifiedText' in parsed && typeof (parsed as Record<string, unknown>).simplifiedText === 'string';
+    if (hasSimplifiedText) {
+      const data = parsed as unknown as NewSimplifyResponse;
+      return (
+        <div className="space-y-4">
+          <p className="text-sm text-foreground/80 leading-relaxed">
+            {data.opening}
+          </p>
+          
+          <div className="p-4 rounded-lg bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950/30 dark:to-cyan-950/30 border border-sky-200/50 dark:border-sky-800/30">
+            <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+              {data.simplifiedText}
+            </p>
+          </div>
+          
+          {data.note && (
+            <p className="text-sm text-muted-foreground italic">
+              {data.note}
+            </p>
+          )}
+        </div>
+      );
+    }
+    
+    // Legacy format fallback
+    const structured = parsed as LegacySimplifyResponse;
     if (structured?.mainPoint || structured?.steps) {
       return (
         <div className="space-y-4">

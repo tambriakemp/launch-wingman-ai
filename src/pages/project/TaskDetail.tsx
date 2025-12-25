@@ -193,8 +193,8 @@ export default function TaskDetail() {
     setLastAiMode(mode);
     
     try {
-      // Get current input value for mode detection
-      const currentInput = mode === 'help_me_choose' ? getPrimaryInputValue() : undefined;
+      // Get current input value for mode detection (help_me_choose and simplify need it)
+      const currentInput = (mode === 'help_me_choose' || mode === 'simplify') ? getPrimaryInputValue() : undefined;
       
       const { data, error } = await supabase.functions.invoke('task-ai-assist', {
         body: {
@@ -426,13 +426,20 @@ export default function TaskDetail() {
                   examples: "Show examples",
                   simplify: "Simplify this",
                 };
+                
+                // Simplify button requires user input
+                const primaryInput = getPrimaryInputValue();
+                const hasInput = primaryInput.trim().length >= 10; // At least one meaningful sentence
+                const isSimplifyDisabled = mode === 'simplify' && !hasInput;
+                
                 return (
                   <Button
                     key={mode}
                     variant="outline"
                     size="sm"
                     onClick={() => handleAiAssist(mode)}
-                    disabled={isAiLoading !== null}
+                    disabled={isAiLoading !== null || isSimplifyDisabled}
+                    title={isSimplifyDisabled ? "Write something first so we can simplify it." : undefined}
                   >
                     {isAiLoading === mode && (
                       <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
@@ -442,6 +449,13 @@ export default function TaskDetail() {
                 );
               })}
             </div>
+            
+            {/* Helper text for simplify when disabled */}
+            {taskTemplate.aiAssistModes.includes('simplify') && getPrimaryInputValue().trim().length < 10 && (
+              <p className="text-xs text-muted-foreground mb-4">
+                Write something first so we can simplify it.
+              </p>
+            )}
 
             {aiResponse && (
               <AIResponseRenderer response={aiResponse} mode={lastAiMode || undefined} />
