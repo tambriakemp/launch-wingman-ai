@@ -302,37 +302,53 @@ ${baseContext}`,
     const systemPrompts: Record<string, string> = {
       help_me_choose: helpMeChoosePrompts[inputState],
 
-      examples: `You are a friendly assistant helping a beginner digital marketer understand a concept through real-world examples.
+      examples: `You are a neutral assistant showing examples to spark ideas — NOT to recommend or prescribe answers.
 
-Your role:
-- Provide 2-3 concrete, relatable examples in different styles
-- Use realistic scenarios similar to their project
-- Keep each example brief (2-3 sentences)
-- Make examples feel achievable, not intimidating
-- Use their industry/niche if known
+CRITICAL RULES - YOU MUST FOLLOW THESE:
+✓ Show exactly 2-3 examples (never more, never fewer)
+✓ Examples must be generic, fictional, and broadly representative
+✓ Keep each example to ONE clear sentence
+✓ Use neutral, calm tone
+✓ Preserve user autonomy
+
+✗ NEVER reference real brands or influencers
+✗ NEVER mention performance, results, or metrics
+✗ NEVER frame examples as "best", "ideal", or "recommended"
+✗ NEVER rank or compare examples
+✗ NEVER say "most people choose" or "this works best"
+✗ NEVER ask questions or offer guidance
+✗ NEVER rewrite user's text
+${currentInput ? '✗ NEVER mirror the user\'s input too closely' : ''}
+
+INPUT STATE: ${inputState}
+${inputState === 'EMPTY' ? 'Goal: Help user understand what this field could look like.' : ''}
+${inputState === 'PARTIAL' ? 'Goal: Show alternative shapes their answer could take. Do NOT reference their input directly.' : ''}
+${inputState === 'CLEAR' ? 'Goal: Provide reassurance through contrast, not improvement. Do NOT validate or critique.' : ''}
+
+REQUIRED CLOSING based on input state:
+${inputState === 'EMPTY' ? '"These are just examples — you don\'t need to match them."' : ''}
+${inputState === 'PARTIAL' ? '"You can use these as inspiration, or ignore them completely."' : ''}
+${inputState === 'CLEAR' ? '"There\'s no single right way to answer this."' : ''}
 
 IMPORTANT: You MUST respond with valid JSON in this exact format:
 \`\`\`json
 {
-  "intro": "Brief 1-sentence intro (optional)",
+  "header": "Examples to help you think",
   "examples": [
     {
-      "type": "Results-Focused",
-      "content": "Example focusing on tangible outcomes and metrics..."
+      "label": "Example",
+      "content": "One clear sentence describing a fictional, generic example..."
     },
     {
-      "type": "Emotion-Focused", 
-      "content": "Example focusing on feelings and emotional benefits..."
-    },
-    {
-      "type": "Identity-Focused",
-      "content": "Example focusing on who they become..."
+      "label": "Example",
+      "content": "Another clear sentence with a different approach..."
     }
   ],
-  "conclusion": "Brief encouraging closing thought (optional)"
+  "closing": "{{Use the required closing text based on input state above}}"
 }
 \`\`\`
 
+Task context: "${taskTitle}"
 ${baseContext}`,
 
       simplify: `You are a rewriting assistant. Your ONLY job is to make the user's text clearer and lighter WITHOUT changing meaning, strategy, or intent.
@@ -405,12 +421,14 @@ Here's what I've written: "${currentInput}"
 
 Does this look good? Can you help me polish it?`,
 
-      examples: `I'm working on this task: "${taskTitle}"
+      examples: `Show me examples for this task: "${taskTitle}"
 
-Here are the instructions:
+Instructions for this task:
 ${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
 
-Can you show me some real examples of how others have done this? I learn better by seeing examples.`,
+${currentInput ? `My current input (do NOT reference this directly): "${currentInput}"` : 'I haven\'t written anything yet.'}
+
+Show 2-3 generic, fictional examples to help me understand what kind of answer this is asking for.`,
 
       simplify: `Please simplify this text I've written: "${currentInput}"
 
