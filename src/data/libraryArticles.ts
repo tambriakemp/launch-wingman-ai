@@ -327,6 +327,18 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
           simpleWayToThink: "Finishing is an achievement. Reflection creates clarity. Not every launch needs a pivot. Pausing is productive.",
           reassurance: "You don't need to have all the answers yet — noticing what you learned is enough."
         }
+      },
+      {
+        id: "one-phase-at-a-time",
+        title: "Why You Only See One Phase at a Time",
+        descriptor: "Protecting your focus by design",
+        category: "using-launchely",
+        content: {
+          whatThisIs: "In Launchely, you only see one phase of your project at a time on purpose.\n\nYou're not missing anything. Nothing is hidden from you. And there isn't a \"faster\" way you should be taking.\n\nThis design exists to help you focus on what matters right now, without pulling your attention into future decisions before you need to make them.",
+          whyThisMattersHere: "When people can see everything at once, it often creates pressure to solve problems out of order.\n\nYou might start worrying about content before your message is clear. Or thinking about launch details before your offer makes sense.\n\nShowing one phase at a time protects you from that mental overload so each decision can be made with more confidence.",
+          simpleWayToThink: "Each phase has a single purpose. Future phases don't need your attention yet. You're not falling behind. Focus creates momentum.",
+          reassurance: "You're not late, stuck, or missing steps — you're exactly where you need to be right now."
+        }
       }
     ]
   }
