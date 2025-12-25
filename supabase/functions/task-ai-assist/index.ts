@@ -335,40 +335,46 @@ IMPORTANT: You MUST respond with valid JSON in this exact format:
 
 ${baseContext}`,
 
-      simplify: `You are a friendly assistant helping a beginner digital marketer who feels overwhelmed. Your job is to simplify and clarify.
+      simplify: `You are a rewriting assistant. Your ONLY job is to make the user's text clearer and lighter WITHOUT changing meaning, strategy, or intent.
 
-Your role:
-- Break down the task into the simplest possible terms
-- Use analogies or metaphors if helpful
-- Focus on the one most important thing to do
-- Remove any complexity or overthinking
-- Be warm and reassuring
+The user has written: "${currentInput}"
+
+CRITICAL RULES - YOU MUST FOLLOW THESE:
+✓ Reduce sentence length
+✓ Remove redundancy
+✓ Replace complex phrases with clearer ones
+✓ Improve readability
+✓ Preserve the user's voice and tone
+✓ Keep meaning IDENTICAL
+
+✗ NEVER add new ideas
+✗ NEVER change strategy
+✗ NEVER improve positioning
+✗ NEVER make it more persuasive
+✗ NEVER make it more "salesy"
+✗ NEVER add urgency or hype
+✗ NEVER introduce jargon
+✗ NEVER correct the user conceptually
+
+The output should sound like: "What the user meant — just cleaner."
+
+TONE RULES:
+- Calm, neutral, non-judgmental
+- No praise ("this is great")
+- No critique ("this was confusing")
+- The user's original text is always treated as valid
 
 IMPORTANT: You MUST respond with valid JSON in this exact format:
 \`\`\`json
 {
-  "intro": "Reassuring opening sentence acknowledging this can feel complex",
-  "mainPoint": {
-    "title": "The One Thing to Focus On",
-    "content": "The single most important thing they need to do, explained simply (2-3 sentences)"
-  },
-  "steps": [
-    {
-      "type": "Give It a Name",
-      "content": "First simple action to take..."
-    },
-    {
-      "type": "Picture Their Day",
-      "content": "Next simple action..."
-    }
-  ],
-  "conclusion": "Encouraging reminder that they've got this"
+  "opening": "Here's a simpler version that keeps your meaning the same:",
+  "simplifiedText": "{{The user's text, rewritten to be clearer and lighter while keeping the exact same meaning}}",
+  "note": "This keeps your original intent, just makes it easier to read."
 }
 \`\`\`
 
-CRITICAL: Step "type" values must be SHORT descriptive action phrases (2-4 words) like "Name Your Customer", "List Their Struggles", "Write It Down" - NOT "Step 1", "Step 2", etc.
-
-Keep steps to 2-3 maximum. Use everyday language and analogies where helpful.
+DO NOT include explanations, coaching, suggestions, or alternatives.
+The simplified text must preserve the user's exact meaning and voice.
 
 ${baseContext}`,
     };
@@ -406,12 +412,9 @@ ${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specif
 
 Can you show me some real examples of how others have done this? I learn better by seeing examples.`,
 
-      simplify: `I'm working on this task: "${taskTitle}"
+      simplify: `Please simplify this text I've written: "${currentInput}"
 
-Here are the instructions:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-This feels overwhelming. Can you break this down into simpler terms? What's the one thing I should focus on?`,
+Make it clearer and lighter while keeping the exact same meaning. Do not add ideas, change strategy, or make it more persuasive.`,
     };
 
     // Validate that we have prompts for the requested mode
