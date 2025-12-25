@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Rocket, Check, RefreshCw, Loader2 } from "lucide-react";
+import { ArrowLeft, Rocket, Check, RefreshCw, Loader2, Sparkles } from "lucide-react";
 import { RelaunchSection } from "./RelaunchSelectionScreen";
 
 interface RelaunchSummaryScreenProps {
@@ -11,6 +11,7 @@ interface RelaunchSummaryScreenProps {
   isCreating: boolean;
   onConfirm: () => void;
   onBack: () => void;
+  skipMemory?: boolean;
 }
 
 const SECTION_LABELS: Record<RelaunchSection, string> = {
@@ -31,7 +32,76 @@ export function RelaunchSummaryScreen({
   isCreating,
   onConfirm,
   onBack,
+  skipMemory = false,
 }: RelaunchSummaryScreenProps) {
+  // Fresh start mode - skip all memory
+  if (skipMemory) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -20 }}
+        className="max-w-xl mx-auto py-12 px-4 space-y-6"
+      >
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-semibold text-foreground">
+            Fresh Start
+          </h1>
+          <p className="text-muted-foreground">
+            Starting clean without past project data
+          </p>
+        </div>
+
+        {/* Project name preview */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">New project name</p>
+                <p className="font-medium text-foreground">
+                  {projectName} — Fresh Start
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+          <CardContent className="pt-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              You'll start with a blank slate and define everything fresh.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* CTAs */}
+        <div className="flex items-center justify-between pt-4">
+          <Button variant="ghost" onClick={onBack} disabled={isCreating} className="gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
+          <Button onClick={onConfirm} disabled={isCreating} className="gap-2">
+            {isCreating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              <>
+                Start fresh
+                <Sparkles className="w-4 h-4" />
+              </>
+            )}
+          </Button>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}

@@ -11,6 +11,7 @@ export interface ProjectSummaryData {
   // Relaunch info
   isRelaunch: boolean;
   parentProjectId: string | null;
+  parentProjectName: string | null;
   
   // Audience & Problem
   niche: string | null;
@@ -121,6 +122,17 @@ export function useProjectSummary(projectId: string | undefined) {
 
       if (projectResult.error) throw projectResult.error;
 
+      // Fetch parent project name if this is a relaunch
+      let parentProjectName: string | null = null;
+      if (projectResult.data.is_relaunch && projectResult.data.parent_project_id) {
+        const { data: parentProject } = await supabase
+          .from("projects")
+          .select("name")
+          .eq("id", projectResult.data.parent_project_id)
+          .maybeSingle();
+        parentProjectName = parentProject?.name || null;
+      }
+
       // Extract unique content themes from labels
       const allLabels = contentResult.data?.flatMap((c) => c.labels || []) || [];
       const uniqueThemes = [...new Set(allLabels)].slice(0, 6); // Limit to 6 themes
@@ -184,6 +196,7 @@ export function useProjectSummary(projectId: string | undefined) {
         transformationStatement: projectResult.data.transformation_statement,
         isRelaunch: projectResult.data.is_relaunch || false,
         parentProjectId: projectResult.data.parent_project_id || null,
+        parentProjectName,
         niche: funnelResult.data?.niche || null,
         targetAudience: funnelResult.data?.target_audience || null,
         primaryPainPoint: funnelResult.data?.primary_pain_point || null,

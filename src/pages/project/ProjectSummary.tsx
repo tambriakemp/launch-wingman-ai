@@ -174,6 +174,7 @@ export default function ProjectSummary() {
   // Check if this is a relaunch project
   const isRelaunchProject = data?.isRelaunch;
   const parentProjectId = data?.parentProjectId;
+  const parentProjectName = data?.parentProjectName;
 
   if (isLoading) {
     return (
@@ -461,7 +462,7 @@ export default function ProjectSummary() {
               to={`/projects/${parentProjectId}/summary`}
               className="text-primary hover:underline"
             >
-              Original project
+              {parentProjectName || "Original project"}
             </Link>
           </motion.div>
         )}
