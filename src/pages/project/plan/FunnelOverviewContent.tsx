@@ -14,8 +14,12 @@ import {
   StuckHelpDialog,
   DailyMotivationCard,
   PhaseCelebrationCard,
+  ProjectCompletedView,
+  ProjectPausedView,
+  ProjectLaunchedView,
 } from "@/components/dashboard";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
+import { useProjectLifecycle } from "@/hooks/useProjectLifecycle";
 import { PHASE_LABELS, PHASES, Phase } from "@/types/tasks";
 
 interface Props {
@@ -53,7 +57,17 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
   const [stuckModalOpen, setStuckModalOpen] = useState(false);
   const [celebrationDismissed, setCelebrationDismissed] = useState(false);
 
-  // Use the task engine to get the next best task
+  // Use the project lifecycle hook
+  const {
+    projectState,
+    isLoading: lifecycleLoading,
+    dashboardViewType,
+    resume,
+    markCompleted,
+    transitionTo,
+  } = useProjectLifecycle({ projectId });
+
+  // Use the task engine to get the next best task (only active when state allows)
   const {
     isLoading: taskEngineLoading,
     nextBestTask,
@@ -110,7 +124,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     enabled: !!projectId,
   });
 
-  const isLoading = taskEngineLoading || projectLoading;
+  const isLoading = taskEngineLoading || projectLoading || lifecycleLoading;
 
   if (isLoading) {
     return (
@@ -119,6 +133,50 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       </div>
     );
   }
+
+  // Handle different dashboard views based on project lifecycle state
+  if (dashboardViewType === 'paused') {
+    return (
+      <ProjectPausedView
+        projectName={project?.name}
+        onResume={async () => {
+          await resume();
+        }}
+      />
+    );
+  }
+
+  if (dashboardViewType === 'completed') {
+    return (
+      <ProjectCompletedView
+        projectName={project?.name}
+        onRelaunch={async () => {
+          // Reset to in_progress to start a new launch cycle
+          await transitionTo('in_progress');
+        }}
+        onNewProject={() => {
+          navigate('/app');
+        }}
+        onPause={async () => {
+          await transitionTo('paused');
+        }}
+      />
+    );
+  }
+
+  if (dashboardViewType === 'launched') {
+    return (
+      <ProjectLaunchedView
+        projectName={project?.name}
+        onContinueToPostLaunch={async () => {
+          // Mark as in_progress to continue with post-launch tasks
+          await transitionTo('in_progress');
+        }}
+      />
+    );
+  }
+
+  // Default tasks view for 'draft' and 'in_progress' states
 
   // Organize content by day
   const todayContent = (contentData || []).filter((item) => {
