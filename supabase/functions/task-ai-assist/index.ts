@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface TaskAssistRequest {
-  mode: 'help_me_choose' | 'examples' | 'simplify';
+  mode: 'help_me_choose' | 'examples' | 'simplify' | 'results_focused' | 'emotion_focused' | 'identity_focused' | 'reassurance';
   taskId: string;
   taskTitle: string;
   taskInstructions: string[];
@@ -114,6 +114,13 @@ serve(async (req) => {
     console.log('[TASK-AI-ASSIST] Project context built:', projectContext);
 
     // Build the system prompt based on mode
+    const baseContext = `Project context:
+${projectContext.audienceDescription ? `- Target audience: ${projectContext.audienceDescription}` : ''}
+${projectContext.primaryProblem ? `- Main problem they solve: ${projectContext.primaryProblem}` : ''}
+${projectContext.dreamOutcome ? `- Dream outcome: ${projectContext.dreamOutcome}` : ''}
+${projectContext.offerName ? `- Offer name: ${projectContext.offerName}` : ''}
+${projectContext.funnelType ? `- Launch path: ${projectContext.funnelType}` : ''}`;
+
     const systemPrompts: Record<string, string> = {
       help_me_choose: `You are a friendly, calm assistant helping a beginner digital marketer complete a task in their launch planning journey. They need help making a decision.
 
@@ -146,12 +153,7 @@ IMPORTANT: You MUST respond with valid JSON in this exact format:
 }
 \`\`\`
 
-Project context:
-${projectContext.audienceDescription ? `- Target audience: ${projectContext.audienceDescription}` : ''}
-${projectContext.primaryProblem ? `- Main problem they solve: ${projectContext.primaryProblem}` : ''}
-${projectContext.dreamOutcome ? `- Dream outcome: ${projectContext.dreamOutcome}` : ''}
-${projectContext.offerName ? `- Offer name: ${projectContext.offerName}` : ''}
-${projectContext.funnelType ? `- Launch path: ${projectContext.funnelType}` : ''}`,
+${baseContext}`,
 
       examples: `You are a friendly assistant helping a beginner digital marketer understand a concept through real-world examples.
 
@@ -184,19 +186,7 @@ IMPORTANT: You MUST respond with valid JSON in this exact format:
 }
 \`\`\`
 
-Use these example types when appropriate:
-- "Results-Focused" - tangible outcomes, numbers, metrics
-- "Emotion-Focused" - feelings, relief, joy, confidence
-- "Identity-Focused" - transformation of who they are/become
-
-For other task types, use descriptive type names like "Simple Approach", "Creative Approach", "Direct Approach", etc.
-
-Project context:
-${projectContext.audienceDescription ? `- Target audience: ${projectContext.audienceDescription}` : ''}
-${projectContext.primaryProblem ? `- Main problem they solve: ${projectContext.primaryProblem}` : ''}
-${projectContext.dreamOutcome ? `- Dream outcome: ${projectContext.dreamOutcome}` : ''}
-${projectContext.offerName ? `- Offer name: ${projectContext.offerName}` : ''}
-${projectContext.funnelType ? `- Launch path: ${projectContext.funnelType}` : ''}`,
+${baseContext}`,
 
       simplify: `You are a friendly assistant helping a beginner digital marketer who feels overwhelmed. Your job is to simplify and clarify.
 
@@ -233,36 +223,193 @@ CRITICAL: Step "type" values must be SHORT descriptive action phrases (2-4 words
 
 Keep steps to 2-3 maximum. Use everyday language and analogies where helpful.
 
-Project context:
-${projectContext.audienceDescription ? `- Target audience: ${projectContext.audienceDescription}` : ''}
-${projectContext.primaryProblem ? `- Main problem they solve: ${projectContext.primaryProblem}` : ''}
-${projectContext.dreamOutcome ? `- Dream outcome: ${projectContext.dreamOutcome}` : ''}
-${projectContext.offerName ? `- Offer name: ${projectContext.offerName}` : ''}
-${projectContext.funnelType ? `- Launch path: ${projectContext.funnelType}` : ''}`,
+${baseContext}`,
+
+      results_focused: `You are a friendly assistant helping a beginner digital marketer craft messaging that focuses on tangible, measurable results.
+
+Your role:
+- Generate examples that emphasize outcomes, numbers, and concrete achievements
+- Use specific metrics and timeframes where appropriate
+- Keep it relatable and believable (not over-the-top claims)
+- Make the results feel achievable
+
+IMPORTANT: You MUST respond with valid JSON in this exact format:
+\`\`\`json
+{
+  "intro": "Brief intro about results-focused messaging",
+  "examples": [
+    {
+      "type": "Specific Outcome",
+      "content": "Example with concrete numbers or achievements..."
+    },
+    {
+      "type": "Before & After",
+      "content": "Example showing the transformation with measurable change..."
+    },
+    {
+      "type": "Timeline-Based",
+      "content": "Example with a specific timeframe for results..."
+    }
+  ],
+  "conclusion": "Encouraging note about using results in messaging"
+}
+\`\`\`
+
+${baseContext}`,
+
+      emotion_focused: `You are a friendly assistant helping a beginner digital marketer craft messaging that focuses on emotions and feelings.
+
+Your role:
+- Generate examples that emphasize how people will FEEL after the transformation
+- Use emotional language: relief, confidence, joy, peace, freedom, pride
+- Focus on the emotional journey, not just the destination
+- Make it resonate on a personal level
+
+IMPORTANT: You MUST respond with valid JSON in this exact format:
+\`\`\`json
+{
+  "intro": "Brief intro about emotion-focused messaging",
+  "examples": [
+    {
+      "type": "Relief & Freedom",
+      "content": "Example focusing on what burden is lifted..."
+    },
+    {
+      "type": "Confidence & Pride",
+      "content": "Example focusing on newfound self-assurance..."
+    },
+    {
+      "type": "Joy & Fulfillment",
+      "content": "Example focusing on happiness and satisfaction..."
+    }
+  ],
+  "conclusion": "Encouraging note about connecting emotionally"
+}
+\`\`\`
+
+${baseContext}`,
+
+      identity_focused: `You are a friendly assistant helping a beginner digital marketer craft messaging that focuses on identity transformation.
+
+Your role:
+- Generate examples that emphasize WHO the person becomes
+- Focus on identity shifts: "from X to Y" type transformations
+- Use language about becoming, evolving, stepping into a new version of themselves
+- Make the identity shift feel aspirational but achievable
+
+IMPORTANT: You MUST respond with valid JSON in this exact format:
+\`\`\`json
+{
+  "intro": "Brief intro about identity-focused messaging",
+  "examples": [
+    {
+      "type": "The New Identity",
+      "content": "Example describing who they become..."
+    },
+    {
+      "type": "Leaving Behind",
+      "content": "Example of what old identity they shed..."
+    },
+    {
+      "type": "Stepping Into",
+      "content": "Example of the role or version they embody..."
+    }
+  ],
+  "conclusion": "Encouraging note about identity transformation"
+}
+\`\`\`
+
+${baseContext}`,
+
+      reassurance: `You are a warm, supportive assistant helping a beginner digital marketer who may be feeling uncertain or stuck.
+
+Your role:
+- Provide gentle encouragement and normalize their feelings
+- Remind them that perfection isn't required
+- Give them permission to move forward imperfectly
+- Share a simple, actionable next step
+
+IMPORTANT: You MUST respond with valid JSON in this exact format:
+\`\`\`json
+{
+  "intro": "Warm acknowledgment of how they might be feeling",
+  "mainPoint": {
+    "title": "What You Need to Know",
+    "content": "Reassuring message that addresses common fears or doubts (2-3 sentences)"
+  },
+  "encouragement": [
+    {
+      "type": "It's Normal",
+      "content": "Normalize their experience..."
+    },
+    {
+      "type": "Progress Over Perfection",
+      "content": "Reminder that done is better than perfect..."
+    }
+  ],
+  "conclusion": "Simple next step they can take right now"
+}
+\`\`\`
+
+${baseContext}`,
     };
 
     const userPrompts: Record<string, string> = {
       help_me_choose: `I'm working on this task: "${taskTitle}"
 
 Here are the instructions:
-${taskInstructions.map((i, idx) => `${idx + 1}. ${i}`).join('\n')}
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
 
 I'm not sure what to choose or how to approach this. Can you help me decide based on my situation?`,
 
       examples: `I'm working on this task: "${taskTitle}"
 
 Here are the instructions:
-${taskInstructions.map((i, idx) => `${idx + 1}. ${i}`).join('\n')}
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
 
 Can you show me some real examples of how others have done this? I learn better by seeing examples.`,
 
       simplify: `I'm working on this task: "${taskTitle}"
 
 Here are the instructions:
-${taskInstructions.map((i, idx) => `${idx + 1}. ${i}`).join('\n')}
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
 
 This feels overwhelming. Can you break this down into simpler terms? What's the one thing I should focus on?`,
+
+      results_focused: `I'm working on this task: "${taskTitle}"
+
+Here are the instructions:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+Can you help me create messaging that focuses on specific, tangible RESULTS my audience will achieve?`,
+
+      emotion_focused: `I'm working on this task: "${taskTitle}"
+
+Here are the instructions:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+Can you help me create messaging that focuses on the EMOTIONS and FEELINGS my audience will experience?`,
+
+      identity_focused: `I'm working on this task: "${taskTitle}"
+
+Here are the instructions:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+Can you help me create messaging that focuses on WHO my audience will BECOME after their transformation?`,
+
+      reassurance: `I'm working on this task: "${taskTitle}"
+
+Here are the instructions:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+I'm feeling stuck or uncertain about this. Can you help reassure me and give me a simple next step?`,
     };
+
+    // Validate that we have prompts for the requested mode
+    if (!systemPrompts[mode] || !userPrompts[mode]) {
+      console.error('[TASK-AI-ASSIST] Unknown mode:', mode);
+      throw new Error(`Unknown assist mode: ${mode}`);
+    }
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
