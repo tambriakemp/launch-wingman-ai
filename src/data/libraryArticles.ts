@@ -249,6 +249,18 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
           example: "A 7-day launch window means you open enrollment on Monday and close it the following Sunday. During that week, you focus on selling. Before and after, you focus on other things.",
           reassurance: "You can always launch again. This one launch doesn't have to be perfect — it just has to happen."
         }
+      },
+      {
+        id: "application-call",
+        title: "Application → Call",
+        descriptor: "Inviting conversations before purchasing",
+        category: "funnels-launch",
+        content: {
+          whatThisIs: "Application → Call is a launch path where people apply to talk with you before purchasing.\n\nInstead of selling publicly or sending people straight to a checkout, you invite them into a conversation to see if your offer is a good fit.\n\nIn Launchely, this path is about alignment, not persuasion.",
+          whyThisMattersHere: "Some offers work best when there's space to talk things through — especially services, coaching, or higher-touch support.\n\nThis path exists to help you invite conversations without turning your launch into a sales process or pipeline.",
+          simpleWayToThink: "Application filters for fit. The call creates clarity. The offer comes after the conversation. Not everyone needs to apply.",
+          reassurance: "You don't need to \"sell on the call\" — the conversation itself creates clarity."
+        }
       }
     ]
   },
@@ -262,10 +274,10 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
         descriptor: "Avoiding decision fatigue with focused guidance",
         category: "using-launchely",
         content: {
-          whatThisIs: "The Next Best Task is Launchely's way of helping you avoid decision fatigue.\n\nInstead of showing you a long list of tasks or everything that needs to be done eventually, Launchely highlights one clear step that makes sense for where you are right now.\n\nYou're never behind. You're just where you are.",
-          whyThisMattersHere: "When everything feels important, it's easy to freeze. The Next Best Task exists so you don't have to decide what to work on next — Launchely does that part for you.\n\nThis keeps your attention on progress, not planning.",
-          simpleWayToThink: "You don't need to see the whole roadmap. One completed step creates momentum. Finishing beats optimizing. You can trust the sequence.",
-          reassurance: "If you're completing the task in front of you, you're doing exactly what you need to do."
+          whatThisIs: "The Next Best Task is how Launchely helps you avoid decision fatigue.\n\nInstead of showing you everything that could be done, Launchely highlights one task that makes sense for where you are right now.\n\nYou're never behind — you're just on a path.",
+          whyThisMattersHere: "When everything feels important, it's easy to freeze. The Next Best Task exists so you don't have to decide what to work on next — Launchely does that part for you.\n\nThis keeps your energy focused on progress, not planning.",
+          simpleWayToThink: "One task is enough. Finishing creates momentum. You don't need the full roadmap. Trust the sequence.",
+          reassurance: "If you're working on the task in front of you, you're exactly where you need to be."
         }
       },
       {
@@ -294,14 +306,26 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
       },
       {
         id: "content-planner-basics",
-        title: "What the Content Planner Does",
-        descriptor: "Planning your launch content in one place",
+        title: "How the Content Planner Works",
+        descriptor: "Organizing content by purpose, not schedule",
         category: "using-launchely",
         content: {
-          whatThisIs: "The Content Planner helps you map out what content you'll create for your launch — before, during, and after. It's a simple calendar and list view of your content pieces.",
-          whyThisMattersHere: "When your content is planned out, you don't wake up wondering what to post. You just look at the plan and create.",
-          simpleWayToThink: "Think of it as a content calendar specifically for your launch. It shows you what's coming up and what you've already done.",
-          reassurance: "You don't need to plan months in advance. Even planning a week ahead makes a big difference."
+          whatThisIs: "The Content Planner in Launchely helps you organize what you want to say, not when or where to post it.\n\nIt focuses on intent — like awareness, trust, or inviting people to take the next step — instead of calendars, algorithms, or posting schedules.\n\nThis keeps content planning calm and flexible.",
+          whyThisMattersHere: "Many people get stuck trying to plan content perfectly before they ever start sharing. This tool exists to remove that pressure.\n\nBy focusing on why you're posting instead of how often, Launchely helps you stay consistent without burnout.",
+          simpleWayToThink: "Content is organized by purpose. You decide when and where to post. Fewer posts can still be effective. Clarity beats volume.",
+          reassurance: "You don't need to post everywhere — sharing intentionally is enough."
+        }
+      },
+      {
+        id: "post-launch-reflection",
+        title: "What Happens After You Launch",
+        descriptor: "Pausing to reflect before moving on",
+        category: "using-launchely",
+        content: {
+          whatThisIs: "After a launch, it's common to feel a mix of emotions — relief, excitement, doubt, or even disappointment.\n\nThis article exists to normalize that experience and help you pause before rushing into the next thing.\n\nIn Launchely, post-launch isn't about fixing or optimizing — it's about reflecting.",
+          whyThisMattersHere: "Many people immediately move on without acknowledging what they just did. That often leads to burnout or repeating the same patterns.\n\nThis step exists to help you close the loop and decide what actually makes sense next.",
+          simpleWayToThink: "Finishing is an achievement. Reflection creates clarity. Not every launch needs a pivot. Pausing is productive.",
+          reassurance: "You don't need to have all the answers yet — noticing what you learned is enough."
         }
       }
     ]
