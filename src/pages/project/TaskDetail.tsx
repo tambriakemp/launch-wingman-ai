@@ -153,7 +153,7 @@ export default function TaskDetail() {
       await completeTask(taskId, inputData);
       
       toast.success("Great work! Task saved and marked complete.");
-      navigate(`/projects/${projectId}/deliverables`);
+      navigate(`/projects/${projectId}/offer`);
     } catch (error) {
       console.error("Error saving task:", error);
       toast.error("Failed to save task. Please try again.");
