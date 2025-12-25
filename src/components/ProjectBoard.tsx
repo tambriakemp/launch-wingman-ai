@@ -25,8 +25,8 @@ import { FilterPopover } from "@/components/FilterPopover";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 import { AssetChecklist } from "@/components/funnel/AssetChecklist";
 import { PhaseSection } from "@/components/PhaseSection";
-import { getPlanningTasks, getMessagingTasks, getBuildTasks, getContentTasks, getLaunchTasks } from "@/data/taskTemplates";
-import { ClipboardList, MessageSquare, Wrench, PenTool, Rocket } from "lucide-react";
+import { getPlanningTasks, getMessagingTasks, getBuildTasks, getContentTasks, getLaunchTasks, getPostLaunchTasks } from "@/data/taskTemplates";
+import { ClipboardList, MessageSquare, Wrench, PenTool, Rocket, Flag } from "lucide-react";
 
 const COLUMNS = [
   { id: "todo", label: "To Do" },
@@ -594,6 +594,14 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
           icon={Rocket}
           tasks={getLaunchTasks()}
           prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasks(), ...getContentTasks()]}
+        />
+
+        <PhaseSection
+          projectId={projectId}
+          label="Post-Launch"
+          icon={Flag}
+          tasks={getPostLaunchTasks()}
+          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasks(), ...getContentTasks(), ...getLaunchTasks()]}
         />
       </div>
 
