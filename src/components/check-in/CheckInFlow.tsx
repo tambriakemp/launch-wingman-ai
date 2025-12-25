@@ -6,6 +6,7 @@ import { CheckInReflection } from "./CheckInReflection";
 import { CheckInOrientation } from "./CheckInOrientation";
 import { CheckInComplete } from "./CheckInComplete";
 import { useCheckIn, OrientationChoice } from "@/hooks/useCheckIn";
+import { useToneLearning } from "@/hooks/useToneLearning";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface CheckInFlowProps {
@@ -18,6 +19,7 @@ type Step = "welcome" | "reflection" | "orientation" | "complete";
 export function CheckInFlow({ open, onOpenChange }: CheckInFlowProps) {
   const navigate = useNavigate();
   const { currentPrompt, submitCheckIn, isSubmitting, snoozeCheckIn } = useCheckIn();
+  const { recordCheckInUncertainty } = useToneLearning();
   
   const [step, setStep] = useState<Step>("welcome");
   const [reflectionResponse, setReflectionResponse] = useState("");
@@ -39,6 +41,11 @@ export function CheckInFlow({ open, onOpenChange }: CheckInFlowProps) {
 
   const handleOrientationSelect = async (choice: OrientationChoice) => {
     setOrientationChoice(choice);
+    
+    // Record uncertainty signal for tone learning (highly restricted)
+    if (reflectionResponse) {
+      recordCheckInUncertainty(reflectionResponse);
+    }
     
     // Submit the check-in
     await submitCheckIn({

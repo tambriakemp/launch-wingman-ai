@@ -15,6 +15,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { CheckInSettings } from "@/components/check-in";
+import { ToneSettings } from "@/components/settings/ToneSettings";
 import {
   User,
   CreditCard,
@@ -30,6 +31,7 @@ import {
   Trash2,
   Link2,
   Unlink,
+  Pen,
 } from "lucide-react";
 
 interface Profile {
@@ -749,6 +751,30 @@ const Settings = () => {
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* AI Writing Style Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.27 }}
+        >
+          <Card variant="elevated">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-accent/50 rounded-xl flex items-center justify-center">
+                  <Pen className="w-5 h-5 text-foreground" />
+                </div>
+                <div>
+                  <CardTitle>AI Writing Style</CardTitle>
+                  <CardDescription>Customize how AI-generated content sounds</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ToneSettings />
             </CardContent>
           </Card>
         </motion.div>
