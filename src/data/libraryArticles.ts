@@ -24,6 +24,18 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
     name: "Getting Started",
     articles: [
       {
+        id: "how-launchely-works",
+        title: "How Launchely Works",
+        descriptor: "Understanding the guided approach to planning and launching",
+        category: "getting-started",
+        content: {
+          whatThisIs: "Launchely is designed to guide you through planning and launching an offer without overwhelming you. Instead of showing you everything you could do, it focuses on what actually matters right now.\n\nEverything in Launchely lives inside a project. Each project moves through clear phases, and within each phase, you're guided step by step. You don't have to map out the entire launch or make every decision up front.\n\nYou're allowed to start messy here. Clarity builds as you move.",
+          whyThisMattersHere: "Many people get stuck not because they lack ideas, but because they're trying to hold too many decisions at once. Launchely removes that pressure by narrowing your focus.\n\nThis structure exists so you can keep moving forward without constantly asking, \"Am I doing this right?\"",
+          simpleWayToThink: "You're not managing a system — you're following a path. You only see what you need for the current phase. Progress matters more than perfection. You can always adjust later.",
+          reassurance: "You don't need to understand everything about Launchely to use it well — starting is enough."
+        }
+      },
+      {
         id: "what-is-a-project",
         title: "What a Project Actually Is",
         descriptor: "Understanding your project as a container for your launch",
@@ -60,11 +72,11 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
         descriptor: "A simple way to think about outcomes without overthinking",
         category: "planning-offers",
         content: {
-          whatThisIs: "A dream outcome is the future state your audience wants to reach. It's not what you teach or what you deliver — it's what life looks like for them after they've achieved the result.",
-          whyThisMattersHere: "When you're clear on the dream outcome, everything else gets easier. Your messaging, your offer, your content — it all points toward this one destination.",
-          simpleWayToThink: "Imagine your ideal client waking up one morning after working with you. What's different? What do they notice? That's the dream outcome.",
-          example: "Instead of 'learn to manage time better,' the dream outcome might be 'finally have evenings free to spend with family without feeling guilty about work.'",
-          reassurance: "You don't need the perfect words yet. Just get close to what your audience actually wants — you can refine it as you go."
+          whatThisIs: "A dream outcome is a simple description of what someone hopes their life, work, or situation will look like after the problem you're addressing is solved.\n\nIt's not a feature list. It's not a guarantee. And it's not about dramatic transformations.\n\nIn Launchely, the dream outcome helps you stay focused on why someone would care about your offer in the first place.",
+          whyThisMattersHere: "When you're clear on the outcome someone wants, it becomes much easier to:\n\n• shape your offer\n• explain what you're helping with\n• decide what content actually matters\n\nThis step exists to prevent you from building something that sounds good but doesn't connect.",
+          simpleWayToThink: "Focus on how someone wants to feel or function. Keep it realistic and human. One clear outcome is enough. You're describing progress, not perfection.",
+          example: "Instead of:\n\"I want to help people build scalable businesses.\"\n\nYou might say:\n\"I want people to feel confident explaining what they offer and how it helps.\"",
+          reassurance: "Your dream outcome can be simple — clarity is more useful than ambition here."
         }
       },
       {
@@ -186,6 +198,18 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
     id: "using-launchely",
     name: "Using Launchely",
     articles: [
+      {
+        id: "next-best-task",
+        title: "What \"Next Best Task\" Means",
+        descriptor: "Avoiding decision fatigue with focused guidance",
+        category: "using-launchely",
+        content: {
+          whatThisIs: "The Next Best Task is Launchely's way of helping you avoid decision fatigue.\n\nInstead of showing you a long list of tasks or everything that needs to be done eventually, Launchely highlights one clear step that makes sense for where you are right now.\n\nYou're never behind. You're just where you are.",
+          whyThisMattersHere: "When everything feels important, it's easy to freeze. The Next Best Task exists so you don't have to decide what to work on next — Launchely does that part for you.\n\nThis keeps your attention on progress, not planning.",
+          simpleWayToThink: "You don't need to see the whole roadmap. One completed step creates momentum. Finishing beats optimizing. You can trust the sequence.",
+          reassurance: "If you're completing the task in front of you, you're doing exactly what you need to do."
+        }
+      },
       {
         id: "tasks-vs-steps",
         title: "How Tasks Work",
