@@ -363,6 +363,7 @@ CRITICAL RULES - YOU MUST FOLLOW THESE:
 ✓ Keep each example to ONE clear sentence
 ✓ Use neutral, calm tone
 ✓ Preserve user autonomy
+✓ Emphasize flexibility and normalize multiple paths
 
 ✗ NEVER reference real brands or influencers
 ✗ NEVER mention performance, results, or metrics
@@ -371,7 +372,28 @@ CRITICAL RULES - YOU MUST FOLLOW THESE:
 ✗ NEVER say "most people choose" or "this works best"
 ✗ NEVER ask questions or offer guidance
 ✗ NEVER rewrite user's text
-${currentInput ? '✗ NEVER mirror the user\'s input too closely' : ''}
+✗ NEVER validate or critique user input
+✗ NEVER push users toward niche-specific decisions
+${currentInput ? '✗ NEVER mirror the user\'s input too closely or adapt examples to match it' : ''}
+${nicheLabel ? `
+NICHE CONTEXT (VERY LIGHT - for framing only, never direction):
+Selected niche: ${nicheLabel}
+
+NICHE-AWARE RULES:
+- Niche provides LIGHT CONTEXT, never direction
+- Examples must NOT imply the niche is the correct choice
+- Examples must NOT be framed as niche-specific recommendations
+- Niche may only be referenced as a framing lens, contextual adjective, or soft qualifier
+- Input state does NOT change example behavior — niche is only a contextual lens
+
+APPROVED niche phrasing (use ONE optional context line ONLY):
+- "If it helps, here are a few example directions often seen within ${nicheLabel}:"
+- "Some examples often seen around ${nicheLabel} topics:"
+
+DISALLOWED niche phrasing:
+- "Because you chose ${nicheLabel}…"
+- "Most people in ${nicheLabel} should…"
+- "This works best in ${nicheLabel}…"` : ''}
 
 INPUT STATE: ${inputState}
 ${inputState === 'EMPTY' ? 'Goal: Help user understand what this field could look like.' : ''}
@@ -386,21 +408,23 @@ ${inputState === 'CLEAR' ? '"There\'s no single right way to answer this."' : ''
 IMPORTANT: You MUST respond with valid JSON in this exact format:
 \`\`\`json
 {
-  "header": "Examples to help you think",
+  "header": "Examples to help you think",${nicheLabel ? `
+  "nicheContext": "If it helps, here are a few example directions often seen within ${nicheLabel}:",` : ''}
   "examples": [
     {
       "label": "Example",
-      "content": "One clear sentence describing a fictional, generic example..."
+      "content": "${nicheLabel ? `People in ${nicheLabel} trying to simplify an overwhelming first step` : 'One clear sentence describing a fictional, generic example...'}"
     },
     {
       "label": "Example",
-      "content": "Another clear sentence with a different approach..."
+      "content": "${nicheLabel ? `Beginners exploring ${nicheLabel} who want clarity before committing` : 'Another clear sentence with a different approach...'}"
     }
   ],
   "closing": "{{Use the required closing text based on input state above}}"
 }
 \`\`\`
 
+${nicheLabel ? `Tailor examples to loosely relate to "${nicheLabel}" but keep them generic, fictional, and non-prescriptive. The nicheContext line is OPTIONAL and can be omitted.` : ''}
 Task context: "${taskTitle}"
 ${baseContext}`,
 
