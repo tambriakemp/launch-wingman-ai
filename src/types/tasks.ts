@@ -27,7 +27,40 @@ export type AIAssistMode = 'help_me_choose' | 'examples' | 'simplify' | 'results
 
 export type SkipReason = 'not_relevant' | 'already_completed' | 'doing_later';
 
-export type FunnelType = 'webinar' | 'challenge' | 'direct-sales' | 'lead-magnet' | 'all';
+// New funnel types (V1) - these represent paths to invitation
+export type FunnelType = 
+  | 'content_to_offer'      // Baseline: social content → direct offer (no injection)
+  | 'freebie_email_offer'   // Freebie → email nurture → offer
+  | 'live_training_offer'   // Live training/webinar → offer
+  | 'application_call'      // Application → call → offer
+  | 'all';                  // Universal tasks that apply to all funnels
+
+// Legacy funnel type mapping (for backwards compatibility)
+export type LegacyFunnelType = 'webinar' | 'challenge' | 'direct-sales' | 'lead-magnet';
+
+// Map legacy types to new types
+export const LEGACY_FUNNEL_TYPE_MAP: Record<LegacyFunnelType, FunnelType> = {
+  'direct-sales': 'content_to_offer',
+  'lead-magnet': 'freebie_email_offer',
+  'webinar': 'live_training_offer',
+  'challenge': 'application_call',
+};
+
+// Funnel type labels for display
+export const FUNNEL_TYPE_LABELS: Record<Exclude<FunnelType, 'all'>, string> = {
+  content_to_offer: 'Content → Offer',
+  freebie_email_offer: 'Freebie → Email → Offer',
+  live_training_offer: 'Live Training → Offer',
+  application_call: 'Application → Call',
+};
+
+// Funnel type descriptions
+export const FUNNEL_TYPE_DESCRIPTIONS: Record<Exclude<FunnelType, 'all'>, string> = {
+  content_to_offer: 'Share content that leads directly to your offer — simple and direct',
+  freebie_email_offer: 'Offer something free to build your list, then nurture with emails',
+  live_training_offer: 'Teach something valuable live, then invite viewers to join your program',
+  application_call: 'Qualify leads through an application, then close on a call',
+};
 
 // Task template - defines what a task looks like before it's created for a project
 export interface TaskTemplate {

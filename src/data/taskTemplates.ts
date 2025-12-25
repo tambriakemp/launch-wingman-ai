@@ -1,4 +1,9 @@
 import { TaskTemplate } from '@/types/tasks';
+import { 
+  FREEBIE_EMAIL_OFFER_DELTA_TASKS, 
+  LIVE_TRAINING_OFFER_DELTA_TASKS, 
+  APPLICATION_CALL_DELTA_TASKS 
+} from './funnelDeltaTasks';
 
 // Universal tasks that apply to all funnel types
 export const TASK_TEMPLATES: TaskTemplate[] = [
@@ -198,10 +203,10 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
     inputSchema: {
       type: 'radio',
       options: [
-        { value: 'lead-magnet', label: 'Freebie → Email → Offer', description: 'Offer something free to build your list, then nurture with emails' },
-        { value: 'direct-sales', label: 'Social content → Offer', description: 'Send traffic directly to a sales page with a clear offer' },
-        { value: 'webinar', label: 'Webinar → Offer', description: 'Teach something valuable live, then invite viewers to join your program' },
-        { value: 'challenge', label: 'Application → Call', description: 'Qualify leads through an application, then close on a call' },
+        { value: 'content_to_offer', label: 'Content → Offer', description: 'Share content that leads directly to your offer — simple and direct' },
+        { value: 'freebie_email_offer', label: 'Freebie → Email → Offer', description: 'Offer something free to build your list, then nurture with emails' },
+        { value: 'live_training_offer', label: 'Live Training → Offer', description: 'Teach something valuable live, then invite viewers to join your program' },
+        { value: 'application_call', label: 'Application → Call', description: 'Qualify leads through an application, then close on a call' },
       ],
     },
     aiAssistModes: ['help_me_choose', 'examples'],
@@ -1090,6 +1095,14 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
     route: '/projects/:id/tasks/postlaunch_next_step',
   },
 ];
+
+// Add all funnel delta tasks to the main TASK_TEMPLATES array
+// This ensures they can be found by getTaskTemplate
+TASK_TEMPLATES.push(
+  ...FREEBIE_EMAIL_OFFER_DELTA_TASKS,
+  ...LIVE_TRAINING_OFFER_DELTA_TASKS,
+  ...APPLICATION_CALL_DELTA_TASKS
+);
 
 // Helper function to get tasks for a specific funnel type
 export function getTasksForFunnelType(funnelType: string): TaskTemplate[] {
