@@ -191,27 +191,50 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
     articles: [
       {
         id: "what-is-funnel",
-        title: "What a Funnel Actually Is",
-        descriptor: "Demystifying the path from stranger to customer",
+        title: "What Launchely Means by a Funnel",
+        descriptor: "A path, not a machine",
         category: "funnels-launch",
         content: {
-          whatThisIs: "A funnel is simply the path someone takes from first discovering you to buying from you. It's not complicated technology — it's just the steps in order.",
-          whyThisMattersHere: "When you can see the path clearly, you know what to build and in what order. It takes the guesswork out of what to create next.",
-          simpleWayToThink: "Think of a funnel as a simple journey: someone finds you, they learn something helpful, they trust you more, they decide to buy. That's it.",
-          example: "A simple funnel: Someone sees your Instagram post → clicks the link in bio → downloads your free guide → gets emails from you → sees your offer → buys.",
-          reassurance: "You don't need a fancy funnel to make sales. Simple funnels often work better because there's less to break."
+          whatThisIs: "In Launchely, a funnel isn't a system, a set of tools, or a technical setup. It's simply the path someone takes from first hearing about your offer to deciding if it's for them.\n\nThat's it.\n\nThere are no automations, no complicated flows, and no optimization layers here. A funnel in Launchely is about clarity — not conversion mechanics.",
+          whyThisMattersHere: "Many people feel overwhelmed by funnels because they've been taught to think about them as complex systems. That pressure often causes people to stall or avoid launching altogether.\n\nThis step exists to help you choose a simple path that feels natural for how you want to show up.",
+          simpleWayToThink: "A funnel is a path, not a machine. Simpler paths are easier to follow. You can change paths later. The goal is clarity, not optimization.",
+          reassurance: "You don't need a \"perfect funnel\" — you just need a clear way for people to take the next step."
         }
       },
       {
-        id: "funnel-types-overview",
-        title: "Why Different Funnel Types Exist",
-        descriptor: "Choosing the right path for your offer",
+        id: "content-to-offer",
+        title: "Content → Offer",
+        descriptor: "The most direct launch path",
         category: "funnels-launch",
         content: {
-          whatThisIs: "Different funnel types exist because different offers and audiences need different paths. A low-ticket course sells differently than a high-ticket service. The funnel type matches how people need to make the buying decision.",
-          whyThisMattersHere: "When you choose the right funnel type, the whole launch feels more natural because you're not forcing people through steps that don't make sense for your offer.",
-          simpleWayToThink: "Ask yourself: How much does someone need to trust me before they'll buy this? Higher trust = more steps in the funnel. Lower trust = simpler funnel.",
-          reassurance: "There's no perfect funnel type. The best one is the one you can actually build and run without burning out."
+          whatThisIs: "Content → Offer is the most direct launch path. You talk about the problem you help with, explain your offer, and invite people to join.\n\nThere's no free resource, no warm-up sequence, and no extra steps. Your content leads straight to your offer.\n\nIn Launchely, this is considered the simplest place to start.",
+          whyThisMattersHere: "Many beginners assume they need multiple layers before selling. This funnel exists to remind you that clarity and consistency can be enough.\n\nIf your offer is straightforward and your audience already understands the problem, this path keeps things simple.",
+          simpleWayToThink: "Content explains the problem. Content introduces the offer. One clear place to send people. No extra steps required.",
+          reassurance: "You're not skipping anything by choosing a simple path — you're reducing friction."
+        }
+      },
+      {
+        id: "freebie-email-offer",
+        title: "Freebie → Email → Offer",
+        descriptor: "Building trust before the ask",
+        category: "funnels-launch",
+        content: {
+          whatThisIs: "This path starts by offering something free and helpful before inviting people into your paid offer.\n\nThe free resource helps people understand the problem more clearly and builds trust before asking them to buy.\n\nIn Launchely, this path focuses on comfort, not complexity.",
+          whyThisMattersHere: "Some audiences need more time to feel confident before purchasing. This path gives them a low-pressure way to engage first.\n\nThis step exists to help you warm people up without forcing urgency or heavy sales language.",
+          simpleWayToThink: "Free resource builds understanding. Email keeps the conversation going. Offer comes after trust. Simple is still effective.",
+          reassurance: "Your free resource doesn't need to be impressive — it just needs to be helpful."
+        }
+      },
+      {
+        id: "live-training-offer",
+        title: "Live Training → Offer",
+        descriptor: "Teaching as the bridge to your offer",
+        category: "funnels-launch",
+        content: {
+          whatThisIs: "Live Training → Offer uses teaching as the bridge to your offer. You host a live session where you explain the problem, share insights, and answer questions.\n\nAt the end, you invite people into your offer if it feels like a fit.\n\nIn Launchely, this path is about connection — not performance.",
+          whyThisMattersHere: "Some people communicate best by talking things through. This path allows you to build trust by showing up live and helping in real time.\n\nThis step exists to make selling feel more natural and human.",
+          simpleWayToThink: "Teach first, invite second. One session is enough. Clarity matters more than polish. Connection builds trust.",
+          reassurance: "You don't need to be perfect on camera — showing up and helping is enough."
         }
       },
       {
