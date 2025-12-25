@@ -43,6 +43,8 @@ const ArticleView = ({
     }
   };
 
+  const isContextual = !!returnToTask;
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -52,15 +54,36 @@ const ArticleView = ({
     >
       {/* Navigation */}
       <div className="flex items-center gap-3 mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onBack}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Back to Library
-        </Button>
+        {isContextual ? (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToTask}
+              className="text-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Back to task
+            </Button>
+            <span className="text-muted-foreground/50">·</span>
+            <button
+              onClick={onBack}
+              className="text-sm text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+            >
+              Browse Library
+            </button>
+          </>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back to Library
+          </Button>
+        )}
       </div>
 
       {/* Article Content */}
@@ -70,7 +93,7 @@ const ArticleView = ({
             <h1 className="text-2xl font-semibold text-foreground mb-2">
               {article.title}
             </h1>
-            <p className="text-muted-foreground">{article.descriptor}</p>
+            <p className="text-muted-foreground/80">{article.descriptor}</p>
           </div>
 
           <Separator />
@@ -79,7 +102,7 @@ const ArticleView = ({
             <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-2">
               What this is
             </h2>
-            <p className="text-foreground leading-relaxed">
+            <p className="text-foreground leading-relaxed whitespace-pre-line">
               {article.content.whatThisIs}
             </p>
           </section>
@@ -88,7 +111,7 @@ const ArticleView = ({
             <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-2">
               Why this matters here
             </h2>
-            <p className="text-foreground leading-relaxed">
+            <p className="text-foreground leading-relaxed whitespace-pre-line">
               {article.content.whyThisMattersHere}
             </p>
           </section>
@@ -97,7 +120,7 @@ const ArticleView = ({
             <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-2">
               A simple way to think about it
             </h2>
-            <p className="text-foreground leading-relaxed">
+            <p className="text-foreground leading-relaxed whitespace-pre-line">
               {article.content.simpleWayToThink}
             </p>
           </section>
@@ -108,23 +131,24 @@ const ArticleView = ({
                 Example
               </h2>
               <div className="bg-muted/50 border border-border rounded-lg p-4">
-                <p className="text-foreground italic leading-relaxed">
+                <p className="text-foreground italic leading-relaxed whitespace-pre-line">
                   {article.content.example}
                 </p>
               </div>
             </section>
           )}
 
-          <Separator />
-
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            {article.content.reassurance}
-          </p>
+          {/* Reassurance section with visual separation */}
+          <div className="pt-4 mt-2 border-t border-border/50">
+            <p className="text-muted-foreground/70 text-sm leading-relaxed italic">
+              {article.content.reassurance}
+            </p>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Back to Task CTA */}
-      {returnToTask && (
+      {/* Back to Task CTA - prominent for contextual view */}
+      {isContextual && (
         <div className="mt-6 flex justify-center">
           <Button onClick={handleBackToTask}>
             Back to task

@@ -26,7 +26,7 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
       {
         id: "how-launchely-works",
         title: "How Launchely Works",
-        descriptor: "Understanding the guided approach to planning and launching",
+        descriptor: "A simple explanation of how Launchely guides you",
         category: "getting-started",
         content: {
           whatThisIs: "Launchely is designed to guide you through planning and launching an offer without overwhelming you. Instead of showing you everything you could do, it focuses on what actually matters right now.\n\nEverything in Launchely lives inside a project. Each project moves through clear phases, and within each phase, you're guided step by step. You don't have to map out the entire launch or make every decision up front.\n\nYou're allowed to start messy here. Clarity builds as you move.",
