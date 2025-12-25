@@ -484,7 +484,7 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
     estimatedMinutesMin: 10,
     estimatedMinutesMax: 20,
     blocking: false,
-    dependencies: ['launch_main_announcement'],
+    dependencies: ['launch_prepare_announcement'],
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
@@ -603,7 +603,7 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
         },
       },
       {
-        taskId: 'launch_main_announcement',
+        taskId: 'launch_prepare_announcement',
         changes: {
           title: 'Announce your live training',
           whyItMatters: 'This is your moment to let people know about your training. Focus on what they\'ll learn and how to join — no sales language needed.',
@@ -645,7 +645,7 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
         },
       },
       {
-        taskId: 'launch_main_announcement',
+        taskId: 'launch_prepare_announcement',
         changes: {
           title: 'Announce that you\'re opening applications',
           whyItMatters: 'This is when you let people know you\'re accepting applications. The tone should be clear, warm, and invitational — not sales-y.',
