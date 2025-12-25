@@ -45,6 +45,7 @@ import TaskDetail from "./pages/project/TaskDetail";
 import ProjectSummary from "./pages/project/ProjectSummary";
 import Library from "./pages/project/Library";
 import Relaunch from "./pages/project/Relaunch";
+import Playbook from "./pages/project/Playbook";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -264,7 +265,15 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            {/* Legacy redirect */}
+            {/* Playbook route */}
+            <Route
+              path="/playbook"
+              element={
+                <ProtectedRoute>
+                  <Playbook />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/projects/:id/content"
               element={<Navigate to={`/projects/:id/social`} replace />}
