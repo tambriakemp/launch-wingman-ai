@@ -228,6 +228,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       <GreetingHeader
         firstName={profile?.first_name}
         projectName={project?.name}
+        projectId={projectId}
       />
 
       {/* Show celebration card if a phase was recently completed and not dismissed */}
