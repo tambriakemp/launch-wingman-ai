@@ -41,11 +41,10 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
         descriptor: "Understanding your project as a container for your launch",
         category: "getting-started",
         content: {
-          whatThisIs: "A project in Launchely is simply a container that holds everything related to one specific offer you want to launch. It's not a business plan or a strategy document — it's just a way to keep your launch elements organized in one place.",
-          whyThisMattersHere: "When you have one clear container for your work, you don't have to remember where things are. Everything you need for this launch lives here.",
-          simpleWayToThink: "Think of a project like a folder on your desk. Inside that folder is everything for one specific thing you're launching — the offer, the audience, the messaging, the content. One folder, one launch.",
-          example: "If you're launching a group coaching program, that's one project. If you later want to launch a self-paced course, that would be a different project.",
-          reassurance: "You don't need to figure out your whole business here. Just focus on this one thing you're launching right now."
+          whatThisIs: "In Launchely, a project is simply a container for one offer or launch. It holds your thinking, decisions, and progress in one place so nothing feels scattered.\n\nA project isn't a commitment to finish everything perfectly. It's just a way to focus on one thing at a time without mixing ideas, drafts, or half-finished plans together.\n\nIf you've ever had notes, docs, and tabs everywhere, this is Launchely's way of simplifying that.",
+          whyThisMattersHere: "Many people get overwhelmed because they try to work on multiple ideas at once. Projects exist to reduce that mental load.\n\nBy keeping everything related to one offer inside a project, Launchely helps you stay focused and finish what you start.",
+          simpleWayToThink: "One project = one offer or launch. Projects keep ideas from bleeding into each other. You don't need the full plan before starting. Projects can evolve as you go.",
+          reassurance: "You can always start a new project later — this one just gives you a place to begin."
         }
       },
       {
@@ -54,10 +53,10 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
         descriptor: "The natural flow from planning to launching",
         category: "getting-started",
         content: {
-          whatThisIs: "Phases are the natural stages your project moves through — from initial planning, through messaging and content, to your actual launch. They're not deadlines or requirements, just a way to see where you are.",
-          whyThisMattersHere: "Knowing which phase you're in helps you focus on the right kind of work at the right time, instead of trying to do everything at once.",
-          simpleWayToThink: "Phases are like chapters in a book. You work through them in order, but you can always flip back if you need to. Each chapter builds on what came before.",
-          reassurance: "There's no timer. You move through phases at your own pace, and you can always revisit earlier work if something needs to change."
+          whatThisIs: "Phases are how Launchely organizes the work of planning and launching into manageable sections.\n\nEach phase focuses on one type of thinking — like clarity, messaging, or sharing — so you're not trying to solve everything at once. You move through phases in order, and only see the one you're currently in.\n\nThis is intentional.",
+          whyThisMattersHere: "When people see the entire launch process all at once, it often feels heavier than it needs to be. Phases exist to protect your attention.\n\nBy narrowing your focus, Launchely helps you make better decisions without second-guessing every step.",
+          simpleWayToThink: "Each phase has a single focus. You only work on what's relevant right now. Finishing a phase creates momentum. You're not missing anything ahead.",
+          reassurance: "You don't need to think about future phases yet — they'll be there when you're ready."
         }
       }
     ]
@@ -82,13 +81,38 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
       {
         id: "pain-points-explained",
         title: "Pain Points vs. Symptoms",
-        descriptor: "Understanding what your audience feels right now",
+        descriptor: "Understanding the difference for clearer messaging",
         category: "planning-offers",
         content: {
-          whatThisIs: "Pain points are the core problems your audience faces. Symptoms are the specific, daily ways those problems show up in their lives. Both matter, but symptoms are often more useful for messaging.",
-          whyThisMattersHere: "When you describe symptoms, your audience feels seen. When you only describe pain points, it can feel too abstract.",
-          simpleWayToThink: "The pain point is 'I'm overwhelmed.' The symptoms are 'I can't sleep because my to-do list keeps running through my head' or 'I snap at my kids because I'm exhausted.'",
-          reassurance: "You don't need to list every symptom. A few specific ones that resonate are more powerful than a long generic list."
+          whatThisIs: "A pain point is the core problem someone is dealing with. A symptom is how that problem shows up in their daily life.\n\nFor example, feeling overwhelmed might be a symptom — not knowing what to focus on is often the pain point underneath it.\n\nIn Launchely, this distinction helps you stay focused on what actually matters.",
+          whyThisMattersHere: "When offers focus only on symptoms, they often sound vague or generic. Understanding the difference helps you describe the problem more clearly and connect with the right people.\n\nThis step isn't about psychology or digging deep — it's just about clarity.",
+          simpleWayToThink: "Symptoms are what people complain about. Pain points are what cause those complaints. You only need one clear pain point. Simple understanding is enough.",
+          example: "Symptom:\n\"I feel scattered all day.\"\n\nPain point:\n\"I don't have a clear plan for what matters most.\"",
+          reassurance: "You don't need the perfect wording — recognizing the difference is already progress."
+        }
+      },
+      {
+        id: "perceived-likelihood",
+        title: "Understanding Perceived Likelihood",
+        descriptor: "Making your offer feel believable and approachable",
+        category: "planning-offers",
+        content: {
+          whatThisIs: "Perceived likelihood is how believable your offer feels to someone — not whether it's technically possible, but whether they think it could work for them.\n\nIt's influenced by things like simplicity, clarity, and familiarity — not hype or guarantees.\n\nIn Launchely, this concept helps you remove unnecessary friction.",
+          whyThisMattersHere: "Even a helpful offer can feel hard to trust if it sounds too complicated or unrealistic. This step exists to help you spot small changes that make your offer feel more approachable.\n\nYou're not trying to convince anyone — just reduce doubt.",
+          simpleWayToThink: "Simple feels more believable. Clear beats impressive. Familiar paths feel safer. Fewer steps increase confidence.",
+          reassurance: "You don't need to prove anything here — making things feel simpler is enough."
+        }
+      },
+      {
+        id: "simple-offer",
+        title: "What Makes a \"Simple Offer\"",
+        descriptor: "Clarity over complexity in offer design",
+        category: "planning-offers",
+        content: {
+          whatThisIs: "A simple offer clearly explains:\n\n• who it's for\n• what it helps with\n• how it's delivered\n\nThat's it.\n\nIt doesn't need multiple layers, bonuses, or advanced positioning. In Launchely, simplicity is a strength — not a limitation.",
+          whyThisMattersHere: "Many people overbuild offers because they're afraid of leaving something out. This often leads to confusion — for both you and your audience.\n\nThis step exists to help you create something clear enough to launch without getting stuck.",
+          simpleWayToThink: "One main problem is enough. One clear outcome is enough. Extra details can come later. Finished beats expanded.",
+          reassurance: "Your offer doesn't need to be big to be meaningful — it just needs to be clear."
         }
       },
       {
