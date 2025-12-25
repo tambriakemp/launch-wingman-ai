@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { motion } from "framer-motion";
@@ -16,6 +17,7 @@ import {
   RotateCcw,
   RefreshCw,
   Link as LinkIcon,
+  GitCompare,
 } from "lucide-react";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +27,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useProjectSummary } from "@/hooks/useProjectSummary";
 import { useProjectLifecycle } from "@/hooks/useProjectLifecycle";
 import { PROJECT_STATE_LABELS, ProjectState } from "@/types/projectLifecycle";
+import { ProjectComparisonDialog } from "@/components/ProjectComparisonDialog";
+import { ProjectComparisonView } from "@/components/ProjectComparisonView";
 
 // Map funnel types to human-readable descriptions
 const FUNNEL_TYPE_LABELS: Record<string, { label: string; description: string }> = {
@@ -145,9 +149,16 @@ export default function ProjectSummary() {
   const navigate = useNavigate();
   const { data, isLoading } = useProjectSummary(id);
   const { projectState, resume } = useProjectLifecycle({ projectId: id || "" });
+  
+  // Comparison state
+  const [comparisonDialogOpen, setComparisonDialogOpen] = useState(false);
+  const [comparisonProjectId, setComparisonProjectId] = useState<string | null>(null);
 
   // Check if relaunch is available (only for launched or completed)
   const canRelaunch = projectState === "launched" || projectState === "completed";
+  
+  // Check if comparison is available (only for completed projects)
+  const canCompare = projectState === "completed";
 
   // Get lifecycle-aware CTA
   const getPrimaryCta = () => {
@@ -196,8 +207,29 @@ export default function ProjectSummary() {
     );
   }
 
+  // If comparing, show comparison view
+  if (comparisonProjectId && id) {
+    return (
+      <ProjectLayout>
+        <ProjectComparisonView
+          currentProjectId={id}
+          comparisonProjectId={comparisonProjectId}
+          onClose={() => setComparisonProjectId(null)}
+        />
+      </ProjectLayout>
+    );
+  }
+
   return (
     <ProjectLayout>
+      {/* Comparison Dialog */}
+      <ProjectComparisonDialog
+        open={comparisonDialogOpen}
+        onOpenChange={setComparisonDialogOpen}
+        currentProjectId={id || ""}
+        onSelectProject={setComparisonProjectId}
+      />
+      
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Back Link */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -438,6 +470,38 @@ export default function ProjectSummary() {
                       <p className="font-medium text-foreground">Relaunch this project</p>
                       <p className="text-sm text-muted-foreground">
                         Reuse what still fits, revisit what needs attention
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Compare Projects CTA - only for completed */}
+        {canCompare && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.38 }}
+          >
+            <Card className="border-border/50 bg-card/50">
+              <CardContent className="pt-4 pb-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => setComparisonDialogOpen(true)}
+                  className="w-full justify-between h-auto py-3 px-3"
+                >
+                  <div className="flex items-center gap-3 text-left">
+                    <div className="p-2 rounded-lg bg-muted">
+                      <GitCompare className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Compare to another project</p>
+                      <p className="text-sm text-muted-foreground">
+                        See how your thinking has evolved across projects
                       </p>
                     </div>
                   </div>
