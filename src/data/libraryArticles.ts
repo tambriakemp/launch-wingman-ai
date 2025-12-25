@@ -135,29 +135,40 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
     name: "Messaging",
     articles: [
       {
-        id: "transformation-statement",
-        title: "What a Transformation Statement Is",
-        descriptor: "Describing the change your offer creates",
+        id: "core-message-basics",
+        title: "What a Core Message Is (and Isn't)",
+        descriptor: "Your anchor when everything feels scattered",
         category: "messaging",
         content: {
-          whatThisIs: "A transformation statement describes the journey from where your audience is now to where they'll be after working with you. It's not a tagline or a promise — it's a simple description of change.",
-          whyThisMattersHere: "When you can clearly describe the transformation, your audience can see themselves in it. It helps them understand what's actually possible.",
-          simpleWayToThink: "Fill in the blank: 'Go from [current state] to [desired state].' That's your transformation in its simplest form.",
-          example: "'Go from constantly second-guessing your content to posting with confidence and seeing real engagement.'",
-          reassurance: "Transformation statements evolve. The one you write now will get clearer as you learn more about your audience."
+          whatThisIs: "A core message is the simplest way to explain what you help with and who it's for.\n\nIt's not a slogan. It's not a headline. And it's not meant to sound clever or polished.\n\nIn Launchely, your core message acts as an anchor — something you can come back to when everything else feels scattered.",
+          whyThisMattersHere: "Without a clear core message, it's easy for your content and offer to drift. You might explain things differently every time, which can feel confusing — both for you and your audience.\n\nThis step exists to give you one steady reference point so everything else feels easier to say.",
+          simpleWayToThink: "Simple beats impressive. Clear beats clever. One sentence is enough. You can refine this later.",
+          reassurance: "Your core message doesn't need to sound perfect — it just needs to make sense."
         }
       },
       {
-        id: "core-message-basics",
-        title: "What a Core Message Is",
-        descriptor: "The one thing you want people to remember",
+        id: "transformation-statement",
+        title: "Writing a Clear Transformation Statement",
+        descriptor: "Describing the shift your offer creates",
         category: "messaging",
         content: {
-          whatThisIs: "Your core message is the main idea you want to communicate throughout your launch. It's the thread that ties everything together — your content, your emails, your sales page.",
-          whyThisMattersHere: "When you have a clear core message, you don't have to reinvent what to say every time. You just say it in different ways for different moments.",
-          simpleWayToThink: "If someone only remembered one thing from your entire launch, what would you want it to be? That's your core message.",
-          example: "'You don't need more followers to launch — you need a simple system that works with the audience you already have.'",
-          reassurance: "Your core message doesn't need to be clever or catchy. Clear and true is better than creative and confusing."
+          whatThisIs: "A transformation statement describes the shift someone experiences when they move from where they are now to where they want to be.\n\nIt's not a promise. It's not a guarantee. And it's not about dramatic change.\n\nIn Launchely, this statement helps you clearly connect the problem you're addressing to the outcome you're helping with.",
+          whyThisMattersHere: "When people understand the transformation you're guiding them through, your message feels grounded and believable.\n\nThis step exists to help you explain progress, not perfection — so your offer feels realistic and human.",
+          simpleWayToThink: "Focus on before → after. Keep the shift realistic. Emotional clarity matters. One transformation is enough.",
+          example: "Before:\n\"I feel scattered when it comes to launching.\"\n\nAfter:\n\"I feel clear about what to work on next.\"",
+          reassurance: "You don't need to describe a complete life change — small, meaningful shifts are enough."
+        }
+      },
+      {
+        id: "objections",
+        title: "How to Think About Objections",
+        descriptor: "Understanding hesitation as signals, not barriers",
+        category: "messaging",
+        content: {
+          whatThisIs: "Objections are the reasons someone hesitates — not because they don't care, but because they're unsure.\n\nThey're often rooted in:\n\n• doubt\n• timing\n• confidence\n• past experiences\n\nIn Launchely, objections are treated as signals — not barriers.",
+          whyThisMattersHere: "When you understand common objections, you can address uncertainty gently instead of trying to convince or persuade.\n\nThis step exists to help you communicate with empathy, not pressure.",
+          simpleWayToThink: "Objections are questions, not resistance. Most objections are emotional, not logical. You don't need to answer everything. Clarity reduces hesitation.",
+          reassurance: "You don't have to eliminate every objection — acknowledging a few is enough."
         }
       },
       {
