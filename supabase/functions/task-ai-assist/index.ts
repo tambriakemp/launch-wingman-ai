@@ -374,31 +374,43 @@ CRITICAL RULES - YOU MUST FOLLOW THESE:
 ✗ NEVER rewrite user's text
 ✗ NEVER validate or critique user input
 ✗ NEVER push users toward niche-specific decisions
-${currentInput ? '✗ NEVER mirror the user\'s input too closely or adapt examples to match it' : ''}
-${nicheLabel ? `
-NICHE CONTEXT (VERY LIGHT - for framing only, never direction):
-Selected niche: ${nicheLabel}
+${currentInput ? `
+USER INPUT CONTEXT (PRIMARY - examples should be in the SAME DOMAIN):
+The user has written: "${currentInput}"
 
-NICHE-AWARE RULES:
+INPUT-AWARE RULES:
+- Examples MUST be in the SAME DOMAIN/TOPIC as the user's input
+- Examples should show ALTERNATIVE ANGLES within that domain
+- Examples should explore DIFFERENT AUDIENCE SEGMENTS or VARIATIONS of the same topic
+- Do NOT mirror or reword the user's exact input
+- Do NOT validate or critique their input
+- Use the user's topic as the foundation, then show other directions within that space
+
+EXAMPLE OF EXPECTED BEHAVIOR:
+If user wrote "Women over 40 who need help budgeting", examples should be:
+- Other audiences who also deal with budgeting/finances (same domain, different angle)
+- NOT generic examples about unrelated topics
+- NOT examples that just reword "Women over 40 who need help budgeting"
+` : ''}
+${nicheLabel ? `
+NICHE CONTEXT (SECONDARY - light framing only):
+Selected niche: ${nicheLabel}
+${currentInput ? '- When user input exists, USER INPUT takes priority over niche' : '- Use niche as a framing lens for examples'}
 - Niche provides LIGHT CONTEXT, never direction
 - Examples must NOT imply the niche is the correct choice
-- Examples must NOT be framed as niche-specific recommendations
-- Niche may only be referenced as a framing lens, contextual adjective, or soft qualifier
-- Input state does NOT change example behavior — niche is only a contextual lens
+- Niche may only be referenced as a soft qualifier
 
-APPROVED niche phrasing (use ONE optional context line ONLY):
+APPROVED niche phrasing (OPTIONAL, only if no user input):
 - "If it helps, here are a few example directions often seen within ${nicheLabel}:"
-- "Some examples often seen around ${nicheLabel} topics:"
 
 DISALLOWED niche phrasing:
 - "Because you chose ${nicheLabel}…"
-- "Most people in ${nicheLabel} should…"
-- "This works best in ${nicheLabel}…"` : ''}
+- "Most people in ${nicheLabel} should…"` : ''}
 
 INPUT STATE: ${inputState}
-${inputState === 'EMPTY' ? 'Goal: Help user understand what this field could look like.' : ''}
-${inputState === 'PARTIAL' ? 'Goal: Show alternative shapes their answer could take. Do NOT reference their input directly.' : ''}
-${inputState === 'CLEAR' ? 'Goal: Provide reassurance through contrast, not improvement. Do NOT validate or critique.' : ''}
+${inputState === 'EMPTY' ? 'Goal: Help user understand what this field could look like. Use niche (if available) or generic examples.' : ''}
+${inputState === 'PARTIAL' ? 'Goal: Show alternative angles WITHIN THE SAME DOMAIN as their input. Examples should explore related audience segments or variations.' : ''}
+${inputState === 'CLEAR' ? 'Goal: Show alternative angles WITHIN THE SAME DOMAIN as their input. Provide contrast through different approaches to the same topic.' : ''}
 
 REQUIRED CLOSING based on input state:
 ${inputState === 'EMPTY' ? '"These are just examples — you don\'t need to match them."' : ''}
@@ -408,23 +420,23 @@ ${inputState === 'CLEAR' ? '"There\'s no single right way to answer this."' : ''
 IMPORTANT: You MUST respond with valid JSON in this exact format:
 \`\`\`json
 {
-  "header": "Examples to help you think",${nicheLabel ? `
-  "nicheContext": "If it helps, here are a few example directions often seen within ${nicheLabel}:",` : ''}
+  "header": "Examples to help you think",${currentInput ? '' : (nicheLabel ? `
+  "nicheContext": "If it helps, here are a few example directions often seen within ${nicheLabel}:",` : '')}
   "examples": [
     {
       "label": "Example",
-      "content": "${nicheLabel ? `People in ${nicheLabel} trying to simplify an overwhelming first step` : 'One clear sentence describing a fictional, generic example...'}"
+      "content": "${currentInput ? 'One clear sentence in the same domain as the user input but with a different angle...' : 'One clear sentence describing a fictional, generic example...'}"
     },
     {
       "label": "Example",
-      "content": "${nicheLabel ? `Beginners exploring ${nicheLabel} who want clarity before committing` : 'Another clear sentence with a different approach...'}"
+      "content": "${currentInput ? 'Another clear sentence exploring a different approach within the same topic area...' : 'Another clear sentence with a different approach...'}"
     }
   ],
   "closing": "{{Use the required closing text based on input state above}}"
 }
 \`\`\`
 
-${nicheLabel ? `Tailor examples to loosely relate to "${nicheLabel}" but keep them generic, fictional, and non-prescriptive. The nicheContext line is OPTIONAL and can be omitted.` : ''}
+${currentInput ? `Generate examples that explore the SAME DOMAIN/TOPIC as "${currentInput}" but show DIFFERENT ANGLES (different audience segments, different pain points within the topic, different life stages, etc.). Do NOT include nicheContext when user input exists.` : (nicheLabel ? `Tailor examples to loosely relate to "${nicheLabel}" but keep them generic, fictional, and non-prescriptive. The nicheContext line is OPTIONAL.` : '')}
 Task context: "${taskTitle}"
 ${baseContext}`,
 
