@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.task-ai-assist]
 verify_jwt = false
+
+[functions.update-article-order]
+verify_jwt = false

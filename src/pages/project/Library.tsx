@@ -1,19 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ChevronRight, ChevronDown, ArrowLeft, BookOpen } from "lucide-react";
+import { Search, ChevronRight, ChevronDown, ArrowLeft, BookOpen, GripVertical } from "lucide-react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { useAdmin } from "@/hooks/useAdmin";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   LIBRARY_CATEGORIES,
   getArticleById,
   searchArticles,
+  getAllArticles,
   type LibraryArticle,
   type LibraryCategory,
 } from "@/data/libraryArticles";
+
+interface ArticleOrder {
+  article_id: string;
+  position: number;
+}
 
 const ArticleView = ({
   article,
@@ -129,11 +140,17 @@ const CategoryAccordion = ({
   isExpanded,
   onToggle,
   onSelectArticle,
+  isAdmin,
+  orderedArticles,
+  categoryIndex,
 }: {
   category: LibraryCategory;
   isExpanded: boolean;
   onToggle: () => void;
   onSelectArticle: (article: LibraryArticle) => void;
+  isAdmin: boolean;
+  orderedArticles: LibraryArticle[];
+  categoryIndex: number;
 }) => {
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-card">
@@ -158,20 +175,59 @@ const CategoryAccordion = ({
             className="overflow-hidden"
           >
             <div className="border-t border-border">
-              {category.articles.map((article, index) => (
-                <button
-                  key={article.id}
-                  onClick={() => onSelectArticle(article)}
-                  className={`w-full text-left p-4 hover:bg-muted/50 transition-colors ${
-                    index !== category.articles.length - 1 ? "border-b border-border" : ""
-                  }`}
-                >
-                  <p className="font-medium text-foreground mb-0.5">{article.title}</p>
-                  <p className="text-sm text-muted-foreground line-clamp-1">
-                    {article.descriptor}
-                  </p>
-                </button>
-              ))}
+              {isAdmin ? (
+                <Droppable droppableId={`category-${categoryIndex}`}>
+                  {(provided) => (
+                    <div ref={provided.innerRef} {...provided.droppableProps}>
+                      {orderedArticles.map((article, index) => (
+                        <Draggable key={article.id} draggableId={article.id} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`flex items-center gap-2 p-4 hover:bg-muted/50 transition-colors ${
+                                index !== orderedArticles.length - 1 ? "border-b border-border" : ""
+                              } ${snapshot.isDragging ? "bg-muted shadow-lg" : ""}`}
+                            >
+                              <div
+                                {...provided.dragHandleProps}
+                                className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+                              >
+                                <GripVertical className="w-4 h-4" />
+                              </div>
+                              <button
+                                onClick={() => onSelectArticle(article)}
+                                className="flex-1 text-left"
+                              >
+                                <p className="font-medium text-foreground mb-0.5">{article.title}</p>
+                                <p className="text-sm text-muted-foreground line-clamp-1">
+                                  {article.descriptor}
+                                </p>
+                              </button>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              ) : (
+                orderedArticles.map((article, index) => (
+                  <button
+                    key={article.id}
+                    onClick={() => onSelectArticle(article)}
+                    className={`w-full text-left p-4 hover:bg-muted/50 transition-colors ${
+                      index !== orderedArticles.length - 1 ? "border-b border-border" : ""
+                    }`}
+                  >
+                    <p className="font-medium text-foreground mb-0.5">{article.title}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-1">
+                      {article.descriptor}
+                    </p>
+                  </button>
+                ))
+              )}
             </div>
           </motion.div>
         )}
@@ -229,12 +285,58 @@ export default function Library() {
   const [searchParams] = useSearchParams();
   const articleId = searchParams.get("article");
   const returnToTask = searchParams.get("returnTo");
+  const { toast } = useToast();
+  const { session } = useAuth();
+  const { isAdmin } = useAdmin();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(DEFAULT_EXPANDED_CATEGORIES);
   const [selectedArticle, setSelectedArticle] = useState<LibraryArticle | null>(
     articleId ? getArticleById(articleId) || null : null
   );
+  const [articleOrderMap, setArticleOrderMap] = useState<Map<string, number>>(new Map());
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Fetch article order from database
+  useEffect(() => {
+    const fetchArticleOrder = async () => {
+      const { data, error } = await supabase
+        .from("library_article_order")
+        .select("article_id, position")
+        .order("position", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching article order:", error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const orderMap = new Map<string, number>();
+        data.forEach((item) => {
+          orderMap.set(item.article_id, item.position);
+        });
+        setArticleOrderMap(orderMap);
+      }
+    };
+
+    fetchArticleOrder();
+  }, []);
+
+  // Sort articles within each category based on the order map
+  const orderedCategories = useMemo(() => {
+    return LIBRARY_CATEGORIES.map((category) => {
+      const sortedArticles = [...category.articles].sort((a, b) => {
+        const posA = articleOrderMap.get(a.id) ?? Infinity;
+        const posB = articleOrderMap.get(b.id) ?? Infinity;
+        if (posA === Infinity && posB === Infinity) {
+          // Both don't have custom order, keep original order
+          return category.articles.indexOf(a) - category.articles.indexOf(b);
+        }
+        return posA - posB;
+      });
+      return { ...category, articles: sortedArticles };
+    });
+  }, [articleOrderMap]);
 
   const searchResults = searchQuery.length >= 2 ? searchArticles(searchQuery) : [];
   const isSearching = searchQuery.length >= 2;
@@ -260,85 +362,178 @@ export default function Library() {
     setSelectedArticle(null);
   };
 
-  return (
-    <ProjectLayout>
-      <div className="max-w-3xl mx-auto py-4 md:py-8 px-4">
-        <AnimatePresence mode="wait">
-          {selectedArticle ? (
-            <ArticleView
-              key="article"
-              article={selectedArticle}
-              onBack={handleBackToList}
-              returnToTask={returnToTask}
-            />
-          ) : (
-            <motion.div
-              key="list"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              {/* Header */}
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <BookOpen className="w-5 h-5 text-primary" />
-                  <h1 className="text-2xl font-semibold text-foreground">Library</h1>
-                </div>
-                <p className="text-muted-foreground">
-                  Short explanations to support the step you're on.
+  const handleDragEnd = async (result: DropResult) => {
+    if (!result.destination || !isAdmin) return;
+
+    const sourceIndex = result.source.index;
+    const destIndex = result.destination.index;
+    const categoryIndex = parseInt(result.source.droppableId.replace("category-", ""));
+
+    if (sourceIndex === destIndex) return;
+
+    const category = orderedCategories[categoryIndex];
+    const reorderedArticles = [...category.articles];
+    const [movedArticle] = reorderedArticles.splice(sourceIndex, 1);
+    reorderedArticles.splice(destIndex, 0, movedArticle);
+
+    // Update local state immediately for optimistic UI
+    const newOrderMap = new Map(articleOrderMap);
+    reorderedArticles.forEach((article, index) => {
+      newOrderMap.set(article.id, index);
+    });
+    setArticleOrderMap(newOrderMap);
+
+    // Save to database
+    setIsSaving(true);
+    try {
+      const articlesToUpdate: ArticleOrder[] = reorderedArticles.map((article, index) => ({
+        article_id: article.id,
+        position: index,
+      }));
+
+      const { error } = await supabase.functions.invoke("update-article-order", {
+        body: { articles: articlesToUpdate },
+      });
+
+      if (error) {
+        console.error("Error saving article order:", error);
+        toast({
+          title: "Error",
+          description: "Failed to save article order. Please try again.",
+          variant: "destructive",
+        });
+        // Revert on error - refetch from DB
+        const { data } = await supabase
+          .from("library_article_order")
+          .select("article_id, position")
+          .order("position", { ascending: true });
+        if (data) {
+          const revertedMap = new Map<string, number>();
+          data.forEach((item) => {
+            revertedMap.set(item.article_id, item.position);
+          });
+          setArticleOrderMap(revertedMap);
+        }
+      } else {
+        toast({
+          title: "Order saved",
+          description: "Article order has been updated.",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving article order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save article order. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const content = (
+    <div className="max-w-3xl mx-auto py-4 md:py-8 px-4">
+      <AnimatePresence mode="wait">
+        {selectedArticle ? (
+          <ArticleView
+            key="article"
+            article={selectedArticle}
+            onBack={handleBackToList}
+            returnToTask={returnToTask}
+          />
+        ) : (
+          <motion.div
+            key="list"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {/* Header */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <BookOpen className="w-5 h-5 text-primary" />
+                <h1 className="text-2xl font-semibold text-foreground">Library</h1>
+                {isAdmin && (
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full ml-2">
+                    Admin mode
+                  </span>
+                )}
+              </div>
+              <p className="text-muted-foreground">
+                Short explanations to support the step you're on.
+              </p>
+              {isAdmin && (
+                <p className="text-sm text-muted-foreground/70 mt-1">
+                  Drag articles to reorder them. Changes are saved automatically.
+                </p>
+              )}
+            </div>
+
+            {/* Search */}
+            <div className="relative mb-6">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search a concept…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            {/* Content */}
+            {isSearching ? (
+              <SearchResults
+                results={searchResults}
+                onSelectArticle={handleSelectArticle}
+                query={searchQuery}
+              />
+            ) : (
+              <div className="space-y-3">
+                {orderedCategories.map((category, categoryIndex) => (
+                  <CategoryAccordion
+                    key={category.id}
+                    category={category}
+                    isExpanded={expandedCategories.has(category.id)}
+                    onToggle={() => toggleCategory(category.id)}
+                    onSelectArticle={handleSelectArticle}
+                    isAdmin={isAdmin}
+                    orderedArticles={category.articles}
+                    categoryIndex={categoryIndex}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Return to work affordance */}
+            {!isSearching && projectId && (
+              <div className="mt-10 pt-6 border-t border-border/50">
+                <p className="text-sm text-muted-foreground/70 text-center">
+                  Working on a task?{" "}
+                  <button
+                    onClick={() => navigate(`/projects/${projectId}`)}
+                    className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+                  >
+                    Return to your project →
+                  </button>
                 </p>
               </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 
-              {/* Search */}
-              <div className="relative mb-6">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search a concept…"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              {/* Content */}
-              {isSearching ? (
-                <SearchResults
-                  results={searchResults}
-                  onSelectArticle={handleSelectArticle}
-                  query={searchQuery}
-                />
-              ) : (
-                <div className="space-y-3">
-                  {LIBRARY_CATEGORIES.map((category) => (
-                    <CategoryAccordion
-                      key={category.id}
-                      category={category}
-                      isExpanded={expandedCategories.has(category.id)}
-                      onToggle={() => toggleCategory(category.id)}
-                      onSelectArticle={handleSelectArticle}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Return to work affordance */}
-              {!isSearching && projectId && (
-                <div className="mt-10 pt-6 border-t border-border/50">
-                  <p className="text-sm text-muted-foreground/70 text-center">
-                    Working on a task?{" "}
-                    <button
-                      onClick={() => navigate(`/projects/${projectId}`)}
-                      className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
-                    >
-                      Return to your project →
-                    </button>
-                  </p>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+  return (
+    <ProjectLayout>
+      {isAdmin ? (
+        <DragDropContext onDragEnd={handleDragEnd}>
+          {content}
+        </DragDropContext>
+      ) : (
+        content
+      )}
     </ProjectLayout>
   );
 }

@@ -497,6 +497,30 @@ export type Database = {
           },
         ]
       }
+      library_article_order: {
+        Row: {
+          article_id: string
+          id: string
+          position: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          article_id: string
+          id?: string
+          position?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          article_id?: string
+          id?: string
+          position?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       offers: {
         Row: {
           community_platform: string | null
