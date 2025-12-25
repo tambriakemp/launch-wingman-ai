@@ -1,17 +1,30 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Rocket, PartyPopper, ArrowRight, RefreshCw } from "lucide-react";
+import { Rocket, PartyPopper, ArrowRight, RefreshCw, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface ProjectLaunchedViewProps {
   projectName?: string;
   onContinueToPostLaunch?: () => void;
+  onMarkComplete?: () => Promise<boolean>;
 }
 
 export function ProjectLaunchedView({
   projectName,
   onContinueToPostLaunch,
+  onMarkComplete,
 }: ProjectLaunchedViewProps) {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -21,6 +34,7 @@ export function ProjectLaunchedView({
       navigate(`/projects/${id}/relaunch`);
     }
   };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -75,6 +89,42 @@ export function ProjectLaunchedView({
           </Button>
         </CardContent>
       </Card>
+
+      {/* Mark Complete - User-controlled completion */}
+      {onMarkComplete && (
+        <Card className="border-primary/20">
+          <CardContent className="pt-4 pb-4">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-between h-auto py-3 px-3"
+                >
+                  <div className="flex items-center gap-3 text-left">
+                    <CheckCircle2 className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">Mark this project complete</span>
+                  </div>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Mark project complete?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This closes the loop on this launch.
+                    You can always relaunch later.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={onMarkComplete}>
+                    Mark Complete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Relaunch option */}
       <Card className="border-border/50">

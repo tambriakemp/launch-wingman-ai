@@ -378,6 +378,7 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
       if (!user) return;
 
       const existingTask = projectTasks.find(pt => pt.taskId === taskId);
+      const template = getTaskTemplate(taskId);
 
       if (existingTask) {
         await supabase
@@ -416,10 +417,38 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
         setSelectedFunnelType(selectedType);
       }
 
+      // === AUTO STATUS TRANSITIONS ===
+      // 1. First planning task completes → Draft → In Progress
+      if (template?.phase === 'planning') {
+        // Check if this is the first completed planning task
+        const completedPlanningTasks = projectTasks.filter(
+          pt => getTaskTemplate(pt.taskId)?.phase === 'planning' && pt.status === 'completed'
+        );
+        // If no planning tasks were completed before (this is the first one)
+        if (completedPlanningTasks.length === 0) {
+          // Transition from draft to in_progress silently
+          await supabase
+            .from('projects')
+            .update({ status: 'in_progress' })
+            .eq('id', projectId)
+            .eq('user_id', user.id);
+        }
+      }
+
+      // 2. Launch phase review completes → In Progress → Launched
+      // This covers the final required launch task for all funnel types
+      if (taskId === 'launch_phase_review') {
+        await supabase
+          .from('projects')
+          .update({ status: 'launched' })
+          .eq('id', projectId)
+          .eq('user_id', user.id);
+      }
+
       await fetchData();
       await recalculatePhases();
     },
-    [user, projectId, projectTasks, fetchData, recalculatePhases, normalizeFunnelType, injectFunnelTasks]
+    [user, projectId, projectTasks, fetchData, recalculatePhases, normalizeFunnelType, injectFunnelTasks, getTaskTemplate]
   );
 
   // Skip a task
