@@ -1,11 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { PartyPopper, Sparkles, Rocket, Megaphone, Hammer, PenTool } from "lucide-react";
-import { motion } from "framer-motion";
-import { Phase } from "@/types/tasks";
+import { Button } from "@/components/ui/button";
+import { PartyPopper, Sparkles, Rocket, Megaphone, Hammer, PenTool, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Phase, PHASE_LABELS } from "@/types/tasks";
 
 interface PhaseCelebrationCardProps {
   completedPhase: Phase;
   nextPhase?: Phase;
+  onDismiss?: () => void;
 }
 
 const PHASE_CELEBRATIONS: Record<Phase, {
@@ -55,6 +57,7 @@ const PHASE_CELEBRATIONS: Record<Phase, {
 export const PhaseCelebrationCard = ({
   completedPhase,
   nextPhase,
+  onDismiss,
 }: PhaseCelebrationCardProps) => {
   const celebration = PHASE_CELEBRATIONS[completedPhase];
   const Icon = celebration.icon;
@@ -63,10 +66,21 @@ export const PhaseCelebrationCard = ({
     <motion.div
       initial={{ opacity: 0, scale: 0.95, y: -10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, y: -10 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
-      <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent overflow-hidden">
-        <CardContent className="p-6">
+      <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent overflow-hidden relative">
+        {onDismiss && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-foreground"
+            onClick={onDismiss}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+        <CardContent className="p-6 pr-12">
           <div className="flex items-start gap-4">
             <motion.div
               initial={{ rotate: -10 }}
@@ -103,7 +117,7 @@ export const PhaseCelebrationCard = ({
                   transition={{ delay: 0.3 }}
                   className="text-sm font-medium text-primary pt-1"
                 >
-                  → Next up: {nextPhase.charAt(0).toUpperCase() + nextPhase.slice(1)} Phase
+                  → Next up: {PHASE_LABELS[nextPhase] || nextPhase.charAt(0).toUpperCase() + nextPhase.slice(1)}
                 </motion.p>
               )}
             </div>

@@ -51,6 +51,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [stuckModalOpen, setStuckModalOpen] = useState(false);
+  const [celebrationDismissed, setCelebrationDismissed] = useState(false);
 
   // Use the task engine to get the next best task
   const {
@@ -137,14 +138,16 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
   const isPhaseComplete = phaseStatuses[activePhase] === "complete";
   
   // Find the most recently completed phase (for celebration)
+  // Only show if there's at least one completed phase AND we're not at the end
   const completedPhases = PHASES.filter(p => phaseStatuses[p] === "complete");
-  const mostRecentlyCompletedPhase = completedPhases.length > 0 
+  const mostRecentlyCompletedPhase = completedPhases.length > 0 && completedPhases.length < PHASES.length
     ? completedPhases[completedPhases.length - 1] 
     : null;
   
-  // Get next phase after active phase
-  const activePhaseIndex = PHASES.indexOf(activePhase);
-  const nextPhase: Phase | undefined = PHASES[activePhaseIndex + 1];
+  // Get next phase after the most recently completed phase
+  const nextPhaseAfterCompleted = mostRecentlyCompletedPhase 
+    ? PHASES[PHASES.indexOf(mostRecentlyCompletedPhase) + 1]
+    : undefined;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 py-6 px-4">
@@ -153,11 +156,12 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
         projectName={project?.name}
       />
 
-      {/* Show celebration card if a phase was recently completed */}
-      {mostRecentlyCompletedPhase && (
+      {/* Show celebration card if a phase was recently completed and not dismissed */}
+      {mostRecentlyCompletedPhase && !celebrationDismissed && (
         <PhaseCelebrationCard
           completedPhase={mostRecentlyCompletedPhase}
-          nextPhase={activePhase !== mostRecentlyCompletedPhase ? activePhase : nextPhase}
+          nextPhase={nextPhaseAfterCompleted}
+          onDismiss={() => setCelebrationDismissed(true)}
         />
       )}
 
@@ -181,7 +185,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
       <ProgressSnapshotCard
         currentPhase={currentPhaseLabel}
         isPhaseComplete={isPhaseComplete}
-        reassuranceText={getReassuranceText(activePhase, isPhaseComplete, nextPhase)}
+        reassuranceText={getReassuranceText(activePhase, isPhaseComplete, nextPhaseAfterCompleted)}
       />
 
       {hasContent && (
