@@ -14,7 +14,20 @@ interface TaskAssistRequest {
   projectId: string;
   toneModifiers?: string;
   currentInput?: string; // The current value of the primary input field
+  nicheContext?: string; // Optional niche context (e.g., 'business_entrepreneurship', 'health_wellness')
 }
+
+// Map niche values to human-readable labels
+const NICHE_LABELS: Record<string, string> = {
+  'business_entrepreneurship': 'Business / Entrepreneurship',
+  'money_finance': 'Money / Finance',
+  'career': 'Career',
+  'health_wellness': 'Health / Wellness',
+  'personal_growth': 'Personal Growth',
+  'relationships': 'Relationships',
+  'creative_content': 'Creative / Content',
+  'other': 'Other / Not sure yet',
+};
 
 interface ProjectContext {
   audienceDescription?: string;
@@ -88,9 +101,12 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const { mode, taskId, taskTitle, taskInstructions, projectId, toneModifiers, currentInput } = await req.json() as TaskAssistRequest;
+    const { mode, taskId, taskTitle, taskInstructions, projectId, toneModifiers, currentInput, nicheContext } = await req.json() as TaskAssistRequest;
 
-    console.log('[TASK-AI-ASSIST] Request received:', { mode, taskId, projectId, hasToneModifiers: !!toneModifiers, hasCurrentInput: !!currentInput });
+    // Get human-readable niche label
+    const nicheLabel = nicheContext ? NICHE_LABELS[nicheContext] || nicheContext : undefined;
+
+    console.log('[TASK-AI-ASSIST] Request received:', { mode, taskId, projectId, hasToneModifiers: !!toneModifiers, hasCurrentInput: !!currentInput, nicheContext, nicheLabel });
 
     // Create Supabase client to fetch project context
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -177,12 +193,17 @@ serve(async (req) => {
     console.log('[TASK-AI-ASSIST] Input state detected:', inputState, 'for input:', currentInput?.substring(0, 50));
 
     // Build the system prompt based on mode
+    // Include niche context for help_me_choose and examples modes only (never for simplify)
+    const nicheContextStr = nicheLabel && mode !== 'simplify' 
+      ? `\n- General niche context: ${nicheLabel} (use this to loosely tailor examples and language - do NOT treat this as the "real" audience)` 
+      : '';
+    
     const baseContext = `Project context:
 ${projectContext.audienceDescription ? `- Target audience: ${projectContext.audienceDescription}` : ''}
 ${projectContext.primaryProblem ? `- Main problem they solve: ${projectContext.primaryProblem}` : ''}
 ${projectContext.dreamOutcome ? `- Dream outcome: ${projectContext.dreamOutcome}` : ''}
 ${projectContext.offerName ? `- Offer name: ${projectContext.offerName}` : ''}
-${projectContext.funnelType ? `- Launch path: ${projectContext.funnelType}` : ''}${toneGuidance}`;
+${projectContext.funnelType ? `- Launch path: ${projectContext.funnelType}` : ''}${nicheContextStr}${toneGuidance}`;
 
     // Help Me Choose prompts based on input state
     const helpMeChoosePrompts: Record<InputState, string> = {

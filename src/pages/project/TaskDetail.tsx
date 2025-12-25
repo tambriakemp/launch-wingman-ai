@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StuckHelpDialog } from "@/components/dashboard/StuckHelpDialog";
 import { AIResponseRenderer } from "@/components/ui/ai-response-renderer";
 import { toast } from "sonner";
@@ -196,6 +197,9 @@ export default function TaskDetail() {
       // Get current input value for mode detection (all AI modes can use it)
       const currentInput = getPrimaryInputValue();
       
+      // Get niche context if available (for audience task)
+      const nicheContext = formData['niche_context'] || undefined;
+      
       const { data, error } = await supabase.functions.invoke('task-ai-assist', {
         body: {
           mode,
@@ -204,6 +208,7 @@ export default function TaskDetail() {
           taskInstructions: taskTemplate.instructions,
           projectId,
           currentInput,
+          nicheContext,
         },
       });
 
@@ -382,31 +387,71 @@ export default function TaskDetail() {
           {/* Form Input */}
           {taskTemplate.inputType === 'form' && taskTemplate.inputSchema?.fields && (
             <div className="space-y-6">
-              {taskTemplate.inputSchema.fields.map((field) => (
-                <div key={field.name} className="space-y-2">
-                  <Label htmlFor={field.name} className="text-sm font-medium">
-                    {field.label}
-                    {field.required && <span className="text-destructive ml-1">*</span>}
-                  </Label>
-                  {field.type === 'textarea' ? (
-                    <Textarea
-                      id={field.name}
-                      placeholder={field.placeholder}
-                      value={formData[field.name] || ''}
-                      onChange={(e) => handleFormChange(field.name, e.target.value)}
-                      className="min-h-[120px]"
-                    />
-                  ) : (
-                    <Input
-                      id={field.name}
-                      type={field.type}
-                      placeholder={field.placeholder}
-                      value={formData[field.name] || ''}
-                      onChange={(e) => handleFormChange(field.name, e.target.value)}
-                    />
-                  )}
-                </div>
-              ))}
+              {taskTemplate.inputSchema.fields.map((field, index) => {
+                // Check if this field has a section label (indicates a new optional section)
+                const hasSection = !!field.sectionLabel;
+                
+                return (
+                  <div key={field.name}>
+                    {/* Optional Section Header */}
+                    {hasSection && (
+                      <div className="mt-8 mb-4 pt-6 border-t border-border/50">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          {field.sectionLabel}
+                        </p>
+                      </div>
+                    )}
+                    
+                    <div className={`space-y-2 ${hasSection ? 'opacity-80' : ''}`}>
+                      <Label htmlFor={field.name} className={`text-sm ${hasSection ? 'font-normal text-muted-foreground' : 'font-medium'}`}>
+                        {field.label}
+                        {field.required && <span className="text-destructive ml-1">*</span>}
+                      </Label>
+                      
+                      {field.type === 'textarea' ? (
+                        <Textarea
+                          id={field.name}
+                          placeholder={field.placeholder}
+                          value={formData[field.name] || ''}
+                          onChange={(e) => handleFormChange(field.name, e.target.value)}
+                          className="min-h-[120px]"
+                        />
+                      ) : field.type === 'select' && field.options ? (
+                        <Select
+                          value={formData[field.name] || ''}
+                          onValueChange={(value) => handleFormChange(field.name, value)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder={field.placeholder || 'Select...'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {field.options.filter(opt => opt.value !== '').map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          id={field.name}
+                          type={field.type}
+                          placeholder={field.placeholder}
+                          value={formData[field.name] || ''}
+                          onChange={(e) => handleFormChange(field.name, e.target.value)}
+                        />
+                      )}
+                      
+                      {/* Helper text for optional fields */}
+                      {field.helperText && (
+                        <p className="text-xs text-muted-foreground/70 mt-1">
+                          {field.helperText}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>
