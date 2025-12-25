@@ -11,6 +11,7 @@ interface ExampleItem {
 interface NewExamplesResponse {
   header: string;
   nicheContext?: string; // Optional niche-aware context line
+  contextNote?: string; // Optional context-aware note from previous tasks
   examples: Array<{ label: string; content: string }>;
   closing: string;
 }
@@ -410,8 +411,15 @@ export function AIResponseRenderer({ response, mode }: AIResponseRendererProps) 
             {data.header}
           </p>
           
+          {/* Context note from previous tasks (e.g., "Based on your target audience...") */}
+          {data.contextNote && (
+            <p className="text-sm text-foreground/70">
+              {data.contextNote}
+            </p>
+          )}
+          
           {/* Optional niche context line (subtle, non-directive) */}
-          {data.nicheContext && (
+          {data.nicheContext && !data.contextNote && (
             <p className="text-sm text-muted-foreground">
               {data.nicheContext}
             </p>

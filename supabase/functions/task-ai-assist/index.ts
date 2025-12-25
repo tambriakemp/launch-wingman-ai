@@ -352,6 +352,51 @@ Make the refinement only slightly better than what they wrote - don't completely
 ${baseContext}`,
     };
 
+    // Build previous task context for contextual examples when current input is empty
+    const buildPreviousTaskContext = (): string => {
+      const contextParts: string[] = [];
+      
+      // Task-specific context mapping: what previous data is relevant for each task
+      if (taskId === 'planning_define_problem') {
+        if (projectContext.audienceDescription) {
+          contextParts.push(`Target audience (from previous task): "${projectContext.audienceDescription}"`);
+        }
+      } else if (taskId === 'planning_define_dream_outcome') {
+        if (projectContext.audienceDescription) {
+          contextParts.push(`Target audience (from previous task): "${projectContext.audienceDescription}"`);
+        }
+        if (projectContext.primaryProblem) {
+          contextParts.push(`Main problem (from previous task): "${projectContext.primaryProblem}"`);
+        }
+      } else if (taskId === 'planning_offer_snapshot') {
+        if (projectContext.audienceDescription) {
+          contextParts.push(`Target audience: "${projectContext.audienceDescription}"`);
+        }
+        if (projectContext.primaryProblem) {
+          contextParts.push(`Main problem: "${projectContext.primaryProblem}"`);
+        }
+        if (projectContext.dreamOutcome) {
+          contextParts.push(`Dream outcome: "${projectContext.dreamOutcome}"`);
+        }
+      } else {
+        // For any other task, include all available context
+        if (projectContext.audienceDescription) {
+          contextParts.push(`Target audience: "${projectContext.audienceDescription}"`);
+        }
+        if (projectContext.primaryProblem) {
+          contextParts.push(`Main problem: "${projectContext.primaryProblem}"`);
+        }
+        if (projectContext.dreamOutcome) {
+          contextParts.push(`Dream outcome: "${projectContext.dreamOutcome}"`);
+        }
+      }
+      
+      return contextParts.length > 0 ? contextParts.join('\n') : '';
+    };
+    
+    const previousTaskContext = buildPreviousTaskContext();
+    const hasPreviousContext = previousTaskContext.length > 0;
+
     const systemPrompts: Record<string, string> = {
       help_me_choose: helpMeChoosePrompts[inputState],
 
@@ -391,16 +436,35 @@ If user wrote "Women over 40 who need help budgeting", examples should be:
 - Other audiences who also deal with budgeting/finances (same domain, different angle)
 - NOT generic examples about unrelated topics
 - NOT examples that just reword "Women over 40 who need help budgeting"
-` : ''}
+` : (hasPreviousContext ? `
+PREVIOUS TASK CONTEXT (PRIMARY - use this to generate relevant examples):
+${previousTaskContext}
+
+CONTEXT-AWARE RULES:
+- Since the user hasn't written anything for THIS field yet, use the PREVIOUS TASK DATA to generate RELEVANT examples
+- Examples MUST be contextual to the previous task data above
+- For "main problem" tasks: Generate PROBLEM examples that this specific audience would face
+- For "dream outcome" tasks: Generate OUTCOME examples relevant to the audience and their problem
+- Do NOT generate generic examples that ignore the previous context
+- Examples should feel like natural continuations of what the user already defined
+
+EXAMPLE OF EXPECTED BEHAVIOR:
+If previous context says "Target audience: Women over 40 who need help budgeting"
+And this task is "Identify your audience's main problem":
+- Generate PROBLEM examples specific to women over 40 with budgeting challenges
+- E.g., "Feeling anxious about having no retirement savings despite working for decades"
+- E.g., "Struggling to balance paying off debt while also enjoying their current life"
+- NOT generic problems like "Busy parents feeling overwhelmed"
+` : '')}
 ${nicheLabel ? `
-NICHE CONTEXT (SECONDARY - light framing only):
+NICHE CONTEXT (${currentInput || hasPreviousContext ? 'TERTIARY' : 'SECONDARY'} - light framing only):
 Selected niche: ${nicheLabel}
-${currentInput ? '- When user input exists, USER INPUT takes priority over niche' : '- Use niche as a framing lens for examples'}
+${currentInput ? '- When user input exists, USER INPUT takes priority over niche' : (hasPreviousContext ? '- When previous task context exists, that takes priority over niche' : '- Use niche as a framing lens for examples')}
 - Niche provides LIGHT CONTEXT, never direction
 - Examples must NOT imply the niche is the correct choice
 - Niche may only be referenced as a soft qualifier
 
-APPROVED niche phrasing (OPTIONAL, only if no user input):
+APPROVED niche phrasing (OPTIONAL, only if no user input AND no previous context):
 - "If it helps, here are a few example directions often seen within ${nicheLabel}:"
 
 DISALLOWED niche phrasing:
@@ -408,7 +472,8 @@ DISALLOWED niche phrasing:
 - "Most people in ${nicheLabel} should…"` : ''}
 
 INPUT STATE: ${inputState}
-${inputState === 'EMPTY' ? 'Goal: Help user understand what this field could look like. Use niche (if available) or generic examples.' : ''}
+${inputState === 'EMPTY' && hasPreviousContext ? 'Goal: Generate examples that are CONTEXTUAL to the previous task data. Examples should be directly relevant to what the user has already defined.' : ''}
+${inputState === 'EMPTY' && !hasPreviousContext ? 'Goal: Help user understand what this field could look like. Use niche (if available) or generic examples.' : ''}
 ${inputState === 'PARTIAL' ? 'Goal: Show alternative angles WITHIN THE SAME DOMAIN as their input. Examples should explore related audience segments or variations.' : ''}
 ${inputState === 'CLEAR' ? 'Goal: Show alternative angles WITHIN THE SAME DOMAIN as their input. Provide contrast through different approaches to the same topic.' : ''}
 
@@ -420,23 +485,24 @@ ${inputState === 'CLEAR' ? '"There\'s no single right way to answer this."' : ''
 IMPORTANT: You MUST respond with valid JSON in this exact format:
 \`\`\`json
 {
-  "header": "Examples to help you think",${currentInput ? '' : (nicheLabel ? `
-  "nicheContext": "If it helps, here are a few example directions often seen within ${nicheLabel}:",` : '')}
+  "header": "Examples to help you think",${currentInput ? '' : (hasPreviousContext ? `
+  "contextNote": "Based on your target audience, here are example problems they might face:",` : (nicheLabel ? `
+  "nicheContext": "If it helps, here are a few example directions often seen within ${nicheLabel}:",` : ''))}
   "examples": [
     {
       "label": "Example",
-      "content": "${currentInput ? 'One clear sentence in the same domain as the user input but with a different angle...' : 'One clear sentence describing a fictional, generic example...'}"
+      "content": "${currentInput ? 'One clear sentence in the same domain as the user input but with a different angle...' : (hasPreviousContext ? 'One clear sentence showing a CONTEXTUAL example based on previous task data...' : 'One clear sentence describing a fictional, generic example...')}"
     },
     {
       "label": "Example",
-      "content": "${currentInput ? 'Another clear sentence exploring a different approach within the same topic area...' : 'Another clear sentence with a different approach...'}"
+      "content": "${currentInput ? 'Another clear sentence exploring a different approach within the same topic area...' : (hasPreviousContext ? 'Another CONTEXTUAL example that builds on what the user already defined...' : 'Another clear sentence with a different approach...')}"
     }
   ],
   "closing": "{{Use the required closing text based on input state above}}"
 }
 \`\`\`
 
-${currentInput ? `Generate examples that explore the SAME DOMAIN/TOPIC as "${currentInput}" but show DIFFERENT ANGLES (different audience segments, different pain points within the topic, different life stages, etc.). Do NOT include nicheContext when user input exists.` : (nicheLabel ? `Tailor examples to loosely relate to "${nicheLabel}" but keep them generic, fictional, and non-prescriptive. The nicheContext line is OPTIONAL.` : '')}
+${currentInput ? `Generate examples that explore the SAME DOMAIN/TOPIC as "${currentInput}" but show DIFFERENT ANGLES (different audience segments, different pain points within the topic, different life stages, etc.). Do NOT include nicheContext when user input exists.` : (hasPreviousContext ? `Generate examples that are DIRECTLY RELEVANT to the previous task data. Examples must feel like natural continuations of what the user already defined. Use contextNote instead of nicheContext.` : (nicheLabel ? `Tailor examples to loosely relate to "${nicheLabel}" but keep them generic, fictional, and non-prescriptive. The nicheContext line is OPTIONAL.` : ''))}
 Task context: "${taskTitle}"
 ${baseContext}`,
 
