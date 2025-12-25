@@ -55,6 +55,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [stuckModalOpen, setStuckModalOpen] = useState(false);
+  const [showPostLaunchTasks, setShowPostLaunchTasks] = useState(false);
   
   // Persist celebration dismissal per phase in localStorage
   const celebrationStorageKey = `celebration-dismissed-${projectId}`;
@@ -182,13 +183,13 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     );
   }
 
-  if (dashboardViewType === 'launched') {
+  if (dashboardViewType === 'launched' && !showPostLaunchTasks) {
     return (
       <ProjectLaunchedView
         projectName={project?.name}
-        onContinueToPostLaunch={async () => {
-          // Mark as in_progress to continue with post-launch tasks
-          await transitionTo('in_progress');
+        onContinueToPostLaunch={() => {
+          // Just show post-launch tasks, don't change project state
+          setShowPostLaunchTasks(true);
         }}
         onMarkComplete={markCompleted}
       />

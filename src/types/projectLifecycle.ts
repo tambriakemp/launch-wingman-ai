@@ -56,6 +56,7 @@ export const COUNTS_TOWARD_LIMITS: ProjectState[] = [
 export const TASK_ENGINE_ACTIVE_STATES: ProjectState[] = [
   'draft',
   'in_progress',
+  'launched', // Tasks should work in launched state for post-launch reflection
 ];
 
 /**
