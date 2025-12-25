@@ -368,6 +368,17 @@ ${baseContext}`,
         if (projectContext.primaryProblem) {
           contextParts.push(`Main problem (from previous task): "${projectContext.primaryProblem}"`);
         }
+      } else if (taskId === 'planning_time_effort_perception') {
+        // Time & Effort Perception task: needs audience, problem, and dream outcome
+        if (projectContext.audienceDescription) {
+          contextParts.push(`Target audience: "${projectContext.audienceDescription}"`);
+        }
+        if (projectContext.primaryProblem) {
+          contextParts.push(`Main problem: "${projectContext.primaryProblem}"`);
+        }
+        if (projectContext.dreamOutcome) {
+          contextParts.push(`Dream outcome: "${projectContext.dreamOutcome}"`);
+        }
       } else if (taskId === 'planning_offer_snapshot') {
         if (projectContext.audienceDescription) {
           contextParts.push(`Target audience: "${projectContext.audienceDescription}"`);
@@ -551,7 +562,45 @@ ${baseContext}`,
     };
 
     const userPrompts: Record<string, string> = {
-      help_me_choose: inputState === 'EMPTY' 
+      help_me_choose: taskId === 'planning_time_effort_perception'
+        ? (inputState === 'EMPTY' 
+          ? `I'm working on this task: "${taskTitle}"
+
+SPECIAL RULES FOR THIS TASK:
+- Help me name PATTERNS about how change feels, NOT actions to take
+- Never suggest specific tactics, steps, or prescribe what my audience should do
+- Focus on perception, feeling, and emotional/cognitive relief
+- This is about WHY change feels manageable, not WHAT to do
+
+Here are the instructions:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+I haven't started yet and need help finding a starting point about how my offer reduces perceived effort.`
+          : inputState === 'PARTIAL'
+          ? `I'm working on this task: "${taskTitle}"
+
+SPECIAL RULES FOR THIS TASK:
+- Help me refine PATTERNS about how change feels, NOT actions
+- Never suggest specific tactics, steps, or prescribe what my audience should do
+
+Here are the instructions:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+Here's what I've written so far: "${currentInput}"
+
+Help me make this more specific while keeping it about PERCEPTION, not tactics.`
+          : `I'm working on this task: "${taskTitle}"
+
+SPECIAL RULES FOR THIS TASK:
+- Polish without adding tactics or prescribed actions
+
+Here are the instructions:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+Here's what I've written: "${currentInput}"
+
+Help me polish this while preserving its focus on perception and feeling.`)
+        : (inputState === 'EMPTY' 
         ? `I'm working on this task: "${taskTitle}"
 
 Here are the instructions:
@@ -574,9 +623,25 @@ ${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specif
 
 Here's what I've written: "${currentInput}"
 
-Does this look good? Can you help me polish it?`,
+Does this look good? Can you help me polish it?`),
 
-      examples: `Show me examples for this task: "${taskTitle}"
+      examples: taskId === 'planning_time_effort_perception' 
+        ? `Show me examples for this task: "${taskTitle}"
+
+SPECIAL RULES FOR THIS TASK - YOU MUST FOLLOW THESE:
+- Show ONLY abstract examples about perception and feeling, NOT tactics or actions
+- Examples must describe STATES or FEELINGS, never steps, tools, or platforms
+- Approved example types: "An early moment of clarity", "A feeling of calm instead of overwhelm", "Less decision-making upfront"
+- NEVER suggest specific tactics, strategies, timelines, or workloads
+- Focus on emotional and cognitive relief, NOT outcomes or results
+
+Instructions for this task:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+${currentInput ? `My current input (do NOT reference this directly): "${currentInput}"` : 'I haven\'t written anything yet.'}
+
+Show 2-3 abstract examples about perception and feeling — not tactics or steps.`
+        : `Show me examples for this task: "${taskTitle}"
 
 Instructions for this task:
 ${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
