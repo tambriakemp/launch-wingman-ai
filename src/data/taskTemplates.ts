@@ -36,6 +36,26 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
       type: 'form',
       fields: [
         { name: 'audience_description', label: 'Who is your target audience?', type: 'textarea', required: true, placeholder: 'Describe the specific type of person you want to help...' },
+        { 
+          name: 'niche_context', 
+          label: 'General niche (if it helps)', 
+          type: 'select', 
+          required: false, 
+          placeholder: 'Select a niche...',
+          sectionLabel: 'Optional: Helpful context',
+          helperText: "This doesn't lock you in — it just helps with examples and wording.",
+          options: [
+            { value: '', label: 'Select a niche...' },
+            { value: 'business_entrepreneurship', label: 'Business / Entrepreneurship' },
+            { value: 'money_finance', label: 'Money / Finance' },
+            { value: 'career', label: 'Career' },
+            { value: 'health_wellness', label: 'Health / Wellness' },
+            { value: 'personal_growth', label: 'Personal Growth' },
+            { value: 'relationships', label: 'Relationships' },
+            { value: 'creative_content', label: 'Creative / Content' },
+            { value: 'other', label: 'Other / Not sure yet' },
+          ]
+        },
       ],
     },
     aiAssistModes: ['help_me_choose', 'examples', 'simplify'],

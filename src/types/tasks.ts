@@ -106,6 +106,9 @@ export interface FormField {
   type: 'text' | 'textarea' | 'select' | 'number';
   required: boolean;
   placeholder?: string;
+  sectionLabel?: string;
+  helperText?: string;
+  options?: { value: string; label: string }[];
 }
 
 export interface ToolLink {
