@@ -32,6 +32,7 @@ export default function TaskDetail() {
   const [isAiLoading, setIsAiLoading] = useState<string | null>(null);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [lastAiMode, setLastAiMode] = useState<string | null>(null);
+  const [hasShownExamples, setHasShownExamples] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const isInitialized = useRef(false);
@@ -326,6 +327,11 @@ export default function TaskDetail() {
       }
 
       setAiResponse(data.response);
+      
+      // Track that examples have been shown
+      if (mode === 'examples') {
+        setHasShownExamples(true);
+      }
     } catch (error) {
       console.error('AI assist error:', error);
       toast.error('Something went wrong. Please try again.');
@@ -584,7 +590,7 @@ export default function TaskDetail() {
               {taskTemplate.aiAssistModes.map((mode) => {
                 const labels: Record<string, string> = {
                   help_me_choose: "Help me choose",
-                  examples: "Show examples",
+                  examples: hasShownExamples ? "Show more examples" : "Show examples",
                   simplify: "Simplify this",
                 };
                 
