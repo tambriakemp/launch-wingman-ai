@@ -324,8 +324,9 @@ export const ProjectSidebar = () => {
   const { isOpen, close } = useMobileSidebar();
   const { isSubscribed } = useAuth();
 
-  // Determine if we're on an assessment page
+  // Determine if we're on an assessment page or playbook page (global pages that still need sidebar)
   const isOnAssessmentPage = location.pathname.startsWith('/assessments');
+  const isOnPlaybookPage = location.pathname === '/playbook';
 
   // Load last project from localStorage on mount
   useEffect(() => {
@@ -339,8 +340,8 @@ export const ProjectSidebar = () => {
     }
   }, []);
 
-  // Use lastProject.id when on assessment pages to show full navigation
-  const effectiveProjectId = projectId || (isOnAssessmentPage ? lastProject?.id : undefined);
+  // Use lastProject.id when on assessment or playbook pages to show full navigation
+  const effectiveProjectId = projectId || ((isOnAssessmentPage || isOnPlaybookPage) ? lastProject?.id : undefined);
 
   // Fetch funnel data to determine step completion
   const { data: funnel } = useQuery({
