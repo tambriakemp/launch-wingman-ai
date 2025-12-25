@@ -193,8 +193,8 @@ export default function TaskDetail() {
     setLastAiMode(mode);
     
     try {
-      // Get current input value for mode detection (help_me_choose and simplify need it)
-      const currentInput = (mode === 'help_me_choose' || mode === 'simplify') ? getPrimaryInputValue() : undefined;
+      // Get current input value for mode detection (all AI modes can use it)
+      const currentInput = getPrimaryInputValue();
       
       const { data, error } = await supabase.functions.invoke('task-ai-assist', {
         body: {

@@ -7,7 +7,15 @@ interface ExampleItem {
   content: string;
 }
 
-interface StructuredExamplesResponse {
+// New examples format (neutral, non-prescriptive)
+interface NewExamplesResponse {
+  header: string;
+  examples: Array<{ label: string; content: string }>;
+  closing: string;
+}
+
+// Legacy examples format
+interface LegacyExamplesResponse {
   intro?: string;
   examples?: ExampleItem[];
   conclusion?: string;
@@ -236,6 +244,28 @@ function ReflectionCard({ content }: { content: string }) {
   );
 }
 
+// Neutral example card for "Show examples" mode (non-prescriptive, read-only)
+function NeutralExampleCard({ label, content, index }: { label: string; content: string; index: number }) {
+  const neutralColors = [
+    { bg: "bg-slate-50 dark:bg-slate-950/30", text: "text-slate-600 dark:text-slate-400", border: "border-slate-200 dark:border-slate-800/50" },
+    { bg: "bg-stone-50 dark:bg-stone-950/30", text: "text-stone-600 dark:text-stone-400", border: "border-stone-200 dark:border-stone-800/50" },
+    { bg: "bg-zinc-50 dark:bg-zinc-950/30", text: "text-zinc-600 dark:text-zinc-400", border: "border-zinc-200 dark:border-zinc-800/50" },
+  ];
+  const colors = neutralColors[index % neutralColors.length];
+  
+  return (
+    <div className={`p-4 rounded-lg ${colors.bg} border ${colors.border}`}>
+      <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/50 ${colors.text} text-xs font-medium mb-2`}>
+        <Lightbulb className="w-3 h-3" />
+        {label}
+      </div>
+      <p className="text-sm text-foreground/80 leading-relaxed">
+        {content}
+      </p>
+    </div>
+  );
+}
+
 function RefinementOptionCard({ content, index }: { content: string; index: number }) {
   const colors = exampleCardColors[index % exampleCardColors.length];
   
@@ -366,7 +396,37 @@ export function AIResponseRenderer({ response, mode }: AIResponseRendererProps) 
 
   // Handle "examples" mode
   if (mode === 'examples' && parsed) {
-    const structured = parsed as StructuredExamplesResponse;
+    // Check for new neutral examples format
+    const hasNewFormat = 'header' in parsed && 'examples' in parsed && Array.isArray((parsed as Record<string, unknown>).examples);
+    
+    if (hasNewFormat) {
+      const data = parsed as unknown as NewExamplesResponse;
+      return (
+        <div className="space-y-4">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            {data.header}
+          </p>
+          
+          <div className="space-y-3">
+            {data.examples.map((example, index) => (
+              <NeutralExampleCard 
+                key={index} 
+                label={example.label} 
+                content={example.content} 
+                index={index} 
+              />
+            ))}
+          </div>
+          
+          <p className="text-sm text-muted-foreground italic">
+            {data.closing}
+          </p>
+        </div>
+      );
+    }
+    
+    // Legacy format fallback
+    const structured = parsed as LegacyExamplesResponse;
     if (structured?.examples && structured.examples.length > 0) {
       return (
         <div className="space-y-4">
