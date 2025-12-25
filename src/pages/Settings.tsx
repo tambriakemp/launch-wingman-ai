@@ -14,6 +14,7 @@ import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { CheckInSettings } from "@/components/check-in";
 import {
   User,
   CreditCard,
@@ -748,6 +749,30 @@ const Settings = () => {
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Check-In Settings */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.28 }}
+        >
+          <Card variant="elevated">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>Check-In Preferences</CardTitle>
+                  <CardDescription>Control how often you're invited to reflect</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <CheckInSettings />
             </CardContent>
           </Card>
         </motion.div>

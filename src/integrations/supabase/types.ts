@@ -137,6 +137,63 @@ export type Database = {
         }
         Relationships: []
       }
+      check_in_preferences: {
+        Row: {
+          cadence: string
+          created_at: string
+          id: string
+          last_check_in_at: string | null
+          snoozed_until: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cadence?: string
+          created_at?: string
+          id?: string
+          last_check_in_at?: string | null
+          snoozed_until?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cadence?: string
+          created_at?: string
+          id?: string
+          last_check_in_at?: string | null
+          snoozed_until?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      check_ins: {
+        Row: {
+          created_at: string
+          id: string
+          orientation_choice: string | null
+          reflection_prompt: string | null
+          reflection_response: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          orientation_choice?: string | null
+          reflection_prompt?: string | null
+          reflection_response?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          orientation_choice?: string | null
+          reflection_prompt?: string | null
+          reflection_response?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       content_planner: {
         Row: {
           content: string | null
