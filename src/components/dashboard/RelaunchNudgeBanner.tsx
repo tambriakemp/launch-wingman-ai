@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, Archive, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ interface RelaunchNudgeBannerProps {
 /**
  * A single, optional reminder shown 30-60 days after a project is completed.
  * Shows once only. Dismiss is permanent.
+ * 
+ * Debug mode: Add ?debugNudge=true to URL to force-show the banner for testing.
  */
 export function RelaunchNudgeBanner({
   projectId,
@@ -28,8 +30,12 @@ export function RelaunchNudgeBanner({
   onArchive,
 }: RelaunchNudgeBannerProps) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isVisible, setIsVisible] = useState(true);
   const [isDismissing, setIsDismissing] = useState(false);
+
+  // Debug mode: ?debugNudge=true forces the banner to show
+  const debugMode = searchParams.get("debugNudge") === "true";
 
   // Calculate days since project was last updated (proxy for completion date)
   const daysSinceUpdate = Math.floor(
@@ -38,12 +44,14 @@ export function RelaunchNudgeBanner({
 
   // Only show if:
   // - Project is completed
-  // - 30+ days have passed
+  // - 30+ days have passed (or debug mode)
   // - Not already dismissed
   const shouldShow =
-    projectStatus === "completed" &&
-    daysSinceUpdate >= 30 &&
-    !relaunchNudgeDismissed &&
+    (debugMode || (
+      projectStatus === "completed" &&
+      daysSinceUpdate >= 30 &&
+      !relaunchNudgeDismissed
+    )) &&
     isVisible;
 
   if (!shouldShow) {
