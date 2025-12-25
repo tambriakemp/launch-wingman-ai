@@ -710,10 +710,14 @@ export type Database = {
           description: string | null
           funnel_type_snapshot: string | null
           id: string
+          is_relaunch: boolean
           launch_date: string | null
           name: string
+          parent_project_id: string | null
           phase_statuses: Json | null
           project_type: string
+          relaunch_kept_sections: string[] | null
+          relaunch_revisit_sections: string[] | null
           sales_copy_funnel_snapshot: string | null
           selected_funnel_type: string | null
           status: string
@@ -730,10 +734,14 @@ export type Database = {
           description?: string | null
           funnel_type_snapshot?: string | null
           id?: string
+          is_relaunch?: boolean
           launch_date?: string | null
           name: string
+          parent_project_id?: string | null
           phase_statuses?: Json | null
           project_type?: string
+          relaunch_kept_sections?: string[] | null
+          relaunch_revisit_sections?: string[] | null
           sales_copy_funnel_snapshot?: string | null
           selected_funnel_type?: string | null
           status?: string
@@ -750,10 +758,14 @@ export type Database = {
           description?: string | null
           funnel_type_snapshot?: string | null
           id?: string
+          is_relaunch?: boolean
           launch_date?: string | null
           name?: string
+          parent_project_id?: string | null
           phase_statuses?: Json | null
           project_type?: string
+          relaunch_kept_sections?: string[] | null
+          relaunch_revisit_sections?: string[] | null
           sales_copy_funnel_snapshot?: string | null
           selected_funnel_type?: string | null
           status?: string
@@ -764,7 +776,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_parent_project_id_fkey"
+            columns: ["parent_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sales_page_copy: {
         Row: {

@@ -1,6 +1,7 @@
+import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Rocket, PartyPopper, ArrowRight } from "lucide-react";
+import { Rocket, PartyPopper, ArrowRight, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface ProjectLaunchedViewProps {
@@ -12,6 +13,14 @@ export function ProjectLaunchedView({
   projectName,
   onContinueToPostLaunch,
 }: ProjectLaunchedViewProps) {
+  const navigate = useNavigate();
+  const { id } = useParams();
+
+  const handleRelaunch = () => {
+    if (id) {
+      navigate(`/projects/${id}/relaunch`);
+    }
+  };
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -62,6 +71,23 @@ export function ProjectLaunchedView({
             className="w-full gap-2"
           >
             Continue to Reflection
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Relaunch option */}
+      <Card className="border-border/50">
+        <CardContent className="pt-4 pb-4">
+          <Button
+            variant="ghost"
+            onClick={handleRelaunch}
+            className="w-full justify-between h-auto py-3 px-3 text-muted-foreground hover:text-foreground"
+          >
+            <div className="flex items-center gap-3 text-left">
+              <RefreshCw className="w-4 h-4" />
+              <span className="text-sm">Plan a relaunch</span>
+            </div>
             <ArrowRight className="w-4 h-4" />
           </Button>
         </CardContent>

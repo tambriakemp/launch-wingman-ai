@@ -8,6 +8,10 @@ export interface ProjectSummaryData {
   projectStatus: ProjectState;
   transformationStatement: string | null;
   
+  // Relaunch info
+  isRelaunch: boolean;
+  parentProjectId: string | null;
+  
   // Audience & Problem
   niche: string | null;
   targetAudience: string | null;
@@ -69,7 +73,7 @@ export function useProjectSummary(projectId: string | undefined) {
       ] = await Promise.all([
         supabase
           .from("projects")
-          .select("name, transformation_statement, status")
+          .select("name, transformation_statement, status, is_relaunch, parent_project_id")
           .eq("id", projectId)
           .single(),
         supabase
@@ -178,6 +182,8 @@ export function useProjectSummary(projectId: string | undefined) {
         projectName: projectResult.data.name,
         projectStatus: (projectResult.data.status || "draft") as ProjectState,
         transformationStatement: projectResult.data.transformation_statement,
+        isRelaunch: projectResult.data.is_relaunch || false,
+        parentProjectId: projectResult.data.parent_project_id || null,
         niche: funnelResult.data?.niche || null,
         targetAudience: funnelResult.data?.target_audience || null,
         primaryPainPoint: funnelResult.data?.primary_pain_point || null,

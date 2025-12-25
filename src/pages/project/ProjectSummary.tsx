@@ -14,6 +14,8 @@ import {
   ArrowRight,
   Play,
   RotateCcw,
+  RefreshCw,
+  Link as LinkIcon,
 } from "lucide-react";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -144,6 +146,9 @@ export default function ProjectSummary() {
   const { data, isLoading } = useProjectSummary(id);
   const { projectState, resume } = useProjectLifecycle({ projectId: id || "" });
 
+  // Check if relaunch is available (only for launched or completed)
+  const canRelaunch = projectState === "launched" || projectState === "completed";
+
   // Get lifecycle-aware CTA
   const getPrimaryCta = () => {
     switch (projectState) {
@@ -165,6 +170,10 @@ export default function ProjectSummary() {
 
   const primaryCta = getPrimaryCta();
   const funnelInfo = data?.funnelType ? FUNNEL_TYPE_LABELS[data.funnelType] : null;
+  
+  // Check if this is a relaunch project
+  const isRelaunchProject = data?.isRelaunch;
+  const parentProjectId = data?.parentProjectId;
 
   if (isLoading) {
     return (
@@ -405,6 +414,57 @@ export default function ProjectSummary() {
             )}
           </SummarySection>
         </div>
+
+        {/* Relaunch CTA - only for launched/completed */}
+        {canRelaunch && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+          >
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="pt-4 pb-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate(`/projects/${id}/relaunch`)}
+                  className="w-full justify-between h-auto py-3 px-3"
+                >
+                  <div className="flex items-center gap-3 text-left">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <RefreshCw className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Relaunch this project</p>
+                      <p className="text-sm text-muted-foreground">
+                        Reuse what still fits, revisit what needs attention
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Based on section - for relaunch projects */}
+        {isRelaunchProject && parentProjectId && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.38 }}
+            className="flex items-center justify-center gap-2 text-sm text-muted-foreground"
+          >
+            <LinkIcon className="w-3.5 h-3.5" />
+            <span>Based on:</span>
+            <Link
+              to={`/projects/${parentProjectId}/summary`}
+              className="text-primary hover:underline"
+            >
+              Original project
+            </Link>
+          </motion.div>
+        )}
 
         {/* CTAs */}
         <motion.div
