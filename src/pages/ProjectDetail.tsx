@@ -40,6 +40,7 @@ import { ContentPlanner } from "@/components/ContentPlanner";
 import { CreateSection } from "@/components/CreateSection";
 import { ProjectProgress } from "@/components/ProjectProgress";
 import { ProjectQuickStats } from "@/components/ProjectQuickStats";
+import { ProjectState, PROJECT_STATE_LABELS } from "@/types/projectLifecycle";
 
 interface LaunchEvent {
   id: string;
@@ -57,22 +58,25 @@ interface LaunchEvent {
   rest_weeks?: number | null;
 }
 
-type ProjectStatus = "active" | "draft" | "archived";
-
 interface Project {
   id: string;
   name: string;
   description: string | null;
-  status: ProjectStatus;
+  status: ProjectState;
   transformation_statement: string | null;
   project_type: "launch" | "prelaunch";
 }
 
 const statusVariants: Record<string, { label: string; className: string }> = {
-  active: { label: "Active", className: "text-success border-success" },
   draft: { label: "Draft", className: "text-warning border-warning" },
+  in_progress: { label: "In Progress", className: "text-success border-success" },
+  launched: { label: "Launched", className: "text-primary border-primary" },
+  completed: { label: "Completed", className: "text-success border-success" },
+  paused: { label: "Paused", className: "text-muted-foreground border-muted" },
   archived: { label: "Archived", className: "text-muted-foreground border-muted" },
-  planning: { label: "Active", className: "text-success border-success" },
+  // Legacy fallbacks
+  active: { label: "In Progress", className: "text-success border-success" },
+  planning: { label: "In Progress", className: "text-success border-success" },
 };
 
 const ProjectDetail = () => {
@@ -199,7 +203,7 @@ const ProjectDetail = () => {
     fetchStats();
   }, [id, navigate, fetchLaunchEvents, fetchStats]);
 
-  const handleProjectUpdated = (name: string, description: string | null, status: ProjectStatus) => {
+  const handleProjectUpdated = (name: string, description: string | null, status: ProjectState) => {
     setProject((prev) => (prev ? { ...prev, name, description, status } : null));
   };
 
