@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronsUpDown, Plus, Check, Loader2, CalendarIcon, Rocket, Clock, Coffee, Package, Sparkles, Crown } from "lucide-react";
+import { ChevronsUpDown, Plus, Check, Loader2, CalendarIcon, Rocket, Clock, Coffee, Package, Sparkles, Crown, Eye } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, addWeeks, subWeeks } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ProjectSummarySheet } from "@/components/ProjectSummarySheet";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -60,6 +61,7 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
   const [open, setOpen] = useState(false);
   const [showNameDialog, setShowNameDialog] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showSummarySheet, setShowSummarySheet] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const [projectName, setProjectName] = useState("");
   const [programWeeks, setProgramWeeks] = useState(DEFAULT_PROGRAM_WEEKS);
@@ -305,6 +307,18 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
               </CommandGroup>
               <CommandSeparator className="bg-[#333]" />
               <CommandGroup className="p-1">
+                {currentProjectId && (
+                  <CommandItem 
+                    onSelect={() => {
+                      setOpen(false);
+                      setShowSummarySheet(true);
+                    }} 
+                    className="cursor-pointer py-2 px-2 text-white hover:bg-[#2a2a2a] rounded-md mx-1 aria-selected:bg-[#2a2a2a]"
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    <span className="text-sm">View Summary</span>
+                  </CommandItem>
+                )}
                 <CommandItem 
                   onSelect={handleOpenCreateDialog} 
                   className="cursor-pointer py-2 px-2 text-white hover:bg-[#2a2a2a] rounded-md mx-1 aria-selected:bg-[#2a2a2a]"
@@ -549,6 +563,13 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
         open={showUpgradeDialog} 
         onOpenChange={setShowUpgradeDialog} 
         feature="Unlimited Projects"
+      />
+
+      {/* Project Summary Sheet */}
+      <ProjectSummarySheet
+        projectId={currentProjectId}
+        open={showSummarySheet}
+        onOpenChange={setShowSummarySheet}
       />
     </>
   );
