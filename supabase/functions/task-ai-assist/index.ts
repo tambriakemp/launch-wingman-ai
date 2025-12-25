@@ -119,10 +119,32 @@ serve(async (req) => {
 
 Your role:
 - Give a clear, specific recommendation based on their project context
-- Explain your reasoning in 2-3 sentences
+- Explain your reasoning
 - Keep it simple and actionable
 - Avoid jargon or marketing-speak
 - Be reassuring and supportive
+
+IMPORTANT: You MUST respond with valid JSON in this exact format:
+\`\`\`json
+{
+  "intro": "Brief context-setting sentence",
+  "recommendation": {
+    "title": "My Recommendation",
+    "content": "Clear statement of what I recommend and why (2-3 sentences)"
+  },
+  "reasoning": [
+    {
+      "type": "Why This Works",
+      "content": "Explanation of why this choice fits their situation..."
+    },
+    {
+      "type": "What to Consider",
+      "content": "Any important considerations or alternatives..."
+    }
+  ],
+  "conclusion": "Encouraging closing thought"
+}
+\`\`\`
 
 Project context:
 ${projectContext.audienceDescription ? `- Target audience: ${projectContext.audienceDescription}` : ''}
@@ -184,6 +206,30 @@ Your role:
 - Focus on the one most important thing to do
 - Remove any complexity or overthinking
 - Be warm and reassuring
+
+IMPORTANT: You MUST respond with valid JSON in this exact format:
+\`\`\`json
+{
+  "intro": "Reassuring opening sentence acknowledging this can feel complex",
+  "mainPoint": {
+    "title": "The One Thing to Focus On",
+    "content": "The single most important thing they need to do, explained simply (2-3 sentences)"
+  },
+  "steps": [
+    {
+      "type": "Step 1",
+      "content": "First simple action to take..."
+    },
+    {
+      "type": "Step 2",
+      "content": "Next simple action..."
+    }
+  ],
+  "conclusion": "Encouraging reminder that they've got this"
+}
+\`\`\`
+
+Keep steps to 2-3 maximum. Use everyday language and analogies where helpful.
 
 Project context:
 ${projectContext.audienceDescription ? `- Target audience: ${projectContext.audienceDescription}` : ''}
