@@ -10,6 +10,7 @@ interface ExampleItem {
 // New examples format (neutral, non-prescriptive)
 interface NewExamplesResponse {
   header: string;
+  nicheContext?: string; // Optional niche-aware context line
   examples: Array<{ label: string; content: string }>;
   closing: string;
 }
@@ -408,6 +409,13 @@ export function AIResponseRenderer({ response, mode }: AIResponseRendererProps) 
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {data.header}
           </p>
+          
+          {/* Optional niche context line (subtle, non-directive) */}
+          {data.nicheContext && (
+            <p className="text-sm text-muted-foreground">
+              {data.nicheContext}
+            </p>
+          )}
           
           <div className="space-y-3">
             {data.examples.map((example, index) => (
