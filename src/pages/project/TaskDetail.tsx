@@ -165,6 +165,26 @@ export default function TaskDetail() {
     }
   };
 
+  // Get the primary input value for Help Me Choose mode detection
+  const getPrimaryInputValue = (): string => {
+    if (!taskTemplate) return '';
+    
+    switch (taskTemplate.inputType) {
+      case 'selection':
+        return selectedOption || '';
+      case 'form':
+        // Get the first textarea or text field value
+        const fields = taskTemplate.inputSchema?.fields || [];
+        const primaryField = fields.find(f => f.type === 'textarea') || fields[0];
+        if (primaryField) {
+          return formData[primaryField.name] || '';
+        }
+        return '';
+      default:
+        return '';
+    }
+  };
+
   const handleAiAssist = async (mode: string) => {
     if (!taskTemplate || !projectId) return;
     
@@ -173,6 +193,9 @@ export default function TaskDetail() {
     setLastAiMode(mode);
     
     try {
+      // Get current input value for mode detection
+      const currentInput = mode === 'help_me_choose' ? getPrimaryInputValue() : undefined;
+      
       const { data, error } = await supabase.functions.invoke('task-ai-assist', {
         body: {
           mode,
@@ -180,6 +203,7 @@ export default function TaskDetail() {
           taskTitle: taskTemplate.title,
           taskInstructions: taskTemplate.instructions,
           projectId,
+          currentInput,
         },
       });
 
