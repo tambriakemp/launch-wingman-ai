@@ -1,3 +1,4 @@
+import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Rocket, ArrowRight, RefreshCw, FolderPlus } from "lucide-react";
@@ -16,6 +17,16 @@ export function ProjectCompletedView({
   onNewProject,
   onPause,
 }: ProjectCompletedViewProps) {
+  const navigate = useNavigate();
+  const { id } = useParams();
+
+  const handleRelaunch = () => {
+    if (onRelaunch) {
+      onRelaunch();
+    } else if (id) {
+      navigate(`/projects/${id}/relaunch`);
+    }
+  };
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -53,16 +64,16 @@ export function ProjectCompletedView({
           <Button
             variant="outline"
             className="w-full justify-between h-auto py-4 px-4"
-            onClick={onRelaunch}
+            onClick={handleRelaunch}
           >
             <div className="flex items-center gap-3 text-left">
               <div className="p-2 rounded-lg bg-primary/10">
                 <RefreshCw className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <p className="font-medium">Relaunch this offer</p>
+                <p className="font-medium">Relaunch this project</p>
                 <p className="text-sm text-muted-foreground">
-                  Start a new launch cycle with the same offer
+                  Reuse what still fits, revisit what needs attention
                 </p>
               </div>
             </div>
