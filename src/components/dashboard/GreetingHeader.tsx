@@ -24,7 +24,7 @@ export const GreetingHeader = ({ firstName, projectName, projectId }: GreetingHe
         {greeting}, {displayName} 👋
       </h1>
       {projectName && (
-        <div className="flex items-center gap-2">
+        <div className="space-y-1">
           <p className="text-muted-foreground">
             You're building: <span className="text-foreground font-medium">{projectName}</span>
           </p>
