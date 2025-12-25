@@ -62,6 +62,7 @@ const createNavSections = (projectId: string): NavSection[] => [
     items: [
       { id: "offer", label: "Dashboard", icon: LayoutDashboard, href: `/projects/${projectId}/offer` },
       { id: "board", label: "Project Board", icon: Kanban, href: `/projects/${projectId}/board` },
+      { id: "content-planner", label: "Content Planner", icon: Calendar, href: `/projects/${projectId}/social`, isProOnly: true },
       { id: "funnel-type", label: "Funnel Type", icon: Rocket, href: `/projects/${projectId}/funnel-type` },
       { id: "audience", label: "Audience", icon: Users, href: `/projects/${projectId}/audience`, requiresStep: "funnel-type" },
       { id: "transformation", label: "Transformation", icon: Sparkles, href: `/projects/${projectId}/transformation`, requiresStep: "audience" },
@@ -87,13 +88,6 @@ const createNavSections = (projectId: string): NavSection[] => [
       { id: "social-bio", label: "Social Bio", icon: AtSign, href: `/projects/${projectId}/social-bio`, isProOnly: true },
       { id: "emails", label: "Emails", icon: Mail, href: `/projects/${projectId}/emails`, isProOnly: true },
       { id: "deliverables", label: "Deliverables", icon: Package, href: `/projects/${projectId}/deliverables`, isProOnly: true },
-    ],
-  },
-  {
-    heading: "Execute",
-    isProOnly: true,
-    items: [
-      { id: "social", label: "Social Media Hub", icon: Calendar, href: `/projects/${projectId}/social`, isProOnly: true },
     ],
   },
 ];
