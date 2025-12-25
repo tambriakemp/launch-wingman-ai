@@ -64,25 +64,6 @@ const chooseTypeStyles: Record<string, { bg: string; text: string; icon: React.R
   },
 };
 
-// Styles for simplify steps
-const simplifyTypeStyles: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-  "Step 1": { 
-    bg: "bg-violet-50 dark:bg-violet-950/30", 
-    text: "text-violet-700 dark:text-violet-400",
-    icon: <span className="w-3.5 h-3.5 text-xs font-bold">1</span>
-  },
-  "Step 2": { 
-    bg: "bg-indigo-50 dark:bg-indigo-950/30", 
-    text: "text-indigo-700 dark:text-indigo-400",
-    icon: <span className="w-3.5 h-3.5 text-xs font-bold">2</span>
-  },
-  "Step 3": { 
-    bg: "bg-blue-50 dark:bg-blue-950/30", 
-    text: "text-blue-700 dark:text-blue-400",
-    icon: <span className="w-3.5 h-3.5 text-xs font-bold">3</span>
-  },
-};
-
 // Fallback colors for unknown types
 const fallbackStyles = [
   { bg: "bg-amber-50 dark:bg-amber-950/30", text: "text-amber-700 dark:text-amber-400", icon: <Lightbulb className="w-3.5 h-3.5" /> },
@@ -90,11 +71,37 @@ const fallbackStyles = [
   { bg: "bg-violet-50 dark:bg-violet-950/30", text: "text-violet-700 dark:text-violet-400", icon: <Target className="w-3.5 h-3.5" /> },
 ];
 
+// Step card colors for simplify mode
+const stepCardColors = [
+  { bg: "bg-violet-50 dark:bg-violet-950/30", text: "text-violet-700 dark:text-violet-400", numBg: "bg-violet-200 dark:bg-violet-800" },
+  { bg: "bg-indigo-50 dark:bg-indigo-950/30", text: "text-indigo-700 dark:text-indigo-400", numBg: "bg-indigo-200 dark:bg-indigo-800" },
+  { bg: "bg-blue-50 dark:bg-blue-950/30", text: "text-blue-700 dark:text-blue-400", numBg: "bg-blue-200 dark:bg-blue-800" },
+  { bg: "bg-purple-50 dark:bg-purple-950/30", text: "text-purple-700 dark:text-purple-400", numBg: "bg-purple-200 dark:bg-purple-800" },
+];
+
 function getStyleForType(type: string, index: number, styleMap: Record<string, { bg: string; text: string; icon: React.ReactNode }>) {
   if (styleMap[type]) {
     return styleMap[type];
   }
   return fallbackStyles[index % fallbackStyles.length];
+}
+
+function StepCard({ stepNumber, title, content }: { stepNumber: number; title: string; content: string }) {
+  const colors = stepCardColors[(stepNumber - 1) % stepCardColors.length];
+  
+  return (
+    <div className={`p-4 rounded-lg ${colors.bg} border border-border/30`}>
+      <div className="flex items-center gap-2.5 mb-2">
+        <span className={`w-5 h-5 rounded-full ${colors.numBg} ${colors.text} flex items-center justify-center text-xs font-bold`}>
+          {stepNumber}
+        </span>
+        <h4 className={`font-medium ${colors.text} text-sm`}>{title}</h4>
+      </div>
+      <p className="text-sm text-foreground/80 leading-relaxed pl-[1.875rem]">
+        {content}
+      </p>
+    </div>
+  );
 }
 
 function ItemCard({ item, index, styleMap }: { item: ExampleItem; index: number; styleMap: Record<string, { bg: string; text: string; icon: React.ReactNode }> }) {
@@ -268,8 +275,8 @@ export function AIResponseRenderer({ response, mode }: AIResponseRendererProps) 
           
           {structured.steps && structured.steps.length > 0 && (
             <div className="space-y-3">
-              {structured.steps.map((item, index) => (
-                <ItemCard key={index} item={item} index={index} styleMap={simplifyTypeStyles} />
+              {structured.steps.map((step, index) => (
+                <StepCard key={index} stepNumber={index + 1} title={step.type} content={step.content} />
               ))}
             </div>
           )}

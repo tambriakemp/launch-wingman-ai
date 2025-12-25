@@ -217,17 +217,19 @@ IMPORTANT: You MUST respond with valid JSON in this exact format:
   },
   "steps": [
     {
-      "type": "Step 1",
+      "type": "Give It a Name",
       "content": "First simple action to take..."
     },
     {
-      "type": "Step 2",
+      "type": "Picture Their Day",
       "content": "Next simple action..."
     }
   ],
   "conclusion": "Encouraging reminder that they've got this"
 }
 \`\`\`
+
+CRITICAL: Step "type" values must be SHORT descriptive action phrases (2-4 words) like "Name Your Customer", "List Their Struggles", "Write It Down" - NOT "Step 1", "Step 2", etc.
 
 Keep steps to 2-3 maximum. Use everyday language and analogies where helpful.
 
