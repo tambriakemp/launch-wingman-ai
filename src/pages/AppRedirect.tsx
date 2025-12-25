@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Sparkles, Plus, Loader2, Rocket, CalendarIcon, Clock, Coffee, Package } from 'lucide-react';
+import { Sparkles, Plus, Loader2, Rocket, CalendarIcon, Clock, Coffee, Package, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, addWeeks, subWeeks } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { APP_LEVEL_LEARN_MORE } from '@/data/taskLearnMoreLinks';
 
 interface LastProjectInfo {
   id: string;
@@ -307,6 +308,17 @@ const AppRedirect = () => {
                 ? "Let's create your first project to get started."
                 : "Set your prelaunch start date and we'll suggest the rest (optional)"}
             </CardDescription>
+            {step === 1 && (
+              <a
+                href={`https://docs.lovable.dev`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors inline-flex items-center gap-1 mt-2"
+              >
+                <HelpCircle className="w-3 h-3" />
+                How Launchely works
+              </a>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             {step === 1 ? (

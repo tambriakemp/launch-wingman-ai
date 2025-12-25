@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { ArrowLeft, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -14,10 +14,11 @@ import { useTaskEngine } from "@/hooks/useTaskEngine";
 import { PHASE_LABELS, TaskTemplate } from "@/types/tasks";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-
+import { getLearnMoreArticleId } from "@/data/taskLearnMoreLinks";
 export default function TaskDetail() {
   const { id: projectId, taskId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [selectedOption, setSelectedOption] = useState<string>("");
@@ -247,6 +248,16 @@ export default function TaskDetail() {
           <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
             {taskTemplate.title}
           </h1>
+          
+          {/* Learn more link - only shown for specific tasks */}
+          {getLearnMoreArticleId(taskTemplate.taskId) && (
+            <Link
+              to={`/projects/${projectId}/library?article=${getLearnMoreArticleId(taskTemplate.taskId)}&returnTo=${encodeURIComponent(location.pathname)}`}
+              className="text-sm text-muted-foreground/70 hover:text-muted-foreground transition-colors"
+            >
+              Learn more
+            </Link>
+          )}
         </div>
 
         {/* Why This Matters Section */}
