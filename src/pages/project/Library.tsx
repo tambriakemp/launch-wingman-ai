@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, ChevronRight, ChevronDown, ArrowLeft, BookOpen } from "lucide-react";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
@@ -220,13 +220,18 @@ const SearchResults = ({
   );
 };
 
+// Default expanded categories - Getting Started and Planning & Offers
+const DEFAULT_EXPANDED_CATEGORIES = new Set(["getting-started", "planning-offers"]);
+
 export default function Library() {
+  const { id: projectId } = useParams();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const articleId = searchParams.get("article");
   const returnToTask = searchParams.get("returnTo");
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(DEFAULT_EXPANDED_CATEGORIES);
   const [selectedArticle, setSelectedArticle] = useState<LibraryArticle | null>(
     articleId ? getArticleById(articleId) || null : null
   );
@@ -280,7 +285,7 @@ export default function Library() {
                   <h1 className="text-2xl font-semibold text-foreground">Library</h1>
                 </div>
                 <p className="text-muted-foreground">
-                  Short explanations to support what you're working on.
+                  Short explanations to support the step you're on.
                 </p>
               </div>
 
@@ -313,6 +318,21 @@ export default function Library() {
                       onSelectArticle={handleSelectArticle}
                     />
                   ))}
+                </div>
+              )}
+
+              {/* Return to work affordance */}
+              {!isSearching && projectId && (
+                <div className="mt-10 pt-6 border-t border-border/50">
+                  <p className="text-sm text-muted-foreground/70 text-center">
+                    Working on a task?{" "}
+                    <button
+                      onClick={() => navigate(`/projects/${projectId}`)}
+                      className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+                    >
+                      Return to your project →
+                    </button>
+                  </p>
                 </div>
               )}
             </motion.div>
