@@ -43,6 +43,7 @@ import ProjectMessaging from "./pages/project/ProjectMessaging";
 import ProjectExecute from "./pages/project/ProjectExecute";
 import TaskDetail from "./pages/project/TaskDetail";
 import ProjectSummary from "./pages/project/ProjectSummary";
+import Library from "./pages/project/Library";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -241,6 +242,15 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ProjectExecute />
+                </ProtectedRoute>
+              }
+            />
+            {/* Library route */}
+            <Route
+              path="/projects/:id/library"
+              element={
+                <ProtectedRoute>
+                  <Library />
                 </ProtectedRoute>
               }
             />

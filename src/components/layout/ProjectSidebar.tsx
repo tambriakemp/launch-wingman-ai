@@ -23,6 +23,7 @@ import {
   Crown,
   Server,
   ClipboardCheck,
+  BookOpen,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
 import { Separator } from "@/components/ui/separator";
@@ -63,6 +64,7 @@ const createNavSections = (projectId: string): NavSection[] => [
       { id: "offer", label: "Dashboard", icon: LayoutDashboard, href: `/projects/${projectId}/offer` },
       { id: "board", label: "Project Board", icon: Kanban, href: `/projects/${projectId}/board` },
       { id: "content-planner", label: "Content Planner", icon: Calendar, href: `/projects/${projectId}/social`, isProOnly: true },
+      { id: "library", label: "Library", icon: BookOpen, href: `/projects/${projectId}/library` },
       { id: "funnel-type", label: "Funnel Type", icon: Rocket, href: `/projects/${projectId}/funnel-type` },
       { id: "audience", label: "Audience", icon: Users, href: `/projects/${projectId}/audience`, requiresStep: "funnel-type" },
       { id: "transformation", label: "Transformation", icon: Sparkles, href: `/projects/${projectId}/transformation`, requiresStep: "audience" },
