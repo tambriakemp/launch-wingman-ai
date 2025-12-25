@@ -12,7 +12,8 @@ interface TaskAssistRequest {
   taskTitle: string;
   taskInstructions: string[];
   projectId: string;
-  toneModifiers?: string; // Optional tone modifiers from user's tone profile
+  toneModifiers?: string;
+  currentInput?: string; // The current value of the primary input field
 }
 
 interface ProjectContext {
@@ -21,6 +22,58 @@ interface ProjectContext {
   dreamOutcome?: string;
   offerName?: string;
   funnelType?: string;
+}
+
+type InputState = 'EMPTY' | 'PARTIAL' | 'CLEAR';
+
+// Detect input state based on content
+function detectInputState(input: string | undefined): InputState {
+  if (!input || input.trim() === '' || input.trim().length < 5) {
+    return 'EMPTY';
+  }
+  
+  const trimmed = input.trim();
+  const wordCount = trimmed.split(/\s+/).length;
+  
+  // Check for vague/generic inputs
+  const vaguePatterns = [
+    /^(busy )?professionals?$/i,
+    /^people who want/i,
+    /^online (beginners?|people)$/i,
+    /^anyone who/i,
+    /^everyone/i,
+    /^people$/i,
+    /^customers?$/i,
+    /^my audience$/i,
+    /^my clients?$/i,
+    /^entrepreneurs?$/i,
+    /^business owners?$/i,
+    /^coaches?$/i,
+    /^consultants?$/i,
+    /^small businesses?$/i,
+    /^startups?$/i,
+  ];
+  
+  const isVague = vaguePatterns.some(pattern => pattern.test(trimmed));
+  
+  // PARTIAL: short, vague, or generic inputs (under 15 words and vague)
+  if (wordCount < 10 || isVague) {
+    return 'PARTIAL';
+  }
+  
+  // CLEAR: has specific elements (situation/stage, problem, desire)
+  const hasSpecificGroup = /\b(who|that|with|after|before|during|struggling|wanting|trying|seeking|looking)\b/i.test(trimmed);
+  const hasSituation = /\b(after|before|during|when|while|just|recently|currently|now)\b/i.test(trimmed);
+  const hasProblem = /\b(struggle|problem|challenge|frustrated|overwhelmed|stuck|confused|worried|stressed|burned out|burnout)\b/i.test(trimmed);
+  const hasDesire = /\b(want|need|desire|wish|hope|dream|goal|looking for|seeking|trying to)\b/i.test(trimmed);
+  
+  const specificityScore = [hasSpecificGroup, hasSituation, hasProblem, hasDesire].filter(Boolean).length;
+  
+  if (wordCount >= 10 && specificityScore >= 2) {
+    return 'CLEAR';
+  }
+  
+  return 'PARTIAL';
 }
 
 serve(async (req) => {
@@ -35,9 +88,9 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const { mode, taskId, taskTitle, taskInstructions, projectId, toneModifiers } = await req.json() as TaskAssistRequest;
+    const { mode, taskId, taskTitle, taskInstructions, projectId, toneModifiers, currentInput } = await req.json() as TaskAssistRequest;
 
-    console.log('[TASK-AI-ASSIST] Request received:', { mode, taskId, projectId, hasToneModifiers: !!toneModifiers });
+    console.log('[TASK-AI-ASSIST] Request received:', { mode, taskId, projectId, hasToneModifiers: !!toneModifiers, hasCurrentInput: !!currentInput });
 
     // Create Supabase client to fetch project context
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -119,6 +172,10 @@ serve(async (req) => {
       ? `\n\nIMPORTANT - Writing Style Preferences:\n${toneModifiers}`
       : '';
 
+    // Detect input state for help_me_choose mode
+    const inputState = detectInputState(currentInput);
+    console.log('[TASK-AI-ASSIST] Input state detected:', inputState, 'for input:', currentInput?.substring(0, 50));
+
     // Build the system prompt based on mode
     const baseContext = `Project context:
 ${projectContext.audienceDescription ? `- Target audience: ${projectContext.audienceDescription}` : ''}
@@ -127,39 +184,123 @@ ${projectContext.dreamOutcome ? `- Dream outcome: ${projectContext.dreamOutcome}
 ${projectContext.offerName ? `- Offer name: ${projectContext.offerName}` : ''}
 ${projectContext.funnelType ? `- Launch path: ${projectContext.funnelType}` : ''}${toneGuidance}`;
 
-    const systemPrompts: Record<string, string> = {
-      help_me_choose: `You are a friendly, calm assistant helping a beginner digital marketer complete a task in their launch planning journey. They need help making a decision.
+    // Help Me Choose prompts based on input state
+    const helpMeChoosePrompts: Record<InputState, string> = {
+      EMPTY: `You are a calm, supportive assistant helping a beginner find a starting point. You are NOT a recommendation engine.
 
-Your role:
-- Give a clear, specific recommendation based on their project context
-- Explain your reasoning
-- Keep it simple and actionable
-- Avoid jargon or marketing-speak
-- Be reassuring and supportive
+CRITICAL RULES:
+- Do NOT give confident recommendations
+- Do NOT use words like "best", "ideal", "perfect", "high-converting"
+- Do NOT assume you know what they should choose
+- Your job is to help them THINK, not decide for them
+- Keep tone calm, supportive, and non-authoritative
 
-IMPORTANT: You MUST respond with valid JSON in this exact format:
+REQUIRED OUTPUT FORMAT - You MUST respond with valid JSON:
 \`\`\`json
 {
-  "intro": "Brief context-setting sentence",
-  "recommendation": {
-    "title": "My Recommendation",
-    "content": "Clear statement of what I recommend and why (2-3 sentences)"
-  },
-  "reasoning": [
+  "mode": "prompting",
+  "opening": "Let's find a starting point. You don't need the perfect answer yet.",
+  "clarifyingQuestions": [
+    "Who do you most enjoy helping right now?",
+    "What problem do people already come to you about?"
+  ],
+  "exampleDirections": [
     {
-      "type": "Why This Works",
-      "content": "Explanation of why this choice fits their situation..."
+      "label": "Example A",
+      "content": "Busy professionals feeling overwhelmed by money decisions"
     },
     {
-      "type": "What to Consider",
-      "content": "Any important considerations or alternatives..."
+      "label": "Example B", 
+      "content": "Beginners trying to make their first online income"
+    },
+    {
+      "label": "Example C",
+      "content": "Women rebuilding confidence after burnout"
     }
   ],
-  "conclusion": "Encouraging closing thought"
+  "closing": "Choose one to edit, or answer one question above — either is enough to move forward."
 }
 \`\`\`
 
+Tailor the clarifying questions and examples to the specific task at hand. Use language that matches the task context.
+
 ${baseContext}`,
+
+      PARTIAL: `You are a calm, supportive assistant helping a beginner refine their thinking. You are NOT a recommendation engine.
+
+CRITICAL RULES:
+- Reflect the user's EXACT wording back to them
+- Help them narrow and sharpen what they already wrote
+- Do NOT replace their words with jargon
+- Do NOT give definitive recommendations
+- Keep tone calm and supportive
+- Avoid words like "best", "ideal", "perfect"
+
+The user has provided this input: "${currentInput}"
+
+REQUIRED OUTPUT FORMAT - You MUST respond with valid JSON:
+\`\`\`json
+{
+  "mode": "refinement",
+  "reflection": "You mentioned: \\"${currentInput?.replace(/"/g, '\\"')}\\"",
+  "guidance": "That's a good starting point. Let's make it a little more specific so your messaging is clearer.",
+  "refinementOptions": [
+    "Their current situation or stage",
+    "The main problem they're struggling with",
+    "What they want but haven't figured out yet"
+  ],
+  "exampleRefinements": [
+    {
+      "label": "Option A",
+      "content": "[More specific version focusing on situation]"
+    },
+    {
+      "label": "Option B",
+      "content": "[More specific version focusing on problem]"
+    }
+  ],
+  "closing": "Which direction feels closer? You can tweak it in your own words."
+}
+\`\`\`
+
+Generate refinement options that build on what they wrote - don't start from scratch.
+
+${baseContext}`,
+
+      CLEAR: `You are a calm, supportive assistant helping a beginner polish their thinking. You may now offer suggestions, but still with soft language.
+
+RULES:
+- Use soft language like "You could phrase it like…" not "You should"
+- Explain WHY your suggestion works
+- Always invite edits or rejection
+- Preserve the user's ownership of the decision
+
+The user has provided this clear input: "${currentInput}"
+
+REQUIRED OUTPUT FORMAT - You MUST respond with valid JSON:
+\`\`\`json
+{
+  "mode": "recommendation",
+  "validation": "This is clear and specific — you're on the right track.",
+  "suggestedRefinement": {
+    "content": "[Your refined version that polishes their input]"
+  },
+  "whyThisWorks": [
+    "It clearly defines who the offer is for",
+    "It highlights their current situation",
+    "It makes your messaging easier later"
+  ],
+  "closing": "You can use this as-is or adjust it so it sounds more like you."
+}
+\`\`\`
+
+Make the refinement only slightly better than what they wrote - don't completely rewrite it.
+
+${baseContext}`,
+    };
+
+    const systemPrompts: Record<string, string> = {
+      help_me_choose: helpMeChoosePrompts[inputState],
 
       examples: `You are a friendly assistant helping a beginner digital marketer understand a concept through real-world examples.
 
@@ -233,12 +374,30 @@ ${baseContext}`,
     };
 
     const userPrompts: Record<string, string> = {
-      help_me_choose: `I'm working on this task: "${taskTitle}"
+      help_me_choose: inputState === 'EMPTY' 
+        ? `I'm working on this task: "${taskTitle}"
 
 Here are the instructions:
 ${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
 
-I'm not sure what to choose or how to approach this. Can you help me decide based on my situation?`,
+I haven't started yet and need help finding a starting point.`
+        : inputState === 'PARTIAL'
+        ? `I'm working on this task: "${taskTitle}"
+
+Here are the instructions:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+Here's what I've written so far: "${currentInput}"
+
+I feel like this is too vague. Can you help me make it more specific?`
+        : `I'm working on this task: "${taskTitle}"
+
+Here are the instructions:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+Here's what I've written: "${currentInput}"
+
+Does this look good? Can you help me polish it?`,
 
       examples: `I'm working on this task: "${taskTitle}"
 
@@ -273,7 +432,7 @@ This feels overwhelming. Can you break this down into simpler terms? What's the 
           { role: 'system', content: systemPrompts[mode] },
           { role: 'user', content: userPrompts[mode] },
         ],
-        max_tokens: 500,
+        max_tokens: 600,
       }),
     });
 
@@ -304,10 +463,10 @@ This feels overwhelming. Can you break this down into simpler terms? What's the 
       throw new Error('No response from AI');
     }
 
-    console.log('[TASK-AI-ASSIST] Response generated successfully');
+    console.log('[TASK-AI-ASSIST] Response generated successfully, input state:', inputState);
 
     return new Response(
-      JSON.stringify({ response: content }),
+      JSON.stringify({ response: content, inputState }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
