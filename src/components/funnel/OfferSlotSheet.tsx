@@ -22,7 +22,7 @@ import { OfferSlotConfig, OFFER_TYPES } from "@/data/funnelConfigs";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { AudienceData } from "./AudienceDiscovery";
+import { AudienceData } from "@/types/audience";
 import { OfferSlotData } from "./OfferSlotCard";
 
 interface GeneratedIdea {

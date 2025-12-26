@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 import { FunnelDiagram } from "./FunnelDiagram";
-import { AudienceData } from "./AudienceDiscovery";
+import { AudienceData } from "@/types/audience";
 import { OfferSlotData } from "./OfferSlotCard";
 import { cn } from "@/lib/utils";
 

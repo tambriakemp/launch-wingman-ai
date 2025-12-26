@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AudienceData } from "./AudienceDiscovery";
+import { AudienceData } from "@/types/audience";
 import { cn } from "@/lib/utils";
 
 interface OfferStackBuilderProps {
