@@ -46,6 +46,7 @@ import ProjectSummary from "./pages/project/ProjectSummary";
 import Library from "./pages/project/Library";
 import Relaunch from "./pages/project/Relaunch";
 import Playbook from "./pages/project/Playbook";
+import ProjectContent from "./pages/project/ProjectContent";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -244,7 +245,11 @@ const App = () => (
             />
             <Route
               path="/projects/:id/content"
-              element={<Navigate to={`/projects/:id/social`} replace />}
+              element={
+                <ProtectedRoute>
+                  <ProjectContent />
+                </ProtectedRoute>
+              }
             />
 
             <Route
