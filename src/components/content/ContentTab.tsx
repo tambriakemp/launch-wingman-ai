@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ContentContextHeader } from "./ContentContextHeader";
 import { ContentTypeFilter } from "./ContentTypeFilter";
 import { TalkingPointsSection } from "./TalkingPointsSection";
-import { SavedIdeasSection } from "./SavedIdeasSection";
+import { SavedIdeasSection, type SavedItem } from "./SavedIdeasSection";
 import { DraftPanel } from "./DraftPanel";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 
@@ -25,6 +25,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   const [selectedContentType, setSelectedContentType] = useState<ContentType>("general");
   const [draftPanelOpen, setDraftPanelOpen] = useState(false);
   const [selectedTalkingPoint, setSelectedTalkingPoint] = useState<TalkingPoint | null>(null);
+  const [selectedSavedItem, setSelectedSavedItem] = useState<SavedItem | null>(null);
 
   // Fetch project data for phase and funnel type
   const { data: project } = useQuery({
@@ -55,7 +56,14 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   });
 
   const handleTurnIntoPost = (talkingPoint: TalkingPoint) => {
+    setSelectedSavedItem(null);
     setSelectedTalkingPoint(talkingPoint);
+    setDraftPanelOpen(true);
+  };
+
+  const handleOpenSavedItem = (item: SavedItem) => {
+    setSelectedTalkingPoint(null);
+    setSelectedSavedItem(item);
     setDraftPanelOpen(true);
   };
 
@@ -100,7 +108,10 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
           />
         </div>
 
-        <SavedIdeasSection projectId={projectId} />
+        <SavedIdeasSection 
+          projectId={projectId} 
+          onOpenItem={handleOpenSavedItem}
+        />
       </div>
 
       <DraftPanel
@@ -108,6 +119,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
         onOpenChange={setDraftPanelOpen}
         projectId={projectId}
         talkingPoint={selectedTalkingPoint}
+        savedItem={selectedSavedItem}
         currentPhase={currentPhase}
         funnelType={funnelType}
         audienceData={funnel}
