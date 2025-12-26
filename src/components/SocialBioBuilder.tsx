@@ -654,7 +654,7 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{p?.name}</p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {f?.name} • {(bio.content || '').length}/{p?.maxChars || 150} chars
+                    {f?.name} • {bio.content.length}/{p?.maxChars} chars
                   </p>
                 </div>
                 
