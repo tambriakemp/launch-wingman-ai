@@ -2,6 +2,7 @@ import { ContentIdeaCard } from "./ContentIdeaCard";
 import { 
   BLUEPRINT_PHASES, 
   filterIdeasByContentType,
+  filterIdeasByFunnelType,
   FORMAT_LABELS,
   type BlueprintIdea 
 } from "@/data/blueprintContent";
@@ -27,9 +28,11 @@ export const OutlineView = ({
   return (
     <div className="space-y-8">
       {BLUEPRINT_PHASES.map((phase) => {
-        // Filter ideas by content type and remove skipped
-        const filteredIdeas = filterIdeasByContentType(phase.ideas, contentType)
-          .filter(idea => !skippedIds.has(idea.id));
+        // Filter ideas by funnel type, content type, and remove skipped
+        const filteredIdeas = filterIdeasByFunnelType(
+          filterIdeasByContentType(phase.ideas, contentType),
+          funnelType
+        ).filter(idea => !skippedIds.has(idea.id));
 
         if (filteredIdeas.length === 0) {
           return null;

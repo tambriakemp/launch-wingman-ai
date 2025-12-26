@@ -2,6 +2,7 @@ import { ContentIdeaCard } from "./ContentIdeaCard";
 import { 
   getAllBlueprintIdeas,
   filterIdeasByContentType,
+  filterIdeasByFunnelType,
   FORMAT_LABELS,
   type BlueprintIdea 
 } from "@/data/blueprintContent";
@@ -33,8 +34,11 @@ export const TimelineView = ({
   onSkip,
 }: TimelineViewProps) => {
   const allIdeas = getAllBlueprintIdeas();
-  const filteredIdeas = filterIdeasByContentType(allIdeas, contentType)
-    .filter(idea => !skippedIds.has(idea.id));
+  // Filter by funnel type first, then content type, then remove skipped
+  const filteredIdeas = filterIdeasByFunnelType(
+    filterIdeasByContentType(allIdeas, contentType),
+    funnelType
+  ).filter(idea => !skippedIds.has(idea.id));
 
   // Group ideas by day
   const dayMap = new Map<number, BlueprintIdea[]>();
