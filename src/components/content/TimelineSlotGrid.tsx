@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronRight, Pencil, MoreHorizontal, Trash2, CalendarClock, Clock } from "lucide-react";
+import { ChevronDown, ChevronRight, Pencil, MoreHorizontal, Trash2, CalendarClock, Clock, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -295,19 +295,25 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                             <Badge variant="secondary" className="text-xs capitalize">
                                               {item.content_type.replace("-", " ")}
                                             </Badge>
-                                            {item.status === "draft" && (
+                                            {item.status === "draft" && !item.scheduled_at && (
                                               <Badge variant="outline" className="text-xs">
                                                 Draft ready
                                               </Badge>
                                             )}
-                                            {item.scheduled_at && (
+                                            {item.status === "completed" && item.scheduled_at && (
+                                              <Badge className="text-xs bg-primary/10 text-primary border-primary/20 gap-1">
+                                                <CheckCircle2 className="w-3 h-3" />
+                                                Posted {format(new Date(item.scheduled_at), "MMM d")}
+                                              </Badge>
+                                            )}
+                                            {item.scheduled_at && item.status !== "completed" && (
                                               <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                   <Badge 
-                                                    className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-200 gap-1 cursor-pointer hover:bg-emerald-500/20 transition-colors"
+                                                    className="text-xs bg-amber-500/10 text-amber-600 border-amber-200 gap-1 cursor-pointer hover:bg-amber-500/20 transition-colors"
                                                   >
                                                     <Clock className="w-3 h-3" />
-                                                    {format(new Date(item.scheduled_at), "MMM d, h:mm a")}
+                                                    Scheduled: {format(new Date(item.scheduled_at), "MMM d, h:mm a")}
                                                   </Badge>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="start">
@@ -405,6 +411,8 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
           title: selectedItem.title,
           content: selectedItem.content,
           description: selectedItem.description,
+          scheduled_at: selectedItem.scheduled_at,
+          scheduled_platforms: selectedItem.scheduled_platforms,
         } : null}
         onScheduled={handleScheduled}
       />
