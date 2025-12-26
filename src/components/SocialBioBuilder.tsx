@@ -372,9 +372,21 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
       return;
     }
 
+    // Check if a bio for this platform already exists
+    const existingBioForPlatform = bios.find(b => b.platform === selectedPlatform);
+
     if (editingBio) {
       updateMutation.mutate({
         id: editingBio.id,
+        platform: selectedPlatform,
+        formulaId: selectedFormula,
+        content,
+        fieldData,
+      });
+    } else if (existingBioForPlatform) {
+      // Update the existing bio for this platform instead of creating a duplicate
+      updateMutation.mutate({
+        id: existingBioForPlatform.id,
         platform: selectedPlatform,
         formulaId: selectedFormula,
         content,
