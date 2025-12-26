@@ -846,6 +846,302 @@ export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
 ];
 
 // ============================================
+// CHALLENGE DELTA TASKS
+// ============================================
+// Path: Time-bound experience for momentum and activation
+// Philosophy: Participation over perfection, clarity over completion.
+// Guardrails: No daily actions, no live delivery requirements, no tools/platforms,
+// no pressure or urgency. Launchely guides thinking about focused momentum.
+
+export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
+  // ==================== PLANNING Phase Additions ====================
+  {
+    taskId: 'planning_challenge_focus',
+    title: 'Define the challenge focus',
+    phase: 'planning',
+    funnelTypes: ['challenge'],
+    order: 6.1,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['planning_offer_snapshot'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'The challenge has one clear focus',
+      'It feels achievable within the timeframe',
+    ],
+    whyItMatters: 'A focused challenge prevents overwhelm. When participants know exactly what they\'re working toward, they\'re more likely to stay engaged.',
+    instructions: [
+      'Anchor the challenge to one clear outcome',
+      'Avoid multiple goals or competing focuses',
+      'Keep it achievable within the challenge window',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'challenge_focus', 
+          label: 'What is the one thing participants will focus on during this challenge?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Describe the single focus of the challenge...',
+          helperText: 'This should feel achievable within the challenge window.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/planning_challenge_focus',
+  },
+  {
+    taskId: 'planning_challenge_duration',
+    title: 'Choose the challenge length',
+    phase: 'planning',
+    funnelTypes: ['challenge'],
+    order: 6.2,
+    priority: 1,
+    estimatedMinutesMin: 5,
+    estimatedMinutesMax: 10,
+    blocking: true,
+    dependencies: ['planning_challenge_focus'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You\'ve chosen a duration',
+      'The length feels realistic and supportive',
+    ],
+    whyItMatters: 'The right duration makes your challenge feel approachable. Shorter challenges often have higher completion rates.',
+    instructions: [
+      'Pick a timeframe that feels supportive, not exhausting',
+      'Shorter is often more approachable',
+      'Consider your audience\'s capacity',
+    ],
+    inputType: 'selection',
+    inputSchema: {
+      type: 'radio',
+      options: [
+        { value: '3_days', label: '3 days', description: 'Quick momentum — great for simple wins' },
+        { value: '5_days', label: '5 days', description: 'Balanced length — most common choice' },
+        { value: '7_days', label: '7 days', description: 'More depth — good for building habits' },
+        { value: 'other', label: 'Other / Not sure yet', description: 'You can decide later' },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples'],
+    route: '/projects/:id/tasks/planning_challenge_duration',
+  },
+
+  // ==================== MESSAGING Phase Additions ====================
+  {
+    taskId: 'messaging_challenge_promise',
+    title: 'Frame the challenge promise',
+    phase: 'messaging',
+    funnelTypes: ['challenge'],
+    order: 2.5,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['messaging_transformation_statement'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'The promise focuses on transformation, not tasks',
+      'It emphasizes momentum, not mastery',
+    ],
+    whyItMatters: 'Your challenge promise describes what participants gain by the end — not what they do daily. Focus on how they\'ll feel or think differently.',
+    instructions: [
+      'Describe the shift participants experience',
+      'Focus on momentum, not mastery',
+      'Keep it realistic and grounded',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'challenge_promise', 
+          label: 'How will participants feel or think differently by the end of the challenge?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Describe the transformation or shift they\'ll experience...',
+          helperText: 'Focus on momentum, not mastery.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/messaging_challenge_promise',
+  },
+  {
+    taskId: 'messaging_reduce_pressure',
+    title: 'How you reduce pressure to "keep up"',
+    phase: 'messaging',
+    funnelTypes: ['challenge'],
+    order: 2.6,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 15,
+    blocking: true,
+    dependencies: ['messaging_challenge_promise'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You can address fears of falling behind',
+      'The framing feels supportive, not pressuring',
+    ],
+    whyItMatters: 'Many people drop out of challenges because they feel like they\'ve "failed" after missing a day. Normalizing imperfect participation increases completion.',
+    instructions: [
+      'Think about how you\'ll reassure participants',
+      'Focus on progress, not perfection',
+      'Remove fear of falling behind',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'pressure_reduction', 
+          label: 'How do you explain that missing a day doesn\'t mean failing?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Describe how you\'ll reassure participants who fall behind...',
+          helperText: 'Reassurance increases participation.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/messaging_reduce_pressure',
+  },
+
+  // ==================== BUILD Phase Additions ====================
+  {
+    taskId: 'build_participation_container',
+    title: 'Define how people participate',
+    phase: 'build',
+    funnelTypes: ['challenge'],
+    order: 1.5,
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 25,
+    blocking: true,
+    dependencies: ['build_choose_platform'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'The participation experience is clear',
+      'It feels simple and accessible',
+    ],
+    whyItMatters: 'This step clarifies how participants experience the challenge — without prescribing specific delivery mechanics or tools.',
+    instructions: [
+      'Think about the experience, not the technology',
+      'Keep it simple and accessible',
+      'Focus on what participants do, not what you build',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'participation_experience', 
+          label: 'Where and how do participants experience the challenge?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'e.g., Daily prompts, light guidance, shared space, simple check-ins...',
+          helperText: 'Think about the experience, not platforms or tools.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/build_participation_container',
+  },
+
+  // ==================== CONTENT Phase Additions ====================
+  {
+    taskId: 'content_momentum_content',
+    title: 'Content that keeps people moving',
+    phase: 'content',
+    funnelTypes: ['challenge'],
+    order: 0.5,
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 25,
+    blocking: true,
+    dependencies: ['build_phase_review'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You understand what keeps participants engaged',
+      'The content approach feels simple and supportive',
+    ],
+    whyItMatters: 'Challenge content is about encouragement, not volume. Simple, supportive content keeps people moving without overwhelming them.',
+    instructions: [
+      'Think simple and supportive',
+      'Focus on encouragement, not volume',
+      'Consider what helps people feel connected',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'momentum_content', 
+          label: 'What kind of content helps participants stay engaged without overwhelm?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Describe content that encourages without overwhelming...',
+          helperText: 'Think simple and supportive.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/content_momentum_content',
+  },
+
+  // ==================== LAUNCH Phase Additions ====================
+  {
+    taskId: 'launch_challenge_expectations',
+    title: 'Set expectations for joining the challenge',
+    phase: 'launch',
+    funnelTypes: ['challenge'],
+    order: 2.5,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['content_phase_review'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Participation expectations are clear',
+      'People understand what to expect before joining',
+    ],
+    whyItMatters: 'Clear expectations reduce drop-off. When people understand what they\'re signing up for, they\'re more likely to participate fully.',
+    instructions: [
+      'Be clear about what the challenge involves',
+      'Set realistic expectations',
+      'Focus on clarity, not selling',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'challenge_expectations', 
+          label: 'What should someone understand before they join?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Describe what participants should know upfront...',
+          helperText: 'Clear expectations build trust.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/launch_challenge_expectations',
+  },
+];
+
+// ============================================
 // DELTA TASK CONFIGURATION
 // ============================================
 
@@ -990,6 +1286,36 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
       },
     ],
   },
+  {
+    funnelType: 'challenge',
+    deltaTasks: CHALLENGE_DELTA_TASKS,
+    modifiedTasks: [
+      {
+        taskId: 'build_email_platform',
+        changes: {
+          blocking: true,
+          whyItMatters: 'Email is essential for challenge communication — welcoming participants, sending daily guidance, and following up afterward.',
+        },
+      },
+      {
+        taskId: 'content_plan_content',
+        changes: {
+          instructions: [
+            'Your content will build anticipation for the challenge and keep participants engaged',
+            'Focus on encouragement and momentum, not volume',
+            'Think about what helps people feel supported',
+          ],
+        },
+      },
+      {
+        taskId: 'launch_share_offer',
+        changes: {
+          title: 'Invite people to join your challenge',
+          whyItMatters: 'This is the moment you open registration. Focus on who this is for and what they\'ll experience — no pressure or urgency.',
+        },
+      },
+    ],
+  },
 ];
 
 // Helper function to get delta config for a funnel type
@@ -1012,7 +1338,7 @@ export function getTaskModificationsForFunnel(funnelType: FunnelType): TaskModif
   return config?.modifiedTasks || [];
 }
 
-// Phases where injection is allowed (now includes planning and messaging for membership)
+// Phases where injection is allowed (includes planning and messaging for some funnels)
 export const INJECTION_ALLOWED_PHASES = ['planning', 'messaging', 'build', 'content', 'launch'] as const;
 
 // Phases that are always universal (no injection)

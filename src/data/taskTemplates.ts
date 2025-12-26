@@ -285,6 +285,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
         { value: 'live_training_offer', label: 'Live Training → Offer', description: 'Teach something valuable live, then invite viewers to join your program' },
         { value: 'application_call', label: 'Application → Call', description: 'Qualify leads through an application, then close on a call' },
         { value: 'membership', label: 'Membership', description: 'An ongoing subscription where members receive continuous value over time, rather than a one-time outcome' },
+        { value: 'challenge', label: 'Challenge', description: 'A short, time-bound experience designed to help people take focused action and experience momentum within a defined window' },
       ],
     },
     aiAssistModes: ['help_me_choose', 'examples'],
