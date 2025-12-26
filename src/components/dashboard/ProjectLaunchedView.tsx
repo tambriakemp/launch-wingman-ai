@@ -1,7 +1,9 @@
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Rocket, PartyPopper, ArrowRight, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Rocket, PartyPopper, ArrowRight, RefreshCw, CheckCircle2, Lightbulb } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   AlertDialog,
@@ -14,6 +16,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { EndingSnapshotDialog } from "@/components/insights/EndingSnapshotDialog";
 
 interface ProjectLaunchedViewProps {
   projectName?: string;
@@ -28,10 +32,51 @@ export function ProjectLaunchedView({
 }: ProjectLaunchedViewProps) {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [snapshotDialogOpen, setSnapshotDialogOpen] = useState(false);
+  const [hasShownDialog, setHasShownDialog] = useState(false);
+
+  // Check if ending snapshot already exists
+  const { data: existingSnapshot, isLoading: snapshotLoading } = useQuery({
+    queryKey: ['ending-snapshot-check', id],
+    queryFn: async () => {
+      if (!id) return null;
+      const { data, error } = await supabase
+        .from('launch_snapshots')
+        .select('id')
+        .eq('project_id', id)
+        .eq('snapshot_type', 'ending')
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  // Show the dialog automatically if no ending snapshot exists and we haven't shown it yet
+  useEffect(() => {
+    const storageKey = `snapshot-dialog-shown-${id}`;
+    const wasShown = localStorage.getItem(storageKey) === 'true';
+    
+    if (!snapshotLoading && !existingSnapshot && !wasShown && !hasShownDialog) {
+      // Small delay to let the celebration animation play
+      const timer = setTimeout(() => {
+        setSnapshotDialogOpen(true);
+        setHasShownDialog(true);
+        localStorage.setItem(storageKey, 'true');
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [snapshotLoading, existingSnapshot, id, hasShownDialog]);
 
   const handleRelaunch = () => {
     if (id) {
       navigate(`/projects/${id}/relaunch`);
+    }
+  };
+
+  const handleOpenInsights = () => {
+    if (id) {
+      navigate(`/projects/${id}/insights`);
     }
   };
 
@@ -41,6 +86,16 @@ export function ProjectLaunchedView({
       animate={{ opacity: 1, y: 0 }}
       className="max-w-2xl mx-auto space-y-6 py-8 px-4"
     >
+      {/* Ending Snapshot Dialog */}
+      {id && (
+        <EndingSnapshotDialog
+          open={snapshotDialogOpen}
+          onOpenChange={setSnapshotDialogOpen}
+          projectId={id}
+          projectName={projectName}
+        />
+      )}
+
       {/* Celebration Header */}
       <Card className="bg-gradient-to-br from-primary/20 via-background to-accent/10 border-primary/30">
         <CardContent className="pt-8 pb-8 text-center">
@@ -65,6 +120,28 @@ export function ProjectLaunchedView({
           </p>
         </CardContent>
       </Card>
+
+      {/* Insights CTA - if no snapshot captured yet */}
+      {!existingSnapshot && !snapshotLoading && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-4 pb-4">
+            <Button
+              variant="ghost"
+              onClick={() => setSnapshotDialogOpen(true)}
+              className="w-full justify-between h-auto py-3 px-3"
+            >
+              <div className="flex items-center gap-3 text-left">
+                <Lightbulb className="w-4 h-4 text-primary" />
+                <div>
+                  <span className="text-sm font-medium block">Capture your launch results</span>
+                  <span className="text-xs text-muted-foreground">Optional — but helpful for future comparison</span>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* What's Next */}
       <Card>
