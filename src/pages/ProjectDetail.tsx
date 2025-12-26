@@ -36,7 +36,6 @@ import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog"
 import { TasksBoard } from "@/components/TasksBoard";
 import { ProjectSettingsDialog } from "@/components/ProjectSettingsDialog";
 import { OfferBuilder } from "@/components/OfferBuilder";
-import { ContentPlanner } from "@/components/ContentPlanner";
 import { CreateSection } from "@/components/CreateSection";
 import { ProjectProgress } from "@/components/ProjectProgress";
 import { ProjectQuickStats } from "@/components/ProjectQuickStats";
@@ -460,50 +459,19 @@ const ProjectDetail = () => {
               </Card>
             </TabsContent>
 
-            {/* EXECUTE TAB - Tasks + Content Planner */}
+            {/* EXECUTE TAB - Tasks */}
             <TabsContent value="execute">
-              <Tabs defaultValue="tasks" className="space-y-4">
-                <TabsList>
-                  <TabsTrigger value="tasks" className="gap-2">
-                    <Kanban className="w-4 h-4" />
-                    Tasks
-                  </TabsTrigger>
-                  <TabsTrigger value="content" className="gap-2">
-                    <FileText className="w-4 h-4" />
-                    Content Planner
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="tasks">
-                  <Card variant="elevated" className="min-h-[400px]">
-                    <CardHeader>
-                      <div>
-                        <CardTitle>Tasks</CardTitle>
-                        <CardDescription>Manage tasks with due dates</CardDescription>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <TasksBoard projectId={project.id} projectType={project.project_type} />
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="content">
-                  <Card variant="elevated" className="min-h-[400px]">
-                    <CardHeader>
-                      <div>
-                        <CardTitle>Content Planner</CardTitle>
-                        <CardDescription>
-                          Plan your pre-launch and launch content based on proven strategies
-                        </CardDescription>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <ContentPlanner projectId={project.id} />
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
+              <Card variant="elevated" className="min-h-[400px]">
+                <CardHeader>
+                  <div>
+                    <CardTitle>Tasks</CardTitle>
+                    <CardDescription>Manage tasks with due dates</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <TasksBoard projectId={project.id} projectType={project.project_type} />
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </motion.div>
