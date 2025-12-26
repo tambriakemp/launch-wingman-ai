@@ -259,7 +259,7 @@ export default function OfferSnapshotTask() {
     navigate(`/projects/${projectId}/offer`);
   };
 
-  if (engineLoading || projectLoading || !taskTemplate) {
+  if (engineLoading || projectLoading || !project || !taskTemplate) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center gap-2 text-muted-foreground">
