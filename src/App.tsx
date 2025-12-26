@@ -193,6 +193,11 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            {/* Legacy redirect from /board to /tasks */}
+            <Route
+              path="/projects/:id/board"
+              element={<Navigate to="../tasks" replace />}
+            />
             <Route
               path="/projects/:id/tasks/planning_offer_stack"
               element={
