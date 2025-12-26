@@ -175,7 +175,7 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["projects-selector"] });
       resetDialog();
-      navigate(`/projects/${data.id}/funnel-type`);
+      navigate(`/projects/${data.id}/offer`);
       toast.success("Project created successfully");
     },
     onError: (error) => {
