@@ -1,4 +1,3 @@
-import { cn } from "@/lib/utils";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 
 interface ContentContextHeaderProps {
@@ -7,11 +6,11 @@ interface ContentContextHeaderProps {
 }
 
 const PHASE_DISPLAY_NAMES: Record<string, string> = {
-  planning: "Planning",
+  planning: "Planning Phase",
   content: "Content Creation",
   messaging: "Messaging",
-  build: "Build",
-  launch: "Launch",
+  build: "Build Phase",
+  launch: "Launch Phase",
   "post-launch": "Post-Launch",
 };
 
@@ -31,24 +30,20 @@ export const ContentContextHeader = ({
   const phaseName = PHASE_DISPLAY_NAMES[currentPhase] || currentPhase;
   const phaseDescription = PHASE_DESCRIPTIONS[currentPhase] || "";
   const funnelConfig = funnelType ? FUNNEL_CONFIGS[funnelType] : null;
-  const funnelName = funnelConfig?.name || "No funnel selected";
 
   return (
-    <div className="p-4 rounded-xl bg-muted/50 border border-border/50">
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+    <div className="py-3 px-4 rounded-lg bg-muted/30">
+      <p className="text-xs text-muted-foreground mb-0.5">
         Right now, you're in:
       </p>
-      <p className="text-base font-medium text-foreground">
+      <p className="text-sm font-medium text-foreground">
         {phaseName}
-        {funnelType && (
-          <>
-            <span className="mx-2 text-muted-foreground">·</span>
-            <span className={cn(funnelConfig?.color)}>{funnelName}</span>
-          </>
+        {funnelConfig && (
+          <span className="font-normal text-muted-foreground"> · {funnelConfig.name}</span>
         )}
       </p>
       {phaseDescription && (
-        <p className="text-sm text-muted-foreground mt-1.5">
+        <p className="text-xs text-muted-foreground mt-1">
           {phaseDescription}
         </p>
       )}

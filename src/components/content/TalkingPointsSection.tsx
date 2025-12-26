@@ -29,6 +29,8 @@ interface TalkingPointsSectionProps {
   onTurnIntoPost: (talkingPoint: TalkingPoint) => void;
 }
 
+const MAX_VISIBLE_CARDS = 3;
+
 export const TalkingPointsSection = ({
   projectId,
   contentType,
@@ -40,10 +42,8 @@ export const TalkingPointsSection = ({
   const [talkingPoints, setTalkingPoints] = useState<TalkingPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showRefreshHint, setShowRefreshHint] = useState(false);
   const { user } = useAuth();
   
-  // Track previous ideas to avoid repetition (stores titles as simple identifiers)
   const previousIdeasRef = useRef<string[]>([]);
 
   const generateTalkingPoints = async (isRefresh = false) => {
@@ -51,10 +51,8 @@ export const TalkingPointsSection = ({
     
     if (isRefresh) {
       setRefreshing(true);
-      setShowRefreshHint(false);
     } else {
       setLoading(true);
-      // Reset previous ideas when context changes (category, phase, funnel)
       previousIdeasRef.current = [];
     }
 
@@ -73,22 +71,15 @@ export const TalkingPointsSection = ({
       if (error) throw error;
 
       if (data?.talkingPoints) {
-        // Store current ideas for future refresh calls
         const currentTitles = data.talkingPoints.map((p: TalkingPoint) => p.title);
-        previousIdeasRef.current = [...previousIdeasRef.current, ...currentTitles].slice(-15); // Keep last 15 to avoid too much context
+        previousIdeasRef.current = [...previousIdeasRef.current, ...currentTitles].slice(-15);
         
-        setTalkingPoints(data.talkingPoints);
-        
-        if (isRefresh) {
-          setShowRefreshHint(true);
-          // Hide hint after a few seconds
-          setTimeout(() => setShowRefreshHint(false), 4000);
-        }
+        // Limit to max visible cards
+        setTalkingPoints(data.talkingPoints.slice(0, MAX_VISIBLE_CARDS));
       }
     } catch (error) {
       console.error("Error generating talking points:", error);
-      // Fallback to default talking points if AI fails
-      setTalkingPoints(getDefaultTalkingPoints(contentType, currentPhase));
+      setTalkingPoints(getDefaultTalkingPoints(contentType).slice(0, MAX_VISIBLE_CARDS));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -105,42 +96,19 @@ export const TalkingPointsSection = ({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
         <span className="ml-2 text-sm text-muted-foreground">
-          Generating ideas...
+          Finding ideas for you...
         </span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="h-5">
-          {showRefreshHint && (
-            <p className="text-xs text-muted-foreground animate-in fade-in slide-in-from-left-2 duration-300">
-              Here's another angle you could explore.
-            </p>
-          )}
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="text-xs text-muted-foreground"
-        >
-          {refreshing ? (
-            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-          ) : (
-            <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-          )}
-          Refresh ideas
-        </Button>
-      </div>
-
-      <div className="grid gap-3">
+    <div className="space-y-4">
+      {/* Cards with increased spacing */}
+      <div className="space-y-4">
         {talkingPoints.map((point) => (
           <TalkingPointCard
             key={point.id}
@@ -157,18 +125,37 @@ export const TalkingPointsSection = ({
       </div>
 
       {talkingPoints.length === 0 && (
-        <div className="text-center py-8">
+        <div className="text-center py-12">
           <p className="text-sm text-muted-foreground">
-            No talking points available right now. Try refreshing or changing the content type.
+            No ideas right now. Try refreshing or changing the filter.
           </p>
+        </div>
+      )}
+
+      {/* Refresh button at bottom */}
+      {talkingPoints.length > 0 && (
+        <div className="flex justify-center pt-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
+            {refreshing ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4 mr-2" />
+            )}
+            Refresh ideas
+          </Button>
         </div>
       )}
     </div>
   );
 };
 
-// Fallback talking points if AI generation fails
-function getDefaultTalkingPoints(contentType: ContentType, phase: string): TalkingPoint[] {
+function getDefaultTalkingPoints(contentType: ContentType): TalkingPoint[] {
   const defaults: Record<ContentType, TalkingPoint[]> = {
     general: [
       {
@@ -203,6 +190,12 @@ function getDefaultTalkingPoints(contentType: ContentType, phase: string): Talki
         description: "Show what a day in your world looks like.",
         contentType: "stories",
       },
+      {
+        id: "3",
+        title: "A lesson you learned the hard way",
+        description: "Share a mistake that taught you something valuable.",
+        contentType: "stories",
+      },
     ],
     offer: [
       {
@@ -217,6 +210,12 @@ function getDefaultTalkingPoints(contentType: ContentType, phase: string): Talki
         description: "Share what's unique about how you help people.",
         contentType: "offer",
       },
+      {
+        id: "3",
+        title: "Who this is for",
+        description: "Help people self-identify if they're a good fit.",
+        contentType: "offer",
+      },
     ],
     "behind-the-scenes": [
       {
@@ -229,6 +228,12 @@ function getDefaultTalkingPoints(contentType: ContentType, phase: string): Talki
         id: "2",
         title: "Your workspace",
         description: "Share a glimpse of where you create.",
+        contentType: "behind-the-scenes",
+      },
+      {
+        id: "3",
+        title: "Tools you love",
+        description: "Share resources that help you do your best work.",
         contentType: "behind-the-scenes",
       },
     ],

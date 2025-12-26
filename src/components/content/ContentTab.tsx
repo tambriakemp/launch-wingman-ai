@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { ContentContextHeader } from "./ContentContextHeader";
 import { ContentTypeFilter } from "./ContentTypeFilter";
 import { TalkingPointsSection } from "./TalkingPointsSection";
-import { SavedIdeasSection, type SavedItem } from "./SavedIdeasSection";
+import { SavedIdeasLink } from "./SavedIdeasLink";
+import { SavedIdeasSheet } from "./SavedIdeasSheet";
 import { DraftPanel } from "./DraftPanel";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { BlueprintSection } from "./blueprint";
 import type { BlueprintIdea } from "@/data/blueprintContent";
+import type { SavedItem } from "./SavedIdeasSection";
 
 export type ContentType = "general" | "stories" | "offer" | "behind-the-scenes";
 
@@ -26,6 +28,7 @@ interface ContentTabProps {
 export const ContentTab = ({ projectId }: ContentTabProps) => {
   const [selectedContentType, setSelectedContentType] = useState<ContentType>("general");
   const [draftPanelOpen, setDraftPanelOpen] = useState(false);
+  const [savedSheetOpen, setSavedSheetOpen] = useState(false);
   const [selectedTalkingPoint, setSelectedTalkingPoint] = useState<TalkingPoint | null>(null);
   const [selectedSavedItem, setSelectedSavedItem] = useState<SavedItem | null>(null);
 
@@ -64,7 +67,6 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   };
 
   const handleBlueprintTurnIntoPost = (idea: BlueprintIdea) => {
-    // Convert BlueprintIdea to TalkingPoint format for the DraftPanel
     const asTalkingPoint: TalkingPoint = {
       id: idea.id,
       title: idea.title,
@@ -86,57 +88,68 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   const funnelType = project?.selected_funnel_type || null;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-12">
-      <PlanPageHeader
-        title="Content"
-        description="Ideas for what to say next, based on where you are in your project."
-        tipText="These are starting points, not requirements. Use what feels right for you."
-      />
-
-      <ContentContextHeader 
-        currentPhase={currentPhase} 
-        funnelType={funnelType} 
-      />
-
-      <div className="space-y-6">
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-medium text-foreground">What to say next</h2>
-              <p className="text-sm text-muted-foreground">
-                Based on where you are in this project, here are a few directions you could talk about.
-              </p>
-            </div>
-            <ContentTypeFilter 
-              selected={selectedContentType} 
-              onChange={setSelectedContentType} 
+    <div className="max-w-3xl mx-auto space-y-12 pb-12">
+      {/* Section A: Orientation Header */}
+      <div className="space-y-4">
+        <div className="flex items-start justify-between gap-4">
+          <PlanPageHeader
+            title="Content"
+            description="Ideas for what to say next, based on where you are in your project."
+            tipText="These are starting points, not requirements. Use what feels right for you."
+          />
+          
+          {/* Saved ideas link - subtle, top right */}
+          <div className="shrink-0 pt-1">
+            <SavedIdeasLink 
+              projectId={projectId} 
+              onOpen={() => setSavedSheetOpen(true)} 
             />
           </div>
-
-          <TalkingPointsSection
-            projectId={projectId}
-            contentType={selectedContentType}
-            currentPhase={currentPhase}
-            funnelType={funnelType}
-            audienceData={funnel}
-            onTurnIntoPost={handleTurnIntoPost}
-          />
         </div>
 
-        <SavedIdeasSection 
-          projectId={projectId} 
-          onOpenItem={handleOpenSavedItem}
-        />
-
-        {/* Launch Content Blueprint */}
-        <BlueprintSection
-          projectId={projectId}
-          funnelType={funnelType}
-          contentType={selectedContentType}
-          onTurnIntoPost={handleBlueprintTurnIntoPost}
+        <ContentContextHeader 
+          currentPhase={currentPhase} 
+          funnelType={funnelType} 
         />
       </div>
 
+      {/* Section B: What to Say Next (Primary Focus) */}
+      <div className="space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h2 className="text-lg font-medium text-foreground">What to say next</h2>
+          <ContentTypeFilter 
+            selected={selectedContentType} 
+            onChange={setSelectedContentType} 
+          />
+        </div>
+
+        <TalkingPointsSection
+          projectId={projectId}
+          contentType={selectedContentType}
+          currentPhase={currentPhase}
+          funnelType={funnelType}
+          audienceData={funnel}
+          onTurnIntoPost={handleTurnIntoPost}
+        />
+      </div>
+
+      {/* Section C: Launch Content Blueprint (Collapsed by Default) */}
+      <BlueprintSection
+        projectId={projectId}
+        funnelType={funnelType}
+        contentType={selectedContentType}
+        onTurnIntoPost={handleBlueprintTurnIntoPost}
+      />
+
+      {/* Saved Ideas Sheet */}
+      <SavedIdeasSheet
+        open={savedSheetOpen}
+        onOpenChange={setSavedSheetOpen}
+        projectId={projectId}
+        onOpenItem={handleOpenSavedItem}
+      />
+
+      {/* Draft Panel */}
       <DraftPanel
         open={draftPanelOpen}
         onOpenChange={setDraftPanelOpen}

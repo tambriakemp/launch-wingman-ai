@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface TalkingPointCardProps {
   id: string;
@@ -34,6 +35,7 @@ export const TalkingPointCard = ({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(isSaved);
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const handleSave = async () => {
     if (!user) return;
@@ -55,6 +57,7 @@ export const TalkingPointCard = ({
       
       setSaved(true);
       toast.success("Idea saved");
+      queryClient.invalidateQueries({ queryKey: ["saved-content-counts", projectId] });
       onSave?.();
     } catch (error) {
       console.error("Error saving idea:", error);
@@ -65,37 +68,37 @@ export const TalkingPointCard = ({
   };
 
   return (
-    <div className="p-4 rounded-lg border border-border bg-card hover:shadow-sm transition-shadow">
-      <h3 className="font-medium text-foreground mb-1">{title}</h3>
-      <p className="text-sm text-muted-foreground mb-4">{description}</p>
+    <div className="p-5 rounded-xl border border-border bg-card hover:border-border/80 transition-colors">
+      <h3 className="text-base font-medium text-foreground mb-2">{title}</h3>
+      <p className="text-sm text-muted-foreground leading-relaxed mb-5">{description}</p>
       
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onTurnIntoPost}
+          className="text-sm"
+        >
+          <Sparkles className="w-4 h-4 mr-2" />
+          Turn into a post
+        </Button>
+        
         <Button
           variant="ghost"
           size="sm"
           onClick={handleSave}
           disabled={saving || saved}
           className={cn(
-            "text-xs",
+            "text-sm text-muted-foreground",
             saved && "text-primary"
           )}
         >
           {saving ? (
-            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           ) : (
-            <Bookmark className={cn("w-3.5 h-3.5 mr-1.5", saved && "fill-primary")} />
+            <Bookmark className={cn("w-4 h-4 mr-2", saved && "fill-primary")} />
           )}
           {saved ? "Saved" : "Save"}
-        </Button>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onTurnIntoPost}
-          className="text-xs"
-        >
-          <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-          Turn into a post
         </Button>
       </div>
     </div>

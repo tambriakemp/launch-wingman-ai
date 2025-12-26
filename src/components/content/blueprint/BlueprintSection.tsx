@@ -35,49 +35,49 @@ export const BlueprintSection = ({
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    // Clear skipped ideas and increment key to force re-render
     setSkippedIds(new Set());
     setRefreshKey(prev => prev + 1);
-    // Brief delay for visual feedback
     setTimeout(() => setIsRefreshing(false), 300);
   };
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-3">
-      <div className="flex items-start justify-between gap-4 p-4 rounded-lg border border-border bg-card/50">
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      {/* Collapsed card */}
+      <div className="p-5 rounded-xl border border-border bg-card/50">
         <CollapsibleTrigger asChild>
-          <button className="flex items-start gap-3 text-left flex-1 group">
-            <div className="mt-0.5">
+          <button className="flex items-start gap-3 text-left w-full group">
+            <div className="mt-0.5 shrink-0">
               {isOpen ? (
                 <ChevronDown className="w-5 h-5 text-muted-foreground" />
               ) : (
                 <ChevronRight className="w-5 h-5 text-muted-foreground" />
               )}
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <h3 className="text-base font-medium text-foreground group-hover:text-primary transition-colors">
                 Launch Content Blueprint
               </h3>
               <p className="text-sm text-muted-foreground mt-0.5">
-                A suggested content rhythm for launches like yours. This is optional guidance, not a checklist.
+                A suggested content rhythm for launches like yours.
               </p>
             </div>
           </button>
         </CollapsibleTrigger>
         
+        {/* View buttons when collapsed */}
         {!isOpen && (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 mt-4 pl-8">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
-                setIsOpen(true);
                 setViewMode("outline");
+                setIsOpen(true);
               }}
-              className="text-xs"
+              className="text-sm"
             >
-              <List className="w-3.5 h-3.5 mr-1.5" />
+              <List className="w-4 h-4 mr-2" />
               View outline
             </Button>
             <Button
@@ -85,92 +85,93 @@ export const BlueprintSection = ({
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
-                setIsOpen(true);
                 setViewMode("timeline");
+                setIsOpen(true);
               }}
-              className="text-xs"
+              className="text-sm text-muted-foreground"
             >
-              <Calendar className="w-3.5 h-3.5 mr-1.5" />
+              <Calendar className="w-4 h-4 mr-2" />
               View timeline
             </Button>
           </div>
         )}
-      </div>
 
-      <CollapsibleContent className="space-y-4">
-        {/* View toggle and refresh */}
-        <div className="flex items-center justify-between">
-          <div className="inline-flex rounded-lg border border-border p-1 bg-muted/30">
-            <button
-              onClick={() => setViewMode("outline")}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors",
-                viewMode === "outline" 
-                  ? "bg-background text-foreground shadow-sm" 
-                  : "text-muted-foreground hover:text-foreground"
-              )}
+        {/* Expanded content */}
+        <CollapsibleContent className="mt-6 space-y-5">
+          {/* View toggle and refresh */}
+          <div className="flex items-center justify-between pl-8">
+            <div className="inline-flex rounded-lg border border-border p-1 bg-muted/30">
+              <button
+                onClick={() => setViewMode("outline")}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors",
+                  viewMode === "outline" 
+                    ? "bg-background text-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <List className="w-4 h-4" />
+                Outline
+              </button>
+              <button
+                onClick={() => setViewMode("timeline")}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors",
+                  viewMode === "timeline" 
+                    ? "bg-background text-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Calendar className="w-4 h-4" />
+                Timeline
+              </button>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="text-sm text-muted-foreground"
             >
-              <List className="w-4 h-4" />
-              Outline
-            </button>
-            <button
-              onClick={() => setViewMode("timeline")}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors",
-                viewMode === "timeline" 
-                  ? "bg-background text-foreground shadow-sm" 
-                  : "text-muted-foreground hover:text-foreground"
+              {isRefreshing ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4 mr-2" />
               )}
-            >
-              <Calendar className="w-4 h-4" />
-              Timeline
-            </button>
+              Reset view
+            </Button>
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="text-xs text-muted-foreground"
-          >
-            {isRefreshing ? (
-              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+          {/* Content views */}
+          <div key={refreshKey} className="pl-8">
+            {viewMode === "outline" ? (
+              <OutlineView
+                projectId={projectId}
+                funnelType={funnelType}
+                contentType={contentType}
+                onTurnIntoPost={onTurnIntoPost}
+                skippedIds={skippedIds}
+                onSkip={handleSkip}
+              />
             ) : (
-              <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+              <div className="max-h-[500px] overflow-y-auto rounded-lg border border-border/50 bg-muted/20 p-4">
+                <p className="text-xs text-muted-foreground mb-4 italic">
+                  This is an optional advanced view showing a day-by-day rhythm.
+                </p>
+                <TimelineView
+                  projectId={projectId}
+                  funnelType={funnelType}
+                  contentType={contentType}
+                  onTurnIntoPost={onTurnIntoPost}
+                  skippedIds={skippedIds}
+                  onSkip={handleSkip}
+                />
+              </div>
             )}
-            Reset view
-          </Button>
-        </div>
-
-        {/* Encouraging note */}
-        <p className="text-sm text-muted-foreground italic">
-          Use what helps. Skip what doesn't. This is a map, not a mandate.
-        </p>
-
-        {/* Content views */}
-        <div key={refreshKey}>
-          {viewMode === "outline" ? (
-            <OutlineView
-              projectId={projectId}
-              funnelType={funnelType}
-              contentType={contentType}
-              onTurnIntoPost={onTurnIntoPost}
-              skippedIds={skippedIds}
-              onSkip={handleSkip}
-            />
-          ) : (
-            <TimelineView
-              projectId={projectId}
-              funnelType={funnelType}
-              contentType={contentType}
-              onTurnIntoPost={onTurnIntoPost}
-              skippedIds={skippedIds}
-              onSkip={handleSkip}
-            />
-          )}
-        </div>
-      </CollapsibleContent>
+          </div>
+        </CollapsibleContent>
+      </div>
     </Collapsible>
   );
 };
