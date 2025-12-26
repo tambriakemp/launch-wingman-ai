@@ -31,9 +31,6 @@ export const TASK_LEARN_MORE_LINKS: TaskLearnMoreMapping[] = [
   // "Increase belief that this will work"
   { taskId: 'planning_perceived_likelihood', articleId: 'perceived-likelihood' },
   
-  // "Create a simple offer snapshot"
-  { taskId: 'planning_offer_snapshot', articleId: 'simple-offer' },
-  
   // "Choose how you'll sell your offer"
   { taskId: 'planning_choose_launch_path', articleId: 'what-is-funnel' },
   

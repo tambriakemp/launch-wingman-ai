@@ -129,12 +129,22 @@ export default function OfferSnapshotTask() {
       : [],
   } : undefined;
 
-  // Initialize offers from existing data or funnel defaults
+  // Initialize offers from existing data or funnel defaults (funnel-aware)
   useEffect(() => {
     if (isInitialized) return;
+    if (!funnelConfig) return;
 
-    if (existingOffers && existingOffers.length > 0) {
-      // Load existing offers
+    const expectedSlotTypes = funnelConfig.offerSlots.map(s => s.type);
+    const existingSlotTypes = existingOffers?.map(o => o.slot_type) || [];
+    
+    // Check if existing offers match the current funnel structure
+    const offersMatchFunnel = 
+      expectedSlotTypes.length === existingSlotTypes.length &&
+      expectedSlotTypes.every(type => existingSlotTypes.includes(type)) &&
+      existingSlotTypes.every(type => expectedSlotTypes.includes(type));
+
+    if (existingOffers && existingOffers.length > 0 && offersMatchFunnel) {
+      // Load existing offers (they match the funnel structure)
       const loadedOffers: OfferSlotData[] = existingOffers.map(o => ({
         id: o.id,
         slotType: o.slot_type,
@@ -148,22 +158,39 @@ export default function OfferSnapshotTask() {
       }));
       setOffers(loadedOffers);
       setIsInitialized(true);
-    } else if (funnelConfig) {
-      // Create default slots from funnel config
-      const defaultOffers: OfferSlotData[] = funnelConfig.offerSlots.map((slot: OfferSlotConfig) => ({
-        slotType: slot.type,
-        title: '',
-        description: '',
-        offerType: '',
-        price: '',
-        priceType: slot.priceRange === 'Free' ? 'free' : 'one-time',
-        isConfigured: false,
-        isSkipped: false,
-      }));
-      setOffers(defaultOffers);
-      setIsInitialized(true);
+    } else {
+      // Funnel structure doesn't match - delete old offers and create new defaults
+      const clearAndInitialize = async () => {
+        if (existingOffers && existingOffers.length > 0 && user && projectId) {
+          // Delete mismatched offers from database
+          await supabase
+            .from("offers")
+            .delete()
+            .eq("project_id", projectId)
+            .eq("user_id", user.id);
+          
+          // Invalidate query to reflect deletion
+          queryClient.invalidateQueries({ queryKey: ["offers", projectId] });
+        }
+        
+        // Create default slots from funnel config
+        const defaultOffers: OfferSlotData[] = funnelConfig.offerSlots.map((slot: OfferSlotConfig) => ({
+          slotType: slot.type,
+          title: '',
+          description: '',
+          offerType: '',
+          price: '',
+          priceType: slot.priceRange === 'Free' ? 'free' : 'one-time',
+          isConfigured: false,
+          isSkipped: false,
+        }));
+        setOffers(defaultOffers);
+        setIsInitialized(true);
+      };
+      
+      clearAndInitialize();
     }
-  }, [existingOffers, funnelConfig, isInitialized]);
+  }, [existingOffers, funnelConfig, isInitialized, user, projectId, queryClient]);
 
   // Auto-save offers
   const performSave = useCallback(async () => {
