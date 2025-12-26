@@ -282,8 +282,8 @@ const OffersContent = ({ projectId }: Props) => {
           Transformation
         </Button>
 
-        <Button onClick={() => navigate(`/projects/${projectId}/tech-stack`)}>
-          Continue
+        <Button onClick={() => navigate(`/projects/${projectId}/board`)}>
+          Continue to Board
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
