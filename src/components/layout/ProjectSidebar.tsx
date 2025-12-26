@@ -21,7 +21,6 @@ import {
   ArrowLeft,
   FolderOpen,
   Crown,
-  Server,
   ClipboardCheck,
   BookOpen,
 } from "lucide-react";
@@ -67,7 +66,6 @@ const createNavSections = (projectId: string): NavSection[] => [
       { id: "playbook", label: "Playbook", icon: BookOpen, href: `/playbook` },
       { id: "library", label: "Library", icon: FolderOpen, href: `/projects/${projectId}/library` },
       { id: "offers", label: "Offer Stack", icon: Package, href: `/projects/${projectId}/offers` },
-      { id: "tech-stack", label: "Tech Stack", icon: Server, href: `/projects/${projectId}/tech-stack`, requiresStep: "offers" },
     ],
   },
   {
@@ -94,7 +92,6 @@ const createNavSections = (projectId: string): NavSection[] => [
 
 interface StepCompletion {
   offers: boolean;
-  "tech-stack": boolean;
 }
 
 interface LastProjectInfo {
@@ -399,7 +396,6 @@ export const ProjectSidebar = () => {
   // Determine step completion status
   const stepCompletion: StepCompletion = {
     offers: (offers && offers.length > 0) ?? false,
-    "tech-stack": !!(funnel?.funnel_platform || funnel?.email_platform || funnel?.community_platform),
   };
 
   const isStepAccessible = (requiresStep?: string): boolean => {
