@@ -35,6 +35,7 @@ export default function OfferSnapshotTask() {
   const [offers, setOffers] = useState<OfferSlotData[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [isSaving, setIsSaving] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
@@ -51,7 +52,7 @@ export default function OfferSnapshotTask() {
   );
 
   // Fetch project with selected funnel type - always refetch to get latest funnel type
-  const { data: project, isLoading: projectLoading } = useQuery({
+  const { data: project, isLoading: projectLoading, refetch: refetchProject } = useQuery({
     queryKey: ["project", projectId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -64,7 +65,16 @@ export default function OfferSnapshotTask() {
     },
     enabled: !!projectId,
     refetchOnMount: 'always',
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
+
+  // Force refetch project data on mount to get latest funnel type
+  useEffect(() => {
+    if (projectId) {
+      refetchProject();
+    }
+  }, [projectId, refetchProject]);
 
   // Fetch funnel data for audience context
   const { data: funnel } = useQuery({
@@ -245,11 +255,33 @@ export default function OfferSnapshotTask() {
       return;
     }
 
-    await performSave();
-    await completeTask('planning_offer_stack', { offers: offers.filter(o => !o.isSkipped) });
-    
-    toast.success("Offer stack saved! Your offer ecosystem is taking shape.");
-    navigate(`/projects/${projectId}/offer`);
+    setIsSaving(true);
+    try {
+      await performSave();
+      await completeTask('planning_offer_stack', { offers: offers.filter(o => !o.isSkipped) });
+      
+      toast.success("Offer stack saved! Your offer ecosystem is taking shape.");
+      navigate(`/projects/${projectId}/offer`);
+    } catch (error) {
+      console.error("Complete error:", error);
+      toast.error("Failed to save. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveForLater = async () => {
+    setIsSaving(true);
+    try {
+      await performSave();
+      toast.success("Progress saved!");
+      navigate(`/projects/${projectId}/offer`);
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("Failed to save. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (engineLoading || projectLoading || !project || !taskTemplate) {
@@ -395,16 +427,26 @@ export default function OfferSnapshotTask() {
             <Button
               onClick={handleComplete}
               className="flex-1"
-              disabled={configuredCount === 0}
+              disabled={configuredCount === 0 || isSaving}
             >
-              <Check className="w-4 h-4 mr-2" />
-              Save & Continue
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  Save & Continue
+                </>
+              )}
             </Button>
             <Button
               variant="ghost"
-              onClick={() => navigate(`/projects/${projectId}/offer`)}
+              onClick={handleSaveForLater}
+              disabled={isSaving}
             >
-              Save for Later
+              {isSaving ? "Saving..." : "Save for Later"}
             </Button>
           </div>
 
