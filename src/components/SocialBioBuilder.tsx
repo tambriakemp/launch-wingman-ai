@@ -652,9 +652,9 @@ const charCount = generatedContent?.length || 0;
                 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{p?.name}</p>
+                  <p className="font-medium text-sm">{p?.name || bio.platform}</p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {f?.name} • {bio.content?.length || 0}/{p?.maxChars} chars
+                    {f?.name || bio.formula || 'Custom'} • {bio.content?.length || 0}/{p?.maxChars || 150} chars
                   </p>
                 </div>
                 
