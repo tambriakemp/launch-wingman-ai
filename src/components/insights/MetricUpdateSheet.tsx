@@ -1,11 +1,11 @@
 import { useState } from "react";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,17 +63,17 @@ export function MetricUpdateSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Update Your Metrics</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Update Your Metrics</DialogTitle>
+          <DialogDescription>
             Log your current numbers to track your growth over time. 
             Only fill in what you'd like to track.
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="space-y-6 mt-6">
+        <div className="space-y-6 mt-2">
           {/* Audience Size */}
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-foreground">Audience Size</h4>
@@ -179,7 +179,7 @@ export function MetricUpdateSheet({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-2">
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
@@ -203,7 +203,7 @@ export function MetricUpdateSheet({
             </Button>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
