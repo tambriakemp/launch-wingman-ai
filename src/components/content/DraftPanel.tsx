@@ -27,7 +27,6 @@ interface AudienceData {
 interface SlotInfo {
   phase: string;
   dayNumber: number;
-  timeOfDay: "morning" | "evening";
 }
 
 interface DraftPanelProps {
