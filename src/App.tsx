@@ -186,7 +186,7 @@ const App = () => (
             />
             {/* Execute routes */}
             <Route
-              path="/projects/:id/board"
+              path="/projects/:id/tasks"
               element={
                 <ProtectedRoute>
                   <ProjectExecute />

@@ -27,13 +27,13 @@ const ProjectExecute = () => {
 
   if (!id) return null;
 
-  // Extract section from path: /projects/:id/board → board
+  // Extract section from path: /projects/:id/tasks → tasks
   const pathParts = location.pathname.split("/");
   const section = pathParts[pathParts.length - 1];
 
   return (
     <ProjectLayout>
-      {section === "board" ? (
+      {section === "tasks" ? (
         <TasksBoard projectId={id} projectType={projectType} />
       ) : section === "social" ? (
         <ContentPlanner projectId={id} />
