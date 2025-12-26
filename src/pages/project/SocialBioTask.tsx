@@ -73,9 +73,9 @@ export default function SocialBioTask() {
     enabled: !!projectId,
   });
 
-  // Fetch existing bios to determine completion status - refetch frequently to stay in sync with SocialBioBuilder
+  // Fetch existing bios count - use different query key to avoid cache collision with SocialBioBuilder
   const { data: existingBios = [] } = useQuery({
-    queryKey: ["social-bios", projectId],
+    queryKey: ["social-bios-count", projectId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("social_bios")
