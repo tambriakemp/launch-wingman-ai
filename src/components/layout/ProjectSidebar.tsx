@@ -10,8 +10,12 @@ import {
   Palette,
   Type,
   Camera,
+  FileText,
   AtSign,
+  Mail,
+  Package,
   Kanban,
+  Users,
   Lock,
   ArrowLeft,
   FolderOpen,
@@ -77,7 +81,10 @@ const createNavSections = (projectId: string): NavSection[] => [
     heading: "Messaging",
     isProOnly: true,
     items: [
+      { id: "sales-copy", label: "Sales Copy", icon: FileText, href: `/projects/${projectId}/sales-copy`, isProOnly: true },
       { id: "social-bio", label: "Social Bio", icon: AtSign, href: `/projects/${projectId}/social-bio`, isProOnly: true },
+      { id: "emails", label: "Emails", icon: Mail, href: `/projects/${projectId}/emails`, isProOnly: true },
+      { id: "deliverables", label: "Deliverables", icon: Package, href: `/projects/${projectId}/deliverables`, isProOnly: true },
     ],
   },
 ];

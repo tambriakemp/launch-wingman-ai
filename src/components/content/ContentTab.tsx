@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Lightbulb, CalendarDays, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +13,7 @@ import { TimelineSlotGrid } from "./TimelineSlotGrid";
 import { SalesPageCopyTab } from "./sales-copy";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import type { SavedItem } from "./SavedIdeasSection";
 
 export type ContentType = "general" | "stories" | "offer" | "behind-the-scenes";
@@ -45,6 +46,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   const [pendingSlotInfo, setPendingSlotInfo] = useState<SlotInfo | null>(null);
   
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   // Fetch project data for phase and funnel type
   const { data: project } = useQuery({
