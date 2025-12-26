@@ -12,6 +12,7 @@ interface TalkingPoint {
   id: string;
   title: string;
   description: string;
+  contentType: string;
 }
 
 interface AudienceData {
@@ -32,6 +33,14 @@ interface DraftPanelProps {
 }
 
 type ToneAdjustment = "simplify" | "shorter" | "calmer" | "direct";
+
+// Category-specific guidance text shown in the draft panel
+const CATEGORY_GUIDANCE: Record<string, string> = {
+  general: "Share a perspective or realization that helps your audience feel understood.",
+  stories: "Start with a moment, question, or thought — not an explanation.",
+  offer: "Explain this as if you're talking to someone who's curious, not convinced.",
+  "behind-the-scenes": "Write this like you're thinking out loud.",
+};
 
 export const DraftPanel = ({
   open,
@@ -71,6 +80,7 @@ export const DraftPanel = ({
           currentPhase,
           funnelType,
           audienceData,
+          contentType: talkingPoint.contentType || "general",
         },
       });
 
@@ -99,6 +109,7 @@ export const DraftPanel = ({
           existingDraft: draft,
           adjustment,
           audienceData,
+          contentType: talkingPoint?.contentType || "general",
         },
       });
 
@@ -181,6 +192,11 @@ export const DraftPanel = ({
             </div>
           ) : (
             <>
+              {/* Category-specific guidance */}
+              <p className="text-sm text-muted-foreground italic">
+                {CATEGORY_GUIDANCE[talkingPoint?.contentType || "general"] || CATEGORY_GUIDANCE.general}
+              </p>
+
               <Textarea
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}

@@ -22,11 +22,65 @@ const PHASE_CONTEXT: Record<string, string> = {
   "post-launch": "post-launch reflection and continuity",
 };
 
-const CONTENT_TYPE_PROMPTS: Record<string, string> = {
-  general: "general social media posts that build connection and trust",
-  stories: "story-based content, personal prompts, and relatable moments",
-  offer: "content that explains the offer naturally without being pushy",
-  "behind-the-scenes": "behind-the-scenes content showing the real work",
+// Category-specific intent definitions
+const CATEGORY_INTENTS: Record<string, {
+  intent: string;
+  talkingPointGuidance: string;
+  examples: string;
+}> = {
+  general: {
+    intent: "Build familiarity and trust through perspective and explanation.",
+    talkingPointGuidance: `Talking points should:
+- Explain beliefs or insights
+- Normalize struggles  
+- Reframe common misunderstandings
+- Build resonance without asking for action`,
+    examples: `Good examples:
+- "Why I stopped chasing [common goal]"
+- "The real reason [common struggle] happens"
+- "What I wish I knew about [topic] earlier"
+- "A small shift that changed how I think about [topic]"`,
+  },
+  stories: {
+    intent: "Invite reflection and engagement through moments, questions, or personal insight.",
+    talkingPointGuidance: `Talking points should:
+- Start from a moment or thought
+- Encourage reflection
+- Invite replies or emotional connection
+- NOT explain or teach`,
+    examples: `Good examples:
+- "A moment that made me rethink everything"
+- "What happened when I finally [action]"
+- "The question I keep coming back to"
+- "Something I noticed this week..."`,
+  },
+  offer: {
+    intent: "Help people understand what the offer is and who it's for — without selling.",
+    talkingPointGuidance: `Talking points should:
+- Clarify who the offer helps
+- Address confusion or objections
+- Explain why the offer exists
+- Set expectations gently
+- NOT push or create urgency`,
+    examples: `Good examples:
+- "Who this is actually for (and who it's not)"
+- "Why I created this the way I did"
+- "A common question I get about [offer]"
+- "What happens after you join"`,
+  },
+  "behind-the-scenes": {
+    intent: "Humanize the creator by sharing process, uncertainty, or progress.",
+    talkingPointGuidance: `Talking points should:
+- Show work in progress
+- Share learning or decision-making
+- Acknowledge uncertainty or growth
+- Feel unpolished and real`,
+    examples: `Good examples:
+- "What I'm working on this week"
+- "Something I'm still figuring out"
+- "A decision I'm wrestling with"
+- "Behind the scenes of [recent thing]"`,
+  },
 };
 
 serve(async (req) => {
@@ -40,7 +94,7 @@ serve(async (req) => {
     console.log("Generating talking points:", { projectId, contentType, currentPhase, funnelType });
 
     const phaseContext = PHASE_CONTEXT[currentPhase] || "general project phase";
-    const contentTypeContext = CONTENT_TYPE_PROMPTS[contentType] || "general content";
+    const categoryConfig = CATEGORY_INTENTS[contentType] || CATEGORY_INTENTS.general;
 
     const audienceContext = audienceData
       ? `
@@ -62,18 +116,30 @@ CRITICAL RULES:
 - Focus on connection, not conversion
 - These are ideas, not requirements
 
+CATEGORY-SPECIFIC INTENT:
+${categoryConfig.intent}
+
+${categoryConfig.talkingPointGuidance}
+
+${categoryConfig.examples}
+
 Respond ONLY with valid JSON, no markdown.`;
 
-    const userPrompt = `Generate 4-5 talking point ideas for ${contentTypeContext}.
+    const userPrompt = `Generate 4-5 talking point ideas for the "${contentType}" category.
 
 Context:
 - Project phase: ${phaseContext}
 - Funnel type: ${funnelType || "not selected yet"}
 ${audienceContext}
 
+Remember, these ideas must align with the category intent:
+"${categoryConfig.intent}"
+
 Each talking point should have:
-- A short, human title (3-6 words)
+- A short, human title (3-6 words) that reflects the category's purpose
 - A one-sentence description that gives direction without being prescriptive
+
+The ideas should feel noticeably different from other categories.
 
 Return JSON in this exact format:
 {
@@ -132,12 +198,12 @@ Return JSON in this exact format:
   } catch (error) {
     console.error("Error in generate-talking-points:", error);
     
-    // Return fallback talking points
+    // Return general fallback talking points
     const fallback = {
       talkingPoints: [
-        { id: "1", title: "Share your journey", description: "Talk about why you started this project and what drives you.", contentType: "general" },
-        { id: "2", title: "Address a common question", description: "Answer something your audience frequently asks about.", contentType: "general" },
-        { id: "3", title: "Share a quick win", description: "Give your audience a simple tip they can use today.", contentType: "general" },
+        { id: "1", title: "Share your perspective", description: "Explain a belief or insight that shapes how you approach your work.", contentType: "general" },
+        { id: "2", title: "Normalize a struggle", description: "Talk about something your audience finds hard — and why it makes sense.", contentType: "general" },
+        { id: "3", title: "Reframe a misunderstanding", description: "Address something commonly misunderstood in your space.", contentType: "general" },
       ],
     };
 
