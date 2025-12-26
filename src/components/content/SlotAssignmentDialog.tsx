@@ -22,7 +22,6 @@ import type { BlueprintIdea } from "@/data/blueprintContent";
 interface SlotInfo {
   phase: string;
   dayNumber: number;
-  timeOfDay: "morning" | "evening";
 }
 
 interface SlotAssignmentDialogProps {
@@ -58,10 +57,9 @@ export const SlotAssignmentDialog = ({
 }: SlotAssignmentDialogProps) => {
   const [phase, setPhase] = useState<string>("pre-launch-week-1");
   const [dayNumber, setDayNumber] = useState<number>(1);
-  const [timeOfDay, setTimeOfDay] = useState<"morning" | "evening">("morning");
 
   const handleConfirm = () => {
-    onConfirm({ phase, dayNumber, timeOfDay });
+    onConfirm({ phase, dayNumber });
   };
 
   if (!idea) return null;
@@ -117,30 +115,6 @@ export const SlotAssignmentDialog = ({
             </Select>
           </div>
 
-          {/* Time of Day Selection */}
-          <div className="space-y-2">
-            <Label>Time of Day</Label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={timeOfDay === "morning" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setTimeOfDay("morning")}
-                className="flex-1"
-              >
-                Morning
-              </Button>
-              <Button
-                type="button"
-                variant={timeOfDay === "evening" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setTimeOfDay("evening")}
-                className="flex-1"
-              >
-                Evening
-              </Button>
-            </div>
-          </div>
         </div>
 
         <DialogFooter>

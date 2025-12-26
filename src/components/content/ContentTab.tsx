@@ -32,7 +32,6 @@ interface TalkingPoint {
 interface SlotInfo {
   phase: string;
   dayNumber: number;
-  timeOfDay: "morning" | "evening";
 }
 
 interface ContentTabProps {
@@ -90,20 +89,13 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   };
 
   const handleBlueprintTurnIntoPost = (idea: BlueprintIdea) => {
-    const asTalkingPoint: TalkingPoint = {
-      id: idea.id,
-      title: idea.title,
-      description: idea.whyItWorks,
-      contentType: idea.contentType,
-    };
-    setSelectedSavedItem(null);
-    setSelectedIdea(null);
-    setSelectedTalkingPoint(asTalkingPoint);
-    setPendingSlotInfo(null);
-    setDraftPanelOpen(true);
+    // "Turn into post" now opens slot assignment dialog first
+    setSelectedIdea(idea);
+    setSlotDialogOpen(true);
   };
 
   const handleAddToTimeline = (idea: BlueprintIdea) => {
+    // Add to timeline without opening draft panel
     setSelectedIdea(idea);
     setSlotDialogOpen(true);
   };
@@ -118,7 +110,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
         user_id: user.id,
         phase: slotInfo.phase,
         day_number: slotInfo.dayNumber,
-        time_of_day: slotInfo.timeOfDay,
+        time_of_day: "morning", // Default value since we removed time selection
         title: selectedIdea.title,
         description: selectedIdea.whyItWorks,
         content_type: selectedIdea.contentType,
@@ -131,7 +123,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
       toast.success("Added to timeline");
       setSlotDialogOpen(false);
       
-      // Optionally open the draft panel to write the post
+      // Open the draft panel to write the post
       const asTalkingPoint: TalkingPoint = {
         id: selectedIdea.id,
         title: selectedIdea.title,
@@ -227,7 +219,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
           )}
         >
           <CalendarDays className="w-4 h-4" />
-          My Timeline
+          Launch Content Timeline
         </button>
       </div>
 
