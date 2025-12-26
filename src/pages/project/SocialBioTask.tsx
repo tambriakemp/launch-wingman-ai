@@ -73,7 +73,7 @@ export default function SocialBioTask() {
     enabled: !!projectId,
   });
 
-  // Fetch existing bios to determine completion status
+  // Fetch existing bios to determine completion status - refetch frequently to stay in sync with SocialBioBuilder
   const { data: existingBios = [] } = useQuery({
     queryKey: ["social-bios", projectId],
     queryFn: async () => {
@@ -85,6 +85,7 @@ export default function SocialBioTask() {
       return data || [];
     },
     enabled: !!projectId,
+    refetchInterval: 2000, // Poll every 2 seconds to stay in sync with child component
   });
 
   const hasBios = existingBios.length > 0;
