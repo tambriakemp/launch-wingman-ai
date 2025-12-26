@@ -171,7 +171,7 @@ Return JSON in this exact format:
   ]
 }`;
 
-    const response = await fetch("https://api.lov.ai/v1/chat/completions", {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
@@ -220,13 +220,34 @@ Return JSON in this exact format:
   } catch (error) {
     console.error("Error in generate-talking-points:", error);
     
-    // Return general fallback talking points
-    const fallback = {
-      talkingPoints: [
+    // Category-aware fallback talking points
+    const { contentType = "general" } = await req.json().catch(() => ({ contentType: "general" }));
+    
+    const categoryFallbacks: Record<string, TalkingPoint[]> = {
+      general: [
         { id: "1", title: "Share your perspective", description: "Explain a belief or insight that shapes how you approach your work.", contentType: "general" },
         { id: "2", title: "Normalize a struggle", description: "Talk about something your audience finds hard — and why it makes sense.", contentType: "general" },
         { id: "3", title: "Reframe a misunderstanding", description: "Address something commonly misunderstood in your space.", contentType: "general" },
       ],
+      stories: [
+        { id: "1", title: "A moment of realization", description: "Share a specific moment that changed how you think about your work.", contentType: "stories" },
+        { id: "2", title: "What I noticed recently", description: "Reflect on something small that caught your attention this week.", contentType: "stories" },
+        { id: "3", title: "A question I keep asking", description: "Share a question you find yourself returning to.", contentType: "stories" },
+      ],
+      offer: [
+        { id: "1", title: "Who this is really for", description: "Clarify the specific person your offer is designed to help.", contentType: "offer" },
+        { id: "2", title: "Why I built it this way", description: "Explain the thinking behind a specific decision in your offer.", contentType: "offer" },
+        { id: "3", title: "A common question answered", description: "Address something people often ask about before joining.", contentType: "offer" },
+      ],
+      "behind-the-scenes": [
+        { id: "1", title: "What I'm working on", description: "Share what's currently in progress, even if it's unfinished.", contentType: "behind-the-scenes" },
+        { id: "2", title: "Something I'm figuring out", description: "Be honest about a decision or challenge you're still working through.", contentType: "behind-the-scenes" },
+        { id: "3", title: "A small win this week", description: "Celebrate progress, even if it feels minor.", contentType: "behind-the-scenes" },
+      ],
+    };
+
+    const fallback = {
+      talkingPoints: categoryFallbacks[contentType] || categoryFallbacks.general,
     };
 
     return new Response(JSON.stringify(fallback), {
