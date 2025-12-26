@@ -193,30 +193,33 @@ export default function OfferSnapshotTask() {
     setIsInitialized(true);
   }, [existingOffers, funnelConfig, isInitialized, selectedFunnelType]);
 
-  // Auto-save offers (scoped to current funnel type)
-  const performSave = useCallback(async () => {
-    if (!projectId || !user || offers.length === 0 || !selectedFunnelType) return;
+  // Save offers to database (scoped to current funnel type)
+  const saveOffersToDb = useCallback(async (offersToSave: OfferSlotData[]) => {
+    if (!projectId || !user || offersToSave.length === 0 || !selectedFunnelType) return;
 
     setAutoSaveStatus('saving');
-    
+
     try {
       // Delete only offers for the current funnel type (preserve other funnel's offers)
-      await supabase
+      const { error: deleteError } = await supabase
         .from("offers")
         .delete()
         .eq("project_id", projectId)
         .eq("user_id", user.id)
         .eq("funnel_type", selectedFunnelType);
 
+      if (deleteError) throw deleteError;
+
       // Insert new offers with funnel_type tag
-      const offersToInsert = offers.map((offer, index) => ({
+      const offersToInsert = offersToSave.map((offer, index) => ({
         project_id: projectId,
         user_id: user.id,
         slot_type: offer.slotType,
         slot_position: index,
-        title: offer.title || null,
-        description: offer.description || null,
-        offer_type: offer.offerType || 'Other',
+        title: offer.title?.trim() ? offer.title.trim() : null,
+        description: offer.description?.trim() ? offer.description.trim() : null,
+        // Keep required column non-null, but don't force a fake configured value
+        offer_type: offer.offerType?.trim() ? offer.offerType.trim() : "",
         offer_category: offer.slotType,
         niche: audienceData?.niche || 'General',
         price: offer.price ? parseFloat(offer.price) : null,
@@ -229,15 +232,26 @@ export default function OfferSnapshotTask() {
         desired_outcome: audienceData?.desiredOutcome || null,
       }));
 
-      await supabase.from("offers").insert(offersToInsert);
-      
+      const { error: insertError } = await supabase.from("offers").insert(offersToInsert);
+      if (insertError) throw insertError;
+
       setAutoSaveStatus('saved');
       setTimeout(() => setAutoSaveStatus('idle'), 2000);
     } catch (error) {
       console.error("Save error:", error);
       setAutoSaveStatus('idle');
+      throw error;
     }
-  }, [projectId, user, offers, audienceData, funnelConfig, funnel, selectedFunnelType]);
+  }, [projectId, user, audienceData, funnelConfig, funnel, selectedFunnelType]);
+
+  // Auto-save wrapper
+  const performSave = useCallback(async () => {
+    try {
+      await saveOffersToDb(offers);
+    } catch {
+      // keep autosave silent
+    }
+  }, [offers, saveOffersToDb]);
 
   // Debounced auto-save
   useEffect(() => {
@@ -267,7 +281,7 @@ export default function OfferSnapshotTask() {
 
     setIsSaving(true);
     try {
-      await performSave();
+      await saveOffersToDb(offers);
       await completeTask('planning_offer_stack', { offers: offers.filter(o => !o.isSkipped) });
       
       toast.success("Offer stack saved! Your offer ecosystem is taking shape.");
@@ -283,7 +297,7 @@ export default function OfferSnapshotTask() {
   const handleSaveForLater = async () => {
     setIsSaving(true);
     try {
-      await performSave();
+      await saveOffersToDb(offers);
       toast.success("Progress saved!");
       navigate(`/projects/${projectId}/offer`);
     } catch (error) {
@@ -421,7 +435,7 @@ export default function OfferSnapshotTask() {
             offers={offers}
             onChange={setOffers}
             audienceData={audienceData}
-            onSaveNow={performSave}
+            onSaveNow={saveOffersToDb}
           />
         )}
 
