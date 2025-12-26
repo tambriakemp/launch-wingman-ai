@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Send, Loader2 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Send, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,6 +31,8 @@ interface SchedulePostSheetProps {
     title: string;
     content: string | null;
     description: string | null;
+    scheduled_at?: string | null;
+    scheduled_platforms?: string[] | null;
   } | null;
   onScheduled?: () => void;
 }
@@ -43,8 +45,10 @@ export function SchedulePostSheet({
   onScheduled,
 }: SchedulePostSheetProps) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isPosting, setIsPosting] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [scheduleMode, setScheduleMode] = useState<"now" | "schedule">("now");
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
   const [scheduledTime, setScheduledTime] = useState("09:00");
@@ -58,20 +62,37 @@ export function SchedulePostSheet({
     link_url: "",
   });
 
+  const isAlreadyScheduled = !!(contentItem?.scheduled_at);
+
   // Reset form when content item changes
   useEffect(() => {
     if (contentItem) {
+      // Pre-populate with existing data
+      const existingPlatforms = contentItem.scheduled_platforms || [];
+      
       setFormData({
         title: contentItem.title || "",
         content: contentItem.content || contentItem.description || "",
         media_url: null,
         media_type: null,
-        scheduled_platforms: [],
+        scheduled_platforms: existingPlatforms,
         pinterest_board_id: null,
         link_url: "",
       });
-      setScheduleMode("now");
-      setScheduledDate(null);
+
+      // If already scheduled, pre-populate the date/time and set mode to schedule
+      if (contentItem.scheduled_at) {
+        const scheduledDateTime = new Date(contentItem.scheduled_at);
+        setScheduledDate(scheduledDateTime);
+        const hours = scheduledDateTime.getHours().toString().padStart(2, "0");
+        const minutes = scheduledDateTime.getMinutes().toString().padStart(2, "0");
+        setScheduledTime(`${hours}:${minutes}`);
+        setScheduleMode("schedule");
+      } else {
+        setScheduleMode("now");
+        setScheduledDate(null);
+        setScheduledTime("09:00");
+      }
     }
   }, [contentItem]);
 
@@ -202,6 +223,39 @@ export function SchedulePostSheet({
       toast.error(error.message || "Failed to schedule post");
     } finally {
       setIsScheduling(false);
+    }
+  };
+
+  const handleCancelSchedule = async () => {
+    if (!contentItem?.id) return;
+
+    setIsCancelling(true);
+    try {
+      // Update content_planner to remove schedule
+      await supabase
+        .from("content_planner")
+        .update({
+          scheduled_at: null,
+          scheduled_platforms: [],
+        })
+        .eq("id", contentItem.id);
+
+      // Delete pending scheduled posts
+      await supabase
+        .from("scheduled_posts")
+        .delete()
+        .eq("content_item_id", contentItem.id)
+        .eq("status", "pending");
+
+      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+      toast.success("Scheduled post cancelled");
+      onScheduled?.();
+      onOpenChange(false);
+    } catch (error: any) {
+      console.error("Error cancelling schedule:", error);
+      toast.error(error.message || "Failed to cancel schedule");
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -339,36 +393,54 @@ export function SchedulePostSheet({
         </div>
 
         {/* Footer */}
-        <SheetFooter className="px-6 py-4 border-t shrink-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          {scheduleMode === "now" ? (
-            <Button
-              onClick={handlePostNow}
-              disabled={isPosting || !formData.scheduled_platforms.length}
-              className="bg-rose-500 hover:bg-rose-600"
-            >
-              {isPosting ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : (
-                <Send className="w-4 h-4 mr-2" />
-              )}
-              Post Now
+        <SheetFooter className="px-6 py-4 border-t shrink-0 flex justify-between">
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
             </Button>
-          ) : (
-            <Button
-              onClick={handleSchedule}
-              disabled={isScheduling || !scheduledDate || !formData.scheduled_platforms.length}
-            >
-              {isScheduling ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : (
-                <Send className="w-4 h-4 mr-2" />
-              )}
-              Schedule
-            </Button>
-          )}
+            {isAlreadyScheduled && (
+              <Button
+                variant="destructive"
+                onClick={handleCancelSchedule}
+                disabled={isCancelling}
+              >
+                {isCancelling ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <X className="w-4 h-4 mr-2" />
+                )}
+                Cancel Schedule
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {scheduleMode === "now" ? (
+              <Button
+                onClick={handlePostNow}
+                disabled={isPosting || !formData.scheduled_platforms.length}
+                className="bg-rose-500 hover:bg-rose-600"
+              >
+                {isPosting ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Send className="w-4 h-4 mr-2" />
+                )}
+                Post Now
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSchedule}
+                disabled={isScheduling || !scheduledDate || !formData.scheduled_platforms.length}
+              >
+                {isScheduling ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Send className="w-4 h-4 mr-2" />
+                )}
+                {isAlreadyScheduled ? "Reschedule" : "Schedule"}
+              </Button>
+            )}
+          </div>
         </SheetFooter>
       </SheetContent>
     </Sheet>
