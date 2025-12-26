@@ -1,11 +1,9 @@
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { useParams, useLocation } from "react-router-dom";
 import ProjectFunnelOverviewContent from "./plan/FunnelOverviewContent";
-import ProjectOffersContent from "./plan/OffersContent";
 
 const sectionMap: Record<string, React.ComponentType<{ projectId: string }>> = {
   offer: ProjectFunnelOverviewContent,
-  offers: ProjectOffersContent,
 };
 
 const ProjectPlan = () => {

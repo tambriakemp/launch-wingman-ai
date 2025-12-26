@@ -118,14 +118,6 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/projects/:id/offers"
-              element={
-                <ProtectedRoute>
-                  <ProjectPlan />
-                </ProtectedRoute>
-              }
-            />
             {/* Brand routes */}
             <Route
               path="/projects/:id/logos"
