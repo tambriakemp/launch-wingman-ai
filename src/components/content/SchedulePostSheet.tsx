@@ -16,11 +16,11 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { PlatformSelector } from "../content-planner/PlatformSelector";
-import { MediaUploader } from "../content-planner/MediaUploader";
-import { SocialPostPreview } from "../content-planner/SocialPostPreview";
-import { PinterestBoardSelector } from "../content-planner/PinterestBoardSelector";
-import { ScheduleDateTimePicker } from "../content-planner/ScheduleDateTimePicker";
+import { PlatformSelector } from "./PlatformSelector";
+import { MediaUploader } from "./MediaUploader";
+import { SocialPostPreview } from "./SocialPostPreview";
+import { PinterestBoardSelector } from "./PinterestBoardSelector";
+import { ScheduleDateTimePicker } from "./ScheduleDateTimePicker";
 
 interface SchedulePostSheetProps {
   open: boolean;
