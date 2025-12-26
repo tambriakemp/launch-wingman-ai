@@ -33,6 +33,7 @@ interface TransformationVersions {
 
 interface SocialBioBuilderProps {
   projectId: string;
+  onBiosChange?: (count: number) => void;
 }
 
 const platforms = [
@@ -198,7 +199,7 @@ const bioFormulas = [
 
 type Step = "platform" | "formula" | "content";
 
-export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
+export const SocialBioBuilder = ({ projectId, onBiosChange }: SocialBioBuilderProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isAddMode, setIsAddMode] = useState(false);
@@ -264,8 +265,15 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["social-bios", projectId] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["social-bios", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["social-bios-count", projectId] });
+      // Notify parent of updated count
+      const { count } = await supabase
+        .from("social_bios")
+        .select("*", { count: "exact", head: true })
+        .eq("project_id", projectId);
+      onBiosChange?.(count || 0);
       toast.success("Bio created");
       resetForm();
     },
@@ -286,8 +294,15 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
         .eq("id", data.id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["social-bios", projectId] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["social-bios", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["social-bios-count", projectId] });
+      // Notify parent of updated count
+      const { count } = await supabase
+        .from("social_bios")
+        .select("*", { count: "exact", head: true })
+        .eq("project_id", projectId);
+      onBiosChange?.(count || 0);
       toast.success("Bio updated");
       resetForm();
     },
@@ -300,8 +315,15 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
       const { error } = await supabase.from("social_bios").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["social-bios", projectId] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["social-bios", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["social-bios-count", projectId] });
+      // Notify parent of updated count
+      const { count } = await supabase
+        .from("social_bios")
+        .select("*", { count: "exact", head: true })
+        .eq("project_id", projectId);
+      onBiosChange?.(count || 0);
       toast.success("Bio deleted");
     },
     onError: () => toast.error("Failed to delete bio"),
