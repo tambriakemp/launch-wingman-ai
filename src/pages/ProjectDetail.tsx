@@ -460,13 +460,13 @@ const ProjectDetail = () => {
               </Card>
             </TabsContent>
 
-            {/* EXECUTE TAB - Project Board + Content Planner */}
+            {/* EXECUTE TAB - Tasks + Content Planner */}
             <TabsContent value="execute">
-              <Tabs defaultValue="board" className="space-y-4">
+              <Tabs defaultValue="tasks" className="space-y-4">
                 <TabsList>
-                  <TabsTrigger value="board" className="gap-2">
+                  <TabsTrigger value="tasks" className="gap-2">
                     <Kanban className="w-4 h-4" />
-                    Project Board
+                    Tasks
                   </TabsTrigger>
                   <TabsTrigger value="content" className="gap-2">
                     <FileText className="w-4 h-4" />
@@ -474,11 +474,11 @@ const ProjectDetail = () => {
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="board">
+                <TabsContent value="tasks">
                   <Card variant="elevated" className="min-h-[400px]">
                     <CardHeader>
                       <div>
-                        <CardTitle>Project Board</CardTitle>
+                        <CardTitle>Tasks</CardTitle>
                         <CardDescription>Manage tasks with due dates</CardDescription>
                       </div>
                     </CardHeader>

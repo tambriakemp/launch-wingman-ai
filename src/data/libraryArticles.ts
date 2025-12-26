@@ -293,15 +293,15 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
         }
       },
       {
-        id: "project-board-basics",
-        title: "What the Project Board Is For",
+        id: "tasks-basics",
+        title: "What the Tasks View Is For",
         descriptor: "Seeing all your work in one place",
         category: "using-launchely",
         content: {
-          whatThisIs: "The Project Board shows all the tasks related to your launch in columns — to do, in progress, done. It helps you see the bigger picture while staying focused on what's next.",
+          whatThisIs: "The Tasks view shows all the tasks related to your launch in columns — to do, in progress, done. It helps you see the bigger picture while staying focused on what's next.",
           whyThisMattersHere: "When you can see everything at once, you feel more in control. Nothing falls through the cracks because it's all visible.",
           simpleWayToThink: "It's like a whiteboard with sticky notes. You move things from left to right as you work on them.",
-          reassurance: "The board is a tool, not a taskmaster. Use it however helps you feel organized."
+          reassurance: "The task list is a tool, not a taskmaster. Use it however helps you feel organized."
         }
       },
       {
