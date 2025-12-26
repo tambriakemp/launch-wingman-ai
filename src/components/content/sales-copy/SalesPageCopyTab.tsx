@@ -134,11 +134,8 @@ export const SalesPageCopyTab = ({ projectId }: SalesPageCopyTabProps) => {
       />
 
       {/* Context Display */}
-      {funnelConfig && offers.length > 0 && (
-        <FunnelContextDisplay 
-          funnelConfig={funnelConfig} 
-          offers={offers} 
-        />
+      {funnelConfig && (
+        <FunnelContextDisplay funnelConfig={funnelConfig} />
       )}
 
       {/* Offer Selection or Section List */}

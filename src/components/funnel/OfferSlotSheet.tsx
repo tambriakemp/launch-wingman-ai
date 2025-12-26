@@ -40,6 +40,7 @@ interface OfferSlotSheetProps {
   isRemovable: boolean;
   audienceData?: AudienceData;
   funnelType?: string;
+  onSave?: () => void;
 }
 
 const PRICE_TYPES = [
@@ -61,6 +62,7 @@ export const OfferSlotSheet = ({
   isRemovable,
   audienceData,
   funnelType,
+  onSave,
 }: OfferSlotSheetProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedIdeas, setGeneratedIdeas] = useState<GeneratedIdea[]>([]);
@@ -312,7 +314,16 @@ export const OfferSlotSheet = ({
 
           {/* Actions */}
           <div className="flex flex-col gap-3 pt-4 border-t border-border">
-            <Button onClick={onClose} className="w-full">
+            <Button 
+              onClick={() => {
+                // Trigger immediate save, then close
+                if (onSave) {
+                  onSave();
+                }
+                onClose();
+              }} 
+              className="w-full"
+            >
               Save
             </Button>
 
