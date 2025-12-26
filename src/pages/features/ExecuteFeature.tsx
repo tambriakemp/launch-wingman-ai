@@ -1,6 +1,6 @@
 import { Rocket, KanbanSquare, Calendar, Share2, CheckSquare, Clock, ListTodo, Timer } from "lucide-react";
 import { FeaturePageLayout } from "@/components/landing/FeaturePageLayout";
-import { ProjectBoardMockup } from "@/components/landing/screenshots/ProjectBoardMockup";
+import { TasksMockup } from "@/components/landing/screenshots/TasksMockup";
 import { SocialHubMockup } from "@/components/landing/screenshots/SocialHubMockup";
 import { motion } from "framer-motion";
 
@@ -54,7 +54,7 @@ const ExecuteFeature = () => {
       description="Planning is nothing without execution. Our project management and scheduling tools help you stay on track, hit your deadlines, and launch with the confidence that everything is in place."
       features={features}
       benefits={benefits}
-      screenshot={<ProjectBoardMockup />}
+      screenshot={<TasksMockup />}
     >
       {/* Additional Screenshot */}
       <section className="py-16 bg-background">

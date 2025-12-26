@@ -7,7 +7,7 @@ import { MarqueeStrip } from "@/components/landing/MarqueeStrip";
 import { DashboardMockup } from "@/components/landing/screenshots/DashboardMockup";
 import { FunnelBuilderMockup } from "@/components/landing/screenshots/FunnelBuilderMockup";
 import { TransformationMockup } from "@/components/landing/screenshots/TransformationMockup";
-import { ProjectBoardMockup } from "@/components/landing/screenshots/ProjectBoardMockup";
+import { TasksMockup } from "@/components/landing/screenshots/TasksMockup";
 import {
   ClipboardCheck,
   Layout,
@@ -426,7 +426,7 @@ const Landing = () => {
                 <p className="text-muted-foreground text-lg">Execute with a clear checklist, project board, and launch calendar that keeps everything on track.</p>
               </div>
               <div className="transform hover:scale-[1.02] transition-transform duration-300">
-                <ProjectBoardMockup />
+                <TasksMockup />
               </div>
             </motion.div>
           </div>
