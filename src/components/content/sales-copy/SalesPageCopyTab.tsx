@@ -46,14 +46,16 @@ export const SalesPageCopyTab = ({ projectId }: SalesPageCopyTabProps) => {
     },
   });
 
-  // Fetch offers
+  // Fetch offers filtered by current funnel type
   const { data: offers = [] } = useQuery({
-    queryKey: ["offers-for-copy", projectId],
+    queryKey: ["offers-for-copy", projectId, project?.selected_funnel_type],
+    enabled: !!project?.selected_funnel_type,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("offers")
         .select("*")
         .eq("project_id", projectId)
+        .eq("funnel_type", project!.selected_funnel_type)
         .order("slot_position");
       if (error) throw error;
       return (data || []).map(o => ({
