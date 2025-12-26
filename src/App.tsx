@@ -214,14 +214,6 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/projects/:id/social"
-              element={
-                <ProtectedRoute>
-                  <ProjectExecute />
-                </ProtectedRoute>
-              }
-            />
             {/* Library route */}
             <Route
               path="/projects/:id/library"
