@@ -23,6 +23,7 @@ import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog"
 import { LoadLaunchTasksDialog } from "@/components/LoadLaunchTasksDialog";
 import { FilterPopover } from "@/components/FilterPopover";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
+import { getFunnelConfigKey } from "@/lib/funnelUtils";
 import { AssetChecklist } from "@/components/funnel/AssetChecklist";
 import { PhaseSection } from "@/components/PhaseSection";
 import { getPlanningTasks, getMessagingTasks, getBuildTasksForFunnel, getContentTasksForFunnel, getLaunchTasksForFunnel, getPostLaunchTasks } from "@/data/taskTemplates";
@@ -234,8 +235,14 @@ export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
     if (!user || !currentFunnelType) return;
 
     setIsRepopulating(true);
-    const config = FUNNEL_CONFIGS[currentFunnelType];
+    
+    // Convert selected funnel type to FUNNEL_CONFIGS key
+    const configKey = getFunnelConfigKey(currentFunnelType);
+    const config = configKey ? FUNNEL_CONFIGS[configKey] : null;
+    
     if (!config) {
+      console.error('No funnel config found for type:', currentFunnelType, 'key:', configKey);
+      toast.error('Could not find funnel configuration');
       setIsRepopulating(false);
       return;
     }
