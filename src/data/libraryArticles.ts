@@ -182,6 +182,18 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
           simpleWayToThink: "Your core message is the headline. Talking points are the subheadings that support it.",
           reassurance: "You don't need dozens of talking points. A handful of strong ones will carry your entire launch."
         }
+      },
+      {
+        id: "why-messaging-comes-before-content",
+        title: "Why Messaging Comes Before Content",
+        descriptor: "The order that makes content easier to create",
+        category: "messaging",
+        content: {
+          whatThisIs: "It's tempting to jump straight into posting. Messaging exists first so your content feels intentional instead of random.",
+          whyThisMattersHere: "When your message is clear:\n\n• content is easier to write\n• offers feel more natural\n• consistency happens without effort",
+          simpleWayToThink: "Messaging isn't something you \"finish.\" It's something you clarify enough to move forward.",
+          reassurance: "You don't need perfect messaging to start creating — just enough clarity to feel grounded."
+        }
       }
     ]
   },
@@ -338,6 +350,60 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
           whyThisMattersHere: "When people can see everything at once, it often creates pressure to solve problems out of order.\n\nYou might start worrying about content before your message is clear. Or thinking about launch details before your offer makes sense.\n\nShowing one phase at a time protects you from that mental overload so each decision can be made with more confidence.",
           simpleWayToThink: "Each phase has a single purpose. Future phases don't need your attention yet. You're not falling behind. Focus creates momentum.",
           reassurance: "You're not late, stuck, or missing steps — you're exactly where you need to be right now."
+        }
+      },
+      {
+        id: "what-happens-when-you-skip-or-save",
+        title: "What Happens When You Skip or Save Something",
+        descriptor: "Understanding Save, Skip, and Draft behavior",
+        category: "using-launchely",
+        content: {
+          whatThisIs: "Not everything in Launchely is meant to be finished in one pass. Saving, skipping, or leaving something half-done is normal.",
+          whyThisMattersHere: "How saving works:\nSaved ideas and drafts are always accessible later. You can edit them, reuse them, or ignore them entirely.\n\nHow skipping works:\nSkipping doesn't hurt progress or block anything. It simply means, \"Not right now.\"",
+          simpleWayToThink: "The goal is momentum, not completion. You're allowed to leave things unfinished and return when it feels right.",
+          reassurance: "Nothing breaks when you skip or save — you're just making space for later."
+        }
+      }
+    ]
+  },
+  {
+    id: "content-launch-rhythm",
+    name: "Content & Launch Rhythm",
+    articles: [
+      {
+        id: "how-launch-content-blueprint-works",
+        title: "How the Launch Content Blueprint Works",
+        descriptor: "A rhythm, not a rule",
+        category: "content-launch-rhythm",
+        content: {
+          whatThisIs: "The Launch Content Blueprint is a suggested rhythm for what people often talk about during a launch. It's not a calendar, and it's not something you're expected to follow perfectly. It exists to remove the \"What do I post today?\" question when you're already juggling a lot.",
+          whyThisMattersHere: "Most creators don't struggle with ideas — they struggle with timing and confidence. The blueprint shows you common patterns that work so you can borrow momentum instead of starting from scratch every day.",
+          simpleWayToThink: "This is a map, not a schedule. You're allowed to take detours, skip stops, or only use one section. If something feels heavy, you can ignore it and still be doing things \"right.\"",
+          reassurance: "You don't need to follow this perfectly — even using one idea makes it worthwhile."
+        }
+      },
+      {
+        id: "outline-vs-timeline-which-to-use",
+        title: "Outline vs Timeline: Which Should I Use?",
+        descriptor: "Two views, same ideas, no wrong choice",
+        category: "content-launch-rhythm",
+        content: {
+          whatThisIs: "Launchely gives you two ways to view launch content ideas: outline and timeline. Both show the same concepts — just organized differently.",
+          whyThisMattersHere: "When outline works best:\n• you want ideas without pressure\n• you don't want to think in dates\n• you prefer flexibility\n\nWhen timeline helps:\n• you like visual structure\n• you're running a time-bound launch\n• you want to see balance across days",
+          simpleWayToThink: "There is no \"better\" option. You're not committing to anything by choosing a view. Switch anytime. Nothing breaks.",
+          reassurance: "Pick the one that feels easier today — you can always change it later."
+        }
+      },
+      {
+        id: "why-you-dont-need-to-post-everything",
+        title: "Why You Don't Need to Post Everything",
+        descriptor: "Permission to do less",
+        category: "content-launch-rhythm",
+        content: {
+          whatThisIs: "You'll see a lot of ideas inside Launchely — more than anyone realistically uses.",
+          whyThisMattersHere: "Seeing options is different from having obligations. The goal is to reduce decision fatigue, not add work. You only need a few aligned messages to launch successfully.",
+          simpleWayToThink: "If one idea helps you write one solid post, the system is working. Progress isn't measured by volume — it's measured by clarity.",
+          reassurance: "You're not behind if you don't use everything — you're focused."
         }
       }
     ]
