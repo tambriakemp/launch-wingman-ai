@@ -33,6 +33,7 @@ export type FunnelType =
   | 'freebie_email_offer'   // Freebie → email nurture → offer
   | 'live_training_offer'   // Live training/webinar → offer
   | 'application_call'      // Application → call → offer
+  | 'membership'            // Ongoing subscription with continuous value
   | 'all';                  // Universal tasks that apply to all funnels
 
 // Legacy funnel type mapping (for backwards compatibility)
@@ -52,6 +53,7 @@ export const FUNNEL_TYPE_LABELS: Record<Exclude<FunnelType, 'all'>, string> = {
   freebie_email_offer: 'Freebie → Email → Offer',
   live_training_offer: 'Live Training → Offer',
   application_call: 'Application → Call',
+  membership: 'Membership',
 };
 
 // Funnel type descriptions
@@ -60,6 +62,7 @@ export const FUNNEL_TYPE_DESCRIPTIONS: Record<Exclude<FunnelType, 'all'>, string
   freebie_email_offer: 'Offer something free to build your list, then nurture with emails',
   live_training_offer: 'Teach something valuable live, then invite viewers to join your program',
   application_call: 'Qualify leads through an application, then close on a call',
+  membership: 'An ongoing subscription where members receive continuous value over time, rather than a one-time outcome',
 };
 
 // Task template - defines what a task looks like before it's created for a project

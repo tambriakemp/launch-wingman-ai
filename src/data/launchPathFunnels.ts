@@ -33,4 +33,10 @@ export const LAUNCH_PATH_FUNNEL_STEPS: Record<string, LaunchPathFunnelConfig> = 
     bgColor: 'bg-amber-50 dark:bg-amber-950/30',
     offerSlots: '1 lead magnet + 1 high-ticket offer',
   },
+  membership: {
+    steps: ['Lead Magnet or Content', 'Nurture Sequence', 'Membership Sales Page', 'Member Onboarding', 'Ongoing Value'],
+    color: 'text-teal-600',
+    bgColor: 'bg-teal-50 dark:bg-teal-950/30',
+    offerSlots: '1 lead magnet + 1 recurring membership',
+  },
 };
