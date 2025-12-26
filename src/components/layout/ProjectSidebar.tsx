@@ -15,7 +15,6 @@ import {
   Mail,
   Package,
   Kanban,
-  Calendar,
   Users,
   Lock,
   ArrowLeft,
@@ -63,7 +62,6 @@ const createNavSections = (projectId: string): NavSection[] => [
     items: [
       { id: "offer", label: "Dashboard", icon: LayoutDashboard, href: `/projects/${projectId}/offer` },
       { id: "tasks", label: "Tasks", icon: Kanban, href: `/projects/${projectId}/tasks` },
-      { id: "content-planner", label: "Content Planner", icon: Calendar, href: `/projects/${projectId}/social`, isProOnly: true },
       { id: "content", label: "Content", icon: MessageSquareText, href: `/projects/${projectId}/content` },
       { id: "playbook", label: "Playbook", icon: BookOpen, href: `/playbook` },
       { id: "library", label: "Library", icon: FolderOpen, href: `/projects/${projectId}/library` },
