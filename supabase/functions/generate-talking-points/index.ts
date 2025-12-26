@@ -89,9 +89,9 @@ serve(async (req) => {
   }
 
   try {
-    const { projectId, contentType, currentPhase, funnelType, audienceData } = await req.json();
+    const { projectId, contentType, currentPhase, funnelType, audienceData, previousIdeas = [] } = await req.json();
 
-    console.log("Generating talking points:", { projectId, contentType, currentPhase, funnelType });
+    console.log("Generating talking points:", { projectId, contentType, currentPhase, funnelType, isRefresh: previousIdeas.length > 0 });
 
     const phaseContext = PHASE_CONTEXT[currentPhase] || "general project phase";
     const categoryConfig = CATEGORY_INTENTS[contentType] || CATEGORY_INTENTS.general;
@@ -103,6 +103,20 @@ Their main pain point: ${audienceData.primary_pain_point || "not specified"}
 What they want: ${audienceData.desired_outcome || "not specified"}
 Niche: ${audienceData.niche || "not specified"}`
       : "No specific audience data available yet.";
+
+    // Build previous ideas context for refresh
+    const previousIdeasContext = previousIdeas.length > 0
+      ? `
+
+IMPORTANT - AVOID THESE PREVIOUSLY SHOWN IDEAS:
+${previousIdeas.map((idea: string, i: number) => `${i + 1}. "${idea}"`).join("\n")}
+
+You MUST generate ideas that:
+- Take a DIFFERENT angle than the above
+- Explore adjacent perspectives not yet covered
+- Feel fresh while staying within the category intent
+- Do NOT rephrase or repeat any of the above ideas`
+      : "";
 
     const systemPrompt = `You are a calm, supportive content strategist for online creators and course makers. 
 Your job is to suggest gentle, non-pushy content ideas that feel authentic.
@@ -125,12 +139,20 @@ ${categoryConfig.examples}
 
 Respond ONLY with valid JSON, no markdown.`;
 
+    const refreshGuidance = previousIdeas.length > 0
+      ? `
+
+This is a REFRESH request. The user wants a different angle, not more of the same.
+Shift perspective while staying within the "${contentType}" category intent.
+Think: "What's another way to approach this category that hasn't been explored yet?"`
+      : "";
+
     const userPrompt = `Generate 4-5 talking point ideas for the "${contentType}" category.
 
 Context:
 - Project phase: ${phaseContext}
 - Funnel type: ${funnelType || "not selected yet"}
-${audienceContext}
+${audienceContext}${previousIdeasContext}${refreshGuidance}
 
 Remember, these ideas must align with the category intent:
 "${categoryConfig.intent}"
@@ -139,7 +161,7 @@ Each talking point should have:
 - A short, human title (3-6 words) that reflects the category's purpose
 - A one-sentence description that gives direction without being prescriptive
 
-The ideas should feel noticeably different from other categories.
+The ideas should feel noticeably different from other categories${previousIdeas.length > 0 ? " AND from the previously shown ideas" : ""}.
 
 Return JSON in this exact format:
 {
@@ -161,7 +183,7 @@ Return JSON in this exact format:
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.7,
+        temperature: previousIdeas.length > 0 ? 0.85 : 0.7, // Slightly higher temperature for refreshes
         max_tokens: 1000,
       }),
     });
@@ -190,7 +212,7 @@ Return JSON in this exact format:
       throw new Error("Failed to parse AI response");
     }
 
-    console.log("Generated talking points:", parsed.talkingPoints?.length);
+    console.log("Generated talking points:", parsed.talkingPoints?.length, previousIdeas.length > 0 ? "(refresh)" : "(initial)");
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
