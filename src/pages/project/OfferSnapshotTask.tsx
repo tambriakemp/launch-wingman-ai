@@ -280,22 +280,9 @@ export default function OfferSnapshotTask() {
     }
   }, [offers, saveOffersToDb]);
 
-  // Debounced auto-save
-  useEffect(() => {
-    if (!isInitialized || offers.length === 0) return;
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(performSave, 1500);
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [offers, isInitialized, performSave]);
+  // Note: Auto-save removed to prevent overwriting configured offers on initial load.
+  // Saving now happens explicitly via: Save & Continue button, Save for Later button, 
+  // and onSaveNow callback when closing the offer sheet.
 
   const handleComplete = async () => {
     // Check if at least one offer has offerType (title is optional)
