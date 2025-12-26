@@ -34,18 +34,29 @@ export default function OfferSnapshotTask() {
   
   const [offers, setOffersRaw] = useState<OfferSlotData[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isDirty, setIsDirty] = useState(false); // Track user changes
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [isSaving, setIsSaving] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const offersRef = useRef<OfferSlotData[]>([]); // Ref to avoid dependency in performSave
+  const hasLoadedForFunnelRef = useRef<string | null>(null); // Prevent re-init after save
+
+  // Keep offersRef in sync
+  useEffect(() => {
+    offersRef.current = offers;
+  }, [offers]);
 
   // Wrapper that auto-computes isConfigured based on offerType (not title)
-  const setOffers = useCallback((newOffers: OfferSlotData[]) => {
+  const setOffers = useCallback((newOffers: OfferSlotData[], markDirty = false) => {
     const offersWithAutoConfig = newOffers.map(offer => ({
       ...offer,
       // Auto-compute: configured if has offerType (and not skipped) - title is optional
       isConfigured: !!(offer.offerType?.trim()) && !offer.isSkipped,
     }));
     setOffersRaw(offersWithAutoConfig);
+    if (markDirty) {
+      setIsDirty(true);
+    }
   }, []);
 
   const {
@@ -124,7 +135,10 @@ export default function OfferSnapshotTask() {
 
   // Reset initialization when funnel type changes
   useEffect(() => {
-    setIsInitialized(false);
+    if (hasLoadedForFunnelRef.current !== selectedFunnelType) {
+      setIsInitialized(false);
+      setIsDirty(false);
+    }
   }, [selectedFunnelType]);
 
   // Build audience data from funnel
@@ -148,7 +162,8 @@ export default function OfferSnapshotTask() {
 
   // Initialize offers from existing data or funnel defaults
   useEffect(() => {
-    if (isInitialized) return;
+    // Skip if already loaded for this funnel type
+    if (hasLoadedForFunnelRef.current === selectedFunnelType) return;
     if (!funnelConfig || !selectedFunnelType) return;
 
     const expectedSlotTypes = funnelConfig.offerSlots.map(s => s.type);
@@ -181,7 +196,7 @@ export default function OfferSnapshotTask() {
         isSkipped: false,
       }));
       console.log('[OfferStack] LOAD - loadedOffers (mapped):', loadedOffers);
-      setOffers(loadedOffers);
+      setOffers(loadedOffers, false); // Don't mark dirty on load
     } else {
       // No matching offers - create defaults for this funnel type
       const defaultOffers: OfferSlotData[] = funnelConfig.offerSlots.map((slot: OfferSlotConfig) => ({
@@ -195,10 +210,11 @@ export default function OfferSnapshotTask() {
         isSkipped: false,
       }));
       console.log('[OfferStack] LOAD - creating default offers:', defaultOffers);
-      setOffers(defaultOffers);
+      setOffers(defaultOffers, false); // Don't mark dirty on init
     }
+    hasLoadedForFunnelRef.current = selectedFunnelType;
     setIsInitialized(true);
-  }, [existingOffers, funnelConfig, isInitialized, selectedFunnelType]);
+  }, [existingOffers, funnelConfig, selectedFunnelType, setOffers]);
 
   // Save offers to database (scoped to current funnel type)
   const saveOffersToDb = useCallback(async (offersToSave: OfferSlotData[]) => {
@@ -267,31 +283,34 @@ export default function OfferSnapshotTask() {
     }
   }, [projectId, user, audienceData, funnelConfig, funnel, selectedFunnelType]);
 
-  // Auto-save wrapper
+  // Auto-save wrapper - uses ref to avoid dependency on offers
   const performSave = useCallback(async () => {
     try {
-      await saveOffersToDb(offers);
+      await saveOffersToDb(offersRef.current);
     } catch {
       // keep autosave silent
     }
-  }, [offers, saveOffersToDb]);
+  }, [saveOffersToDb]);
 
-  // Debounced auto-save
+  // Debounced auto-save - only triggers when isDirty
   useEffect(() => {
-    if (!isInitialized || offers.length === 0) return;
+    if (!isInitialized || offers.length === 0 || !isDirty) return;
 
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
-    saveTimeoutRef.current = setTimeout(performSave, 1500);
+    saveTimeoutRef.current = setTimeout(() => {
+      performSave();
+      setIsDirty(false); // Reset dirty flag after save
+    }, 1500);
 
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [offers, isInitialized, performSave]);
+  }, [offers, isInitialized, isDirty, performSave]);
 
   const handleComplete = async () => {
     // Check if at least one offer has offerType (title is optional)
@@ -458,7 +477,7 @@ export default function OfferSnapshotTask() {
           <OfferStackBuilder
             funnelType={funnelConfigKey!}
             offers={offers}
-            onChange={setOffers}
+            onChange={(newOffers) => setOffers(newOffers, true)}
             audienceData={audienceData}
             onSaveNow={saveOffersToDb}
           />
