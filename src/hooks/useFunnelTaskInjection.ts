@@ -60,6 +60,7 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
       'live_training_offer',
       'application_call',
       'membership',
+      'challenge',
       'all',
     ];
     

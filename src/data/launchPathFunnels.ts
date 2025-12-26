@@ -39,4 +39,10 @@ export const LAUNCH_PATH_FUNNEL_STEPS: Record<string, LaunchPathFunnelConfig> = 
     bgColor: 'bg-teal-50 dark:bg-teal-950/30',
     offerSlots: '1 lead magnet + 1 recurring membership',
   },
+  challenge: {
+    steps: ['Registration Page', 'Welcome + Prep', 'Challenge Experience', 'Momentum Content', 'Invitation to Next Step'],
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-50 dark:bg-orange-950/30',
+    offerSlots: '1 challenge + 1 optional follow-up offer',
+  },
 };
