@@ -32,11 +32,21 @@ export default function OfferSnapshotTask() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   
-  const [offers, setOffers] = useState<OfferSlotData[]>([]);
+  const [offers, setOffersRaw] = useState<OfferSlotData[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [isSaving, setIsSaving] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Wrapper that auto-computes isConfigured based on title + offerType
+  const setOffers = useCallback((newOffers: OfferSlotData[]) => {
+    const offersWithAutoConfig = newOffers.map(offer => ({
+      ...offer,
+      // Auto-compute: configured if has title AND offerType (and not skipped)
+      isConfigured: !!(offer.title?.trim() && offer.offerType?.trim()) && !offer.isSkipped,
+    }));
+    setOffersRaw(offersWithAutoConfig);
+  }, []);
 
   const {
     isLoading: engineLoading,
