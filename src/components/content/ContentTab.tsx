@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Lightbulb, CalendarDays, FileText } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Lightbulb, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ContentContextHeader } from "./ContentContextHeader";
@@ -10,15 +10,13 @@ import { SavedIdeasLink } from "./SavedIdeasLink";
 import { SavedIdeasSheet } from "./SavedIdeasSheet";
 import { DraftPanel } from "./DraftPanel";
 import { TimelineSlotGrid } from "./TimelineSlotGrid";
-import { SalesPageCopyTab } from "./sales-copy";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import type { SavedItem } from "./SavedIdeasSection";
 
 export type ContentType = "general" | "stories" | "offer" | "behind-the-scenes";
 
-type ContentViewTab = "ideas" | "my-timeline" | "sales-copy";
+type ContentViewTab = "ideas" | "my-timeline";
 
 interface TalkingPoint {
   id: string;
@@ -46,7 +44,6 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   const [pendingSlotInfo, setPendingSlotInfo] = useState<SlotInfo | null>(null);
   
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
   // Fetch project data for phase and funnel type
   const { data: project } = useQuery({
@@ -167,18 +164,6 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
           <CalendarDays className="w-4 h-4" />
           Launch Content Timeline
         </button>
-        <button
-          onClick={() => setActiveTab("sales-copy")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
-            activeTab === "sales-copy"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <FileText className="w-4 h-4" />
-          Sales Page Copy
-        </button>
       </div>
 
       {/* Tab Content */}
@@ -204,13 +189,11 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
             />
           </div>
         </div>
-      ) : activeTab === "my-timeline" ? (
+      ) : (
         <TimelineSlotGrid
           projectId={projectId}
           onWritePost={handleTimelineWritePost}
         />
-      ) : (
-        <SalesPageCopyTab projectId={projectId} />
       )}
 
       {/* Saved Ideas Sheet */}

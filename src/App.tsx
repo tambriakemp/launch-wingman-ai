@@ -153,31 +153,7 @@ const App = () => (
             />
             {/* Messaging routes */}
             <Route
-              path="/projects/:id/sales-copy"
-              element={
-                <ProtectedRoute>
-                  <ProjectMessaging />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/projects/:id/social-bio"
-              element={
-                <ProtectedRoute>
-                  <ProjectMessaging />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/projects/:id/emails"
-              element={
-                <ProtectedRoute>
-                  <ProjectMessaging />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/projects/:id/deliverables"
               element={
                 <ProtectedRoute>
                   <ProjectMessaging />
