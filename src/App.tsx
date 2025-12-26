@@ -43,6 +43,7 @@ import ProjectMessaging from "./pages/project/ProjectMessaging";
 import ProjectExecute from "./pages/project/ProjectExecute";
 import TaskDetail from "./pages/project/TaskDetail";
 import OfferSnapshotTask from "./pages/project/OfferSnapshotTask";
+import SocialBioTask from "./pages/project/SocialBioTask";
 import ProjectSummary from "./pages/project/ProjectSummary";
 import Library from "./pages/project/Library";
 import Relaunch from "./pages/project/Relaunch";
@@ -179,6 +180,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <OfferSnapshotTask />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id/tasks/messaging_social_bio"
+              element={
+                <ProtectedRoute>
+                  <SocialBioTask />
                 </ProtectedRoute>
               }
             />

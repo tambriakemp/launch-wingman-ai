@@ -96,11 +96,12 @@ export interface TaskTemplate {
 }
 
 export interface InputSchema {
-  type: 'radio' | 'checkbox' | 'textarea' | 'form';
+  type: 'radio' | 'checkbox' | 'textarea' | 'form' | 'custom';
   options?: InputOption[];
   fields?: FormField[];
   placeholder?: string;
   maxLength?: number;
+  customComponent?: string;
 }
 
 export interface InputOption {
