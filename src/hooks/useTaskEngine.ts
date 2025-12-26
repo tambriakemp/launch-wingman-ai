@@ -411,11 +411,16 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
         const selectedType = normalizeFunnelType(inputData.selected as FunnelType) || (inputData.selected as FunnelType);
         
         // Update project with selected funnel type
-        await supabase
+        const { error: funnelUpdateError } = await supabase
           .from('projects')
           .update({ selected_funnel_type: selectedType })
           .eq('id', projectId)
           .eq('user_id', user.id);
+
+        if (funnelUpdateError) {
+          console.error('Failed to update funnel type:', funnelUpdateError);
+          throw new Error(`Failed to save funnel type "${selectedType}": ${funnelUpdateError.message}`);
+        }
 
         // Inject funnel-specific tasks
         await injectFunnelTasks(selectedType, projectTasks);
