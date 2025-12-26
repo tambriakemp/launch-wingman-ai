@@ -117,11 +117,6 @@ export default function SocialBioTask() {
       return;
     }
 
-    if (!allCriteriaComplete) {
-      toast.error("Please confirm the completion criteria before continuing");
-      return;
-    }
-
     setIsSaving(true);
 
     try {
@@ -264,45 +259,12 @@ export default function SocialBioTask() {
           </div>
         </section>
 
-        {/* Status display */}
-        <div className="mb-6 p-4 rounded-lg bg-muted/50 border border-border">
-          <h3 className="text-sm font-medium text-foreground mb-2">Completion status</h3>
-          <div className="flex flex-wrap gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              {hasBios ? (
-                <Check className="w-4 h-4 text-green-500" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-amber-500" />
-              )}
-              <span className="text-muted-foreground">
-                Bio(s) created: {hasBios ? `${biosCount}` : "None yet"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {allCriteriaComplete ? (
-                <Check className="w-4 h-4 text-green-500" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-amber-500" />
-              )}
-              <span className="text-muted-foreground">
-                Criteria checked: {criteriaCount} / {totalCriteria}
-              </span>
-            </div>
-          </div>
-          {(!hasBios || !allCriteriaComplete) && (
-            <p className="text-xs text-muted-foreground mt-2">
-              {!hasBios 
-                ? "Create at least one bio to enable completion." 
-                : "Check all criteria above to complete this task."}
-            </p>
-          )}
-        </div>
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 pt-4">
           <Button
             onClick={handleSaveAndComplete}
-            disabled={!hasBios || !allCriteriaComplete || isSaving}
+            disabled={!hasBios || isSaving}
             className="flex-1 gap-2"
           >
             {isSaving ? (
