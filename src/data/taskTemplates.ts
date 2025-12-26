@@ -505,6 +505,37 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
     aiAssistModes: ['simplify'],
     route: '/projects/:id/tasks/messaging_phase_review',
   },
+  {
+    taskId: 'messaging_social_bio',
+    title: 'Create your social media bio',
+    phase: 'messaging',
+    funnelTypes: ['all'],
+    order: 6,
+    priority: 2,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: false,
+    dependencies: ['messaging_transformation_statement'],
+    canSkip: true,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Your bio clearly communicates who you help',
+      'The message feels aligned with your offer',
+    ],
+    whyItMatters: 'Your social media bio is often the first trust signal people see. It sets context for all your future content and helps the right audience know they\'re in the right place.',
+    instructions: [
+      'Speak directly to who you help',
+      'Name the outcome you support',
+      'Keep language simple and clear',
+    ],
+    inputType: 'custom',
+    inputSchema: {
+      type: 'custom',
+      customComponent: 'SocialBioBuilder',
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/messaging_social_bio',
+  },
 
   // ==================== BUILD PHASE ====================
   // Goal: "Put your offer somewhere real so people can find it and buy it — without tech overwhelm."
