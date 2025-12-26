@@ -45,4 +45,10 @@ export const LAUNCH_PATH_FUNNEL_STEPS: Record<string, LaunchPathFunnelConfig> = 
     bgColor: 'bg-orange-50 dark:bg-orange-950/30',
     offerSlots: '1 challenge + 1 optional follow-up offer',
   },
+  launch: {
+    steps: ['Pre-Launch Content', 'Announcement', 'Launch Window Open', 'Enrollment Period', 'Cart Close'],
+    color: 'text-rose-600',
+    bgColor: 'bg-rose-50 dark:bg-rose-950/30',
+    offerSlots: '1 core offer (time-bound)',
+  },
 };

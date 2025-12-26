@@ -1142,6 +1142,306 @@ export const CHALLENGE_DELTA_TASKS: TaskTemplate[] = [
 ];
 
 // ============================================
+// LAUNCH DELTA TASKS
+// ============================================
+// Path: Time-bound window for introducing and selling an offer
+// Philosophy: Preparation over pressure, understanding over hype.
+// Guardrails: No marketing tactics, no urgency language, no tech stacks,
+// no scarcity frameworks. Launchely guides clarity and intentionality.
+
+export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
+  // ==================== PLANNING Phase Additions ====================
+  {
+    taskId: 'planning_launch_window',
+    title: 'Define your launch window',
+    phase: 'planning',
+    funnelTypes: ['launch'],
+    order: 6.1,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['planning_offer_snapshot'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'The launch window is defined',
+      'The timeframe feels clear and intentional',
+    ],
+    whyItMatters: 'Anchoring your launch to a clear timeframe provides structure without pressure. This is about clarity, not urgency.',
+    instructions: [
+      'Define when your offer will be available',
+      'Choose a window that feels manageable',
+      'Focus on clarity, not artificial deadlines',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'launch_window', 
+          label: 'When will your offer be available?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Describe the timeframe for your launch...',
+          helperText: 'This is about clarity, not urgency.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/planning_launch_window',
+  },
+  {
+    taskId: 'planning_launch_completion',
+    title: 'Define what completion looks like',
+    phase: 'planning',
+    funnelTypes: ['launch'],
+    order: 6.2,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 15,
+    blocking: true,
+    dependencies: ['planning_launch_window'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You know when the launch is "done"',
+      'The endpoint reduces pressure and prevents burnout',
+    ],
+    whyItMatters: 'Defining completion reduces burnout by setting a clear endpoint. This could be a date, a feeling, or a decision — not a metric.',
+    instructions: [
+      'Think about what signals "done" for you',
+      'Avoid tying completion to sales numbers',
+      'Focus on a sustainable endpoint',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'launch_completion', 
+          label: 'How will you know when this launch is complete?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Describe what "done" looks like for this launch...',
+          helperText: 'This could be a date, a feeling, or a decision — not a metric.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/planning_launch_completion',
+  },
+
+  // ==================== MESSAGING Phase Additions ====================
+  {
+    taskId: 'messaging_why_now',
+    title: 'Explain why this is being launched now',
+    phase: 'messaging',
+    funnelTypes: ['launch'],
+    order: 2.5,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['messaging_transformation_statement'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'The timing feels relevant, not manufactured',
+      'You can articulate why now without pressure',
+    ],
+    whyItMatters: 'Helping people understand timing without urgency builds trust. Focus on relevance, not pressure.',
+    instructions: [
+      'Think about why this moment matters',
+      'Focus on relevance to your audience',
+      'Avoid manufactured urgency',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'why_now', 
+          label: 'Why is this the right moment to introduce this offer?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Describe the relevance of this timing...',
+          helperText: 'Focus on relevance, not pressure.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/messaging_why_now',
+  },
+  {
+    taskId: 'messaging_missed_timing',
+    title: 'How you handle missed timing',
+    phase: 'messaging',
+    funnelTypes: ['launch'],
+    order: 2.6,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 15,
+    blocking: true,
+    dependencies: ['messaging_why_now'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You can address what happens if someone doesn\'t join now',
+      'The framing reduces fear, not creates it',
+    ],
+    whyItMatters: 'Addressing what happens if someone misses the window reduces fear-based resistance. Clarity builds trust more than urgency.',
+    instructions: [
+      'Be honest about what happens after the window closes',
+      'Focus on clarity, not FOMO',
+      'Reduce fear, don\'t amplify it',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'missed_timing_framing', 
+          label: 'How do you explain what happens if someone doesn\'t join during this window?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Describe what happens after — honestly and clearly...',
+          helperText: 'Clarity builds trust more than urgency.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/messaging_missed_timing',
+  },
+
+  // ==================== BUILD Phase Additions ====================
+  {
+    taskId: 'build_launch_access',
+    title: 'Define how the offer is accessed during launch',
+    phase: 'build',
+    funnelTypes: ['launch'],
+    order: 1.5,
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 25,
+    blocking: true,
+    dependencies: ['build_choose_platform'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'The access method is clear',
+      'It feels simple and intentional',
+    ],
+    whyItMatters: 'This step clarifies how people access or join during the launch window — without building infrastructure or prescribing specific tools.',
+    instructions: [
+      'Think about the experience, not the technology',
+      'Keep it simple and accessible',
+      'Focus on what people do, not what you build',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'launch_access', 
+          label: 'How do people access or join during the launch window?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'e.g., Enrollment window, application period, limited access page, invite-based access...',
+          helperText: 'Think about the experience, not platforms or tools.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/build_launch_access',
+  },
+
+  // ==================== CONTENT Phase Additions ====================
+  {
+    taskId: 'content_decision_support',
+    title: 'Content that helps people decide',
+    phase: 'content',
+    funnelTypes: ['launch'],
+    order: 0.5,
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 25,
+    blocking: true,
+    dependencies: ['build_phase_review'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You understand what helps people decide',
+      'The content approach shifts from awareness to clarity',
+    ],
+    whyItMatters: 'Launch content is about helping people understand if this is right for them — explanation, reassurance, and context.',
+    instructions: [
+      'Think explanation, reassurance, and context',
+      'Focus on clarity, not persuasion',
+      'Help people make an informed decision',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'decision_content', 
+          label: 'What kind of content helps people understand if this is right for them?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Describe content that supports decision-making...',
+          helperText: 'Think explanation, reassurance, and context.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/content_decision_support',
+  },
+
+  // ==================== LAUNCH Phase Additions ====================
+  {
+    taskId: 'launch_set_expectations',
+    title: 'Set expectations for this launch',
+    phase: 'launch',
+    funnelTypes: ['launch'],
+    order: 2.5,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['content_phase_review'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Expectations are clear for both you and your audience',
+      'People understand what to expect before engaging',
+    ],
+    whyItMatters: 'Aligning expectations for both you and your audience reduces stress for everyone. Clear expectations build trust.',
+    instructions: [
+      'Think about what people should know before engaging',
+      'Set expectations for yourself too',
+      'Focus on clarity and alignment',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'launch_expectations', 
+          label: 'What should people understand about this launch before they engage?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Describe what participants and you should expect...',
+          helperText: 'Clear expectations reduce stress for everyone.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/launch_set_expectations',
+  },
+];
+
+// ============================================
 // DELTA TASK CONFIGURATION
 // ============================================
 
@@ -1312,6 +1612,36 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
         changes: {
           title: 'Invite people to join your challenge',
           whyItMatters: 'This is the moment you open registration. Focus on who this is for and what they\'ll experience — no pressure or urgency.',
+        },
+      },
+    ],
+  },
+  {
+    funnelType: 'launch',
+    deltaTasks: LAUNCH_DELTA_TASKS,
+    modifiedTasks: [
+      {
+        taskId: 'build_email_platform',
+        changes: {
+          blocking: true,
+          whyItMatters: 'Email is essential for launch communication — building anticipation, announcing availability, and supporting decision-making during the window.',
+        },
+      },
+      {
+        taskId: 'content_plan_content',
+        changes: {
+          instructions: [
+            'Your content will explain and support — not push or pressure',
+            'Focus on helping people understand if this is right for them',
+            'Think preparation and clarity, not urgency',
+          ],
+        },
+      },
+      {
+        taskId: 'launch_share_offer',
+        changes: {
+          title: 'Open your launch window',
+          whyItMatters: 'This is the moment you announce availability. Focus on clarity and relevance — no countdown pressure or scarcity tactics.',
         },
       },
     ],
