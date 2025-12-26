@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 const features = [
   {
     icon: KanbanSquare,
-    title: "Project Board",
+    title: "Tasks",
     description: "Visual task management with drag-and-drop columns—To Do, In Progress, Review, and Done.",
   },
   {

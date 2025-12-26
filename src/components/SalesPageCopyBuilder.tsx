@@ -3907,7 +3907,7 @@ export const SalesPageCopyBuilder = ({ projectId }: SalesPageCopyBuilderProps) =
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Page</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this page? This will remove the content and its task from the Project Board.
+              Are you sure you want to delete this page? This will remove the content and its task from the Tasks list.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
