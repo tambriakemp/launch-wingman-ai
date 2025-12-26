@@ -168,14 +168,6 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/projects/:id/emails"
-              element={
-                <ProtectedRoute>
-                  <ProjectMessaging />
-                </ProtectedRoute>
-              }
-            />
             {/* Execute routes */}
             <Route
               path="/projects/:id/tasks"

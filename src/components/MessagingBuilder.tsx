@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { FileText, Users, Mail } from "lucide-react";
+import { FileText, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SalesPageCopyBuilder } from "./SalesPageCopyBuilder";
 import { SocialBioBuilder } from "./SocialBioBuilder";
-import { EmailSequencesSection } from "./messaging/EmailSequencesSection";
 
 interface MessagingBuilderProps {
   projectId: string;
@@ -15,7 +14,7 @@ export const MessagingBuilder = ({ projectId }: MessagingBuilderProps) => {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-3 h-auto p-1">
+        <TabsList className="w-full grid grid-cols-2 h-auto p-1">
           <TabsTrigger 
             value="sales-page" 
             className="flex items-center gap-2 py-2.5 data-[state=active]:bg-background"
@@ -30,13 +29,6 @@ export const MessagingBuilder = ({ projectId }: MessagingBuilderProps) => {
             <Users className="w-4 h-4" />
             <span className="hidden sm:inline">Social Bio</span>
           </TabsTrigger>
-          <TabsTrigger 
-            value="email-sequences" 
-            className="flex items-center gap-2 py-2.5 data-[state=active]:bg-background"
-          >
-            <Mail className="w-4 h-4" />
-            <span className="hidden sm:inline">Email</span>
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="sales-page" className="mt-6">
@@ -45,10 +37,6 @@ export const MessagingBuilder = ({ projectId }: MessagingBuilderProps) => {
 
         <TabsContent value="social-bio" className="mt-6">
           <SocialBioBuilder projectId={projectId} />
-        </TabsContent>
-
-        <TabsContent value="email-sequences" className="mt-6">
-          <EmailSequencesSection projectId={projectId} />
         </TabsContent>
       </Tabs>
     </div>

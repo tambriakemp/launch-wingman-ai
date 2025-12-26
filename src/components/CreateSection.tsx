@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Image, Palette, Type, Camera, FileText, AtSign, Mail } from "lucide-react";
+import { Image, Palette, Type, Camera, FileText, AtSign } from "lucide-react";
 import LogosSection from "./branding/LogosSection";
 import ColorsSection from "./branding/ColorsSection";
 import FontsSection from "./branding/FontsSection";
 import PhotosSection from "./branding/PhotosSection";
 import { SalesPageCopyBuilder } from "./SalesPageCopyBuilder";
 import { SocialBioBuilder } from "./SocialBioBuilder";
-import { EmailSequencesSection } from "./messaging/EmailSequencesSection";
 
 interface CreateSectionProps {
   projectId: string;
@@ -21,7 +20,6 @@ const NAV_ITEMS = [
   { id: "divider-1", type: "divider" },
   { id: "sales-copy", label: "Sales Copy", icon: FileText, group: "Messaging" },
   { id: "social-bio", label: "Social Bio", icon: AtSign, group: "Messaging" },
-  { id: "emails", label: "Emails", icon: Mail, group: "Messaging" },
 ];
 
 export const CreateSection = ({ projectId }: CreateSectionProps) => {
@@ -41,8 +39,6 @@ export const CreateSection = ({ projectId }: CreateSectionProps) => {
         return <SalesPageCopyBuilder projectId={projectId} />;
       case "social-bio":
         return <SocialBioBuilder projectId={projectId} />;
-      case "emails":
-        return <EmailSequencesSection projectId={projectId} />;
       default:
         return null;
     }

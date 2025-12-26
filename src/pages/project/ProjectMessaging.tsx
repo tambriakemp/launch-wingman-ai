@@ -2,13 +2,11 @@ import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { useParams, useLocation } from "react-router-dom";
 import { SalesPageCopyBuilder } from "@/components/SalesPageCopyBuilder";
 import { SocialBioBuilder } from "@/components/SocialBioBuilder";
-import { EmailSequencesSection } from "@/components/messaging/EmailSequencesSection";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 
 const sectionMap: Record<string, React.ComponentType<{ projectId: string }>> = {
   "sales-copy": SalesPageCopyBuilder,
   "social-bio": SocialBioBuilder,
-  emails: EmailSequencesSection,
 };
 
 const sectionConfig: Record<string, { title: string; description: string }> = {
@@ -19,10 +17,6 @@ const sectionConfig: Record<string, { title: string; description: string }> = {
   "social-bio": {
     title: "Social Media Bio",
     description: "Create engaging bios for your social profiles",
-  },
-  emails: {
-    title: "Email Sequences",
-    description: "Build nurture sequences, launch emails, and follow-ups",
   },
 };
 
