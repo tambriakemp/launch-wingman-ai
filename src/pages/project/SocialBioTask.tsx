@@ -1,10 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Loader2, Check } from "lucide-react";
+import { ArrowLeft, Clock, Loader2, Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
 import { PHASE_LABELS } from "@/types/tasks";
@@ -20,7 +19,9 @@ export default function SocialBioTask() {
   const taskId = 'messaging_social_bio';
   
   const [completedCriteria, setCompletedCriteria] = useState<string[]>([]);
+  const [biosCount, setBiosCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const {
     isLoading: engineLoading,
@@ -37,70 +38,78 @@ export default function SocialBioTask() {
     return projectTasks.find(pt => pt.taskId === taskId);
   }, [projectTasks]);
 
-  // Fetch project context (read-only display)
-  const { data: projectContext, isLoading: contextLoading } = useQuery({
-    queryKey: ["project-context-bio", projectId],
-    queryFn: async () => {
-      // Fetch project data
-      const { data: project, error: projectError } = await supabase
-        .from("projects")
-        .select("transformation_statement, selected_funnel_type")
-        .eq("id", projectId)
-        .maybeSingle();
-      
-      if (projectError) throw projectError;
-
-      // Fetch planning task data
-      const { data: tasks, error: tasksError } = await supabase
-        .from("project_tasks")
-        .select("task_id, input_data")
-        .eq("project_id", projectId)
-        .in("task_id", ["planning_define_audience", "planning_define_problem", "planning_define_dream_outcome"]);
-      
-      if (tasksError) throw tasksError;
-
-      const audienceTask = tasks?.find(t => t.task_id === "planning_define_audience");
-      const problemTask = tasks?.find(t => t.task_id === "planning_define_problem");
-      const outcomeTask = tasks?.find(t => t.task_id === "planning_define_dream_outcome");
-
-      return {
-        targetAudience: (audienceTask?.input_data as any)?.audience_description || null,
-        coreProblem: (problemTask?.input_data as any)?.primary_problem || null,
-        dreamOutcome: (outcomeTask?.input_data as any)?.dream_outcome || null,
-        funnelType: project?.selected_funnel_type || null,
-      };
-    },
-    enabled: !!projectId,
-  });
-
-  // Fetch existing bios count - use different query key to avoid cache collision with SocialBioBuilder
-  const { data: existingBios = [] } = useQuery({
+  // Fetch initial bios count on mount (no polling)
+  const { data: initialBiosCount = 0 } = useQuery({
     queryKey: ["social-bios-count", projectId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from("social_bios")
-        .select("id")
+        .select("*", { count: "exact", head: true })
         .eq("project_id", projectId);
       if (error) throw error;
-      return data || [];
+      return count || 0;
     },
     enabled: !!projectId,
-    refetchInterval: 2000, // Poll every 2 seconds to stay in sync with child component
+    staleTime: Infinity, // Don't refetch automatically, rely on callback
   });
 
-  const hasBios = existingBios.length > 0;
+  // Initialize state from projectTask.input_data on mount
+  useEffect(() => {
+    if (projectTask && !isInitialized) {
+      const inputData = projectTask.inputData as { completedCriteria?: string[]; biosCreated?: number } | null;
+      if (inputData?.completedCriteria) {
+        setCompletedCriteria(inputData.completedCriteria);
+      }
+      setIsInitialized(true);
+    }
+  }, [projectTask, isInitialized]);
+
+  // Set initial bios count
+  useEffect(() => {
+    if (initialBiosCount > 0 && biosCount === 0) {
+      setBiosCount(initialBiosCount);
+    }
+  }, [initialBiosCount, biosCount]);
+
+  // Callback from SocialBioBuilder when bios change
+  const handleBiosChange = useCallback((count: number) => {
+    setBiosCount(count);
+  }, []);
+
+  // Auto-save criteria to input_data when toggled
+  const saveCriteriaToTask = useCallback(async (criteria: string[]) => {
+    if (!projectId || !user?.id) return;
+    
+    try {
+      await supabase
+        .from("project_tasks")
+        .update({ 
+          input_data: { completedCriteria: criteria, biosCreated: biosCount },
+          updated_at: new Date().toISOString()
+        })
+        .eq("project_id", projectId)
+        .eq("task_id", taskId);
+    } catch (error) {
+      console.error("Failed to auto-save criteria:", error);
+    }
+  }, [projectId, user?.id, biosCount]);
 
   const handleCriteriaToggle = (criteriaText: string) => {
-    setCompletedCriteria((prev) =>
-      prev.includes(criteriaText)
+    setCompletedCriteria((prev) => {
+      const newCriteria = prev.includes(criteriaText)
         ? prev.filter((c) => c !== criteriaText)
-        : [...prev, criteriaText]
-    );
+        : [...prev, criteriaText];
+      
+      // Auto-save after state update
+      saveCriteriaToTask(newCriteria);
+      return newCriteria;
+    });
   };
 
-  const allCriteriaComplete = taskTemplate?.completionCriteria?.every(c => 
-    completedCriteria.includes(c)
-  ) ?? false;
+  const hasBios = biosCount > 0;
+  const criteriaCount = completedCriteria.length;
+  const totalCriteria = taskTemplate?.completionCriteria?.length || 0;
+  const allCriteriaComplete = totalCriteria > 0 && criteriaCount === totalCriteria;
 
   const handleSaveAndComplete = async () => {
     if (!hasBios) {
@@ -117,7 +126,7 @@ export default function SocialBioTask() {
 
     try {
       await completeTask(taskId, { 
-        biosCreated: existingBios.length,
+        biosCreated: biosCount,
         completedCriteria 
       });
       
@@ -129,6 +138,13 @@ export default function SocialBioTask() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSaveForLater = async () => {
+    // Save current progress before navigating
+    await saveCriteriaToTask(completedCriteria);
+    toast.success("Progress saved");
+    navigate(`/projects/${projectId}/offer`);
   };
 
   if (engineLoading || !taskTemplate) {
@@ -210,7 +226,12 @@ export default function SocialBioTask() {
             Your response
           </h2>
           
-          {projectId && <SocialBioBuilder projectId={projectId} />}
+          {projectId && (
+            <SocialBioBuilder 
+              projectId={projectId} 
+              onBiosChange={handleBiosChange}
+            />
+          )}
         </section>
 
         <div className="h-px bg-border mb-10" />
@@ -243,6 +264,40 @@ export default function SocialBioTask() {
           </div>
         </section>
 
+        {/* Status display */}
+        <div className="mb-6 p-4 rounded-lg bg-muted/50 border border-border">
+          <h3 className="text-sm font-medium text-foreground mb-2">Completion status</h3>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              {hasBios ? (
+                <Check className="w-4 h-4 text-green-500" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-amber-500" />
+              )}
+              <span className="text-muted-foreground">
+                Bio(s) created: {hasBios ? `${biosCount}` : "None yet"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {allCriteriaComplete ? (
+                <Check className="w-4 h-4 text-green-500" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-amber-500" />
+              )}
+              <span className="text-muted-foreground">
+                Criteria checked: {criteriaCount} / {totalCriteria}
+              </span>
+            </div>
+          </div>
+          {(!hasBios || !allCriteriaComplete) && (
+            <p className="text-xs text-muted-foreground mt-2">
+              {!hasBios 
+                ? "Create at least one bio to enable completion." 
+                : "Check all criteria above to complete this task."}
+            </p>
+          )}
+        </div>
+
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 pt-4">
           <Button
@@ -264,7 +319,7 @@ export default function SocialBioTask() {
           </Button>
           <Button
             variant="outline"
-            onClick={() => navigate(`/projects/${projectId}/offer`)}
+            onClick={handleSaveForLater}
             className="sm:w-auto"
           >
             Save for Later
