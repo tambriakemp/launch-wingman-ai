@@ -1,7 +1,7 @@
 import { CheckSquare, Clock, AlertCircle, MoreHorizontal } from "lucide-react";
 import { BrowserFrame } from "../BrowserFrame";
 
-export const ProjectBoardMockup = () => {
+export const TasksMockup = () => {
   return (
     <BrowserFrame>
       <div className="p-6 min-h-[380px]">

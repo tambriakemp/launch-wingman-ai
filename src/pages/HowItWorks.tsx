@@ -9,7 +9,7 @@ import { AudienceBuilderMockup } from "@/components/landing/screenshots/Audience
 import { TransformationMockup } from "@/components/landing/screenshots/TransformationMockup";
 import { BrandingMockup } from "@/components/landing/screenshots/BrandingMockup";
 import { SalesCopyMockup } from "@/components/landing/screenshots/SalesCopyMockup";
-import { ProjectBoardMockup } from "@/components/landing/screenshots/ProjectBoardMockup";
+import { TasksMockup } from "@/components/landing/screenshots/TasksMockup";
 import { SocialHubMockup } from "@/components/landing/screenshots/SocialHubMockup";
 import {
   ClipboardCheck,
@@ -115,7 +115,7 @@ const steps = [
     title: "Execute Your Launch",
     description: "Manage tasks with a project board, schedule social posts, and track your launch calendar.",
     color: "bg-teal-500/10 text-teal-500",
-    mockup: ProjectBoardMockup,
+    mockup: TasksMockup,
     secondaryMockup: SocialHubMockup,
     details: [
       "Asset checklist from funnel config",
