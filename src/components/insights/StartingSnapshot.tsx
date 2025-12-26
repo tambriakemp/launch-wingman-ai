@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Flag, Save, Check } from "lucide-react";
+import { Flag, Save, Check, Edit2, Users, Mail, DollarSign, Heart } from "lucide-react";
 import { toast } from "sonner";
 
 interface StartingSnapshotProps {
@@ -30,6 +30,7 @@ interface StartingSnapshotProps {
 }
 
 export function StartingSnapshot({ snapshot, onSave, isSaving }: StartingSnapshotProps) {
+  const [isEditing, setIsEditing] = useState(false);
   const [instagramFollowers, setInstagramFollowers] = useState<string>("");
   const [facebookFollowers, setFacebookFollowers] = useState<string>("");
   const [tiktokFollowers, setTiktokFollowers] = useState<string>("");
@@ -38,6 +39,17 @@ export function StartingSnapshot({ snapshot, onSave, isSaving }: StartingSnapsho
   const [ytdRevenue, setYtdRevenue] = useState<string>("");
   const [confidenceLevel, setConfidenceLevel] = useState<string>("");
   const [hasChanges, setHasChanges] = useState(false);
+
+  // Check if snapshot has any meaningful data
+  const hasData = snapshot && (
+    snapshot.instagram_followers ||
+    snapshot.facebook_followers ||
+    snapshot.tiktok_followers ||
+    snapshot.email_list_size ||
+    snapshot.monthly_revenue ||
+    snapshot.ytd_revenue ||
+    snapshot.confidence_level
+  );
 
   // Initialize form with existing data
   useEffect(() => {
@@ -52,6 +64,13 @@ export function StartingSnapshot({ snapshot, onSave, isSaving }: StartingSnapsho
     }
   }, [snapshot]);
 
+  // Start in edit mode if no data exists
+  useEffect(() => {
+    if (!hasData) {
+      setIsEditing(true);
+    }
+  }, [hasData]);
+
   const handleSave = () => {
     onSave({
       instagram_followers: instagramFollowers ? parseInt(instagramFollowers) : null,
@@ -63,6 +82,7 @@ export function StartingSnapshot({ snapshot, onSave, isSaving }: StartingSnapsho
       confidence_level: confidenceLevel || null,
     });
     setHasChanges(false);
+    setIsEditing(false);
     toast.success("Starting snapshot saved");
   };
 
@@ -76,19 +96,132 @@ export function StartingSnapshot({ snapshot, onSave, isSaving }: StartingSnapsho
     setHasChanges(true);
   };
 
+  const formatNumber = (value: number | null | undefined) => {
+    if (!value) return "—";
+    return new Intl.NumberFormat('en-US').format(value);
+  };
+
+  const formatCurrency = (value: number | null | undefined) => {
+    if (!value) return "—";
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  const getConfidenceLabel = (value: string | null | undefined) => {
+    switch (value) {
+      case 'unsure': return 'Unsure';
+      case 'somewhat': return 'Somewhat confident';
+      case 'confident': return 'Confident';
+      default: return '—';
+    }
+  };
+
+  const totalFollowers = 
+    (snapshot?.instagram_followers || 0) + 
+    (snapshot?.facebook_followers || 0) + 
+    (snapshot?.tiktok_followers || 0);
+
+  // View Mode - Show saved data as dashboard
+  if (hasData && !isEditing) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <Flag className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Starting Point</CardTitle>
+                <CardDescription>
+                  Where you were when this launch began
+                </CardDescription>
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+              <Edit2 className="w-4 h-4 mr-1" />
+              Edit
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {/* Total Followers */}
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <Users className="w-4 h-4" />
+                <span className="text-xs font-medium">Total Followers</span>
+              </div>
+              <p className="text-xl font-semibold">{formatNumber(totalFollowers || null)}</p>
+              <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                {snapshot?.instagram_followers && <div>IG: {formatNumber(snapshot.instagram_followers)}</div>}
+                {snapshot?.facebook_followers && <div>FB: {formatNumber(snapshot.facebook_followers)}</div>}
+                {snapshot?.tiktok_followers && <div>TT: {formatNumber(snapshot.tiktok_followers)}</div>}
+              </div>
+            </div>
+
+            {/* Email List */}
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <Mail className="w-4 h-4" />
+                <span className="text-xs font-medium">Email List</span>
+              </div>
+              <p className="text-xl font-semibold">{formatNumber(snapshot?.email_list_size)}</p>
+            </div>
+
+            {/* Monthly Revenue */}
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <DollarSign className="w-4 h-4" />
+                <span className="text-xs font-medium">Monthly Revenue</span>
+              </div>
+              <p className="text-xl font-semibold">{formatCurrency(snapshot?.monthly_revenue)}</p>
+              {snapshot?.ytd_revenue && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  YTD: {formatCurrency(snapshot.ytd_revenue)}
+                </div>
+              )}
+            </div>
+
+            {/* Confidence */}
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <Heart className="w-4 h-4" />
+                <span className="text-xs font-medium">Confidence</span>
+              </div>
+              <p className="text-xl font-semibold">{getConfidenceLabel(snapshot?.confidence_level)}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Edit Mode - Show form
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-            <Flag className="w-4 h-4 text-emerald-600" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+              <Flag className="w-4 h-4 text-emerald-600" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Starting Point</CardTitle>
+              <CardDescription>
+                Where you are when this launch begins. All fields are optional.
+              </CardDescription>
+            </div>
           </div>
-          <div>
-            <CardTitle className="text-lg">Starting Point</CardTitle>
-            <CardDescription>
-              Where you are when this launch begins. All fields are optional.
-            </CardDescription>
-          </div>
+          {hasData && (
+            <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>
+              Cancel
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-6">

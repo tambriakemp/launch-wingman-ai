@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,15 +6,22 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lightbulb, TrendingUp } from "lucide-react";
-import { StartingSnapshot } from "@/components/insights/StartingSnapshot";
-import { EndingSnapshot } from "@/components/insights/EndingSnapshot";
-import { ComparisonView } from "@/components/insights/ComparisonView";
+import { 
+  StartingSnapshot, 
+  EndingSnapshot, 
+  ComparisonView,
+  InsightsDashboard,
+  MetricUpdateSheet,
+  InsightsReminder 
+} from "@/components/insights";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 export default function Insights() {
   const { id: projectId } = useParams();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [isMetricSheetOpen, setIsMetricSheetOpen] = useState(false);
 
   // Fetch current project details
   const { data: project, isLoading: projectLoading } = useQuery({
@@ -58,6 +66,21 @@ export default function Insights() {
     enabled: !!projectId,
   });
 
+  // Fetch metric updates for current project
+  const { data: metricUpdates, isLoading: metricsLoading } = useQuery({
+    queryKey: ['metric-updates', projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('metric_updates')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('recorded_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!projectId,
+  });
+
   // Fetch all snapshots for comparison
   const { data: allSnapshots } = useQuery({
     queryKey: ['all-launch-snapshots'],
@@ -76,6 +99,26 @@ export default function Insights() {
 
   // Determine if project is in post-launch state
   const isPostLaunch = project?.status === 'launched' || project?.status === 'post-launch';
+
+  // Check if starting snapshot has data
+  const hasStartingData = startingSnapshot && (
+    startingSnapshot.instagram_followers ||
+    startingSnapshot.facebook_followers ||
+    startingSnapshot.tiktok_followers ||
+    startingSnapshot.email_list_size ||
+    startingSnapshot.monthly_revenue ||
+    startingSnapshot.ytd_revenue ||
+    startingSnapshot.confidence_level
+  );
+
+  // Get last metric update date for reminder
+  const lastMetricUpdateDate = metricUpdates?.[0]?.recorded_at 
+    ? new Date(metricUpdates[0].recorded_at)
+    : startingSnapshot?.last_metric_update 
+      ? new Date(startingSnapshot.last_metric_update)
+      : startingSnapshot?.created_at 
+        ? new Date(startingSnapshot.created_at)
+        : null;
 
   // Save snapshot mutation
   const saveSnapshotMutation = useMutation({
@@ -122,7 +165,47 @@ export default function Insights() {
     },
   });
 
-  const isLoading = projectLoading || snapshotsLoading;
+  // Save metric update mutation
+  const saveMetricUpdateMutation = useMutation({
+    mutationFn: async (data: {
+      instagram_followers?: number | null;
+      facebook_followers?: number | null;
+      tiktok_followers?: number | null;
+      email_list_size?: number | null;
+      monthly_revenue?: number | null;
+      ytd_revenue?: number | null;
+      notes?: string | null;
+    }) => {
+      const { error } = await supabase
+        .from('metric_updates')
+        .insert({
+          ...data,
+          project_id: projectId,
+          user_id: user?.id,
+          recorded_at: new Date().toISOString(),
+        });
+      if (error) throw error;
+
+      // Update last_metric_update on snapshot
+      if (startingSnapshot) {
+        await supabase
+          .from('launch_snapshots')
+          .update({ last_metric_update: new Date().toISOString() })
+          .eq('id', startingSnapshot.id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['metric-updates', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['launch-snapshots', projectId] });
+      setIsMetricSheetOpen(false);
+      toast.success("Metrics updated successfully");
+    },
+    onError: () => {
+      toast.error("Failed to save metrics");
+    },
+  });
+
+  const isLoading = projectLoading || snapshotsLoading || metricsLoading;
 
   // Get other projects with snapshots for comparison
   const projectsWithSnapshots = allProjects?.filter(p => {
@@ -131,9 +214,12 @@ export default function Insights() {
     return projectSnapshots && projectSnapshots.length > 0;
   }) || [];
 
+  // Get latest metrics for pre-filling the update sheet
+  const latestMetrics = metricUpdates?.[0] || startingSnapshot;
+
   return (
     <ProjectLayout>
-      <div className="max-w-3xl mx-auto py-8 px-4 space-y-8">
+      <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
         {/* Header */}
         <div className="space-y-2">
           <div className="flex items-center gap-3">
@@ -156,12 +242,29 @@ export default function Insights() {
           </div>
         ) : (
           <>
+            {/* Monthly Reminder Banner */}
+            {hasStartingData && (
+              <InsightsReminder
+                lastUpdateDate={lastMetricUpdateDate}
+                onUpdateClick={() => setIsMetricSheetOpen(true)}
+              />
+            )}
+
             {/* Starting Snapshot */}
             <StartingSnapshot
               snapshot={startingSnapshot}
               onSave={(data) => saveSnapshotMutation.mutate({ ...data, snapshot_type: 'starting' })}
               isSaving={saveSnapshotMutation.isPending}
             />
+
+            {/* Growth Dashboard - Only show if starting snapshot has data */}
+            {hasStartingData && (
+              <InsightsDashboard
+                startingSnapshot={startingSnapshot}
+                metricUpdates={metricUpdates || []}
+                onUpdateMetrics={() => setIsMetricSheetOpen(true)}
+              />
+            )}
 
             {/* Ending Snapshot - Only show for post-launch projects */}
             {isPostLaunch && (
@@ -201,6 +304,22 @@ export default function Insights() {
             )}
           </>
         )}
+
+        {/* Metric Update Sheet */}
+        <MetricUpdateSheet
+          open={isMetricSheetOpen}
+          onOpenChange={setIsMetricSheetOpen}
+          onSave={(data) => saveMetricUpdateMutation.mutate(data)}
+          isSaving={saveMetricUpdateMutation.isPending}
+          previousValues={latestMetrics ? {
+            instagram_followers: latestMetrics.instagram_followers,
+            facebook_followers: latestMetrics.facebook_followers,
+            tiktok_followers: latestMetrics.tiktok_followers,
+            email_list_size: latestMetrics.email_list_size,
+            monthly_revenue: latestMetrics.monthly_revenue,
+            ytd_revenue: latestMetrics.ytd_revenue,
+          } : undefined}
+        />
       </div>
     </ProjectLayout>
   );

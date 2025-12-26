@@ -670,6 +670,7 @@ export type Database = {
           facebook_followers: number | null
           id: string
           instagram_followers: number | null
+          last_metric_update: string | null
           launch_revenue: number | null
           monthly_revenue: number | null
           new_followers: number | null
@@ -690,6 +691,7 @@ export type Database = {
           facebook_followers?: number | null
           id?: string
           instagram_followers?: number | null
+          last_metric_update?: string | null
           launch_revenue?: number | null
           monthly_revenue?: number | null
           new_followers?: number | null
@@ -710,6 +712,7 @@ export type Database = {
           facebook_followers?: number | null
           id?: string
           instagram_followers?: number | null
+          last_metric_update?: string | null
           launch_revenue?: number | null
           monthly_revenue?: number | null
           new_followers?: number | null
@@ -755,6 +758,59 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      metric_updates: {
+        Row: {
+          created_at: string
+          email_list_size: number | null
+          facebook_followers: number | null
+          id: string
+          instagram_followers: number | null
+          monthly_revenue: number | null
+          notes: string | null
+          project_id: string
+          recorded_at: string
+          tiktok_followers: number | null
+          user_id: string
+          ytd_revenue: number | null
+        }
+        Insert: {
+          created_at?: string
+          email_list_size?: number | null
+          facebook_followers?: number | null
+          id?: string
+          instagram_followers?: number | null
+          monthly_revenue?: number | null
+          notes?: string | null
+          project_id: string
+          recorded_at?: string
+          tiktok_followers?: number | null
+          user_id: string
+          ytd_revenue?: number | null
+        }
+        Update: {
+          created_at?: string
+          email_list_size?: number | null
+          facebook_followers?: number | null
+          id?: string
+          instagram_followers?: number | null
+          monthly_revenue?: number | null
+          notes?: string | null
+          project_id?: string
+          recorded_at?: string
+          tiktok_followers?: number | null
+          user_id?: string
+          ytd_revenue?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metric_updates_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       offers: {
         Row: {
