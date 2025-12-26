@@ -61,7 +61,7 @@ const createNavSections = (projectId: string): NavSection[] => [
       { id: "tasks", label: "Tasks", icon: Kanban, href: `/projects/${projectId}/tasks` },
       { id: "content", label: "Content", icon: MessageSquareText, href: `/projects/${projectId}/content` },
       { id: "playbook", label: "Playbook", icon: BookOpen, href: `/playbook` },
-      { id: "insights", label: "Insights", icon: Lightbulb, href: `/projects/${projectId}/insights` },
+      { id: "insights", label: "Insights", icon: Lightbulb, href: `/insights` },
       { id: "library", label: "Library", icon: FolderOpen, href: `/projects/${projectId}/library` },
     ],
   },
@@ -306,6 +306,7 @@ export const ProjectSidebar = () => {
   const isOnAssessmentPage = location.pathname.startsWith('/assessments');
   const isOnPlaybookPage = location.pathname === '/playbook';
   const isOnSettingsPage = location.pathname === '/settings';
+  const isOnInsightsOverviewPage = location.pathname === '/insights';
 
   // Load last project from localStorage on mount
   useEffect(() => {
@@ -320,7 +321,7 @@ export const ProjectSidebar = () => {
   }, []);
 
   // Use lastProject.id when on global pages to show full navigation
-  const effectiveProjectId = projectId || ((isOnAssessmentPage || isOnPlaybookPage || isOnSettingsPage) ? lastProject?.id : undefined);
+  const effectiveProjectId = projectId || ((isOnAssessmentPage || isOnPlaybookPage || isOnSettingsPage || isOnInsightsOverviewPage) ? lastProject?.id : undefined);
 
   // Fetch funnel data to determine step completion
   const { data: funnel } = useQuery({
