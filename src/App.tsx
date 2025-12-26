@@ -44,6 +44,7 @@ import ProjectExecute from "./pages/project/ProjectExecute";
 import TaskDetail from "./pages/project/TaskDetail";
 import OfferSnapshotTask from "./pages/project/OfferSnapshotTask";
 import SocialBioTask from "./pages/project/SocialBioTask";
+import StartingPointTask from "./pages/project/StartingPointTask";
 import ProjectSummary from "./pages/project/ProjectSummary";
 import Library from "./pages/project/Library";
 import Relaunch from "./pages/project/Relaunch";
@@ -180,6 +181,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <SocialBioTask />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id/tasks/launch_capture_starting_point"
+              element={
+                <ProtectedRoute>
+                  <StartingPointTask />
                 </ProtectedRoute>
               }
             />
