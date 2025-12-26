@@ -107,7 +107,7 @@ export default function OfferSnapshotTask() {
   const funnelConfig = funnelConfigKey ? FUNNEL_CONFIGS[funnelConfigKey] : null;
 
   // Fetch existing offers - scoped to current funnel type
-  const { data: existingOffers } = useQuery({
+  const { data: existingOffers, isLoading: offersLoading } = useQuery({
     queryKey: ["offers", projectId, selectedFunnelType],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -120,6 +120,8 @@ export default function OfferSnapshotTask() {
       return data;
     },
     enabled: !!projectId && !!selectedFunnelType,
+    refetchOnMount: 'always',
+    staleTime: 0,
   });
 
   // Reset initialization when funnel type changes
@@ -154,6 +156,8 @@ export default function OfferSnapshotTask() {
   useEffect(() => {
     if (isInitialized) return;
     if (!funnelConfig || !selectedFunnelType) return;
+    // Wait for offers query to complete before deciding to use defaults
+    if (offersLoading) return;
 
     const expectedSlotTypes = funnelConfig.offerSlots.map(s => s.type);
     
@@ -202,7 +206,7 @@ export default function OfferSnapshotTask() {
       setOffers(defaultOffers);
     }
     setIsInitialized(true);
-  }, [existingOffers, funnelConfig, isInitialized, selectedFunnelType]);
+  }, [existingOffers, funnelConfig, isInitialized, selectedFunnelType, offersLoading]);
 
   // Save offers to database (scoped to current funnel type)
   const saveOffersToDb = useCallback(async (offersToSave: OfferSlotData[]) => {
