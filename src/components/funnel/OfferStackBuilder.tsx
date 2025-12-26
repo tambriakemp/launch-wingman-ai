@@ -25,6 +25,7 @@ interface OfferStackBuilderProps {
   offers: OfferSlotData[];
   onChange: (offers: OfferSlotData[]) => void;
   audienceData?: AudienceData;
+  onSaveNow?: () => void;
 }
 
 export const OfferStackBuilder = ({
@@ -32,6 +33,7 @@ export const OfferStackBuilder = ({
   offers,
   onChange,
   audienceData,
+  onSaveNow,
 }: OfferStackBuilderProps) => {
   const [activeOfferIndex, setActiveOfferIndex] = useState<number | null>(null);
   const [showAddSlot, setShowAddSlot] = useState(false);
@@ -294,6 +296,7 @@ export const OfferStackBuilder = ({
           }
           audienceData={audienceData}
           funnelType={funnelType}
+          onSave={onSaveNow}
         />
       )}
     </div>

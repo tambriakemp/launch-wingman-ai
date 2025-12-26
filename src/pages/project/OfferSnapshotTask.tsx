@@ -421,6 +421,7 @@ export default function OfferSnapshotTask() {
             offers={offers}
             onChange={setOffers}
             audienceData={audienceData}
+            onSaveNow={performSave}
           />
         )}
 
