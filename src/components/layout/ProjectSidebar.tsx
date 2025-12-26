@@ -10,7 +10,6 @@ import {
   Palette,
   Type,
   Camera,
-  FileText,
   AtSign,
   Kanban,
   Users,
@@ -79,7 +78,6 @@ const createNavSections = (projectId: string): NavSection[] => [
     heading: "Messaging",
     isProOnly: true,
     items: [
-      { id: "sales-copy", label: "Sales Copy", icon: FileText, href: `/projects/${projectId}/sales-copy`, isProOnly: true },
       { id: "social-bio", label: "Social Bio", icon: AtSign, href: `/projects/${projectId}/social-bio`, isProOnly: true },
     ],
   },
