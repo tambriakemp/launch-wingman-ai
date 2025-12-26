@@ -574,6 +574,19 @@ ${baseContext}`,
     
     const isLaunchFunnelTask = launchFunnelTaskIds.includes(taskId);
     
+    // Membership funnel task IDs that need special handling
+    const membershipFunnelTaskIds = [
+      'planning_membership_commitment',
+      'planning_membership_rhythm',
+      'messaging_renewal_framing',
+      'messaging_ongoing_access_framing',
+      'build_membership_container',
+      'content_retention_content',
+      'launch_set_joining_expectations'
+    ];
+    
+    const isMembershipFunnelTask = membershipFunnelTaskIds.includes(taskId);
+    
     // Build launch-specific rules for AI prompts
     const getLaunchTaskRules = (taskId: string): string => {
       const launchRules: Record<string, string> = {
@@ -614,6 +627,48 @@ ${baseContext}`,
 - This is about reducing stress and building trust through transparency`
       };
       return launchRules[taskId] || '';
+    };
+    
+    // Build membership-specific rules for AI prompts
+    const getMembershipTaskRules = (taskId: string): string => {
+      const membershipRules: Record<string, string> = {
+        'planning_membership_commitment': `SPECIAL RULES FOR THIS TASK:
+- Help define commitment level with SUSTAINABILITY in mind, not maximizing engagement
+- Never suggest strategies to "lock in" members or create exit barriers
+- Focus on genuine value alignment, not retention tactics
+- This is about clarity on what members are committing to, not pressure to stay`,
+        'planning_membership_rhythm': `SPECIAL RULES FOR THIS TASK:
+- Help define a sustainable rhythm that works for BOTH creator and members
+- Never suggest content treadmills, daily requirements, or overwhelming schedules
+- Focus on steady and manageable over constant and exhausting
+- This is about finding a pace that protects energy while providing value`,
+        'messaging_renewal_framing': `SPECIAL RULES FOR THIS TASK:
+- Help frame renewals with HONESTY and clarity, not manipulation
+- Never suggest guilt-based language, fear of missing out, or sunk-cost framing
+- Focus on genuine reasons to stay vs. pressure to not leave
+- This is about building trust through transparent value communication`,
+        'messaging_ongoing_access_framing': `SPECIAL RULES FOR THIS TASK:
+- Help address the "do I need this forever?" question HONESTLY
+- Never suggest language that avoids the question or creates dependency
+- Focus on clarity about ongoing value without pressure to stay indefinitely
+- This is about respecting member autonomy and building trust`,
+        'build_membership_container': `SPECIAL RULES FOR THIS TASK:
+- Help define the core experience WITHOUT prescribing specific tools or platforms
+- Never recommend specific software, apps, or technical implementations
+- Focus on what members GET ACCESS TO, not how it's technically delivered
+- Examples should be abstract like "content library", "community space", "regular touchpoints"`,
+        'content_retention_content': `SPECIAL RULES FOR THIS TASK:
+- Help plan content that keeps members SUPPORTED, not overwhelmed
+- Never suggest content treadmills, constant novelty requirements, or unsustainable schedules
+- Focus on steady, reassuring content over constant output
+- This is about sustainable value delivery, not content volume metrics`,
+        'launch_set_joining_expectations': `SPECIAL RULES FOR THIS TASK:
+- Help set expectations that PREVENT churn through clarity, not sales tactics
+- Never suggest hiding limitations or over-promising features
+- Focus on honest alignment of what the membership is and isn't
+- This is about reducing future regret by setting clear expectations upfront`
+      };
+      return membershipRules[taskId] || '';
     };
 
     const userPrompts: Record<string, string> = {
@@ -686,6 +741,37 @@ ${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specif
 Here's what I've written: "${currentInput}"
 
 Help me polish this while preserving its focus on clarity and trust-building.`)
+        : isMembershipFunnelTask
+        ? (inputState === 'EMPTY' 
+          ? `I'm working on this task: "${taskTitle}"
+
+${getMembershipTaskRules(taskId)}
+
+Here are the instructions:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+I haven't started yet and need help finding a starting point.`
+          : inputState === 'PARTIAL'
+          ? `I'm working on this task: "${taskTitle}"
+
+${getMembershipTaskRules(taskId)}
+
+Here are the instructions:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+Here's what I've written so far: "${currentInput}"
+
+Help me make this more specific while keeping it focused on sustainability and ongoing value, never pressure.`
+          : `I'm working on this task: "${taskTitle}"
+
+${getMembershipTaskRules(taskId)}
+
+Here are the instructions:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+Here's what I've written: "${currentInput}"
+
+Help me polish this while preserving its focus on sustainable value and member trust.`)
         : (inputState === 'EMPTY' 
         ? `I'm working on this task: "${taskTitle}"
 
@@ -745,6 +831,24 @@ ${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specif
 ${currentInput ? `My current input (do NOT reference this directly): "${currentInput}"` : 'I haven\'t written anything yet.'}
 
 Show 2-3 examples that emphasize clarity and intentionality — never urgency or pressure.`
+        : isMembershipFunnelTask
+        ? `Show me examples for this task: "${taskTitle}"
+
+${getMembershipTaskRules(taskId)}
+
+MEMBERSHIP FUNNEL EXAMPLE RULES - YOU MUST FOLLOW THESE:
+- Examples must focus on ONGOING VALUE and SUSTAINABILITY, never pressure or content treadmills
+- Never suggest guilt-based retention, lock-in tactics, or dependency language
+- Examples should feel supportive, sustainable, and honest — not overwhelming
+- Focus on genuine value delivery and member autonomy
+- No constant content requirements, no daily engagement mandates, no churn manipulation
+
+Instructions for this task:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+${currentInput ? `My current input (do NOT reference this directly): "${currentInput}"` : 'I haven\'t written anything yet.'}
+
+Show 2-3 examples that emphasize sustainable value and member trust — never pressure or content treadmills.`
         : `Show me examples for this task: "${taskTitle}"
 
 Instructions for this task:
