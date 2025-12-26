@@ -39,7 +39,7 @@ import TermsOfService from "./pages/TermsOfService";
 // Project-specific pages
 import ProjectPlan from "./pages/project/ProjectPlan";
 import ProjectBrand from "./pages/project/ProjectBrand";
-import ProjectMessaging from "./pages/project/ProjectMessaging";
+
 import ProjectExecute from "./pages/project/ProjectExecute";
 import TaskDetail from "./pages/project/TaskDetail";
 import OfferSnapshotTask from "./pages/project/OfferSnapshotTask";
@@ -149,15 +149,6 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ProjectBrand />
-                </ProtectedRoute>
-              }
-            />
-            {/* Messaging routes */}
-            <Route
-              path="/projects/:id/social-bio"
-              element={
-                <ProtectedRoute>
-                  <ProjectMessaging />
                 </ProtectedRoute>
               }
             />
