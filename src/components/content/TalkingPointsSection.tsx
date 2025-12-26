@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TalkingPointCard } from "./TalkingPointCard";
@@ -40,15 +40,22 @@ export const TalkingPointsSection = ({
   const [talkingPoints, setTalkingPoints] = useState<TalkingPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showRefreshHint, setShowRefreshHint] = useState(false);
   const { user } = useAuth();
+  
+  // Track previous ideas to avoid repetition (stores titles as simple identifiers)
+  const previousIdeasRef = useRef<string[]>([]);
 
   const generateTalkingPoints = async (isRefresh = false) => {
     if (!user) return;
     
     if (isRefresh) {
       setRefreshing(true);
+      setShowRefreshHint(false);
     } else {
       setLoading(true);
+      // Reset previous ideas when context changes (category, phase, funnel)
+      previousIdeasRef.current = [];
     }
 
     try {
@@ -59,13 +66,24 @@ export const TalkingPointsSection = ({
           currentPhase,
           funnelType,
           audienceData,
+          previousIdeas: isRefresh ? previousIdeasRef.current : [],
         },
       });
 
       if (error) throw error;
 
       if (data?.talkingPoints) {
+        // Store current ideas for future refresh calls
+        const currentTitles = data.talkingPoints.map((p: TalkingPoint) => p.title);
+        previousIdeasRef.current = [...previousIdeasRef.current, ...currentTitles].slice(-15); // Keep last 15 to avoid too much context
+        
         setTalkingPoints(data.talkingPoints);
+        
+        if (isRefresh) {
+          setShowRefreshHint(true);
+          // Hide hint after a few seconds
+          setTimeout(() => setShowRefreshHint(false), 4000);
+        }
       }
     } catch (error) {
       console.error("Error generating talking points:", error);
@@ -98,7 +116,14 @@ export const TalkingPointsSection = ({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        <div className="h-5">
+          {showRefreshHint && (
+            <p className="text-xs text-muted-foreground animate-in fade-in slide-in-from-left-2 duration-300">
+              Here's another angle you could explore.
+            </p>
+          )}
+        </div>
         <Button
           variant="ghost"
           size="sm"
