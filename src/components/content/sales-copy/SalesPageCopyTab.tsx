@@ -93,9 +93,7 @@ export const SalesPageCopyTab = ({ projectId }: SalesPageCopyTabProps) => {
 
   // Get draft data for selected offer
   const offerCopyRecord = existingCopy.find(c => c.deliverable_id === selectedOfferId);
-  const sectionDrafts: Record<string, SectionDraft> = offerCopyRecord?.sections as unknown as Record<string, SectionDraft>
-    ? (offerCopyRecord.sections as Record<string, SectionDraft>) 
-    : {};
+  const sectionDrafts: Record<string, SectionDraft> = (offerCopyRecord?.sections as unknown as Record<string, SectionDraft>) || {};
 
   const handleSelectOffer = (offerId: string) => {
     setSelectedOfferId(offerId);
