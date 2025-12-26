@@ -127,24 +127,28 @@ export default function OfferSnapshotTask() {
     setIsInitialized(false);
   }, [selectedFunnelType]);
 
-  // Build audience data from funnel
-  const audienceData: AudienceData | undefined = funnel ? {
-    niche: funnel.niche || '',
-    targetAudience: funnel.target_audience || '',
-    primaryPainPoint: funnel.primary_pain_point || '',
-    desiredOutcome: funnel.desired_outcome || '',
-    problemStatement: funnel.problem_statement || '',
-    painSymptoms: Array.isArray(funnel.pain_symptoms) 
-      ? (funnel.pain_symptoms as unknown as string[]) 
-      : [],
-    mainObjections: funnel.main_objections || '',
-    likelihoodElements: Array.isArray(funnel.likelihood_elements) 
-      ? (funnel.likelihood_elements as Array<{ type: string; content: string }>) 
-      : [],
-    timeEffortElements: Array.isArray(funnel.time_effort_elements) 
-      ? (funnel.time_effort_elements as Array<{ type: string; content: string }>) 
-      : [],
-  } : undefined;
+  // Build audience data from funnel (memoized to avoid auto-save loops)
+  const audienceData = useMemo<AudienceData | undefined>(() => {
+    if (!funnel) return undefined;
+
+    return {
+      niche: funnel.niche || "",
+      targetAudience: funnel.target_audience || "",
+      primaryPainPoint: funnel.primary_pain_point || "",
+      desiredOutcome: funnel.desired_outcome || "",
+      problemStatement: funnel.problem_statement || "",
+      painSymptoms: Array.isArray(funnel.pain_symptoms)
+        ? (funnel.pain_symptoms as unknown as string[])
+        : [],
+      mainObjections: funnel.main_objections || "",
+      likelihoodElements: Array.isArray(funnel.likelihood_elements)
+        ? (funnel.likelihood_elements as Array<{ type: string; content: string }>)
+        : [],
+      timeEffortElements: Array.isArray(funnel.time_effort_elements)
+        ? (funnel.time_effort_elements as Array<{ type: string; content: string }>)
+        : [],
+    };
+  }, [funnel]);
 
   // Initialize offers from existing data or funnel defaults
   useEffect(() => {
