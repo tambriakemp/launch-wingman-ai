@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronRight, Pencil, Plus, MoreHorizontal, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Pencil, MoreHorizontal, Trash2, CalendarClock, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,11 +10,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { SchedulePostSheet } from "./SchedulePostSheet";
+import { format } from "date-fns";
 
 interface TimelineSlotGridProps {
   projectId: string;
@@ -36,6 +39,8 @@ interface ContentPlannerItem {
   time_of_day: string;
   status: string;
   content: string | null;
+  scheduled_at: string | null;
+  scheduled_platforms: string[] | null;
 }
 
 const PHASES = [
@@ -82,6 +87,8 @@ const CONTENT_TYPE_COLORS: Record<string, string> = {
 
 export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridProps) => {
   const [expandedPhases, setExpandedPhases] = useState<string[]>(["pre-launch-week-1"]);
+  const [scheduleSheetOpen, setScheduleSheetOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<ContentPlannerItem | null>(null);
   const queryClient = useQueryClient();
 
   const { data: plannerItems = [], isLoading } = useQuery({
@@ -96,6 +103,15 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
       return data as ContentPlannerItem[];
     },
   });
+
+  const handleOpenSchedule = (item: ContentPlannerItem) => {
+    setSelectedItem(item);
+    setScheduleSheetOpen(true);
+  };
+
+  const handleScheduled = () => {
+    queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+  };
 
   const togglePhase = (phaseId: string) => {
     setExpandedPhases((prev) =>
@@ -257,6 +273,12 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                                 Draft ready
                                               </Badge>
                                             )}
+                                            {item.scheduled_at && (
+                                              <Badge className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-200 gap-1">
+                                                <Clock className="w-3 h-3" />
+                                                {format(new Date(item.scheduled_at), "MMM d, h:mm a")}
+                                              </Badge>
+                                            )}
                                           </div>
                                         </div>
                                         <DropdownMenu>
@@ -283,6 +305,14 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                               <Pencil className="w-4 h-4 mr-2" />
                                               Write / Edit
                                             </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                              onClick={() => handleOpenSchedule(item)}
+                                            >
+                                              <CalendarClock className="w-4 h-4 mr-2" />
+                                              Schedule
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
                                             <DropdownMenuItem
                                               className="text-destructive"
                                               onClick={() => handleDelete(item.id)}
@@ -317,6 +347,20 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
           </p>
         </div>
       )}
+
+      {/* Schedule Post Sheet */}
+      <SchedulePostSheet
+        open={scheduleSheetOpen}
+        onOpenChange={setScheduleSheetOpen}
+        projectId={projectId}
+        contentItem={selectedItem ? {
+          id: selectedItem.id,
+          title: selectedItem.title,
+          content: selectedItem.content,
+          description: selectedItem.description,
+        } : null}
+        onScheduled={handleScheduled}
+      />
     </div>
   );
 };
