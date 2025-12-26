@@ -16,6 +16,7 @@ interface OutlineViewProps {
   funnelType: string | null;
   contentType: ContentType;
   onTurnIntoPost: (idea: BlueprintIdea) => void;
+  onAddToTimeline?: (idea: BlueprintIdea) => void;
   skippedIds: Set<string>;
   onSkip: (ideaId: string) => void;
 }
@@ -31,6 +32,7 @@ export const OutlineView = ({
   funnelType,
   contentType,
   onTurnIntoPost,
+  onAddToTimeline,
   skippedIds,
   onSkip,
 }: OutlineViewProps) => {
@@ -95,11 +97,12 @@ export const OutlineView = ({
                 
                 {/* Minimal idea rows */}
                 <div className="space-y-0.5">
-                  {filteredIdeas.map((idea) => (
+                {filteredIdeas.map((idea) => (
                     <MinimalIdeaRow
                       key={idea.id}
                       idea={idea}
                       onTurnIntoPost={onTurnIntoPost}
+                      onAddToTimeline={onAddToTimeline}
                       formatLabels={FORMAT_LABELS}
                     />
                   ))}

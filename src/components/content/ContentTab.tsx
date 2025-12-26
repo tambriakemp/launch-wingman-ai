@@ -1,18 +1,26 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Lightbulb, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { ContentContextHeader } from "./ContentContextHeader";
 import { ContentTypeFilter } from "./ContentTypeFilter";
 import { TalkingPointsSection } from "./TalkingPointsSection";
 import { SavedIdeasLink } from "./SavedIdeasLink";
 import { SavedIdeasSheet } from "./SavedIdeasSheet";
 import { DraftPanel } from "./DraftPanel";
+import { SlotAssignmentDialog } from "./SlotAssignmentDialog";
+import { TimelineSlotGrid } from "./TimelineSlotGrid";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { BlueprintSection } from "./blueprint";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import type { BlueprintIdea } from "@/data/blueprintContent";
 import type { SavedItem } from "./SavedIdeasSection";
 
 export type ContentType = "general" | "stories" | "offer" | "behind-the-scenes";
+
+type ContentViewTab = "ideas" | "my-timeline";
 
 interface TalkingPoint {
   id: string;
@@ -21,16 +29,29 @@ interface TalkingPoint {
   contentType: ContentType;
 }
 
+interface SlotInfo {
+  phase: string;
+  dayNumber: number;
+  timeOfDay: "morning" | "evening";
+}
+
 interface ContentTabProps {
   projectId: string;
 }
 
 export const ContentTab = ({ projectId }: ContentTabProps) => {
+  const [activeTab, setActiveTab] = useState<ContentViewTab>("ideas");
   const [selectedContentType, setSelectedContentType] = useState<ContentType>("general");
   const [draftPanelOpen, setDraftPanelOpen] = useState(false);
   const [savedSheetOpen, setSavedSheetOpen] = useState(false);
+  const [slotDialogOpen, setSlotDialogOpen] = useState(false);
   const [selectedTalkingPoint, setSelectedTalkingPoint] = useState<TalkingPoint | null>(null);
   const [selectedSavedItem, setSelectedSavedItem] = useState<SavedItem | null>(null);
+  const [selectedIdea, setSelectedIdea] = useState<BlueprintIdea | null>(null);
+  const [pendingSlotInfo, setPendingSlotInfo] = useState<SlotInfo | null>(null);
+  
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   // Fetch project data for phase and funnel type
   const { data: project } = useQuery({
@@ -62,7 +83,9 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
 
   const handleTurnIntoPost = (talkingPoint: TalkingPoint) => {
     setSelectedSavedItem(null);
+    setSelectedIdea(null);
     setSelectedTalkingPoint(talkingPoint);
+    setPendingSlotInfo(null);
     setDraftPanelOpen(true);
   };
 
@@ -74,13 +97,80 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
       contentType: idea.contentType,
     };
     setSelectedSavedItem(null);
+    setSelectedIdea(null);
     setSelectedTalkingPoint(asTalkingPoint);
+    setPendingSlotInfo(null);
     setDraftPanelOpen(true);
+  };
+
+  const handleAddToTimeline = (idea: BlueprintIdea) => {
+    setSelectedIdea(idea);
+    setSlotDialogOpen(true);
+  };
+
+  const handleSlotConfirm = async (slotInfo: SlotInfo) => {
+    if (!selectedIdea || !user) return;
+
+    try {
+      // Insert into content_planner with the slot info
+      const { error } = await supabase.from("content_planner").insert({
+        project_id: projectId,
+        user_id: user.id,
+        phase: slotInfo.phase,
+        day_number: slotInfo.dayNumber,
+        time_of_day: slotInfo.timeOfDay,
+        title: selectedIdea.title,
+        description: selectedIdea.whyItWorks,
+        content_type: selectedIdea.contentType,
+        status: "planned",
+      });
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+      toast.success("Added to timeline");
+      setSlotDialogOpen(false);
+      
+      // Optionally open the draft panel to write the post
+      const asTalkingPoint: TalkingPoint = {
+        id: selectedIdea.id,
+        title: selectedIdea.title,
+        description: selectedIdea.whyItWorks,
+        contentType: selectedIdea.contentType,
+      };
+      setSelectedTalkingPoint(asTalkingPoint);
+      setPendingSlotInfo(slotInfo);
+      setDraftPanelOpen(true);
+    } catch (error) {
+      console.error("Error adding to timeline:", error);
+      toast.error("Failed to add to timeline");
+    }
   };
 
   const handleOpenSavedItem = (item: SavedItem) => {
     setSelectedTalkingPoint(null);
+    setSelectedIdea(null);
     setSelectedSavedItem(item);
+    setPendingSlotInfo(null);
+    setDraftPanelOpen(true);
+  };
+
+  const handleTimelineWritePost = (item: {
+    id: string;
+    title: string;
+    description: string | null;
+    contentType: string;
+  }) => {
+    const asTalkingPoint: TalkingPoint = {
+      id: item.id,
+      title: item.title,
+      description: item.description || "",
+      contentType: item.contentType as ContentType,
+    };
+    setSelectedSavedItem(null);
+    setSelectedIdea(null);
+    setSelectedTalkingPoint(asTalkingPoint);
+    setPendingSlotInfo(null);
     setDraftPanelOpen(true);
   };
 
@@ -88,7 +178,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   const funnelType = project?.selected_funnel_type || null;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-12 pb-12">
+    <div className="max-w-3xl mx-auto space-y-8 pb-12">
       {/* Section A: Orientation Header */}
       <div className="space-y-4">
         <div className="flex items-start justify-between gap-4">
@@ -113,32 +203,79 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
         />
       </div>
 
-      {/* Section B: What to Say Next (Primary Focus) */}
-      <div className="space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h2 className="text-lg font-medium text-foreground">What to say next</h2>
-          <ContentTypeFilter 
-            selected={selectedContentType} 
-            onChange={setSelectedContentType} 
-          />
-        </div>
-
-        <TalkingPointsSection
-          projectId={projectId}
-          contentType={selectedContentType}
-          currentPhase={currentPhase}
-          funnelType={funnelType}
-          audienceData={funnel}
-          onTurnIntoPost={handleTurnIntoPost}
-        />
+      {/* Tab Navigation */}
+      <div className="flex items-center gap-1 border-b border-border">
+        <button
+          onClick={() => setActiveTab("ideas")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
+            activeTab === "ideas"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Lightbulb className="w-4 h-4" />
+          Ideas
+        </button>
+        <button
+          onClick={() => setActiveTab("my-timeline")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
+            activeTab === "my-timeline"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <CalendarDays className="w-4 h-4" />
+          My Timeline
+        </button>
       </div>
 
-      {/* Section C: Launch Content Blueprint (Collapsed by Default) */}
-      <BlueprintSection
-        projectId={projectId}
-        funnelType={funnelType}
-        contentType={selectedContentType}
-        onTurnIntoPost={handleBlueprintTurnIntoPost}
+      {/* Tab Content */}
+      {activeTab === "ideas" ? (
+        <div className="space-y-12">
+          {/* Section B: What to Say Next (Primary Focus) */}
+          <div className="space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <h2 className="text-lg font-medium text-foreground">What to say next</h2>
+              <ContentTypeFilter 
+                selected={selectedContentType} 
+                onChange={setSelectedContentType} 
+              />
+            </div>
+
+            <TalkingPointsSection
+              projectId={projectId}
+              contentType={selectedContentType}
+              currentPhase={currentPhase}
+              funnelType={funnelType}
+              audienceData={funnel}
+              onTurnIntoPost={handleTurnIntoPost}
+            />
+          </div>
+
+          {/* Section C: Launch Content Blueprint (Collapsed by Default) */}
+          <BlueprintSection
+            projectId={projectId}
+            funnelType={funnelType}
+            contentType={selectedContentType}
+            onTurnIntoPost={handleBlueprintTurnIntoPost}
+            onAddToTimeline={handleAddToTimeline}
+          />
+        </div>
+      ) : (
+        <TimelineSlotGrid
+          projectId={projectId}
+          onWritePost={handleTimelineWritePost}
+        />
+      )}
+
+      {/* Slot Assignment Dialog */}
+      <SlotAssignmentDialog
+        open={slotDialogOpen}
+        onOpenChange={setSlotDialogOpen}
+        idea={selectedIdea}
+        onConfirm={handleSlotConfirm}
       />
 
       {/* Saved Ideas Sheet */}
@@ -159,6 +296,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
         currentPhase={currentPhase}
         funnelType={funnelType}
         audienceData={funnel}
+        slotInfo={pendingSlotInfo}
       />
     </div>
   );

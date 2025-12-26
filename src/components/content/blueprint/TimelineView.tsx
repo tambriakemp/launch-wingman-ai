@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import { Sparkles, CalendarPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -16,6 +16,7 @@ interface TimelineViewProps {
   funnelType: string | null;
   contentType: ContentType;
   onTurnIntoPost: (idea: BlueprintIdea) => void;
+  onAddToTimeline?: (idea: BlueprintIdea) => void;
   skippedIds: Set<string>;
   onSkip: (ideaId: string) => void;
 }
@@ -31,6 +32,7 @@ export const TimelineView = ({
   funnelType,
   contentType,
   onTurnIntoPost,
+  onAddToTimeline,
   skippedIds,
   onSkip,
 }: TimelineViewProps) => {
@@ -122,15 +124,28 @@ export const TimelineView = ({
                         ))}
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onTurnIntoPost(idea)}
-                      className="shrink-0 h-7 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      Create
-                    </Button>
+                    <div className="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {onAddToTimeline && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onAddToTimeline(idea)}
+                          className="h-7 text-xs"
+                        >
+                          <CalendarPlus className="w-3 h-3 mr-1" />
+                          Add
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onTurnIntoPost(idea)}
+                        className="h-7 text-xs"
+                      >
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        Create
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
