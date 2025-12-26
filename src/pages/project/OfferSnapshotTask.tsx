@@ -36,7 +36,6 @@ export default function OfferSnapshotTask() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const prevFunnelTypeRef = useRef<string | null>(null);
 
   const {
     isLoading: engineLoading,
@@ -51,7 +50,7 @@ export default function OfferSnapshotTask() {
     [projectTasks]
   );
 
-  // Fetch project with selected funnel type
+  // Fetch project with selected funnel type - always refetch to get latest funnel type
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ["project", projectId],
     queryFn: async () => {
@@ -64,6 +63,7 @@ export default function OfferSnapshotTask() {
       return data;
     },
     enabled: !!projectId,
+    refetchOnMount: 'always',
   });
 
   // Fetch funnel data for audience context
@@ -81,35 +81,31 @@ export default function OfferSnapshotTask() {
     enabled: !!projectId,
   });
 
-  // Fetch existing offers
-  const { data: existingOffers } = useQuery({
-    queryKey: ["offers", projectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("offers")
-        .select("*")
-        .eq("project_id", projectId)
-        .order("slot_position", { ascending: true });
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!projectId,
-  });
-
   // Get the funnel config based on selected funnel type
   const selectedFunnelType = project?.selected_funnel_type;
   const funnelConfigKey = getFunnelConfigKey(selectedFunnelType);
   const funnelConfig = funnelConfigKey ? FUNNEL_CONFIGS[funnelConfigKey] : null;
 
-  // Reset initialization when funnel type changes so we reload offers for the new funnel
+  // Fetch existing offers - scoped to current funnel type
+  const { data: existingOffers } = useQuery({
+    queryKey: ["offers", projectId, selectedFunnelType],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("offers")
+        .select("*")
+        .eq("project_id", projectId)
+        .eq("funnel_type", selectedFunnelType)
+        .order("slot_position", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!projectId && !!selectedFunnelType,
+  });
+
+  // Reset initialization when funnel type changes
   useEffect(() => {
-    if (selectedFunnelType && prevFunnelTypeRef.current && selectedFunnelType !== prevFunnelTypeRef.current) {
-      // Funnel type changed - reset to trigger reload
-      setIsInitialized(false);
-      queryClient.invalidateQueries({ queryKey: ["offers", projectId] });
-    }
-    prevFunnelTypeRef.current = selectedFunnelType || null;
-  }, [selectedFunnelType, projectId, queryClient]);
+    setIsInitialized(false);
+  }, [selectedFunnelType]);
 
   // Build audience data from funnel
   const audienceData: AudienceData | undefined = funnel ? {
@@ -130,16 +126,15 @@ export default function OfferSnapshotTask() {
       : [],
   } : undefined;
 
-  // Initialize offers from existing data or funnel defaults (funnel-aware with data retention)
+  // Initialize offers from existing data or funnel defaults
   useEffect(() => {
     if (isInitialized) return;
     if (!funnelConfig || !selectedFunnelType) return;
 
     const expectedSlotTypes = funnelConfig.offerSlots.map(s => s.type);
     
-    // Filter existing offers for current funnel type only
-    const offersForCurrentFunnel = existingOffers?.filter(o => o.funnel_type === selectedFunnelType) || [];
-    const existingSlotTypes = offersForCurrentFunnel.map(o => o.slot_type);
+    // existingOffers is already filtered by funnel_type from the query
+    const existingSlotTypes = existingOffers?.map(o => o.slot_type) || [];
     
     // Check if we have matching offers for this funnel type
     const hasMatchingOffers = 
@@ -147,9 +142,9 @@ export default function OfferSnapshotTask() {
       expectedSlotTypes.every(type => existingSlotTypes.includes(type)) &&
       existingSlotTypes.every(type => expectedSlotTypes.includes(type));
 
-    if (offersForCurrentFunnel.length > 0 && hasMatchingOffers) {
+    if (existingOffers && existingOffers.length > 0 && hasMatchingOffers) {
       // Load existing offers for this funnel type
-      const loadedOffers: OfferSlotData[] = offersForCurrentFunnel.map(o => ({
+      const loadedOffers: OfferSlotData[] = existingOffers.map(o => ({
         id: o.id,
         slotType: o.slot_type,
         title: o.title || '',
@@ -161,10 +156,8 @@ export default function OfferSnapshotTask() {
         isSkipped: false,
       }));
       setOffers(loadedOffers);
-      setIsInitialized(true);
     } else {
       // No matching offers - create defaults for this funnel type
-      // (Previous funnel's offers remain in DB for if user switches back)
       const defaultOffers: OfferSlotData[] = funnelConfig.offerSlots.map((slot: OfferSlotConfig) => ({
         slotType: slot.type,
         title: '',
@@ -176,8 +169,8 @@ export default function OfferSnapshotTask() {
         isSkipped: false,
       }));
       setOffers(defaultOffers);
-      setIsInitialized(true);
     }
+    setIsInitialized(true);
   }, [existingOffers, funnelConfig, isInitialized, selectedFunnelType]);
 
   // Auto-save offers (scoped to current funnel type)
