@@ -561,6 +561,61 @@ The simplified text must preserve the user's exact meaning and voice.
 ${baseContext}`,
     };
 
+    // Launch funnel task IDs that need special handling
+    const launchFunnelTaskIds = [
+      'planning_launch_window',
+      'planning_launch_completion',
+      'messaging_why_now',
+      'messaging_missed_timing',
+      'build_launch_access',
+      'content_decision_support',
+      'launch_set_expectations'
+    ];
+    
+    const isLaunchFunnelTask = launchFunnelTaskIds.includes(taskId);
+    
+    // Build launch-specific rules for AI prompts
+    const getLaunchTaskRules = (taskId: string): string => {
+      const launchRules: Record<string, string> = {
+        'planning_launch_window': `SPECIAL RULES FOR THIS TASK:
+- Help define timing with clarity, NOT urgency or pressure
+- Never suggest countdown timers, scarcity tactics, or FOMO language
+- Focus on intentional timing and preparation, not manufactured urgency
+- This is about WHEN the offer is available, not creating pressure to act`,
+        'planning_launch_completion': `SPECIAL RULES FOR THIS TASK:
+- Help define what "done" looks like without metrics or sales goals
+- Never suggest revenue targets, conversion rates, or numerical benchmarks
+- Focus on emotional/practical endpoints like "when enrollment closes" or "when I feel ready to rest"
+- This is about personal completion, not performance metrics`,
+        'messaging_why_now': `SPECIAL RULES FOR THIS TASK:
+- Help articulate timing relevance, NOT urgency or scarcity
+- Never use phrases like "limited time", "act now", "don't miss out"
+- Focus on natural timing, readiness, and relevance
+- This is about WHY this moment matters, not pressuring people to act`,
+        'messaging_missed_timing': `SPECIAL RULES FOR THIS TASK:
+- Help explain what happens if someone doesn't join, WITHOUT pressure
+- Never imply they'll "miss out forever" or use guilt-based language
+- Focus on honest, calm communication about future availability
+- This is about building trust through transparency, not fear`,
+        'build_launch_access': `SPECIAL RULES FOR THIS TASK:
+- Help define HOW people access the offer, NOT specific tools or platforms
+- Never recommend specific software, payment processors, or tech stacks
+- Focus on the experience and structure, not implementation details
+- Examples should be abstract like "enrollment window" or "application period"`,
+        'content_decision_support': `SPECIAL RULES FOR THIS TASK:
+- Help plan content that supports UNDERSTANDING, not urgency
+- Never suggest countdown content, scarcity posts, or pressure tactics
+- Focus on explanation, reassurance, and helping people decide if it's right for them
+- This is about informed decision-making, not conversion optimization`,
+        'launch_set_expectations': `SPECIAL RULES FOR THIS TASK:
+- Help set clear expectations WITHOUT pressure or urgency
+- Never suggest creating artificial deadlines or scarcity
+- Focus on clarity for both the creator and the audience
+- This is about reducing stress and building trust through transparency`
+      };
+      return launchRules[taskId] || '';
+    };
+
     const userPrompts: Record<string, string> = {
       help_me_choose: taskId === 'planning_time_effort_perception'
         ? (inputState === 'EMPTY' 
@@ -600,6 +655,37 @@ ${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specif
 Here's what I've written: "${currentInput}"
 
 Help me polish this while preserving its focus on perception and feeling.`)
+        : isLaunchFunnelTask
+        ? (inputState === 'EMPTY' 
+          ? `I'm working on this task: "${taskTitle}"
+
+${getLaunchTaskRules(taskId)}
+
+Here are the instructions:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+I haven't started yet and need help finding a starting point.`
+          : inputState === 'PARTIAL'
+          ? `I'm working on this task: "${taskTitle}"
+
+${getLaunchTaskRules(taskId)}
+
+Here are the instructions:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+Here's what I've written so far: "${currentInput}"
+
+Help me make this more specific while keeping it focused on clarity and intentionality, never urgency.`
+          : `I'm working on this task: "${taskTitle}"
+
+${getLaunchTaskRules(taskId)}
+
+Here are the instructions:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+Here's what I've written: "${currentInput}"
+
+Help me polish this while preserving its focus on clarity and trust-building.`)
         : (inputState === 'EMPTY' 
         ? `I'm working on this task: "${taskTitle}"
 
@@ -641,6 +727,24 @@ ${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specif
 ${currentInput ? `My current input (do NOT reference this directly): "${currentInput}"` : 'I haven\'t written anything yet.'}
 
 Show 2-3 abstract examples about perception and feeling — not tactics or steps.`
+        : isLaunchFunnelTask
+        ? `Show me examples for this task: "${taskTitle}"
+
+${getLaunchTaskRules(taskId)}
+
+LAUNCH FUNNEL EXAMPLE RULES - YOU MUST FOLLOW THESE:
+- Examples must focus on CLARITY and INTENTIONALITY, never urgency or scarcity
+- Never use phrases like "limited time", "act now", "don't miss out", "last chance"
+- Examples should feel calm, clear, and supportive — not pressuring
+- Focus on honest communication and trust-building
+- No countdown language, no FOMO tactics, no artificial deadlines
+
+Instructions for this task:
+${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
+
+${currentInput ? `My current input (do NOT reference this directly): "${currentInput}"` : 'I haven\'t written anything yet.'}
+
+Show 2-3 examples that emphasize clarity and intentionality — never urgency or pressure.`
         : `Show me examples for this task: "${taskTitle}"
 
 Instructions for this task:
