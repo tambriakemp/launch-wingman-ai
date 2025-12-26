@@ -113,7 +113,7 @@ const steps = [
     number: "07",
     icon: Rocket,
     title: "Execute Your Launch",
-    description: "Manage tasks with a project board, schedule social posts, and track your launch calendar.",
+    description: "Manage tasks with a task list, schedule social posts, and track your launch calendar.",
     color: "bg-teal-500/10 text-teal-500",
     mockup: TasksMockup,
     secondaryMockup: SocialHubMockup,
