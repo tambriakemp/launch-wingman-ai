@@ -15,6 +15,7 @@ interface BlueprintSectionProps {
   funnelType: string | null;
   contentType: ContentType;
   onTurnIntoPost: (idea: BlueprintIdea) => void;
+  onAddToTimeline?: (idea: BlueprintIdea) => void;
 }
 
 export const BlueprintSection = ({
@@ -22,6 +23,7 @@ export const BlueprintSection = ({
   funnelType,
   contentType,
   onTurnIntoPost,
+  onAddToTimeline,
 }: BlueprintSectionProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("outline");
@@ -151,6 +153,7 @@ export const BlueprintSection = ({
                 funnelType={funnelType}
                 contentType={contentType}
                 onTurnIntoPost={onTurnIntoPost}
+                onAddToTimeline={onAddToTimeline}
                 skippedIds={skippedIds}
                 onSkip={handleSkip}
               />
@@ -164,6 +167,7 @@ export const BlueprintSection = ({
                   funnelType={funnelType}
                   contentType={contentType}
                   onTurnIntoPost={onTurnIntoPost}
+                  onAddToTimeline={onAddToTimeline}
                   skippedIds={skippedIds}
                   onSkip={handleSkip}
                 />

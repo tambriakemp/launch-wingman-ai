@@ -24,6 +24,12 @@ interface AudienceData {
   niche?: string | null;
 }
 
+interface SlotInfo {
+  phase: string;
+  dayNumber: number;
+  timeOfDay: "morning" | "evening";
+}
+
 interface DraftPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -33,6 +39,7 @@ interface DraftPanelProps {
   currentPhase: string;
   funnelType: string | null;
   audienceData: AudienceData | null;
+  slotInfo?: SlotInfo | null;
 }
 
 type ToneAdjustment = "simplify" | "shorter" | "calmer" | "direct";
@@ -61,6 +68,7 @@ export const DraftPanel = ({
   currentPhase,
   funnelType,
   audienceData,
+  slotInfo,
 }: DraftPanelProps) => {
   const [draft, setDraft] = useState("");
   const [title, setTitle] = useState("");

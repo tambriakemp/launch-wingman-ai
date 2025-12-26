@@ -1,19 +1,20 @@
 import { useState } from "react";
-import { Sparkles, ChevronDown, ChevronRight } from "lucide-react";
+import { Sparkles, ChevronDown, ChevronRight, CalendarPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import type { BlueprintIdea, FORMAT_LABELS } from "@/data/blueprintContent";
 
 interface MinimalIdeaRowProps {
   idea: BlueprintIdea;
   onTurnIntoPost: (idea: BlueprintIdea) => void;
+  onAddToTimeline?: (idea: BlueprintIdea) => void;
   formatLabels: typeof FORMAT_LABELS;
 }
 
 export const MinimalIdeaRow = ({
   idea,
   onTurnIntoPost,
+  onAddToTimeline,
   formatLabels,
 }: MinimalIdeaRowProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -54,17 +55,31 @@ export const MinimalIdeaRow = ({
           ))}
         </div>
         
-        {/* Action - visible on hover */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onTurnIntoPost(idea)}
-          className="shrink-0 text-xs h-7 opacity-0 group-hover:opacity-100 transition-opacity"
-        >
-          <Sparkles className="w-3.5 h-3.5 mr-1" />
-          <span className="hidden sm:inline">Turn into a post</span>
-          <span className="sm:hidden">Create</span>
-        </Button>
+        {/* Actions - visible on hover */}
+        <div className="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {onAddToTimeline && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onAddToTimeline(idea)}
+              className="text-xs h-7"
+            >
+              <CalendarPlus className="w-3.5 h-3.5 mr-1" />
+              <span className="hidden sm:inline">Add to timeline</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onTurnIntoPost(idea)}
+            className="text-xs h-7"
+          >
+            <Sparkles className="w-3.5 h-3.5 mr-1" />
+            <span className="hidden sm:inline">Turn into post</span>
+            <span className="sm:hidden">Create</span>
+          </Button>
+        </div>
       </div>
       
       {/* Expanded description */}
