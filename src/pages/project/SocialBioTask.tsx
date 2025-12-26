@@ -201,48 +201,6 @@ export default function SocialBioTask() {
           </ol>
         </section>
 
-        {/* Project Context (Read-only) */}
-        {!contextLoading && projectContext && (
-          <section className="mb-10">
-            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">
-              Your project context
-            </h2>
-            <Card className="bg-muted/30 border-muted">
-              <CardContent className="p-4 space-y-3">
-                {projectContext.targetAudience && (
-                  <div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase">Target Audience</span>
-                    <p className="text-sm text-foreground/80 mt-1">{projectContext.targetAudience}</p>
-                  </div>
-                )}
-                {projectContext.coreProblem && (
-                  <div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase">Core Problem</span>
-                    <p className="text-sm text-foreground/80 mt-1">{projectContext.coreProblem}</p>
-                  </div>
-                )}
-                {projectContext.dreamOutcome && (
-                  <div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase">Dream Outcome</span>
-                    <p className="text-sm text-foreground/80 mt-1">{projectContext.dreamOutcome}</p>
-                  </div>
-                )}
-                {projectContext.funnelType && (
-                  <div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase">Funnel Type</span>
-                    <p className="text-sm text-foreground/80 mt-1 capitalize">{projectContext.funnelType.replace(/_/g, ' ')}</p>
-                  </div>
-                )}
-                {!projectContext.targetAudience && !projectContext.coreProblem && !projectContext.dreamOutcome && (
-                  <p className="text-sm text-muted-foreground italic">
-                    Complete the planning tasks to see your project context here.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </section>
-        )}
-
         <div className="h-px bg-border mb-10" />
 
         {/* Your Response - SocialBioBuilder embedded */}
