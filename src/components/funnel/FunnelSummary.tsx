@@ -83,13 +83,6 @@ export const FunnelSummary = ({
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onEditStep('funnel-type')}
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">

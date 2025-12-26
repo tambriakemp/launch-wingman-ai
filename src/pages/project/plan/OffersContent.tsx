@@ -224,9 +224,9 @@ const OffersContent = ({ projectId }: Props) => {
     );
   }
 
-  // No funnel or funnel type - redirect to funnel type
-  if (!funnel || !funnel.funnel_type) {
-    navigate(`/projects/${projectId}/funnel-type`, { replace: true });
+  // No funnel - redirect to dashboard
+  if (!funnel) {
+    navigate(`/projects/${projectId}/offer`, { replace: true });
     return null;
   }
 

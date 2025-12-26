@@ -216,8 +216,8 @@ const AudienceContent = ({ projectId }: Props) => {
           .eq('id', funnel.id);
         if (error) throw error;
       } else {
-        // No funnel exists - redirect to funnel type first
-        navigate(`/projects/${projectId}/funnel-type`);
+        // No funnel exists - this shouldn't happen, but redirect to dashboard
+        navigate(`/projects/${projectId}/offer`);
         return;
       }
     },
@@ -246,9 +246,9 @@ const AudienceContent = ({ projectId }: Props) => {
     );
   }
 
-  // No funnel or no funnel type selected - redirect to funnel type
-  if (!funnel || !funnel.funnel_type) {
-    navigate(`/projects/${projectId}/funnel-type`, { replace: true });
+  // No funnel - redirect to dashboard
+  if (!funnel) {
+    navigate(`/projects/${projectId}/offer`, { replace: true });
     return null;
   }
 
@@ -309,10 +309,10 @@ const AudienceContent = ({ projectId }: Props) => {
       <div className="flex items-center justify-between pt-4 border-t border-border">
         <Button
           variant="outline"
-          onClick={() => navigate(`/projects/${projectId}/funnel-type`)}
+          onClick={() => navigate(`/projects/${projectId}/offer`)}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Funnel Type
+          Dashboard
         </Button>
 
         <Button

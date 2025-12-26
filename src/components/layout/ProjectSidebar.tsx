@@ -66,8 +66,7 @@ const createNavSections = (projectId: string): NavSection[] => [
       { id: "content-planner", label: "Content Planner", icon: Calendar, href: `/projects/${projectId}/social`, isProOnly: true },
       { id: "playbook", label: "Playbook", icon: BookOpen, href: `/playbook` },
       { id: "library", label: "Library", icon: FolderOpen, href: `/projects/${projectId}/library` },
-      { id: "funnel-type", label: "Funnel Type", icon: Rocket, href: `/projects/${projectId}/funnel-type` },
-      { id: "audience", label: "Audience", icon: Users, href: `/projects/${projectId}/audience`, requiresStep: "funnel-type" },
+      { id: "audience", label: "Audience", icon: Users, href: `/projects/${projectId}/audience` },
       { id: "offers", label: "Offer Stack", icon: Package, href: `/projects/${projectId}/offers`, requiresStep: "audience" },
       { id: "tech-stack", label: "Tech Stack", icon: Server, href: `/projects/${projectId}/tech-stack`, requiresStep: "offers" },
     ],
@@ -95,7 +94,6 @@ const createNavSections = (projectId: string): NavSection[] => [
 ];
 
 interface StepCompletion {
-  "funnel-type": boolean;
   audience: boolean;
   transformation: boolean;
   offers: boolean;
@@ -403,7 +401,6 @@ export const ProjectSidebar = () => {
 
   // Determine step completion status
   const stepCompletion: StepCompletion = {
-    "funnel-type": !!funnel?.funnel_type,
     audience: !!(funnel?.niche && funnel?.target_audience && funnel?.primary_pain_point && funnel?.desired_outcome),
     transformation: !!project?.transformation_statement,
     offers: (offers && offers.length > 0) ?? false,
@@ -417,8 +414,6 @@ export const ProjectSidebar = () => {
 
   const getLockedMessage = (requiresStep?: string): string => {
     switch (requiresStep) {
-      case "funnel-type":
-        return "Complete Funnel Type first";
       case "audience":
         return "Complete Audience first";
       case "transformation":
