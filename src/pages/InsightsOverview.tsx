@@ -6,6 +6,7 @@ import { Lightbulb, ChevronRight, Users, Mail, DollarSign, Sparkles } from "luci
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { ProjectLayout } from "@/components/layout/ProjectLayout";
 
 interface ProjectWithSnapshots {
   id: string;
@@ -109,7 +110,7 @@ export default function InsightsOverview() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <ProjectLayout>
       <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
         {/* Header */}
         <div className="space-y-2">
@@ -317,6 +318,6 @@ export default function InsightsOverview() {
           </>
         )}
       </div>
-    </div>
+    </ProjectLayout>
   );
 }
