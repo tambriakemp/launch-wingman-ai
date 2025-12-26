@@ -10,7 +10,6 @@ import {
   Palette,
   Type,
   Camera,
-  AtSign,
   Kanban,
   Users,
   Lock,
@@ -72,13 +71,6 @@ const createNavSections = (projectId: string): NavSection[] => [
       { id: "colors", label: "Colors", icon: Palette, href: `/projects/${projectId}/colors`, isProOnly: true },
       { id: "fonts", label: "Fonts", icon: Type, href: `/projects/${projectId}/fonts`, isProOnly: true },
       { id: "photos", label: "Photos", icon: Camera, href: `/projects/${projectId}/photos`, isProOnly: true },
-    ],
-  },
-  {
-    heading: "Messaging",
-    isProOnly: true,
-    items: [
-      { id: "social-bio", label: "Social Bio", icon: AtSign, href: `/projects/${projectId}/social-bio`, isProOnly: true },
     ],
   },
 ];
