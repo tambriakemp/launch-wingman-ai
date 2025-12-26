@@ -284,6 +284,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
         { value: 'freebie_email_offer', label: 'Freebie → Email → Offer', description: 'Offer something free to build your list, then nurture with emails' },
         { value: 'live_training_offer', label: 'Live Training → Offer', description: 'Teach something valuable live, then invite viewers to join your program' },
         { value: 'application_call', label: 'Application → Call', description: 'Qualify leads through an application, then close on a call' },
+        { value: 'membership', label: 'Membership', description: 'An ongoing subscription where members receive continuous value over time, rather than a one-time outcome' },
       ],
     },
     aiAssistModes: ['help_me_choose', 'examples'],

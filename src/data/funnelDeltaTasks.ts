@@ -2,8 +2,8 @@
  * Funnel Delta Task System
  * 
  * This file defines the delta tasks that are injected for specific funnel types.
- * Delta tasks are ONLY for Build, Content, and Launch phases.
- * Planning, Messaging, and Post-Launch are ALWAYS universal.
+ * Most delta tasks are for Build, Content, and Launch phases.
+ * Membership funnel also includes Planning and Messaging phase tasks.
  */
 
 import { TaskTemplate, FunnelType } from '@/types/tasks';
@@ -546,6 +546,306 @@ export const APPLICATION_CALL_DELTA_TASKS: TaskTemplate[] = [
 ];
 
 // ============================================
+// MEMBERSHIP DELTA TASKS
+// ============================================
+// Path: Ongoing subscription with continuous value
+// Philosophy: Sustainability over growth pressure, clarity over urgency.
+// Guardrails: No pricing formulas, no churn metrics, no retention tactics,
+// no scarcity, no urgency. Launchely guides thinking about ongoing value.
+
+export const MEMBERSHIP_DELTA_TASKS: TaskTemplate[] = [
+  // ==================== PLANNING Phase Additions ====================
+  {
+    taskId: 'planning_ongoing_promise',
+    title: 'Define your ongoing promise',
+    phase: 'planning',
+    funnelTypes: ['membership'],
+    order: 6.1, // After offer snapshot, before launch path
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 25,
+    blocking: true,
+    dependencies: ['planning_offer_snapshot'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You can articulate what members stay for',
+      'The promise feels sustainable, not exhausting',
+    ],
+    whyItMatters: 'Memberships succeed when people understand why they stay — not just why they join. This step helps you define the ongoing result or support members can expect.',
+    instructions: [
+      'Think about what members experience over time, not just at the start',
+      'Focus on continuity, not completion',
+      'Keep it realistic and sustainable for you to deliver',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'ongoing_promise', 
+          label: 'What ongoing result or support do members expect over time?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Describe what keeps members engaged and supported...',
+          helperText: 'Think in terms of continuity, not completion.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/planning_ongoing_promise',
+  },
+  {
+    taskId: 'planning_monthly_evolution',
+    title: 'What changes month to month?',
+    phase: 'planning',
+    funnelTypes: ['membership'],
+    order: 6.2,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['planning_ongoing_promise'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You understand the nature of updates in your membership',
+      'It feels sustainable to deliver',
+    ],
+    whyItMatters: 'This step reduces pressure to "constantly create" by helping you define what kind of value evolves or refreshes inside your membership.',
+    instructions: [
+      'Think about what changes or updates members can expect',
+      'This doesn\'t need to be new every time — just relevant',
+      'Focus on sustainability, not volume',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'monthly_value', 
+          label: 'What kind of value evolves or refreshes inside your membership?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Describe what changes or updates members can expect...',
+          helperText: 'This doesn\'t need to be new every time — just relevant.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/planning_monthly_evolution',
+  },
+
+  // ==================== MESSAGING Phase Additions ====================
+  {
+    taskId: 'messaging_why_membership',
+    title: 'Why this works as a membership',
+    phase: 'messaging',
+    funnelTypes: ['membership'],
+    order: 2.5, // After transformation statement
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['messaging_transformation_statement'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You can explain why this isn\'t a one-time product',
+      'The reason feels honest and clear',
+    ],
+    whyItMatters: 'This step helps you articulate why your offer works better as ongoing support instead of a one-time solution — focusing on reality, not persuasion.',
+    instructions: [
+      'Think about why ongoing access makes sense',
+      'Focus on reality, not marketing language',
+      'Be honest about what the format provides',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'membership_reasoning', 
+          label: 'Why does this work better as ongoing support instead of a one-time solution?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Explain why the membership format makes sense...',
+          helperText: 'Focus on reality, not persuasion.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/messaging_why_membership',
+  },
+  {
+    taskId: 'messaging_ongoing_access_framing',
+    title: 'How you frame ongoing access',
+    phase: 'messaging',
+    funnelTypes: ['membership'],
+    order: 2.6,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 15,
+    blocking: true,
+    dependencies: ['messaging_why_membership'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You can address the "do I need this forever?" question',
+      'The framing feels honest and pressure-free',
+    ],
+    whyItMatters: 'This step helps you reduce buyer resistance around commitment by explaining the value of staying without pressure.',
+    instructions: [
+      'Think about how members might wonder about long-term commitment',
+      'Focus on clarity over urgency',
+      'Keep it honest and reassuring',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'ongoing_framing', 
+          label: 'How do you explain the value of staying without pressure?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Address the "do I need this forever?" question honestly...',
+          helperText: 'Clarity builds trust more than urgency.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/messaging_ongoing_access_framing',
+  },
+
+  // ==================== BUILD Phase Additions ====================
+  {
+    taskId: 'build_membership_container',
+    title: 'Define the core membership container',
+    phase: 'build',
+    funnelTypes: ['membership'],
+    order: 1.5,
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 30,
+    blocking: true,
+    dependencies: ['build_choose_platform'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You know what members get access to',
+      'The elements feel clear and deliverable',
+    ],
+    whyItMatters: 'This step helps you decide what members actually get access to — the main elements that make up your membership experience.',
+    instructions: [
+      'Think about the core elements members can expect',
+      'Focus on what you can sustainably deliver',
+      'Keep it simple — you can always add more later',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'membership_elements', 
+          label: 'What are the main elements members can expect inside?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'e.g., Content library, ongoing guidance, community, regular touchpoints...',
+          helperText: 'Think about core access, not tools or platforms.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/build_membership_container',
+  },
+
+  // ==================== CONTENT Phase Additions ====================
+  {
+    taskId: 'content_retention_content',
+    title: 'Content that keeps members engaged',
+    phase: 'content',
+    funnelTypes: ['membership'],
+    order: 0.5,
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 25,
+    blocking: true,
+    dependencies: ['build_phase_review'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You understand what keeps members feeling supported',
+      'The content approach feels sustainable',
+    ],
+    whyItMatters: 'This step shifts focus from acquisition to retention — thinking about what kind of content helps members feel supported over time.',
+    instructions: [
+      'Think steady and reassuring — not constant',
+      'Focus on support, not novelty',
+      'Consider what makes members feel connected',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'retention_content', 
+          label: 'What kind of content helps members feel supported over time?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Describe content that keeps members engaged without overwhelming you...',
+          helperText: 'Think steady and reassuring — not constant.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/content_retention_content',
+  },
+
+  // ==================== LAUNCH Phase Additions ====================
+  {
+    taskId: 'launch_set_joining_expectations',
+    title: 'Set expectations for joining',
+    phase: 'launch',
+    funnelTypes: ['membership'],
+    order: 2.5,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['content_phase_review'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You can clearly explain what someone should know before joining',
+      'Expectations are set to prevent churn',
+    ],
+    whyItMatters: 'This step helps prevent churn by aligning expectations early. Clear expectations reduce regret later.',
+    instructions: [
+      'Think about what someone should understand before joining',
+      'Be honest about what the membership is and isn\'t',
+      'Focus on clarity, not selling',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'joining_expectations', 
+          label: 'What should someone understand before joining your membership?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'Describe what new members should know upfront...',
+          helperText: 'Clear expectations reduce regret later.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
+    route: '/projects/:id/tasks/launch_set_joining_expectations',
+  },
+];
+
+// ============================================
 // DELTA TASK CONFIGURATION
 // ============================================
 
@@ -660,6 +960,36 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
       },
     ],
   },
+  {
+    funnelType: 'membership',
+    deltaTasks: MEMBERSHIP_DELTA_TASKS,
+    modifiedTasks: [
+      {
+        taskId: 'build_email_platform',
+        changes: {
+          blocking: true,
+          whyItMatters: 'Email is essential for membership onboarding and ongoing member communication. This is how you\'ll welcome new members and keep them engaged.',
+        },
+      },
+      {
+        taskId: 'content_plan_content',
+        changes: {
+          instructions: [
+            'Your content will focus on both attracting new members and supporting existing ones',
+            'Think about content that demonstrates ongoing value',
+            'Balance acquisition with retention — both matter',
+          ],
+        },
+      },
+      {
+        taskId: 'launch_share_offer',
+        changes: {
+          title: 'Invite people to join your membership',
+          whyItMatters: 'This is the moment you open the doors. Focus on who this is for and what they can expect — no pressure or false urgency.',
+        },
+      },
+    ],
+  },
 ];
 
 // Helper function to get delta config for a funnel type
@@ -682,8 +1012,8 @@ export function getTaskModificationsForFunnel(funnelType: FunnelType): TaskModif
   return config?.modifiedTasks || [];
 }
 
-// Phases where injection is allowed
-export const INJECTION_ALLOWED_PHASES = ['build', 'content', 'launch'] as const;
+// Phases where injection is allowed (now includes planning and messaging for membership)
+export const INJECTION_ALLOWED_PHASES = ['planning', 'messaging', 'build', 'content', 'launch'] as const;
 
 // Phases that are always universal (no injection)
 export const UNIVERSAL_PHASES = ['planning', 'messaging', 'post-launch'] as const;

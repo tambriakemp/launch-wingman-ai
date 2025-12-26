@@ -7,8 +7,8 @@
  * Key principles:
  * - Never delete existing tasks
  * - Never modify completed tasks
- * - Inject only into Build, Content, and Launch phases
- * - Planning, Messaging, and Post-Launch remain universal
+ * - Most funnels inject only into Build, Content, and Launch phases
+ * - Membership funnel also injects into Planning and Messaging phases
  */
 
 import { useCallback } from 'react';
@@ -59,6 +59,7 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
       'freebie_email_offer', 
       'live_training_offer',
       'application_call',
+      'membership',
       'all',
     ];
     
