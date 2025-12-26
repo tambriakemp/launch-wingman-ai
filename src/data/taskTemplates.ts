@@ -891,6 +891,33 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
   // ==================== LAUNCH PHASE ====================
   // Goal: "Share your offer intentionally and complete your launch — without pressure, urgency, or burnout."
   {
+    taskId: 'launch_capture_starting_point',
+    title: 'Capture your starting point',
+    phase: 'launch',
+    funnelTypes: ['all'],
+    order: 0,
+    priority: 2,
+    estimatedMinutesMin: 5,
+    estimatedMinutesMax: 10,
+    blocking: false,
+    dependencies: ['content_phase_review'],
+    canSkip: true,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You\'ve captured a reasonable starting point',
+      'You understand this is for personal reflection only',
+    ],
+    whyItMatters: 'This snapshot is for personal reflection, not performance tracking. Recording where you\'re starting helps you see progress across launches — estimates are perfectly acceptable.',
+    instructions: [
+      'Add rough numbers for the metrics you track',
+      'Skip anything you don\'t know or don\'t track',
+      'You can always update this later',
+    ],
+    inputType: 'custom',
+    aiAssistModes: ['help_me_choose'],
+    route: '/projects/:id/tasks/launch_capture_starting_point',
+  },
+  {
     taskId: 'launch_set_window',
     title: 'Set your launch window',
     phase: 'launch',
