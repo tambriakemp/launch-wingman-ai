@@ -9,13 +9,10 @@ import { TalkingPointsSection } from "./TalkingPointsSection";
 import { SavedIdeasLink } from "./SavedIdeasLink";
 import { SavedIdeasSheet } from "./SavedIdeasSheet";
 import { DraftPanel } from "./DraftPanel";
-import { SlotAssignmentDialog } from "./SlotAssignmentDialog";
 import { TimelineSlotGrid } from "./TimelineSlotGrid";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
-import { BlueprintSection } from "./blueprint";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import type { BlueprintIdea } from "@/data/blueprintContent";
 import type { SavedItem } from "./SavedIdeasSection";
 
 export type ContentType = "general" | "stories" | "offer" | "behind-the-scenes";
@@ -43,10 +40,8 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   const [selectedContentType, setSelectedContentType] = useState<ContentType>("general");
   const [draftPanelOpen, setDraftPanelOpen] = useState(false);
   const [savedSheetOpen, setSavedSheetOpen] = useState(false);
-  const [slotDialogOpen, setSlotDialogOpen] = useState(false);
   const [selectedTalkingPoint, setSelectedTalkingPoint] = useState<TalkingPoint | null>(null);
   const [selectedSavedItem, setSelectedSavedItem] = useState<SavedItem | null>(null);
-  const [selectedIdea, setSelectedIdea] = useState<BlueprintIdea | null>(null);
   const [pendingSlotInfo, setPendingSlotInfo] = useState<SlotInfo | null>(null);
   
   const { user } = useAuth();
@@ -82,66 +77,13 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
 
   const handleTurnIntoPost = (talkingPoint: TalkingPoint) => {
     setSelectedSavedItem(null);
-    setSelectedIdea(null);
     setSelectedTalkingPoint(talkingPoint);
     setPendingSlotInfo(null);
     setDraftPanelOpen(true);
   };
 
-  const handleBlueprintTurnIntoPost = (idea: BlueprintIdea) => {
-    // "Turn into post" now opens slot assignment dialog first
-    setSelectedIdea(idea);
-    setSlotDialogOpen(true);
-  };
-
-  const handleAddToTimeline = (idea: BlueprintIdea) => {
-    // Add to timeline without opening draft panel
-    setSelectedIdea(idea);
-    setSlotDialogOpen(true);
-  };
-
-  const handleSlotConfirm = async (slotInfo: SlotInfo) => {
-    if (!selectedIdea || !user) return;
-
-    try {
-      // Insert into content_planner with the slot info
-      const { error } = await supabase.from("content_planner").insert({
-        project_id: projectId,
-        user_id: user.id,
-        phase: slotInfo.phase,
-        day_number: slotInfo.dayNumber,
-        time_of_day: "morning", // Default value since we removed time selection
-        title: selectedIdea.title,
-        description: selectedIdea.whyItWorks,
-        content_type: selectedIdea.contentType,
-        status: "planned",
-      });
-
-      if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
-      toast.success("Added to timeline");
-      setSlotDialogOpen(false);
-      
-      // Open the draft panel to write the post
-      const asTalkingPoint: TalkingPoint = {
-        id: selectedIdea.id,
-        title: selectedIdea.title,
-        description: selectedIdea.whyItWorks,
-        contentType: selectedIdea.contentType,
-      };
-      setSelectedTalkingPoint(asTalkingPoint);
-      setPendingSlotInfo(slotInfo);
-      setDraftPanelOpen(true);
-    } catch (error) {
-      console.error("Error adding to timeline:", error);
-      toast.error("Failed to add to timeline");
-    }
-  };
-
   const handleOpenSavedItem = (item: SavedItem) => {
     setSelectedTalkingPoint(null);
-    setSelectedIdea(null);
     setSelectedSavedItem(item);
     setPendingSlotInfo(null);
     setDraftPanelOpen(true);
@@ -160,10 +102,13 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
       contentType: item.contentType as ContentType,
     };
     setSelectedSavedItem(null);
-    setSelectedIdea(null);
     setSelectedTalkingPoint(asTalkingPoint);
     setPendingSlotInfo(null);
     setDraftPanelOpen(true);
+  };
+
+  const handleSlotAssign = (slotInfo: SlotInfo) => {
+    setPendingSlotInfo(slotInfo);
   };
 
   const currentPhase = project?.active_phase || "planning";
@@ -245,15 +190,6 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
               onTurnIntoPost={handleTurnIntoPost}
             />
           </div>
-
-          {/* Section C: Launch Content Blueprint (Collapsed by Default) */}
-          <BlueprintSection
-            projectId={projectId}
-            funnelType={funnelType}
-            contentType={selectedContentType}
-            onTurnIntoPost={handleBlueprintTurnIntoPost}
-            onAddToTimeline={handleAddToTimeline}
-          />
         </div>
       ) : (
         <TimelineSlotGrid
@@ -261,14 +197,6 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
           onWritePost={handleTimelineWritePost}
         />
       )}
-
-      {/* Slot Assignment Dialog */}
-      <SlotAssignmentDialog
-        open={slotDialogOpen}
-        onOpenChange={setSlotDialogOpen}
-        idea={selectedIdea}
-        onConfirm={handleSlotConfirm}
-      />
 
       {/* Saved Ideas Sheet */}
       <SavedIdeasSheet
@@ -278,7 +206,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
         onOpenItem={handleOpenSavedItem}
       />
 
-      {/* Draft Panel */}
+      {/* Draft Panel with timeline assignment */}
       <DraftPanel
         open={draftPanelOpen}
         onOpenChange={setDraftPanelOpen}
@@ -289,6 +217,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
         funnelType={funnelType}
         audienceData={funnel}
         slotInfo={pendingSlotInfo}
+        onSlotAssign={handleSlotAssign}
       />
     </div>
   );

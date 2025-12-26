@@ -1,13 +1,27 @@
 import { useState, useEffect } from "react";
-import { Loader2, Wand2, Copy, Check, Trash2 } from "lucide-react";
+import { Loader2, Wand2, Copy, Check, Trash2, CalendarPlus, ChevronDown } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 import type { SavedItem } from "./SavedIdeasSection";
 
 interface TalkingPoint {
@@ -39,9 +53,28 @@ interface DraftPanelProps {
   funnelType: string | null;
   audienceData: AudienceData | null;
   slotInfo?: SlotInfo | null;
+  onSlotAssign?: (slotInfo: SlotInfo) => void;
 }
 
 type ToneAdjustment = "simplify" | "shorter" | "calmer" | "direct";
+
+const PHASES = [
+  { value: "pre-launch-week-1", label: "Pre-Launch: Week 1" },
+  { value: "pre-launch-week-2", label: "Pre-Launch: Week 2" },
+  { value: "pre-launch-week-3", label: "Pre-Launch: Week 3" },
+  { value: "pre-launch-week-4", label: "Pre-Launch: Week 4" },
+  { value: "launch", label: "Launch Week" },
+];
+
+const DAYS = [
+  { value: 1, label: "Day 1" },
+  { value: 2, label: "Day 2" },
+  { value: 3, label: "Day 3" },
+  { value: 4, label: "Day 4" },
+  { value: 5, label: "Day 5" },
+  { value: 6, label: "Day 6" },
+  { value: 7, label: "Day 7" },
+];
 
 // Category-specific guidance text shown in the draft panel
 const CATEGORY_GUIDANCE: Record<string, string> = {
@@ -68,6 +101,7 @@ export const DraftPanel = ({
   funnelType,
   audienceData,
   slotInfo,
+  onSlotAssign,
 }: DraftPanelProps) => {
   const [draft, setDraft] = useState("");
   const [title, setTitle] = useState("");
@@ -76,6 +110,14 @@ export const DraftPanel = ({
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [addingToTimeline, setAddingToTimeline] = useState(false);
+  
+  // Timeline assignment state
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [selectedPhase, setSelectedPhase] = useState<string>("pre-launch-week-1");
+  const [selectedDay, setSelectedDay] = useState<number>(1);
+  const [isAssigned, setIsAssigned] = useState(false);
+  
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -90,13 +132,24 @@ export const DraftPanel = ({
         // Opening a saved item for viewing/editing
         setTitle(savedItem.title);
         setDraft(savedItem.content);
+        setIsAssigned(false);
+        setTimelineOpen(false);
       } else if (talkingPoint) {
         // Creating new draft from talking point
         setTitle(talkingPoint.title);
         generateDraft();
+        setIsAssigned(false);
+        setTimelineOpen(false);
+      }
+      
+      // If slotInfo is provided, pre-fill the assignment
+      if (slotInfo) {
+        setSelectedPhase(slotInfo.phase);
+        setSelectedDay(slotInfo.dayNumber);
+        setIsAssigned(true);
       }
     }
-  }, [open, talkingPoint, savedItem]);
+  }, [open, talkingPoint, savedItem, slotInfo]);
 
   const generateDraft = async () => {
     if (!talkingPoint) return;
@@ -160,6 +213,44 @@ export const DraftPanel = ({
     setCopied(true);
     toast.success("Copied to clipboard");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleAddToTimeline = async () => {
+    if (!user || !title.trim()) return;
+    
+    setAddingToTimeline(true);
+    try {
+      const { error } = await supabase.from("content_planner").insert({
+        project_id: projectId,
+        user_id: user.id,
+        phase: selectedPhase,
+        day_number: selectedDay,
+        time_of_day: "morning",
+        title: title || "Untitled post",
+        description: talkingPoint?.description || "",
+        content_type: contentType,
+        content: draft || null,
+        status: draft ? "draft" : "planned",
+      });
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+      setIsAssigned(true);
+      setTimelineOpen(false);
+      
+      const phaseLabel = PHASES.find(p => p.value === selectedPhase)?.label || selectedPhase;
+      toast.success(`Added to ${phaseLabel}, Day ${selectedDay}`);
+      
+      if (onSlotAssign) {
+        onSlotAssign({ phase: selectedPhase, dayNumber: selectedDay });
+      }
+    } catch (error) {
+      console.error("Error adding to timeline:", error);
+      toast.error("Failed to add to timeline");
+    } finally {
+      setAddingToTimeline(false);
+    }
   };
 
   const handleSaveDraft = async () => {
@@ -232,6 +323,8 @@ export const DraftPanel = ({
   const handleClose = () => {
     setDraft("");
     setTitle("");
+    setIsAssigned(false);
+    setTimelineOpen(false);
     onOpenChange(false);
   };
 
@@ -282,6 +375,79 @@ export const DraftPanel = ({
                 placeholder="Your draft will appear here..."
                 className="min-h-[200px] resize-none"
               />
+
+              {/* Timeline Assignment Section */}
+              <Collapsible open={timelineOpen} onOpenChange={setTimelineOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-between",
+                      isAssigned && "border-primary/50 bg-primary/5"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <CalendarPlus className="w-4 h-4" />
+                      {isAssigned ? (
+                        <span>
+                          Assigned to {PHASES.find(p => p.value === selectedPhase)?.label}, Day {selectedDay}
+                        </span>
+                      ) : (
+                        <span>Add to Launch Timeline</span>
+                      )}
+                    </div>
+                    <ChevronDown className={cn(
+                      "w-4 h-4 transition-transform",
+                      timelineOpen && "rotate-180"
+                    )} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="phase">Week</Label>
+                      <Select value={selectedPhase} onValueChange={setSelectedPhase}>
+                        <SelectTrigger id="phase">
+                          <SelectValue placeholder="Select week" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PHASES.map((p) => (
+                            <SelectItem key={p.value} value={p.value}>
+                              {p.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="day">Day</Label>
+                      <Select 
+                        value={selectedDay.toString()} 
+                        onValueChange={(v) => setSelectedDay(parseInt(v))}
+                      >
+                        <SelectTrigger id="day">
+                          <SelectValue placeholder="Select day" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DAYS.map((d) => (
+                            <SelectItem key={d.value} value={d.value.toString()}>
+                              {d.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleAddToTimeline}
+                    disabled={addingToTimeline || !title.trim()}
+                    className="w-full"
+                  >
+                    {addingToTimeline && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    {isAssigned ? "Update Assignment" : "Add to Timeline"}
+                  </Button>
+                </CollapsibleContent>
+              </Collapsible>
 
               <div className="space-y-3">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
