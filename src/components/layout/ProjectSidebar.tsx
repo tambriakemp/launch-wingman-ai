@@ -13,7 +13,6 @@ import {
   FileText,
   AtSign,
   Mail,
-  Package,
   Kanban,
   Users,
   Lock,
@@ -84,7 +83,6 @@ const createNavSections = (projectId: string): NavSection[] => [
       { id: "sales-copy", label: "Sales Copy", icon: FileText, href: `/projects/${projectId}/sales-copy`, isProOnly: true },
       { id: "social-bio", label: "Social Bio", icon: AtSign, href: `/projects/${projectId}/social-bio`, isProOnly: true },
       { id: "emails", label: "Emails", icon: Mail, href: `/projects/${projectId}/emails`, isProOnly: true },
-      { id: "deliverables", label: "Deliverables", icon: Package, href: `/projects/${projectId}/deliverables`, isProOnly: true },
     ],
   },
 ];

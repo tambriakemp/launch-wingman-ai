@@ -176,14 +176,6 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/projects/:id/deliverables"
-              element={
-                <ProtectedRoute>
-                  <ProjectMessaging />
-                </ProtectedRoute>
-              }
-            />
             {/* Execute routes */}
             <Route
               path="/projects/:id/tasks"

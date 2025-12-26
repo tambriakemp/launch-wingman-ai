@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Image, Palette, Type, Camera, FileText, AtSign, Mail, Package } from "lucide-react";
+import { Image, Palette, Type, Camera, FileText, AtSign, Mail } from "lucide-react";
 import LogosSection from "./branding/LogosSection";
 import ColorsSection from "./branding/ColorsSection";
 import FontsSection from "./branding/FontsSection";
@@ -8,7 +8,6 @@ import PhotosSection from "./branding/PhotosSection";
 import { SalesPageCopyBuilder } from "./SalesPageCopyBuilder";
 import { SocialBioBuilder } from "./SocialBioBuilder";
 import { EmailSequencesSection } from "./messaging/EmailSequencesSection";
-import { DeliverableCopySection } from "./messaging/DeliverableCopySection";
 
 interface CreateSectionProps {
   projectId: string;
@@ -23,7 +22,6 @@ const NAV_ITEMS = [
   { id: "sales-copy", label: "Sales Copy", icon: FileText, group: "Messaging" },
   { id: "social-bio", label: "Social Bio", icon: AtSign, group: "Messaging" },
   { id: "emails", label: "Emails", icon: Mail, group: "Messaging" },
-  { id: "deliverables", label: "Deliverables", icon: Package, group: "Messaging" },
 ];
 
 export const CreateSection = ({ projectId }: CreateSectionProps) => {
@@ -45,8 +43,6 @@ export const CreateSection = ({ projectId }: CreateSectionProps) => {
         return <SocialBioBuilder projectId={projectId} />;
       case "emails":
         return <EmailSequencesSection projectId={projectId} />;
-      case "deliverables":
-        return <DeliverableCopySection projectId={projectId} />;
       default:
         return null;
     }

@@ -3,14 +3,12 @@ import { useParams, useLocation } from "react-router-dom";
 import { SalesPageCopyBuilder } from "@/components/SalesPageCopyBuilder";
 import { SocialBioBuilder } from "@/components/SocialBioBuilder";
 import { EmailSequencesSection } from "@/components/messaging/EmailSequencesSection";
-import { DeliverableCopySection } from "@/components/messaging/DeliverableCopySection";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 
 const sectionMap: Record<string, React.ComponentType<{ projectId: string }>> = {
   "sales-copy": SalesPageCopyBuilder,
   "social-bio": SocialBioBuilder,
   emails: EmailSequencesSection,
-  deliverables: DeliverableCopySection,
 };
 
 const sectionConfig: Record<string, { title: string; description: string }> = {
@@ -25,10 +23,6 @@ const sectionConfig: Record<string, { title: string; description: string }> = {
   emails: {
     title: "Email Sequences",
     description: "Build nurture sequences, launch emails, and follow-ups",
-  },
-  deliverables: {
-    title: "Deliverable Copy",
-    description: "Descriptions and copy for your program deliverables",
   },
 };
 

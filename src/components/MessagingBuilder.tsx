@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { FileText, Users, Mail, Package } from "lucide-react";
+import { FileText, Users, Mail } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SalesPageCopyBuilder } from "./SalesPageCopyBuilder";
 import { SocialBioBuilder } from "./SocialBioBuilder";
 import { EmailSequencesSection } from "./messaging/EmailSequencesSection";
-import { DeliverableCopySection } from "./messaging/DeliverableCopySection";
 
 interface MessagingBuilderProps {
   projectId: string;
@@ -16,7 +15,7 @@ export const MessagingBuilder = ({ projectId }: MessagingBuilderProps) => {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-4 h-auto p-1">
+        <TabsList className="w-full grid grid-cols-3 h-auto p-1">
           <TabsTrigger 
             value="sales-page" 
             className="flex items-center gap-2 py-2.5 data-[state=active]:bg-background"
@@ -38,13 +37,6 @@ export const MessagingBuilder = ({ projectId }: MessagingBuilderProps) => {
             <Mail className="w-4 h-4" />
             <span className="hidden sm:inline">Email</span>
           </TabsTrigger>
-          <TabsTrigger 
-            value="deliverable-copy" 
-            className="flex items-center gap-2 py-2.5 data-[state=active]:bg-background"
-          >
-            <Package className="w-4 h-4" />
-            <span className="hidden sm:inline">Deliverable</span>
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="sales-page" className="mt-6">
@@ -57,10 +49,6 @@ export const MessagingBuilder = ({ projectId }: MessagingBuilderProps) => {
 
         <TabsContent value="email-sequences" className="mt-6">
           <EmailSequencesSection projectId={projectId} />
-        </TabsContent>
-
-        <TabsContent value="deliverable-copy" className="mt-6">
-          <DeliverableCopySection projectId={projectId} />
         </TabsContent>
       </Tabs>
     </div>
