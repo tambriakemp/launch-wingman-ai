@@ -8,7 +8,7 @@ export const ProjectBoardMockup = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-lg font-semibold text-foreground mb-1">Project Board</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-1">Tasks</h3>
             <p className="text-sm text-muted-foreground">Track all your launch assets</p>
           </div>
           <div className="flex gap-2">

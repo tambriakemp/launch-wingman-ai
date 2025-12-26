@@ -10,7 +10,7 @@ const keywords = [
   "Brand Assets",
   "Transformation Statements",
   "Audience Insights",
-  "Project Board",
+  "Tasks",
   "Launch Calendar",
 ];
 

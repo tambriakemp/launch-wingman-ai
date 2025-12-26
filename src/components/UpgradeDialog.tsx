@@ -22,7 +22,7 @@ const proFeatures = [
   "Full funnel branding tools",
   "Sales copy & messaging builders",
   "Social media posting",
-  "Project board & execution tools",
+  "Tasks & execution tools",
   "Priority support",
 ];
 

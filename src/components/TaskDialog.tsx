@@ -274,7 +274,7 @@ export const TaskDialog = ({
           <DialogHeader>
             <DialogTitle>{editTask ? "Edit Task" : "Add New Task"}</DialogTitle>
             <DialogDescription>
-              {editTask ? "Update task details below." : "Create a new task for your project board."}
+              {editTask ? "Update task details below." : "Create a new task for your task list."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
