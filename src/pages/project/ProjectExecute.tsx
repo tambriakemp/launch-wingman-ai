@@ -1,7 +1,7 @@
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { useParams, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { ProjectBoard } from "@/components/ProjectBoard";
+import { TasksBoard } from "@/components/TasksBoard";
 import { ContentPlanner } from "@/components/ContentPlanner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -34,7 +34,7 @@ const ProjectExecute = () => {
   return (
     <ProjectLayout>
       {section === "board" ? (
-        <ProjectBoard projectId={id} projectType={projectType} />
+        <TasksBoard projectId={id} projectType={projectType} />
       ) : section === "social" ? (
         <ContentPlanner projectId={id} />
       ) : null}
