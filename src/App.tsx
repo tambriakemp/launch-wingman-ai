@@ -50,7 +50,6 @@ import Relaunch from "./pages/project/Relaunch";
 import Playbook from "./pages/project/Playbook";
 import ProjectContent from "./pages/project/ProjectContent";
 import Insights from "./pages/project/Insights";
-import InsightsOverview from "./pages/InsightsOverview";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -216,15 +215,6 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Playbook />
-                </ProtectedRoute>
-              }
-            />
-            {/* Insights overview route */}
-            <Route
-              path="/insights"
-              element={
-                <ProtectedRoute>
-                  <InsightsOverview />
                 </ProtectedRoute>
               }
             />
