@@ -349,8 +349,8 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
     setStep("content");
   };
 
-  const generatedContent = formula && !editingBio ? formula.build(fieldData) : fieldData.finalContent || "";
-  const charCount = generatedContent.length;
+const generatedContent = formula && !editingBio ? formula.build(fieldData) : fieldData.finalContent || "";
+const charCount = generatedContent?.length || 0;
   const maxChars = platform?.maxChars || 150;
   const isOverLimit = charCount > maxChars;
 
@@ -654,7 +654,7 @@ export const SocialBioBuilder = ({ projectId }: SocialBioBuilderProps) => {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{p?.name}</p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {f?.name} • {bio.content.length}/{p?.maxChars} chars
+                    {f?.name} • {bio.content?.length || 0}/{p?.maxChars} chars
                   </p>
                 </div>
                 
