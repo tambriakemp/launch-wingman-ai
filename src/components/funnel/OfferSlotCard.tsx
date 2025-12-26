@@ -20,7 +20,7 @@ import { OfferSlotConfig, OFFER_TYPES, SLOT_TYPE_COLORS } from "@/data/funnelCon
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { AudienceData } from "./AudienceDiscovery";
+import { AudienceData } from "@/types/audience";
 
 export interface OfferSlotData {
   id?: string;

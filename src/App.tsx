@@ -117,14 +117,6 @@ const App = () => (
               }
             />
             <Route
-              path="/projects/:id/audience"
-              element={
-                <ProtectedRoute>
-                  <ProjectPlan />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/projects/:id/offers"
               element={
                 <ProtectedRoute>

@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { OfferStackBuilder } from "@/components/funnel/OfferStackBuilder";
 import { OfferSlotData } from "@/components/funnel/OfferSlotCard";
-import { AudienceData } from "@/components/funnel/AudienceDiscovery";
+import { AudienceData } from "@/types/audience";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -230,9 +230,9 @@ const OffersContent = ({ projectId }: Props) => {
     return null;
   }
 
-  // Audience not complete - redirect to audience
+  // Audience not complete - redirect to dashboard
   if (!funnel.niche || !funnel.target_audience) {
-    navigate(`/projects/${projectId}/audience`, { replace: true });
+    navigate(`/projects/${projectId}/offer`, { replace: true });
     return null;
   }
 
