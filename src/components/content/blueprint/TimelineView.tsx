@@ -1,4 +1,6 @@
-import { ContentIdeaCard } from "./ContentIdeaCard";
+import { Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { 
   getAllBlueprintIdeas,
   filterIdeasByContentType,
@@ -7,7 +9,6 @@ import {
   type BlueprintIdea 
 } from "@/data/blueprintContent";
 import type { ContentType } from "@/components/content/ContentTab";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface TimelineViewProps {
@@ -34,7 +35,6 @@ export const TimelineView = ({
   onSkip,
 }: TimelineViewProps) => {
   const allIdeas = getAllBlueprintIdeas();
-  // Filter by funnel type first, then content type, then remove skipped
   const filteredIdeas = filterIdeasByFunnelType(
     filterIdeasByContentType(allIdeas, contentType),
     funnelType
@@ -56,7 +56,6 @@ export const TimelineView = ({
       dayHint,
       label: getDayLabel(dayHint),
       ideas: ideas.sort((a, b) => {
-        // Morning before evening
         if (a.timeOfDay === "morning" && b.timeOfDay === "evening") return -1;
         if (a.timeOfDay === "evening" && b.timeOfDay === "morning") return 1;
         return 0;
@@ -67,7 +66,7 @@ export const TimelineView = ({
     return (
       <div className="text-center py-8">
         <p className="text-sm text-muted-foreground">
-          No timeline ideas for this content type. Try a different filter.
+          No timeline ideas for this content type.
         </p>
       </div>
     );
@@ -75,56 +74,64 @@ export const TimelineView = ({
 
   return (
     <div className="relative">
-      {/* Timeline line */}
-      <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
+      {/* Timeline line - muted */}
+      <div className="absolute left-3 top-0 bottom-0 w-px bg-border/50" />
       
-      <div className="space-y-6">
+      <div className="space-y-5">
         {sortedDays.map((day) => (
-          <div key={day.dayHint} className="relative pl-10">
-            {/* Timeline dot */}
+          <div key={day.dayHint} className="relative pl-8">
+            {/* Timeline dot - smaller, muted */}
             <div 
               className={cn(
-                "absolute left-2.5 w-3 h-3 rounded-full border-2 border-background",
-                day.dayHint < 0 ? "bg-muted-foreground/50" : 
-                day.dayHint === 0 ? "bg-primary" : 
-                "bg-accent"
+                "absolute left-1.5 w-3 h-3 rounded-full border-2 border-background",
+                day.dayHint < 0 ? "bg-muted-foreground/30" : 
+                day.dayHint === 0 ? "bg-primary/70" : 
+                "bg-muted-foreground/40"
               )}
-              style={{ top: "0.5rem" }}
+              style={{ top: "0.25rem" }}
             />
             
-            {/* Day header */}
-            <div className="flex items-center gap-2 mb-3">
-              <Badge 
-                variant={day.dayHint === 0 ? "default" : "secondary"}
-                className="text-xs"
-              >
+            {/* Day header - smaller */}
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-medium text-muted-foreground">
                 {day.label}
-              </Badge>
-              {day.dayHint < 0 && (
-                <span className="text-xs text-muted-foreground">Pre-launch</span>
-              )}
-              {day.dayHint > 0 && (
-                <span className="text-xs text-muted-foreground">During launch</span>
-              )}
+              </span>
             </div>
             
-            {/* Ideas for this day */}
-            <div className="grid gap-3">
+            {/* Compact idea cards */}
+            <div className="space-y-2">
               {day.ideas.map((idea) => (
-                <div key={idea.id} className="relative">
-                  {idea.timeOfDay && (
-                    <span className="absolute -left-6 top-4 text-[10px] text-muted-foreground uppercase tracking-wider rotate-[-90deg] origin-left">
-                      {idea.timeOfDay === "morning" ? "AM" : "PM"}
-                    </span>
-                  )}
-                  <ContentIdeaCard
-                    idea={idea}
-                    projectId={projectId}
-                    funnelType={funnelType}
-                    onTurnIntoPost={onTurnIntoPost}
-                    onSkip={onSkip}
-                    formatLabels={FORMAT_LABELS}
-                  />
+                <div 
+                  key={idea.id} 
+                  className="group p-3 rounded-lg border border-border/50 bg-card/50 hover:bg-card transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-foreground/90 mb-1 truncate">
+                        {idea.title}
+                      </h4>
+                      <div className="flex flex-wrap gap-1">
+                        {idea.formats.slice(0, 2).map((format) => (
+                          <Badge 
+                            key={format} 
+                            variant="secondary" 
+                            className="text-[10px] font-normal py-0 h-4 bg-muted/50"
+                          >
+                            {FORMAT_LABELS[format]}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onTurnIntoPost(idea)}
+                      className="shrink-0 h-7 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      Create
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
