@@ -1,19 +1,13 @@
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { useParams, useLocation } from "react-router-dom";
-import { SalesPageCopyBuilder } from "@/components/SalesPageCopyBuilder";
 import { SocialBioBuilder } from "@/components/SocialBioBuilder";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 
 const sectionMap: Record<string, React.ComponentType<{ projectId: string }>> = {
-  "sales-copy": SalesPageCopyBuilder,
   "social-bio": SocialBioBuilder,
 };
 
 const sectionConfig: Record<string, { title: string; description: string }> = {
-  "sales-copy": {
-    title: "Sales Page Copy",
-    description: "Build copy for all pages in your funnel",
-  },
   "social-bio": {
     title: "Social Media Bio",
     description: "Create engaging bios for your social profiles",
@@ -26,7 +20,7 @@ const ProjectMessaging = () => {
 
   if (!id) return null;
 
-  // Extract section from path: /projects/:id/sales-copy → sales-copy
+  // Extract section from path: /projects/:id/social-bio → social-bio
   const pathParts = location.pathname.split("/");
   const section = pathParts[pathParts.length - 1];
   const SectionComponent = sectionMap[section];
