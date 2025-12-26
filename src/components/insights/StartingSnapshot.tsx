@@ -4,8 +4,19 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Flag, Save, Check, Edit2, Users, Mail, DollarSign, Heart } from "lucide-react";
+import { Flag, Save, Check, Edit2, Users, Mail, DollarSign, Heart, Instagram, Facebook } from "lucide-react";
 import { toast } from "sonner";
+
+// Custom TikTok icon since lucide doesn't have one
+const TikTokIcon = ({ className }: { className?: string }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="currentColor" 
+    className={className}
+  >
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+  </svg>
+);
 
 interface StartingSnapshotProps {
   snapshot?: {
@@ -157,10 +168,25 @@ export function StartingSnapshot({ snapshot, onSave, isSaving }: StartingSnapsho
                 <span className="text-xs font-medium">Total Followers</span>
               </div>
               <p className="text-xl font-semibold">{formatNumber(totalFollowers || null)}</p>
-              <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                {snapshot?.instagram_followers && <div>IG: {formatNumber(snapshot.instagram_followers)}</div>}
-                {snapshot?.facebook_followers && <div>FB: {formatNumber(snapshot.facebook_followers)}</div>}
-                {snapshot?.tiktok_followers && <div>TT: {formatNumber(snapshot.tiktok_followers)}</div>}
+              <div className="text-xs text-muted-foreground mt-1 space-y-1">
+                {snapshot?.instagram_followers && (
+                  <div className="flex items-center gap-1.5">
+                    <Instagram className="w-3.5 h-3.5 text-pink-500" />
+                    <span>{formatNumber(snapshot.instagram_followers)}</span>
+                  </div>
+                )}
+                {snapshot?.facebook_followers && (
+                  <div className="flex items-center gap-1.5">
+                    <Facebook className="w-3.5 h-3.5 text-blue-600" />
+                    <span>{formatNumber(snapshot.facebook_followers)}</span>
+                  </div>
+                )}
+                {snapshot?.tiktok_followers && (
+                  <div className="flex items-center gap-1.5">
+                    <TikTokIcon className="w-3.5 h-3.5" />
+                    <span>{formatNumber(snapshot.tiktok_followers)}</span>
+                  </div>
+                )}
               </div>
             </div>
 
