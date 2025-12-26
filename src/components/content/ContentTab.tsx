@@ -7,6 +7,8 @@ import { TalkingPointsSection } from "./TalkingPointsSection";
 import { SavedIdeasSection, type SavedItem } from "./SavedIdeasSection";
 import { DraftPanel } from "./DraftPanel";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
+import { BlueprintSection } from "./blueprint";
+import type { BlueprintIdea } from "@/data/blueprintContent";
 
 export type ContentType = "general" | "stories" | "offer" | "behind-the-scenes";
 
@@ -61,6 +63,19 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
     setDraftPanelOpen(true);
   };
 
+  const handleBlueprintTurnIntoPost = (idea: BlueprintIdea) => {
+    // Convert BlueprintIdea to TalkingPoint format for the DraftPanel
+    const asTalkingPoint: TalkingPoint = {
+      id: idea.id,
+      title: idea.title,
+      description: idea.whyItWorks,
+      contentType: idea.contentType,
+    };
+    setSelectedSavedItem(null);
+    setSelectedTalkingPoint(asTalkingPoint);
+    setDraftPanelOpen(true);
+  };
+
   const handleOpenSavedItem = (item: SavedItem) => {
     setSelectedTalkingPoint(null);
     setSelectedSavedItem(item);
@@ -111,6 +126,14 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
         <SavedIdeasSection 
           projectId={projectId} 
           onOpenItem={handleOpenSavedItem}
+        />
+
+        {/* Launch Content Blueprint */}
+        <BlueprintSection
+          projectId={projectId}
+          funnelType={funnelType}
+          contentType={selectedContentType}
+          onTurnIntoPost={handleBlueprintTurnIntoPost}
         />
       </div>
 
