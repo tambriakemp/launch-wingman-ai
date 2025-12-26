@@ -25,7 +25,7 @@ interface OfferStackBuilderProps {
   offers: OfferSlotData[];
   onChange: (offers: OfferSlotData[]) => void;
   audienceData?: AudienceData;
-  onSaveNow?: () => void;
+  onSaveNow?: (offers: OfferSlotData[]) => void | Promise<void>;
 }
 
 export const OfferStackBuilder = ({
@@ -56,6 +56,14 @@ export const OfferStackBuilder = ({
     const newOffers = [...offers];
     newOffers[index] = data;
     onChange(newOffers);
+  };
+
+  const handleSaveOffer = (updated: OfferSlotData) => {
+    if (activeOfferIndex === null) return;
+    const newOffers = [...offers];
+    newOffers[activeOfferIndex] = updated;
+    onChange(newOffers);
+    void onSaveNow?.(newOffers);
   };
 
   const handleRemoveOffer = (index: number) => {
@@ -296,7 +304,7 @@ export const OfferStackBuilder = ({
           }
           audienceData={audienceData}
           funnelType={funnelType}
-          onSave={onSaveNow}
+          onSave={handleSaveOffer}
         />
       )}
     </div>

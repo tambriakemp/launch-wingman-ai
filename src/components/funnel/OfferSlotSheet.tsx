@@ -40,7 +40,7 @@ interface OfferSlotSheetProps {
   isRemovable: boolean;
   audienceData?: AudienceData;
   funnelType?: string;
-  onSave?: () => void;
+  onSave?: (data: OfferSlotData) => void | Promise<void>;
 }
 
 const PRICE_TYPES = [
@@ -68,6 +68,15 @@ export const OfferSlotSheet = ({
   const [generatedIdeas, setGeneratedIdeas] = useState<GeneratedIdea[]>([]);
   const [showIdeas, setShowIdeas] = useState(false);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const priceRef = useRef<HTMLInputElement>(null);
+  const offerTypeRef = useRef<string>(data.offerType);
+  const priceTypeRef = useRef<string>(data.priceType);
+
+  useEffect(() => {
+    offerTypeRef.current = data.offerType;
+    priceTypeRef.current = data.priceType;
+  }, [data.offerType, data.priceType]);
 
   // Auto-resize textarea when sheet opens or description changes
   useEffect(() => {
@@ -169,7 +178,10 @@ export const OfferSlotSheet = ({
             </Label>
             <Select
               value={data.offerType}
-              onValueChange={(value) => handleFieldChange("offerType", value)}
+              onValueChange={(value) => {
+                offerTypeRef.current = value;
+                handleFieldChange("offerType", value);
+              }}
             >
               <SelectTrigger className="bg-muted/50">
                 <SelectValue placeholder="Select type first..." />
@@ -206,6 +218,7 @@ export const OfferSlotSheet = ({
           <div className="space-y-2">
             <Label>Offer Title</Label>
             <Input
+              ref={titleRef}
               value={data.title}
               onChange={(e) => handleFieldChange("title", e.target.value)}
               placeholder={`e.g., "Ultimate ${slot.label} Guide"`}
@@ -234,6 +247,7 @@ export const OfferSlotSheet = ({
             <div className="space-y-2">
               <Label>Price</Label>
               <Input
+                ref={priceRef}
                 value={data.price}
                 onChange={(e) => handleFieldChange("price", e.target.value)}
                 placeholder="e.g., 297"
@@ -246,7 +260,10 @@ export const OfferSlotSheet = ({
               <Label>Price Type</Label>
               <Select
                 value={data.priceType}
-                onValueChange={(value) => handleFieldChange("priceType", value)}
+                onValueChange={(value) => {
+                  priceTypeRef.current = value;
+                  handleFieldChange("priceType", value);
+                }}
               >
                 <SelectTrigger className="bg-muted/50">
                   <SelectValue placeholder="Select..." />
@@ -316,10 +333,17 @@ export const OfferSlotSheet = ({
           <div className="flex flex-col gap-3 pt-4 border-t border-border">
             <Button 
               onClick={() => {
-                // Trigger immediate save, then close
-                if (onSave) {
-                  onSave();
-                }
+                const updated: OfferSlotData = {
+                  ...data,
+                  title: titleRef.current?.value ?? data.title,
+                  description: descriptionRef.current?.value ?? data.description,
+                  price: priceRef.current?.value ?? data.price,
+                  offerType: offerTypeRef.current ?? data.offerType,
+                  priceType: priceTypeRef.current ?? data.priceType,
+                };
+
+                onChange(updated);
+                onSave?.(updated);
                 onClose();
               }} 
               className="w-full"
