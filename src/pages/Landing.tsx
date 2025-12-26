@@ -119,7 +119,7 @@ const steps = [
   {
     number: "03",
     title: "Launch With Confidence",
-    description: "Execute with a clear checklist, project board, and launch calendar.",
+    description: "Execute with a clear checklist, task list, and launch calendar.",
   },
 ];
 
@@ -423,7 +423,7 @@ const Landing = () => {
               <div className="text-center md:text-left">
                 <div className="text-6xl font-bold text-accent/20 mb-4">03</div>
                 <h3 className="text-2xl font-semibold text-foreground mb-3">Launch With Confidence</h3>
-                <p className="text-muted-foreground text-lg">Execute with a clear checklist, project board, and launch calendar that keeps everything on track.</p>
+                <p className="text-muted-foreground text-lg">Execute with a clear checklist, task list, and launch calendar that keeps everything on track.</p>
               </div>
               <div className="transform hover:scale-[1.02] transition-transform duration-300">
                 <TasksMockup />
