@@ -88,7 +88,7 @@ export interface TaskTemplate {
   completionCriteria: string[];
   whyItMatters: string;
   instructions: string[];
-  inputType: 'selection' | 'text' | 'checklist' | 'multi-select' | 'form';
+  inputType: 'selection' | 'text' | 'checklist' | 'multi-select' | 'form' | 'custom';
   inputSchema?: InputSchema;
   aiAssistModes: AIAssistMode[];
   toolLinks?: ToolLink[];

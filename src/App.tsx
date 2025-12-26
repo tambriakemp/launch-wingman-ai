@@ -42,6 +42,7 @@ import ProjectBrand from "./pages/project/ProjectBrand";
 import ProjectMessaging from "./pages/project/ProjectMessaging";
 import ProjectExecute from "./pages/project/ProjectExecute";
 import TaskDetail from "./pages/project/TaskDetail";
+import OfferSnapshotTask from "./pages/project/OfferSnapshotTask";
 import ProjectSummary from "./pages/project/ProjectSummary";
 import Library from "./pages/project/Library";
 import Relaunch from "./pages/project/Relaunch";
@@ -197,6 +198,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ProjectExecute />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id/tasks/planning_offer_stack"
+              element={
+                <ProtectedRoute>
+                  <OfferSnapshotTask />
                 </ProtectedRoute>
               }
             />
