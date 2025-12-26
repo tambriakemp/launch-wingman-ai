@@ -113,6 +113,33 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
     queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
   };
 
+  const handleUnschedule = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("content_planner")
+        .update({
+          scheduled_at: null,
+          scheduled_platforms: [],
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      // Also delete any pending scheduled posts
+      await supabase
+        .from("scheduled_posts")
+        .delete()
+        .eq("content_item_id", id)
+        .eq("status", "pending");
+
+      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+      toast.success("Post unscheduled");
+    } catch (error) {
+      console.error("Error unscheduling:", error);
+      toast.error("Failed to unschedule");
+    }
+  };
+
   const togglePhase = (phaseId: string) => {
     setExpandedPhases((prev) =>
       prev.includes(phaseId)
@@ -274,10 +301,30 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                               </Badge>
                                             )}
                                             {item.scheduled_at && (
-                                              <Badge className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-200 gap-1">
-                                                <Clock className="w-3 h-3" />
-                                                {format(new Date(item.scheduled_at), "MMM d, h:mm a")}
-                                              </Badge>
+                                              <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                  <Badge 
+                                                    className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-200 gap-1 cursor-pointer hover:bg-emerald-500/20 transition-colors"
+                                                  >
+                                                    <Clock className="w-3 h-3" />
+                                                    {format(new Date(item.scheduled_at), "MMM d, h:mm a")}
+                                                  </Badge>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="start">
+                                                  <DropdownMenuItem onClick={() => handleOpenSchedule(item)}>
+                                                    <CalendarClock className="w-4 h-4 mr-2" />
+                                                    Reschedule
+                                                  </DropdownMenuItem>
+                                                  <DropdownMenuSeparator />
+                                                  <DropdownMenuItem 
+                                                    className="text-destructive"
+                                                    onClick={() => handleUnschedule(item.id)}
+                                                  >
+                                                    <Trash2 className="w-4 h-4 mr-2" />
+                                                    Unschedule
+                                                  </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                              </DropdownMenu>
                                             )}
                                           </div>
                                         </div>
