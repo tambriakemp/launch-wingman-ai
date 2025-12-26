@@ -53,12 +53,12 @@ const ASSET_LABEL_MAP: Record<string, string[]> = {
   'deliverables': ['creative'],
 };
 
-interface ProjectBoardProps {
+interface TasksBoardProps {
   projectId: string;
   projectType: "launch" | "prelaunch";
 }
 
-export const ProjectBoard = ({ projectId, projectType }: ProjectBoardProps) => {
+export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);

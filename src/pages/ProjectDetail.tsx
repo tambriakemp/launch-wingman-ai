@@ -33,7 +33,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { LaunchCalendarEventDialog } from "@/components/LaunchCalendarEventDialog";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
-import { ProjectBoard } from "@/components/ProjectBoard";
+import { TasksBoard } from "@/components/TasksBoard";
 import { ProjectSettingsDialog } from "@/components/ProjectSettingsDialog";
 import { OfferBuilder } from "@/components/OfferBuilder";
 import { ContentPlanner } from "@/components/ContentPlanner";
@@ -483,7 +483,7 @@ const ProjectDetail = () => {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <ProjectBoard projectId={project.id} projectType={project.project_type} />
+                      <TasksBoard projectId={project.id} projectType={project.project_type} />
                     </CardContent>
                   </Card>
                 </TabsContent>
