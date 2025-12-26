@@ -194,6 +194,113 @@ export type Database = {
         }
         Relationships: []
       }
+      content_drafts: {
+        Row: {
+          content: string
+          content_idea_id: string | null
+          content_type: string
+          created_at: string
+          funnel_type: string | null
+          id: string
+          phase: string | null
+          project_id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          content_idea_id?: string | null
+          content_type?: string
+          created_at?: string
+          funnel_type?: string | null
+          id?: string
+          phase?: string | null
+          project_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          content_idea_id?: string | null
+          content_type?: string
+          created_at?: string
+          funnel_type?: string | null
+          id?: string
+          phase?: string | null
+          project_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_drafts_content_idea_id_fkey"
+            columns: ["content_idea_id"]
+            isOneToOne: false
+            referencedRelation: "content_ideas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_drafts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_ideas: {
+        Row: {
+          content_type: string
+          created_at: string
+          description: string | null
+          funnel_type: string | null
+          id: string
+          is_saved: boolean
+          phase: string | null
+          project_id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_type?: string
+          created_at?: string
+          description?: string | null
+          funnel_type?: string | null
+          id?: string
+          is_saved?: boolean
+          phase?: string | null
+          project_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          description?: string | null
+          funnel_type?: string | null
+          id?: string
+          is_saved?: boolean
+          phase?: string | null
+          project_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_ideas_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_planner: {
         Row: {
           content: string | null
