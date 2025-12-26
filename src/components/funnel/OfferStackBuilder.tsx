@@ -218,6 +218,19 @@ export const OfferStackBuilder = ({
                                     ) : null}
                                   </div>
                                 </div>
+                              ) : offer.offerType ? (
+                                <div className="space-y-1">
+                                  <span className="text-sm font-medium text-foreground truncate block">
+                                    {offer.offerType}
+                                  </span>
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    {offer.priceType === 'free' ? (
+                                      <span>Free</span>
+                                    ) : offer.price ? (
+                                      <span>${offer.price}</span>
+                                    ) : null}
+                                  </div>
+                                </div>
                               ) : (
                                 <span className="text-sm text-muted-foreground italic">
                                   Not configured
