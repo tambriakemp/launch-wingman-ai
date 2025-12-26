@@ -35,6 +35,7 @@ export type FunnelType =
   | 'application_call'      // Application → call → offer
   | 'membership'            // Ongoing subscription with continuous value
   | 'challenge'             // Time-bound experience for momentum and activation
+  | 'launch'                // Time-bound window for introducing and selling an offer
   | 'all';                  // Universal tasks that apply to all funnels
 
 // Legacy funnel type mapping (for backwards compatibility)
@@ -56,6 +57,7 @@ export const FUNNEL_TYPE_LABELS: Record<Exclude<FunnelType, 'all'>, string> = {
   application_call: 'Application → Call',
   membership: 'Membership',
   challenge: 'Challenge',
+  launch: 'Launch',
 };
 
 // Funnel type descriptions
@@ -66,6 +68,7 @@ export const FUNNEL_TYPE_DESCRIPTIONS: Record<Exclude<FunnelType, 'all'>, string
   application_call: 'Qualify leads through an application, then close on a call',
   membership: 'An ongoing subscription where members receive continuous value over time, rather than a one-time outcome',
   challenge: 'A short, time-bound experience designed to help people take focused action and experience momentum within a defined window',
+  launch: 'A time-bound window where your offer is introduced, explained, and made available for a limited period',
 };
 
 // Task template - defines what a task looks like before it's created for a project

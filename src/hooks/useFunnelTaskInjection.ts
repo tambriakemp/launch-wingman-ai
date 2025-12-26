@@ -61,6 +61,7 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
       'application_call',
       'membership',
       'challenge',
+      'launch',
       'all',
     ];
     
