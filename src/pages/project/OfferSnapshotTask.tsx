@@ -162,6 +162,10 @@ export default function OfferSnapshotTask() {
       expectedSlotTypes.every(type => existingSlotTypes.includes(type)) &&
       existingSlotTypes.every(type => expectedSlotTypes.includes(type));
 
+    console.log('[OfferStack] LOAD - selectedFunnelType:', selectedFunnelType);
+    console.log('[OfferStack] LOAD - existingOffers from DB:', existingOffers);
+    console.log('[OfferStack] LOAD - hasMatchingOffers:', hasMatchingOffers);
+
     if (existingOffers && existingOffers.length > 0 && hasMatchingOffers) {
       // Load existing offers for this funnel type
       const loadedOffers: OfferSlotData[] = existingOffers.map(o => ({
@@ -176,6 +180,7 @@ export default function OfferSnapshotTask() {
         isConfigured: !!(o.offer_type?.trim()),
         isSkipped: false,
       }));
+      console.log('[OfferStack] LOAD - loadedOffers (mapped):', loadedOffers);
       setOffers(loadedOffers);
     } else {
       // No matching offers - create defaults for this funnel type
@@ -189,6 +194,7 @@ export default function OfferSnapshotTask() {
         isConfigured: false,
         isSkipped: false,
       }));
+      console.log('[OfferStack] LOAD - creating default offers:', defaultOffers);
       setOffers(defaultOffers);
     }
     setIsInitialized(true);
@@ -196,7 +202,13 @@ export default function OfferSnapshotTask() {
 
   // Save offers to database (scoped to current funnel type)
   const saveOffersToDb = useCallback(async (offersToSave: OfferSlotData[]) => {
-    if (!projectId || !user || offersToSave.length === 0 || !selectedFunnelType) return;
+    if (!projectId || !user || offersToSave.length === 0 || !selectedFunnelType) {
+      console.log('[OfferStack] SAVE - skipping, missing required data:', { projectId, user: !!user, offersCount: offersToSave.length, selectedFunnelType });
+      return;
+    }
+
+    console.log('[OfferStack] SAVE - starting save for funnel:', selectedFunnelType);
+    console.log('[OfferStack] SAVE - offersToSave:', offersToSave);
 
     setAutoSaveStatus('saving');
 
@@ -209,7 +221,11 @@ export default function OfferSnapshotTask() {
         .eq("user_id", user.id)
         .eq("funnel_type", selectedFunnelType);
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error('[OfferStack] SAVE - delete error:', deleteError);
+        throw deleteError;
+      }
+      console.log('[OfferStack] SAVE - deleted old offers for funnel:', selectedFunnelType);
 
       // Insert new offers with funnel_type tag
       const offersToInsert = offersToSave.map((offer, index) => ({
@@ -233,13 +249,19 @@ export default function OfferSnapshotTask() {
         desired_outcome: audienceData?.desiredOutcome || null,
       }));
 
-      const { error: insertError } = await supabase.from("offers").insert(offersToInsert);
-      if (insertError) throw insertError;
+      console.log('[OfferStack] SAVE - offersToInsert:', offersToInsert);
+
+      const { data: insertedData, error: insertError } = await supabase.from("offers").insert(offersToInsert).select();
+      if (insertError) {
+        console.error('[OfferStack] SAVE - insert error:', insertError);
+        throw insertError;
+      }
+      console.log('[OfferStack] SAVE - insert SUCCESS, inserted:', insertedData);
 
       setAutoSaveStatus('saved');
       setTimeout(() => setAutoSaveStatus('idle'), 2000);
     } catch (error) {
-      console.error("Save error:", error);
+      console.error("[OfferStack] SAVE - error:", error);
       setAutoSaveStatus('idle');
       throw error;
     }
