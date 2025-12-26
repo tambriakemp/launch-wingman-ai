@@ -661,6 +661,77 @@ export type Database = {
           },
         ]
       }
+      launch_snapshots: {
+        Row: {
+          confidence_level: string | null
+          created_at: string
+          email_list_growth: number | null
+          email_list_size: number | null
+          facebook_followers: number | null
+          id: string
+          instagram_followers: number | null
+          launch_revenue: number | null
+          monthly_revenue: number | null
+          new_followers: number | null
+          project_id: string
+          reflection_note: string | null
+          sales_count: number | null
+          snapshot_type: string
+          tiktok_followers: number | null
+          updated_at: string
+          user_id: string
+          ytd_revenue: number | null
+        }
+        Insert: {
+          confidence_level?: string | null
+          created_at?: string
+          email_list_growth?: number | null
+          email_list_size?: number | null
+          facebook_followers?: number | null
+          id?: string
+          instagram_followers?: number | null
+          launch_revenue?: number | null
+          monthly_revenue?: number | null
+          new_followers?: number | null
+          project_id: string
+          reflection_note?: string | null
+          sales_count?: number | null
+          snapshot_type: string
+          tiktok_followers?: number | null
+          updated_at?: string
+          user_id: string
+          ytd_revenue?: number | null
+        }
+        Update: {
+          confidence_level?: string | null
+          created_at?: string
+          email_list_growth?: number | null
+          email_list_size?: number | null
+          facebook_followers?: number | null
+          id?: string
+          instagram_followers?: number | null
+          launch_revenue?: number | null
+          monthly_revenue?: number | null
+          new_followers?: number | null
+          project_id?: string
+          reflection_note?: string | null
+          sales_count?: number | null
+          snapshot_type?: string
+          tiktok_followers?: number | null
+          updated_at?: string
+          user_id?: string
+          ytd_revenue?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "launch_snapshots_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       library_article_order: {
         Row: {
           article_id: string

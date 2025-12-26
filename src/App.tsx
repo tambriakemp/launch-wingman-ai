@@ -49,6 +49,7 @@ import Library from "./pages/project/Library";
 import Relaunch from "./pages/project/Relaunch";
 import Playbook from "./pages/project/Playbook";
 import ProjectContent from "./pages/project/ProjectContent";
+import Insights from "./pages/project/Insights";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -222,6 +223,15 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ProjectContent />
+                </ProtectedRoute>
+              }
+            />
+            {/* Insights route */}
+            <Route
+              path="/projects/:id/insights"
+              element={
+                <ProtectedRoute>
+                  <Insights />
                 </ProtectedRoute>
               }
             />
