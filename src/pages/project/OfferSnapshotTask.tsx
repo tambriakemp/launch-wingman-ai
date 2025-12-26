@@ -38,12 +38,12 @@ export default function OfferSnapshotTask() {
   const [isSaving, setIsSaving] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Wrapper that auto-computes isConfigured based on title + offerType
+  // Wrapper that auto-computes isConfigured based on offerType (not title)
   const setOffers = useCallback((newOffers: OfferSlotData[]) => {
     const offersWithAutoConfig = newOffers.map(offer => ({
       ...offer,
-      // Auto-compute: configured if has title AND offerType (and not skipped)
-      isConfigured: !!(offer.title?.trim() && offer.offerType?.trim()) && !offer.isSkipped,
+      // Auto-compute: configured if has offerType (and not skipped) - title is optional
+      isConfigured: !!(offer.offerType?.trim()) && !offer.isSkipped,
     }));
     setOffersRaw(offersWithAutoConfig);
   }, []);
@@ -172,7 +172,8 @@ export default function OfferSnapshotTask() {
         offerType: o.offer_type,
         price: o.price?.toString() || '',
         priceType: o.price_type || 'one-time',
-        isConfigured: !!(o.title && o.offer_type),
+        // Configured if offerType exists (title is optional)
+        isConfigured: !!(o.offer_type?.trim()),
         isSkipped: false,
       }));
       setOffers(loadedOffers);
@@ -271,8 +272,8 @@ export default function OfferSnapshotTask() {
   }, [offers, isInitialized, performSave]);
 
   const handleComplete = async () => {
-    // Check if at least one offer is defined
-    const configuredOffers = offers.filter(o => o.title && o.offerType && !o.isSkipped);
+    // Check if at least one offer has offerType (title is optional)
+    const configuredOffers = offers.filter(o => o.offerType?.trim() && !o.isSkipped);
     
     if (configuredOffers.length === 0) {
       toast.error("Please configure at least one offer before continuing");
@@ -282,6 +283,8 @@ export default function OfferSnapshotTask() {
     setIsSaving(true);
     try {
       await saveOffersToDb(offers);
+      // Invalidate cache to ensure fresh data on next load
+      queryClient.invalidateQueries({ queryKey: ["offers", projectId, selectedFunnelType] });
       await completeTask('planning_offer_stack', { offers: offers.filter(o => !o.isSkipped) });
       
       toast.success("Offer stack saved! Your offer ecosystem is taking shape.");
@@ -460,10 +463,7 @@ export default function OfferSnapshotTask() {
                   Saving...
                 </>
               ) : (
-                <>
-                  <Check className="w-4 h-4 mr-2" />
-                  Save & Continue
-                </>
+                "Save & mark complete →"
               )}
             </Button>
             <Button
