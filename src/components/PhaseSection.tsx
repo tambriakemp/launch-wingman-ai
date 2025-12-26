@@ -11,6 +11,17 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
+// Friendly names for funnel types
+const FUNNEL_TYPE_LABELS: Record<string, string> = {
+  'content_to_offer': 'Content',
+  'freebie_email_offer': 'Freebie',
+  'live_training_offer': 'Webinar',
+  'application_call': 'Application',
+  'membership': 'Membership',
+  'challenge': 'Challenge',
+  'launch': 'Launch',
+};
+
 interface PhaseSectionProps {
   projectId: string;
   label: string;
@@ -208,7 +219,7 @@ export const PhaseSection = ({
                   {task.funnelTypes && task.funnelTypes.length > 0 && !task.funnelTypes.includes('all') && (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium flex-shrink-0">
                       <Sparkles className="w-2.5 h-2.5" />
-                      Funnel
+                      {FUNNEL_TYPE_LABELS[task.funnelTypes[0]] || task.funnelTypes[0]}
                     </span>
                   )}
                   
