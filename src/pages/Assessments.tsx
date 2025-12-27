@@ -273,14 +273,6 @@ const Assessments = () => {
                         </div>
                       </div>
                     )}
-                    
-                    <div className="flex flex-wrap gap-2">
-                      {assessment.categories.map((category) => (
-                        <Badge key={category} variant="secondary" className="text-xs">
-                          {category}
-                        </Badge>
-                      ))}
-                    </div>
 
                     <div className="flex gap-2">
                       <Button asChild className="w-full sm:w-auto">
