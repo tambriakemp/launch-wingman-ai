@@ -6,6 +6,7 @@ import { ViewMoreDialog } from "./ViewMoreDialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Phase } from "@/types/tasks";
+import type { ContentType, StructuredContent, ContentItem } from "@/hooks/usePhaseSnapshot";
 
 interface SummaryCardProps {
   label: string;
@@ -14,6 +15,8 @@ interface SummaryCardProps {
   taskRoute: string;
   taskId: string;
   phase: Phase;
+  contentType: ContentType;
+  structuredContent: StructuredContent;
 }
 
 // Map task IDs to contextual icons
@@ -69,9 +72,259 @@ const PHASE_BUTTON_COLORS: Record<Phase, string> = {
   "post-launch": "bg-teal-500 hover:bg-teal-600 text-white",
 };
 
+const PHASE_BADGE_COLORS: Record<Phase, string> = {
+  planning: "bg-blue-500/15 text-blue-600 border-blue-500/30",
+  messaging: "bg-purple-500/15 text-purple-600 border-purple-500/30",
+  build: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
+  content: "bg-amber-500/15 text-amber-600 border-amber-500/30",
+  launch: "bg-rose-500/15 text-rose-600 border-rose-500/30",
+  "post-launch": "bg-teal-500/15 text-teal-600 border-teal-500/30",
+};
+
 const MAX_LINES = 7;
 
-export function SummaryCard({ label, bullets, fullContent, taskRoute, taskId, phase }: SummaryCardProps) {
+// Content Renderer Component
+function ContentRenderer({ 
+  contentType, 
+  structuredContent, 
+  phase 
+}: { 
+  contentType: ContentType; 
+  structuredContent: StructuredContent;
+  phase: Phase;
+}) {
+  const items = structuredContent.items;
+  
+  if (!items || items.length === 0) {
+    return null;
+  }
+
+  switch (contentType) {
+    case "paragraph":
+      return (
+        <div className="space-y-1">
+          {items.map((item, idx) => (
+            <p key={idx} className="text-sm text-muted-foreground leading-relaxed">
+              {item.value}
+            </p>
+          ))}
+        </div>
+      );
+
+    case "quote":
+      return (
+        <div className="space-y-2">
+          {items.map((item, idx) => (
+            <p key={idx} className="text-sm text-muted-foreground italic leading-relaxed">
+              "{item.value}"
+            </p>
+          ))}
+        </div>
+      );
+
+    case "numbered-list":
+      return (
+        <div className="space-y-2">
+          {items.slice(0, 5).map((item, idx) => (
+            <div key={idx} className="flex gap-2.5">
+              <span className="text-sm font-medium text-muted-foreground/70 shrink-0 w-5">
+                {idx + 1}.
+              </span>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {item.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      );
+
+    case "key-value":
+      return (
+        <div className="space-y-3">
+          {items.slice(0, 4).map((item, idx) => (
+            <div key={idx}>
+              <span className="text-xs font-semibold text-foreground/80 uppercase tracking-wide">
+                {item.label}
+              </span>
+              <p className="text-sm text-muted-foreground leading-relaxed mt-0.5">
+                {item.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      );
+
+    case "offer-stack":
+      return (
+        <div className="space-y-3">
+          {items.slice(0, 3).map((item, idx) => (
+            <div key={idx} className={cn(
+              idx > 0 && "pt-3 border-t border-border/50"
+            )}>
+              <p className="text-sm font-semibold text-foreground">
+                {item.label}
+              </p>
+              {item.value && (
+                <p className="text-sm text-muted-foreground leading-relaxed mt-0.5">
+                  {item.value}
+                </p>
+              )}
+              <p className="text-sm font-medium text-primary mt-1">
+                {item.secondary}
+              </p>
+            </div>
+          ))}
+        </div>
+      );
+
+    case "badge":
+      return (
+        <div className="flex flex-wrap gap-2">
+          {items.map((item, idx) => (
+            <span 
+              key={idx}
+              className={cn(
+                "inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border",
+                PHASE_BADGE_COLORS[phase]
+              )}
+            >
+              {item.value}
+            </span>
+          ))}
+        </div>
+      );
+
+    case "visual-palette":
+      const colors = items.filter(i => i.label === "color");
+      const fonts = items.filter(i => i.label !== "color");
+      
+      return (
+        <div className="space-y-3">
+          {colors.length > 0 && (
+            <div>
+              <span className="text-xs font-semibold text-foreground/80 uppercase tracking-wide">
+                Colors
+              </span>
+              <div className="flex flex-wrap gap-2 mt-1.5">
+                {colors.slice(0, 6).map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-1.5">
+                    <div 
+                      className="w-5 h-5 rounded-full border border-border/50 shrink-0"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    {item.value && (
+                      <span className="text-xs text-muted-foreground">{item.value}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {fonts.length > 0 && (
+            <div>
+              <span className="text-xs font-semibold text-foreground/80 uppercase tracking-wide">
+                Fonts
+              </span>
+              <div className="space-y-1 mt-1">
+                {fonts.slice(0, 3).map((item, idx) => (
+                  <div key={idx} className="flex items-baseline gap-2">
+                    <span className="text-xs text-muted-foreground/70 capitalize">{item.label}:</span>
+                    <span className="text-sm text-muted-foreground font-medium">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+
+    case "social-bio":
+      return (
+        <div className="space-y-3">
+          {items.slice(0, 2).map((item, idx) => (
+            <div key={idx} className={cn(
+              idx > 0 && "pt-3 border-t border-border/50"
+            )}>
+              <span className="text-xs font-semibold text-foreground/80 uppercase tracking-wide">
+                {item.label}
+              </span>
+              <p className="text-sm text-muted-foreground leading-relaxed mt-0.5">
+                {item.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      );
+
+    case "metrics":
+      return (
+        <div className="grid grid-cols-2 gap-3">
+          {items.slice(0, 6).map((item, idx) => (
+            <div key={idx}>
+              <span className="text-xs text-muted-foreground/70">
+                {item.label}
+              </span>
+              <p className="text-sm font-semibold text-foreground">
+                {item.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      );
+
+    case "checklist":
+      return (
+        <div className="space-y-1.5">
+          {items.slice(0, 5).map((item, idx) => (
+            <div key={idx} className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span className="text-sm text-muted-foreground">
+                {item.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+
+    case "dates":
+      return (
+        <div className="space-y-2">
+          {items.map((item, idx) => (
+            <div key={idx} className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground/80">
+                {item.label}
+              </span>
+              <span className="text-sm font-medium text-foreground">
+                {item.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+
+    default:
+      return (
+        <div className="space-y-1">
+          {items.map((item, idx) => (
+            <p key={idx} className="text-sm text-muted-foreground leading-relaxed">
+              {item.value}
+            </p>
+          ))}
+        </div>
+      );
+  }
+}
+
+export function SummaryCard({ 
+  label, 
+  bullets, 
+  fullContent, 
+  taskRoute, 
+  taskId, 
+  phase,
+  contentType,
+  structuredContent 
+}: SummaryCardProps) {
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -80,14 +333,14 @@ export function SummaryCard({ label, bullets, fullContent, taskRoute, taskId, ph
 
   const Icon = TASK_ICONS[taskId] || MessageSquare;
 
-  // Check if content exceeds 4 lines
+  // Check if content exceeds max lines
   useEffect(() => {
     if (contentRef.current) {
       const lineHeight = parseFloat(getComputedStyle(contentRef.current).lineHeight);
       const maxHeight = lineHeight * MAX_LINES;
       setNeedsTruncation(contentRef.current.scrollHeight > maxHeight + 8);
     }
-  }, [bullets, fullContent]);
+  }, [structuredContent, contentType]);
 
   const handleCopy = async () => {
     try {
@@ -103,9 +356,6 @@ export function SummaryCard({ label, bullets, fullContent, taskRoute, taskId, ph
   const handleViewTask = () => {
     navigate(taskRoute);
   };
-
-  // Format content as flowing paragraph text
-  const displayContent = bullets.join(" ");
 
   return (
     <>
@@ -135,21 +385,25 @@ export function SummaryCard({ label, bullets, fullContent, taskRoute, taskId, ph
           </h3>
         </div>
 
-        {/* Content area */}
+        {/* Content area with smart formatting */}
         <div className="relative">
           <div 
             ref={contentRef}
             className={cn(
-              "text-sm text-muted-foreground leading-relaxed whitespace-normal",
+              "min-h-[2rem]",
               needsTruncation && "[display:-webkit-box] [-webkit-line-clamp:7] [-webkit-box-orient:vertical] overflow-hidden"
             )}
           >
-            {displayContent}
+            <ContentRenderer 
+              contentType={contentType} 
+              structuredContent={structuredContent}
+              phase={phase}
+            />
           </div>
 
           {/* Fade gradient for truncated content */}
           {needsTruncation && (
-            <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none" />
           )}
         </div>
 

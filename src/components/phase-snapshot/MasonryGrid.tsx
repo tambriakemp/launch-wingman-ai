@@ -28,6 +28,8 @@ export function MasonryGrid({ blocks }: MasonryGridProps) {
             taskRoute={block.taskRoute}
             taskId={block.taskId}
             phase={block.phase}
+            contentType={block.contentType}
+            structuredContent={block.structuredContent}
           />
         </div>
       ))}
