@@ -1,5 +1,6 @@
 import { MessageSquare, FileText, Mail, AtSign, Sparkles, Copy, Wand2, BookOpen } from "lucide-react";
 import { FeaturePageLayout } from "@/components/landing/FeaturePageLayout";
+import { MessagingMockup } from "@/components/landing/screenshots/MessagingMockup";
 
 const features = [
   {
@@ -51,6 +52,7 @@ const MessagingFeature = () => {
       description="Writer's block is expensive. Our AI tools help you create compelling sales copy, email sequences, and social content that speaks directly to your audience's desires and pain points."
       features={features}
       benefits={benefits}
+      screenshot={<MessagingMockup />}
     />
   );
 };
