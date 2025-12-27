@@ -12,7 +12,7 @@ const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 async function sendEmailUpdateNotification(email: string, oldEmail: string) {
   try {
     await resend.emails.send({
-      from: "Launchely <onboarding@resend.dev>",
+      from: "Launchely <hello@launchely.com>",
       to: [email],
       subject: "Your Email Has Been Updated",
       html: `
@@ -34,7 +34,7 @@ async function sendEmailUpdateNotification(email: string, oldEmail: string) {
 async function sendTempPasswordNotification(email: string, tempPassword: string) {
   try {
     await resend.emails.send({
-      from: "Launchely <onboarding@resend.dev>",
+      from: "Launchely <hello@launchely.com>",
       to: [email],
       subject: "Your Temporary Password",
       html: `
