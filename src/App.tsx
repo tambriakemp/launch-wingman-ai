@@ -18,6 +18,7 @@ import Assessment from "./pages/Assessment";
 import CoachAssessment from "./pages/CoachAssessment";
 import WhyStatementAssessment from "./pages/WhyStatementAssessment";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminContentVault from "./pages/AdminContentVault";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
@@ -302,6 +303,14 @@ const App = () => (
               element={
                 <ProtectedAdminRoute>
                   <AdminDashboard />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/content-vault"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminContentVault />
                 </ProtectedAdminRoute>
               }
             />
