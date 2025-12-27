@@ -437,6 +437,8 @@ export function SummaryCard({
         content={fullContent}
         taskRoute={taskRoute}
         phase={phase}
+        contentType={contentType}
+        structuredContent={structuredContent}
       />
     </>
   );
