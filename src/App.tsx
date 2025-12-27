@@ -202,6 +202,7 @@ const App = () => (
               }
             />
             <Route
+              path="/projects/:id/tasks/:taskId"
               element={
                 <ProtectedRoute>
                   <TaskDetail />
