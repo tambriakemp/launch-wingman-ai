@@ -25,6 +25,8 @@ import {
   Wand2,
   Brain,
   Package,
+  BarChart3,
+  RefreshCw,
 } from "lucide-react";
 
 const features = [
@@ -63,6 +65,18 @@ const features = [
     title: "Content Vault",
     description: "Access ready-to-use templates, social posts, ebooks, presets, and more.",
     href: "/features/content-vault",
+  },
+  {
+    icon: BarChart3,
+    title: "Insights",
+    description: "Track your launch metrics, compare results, and see your growth over time.",
+    href: "/features/insights",
+  },
+  {
+    icon: RefreshCw,
+    title: "Relaunch",
+    description: "Launch again smarter by keeping what worked and iterating on what didn't.",
+    href: "/features/relaunch",
   },
 ];
 
