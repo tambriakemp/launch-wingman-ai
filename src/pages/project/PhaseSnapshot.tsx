@@ -1,9 +1,10 @@
 import { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
-import { PhaseFilters, PhaseAccordion } from "@/components/phase-snapshot";
+import { PhaseFilters } from "@/components/phase-snapshot/PhaseFilters";
+import { MasonryGrid } from "@/components/phase-snapshot/MasonryGrid";
 import { usePhaseSnapshot } from "@/hooks/usePhaseSnapshot";
 import { Phase, PHASES } from "@/types/tasks";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,13 +15,13 @@ function LoadingSkeleton() {
       <Skeleton className="h-10 w-64" />
       <Skeleton className="h-5 w-96" />
       <div className="flex gap-2 pt-4">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <Skeleton key={i} className="h-8 w-20 rounded-full" />
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <Skeleton key={i} className="h-10 w-24 rounded-full" />
         ))}
       </div>
-      <div className="space-y-4 pt-6">
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-24 w-full rounded-xl" />
+      <div className="columns-1 md:columns-2 gap-5 space-y-5 pt-6">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <Skeleton key={i} className="h-40 w-full rounded-xl break-inside-avoid" />
         ))}
       </div>
     </div>
@@ -29,25 +30,24 @@ function LoadingSkeleton() {
 
 export default function PhaseSnapshot() {
   const { id } = useParams();
-  const [selectedPhase, setSelectedPhase] = useState<"all" | Phase>("all");
+  const [selectedPhase, setSelectedPhase] = useState<Phase>("planning");
   const { data: phases, isLoading, error } = usePhaseSnapshot(id);
 
-  // Filter phases based on selection
-  const filteredPhases = useMemo(() => {
+  // Get all blocks for selected phase with phase info attached
+  const filteredBlocks = useMemo(() => {
     if (!phases) return [];
-    if (selectedPhase === "all") return phases;
-    return phases.filter(p => p.phase === selectedPhase);
+    const phaseData = phases.find(p => p.phase === selectedPhase);
+    if (!phaseData) return [];
+    return phaseData.blocks.map(block => ({
+      ...block,
+      phase: selectedPhase
+    }));
   }, [phases, selectedPhase]);
-
-  // Get all phase keys for default expansion
-  const expandedPhases = useMemo(() => {
-    return [...PHASES] as string[];
-  }, []);
 
   if (isLoading) {
     return (
       <ProjectLayout>
-        <div className="max-w-3xl mx-auto px-4 py-8 sm:py-12">
+        <div className="max-w-5xl mx-auto px-4 py-8 sm:py-12">
           <LoadingSkeleton />
         </div>
       </ProjectLayout>
@@ -57,7 +57,7 @@ export default function PhaseSnapshot() {
   if (error || !phases) {
     return (
       <ProjectLayout>
-        <div className="max-w-3xl mx-auto px-4 py-12 text-center">
+        <div className="max-w-5xl mx-auto px-4 py-12 text-center">
           <p className="text-muted-foreground">Unable to load phase snapshot.</p>
         </div>
       </ProjectLayout>
@@ -66,7 +66,7 @@ export default function PhaseSnapshot() {
 
   return (
     <ProjectLayout>
-      <div className="max-w-3xl mx-auto px-4 py-8 sm:py-12">
+      <div className="max-w-5xl mx-auto px-4 py-8 sm:py-12">
         {/* Back Link */}
         <motion.div 
           initial={{ opacity: 0 }}
@@ -109,16 +109,13 @@ export default function PhaseSnapshot() {
           />
         </motion.div>
 
-        {/* Phase Accordion Sections */}
+        {/* Masonry Grid of Cards */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <PhaseAccordion
-            phases={filteredPhases}
-            expandedPhases={expandedPhases}
-          />
+          <MasonryGrid blocks={filteredBlocks} />
         </motion.div>
 
         {/* Reflective Footer */}

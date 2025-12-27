@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { Pencil } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -79,16 +78,12 @@ export function ViewMoreDialog({
             </div>
           </ScrollArea>
 
-          <div className="flex justify-end gap-3 p-6 pt-4 border-t border-border/30 bg-muted/30">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
+          <div className="flex justify-end p-6 pt-4 border-t border-border/30 bg-muted/30">
             <Button 
               onClick={handleEdit} 
-              className={cn("gap-2 text-white", PHASE_BUTTON_COLORS[phase])}
+              className={cn("text-white", PHASE_BUTTON_COLORS[phase])}
             >
-              <Pencil className="w-4 h-4" />
-              Edit
+              View Task
             </Button>
           </div>
         </div>
