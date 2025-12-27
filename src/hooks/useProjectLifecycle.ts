@@ -254,6 +254,24 @@ export function useProjectLifecycle({ projectId }: UseProjectLifecycleOptions): 
         },
       }).catch((err) => console.error("Failed to send project completed email:", err));
       
+      // Check if this is the user's second completed project for playbook_ready email
+      const { count: completedCount } = await supabase
+        .from('projects')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user?.id)
+        .eq('status', 'completed');
+      
+      if (completedCount === 2) {
+        // Send playbook_ready email (fire and forget)
+        supabase.functions.invoke("send-notification-email", {
+          body: {
+            email_type: "playbook_ready",
+            user_id: user?.id,
+            data: {},
+          },
+        }).catch((err) => console.error("Failed to send playbook ready email:", err));
+      }
+      
       return true;
     } catch (err) {
       console.error('Error marking project as completed:', err);
