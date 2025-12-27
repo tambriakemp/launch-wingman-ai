@@ -1,16 +1,6 @@
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, Navigate } from "react-router-dom";
 import LogosSection from "@/components/branding/LogosSection";
-import ColorsSection from "@/components/branding/ColorsSection";
-import FontsSection from "@/components/branding/FontsSection";
-import PhotosSection from "@/components/branding/PhotosSection";
-
-const sectionMap: Record<string, React.ComponentType<{ projectId: string }>> = {
-  logos: LogosSection,
-  colors: ColorsSection,
-  fonts: FontsSection,
-  photos: PhotosSection,
-};
 
 const ProjectBrand = () => {
   const { id } = useParams();
@@ -21,13 +11,18 @@ const ProjectBrand = () => {
   // Extract section from path: /projects/:id/logos → logos
   const pathParts = location.pathname.split("/");
   const section = pathParts[pathParts.length - 1];
-  const SectionComponent = sectionMap[section];
 
-  if (!SectionComponent) return null;
+  // Redirect colors, fonts, photos to the visual direction task
+  if (section === "colors" || section === "fonts" || section === "photos") {
+    return <Navigate to={`/projects/${id}/tasks/messaging_visual_direction`} replace />;
+  }
+
+  // Only logos section remains here
+  if (section !== "logos") return null;
 
   return (
     <ProjectLayout>
-      <SectionComponent projectId={id} />
+      <LogosSection projectId={id} />
     </ProjectLayout>
   );
 };

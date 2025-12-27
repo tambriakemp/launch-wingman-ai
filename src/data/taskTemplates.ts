@@ -536,6 +536,37 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
     aiAssistModes: ['help_me_choose', 'examples', 'simplify'],
     route: '/projects/:id/tasks/messaging_social_bio',
   },
+  {
+    taskId: 'messaging_visual_direction',
+    title: 'Set your launch visual direction',
+    phase: 'messaging',
+    funnelTypes: ['all'],
+    order: 7,
+    priority: 2,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 15,
+    blocking: false,
+    dependencies: ['messaging_social_bio'],
+    canSkip: true,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'I\'ve chosen a simple visual direction',
+      'I understand this is just for this launch',
+    ],
+    whyItMatters: 'When your visuals feel consistent, posting feels easier — and your audience understands you faster. This isn\'t about perfect branding. It\'s about choosing a direction so you don\'t second-guess every post.',
+    instructions: [
+      'Choose a small set of visual cues for this launch',
+      'Keep it simple — less is better',
+      'You can change this later or use a different direction next launch',
+    ],
+    inputType: 'custom',
+    inputSchema: {
+      type: 'custom',
+      customComponent: 'VisualDirectionBuilder',
+    },
+    aiAssistModes: ['help_me_choose'],
+    route: '/projects/:id/tasks/messaging_visual_direction',
+  },
 
   // ==================== BUILD PHASE ====================
   // Goal: "Put your offer somewhere real so people can find it and buy it — without tech overwhelm."
