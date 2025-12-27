@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Sparkles, Check, Palette, Type, Camera, ExternalLink } from "lucide-react";
+import { ArrowLeft, Sparkles, Clock, Palette, Type, Camera, ExternalLink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ColorsSection from "@/components/branding/ColorsSection";
 import FontsSection from "@/components/branding/FontsSection";
@@ -121,7 +120,7 @@ const VisualDirectionTask = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background p-6">
-        <div className="max-w-4xl mx-auto animate-pulse space-y-6">
+        <div className="max-w-2xl mx-auto animate-pulse space-y-6">
           <div className="h-8 bg-muted rounded w-1/4" />
           <div className="h-64 bg-muted rounded" />
         </div>
@@ -131,126 +130,162 @@ const VisualDirectionTask = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto p-6 space-y-8">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => navigate(`/projects/${projectId}/plan`)}
+      <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
+        {/* Header / Context Section */}
+        <div className="mb-10">
+          <Link
+            to={`/projects/${projectId}/offer`}
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Set Your Launch Visual Direction</h1>
-            <p className="text-muted-foreground">~10 minutes</p>
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </Link>
+
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+              Messaging Phase
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5" />
+              Estimated time: ~10 minutes
+            </span>
           </div>
+
+          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
+            Set Your Launch Visual Direction
+          </h1>
         </div>
 
-        {/* Why This Matters */}
-        <Card className="p-6 bg-muted/30 border-muted">
-          <h2 className="text-lg font-semibold mb-2">Why This Matters</h2>
-          <p className="text-muted-foreground">
+        {/* Why This Matters Section */}
+        <section className="mb-10">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">
+            Why this matters
+          </h2>
+          <p className="text-foreground/80 leading-relaxed">
             When your visuals feel consistent, posting feels easier — and your audience understands you faster.
             This isn't about perfect branding. It's about choosing a direction so you don't second-guess every post.
           </p>
-        </Card>
+        </section>
 
-        {/* What To Do */}
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-3">What To Do</h2>
-          <ul className="space-y-2 text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-              Choose a small set of visual cues for this launch
+        <div className="h-px bg-border mb-10" />
+
+        {/* What to Do Section */}
+        <section className="mb-10">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">
+            What to do
+          </h2>
+          <ol className="space-y-3">
+            <li className="flex gap-3 items-start">
+              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0 text-xs font-medium text-muted-foreground">
+                1
+              </span>
+              <span className="text-foreground/80 pt-0.5">Choose a small set of visual cues for this launch</span>
             </li>
-            <li className="flex items-start gap-2">
-              <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-              Keep it simple — less is better
+            <li className="flex gap-3 items-start">
+              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0 text-xs font-medium text-muted-foreground">
+                2
+              </span>
+              <span className="text-foreground/80 pt-0.5">Keep it simple — less is better</span>
             </li>
-            <li className="flex items-start gap-2">
-              <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-              You can change this later or use a different direction next launch
+            <li className="flex gap-3 items-start">
+              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0 text-xs font-medium text-muted-foreground">
+                3
+              </span>
+              <span className="text-foreground/80 pt-0.5">You can change this later or use a different direction next launch</span>
             </li>
-          </ul>
-        </Card>
+          </ol>
+        </section>
 
-        {/* Visual Direction Sections */}
-        <Accordion type="multiple" defaultValue={["colors", "fonts", "photos"]} className="space-y-4">
-          {/* Colors Section */}
-          <AccordionItem value="colors" className="border rounded-lg px-6">
-            <AccordionTrigger className="py-4">
-              <div className="flex items-center gap-3">
-                <Palette className="h-5 w-5 text-primary" />
-                <div className="text-left">
-                  <p className="font-semibold">Choose your color palette</p>
-                  <p className="text-sm text-muted-foreground font-normal">
-                    These don't have to be perfect. <a href="https://coolors.co" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">Coolors.co <ExternalLink className="h-3 w-3" /></a> is a great site to get inspiration.
-                  </p>
+        <div className="h-px bg-border mb-10" />
+
+        {/* Visual Direction Input Section */}
+        <section className="mb-10">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">
+            Your visual direction
+          </h2>
+          
+          <Accordion type="multiple" defaultValue={["colors", "fonts", "photos"]} className="space-y-4">
+            {/* Colors Section */}
+            <AccordionItem value="colors" className="border rounded-lg px-4">
+              <AccordionTrigger className="py-4 hover:no-underline">
+                <div className="flex items-center gap-3">
+                  <Palette className="h-5 w-5 text-primary" />
+                  <div className="text-left">
+                    <p className="font-medium text-foreground">Choose your color palette</p>
+                    <p className="text-sm text-muted-foreground font-normal">
+                      These don't have to be perfect. <a href="https://coolors.co" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">Coolors.co <ExternalLink className="h-3 w-3" /></a> is a great site to get inspiration.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-6">
-              <ColorsSection projectId={projectId!} />
-            </AccordionContent>
-          </AccordionItem>
+              </AccordionTrigger>
+              <AccordionContent className="pb-6">
+                <ColorsSection projectId={projectId!} />
+              </AccordionContent>
+            </AccordionItem>
 
-          {/* Fonts Section */}
-          <AccordionItem value="fonts" className="border rounded-lg px-6">
-            <AccordionTrigger className="py-4">
-              <div className="flex items-center gap-3">
-                <Type className="h-5 w-5 text-primary" />
-                <div className="text-left">
-                  <p className="font-semibold">Which font styles feel right for this launch?</p>
-                  <p className="text-sm text-muted-foreground font-normal">
-                    You're choosing a feel, not a font file.
-                  </p>
+            {/* Fonts Section */}
+            <AccordionItem value="fonts" className="border rounded-lg px-4">
+              <AccordionTrigger className="py-4 hover:no-underline">
+                <div className="flex items-center gap-3">
+                  <Type className="h-5 w-5 text-primary" />
+                  <div className="text-left">
+                    <p className="font-medium text-foreground">Which font styles feel right for this launch?</p>
+                    <p className="text-sm text-muted-foreground font-normal">
+                      You're choosing a feel, not a font file.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-6">
-              <FontsSection projectId={projectId!} />
-            </AccordionContent>
-          </AccordionItem>
+              </AccordionTrigger>
+              <AccordionContent className="pb-6">
+                <FontsSection projectId={projectId!} />
+              </AccordionContent>
+            </AccordionItem>
 
-          {/* Photos Section */}
-          <AccordionItem value="photos" className="border rounded-lg px-6">
-            <AccordionTrigger className="py-4">
-              <div className="flex items-center gap-3">
-                <Camera className="h-5 w-5 text-primary" />
-                <div className="text-left">
-                  <p className="font-semibold">What kind of visuals feel aligned?</p>
-                  <p className="text-sm text-muted-foreground font-normal">
-                    Pick what feels easiest to stay consistent with.
-                  </p>
+            {/* Photos Section */}
+            <AccordionItem value="photos" className="border rounded-lg px-4">
+              <AccordionTrigger className="py-4 hover:no-underline">
+                <div className="flex items-center gap-3">
+                  <Camera className="h-5 w-5 text-primary" />
+                  <div className="text-left">
+                    <p className="font-medium text-foreground">What kind of visuals feel aligned?</p>
+                    <p className="text-sm text-muted-foreground font-normal">
+                      Pick what feels easiest to stay consistent with.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-6">
-              <PhotosSection projectId={projectId!} />
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+              </AccordionTrigger>
+              <AccordionContent className="pb-6">
+                <PhotosSection projectId={projectId!} />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </section>
 
-        {/* AI Assist */}
-        <Card className="p-6 border-dashed">
+        <div className="h-px bg-border mb-10" />
+
+        {/* AI Assist Section */}
+        <section className="mb-10 p-5 rounded-xl bg-muted/30 border border-border/50">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold flex items-center gap-2">
+              <h3 className="font-medium text-foreground flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                AI Assist (Optional)
+                Need help choosing?
               </h3>
               <p className="text-sm text-muted-foreground">Get suggestions based on your audience, offer, and tone</p>
             </div>
-            <Button variant="outline" onClick={() => setShowAiHelp(true)}>
+            <Button variant="outline" size="sm" onClick={() => setShowAiHelp(true)}>
               Help me choose
             </Button>
           </div>
-        </Card>
+        </section>
 
-        {/* Completion Checkboxes */}
-        <Card className="p-6">
-          <h3 className="font-semibold mb-4">This task is complete when:</h3>
+        <div className="h-px bg-border mb-10" />
+
+        {/* Completion Criteria Section */}
+        <section className="mb-10">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">
+            This step is complete when
+          </h2>
           <div className="space-y-4">
             <div className="flex items-start gap-3">
               <Checkbox 
@@ -258,7 +293,7 @@ const VisualDirectionTask = () => {
                 checked={confirmations.chosen_direction}
                 onCheckedChange={(checked) => handleConfirmationChange("chosen_direction", checked as boolean)}
               />
-              <Label htmlFor="chosen_direction" className="text-sm leading-relaxed cursor-pointer">
+              <Label htmlFor="chosen_direction" className="text-sm leading-relaxed cursor-pointer text-foreground/80">
                 I've chosen a simple visual direction
               </Label>
             </div>
@@ -268,24 +303,26 @@ const VisualDirectionTask = () => {
                 checked={confirmations.understand_launch_only}
                 onCheckedChange={(checked) => handleConfirmationChange("understand_launch_only", checked as boolean)}
               />
-              <Label htmlFor="understand_launch_only" className="text-sm leading-relaxed cursor-pointer">
+              <Label htmlFor="understand_launch_only" className="text-sm leading-relaxed cursor-pointer text-foreground/80">
                 I understand this is just for this launch
               </Label>
             </div>
           </div>
-        </Card>
+        </section>
 
-        {/* Save Button */}
-        <div className="flex justify-end gap-3">
+        {/* Save Buttons */}
+        <div className="flex flex-col sm:flex-row justify-end gap-3">
           <Button 
             variant="outline"
             onClick={() => navigate(`/projects/${projectId}/plan`)}
+            className="w-full sm:w-auto"
           >
             Save for Later
           </Button>
           <Button 
             onClick={handleSaveAndComplete}
             disabled={!allConfirmed || saveMutation.isPending}
+            className="w-full sm:w-auto"
           >
             {saveMutation.isPending ? "Saving..." : "Save & Complete"}
           </Button>
