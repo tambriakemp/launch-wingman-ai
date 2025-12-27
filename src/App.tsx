@@ -46,7 +46,7 @@ import OfferSnapshotTask from "./pages/project/OfferSnapshotTask";
 import SocialBioTask from "./pages/project/SocialBioTask";
 import StartingPointTask from "./pages/project/StartingPointTask";
 import VisualDirectionTask from "./pages/project/VisualDirectionTask";
-import ProjectSummary from "./pages/project/ProjectSummary";
+import PhaseSnapshot from "./pages/project/PhaseSnapshot";
 import Library from "./pages/project/Library";
 import Relaunch from "./pages/project/Relaunch";
 import Playbook from "./pages/project/Playbook";
@@ -110,7 +110,7 @@ const App = () => (
               path="/projects/:id/summary"
               element={
                 <ProtectedRoute>
-                  <ProjectSummary />
+                  <PhaseSnapshot />
                 </ProtectedRoute>
               }
             />
