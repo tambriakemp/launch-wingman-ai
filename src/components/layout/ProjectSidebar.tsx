@@ -3,13 +3,10 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import {
-  Sparkles,
   LayoutDashboard,
   Rocket,
   Kanban,
-  Users,
   Lock,
-  ArrowLeft,
   FolderOpen,
   Crown,
   ClipboardCheck,
@@ -36,6 +33,7 @@ interface NavItem {
   href: string;
   requiresStep?: string;
   isProOnly?: boolean;
+  requiresProject?: boolean;
 }
 
 interface NavSection {
@@ -44,7 +42,7 @@ interface NavSection {
   isProOnly?: boolean;
 }
 
-const createNavSections = (projectId: string): NavSection[] => [
+const createNavSections = (projectId?: string): NavSection[] => [
   {
     heading: "Assessments",
     items: [
@@ -54,12 +52,12 @@ const createNavSections = (projectId: string): NavSection[] => [
   {
     heading: "Plan",
     items: [
-      { id: "offer", label: "Dashboard", icon: LayoutDashboard, href: `/projects/${projectId}/offer` },
-      { id: "tasks", label: "Tasks", icon: Kanban, href: `/projects/${projectId}/tasks` },
-      { id: "content", label: "Content", icon: MessageSquareText, href: `/projects/${projectId}/content` },
+      { id: "offer", label: "Dashboard", icon: LayoutDashboard, href: projectId ? `/projects/${projectId}/offer` : "#", requiresProject: !projectId },
+      { id: "tasks", label: "Tasks", icon: Kanban, href: projectId ? `/projects/${projectId}/tasks` : "#", requiresProject: !projectId },
+      { id: "content", label: "Content", icon: MessageSquareText, href: projectId ? `/projects/${projectId}/content` : "#", requiresProject: !projectId },
       { id: "playbook", label: "Playbook", icon: BookOpen, href: `/playbook` },
-      { id: "insights", label: "Insights", icon: Lightbulb, href: `/projects/${projectId}/insights`, isProOnly: true },
-      { id: "library", label: "Library", icon: FolderOpen, href: `/projects/${projectId}/library` },
+      { id: "insights", label: "Insights", icon: Lightbulb, href: projectId ? `/projects/${projectId}/insights` : "#", isProOnly: true, requiresProject: !projectId },
+      { id: "library", label: "Library", icon: FolderOpen, href: projectId ? `/projects/${projectId}/library` : "#", requiresProject: !projectId },
     ],
   },
   {
@@ -74,11 +72,6 @@ interface StepCompletion {
   offers: boolean;
 }
 
-interface LastProjectInfo {
-  id: string;
-  name: string;
-}
-
 const SidebarContent = ({ 
   projectId, 
   navSections, 
@@ -86,7 +79,6 @@ const SidebarContent = ({
   isStepAccessible, 
   getLockedMessage, 
   isActiveRoute,
-  lastProject,
   onNavigate,
   isSubscribed,
   onUpgradeClick
@@ -97,7 +89,6 @@ const SidebarContent = ({
   isStepAccessible: (requiresStep?: string) => boolean;
   getLockedMessage: (requiresStep?: string) => string;
   isActiveRoute: (href: string) => boolean;
-  lastProject: LastProjectInfo | null;
   onNavigate?: () => void;
   isSubscribed: boolean;
   onUpgradeClick: (feature: string) => void;
@@ -108,75 +99,6 @@ const SidebarContent = ({
     onNavigate?.();
     navigate(href);
   };
-
-  if (!projectId) {
-    return (
-      <>
-        {/* Logo */}
-        <div className="px-4 py-3 border-b border-sidebar-border">
-          <Link to="/app" className="flex items-center gap-2" onClick={onNavigate}>
-            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-              <Rocket className="w-5 h-5 text-accent-foreground" />
-            </div>
-            <span className="text-base font-semibold text-sidebar-accent-foreground">Launchely</span>
-          </Link>
-        </div>
-
-        {/* Back to Project Navigation */}
-        <div className="px-3 py-3 border-b border-sidebar-border space-y-2">
-          {lastProject ? (
-            <button
-              onClick={() => handleNavClick(`/projects/${lastProject.id}/offer`)}
-              className="flex items-center gap-2 px-2 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors w-full text-left"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="truncate">Back to {lastProject.name}</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => handleNavClick("/app")}
-              className="flex items-center gap-2 px-2 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors w-full text-left"
-            >
-              <FolderOpen className="w-4 h-4" />
-              <span>Go to Projects</span>
-            </button>
-          )}
-        </div>
-
-        {/* Navigation - Show Assessments section even without project */}
-        <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-3">
-          {/* Assessments Section */}
-          <div>
-            <div className="mb-1.5 px-2">
-              <span className="text-[11px] font-semibold text-sidebar-foreground uppercase tracking-wider">
-                Assessments
-              </span>
-            </div>
-            <div className="space-y-0.5">
-              <button
-                onClick={() => handleNavClick("/assessments")}
-                className={cn(
-                  "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
-                  isActiveRoute("/assessments")
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                )}
-              >
-                <ClipboardCheck className={cn("w-4 h-4", isActiveRoute("/assessments") && "text-sidebar-primary")} />
-                <span>All Assessments</span>
-              </button>
-            </div>
-          </div>
-          
-          <Separator className="bg-sidebar-border" />
-          
-          <p className="px-2 py-2 text-xs text-sidebar-foreground/60">
-            Select a project to see more options.
-          </p>
-        </nav>
-      </>
-    );
-  }
 
   return (
     <>
@@ -214,6 +136,29 @@ const SidebarContent = ({
                 const isAccessible = isStepAccessible(item.requiresStep);
                 const isLocked = !isAccessible;
                 const isProLocked = item.isProOnly && !isSubscribed;
+                const requiresProject = (item as NavItem & { requiresProject?: boolean }).requiresProject;
+
+                // Requires project selection
+                if (requiresProject) {
+                  return (
+                    <Tooltip key={item.id}>
+                      <TooltipTrigger asChild>
+                        <div
+                          className={cn(
+                            "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm cursor-not-allowed",
+                            "text-sidebar-foreground/40"
+                          )}
+                        >
+                          <item.icon className="w-4 h-4" />
+                          <span>{item.label}</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <p>Select a project first</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                }
 
                 // Pro-locked items
                 if (isProLocked) {
@@ -288,48 +233,29 @@ const SidebarContent = ({
 export const ProjectSidebar = () => {
   const location = useLocation();
   const { id: projectId } = useParams();
-  const [lastProject, setLastProject] = useState<LastProjectInfo | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState("");
   const isMobile = useIsMobile();
   const { isOpen, close } = useMobileSidebar();
   const { isSubscribed } = useAuth();
 
-  // Determine if we're on a global page that still needs full sidebar navigation
-  const isOnAssessmentPage = location.pathname.startsWith('/assessments');
-  const isOnPlaybookPage = location.pathname === '/playbook';
-  const isOnSettingsPage = location.pathname === '/settings';
-
-  // Load last project from localStorage on mount
+  // Use the projectId from params, or try to get from localStorage for global pages
+  const [storedProjectId, setStoredProjectId] = useState<string | undefined>(undefined);
+  
   useEffect(() => {
     const stored = localStorage.getItem("lastProjectInfo");
     if (stored) {
       try {
-        setLastProject(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        setStoredProjectId(parsed.id);
       } catch {
         // Ignore parse errors
       }
     }
   }, []);
 
-  // Use lastProject.id when on global pages to show full navigation
-  const effectiveProjectId = projectId || ((isOnAssessmentPage || isOnPlaybookPage || isOnSettingsPage) ? lastProject?.id : undefined);
-
-  // Fetch funnel data to determine step completion
-  const { data: funnel } = useQuery({
-    queryKey: ['funnel', effectiveProjectId],
-    queryFn: async () => {
-      if (!effectiveProjectId) return null;
-      const { data, error } = await supabase
-        .from('funnels')
-        .select('*')
-        .eq('project_id', effectiveProjectId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!effectiveProjectId,
-  });
+  // Use URL projectId if available, otherwise fall back to stored projectId
+  const effectiveProjectId = projectId || storedProjectId;
 
   // Fetch offers data to determine offers step completion
   const { data: offers } = useQuery({
@@ -346,32 +272,33 @@ export const ProjectSidebar = () => {
     enabled: !!effectiveProjectId,
   });
 
-  // Fetch project data for transformation statement and name
+  // Fetch project data for saving to localStorage
   const { data: project } = useQuery({
-    queryKey: ['project', effectiveProjectId],
+    queryKey: ['project', projectId],
     queryFn: async () => {
-      if (!effectiveProjectId) return null;
+      if (!projectId) return null;
       const { data, error } = await supabase
         .from('projects')
-        .select('transformation_statement, name')
-        .eq('id', effectiveProjectId)
+        .select('name')
+        .eq('id', projectId)
         .single();
       if (error) throw error;
       return data;
     },
-    enabled: !!effectiveProjectId,
+    enabled: !!projectId,
   });
 
-  // Save current project to localStorage when on a project page (not assessment pages)
+  // Save current project to localStorage when on a project page
   useEffect(() => {
     if (projectId && project?.name) {
-      const projectInfo: LastProjectInfo = { id: projectId, name: project.name };
+      const projectInfo = { id: projectId, name: project.name };
       localStorage.setItem("lastProjectInfo", JSON.stringify(projectInfo));
-      setLastProject(projectInfo);
+      setStoredProjectId(projectId);
     }
   }, [projectId, project?.name]);
 
-  const navSections = effectiveProjectId ? createNavSections(effectiveProjectId) : [];
+  // Always create nav sections, passing effectiveProjectId to determine which items need project
+  const navSections = createNavSections(effectiveProjectId);
 
   // Determine step completion status
   const stepCompletion: StepCompletion = {
@@ -408,7 +335,6 @@ export const ProjectSidebar = () => {
     isStepAccessible,
     getLockedMessage,
     isActiveRoute,
-    lastProject,
     isSubscribed,
     onUpgradeClick: handleUpgradeClick,
   };
