@@ -38,7 +38,7 @@ import TermsOfService from "./pages/TermsOfService";
 
 // Project-specific pages
 import ProjectPlan from "./pages/project/ProjectPlan";
-import ProjectBrand from "./pages/project/ProjectBrand";
+
 
 import ProjectExecute from "./pages/project/ProjectExecute";
 import TaskDetail from "./pages/project/TaskDetail";
@@ -119,39 +119,6 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ProjectPlan />
-                </ProtectedRoute>
-              }
-            />
-            {/* Brand routes */}
-            <Route
-              path="/projects/:id/logos"
-              element={
-                <ProtectedRoute>
-                  <ProjectBrand />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/projects/:id/colors"
-              element={
-                <ProtectedRoute>
-                  <ProjectBrand />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/projects/:id/fonts"
-              element={
-                <ProtectedRoute>
-                  <ProjectBrand />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/projects/:id/photos"
-              element={
-                <ProtectedRoute>
-                  <ProjectBrand />
                 </ProtectedRoute>
               }
             />

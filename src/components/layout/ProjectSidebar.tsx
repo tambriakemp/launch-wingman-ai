@@ -6,10 +6,6 @@ import {
   Sparkles,
   LayoutDashboard,
   Rocket,
-  Image,
-  Palette,
-  Type,
-  Camera,
   Kanban,
   Users,
   Lock,
@@ -63,16 +59,6 @@ const createNavSections = (projectId: string): NavSection[] => [
       { id: "playbook", label: "Playbook", icon: BookOpen, href: `/playbook` },
       { id: "insights", label: "Insights", icon: Lightbulb, href: `/projects/${projectId}/insights` },
       { id: "library", label: "Library", icon: FolderOpen, href: `/projects/${projectId}/library` },
-    ],
-  },
-  {
-    heading: "Funnel Branding",
-    isProOnly: true,
-    items: [
-      { id: "logos", label: "Logos", icon: Image, href: `/projects/${projectId}/logos`, isProOnly: true },
-      { id: "colors", label: "Colors", icon: Palette, href: `/projects/${projectId}/colors`, isProOnly: true },
-      { id: "fonts", label: "Fonts", icon: Type, href: `/projects/${projectId}/fonts`, isProOnly: true },
-      { id: "photos", label: "Photos", icon: Camera, href: `/projects/${projectId}/photos`, isProOnly: true },
     ],
   },
 ];

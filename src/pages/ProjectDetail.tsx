@@ -21,7 +21,6 @@ import {
   Palette,
   Gift,
   ClipboardList,
-  Sparkles,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -36,7 +35,7 @@ import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog"
 import { TasksBoard } from "@/components/TasksBoard";
 import { ProjectSettingsDialog } from "@/components/ProjectSettingsDialog";
 import { OfferBuilder } from "@/components/OfferBuilder";
-import { CreateSection } from "@/components/CreateSection";
+
 import { ProjectProgress } from "@/components/ProjectProgress";
 import { ProjectQuickStats } from "@/components/ProjectQuickStats";
 import { ProjectState, PROJECT_STATE_LABELS } from "@/types/projectLifecycle";
@@ -328,14 +327,10 @@ const ProjectDetail = () => {
           transition={{ delay: 0.2 }}
         >
           <Tabs defaultValue="plan" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-flex">
+            <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-flex">
               <TabsTrigger value="plan" className="gap-2">
                 <Gift className="w-4 h-4" />
                 Plan
-              </TabsTrigger>
-              <TabsTrigger value="create" className="gap-2">
-                <Sparkles className="w-4 h-4" />
-                Create
               </TabsTrigger>
               <TabsTrigger value="execute" className="gap-2">
                 <ClipboardList className="w-4 h-4" />
@@ -442,22 +437,6 @@ const ProjectDetail = () => {
               </div>
             </TabsContent>
 
-            {/* CREATE TAB - Branding + Messaging combined */}
-            <TabsContent value="create">
-              <Card variant="elevated" className="min-h-[500px]">
-                <CardHeader>
-                  <div>
-                    <CardTitle>Brand & Messaging</CardTitle>
-                    <CardDescription>
-                      Build your brand identity and craft compelling copy
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <CreateSection projectId={project.id} />
-                </CardContent>
-              </Card>
-            </TabsContent>
 
             {/* EXECUTE TAB - Tasks */}
             <TabsContent value="execute">
