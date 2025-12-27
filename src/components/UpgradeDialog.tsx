@@ -64,7 +64,7 @@ export const UpgradeDialog = ({ open, onOpenChange, feature }: UpgradeDialogProp
 
         <div className="space-y-4 py-4">
           <div className="flex items-baseline justify-center gap-1">
-            <span className="text-4xl font-bold text-foreground">$20</span>
+            <span className="text-4xl font-bold text-foreground">$25</span>
             <span className="text-muted-foreground">/month</span>
           </div>
 
