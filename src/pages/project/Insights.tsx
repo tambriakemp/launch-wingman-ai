@@ -16,12 +16,17 @@ import {
 } from "@/components/insights";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
 
 export default function Insights() {
   const { id: projectId } = useParams();
   const { user } = useAuth();
+  const { hasAccess } = useFeatureAccess();
   const queryClient = useQueryClient();
   const [isMetricSheetOpen, setIsMetricSheetOpen] = useState(false);
+  
+  const canAccessInsights = hasAccess('insights_history');
 
   // Fetch current project details
   const { data: project, isLoading: projectLoading } = useQuery({
@@ -234,6 +239,11 @@ export default function Insights() {
             </div>
           </div>
         </div>
+
+        {/* Upgrade prompt for free users */}
+        {!canAccessInsights && (
+          <UpgradePrompt feature="insights_history" variant="banner" />
+        )}
 
         {isLoading ? (
           <div className="space-y-6">
