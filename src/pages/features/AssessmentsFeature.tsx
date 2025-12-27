@@ -1,5 +1,6 @@
 import { ClipboardCheck, Target, Compass, Heart, TrendingUp, CheckCircle } from "lucide-react";
 import { FeaturePageLayout } from "@/components/landing/FeaturePageLayout";
+import { AssessmentMockup } from "@/components/landing/screenshots/AssessmentMockup";
 
 const features = [
   {
@@ -51,6 +52,7 @@ const AssessmentsFeature = () => {
       description="Before you can improve, you need to know where you are. Our assessment tools help you understand your current launch approach, identify gaps, and create a roadmap for success."
       features={features}
       benefits={benefits}
+      screenshot={<AssessmentMockup />}
     />
   );
 };
