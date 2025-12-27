@@ -136,35 +136,42 @@ const getEmailContent = (
 
     case "launch_completed":
       return {
-        subject: "You did it — your launch is complete",
+        subject: "You did the thing",
         html: `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333;">
             <p style="font-size: 16px; line-height: 1.6;">Hi ${firstName},</p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              You've launched. That's a meaningful moment.
+              You did the thing 🎉
             </p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              However it went — whether it exceeded expectations or felt quieter than you hoped — what matters is that you showed up and shipped.
+              Your project "${data?.projectName || "project"}" is officially live.
             </p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              Give yourself space to rest, reflect, or simply breathe. There's nothing you need to do right now.
+              However it feels right now — excited, relieved, unsure, or somewhere in between — it's all normal. Launching isn't just about outcomes. It's about showing up and following through.
             </p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              When you're ready, you can capture what you learned or plan what comes next.
+              There's nothing you need to fix or optimize at this stage.<br/>
+              When you're ready, Launchely will guide you through a simple post-launch reflection.
             </p>
             
             <p style="margin: 30px 0;">
               <a href="${appUrl}/projects/${data?.projectId || ""}/execute" 
                  style="display: inline-block; background: #333; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">
-                View post-launch
+                👉 Continue to post-launch
               </a>
             </p>
             
             <p style="font-size: 16px; line-height: 1.6; color: #666;">
+              For now, take a breath.<br/>
+              You showed up — and that counts.
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">
+              —<br/>
               Launchely
             </p>
           </div>
@@ -345,16 +352,17 @@ const getEmailContent = (
 };
 
 // Check if we can send a product email (max 1 per week)
-// Exception: welcome and project_created are onboarding emails and always go through
+// Exception: onboarding emails (welcome, project_created) and state-change emails (launch_completed) always go through
 async function canSendProductEmail(
   supabase: any, 
   userId: string, 
   emailType: EmailType
 ): Promise<boolean> {
-  // Onboarding emails (welcome, project_created) always go through
-  if (emailType === "welcome" || emailType === "project_created") return true;
+  // Onboarding and state-change emails always go through
+  const alwaysAllowed: EmailType[] = ["welcome", "project_created", "launch_completed"];
+  if (alwaysAllowed.includes(emailType)) return true;
 
-  // Check last product email sent (excluding onboarding emails)
+  // Check last product email sent (excluding always-allowed emails)
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -362,7 +370,7 @@ async function canSendProductEmail(
     .from("email_logs")
     .select("id")
     .eq("user_id", userId)
-    .not("email_type", "in", '("welcome","project_created")') // Exclude onboarding emails
+    .not("email_type", "in", '("welcome","project_created","launch_completed")') // Exclude always-allowed
     .gte("sent_at", oneWeekAgo.toISOString())
     .limit(1);
 

@@ -196,6 +196,13 @@ export function useProjectLifecycle({ projectId }: UseProjectLifecycleOptions): 
     if (projectState !== 'in_progress') {
       // Force transition for launch completion
       try {
+        // Get project name first
+        const { data: project } = await supabase
+          .from('projects')
+          .select('name')
+          .eq('id', projectId)
+          .single();
+        
         const { error } = await supabase
           .from('projects')
           .update({ status: 'launched' })
@@ -211,7 +218,7 @@ export function useProjectLifecycle({ projectId }: UseProjectLifecycleOptions): 
           body: {
             email_type: "launch_completed",
             user_id: user?.id,
-            data: { projectId },
+            data: { projectId, projectName: project?.name },
           },
         }).catch((err) => console.error("Failed to send launch completed email:", err));
         
