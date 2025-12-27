@@ -225,31 +225,38 @@ const getEmailContent = (
 
     case "relaunch_invitation":
       return {
-        subject: "Ready for round two?",
+        subject: "You don't have to start over",
         html: `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333;">
             <p style="font-size: 16px; line-height: 1.6;">Hi ${firstName},</p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              It's been a while since your last launch. Just checking in — no pressure at all.
+              Just a gentle note — your project "${data?.projectName || "project"}" is still here.
             </p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              If you're thinking about running another launch, Launchely can help you build on what you've already learned. Your past work is already there, ready to be adapted.
+              If you've been thinking about revisiting it, you don't need to start from scratch.<br/>
+              Launchely can help you relaunch using what you've already clarified — and revisit only what needs attention now.
             </p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              This is completely optional. Only you know when the time is right.
+              There's no pressure to do this today.<br/>
+              But when it feels right, you can pick things back up here:
             </p>
             
             <p style="margin: 30px 0;">
               <a href="${appUrl}/projects/${data?.projectId || ""}/relaunch" 
                  style="display: inline-block; background: #333; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">
-                Explore relaunch options
+                👉 Plan a relaunch
               </a>
             </p>
             
             <p style="font-size: 16px; line-height: 1.6; color: #666;">
+              Whenever you're ready is the right time.
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">
+              —<br/>
               Launchely
             </p>
           </div>

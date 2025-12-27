@@ -139,6 +139,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // ===== 2. RELAUNCH INVITATIONS =====
+    // Send once per completed project, 30-60 days after completion, only if user has no active projects
     console.log("Processing relaunch invitations...");
     
     const thirtyDaysAgo = new Date(now);
@@ -146,10 +147,12 @@ const handler = async (req: Request): Promise<Response> => {
     const sixtyDaysAgo = new Date(now);
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
+    // Get completed projects that haven't had a relaunch invite sent yet
     const { data: completedProjects, error: projectError } = await supabase
       .from("projects")
-      .select("user_id, name, updated_at")
+      .select("id, user_id, name, updated_at, relaunch_invite_sent_at")
       .eq("status", "completed")
+      .is("relaunch_invite_sent_at", null) // Never sent relaunch invite for this project
       .gte("updated_at", sixtyDaysAgo.toISOString())
       .lte("updated_at", thirtyDaysAgo.toISOString());
 
@@ -157,95 +160,125 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Error fetching completed projects:", projectError);
       results.errors.push("Failed to fetch completed projects");
     } else if (completedProjects) {
-      const userProjects = new Map<string, { name: string; updated_at: string }[]>();
       for (const proj of completedProjects) {
-        if (!userProjects.has(proj.user_id)) {
-          userProjects.set(proj.user_id, []);
-        }
-        userProjects.get(proj.user_id)!.push({ name: proj.name, updated_at: proj.updated_at });
-      }
-
-      for (const [userId, projects] of userProjects) {
         try {
-          // Check for active projects
+          // Check if user has any active projects
           const { count: activeCount } = await supabase
             .from("projects")
             .select("*", { count: "exact", head: true })
-            .eq("user_id", userId)
+            .eq("user_id", proj.user_id)
             .in("status", ["draft", "in_progress", "launched"]);
 
-          if ((activeCount || 0) > 0) continue;
+          if ((activeCount || 0) > 0) {
+            console.log(`Skipping ${proj.id}: user has active projects`);
+            continue;
+          }
 
-          // Check email preferences
+          // Check email preferences (relaunch_emails_enabled)
           const { data: emailPref } = await supabase
             .from("email_preferences")
             .select("relaunch_emails_enabled")
-            .eq("user_id", userId)
+            .eq("user_id", proj.user_id)
             .maybeSingle();
 
-          if (emailPref?.relaunch_emails_enabled === false) continue;
+          if (emailPref?.relaunch_emails_enabled === false) {
+            console.log(`Skipping ${proj.id}: user opted out of relaunch emails`);
+            continue;
+          }
 
-          // Rate limit check
+          // Rate limit check (1 product email per week)
           const weekAgo = new Date(now);
           weekAgo.setDate(weekAgo.getDate() - 7);
           
           const { count: recentEmails } = await supabase
             .from("email_logs")
             .select("*", { count: "exact", head: true })
-            .eq("user_id", userId)
+            .eq("user_id", proj.user_id)
             .in("email_type", ["check_in_reminder", "relaunch_invitation", "playbook_ready", "paused_project_reminder"])
             .gte("sent_at", weekAgo.toISOString());
 
-          if ((recentEmails || 0) > 0) continue;
+          if ((recentEmails || 0) > 0) {
+            console.log(`Skipping ${proj.id}: rate limited`);
+            continue;
+          }
 
-          // Check if already sent relaunch this cycle
-          const { count: existingRelaunch } = await supabase
-            .from("email_logs")
-            .select("*", { count: "exact", head: true })
-            .eq("user_id", userId)
-            .eq("email_type", "relaunch_invitation")
-            .gte("sent_at", sixtyDaysAgo.toISOString());
-
-          if ((existingRelaunch || 0) > 0) continue;
-
+          // Get user profile and email
           const { data: profile } = await supabase
             .from("profiles")
             .select("first_name")
-            .eq("user_id", userId)
+            .eq("user_id", proj.user_id)
             .maybeSingle();
 
           const { data: { users } } = await supabase.auth.admin.listUsers();
-          const user = users?.find(u => u.id === userId);
+          const user = users?.find(u => u.id === proj.user_id);
           
-          if (!user?.email) continue;
+          if (!user?.email) {
+            console.log(`Skipping ${proj.id}: no email found`);
+            continue;
+          }
 
           const firstName = profile?.first_name || user.user_metadata?.first_name || "there";
-          const projectName = projects[0]?.name || "your project";
           
+          // Send email with exact copy from spec
           await resend.emails.send({
             from: "Launchely <hello@launchely.com>",
             to: [user.email],
-            subject: "Ready for another launch?",
+            subject: "You don't have to start over",
             html: `
-              <p>Hi ${firstName},</p>
-              <p>It's been a little while since you completed ${projectName}.</p>
-              <p>If you're thinking about launching again, Relaunch mode makes it easy to build on what worked. You can keep what you loved, revisit what needs refining, and start fresh where needed.</p>
-              <p><a href="${APP_URL}/app">Explore Relaunch mode</a></p>
-              <p>No pressure, just an option when you're ready.</p>
-              <p>Launchely</p>
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333;">
+                <p style="font-size: 16px; line-height: 1.6;">Hi ${firstName},</p>
+                
+                <p style="font-size: 16px; line-height: 1.6;">
+                  Just a gentle note — your project "${proj.name}" is still here.
+                </p>
+                
+                <p style="font-size: 16px; line-height: 1.6;">
+                  If you've been thinking about revisiting it, you don't need to start from scratch.<br/>
+                  Launchely can help you relaunch using what you've already clarified — and revisit only what needs attention now.
+                </p>
+                
+                <p style="font-size: 16px; line-height: 1.6;">
+                  There's no pressure to do this today.<br/>
+                  But when it feels right, you can pick things back up here:
+                </p>
+                
+                <p style="margin: 30px 0;">
+                  <a href="${APP_URL}/projects/${proj.id}/relaunch" 
+                     style="display: inline-block; background: #333; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">
+                    👉 Plan a relaunch
+                  </a>
+                </p>
+                
+                <p style="font-size: 16px; line-height: 1.6; color: #666;">
+                  Whenever you're ready is the right time.
+                </p>
+                
+                <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">
+                  —<br/>
+                  Launchely
+                </p>
+              </div>
             `,
           });
 
+          // Mark this project as having received relaunch invite
+          await supabase
+            .from("projects")
+            .update({ relaunch_invite_sent_at: now.toISOString() })
+            .eq("id", proj.id);
+
+          // Log the email
           await supabase.from("email_logs").insert({
-            user_id: userId,
+            user_id: proj.user_id,
             email_type: "relaunch_invitation",
-            metadata: { project_name: projectName },
+            metadata: { project_id: proj.id, project_name: proj.name },
           });
 
+          console.log(`Sent relaunch invitation for project ${proj.id}`);
           results.relaunchInvitations++;
         } catch (err) {
           console.error("Relaunch invitation error:", err);
-          results.errors.push(`Relaunch failed for ${userId}`);
+          results.errors.push(`Relaunch failed for project ${proj.id}`);
         }
       }
     }

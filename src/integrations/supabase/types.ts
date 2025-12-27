@@ -1214,6 +1214,7 @@ export type Database = {
           parent_project_id: string | null
           phase_statuses: Json | null
           project_type: string
+          relaunch_invite_sent_at: string | null
           relaunch_kept_sections: string[] | null
           relaunch_nudge_dismissed: boolean
           relaunch_revisit_sections: string[] | null
@@ -1240,6 +1241,7 @@ export type Database = {
           parent_project_id?: string | null
           phase_statuses?: Json | null
           project_type?: string
+          relaunch_invite_sent_at?: string | null
           relaunch_kept_sections?: string[] | null
           relaunch_nudge_dismissed?: boolean
           relaunch_revisit_sections?: string[] | null
@@ -1266,6 +1268,7 @@ export type Database = {
           parent_project_id?: string | null
           phase_statuses?: Json | null
           project_type?: string
+          relaunch_invite_sent_at?: string | null
           relaunch_kept_sections?: string[] | null
           relaunch_nudge_dismissed?: boolean
           relaunch_revisit_sections?: string[] | null
