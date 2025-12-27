@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO, isPast, isToday } from "date-fns";
-import { MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, X, Settings, ListChecks, Search, AlertTriangle, RefreshCw, CheckSquare } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, X, Settings, ListChecks, Search, AlertTriangle, RefreshCw, CheckSquare, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -550,6 +551,12 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          <Link to={`/projects/${projectId}/summary`}>
+            <Button variant="outline" size="sm" className="h-9 gap-2">
+              <FileText className="w-4 h-4" />
+              View Phase Snapshot
+            </Button>
+          </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-9 w-9">
