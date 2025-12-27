@@ -19,7 +19,7 @@ interface UpgradeDialogProps {
 
 const proFeatures = [
   "Unlimited projects",
-  "Full funnel branding tools",
+  "Visual direction tools",
   "Sales copy & messaging builders",
   "Social media posting",
   "Tasks & execution tools",
