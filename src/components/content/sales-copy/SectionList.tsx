@@ -1,9 +1,14 @@
-import { ArrowLeft, Check, Minus, Pencil } from "lucide-react";
+import { ArrowLeft, Check, Minus, Pencil, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useFeatureAccess, FREE_PLAN_LIMITS } from "@/hooks/useFeatureAccess";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
 import type { SalesCopySection, SectionDraft, OfferForCopy } from "./types";
+
+// Map section IDs to the free plan allowed sections
+const FREE_SECTION_IDS = ['headline', 'promise', 'cta', 'pain-point', 'confirmation'];
 
 interface SectionListProps {
   sections: SalesCopySection[];
@@ -20,6 +25,12 @@ export const SectionList = ({
   onEditSection, 
   onBack 
 }: SectionListProps) => {
+  const { isSubscribed, hasAccess } = useFeatureAccess();
+  
+  const isSectionLocked = (sectionId: string): boolean => {
+    if (isSubscribed) return false;
+    return !FREE_SECTION_IDS.includes(sectionId);
+  };
   const getSlotLabel = (slotType: string) => {
     const labels: Record<string, string> = {
       'lead-magnet': 'Lead Magnet',
@@ -90,38 +101,51 @@ export const SectionList = ({
           const status = getSectionStatus(section.id);
           const isDrafted = status === 'drafted';
           const preview = drafts[section.id]?.content?.slice(0, 80);
+          const isLocked = isSectionLocked(section.id);
 
           return (
             <Card 
               key={section.id}
               className={cn(
-                "cursor-pointer transition-all hover:border-primary/50 group",
-                isDrafted && "border-primary/20 bg-primary/5"
+                "transition-all group",
+                isLocked 
+                  ? "opacity-60 cursor-not-allowed" 
+                  : "cursor-pointer hover:border-primary/50",
+                isDrafted && !isLocked && "border-primary/20 bg-primary/5"
               )}
-              onClick={() => onEditSection(section)}
+              onClick={() => !isLocked && onEditSection(section)}
             >
               <CardContent className="py-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
                     <div className={cn(
                       "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
-                      isDrafted 
-                        ? "bg-primary text-primary-foreground" 
-                        : "bg-muted text-muted-foreground"
+                      isLocked
+                        ? "bg-muted/50 text-muted-foreground/50"
+                        : isDrafted 
+                          ? "bg-primary text-primary-foreground" 
+                          : "bg-muted text-muted-foreground"
                     )}>
-                      {isDrafted ? <Check className="w-3.5 h-3.5" /> : index + 1}
+                      {isLocked ? <Lock className="w-3 h-3" /> : isDrafted ? <Check className="w-3.5 h-3.5" /> : index + 1}
                     </div>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <h3 className="font-medium">{section.label}</h3>
-                        {getStatusBadge(status)}
+                        <h3 className={cn("font-medium", isLocked && "text-muted-foreground")}>{section.label}</h3>
+                        {isLocked ? (
+                          <Badge variant="outline" className="text-muted-foreground text-xs">
+                            <Lock className="w-2.5 h-2.5 mr-1" />
+                            Pro
+                          </Badge>
+                        ) : (
+                          getStatusBadge(status)
+                        )}
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className={cn("text-sm text-muted-foreground", isLocked && "text-muted-foreground/60")}>
                         {section.description}
                       </p>
                       
-                      {preview && (
+                      {preview && !isLocked && (
                         <p className="text-sm text-muted-foreground/70 mt-1.5 truncate italic">
                           "{preview}..."
                         </p>
@@ -129,20 +153,33 @@ export const SectionList = ({
                     </div>
                   </div>
 
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Pencil className="w-4 h-4 mr-1" />
-                    {isDrafted ? 'Edit' : 'Write'}
-                  </Button>
+                  {!isLocked && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Pencil className="w-4 h-4 mr-1" />
+                      {isDrafted ? 'Edit' : 'Write'}
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
           );
         })}
       </div>
+
+      {/* Pro upgrade prompt for free users */}
+      {!isSubscribed && (
+        <div className="pt-4">
+          <UpgradePrompt
+            feature="full_sales_copy"
+            variant="card"
+            customMessage="Unlock all sales copy sections with step-by-step AI guidance"
+          />
+        </div>
+      )}
 
       {/* Reassurance note */}
       <p className="text-xs text-muted-foreground text-center pt-4">

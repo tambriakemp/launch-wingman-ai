@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { TalkingPointCard } from "./TalkingPointCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFeatureAccess, FREE_PLAN_LIMITS } from "@/hooks/useFeatureAccess";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
 import type { ContentType } from "./ContentTab";
 
 interface TalkingPoint {
@@ -30,6 +32,32 @@ interface TalkingPointsSectionProps {
 }
 
 const MAX_VISIBLE_CARDS = 3;
+const DAILY_LIMIT_STORAGE_KEY = 'daily_ideas_usage';
+
+interface DailyUsage {
+  date: string;
+  count: number;
+}
+
+function getDailyUsage(): DailyUsage {
+  const today = new Date().toISOString().split('T')[0];
+  const stored = localStorage.getItem(DAILY_LIMIT_STORAGE_KEY);
+  
+  if (stored) {
+    const usage = JSON.parse(stored) as DailyUsage;
+    if (usage.date === today) {
+      return usage;
+    }
+  }
+  
+  return { date: today, count: 0 };
+}
+
+function incrementDailyUsage(): void {
+  const usage = getDailyUsage();
+  usage.count += 1;
+  localStorage.setItem(DAILY_LIMIT_STORAGE_KEY, JSON.stringify(usage));
+}
 
 export const TalkingPointsSection = ({
   projectId,
@@ -42,12 +70,26 @@ export const TalkingPointsSection = ({
   const [talkingPoints, setTalkingPoints] = useState<TalkingPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [dailyUsage, setDailyUsage] = useState<DailyUsage>(() => getDailyUsage());
   const { user } = useAuth();
+  const { isSubscribed, getRemainingDailyIdeas } = useFeatureAccess();
   
   const previousIdeasRef = useRef<string[]>([]);
+  
+  const remainingIdeas = getRemainingDailyIdeas(dailyUsage.count);
+  const hasReachedLimit = !isSubscribed && remainingIdeas !== null && remainingIdeas <= 0;
 
   const generateTalkingPoints = async (isRefresh = false) => {
     if (!user) return;
+    
+    // Check daily limit for free users
+    if (!isSubscribed && isRefresh) {
+      const currentUsage = getDailyUsage();
+      if (currentUsage.count >= FREE_PLAN_LIMITS.dailyIdeas) {
+        setDailyUsage(currentUsage);
+        return;
+      }
+    }
     
     if (isRefresh) {
       setRefreshing(true);
@@ -76,6 +118,12 @@ export const TalkingPointsSection = ({
         
         // Limit to max visible cards
         setTalkingPoints(data.talkingPoints.slice(0, MAX_VISIBLE_CARDS));
+        
+        // Increment usage for free users on refresh
+        if (!isSubscribed && isRefresh) {
+          incrementDailyUsage();
+          setDailyUsage(getDailyUsage());
+        }
       }
     } catch (error) {
       console.error("Error generating talking points:", error);
@@ -91,6 +139,7 @@ export const TalkingPointsSection = ({
   }, [contentType, currentPhase, funnelType]);
 
   const handleRefresh = () => {
+    if (hasReachedLimit) return;
     generateTalkingPoints(true);
   };
 
@@ -132,8 +181,25 @@ export const TalkingPointsSection = ({
         </div>
       )}
 
+      {/* Daily limit warning for free users */}
+      {!isSubscribed && remainingIdeas !== null && (
+        <div className="text-center">
+          {hasReachedLimit ? (
+            <UpgradePrompt
+              feature="unlimited_ideas"
+              variant="inline"
+              customMessage="You've used all 5 daily ideas. Upgrade for unlimited."
+            />
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              {remainingIdeas} idea refresh{remainingIdeas !== 1 ? 'es' : ''} remaining today
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Refresh button at bottom */}
-      {talkingPoints.length > 0 && (
+      {talkingPoints.length > 0 && !hasReachedLimit && (
         <div className="flex justify-center pt-2">
           <Button
             variant="ghost"
