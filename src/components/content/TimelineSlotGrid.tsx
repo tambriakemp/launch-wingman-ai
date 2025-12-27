@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronRight, Pencil, MoreHorizontal, Trash2, CalendarClock, Clock, CheckCircle2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Pencil, MoreHorizontal, Trash2, CalendarClock, Clock, CheckCircle2, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { SchedulePostSheet } from "./SchedulePostSheet";
 import { format } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 
 interface TimelineSlotGridProps {
   projectId: string;
@@ -86,9 +88,11 @@ const CONTENT_TYPE_COLORS: Record<string, string> = {
 };
 
 export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridProps) => {
+  const { isSubscribed } = useAuth();
   const [expandedPhases, setExpandedPhases] = useState<string[]>(["pre-launch-week-1"]);
   const [scheduleSheetOpen, setScheduleSheetOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ContentPlannerItem | null>(null);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: plannerItems = [], isLoading } = useQuery({
@@ -360,10 +364,19 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem
-                                              onClick={() => handleOpenSchedule(item)}
+                                              onClick={() => {
+                                                if (isSubscribed) {
+                                                  handleOpenSchedule(item);
+                                                } else {
+                                                  setShowUpgradeDialog(true);
+                                                }
+                                              }}
                                             >
                                               <CalendarClock className="w-4 h-4 mr-2" />
                                               Schedule
+                                              {!isSubscribed && (
+                                                <Crown className="w-3.5 h-3.5 ml-auto text-yellow-500" />
+                                              )}
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem
@@ -415,6 +428,13 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
           scheduled_platforms: selectedItem.scheduled_platforms,
         } : null}
         onScheduled={handleScheduled}
+      />
+
+      {/* Upgrade Dialog for scheduling feature */}
+      <UpgradeDialog 
+        open={showUpgradeDialog} 
+        onOpenChange={setShowUpgradeDialog} 
+        feature="Social Media Scheduling"
       />
     </div>
   );
