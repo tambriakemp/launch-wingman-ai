@@ -102,21 +102,21 @@ export const LandingHeader = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-full left-0 mt-2 w-72 bg-card rounded-xl shadow-2xl border border-border overflow-hidden"
+                    className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[520px] bg-card rounded-xl shadow-2xl border border-border overflow-hidden z-50"
                   >
-                    <div className="p-2">
+                    <div className="p-3 grid grid-cols-2 gap-1">
                       {featureLinks.map((link) => (
                         <Link
                           key={link.href}
                           to={link.href}
                           className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted transition-colors group"
                         >
-                          <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
-                            <link.icon className="w-5 h-5 text-accent" />
+                          <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors flex-shrink-0">
+                            <link.icon className="w-4 h-4 text-accent" />
                           </div>
-                          <div>
-                            <div className="font-semibold text-foreground">{link.title}</div>
-                            <div className="text-sm text-muted-foreground">{link.description}</div>
+                          <div className="min-w-0">
+                            <div className="font-semibold text-foreground text-sm">{link.title}</div>
+                            <div className="text-xs text-muted-foreground">{link.description}</div>
                           </div>
                         </Link>
                       ))}
