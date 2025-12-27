@@ -19,6 +19,7 @@ export interface SummaryBlock {
   fullContent: string;
   taskId: string;
   taskRoute: string;
+  phase: Phase;
 }
 
 export interface PhaseData {
@@ -426,6 +427,7 @@ export function usePhaseSnapshot(projectId: string | undefined) {
               fullContent: offers.map(o => `${o.title || o.offer_type} (${o.slot_type})${o.price ? ` - $${o.price}` : ""}`).join("\n"),
               taskId: template.taskId,
               taskRoute: output.route,
+              phase,
             });
             continue;
           }
@@ -443,6 +445,7 @@ export function usePhaseSnapshot(projectId: string | undefined) {
               fullContent: socialBios.map(b => `${b.platform.toUpperCase()}\n${b.bio_content}`).join("\n\n"),
               taskId: template.taskId,
               taskRoute: output.route,
+              phase,
             });
             continue;
           }
@@ -474,6 +477,7 @@ export function usePhaseSnapshot(projectId: string | undefined) {
               fullContent: fullParts.join("\n\n"),
               taskId: template.taskId,
               taskRoute: output.route,
+              phase,
             });
             continue;
           }
@@ -512,6 +516,7 @@ export function usePhaseSnapshot(projectId: string | undefined) {
                 fullContent: fullMetrics.join("\n"),
                 taskId: template.taskId,
                 taskRoute: output.route,
+                phase,
               });
             }
             continue;
@@ -528,6 +533,7 @@ export function usePhaseSnapshot(projectId: string | undefined) {
             fullContent,
             taskId: template.taskId,
             taskRoute: output.route,
+            phase,
           });
         }
 
