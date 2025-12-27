@@ -522,6 +522,60 @@ export type Database = {
           },
         ]
       }
+      email_logs: {
+        Row: {
+          email_type: string
+          id: string
+          metadata: Json | null
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          email_type: string
+          id?: string
+          metadata?: Json | null
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          email_type?: string
+          id?: string
+          metadata?: Json | null
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      email_preferences: {
+        Row: {
+          check_in_emails_enabled: boolean
+          created_at: string
+          id: string
+          product_emails_enabled: boolean
+          relaunch_emails_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          check_in_emails_enabled?: boolean
+          created_at?: string
+          id?: string
+          product_emails_enabled?: boolean
+          relaunch_emails_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          check_in_emails_enabled?: boolean
+          created_at?: string
+          id?: string
+          product_emails_enabled?: boolean
+          relaunch_emails_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_sequences: {
         Row: {
           content: string

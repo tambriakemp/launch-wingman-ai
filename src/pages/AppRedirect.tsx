@@ -260,6 +260,16 @@ const AppRedirect = () => {
       }));
 
       toast.success('Project created!');
+      
+      // Send project_created email (fire and forget)
+      supabase.functions.invoke("send-notification-email", {
+        body: {
+          email_type: "project_created",
+          user_id: user.id,
+          data: { projectId: newProject.id, projectName: newProject.name },
+        },
+      }).catch((err) => console.error("Failed to send project created email:", err));
+      
       navigate(`/projects/${newProject.id}/offer`, { replace: true });
     } catch (error) {
       console.error('Error creating project:', error);

@@ -117,7 +117,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string, skipNavigation?: boolean) => {
     const redirectUrl = `${window.location.origin}/projects`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -129,9 +129,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       },
     });
     
-    if (!error) {
+    if (!error && signUpData?.user) {
       // Track signup activity and notify admins
       await trackActivity('signup', true);
+      
+      // Send welcome email (fire and forget)
+      supabase.functions.invoke("send-notification-email", {
+        body: {
+          email_type: "welcome",
+          user_id: signUpData.user.id,
+        },
+      }).catch((err) => console.error("Failed to send welcome email:", err));
+      
       // Only navigate if not explicitly skipped (e.g., for Pro checkout flow)
       if (!skipNavigation) {
         await navigateToProject();

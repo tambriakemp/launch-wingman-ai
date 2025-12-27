@@ -205,6 +205,16 @@ export function useProjectLifecycle({ projectId }: UseProjectLifecycleOptions): 
 
         setProjectState('launched');
         toast.success('Congratulations! Your launch is complete! 🎉');
+        
+        // Send launch_completed email (fire and forget)
+        supabase.functions.invoke("send-notification-email", {
+          body: {
+            email_type: "launch_completed",
+            user_id: user?.id,
+            data: { projectId },
+          },
+        }).catch((err) => console.error("Failed to send launch completed email:", err));
+        
         return true;
       } catch (err) {
         console.error('Error marking project as launched:', err);
@@ -213,11 +223,18 @@ export function useProjectLifecycle({ projectId }: UseProjectLifecycleOptions): 
       }
     }
     return transitionTo('launched');
-  }, [transitionTo, projectState, projectId]);
+  }, [transitionTo, projectState, projectId, user?.id]);
 
   const markCompleted = useCallback(async (): Promise<boolean> => {
     // Force transition to completed
     try {
+      // Get project name first
+      const { data: project } = await supabase
+        .from('projects')
+        .select('name')
+        .eq('id', projectId)
+        .single();
+      
       const { error } = await supabase
         .from('projects')
         .update({ status: 'completed' })
@@ -227,13 +244,23 @@ export function useProjectLifecycle({ projectId }: UseProjectLifecycleOptions): 
 
       setProjectState('completed');
       toast.success("Your launch journey is complete. What would you like to do next?");
+      
+      // Send project_completed email (fire and forget)
+      supabase.functions.invoke("send-notification-email", {
+        body: {
+          email_type: "project_completed",
+          user_id: user?.id,
+          data: { projectId, projectName: project?.name },
+        },
+      }).catch((err) => console.error("Failed to send project completed email:", err));
+      
       return true;
     } catch (err) {
       console.error('Error marking project as completed:', err);
       toast.error('Failed to update project status');
       return false;
     }
-  }, [projectId]);
+  }, [projectId, user?.id]);
 
   const refreshState = useCallback(async () => {
     await fetchState();
