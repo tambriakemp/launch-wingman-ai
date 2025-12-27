@@ -52,6 +52,8 @@ import Relaunch from "./pages/project/Relaunch";
 import Playbook from "./pages/project/Playbook";
 import ProjectContent from "./pages/project/ProjectContent";
 import Insights from "./pages/project/Insights";
+import ContentVault from "./pages/ContentVault";
+import ContentVaultCategory from "./pages/ContentVaultCategory";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -217,6 +219,23 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Insights />
+                </ProtectedRoute>
+              }
+            />
+            {/* Content Vault routes */}
+            <Route
+              path="/content-vault"
+              element={
+                <ProtectedRoute>
+                  <ContentVault />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/content-vault/:categorySlug"
+              element={
+                <ProtectedRoute>
+                  <ContentVaultCategory />
                 </ProtectedRoute>
               }
             />

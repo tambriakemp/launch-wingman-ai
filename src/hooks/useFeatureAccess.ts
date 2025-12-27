@@ -10,7 +10,8 @@ export type FeatureKey =
   | 'full_sales_copy'
   | 'multiple_offers_sales_copy'
   | 'unlimited_ideas'
-  | 'unlimited_drafts';
+  | 'unlimited_drafts'
+  | 'content_vault';
 
 // Limits for free plan
 export const FREE_PLAN_LIMITS = {
@@ -31,6 +32,7 @@ export const PRO_FEATURES: FeatureKey[] = [
   'multiple_offers_sales_copy',
   'unlimited_ideas',
   'unlimited_drafts',
+  'content_vault',
 ];
 
 // Feature display names for UI
@@ -44,6 +46,7 @@ export const FEATURE_DISPLAY_NAMES: Record<FeatureKey, string> = {
   multiple_offers_sales_copy: 'Multiple Offers in Sales Copy',
   unlimited_ideas: 'Unlimited Daily Ideas',
   unlimited_drafts: 'Unlimited Content Drafts',
+  content_vault: 'Content Vault',
 };
 
 export const useFeatureAccess = () => {
