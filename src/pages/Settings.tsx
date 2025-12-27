@@ -860,30 +860,13 @@ const Settings = () => {
           </Card>
         </motion.div>
 
-        {/* Notifications Section */}
+        {/* Email Preferences Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Card variant="elevated">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-info/10 rounded-xl flex items-center justify-center">
-                  <Bell className="w-5 h-5 text-info" />
-                </div>
-                <div>
-                  <CardTitle>Notifications</CardTitle>
-                  <CardDescription>Configure how you receive updates</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Notification preferences coming soon.
-              </p>
-            </CardContent>
-          </Card>
+          <EmailPreferencesSettings />
         </motion.div>
 
         {/* Danger Zone */}

@@ -77,3 +77,6 @@ verify_jwt = false
 
 [functions.send-notification-email]
 verify_jwt = false
+
+[functions.scheduled-email-jobs]
+verify_jwt = false

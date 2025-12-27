@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { addMonths, addDays, isAfter, parseISO } from "date-fns";
+import { useNotificationEmail } from "./useNotificationEmail";
 
 export type CheckInCadence = "monthly" | "quarterly";
 
@@ -40,6 +41,7 @@ export function useCheckIn() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [currentPrompt, setCurrentPrompt] = useState("");
+  const { sendEmail } = useNotificationEmail();
 
   // Fetch preferences
   const { data: preferences, isLoading: isLoadingPreferences } = useQuery({
