@@ -51,16 +51,6 @@ const TASK_ICONS: Record<string, LucideIcon> = {
   postlaunch_capture_ending_point: BarChart3,
 };
 
-// Phase accent colors for left border
-const PHASE_BORDER_COLORS: Record<Phase, string> = {
-  planning: "border-l-blue-500",
-  messaging: "border-l-purple-500",
-  build: "border-l-emerald-500",
-  content: "border-l-amber-500",
-  launch: "border-l-rose-500",
-  "post-launch": "border-l-teal-500",
-};
-
 const PHASE_ICON_BG: Record<Phase, string> = {
   planning: "bg-blue-500/10 text-blue-500",
   messaging: "bg-purple-500/10 text-purple-500",
@@ -79,7 +69,7 @@ const PHASE_BUTTON_COLORS: Record<Phase, string> = {
   "post-launch": "bg-teal-500 hover:bg-teal-600 text-white",
 };
 
-const MAX_LINES = 4;
+const MAX_LINES = 7;
 
 export function SummaryCard({ label, bullets, fullContent, taskRoute, taskId, phase }: SummaryCardProps) {
   const navigate = useNavigate();
@@ -120,10 +110,7 @@ export function SummaryCard({ label, bullets, fullContent, taskRoute, taskId, ph
   return (
     <>
       <div 
-        className={cn(
-          "relative p-5 bg-card rounded-xl border-l-4 shadow-sm hover:shadow-md transition-shadow",
-          PHASE_BORDER_COLORS[phase]
-        )}
+        className="relative p-5 bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-shadow"
       >
         {/* Copy button - top right */}
         <button
@@ -153,8 +140,8 @@ export function SummaryCard({ label, bullets, fullContent, taskRoute, taskId, ph
           <div 
             ref={contentRef}
             className={cn(
-              "text-sm text-muted-foreground leading-relaxed",
-              needsTruncation && "line-clamp-4"
+              "text-sm text-muted-foreground leading-relaxed whitespace-normal",
+              needsTruncation && "[display:-webkit-box] [-webkit-line-clamp:7] [-webkit-box-orient:vertical] overflow-hidden"
             )}
           >
             {displayContent}
