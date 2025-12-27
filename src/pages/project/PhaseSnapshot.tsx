@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { PhaseFilters } from "@/components/phase-snapshot/PhaseFilters";
 import { MasonryGrid } from "@/components/phase-snapshot/MasonryGrid";
+import { ExportSnapshotButton } from "@/components/phase-snapshot/ExportSnapshotButton";
 import { usePhaseSnapshot } from "@/hooks/usePhaseSnapshot";
 import { Phase, PHASES } from "@/types/tasks";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -88,12 +89,17 @@ export default function PhaseSnapshot() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight mb-3">
-            Phase Snapshot
-          </h1>
-          <p className="text-muted-foreground leading-relaxed max-w-xl">
-            A summary of everything you've defined so far, organized by phase.
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight mb-3">
+                Phase Snapshot
+              </h1>
+              <p className="text-muted-foreground leading-relaxed max-w-xl">
+                A summary of everything you've defined so far, organized by phase.
+              </p>
+            </div>
+            <ExportSnapshotButton phases={phases} />
+          </div>
         </motion.header>
 
         {/* Phase Filters */}
