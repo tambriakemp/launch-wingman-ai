@@ -348,7 +348,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                               <MoreHorizontal className="w-4 h-4" />
                                             </Button>
                                           </DropdownMenuTrigger>
-                                          <DropdownMenuContent align="end">
+                                          <DropdownMenuContent align="end" className="min-w-[160px]">
                                             <DropdownMenuItem
                                               onClick={() =>
                                                 onWritePost({
