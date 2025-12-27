@@ -1,10 +1,61 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
+async function sendEmailUpdateNotification(email: string, oldEmail: string) {
+  try {
+    await resend.emails.send({
+      from: "Launchely <onboarding@resend.dev>",
+      to: [email],
+      subject: "Your Email Has Been Updated",
+      html: `
+        <h2>Email Address Updated</h2>
+        <p>Hello,</p>
+        <p>Your account email has been updated from <strong>${oldEmail}</strong> to <strong>${email}</strong>.</p>
+        <p>If you did not request this change, please contact our support team immediately.</p>
+        <p>Best regards,<br>The Launchely Team</p>
+      `,
+    });
+    console.log(`Email update notification sent to ${email}`);
+    return true;
+  } catch (error) {
+    console.error('Failed to send email update notification:', error);
+    return false;
+  }
+}
+
+async function sendTempPasswordNotification(email: string, tempPassword: string) {
+  try {
+    await resend.emails.send({
+      from: "Launchely <onboarding@resend.dev>",
+      to: [email],
+      subject: "Your Temporary Password",
+      html: `
+        <h2>Temporary Password</h2>
+        <p>Hello,</p>
+        <p>A temporary password has been set for your account. Please use the following password to log in:</p>
+        <p style="font-family: monospace; font-size: 18px; background: #f4f4f4; padding: 12px; border-radius: 6px; display: inline-block;">
+          ${tempPassword}
+        </p>
+        <p><strong>Important:</strong> Please change your password immediately after logging in for security reasons.</p>
+        <p>If you did not request this, please contact our support team immediately.</p>
+        <p>Best regards,<br>The Launchely Team</p>
+      `,
+    });
+    console.log(`Temp password notification sent to ${email}`);
+    return true;
+  } catch (error) {
+    console.error('Failed to send temp password notification:', error);
+    return false;
+  }
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -60,7 +111,7 @@ serve(async (req) => {
       );
     }
 
-    const { action, user_id, new_email } = await req.json();
+    const { action, user_id, new_email, send_notification, old_email } = await req.json();
 
     console.log(`Admin ${adminUser.email} performing action: ${action} on user ${user_id}`);
 
@@ -95,6 +146,12 @@ serve(async (req) => {
         );
       }
 
+      // Send email notification if requested
+      let emailSent = false;
+      if (send_notification) {
+        emailSent = await sendEmailUpdateNotification(new_email, old_email || 'your previous email');
+      }
+
       // Log the action
       await supabaseClient.from('impersonation_logs').insert({
         admin_user_id: adminUser.id,
@@ -109,8 +166,9 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: `Email updated to ${new_email}`,
-          user: updatedUser.user
+          message: `Email updated to ${new_email}${emailSent ? ' (notification sent)' : ''}`,
+          user: updatedUser.user,
+          email_sent: emailSent
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -137,6 +195,10 @@ serve(async (req) => {
       // Add a number to ensure complexity
       tempPassword += Math.floor(Math.random() * 10);
 
+      // Get user's current email for notification
+      const { data: targetUser } = await supabaseClient.auth.admin.getUserById(user_id);
+      const userEmail = targetUser?.user?.email;
+
       // Update the user's password
       const { data: updatedUser, error: updateError } = await supabaseClient.auth.admin.updateUserById(
         user_id,
@@ -149,6 +211,12 @@ serve(async (req) => {
           JSON.stringify({ error: updateError.message }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
+
+      // Send email notification if requested
+      let emailSent = false;
+      if (send_notification && userEmail) {
+        emailSent = await sendTempPasswordNotification(userEmail, tempPassword);
       }
 
       // Log the action (don't log the password!)
@@ -165,8 +233,9 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Temporary password generated',
-          temp_password: tempPassword
+          message: `Temporary password generated${emailSent ? ' and sent to user' : ''}`,
+          temp_password: tempPassword,
+          email_sent: emailSent
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

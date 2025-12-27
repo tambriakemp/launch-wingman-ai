@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Mail, Key, Copy, RefreshCw, Check } from 'lucide-react';
+import { Mail, Key, Copy, RefreshCw, Check, Send } from 'lucide-react';
 
 interface EditUserDialogProps {
   open: boolean;
@@ -40,11 +41,15 @@ export function EditUserDialog({
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [sendEmailNotification, setSendEmailNotification] = useState(true);
+  const [sendPasswordNotification, setSendPasswordNotification] = useState(false);
 
   const handleClose = () => {
     setNewEmail('');
     setTempPassword(null);
     setCopied(false);
+    setSendEmailNotification(true);
+    setSendPasswordNotification(false);
     onOpenChange(false);
   };
 
@@ -61,12 +66,17 @@ export function EditUserDialog({
           action: 'update_email',
           user_id: user.id,
           new_email: newEmail.trim(),
+          old_email: user.email,
+          send_notification: sendEmailNotification,
         },
       });
 
       if (error) throw error;
 
-      toast.success(data.message || 'Email updated successfully');
+      const message = data.email_sent 
+        ? `Email updated to ${newEmail.trim()} and notification sent`
+        : data.message || 'Email updated successfully';
+      toast.success(message);
       onUserUpdated();
       handleClose();
     } catch (error: any) {
@@ -89,13 +99,18 @@ export function EditUserDialog({
         body: {
           action: 'set_temp_password',
           user_id: user.id,
+          send_notification: sendPasswordNotification,
         },
       });
 
       if (error) throw error;
 
       setTempPassword(data.temp_password);
-      toast.success('Temporary password generated');
+      
+      const message = data.email_sent 
+        ? 'Temporary password generated and sent to user'
+        : 'Temporary password generated';
+      toast.success(message);
       onUserUpdated();
     } catch (error: any) {
       toast.error(error.message || 'Failed to generate password');
@@ -164,6 +179,20 @@ export function EditUserDialog({
                 onChange={(e) => setNewEmail(e.target.value)}
               />
             </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="sendEmailNotification"
+                checked={sendEmailNotification}
+                onCheckedChange={(checked) => setSendEmailNotification(checked === true)}
+              />
+              <Label 
+                htmlFor="sendEmailNotification" 
+                className="text-sm font-normal cursor-pointer flex items-center gap-2"
+              >
+                <Send className="h-3 w-3" />
+                Send email notification to new address
+              </Label>
+            </div>
             <DialogFooter>
               <Button
                 onClick={handleUpdateEmail}
@@ -183,7 +212,7 @@ export function EditUserDialog({
 
           <TabsContent value="password" className="space-y-4 mt-4">
             <p className="text-sm text-muted-foreground">
-              Generate a temporary password for this user. Share it with them through a secure channel (phone, etc.) so they can log in and change their password.
+              Generate a temporary password for this user. You can optionally send it via email, or share it through a secure channel (phone, etc.).
             </p>
 
             {tempPassword ? (
@@ -214,24 +243,40 @@ export function EditUserDialog({
                 </p>
               </div>
             ) : (
-              <DialogFooter>
-                <Button
-                  onClick={handleGenerateTempPassword}
-                  disabled={passwordLoading}
-                >
-                  {passwordLoading ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Key className="h-4 w-4 mr-2" />
-                      Generate Temporary Password
-                    </>
-                  )}
-                </Button>
-              </DialogFooter>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="sendPasswordNotification"
+                    checked={sendPasswordNotification}
+                    onCheckedChange={(checked) => setSendPasswordNotification(checked === true)}
+                  />
+                  <Label 
+                    htmlFor="sendPasswordNotification" 
+                    className="text-sm font-normal cursor-pointer flex items-center gap-2"
+                  >
+                    <Send className="h-3 w-3" />
+                    Send password to user via email
+                  </Label>
+                </div>
+                <DialogFooter>
+                  <Button
+                    onClick={handleGenerateTempPassword}
+                    disabled={passwordLoading}
+                  >
+                    {passwordLoading ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Key className="h-4 w-4 mr-2" />
+                        Generate Temporary Password
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </div>
             )}
           </TabsContent>
         </Tabs>
