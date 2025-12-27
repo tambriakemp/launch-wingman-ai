@@ -222,11 +222,11 @@ const SidebarContent = ({
                         >
                           <item.icon className="w-4 h-4" />
                           <span className="flex-1">{item.label}</span>
-                          <Crown className="w-3 h-3 text-primary" />
+                          <Crown className="w-3 h-3 text-yellow-500" />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="right">
-                        <p>Pro feature - Click to upgrade</p>
+                        <p>Pro feature - Upgrade to access</p>
                       </TooltipContent>
                     </Tooltip>
                   );
