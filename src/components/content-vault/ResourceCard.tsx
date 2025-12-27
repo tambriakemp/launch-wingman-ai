@@ -1,4 +1,4 @@
-import { ExternalLink, Download, Image as ImageIcon } from "lucide-react";
+import { ExternalLink, Download, Image as ImageIcon, Pencil, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,9 @@ interface ResourceCardProps {
   resourceType: string;
   tags: string[];
   onClick: () => void;
+  isAdmin?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 export const ResourceCard = ({ 
@@ -18,9 +21,22 @@ export const ResourceCard = ({
   coverImageUrl, 
   resourceType, 
   tags,
-  onClick 
+  onClick,
+  isAdmin = false,
+  onEdit,
+  onDelete,
 }: ResourceCardProps) => {
   const isCanvaLink = resourceType === 'canva_link';
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit?.();
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete?.();
+  };
 
   return (
     <Card 
@@ -60,6 +76,28 @@ export const ResourceCard = ({
             )}
           </Badge>
         </div>
+
+        {/* Admin Actions */}
+        {isAdmin && (
+          <div className="absolute top-3 left-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <Button
+              size="icon"
+              variant="secondary"
+              className="h-7 w-7 bg-background/90 backdrop-blur-sm hover:bg-background"
+              onClick={handleEdit}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              size="icon"
+              variant="secondary"
+              className="h-7 w-7 bg-background/90 backdrop-blur-sm hover:bg-destructive hover:text-destructive-foreground"
+              onClick={handleDelete}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        )}
 
         {/* Hover Overlay */}
         <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">

@@ -1,14 +1,18 @@
 import { useState, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useParams, Link } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { ResourceCard } from "@/components/content-vault/ResourceCard";
+import { ResourceEditDialog } from "@/components/content-vault/ResourceEditDialog";
 import { VaultFilters } from "@/components/content-vault/VaultFilters";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { useAdmin } from "@/hooks/useAdmin";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
+import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronRight, Package } from "lucide-react";
+import { toast } from "sonner";
 
 interface Category {
   id: string;
@@ -37,13 +41,18 @@ interface Resource {
 
 const ContentVaultCategory = () => {
   const { categorySlug } = useParams();
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { hasAccess } = useFeatureAccess();
+  const { isAdmin } = useAdmin();
   const canAccessVault = hasAccess('content_vault');
 
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  
+  // Edit/Delete state
+  const [editingResource, setEditingResource] = useState<Resource | null>(null);
+  const [deletingResource, setDeletingResource] = useState<Resource | null>(null);
 
   // Fetch category
   const { data: category, isLoading: categoryLoading } = useQuery({
@@ -94,6 +103,26 @@ const ContentVaultCategory = () => {
       return data as Resource[];
     },
     enabled: canAccessVault && !!subcategories && subcategories.length > 0,
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (resourceId: string) => {
+      const { error } = await supabase
+        .from('content_vault_resources')
+        .delete()
+        .eq('id', resourceId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['content-vault-resources'] });
+      toast.success("Resource deleted successfully");
+      setDeletingResource(null);
+    },
+    onError: (error) => {
+      toast.error("Failed to delete resource: " + error.message);
+    },
   });
 
   // Get all unique tags
@@ -238,6 +267,9 @@ const ContentVaultCategory = () => {
                   resourceType={resource.resource_type}
                   tags={resource.tags}
                   onClick={() => handleResourceClick(resource)}
+                  isAdmin={isAdmin}
+                  onEdit={() => setEditingResource(resource)}
+                  onDelete={() => setDeletingResource(resource)}
                 />
               ))}
             </div>
@@ -252,6 +284,23 @@ const ContentVaultCategory = () => {
           )}
         </div>
       </div>
+
+      {/* Edit Dialog */}
+      <ResourceEditDialog
+        resource={editingResource}
+        open={!!editingResource}
+        onOpenChange={(open) => !open && setEditingResource(null)}
+      />
+
+      {/* Delete Confirmation */}
+      <DeleteConfirmationDialog
+        open={!!deletingResource}
+        onOpenChange={(open) => !open && setDeletingResource(null)}
+        onConfirm={() => deletingResource && deleteMutation.mutate(deletingResource.id)}
+        title="Delete Resource"
+        description={`Are you sure you want to delete "${deletingResource?.title}"? This action cannot be undone.`}
+        isDeleting={deleteMutation.isPending}
+      />
     </ProjectLayout>
   );
 };
