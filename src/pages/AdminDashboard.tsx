@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Menu, Package } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Menu, Package, Pencil } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -27,6 +27,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UserActivityDialog } from '@/components/UserActivityDialog';
+import { EditUserDialog } from '@/components/admin/EditUserDialog';
 
 interface User {
   id: string;
@@ -57,7 +58,8 @@ const MobileUserCard = ({
   user, 
   isSelected, 
   onToggleSelect, 
-  onActivity, 
+  onActivity,
+  onEdit, 
   onImpersonate, 
   onAction, 
   actionLoading, 
@@ -68,6 +70,7 @@ const MobileUserCard = ({
   isSelected: boolean;
   onToggleSelect: () => void;
   onActivity: () => void;
+  onEdit: () => void;
   onImpersonate: () => void;
   onAction: (action: 'cancel' | 'grant_pro') => void;
   actionLoading: string | null;
@@ -109,6 +112,10 @@ const MobileUserCard = ({
         <Button variant="outline" size="sm" onClick={onActivity}>
           <Activity className="h-4 w-4 mr-1" />
           Activity
+        </Button>
+        <Button variant="outline" size="sm" onClick={onEdit}>
+          <Pencil className="h-4 w-4 mr-1" />
+          Edit
         </Button>
         {user.id !== currentUserId && (
           <Button
@@ -203,6 +210,12 @@ const AdminDashboard = () => {
 
   // Activity dialog state
   const [activityDialog, setActivityDialog] = useState<{
+    open: boolean;
+    user: User | null;
+  }>({ open: false, user: null });
+
+  // Edit user dialog state
+  const [editUserDialog, setEditUserDialog] = useState<{
     open: boolean;
     user: User | null;
   }>({ open: false, user: null });
@@ -798,6 +811,7 @@ const AdminDashboard = () => {
                       isSelected={selectedUsers.has(user.id)}
                       onToggleSelect={() => toggleUserSelection(user.id)}
                       onActivity={() => setActivityDialog({ open: true, user })}
+                      onEdit={() => setEditUserDialog({ open: true, user })}
                       onImpersonate={() => handleImpersonateClick(user)}
                       onAction={(action) => handleAction(action, user)}
                       actionLoading={actionLoading}
@@ -883,6 +897,14 @@ const AdminDashboard = () => {
                                 title="View activity log"
                               >
                                 <Activity className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setEditUserDialog({ open: true, user })}
+                                title="Edit user"
+                              >
+                                <Pencil className="h-4 w-4" />
                               </Button>
                               {user.id !== currentUser?.id && (
                                 <Button
@@ -1262,6 +1284,15 @@ const AdminDashboard = () => {
         onOpenChange={(open) => setActivityDialog({ ...activityDialog, open })}
         user={activityDialog.user}
         accessToken={session?.access_token || ''}
+      />
+
+      {/* Edit User Dialog */}
+      <EditUserDialog
+        open={editUserDialog.open}
+        onOpenChange={(open) => setEditUserDialog({ ...editUserDialog, open })}
+        user={editUserDialog.user}
+        accessToken={session?.access_token || ''}
+        onUserUpdated={fetchUsers}
       />
     </div>
   );

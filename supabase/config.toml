@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.generate-content-draft]
 verify_jwt = false
+
+[functions.admin-update-user]
+verify_jwt = false
