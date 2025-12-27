@@ -28,6 +28,12 @@ export interface PhaseData {
   hasContent: boolean;
 }
 
+// Helper to truncate text
+function truncate(text: string, maxLength: number = 100): string {
+  if (!text) return "";
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+}
+
 // Helper to extract meaningful display text from task input data
 function extractDisplayContent(taskId: string, inputData: Record<string, unknown>): { bullets: string[]; fullContent: string } {
   const bullets: string[] = [];
@@ -39,10 +45,11 @@ function extractDisplayContent(taskId: string, inputData: Record<string, unknown
 
   // Handle different task types
   switch (taskId) {
+    // ==================== PLANNING PHASE ====================
     case "planning_define_audience":
       if (inputData.audience_description) {
         const desc = String(inputData.audience_description);
-        bullets.push(desc.length > 100 ? desc.substring(0, 100) + "..." : desc);
+        bullets.push(truncate(desc));
         fullContent = desc;
       }
       break;
@@ -50,7 +57,7 @@ function extractDisplayContent(taskId: string, inputData: Record<string, unknown
     case "planning_define_problem":
       if (inputData.primary_problem) {
         const prob = String(inputData.primary_problem);
-        bullets.push(prob.length > 100 ? prob.substring(0, 100) + "..." : prob);
+        bullets.push(truncate(prob));
         fullContent = prob;
       }
       break;
@@ -58,14 +65,14 @@ function extractDisplayContent(taskId: string, inputData: Record<string, unknown
     case "planning_define_dream_outcome":
       if (inputData.dream_outcome) {
         const outcome = String(inputData.dream_outcome);
-        bullets.push(outcome.length > 100 ? outcome.substring(0, 100) + "..." : outcome);
+        bullets.push(truncate(outcome));
         fullContent = outcome;
       }
       break;
 
     case "planning_time_effort_perception":
-      if (inputData.quick_wins) bullets.push(`Quick wins: ${String(inputData.quick_wins).substring(0, 80)}...`);
-      if (inputData.friction_reducers) bullets.push(`Friction reducers: ${String(inputData.friction_reducers).substring(0, 80)}...`);
+      if (inputData.quick_wins) bullets.push(`Quick wins: ${truncate(String(inputData.quick_wins), 80)}`);
+      if (inputData.friction_reducers) bullets.push(`Friction reducers: ${truncate(String(inputData.friction_reducers), 80)}`);
       fullContent = [
         inputData.quick_wins && `Quick wins: ${inputData.quick_wins}`,
         inputData.friction_reducers && `Friction reducers: ${inputData.friction_reducers}`,
@@ -74,7 +81,7 @@ function extractDisplayContent(taskId: string, inputData: Record<string, unknown
       break;
 
     case "planning_perceived_likelihood":
-      if (inputData.belief_builders) bullets.push(`Trust builders: ${String(inputData.belief_builders).substring(0, 80)}...`);
+      if (inputData.belief_builders) bullets.push(`Trust builders: ${truncate(String(inputData.belief_builders), 80)}`);
       fullContent = [
         inputData.past_attempts && `Past attempts: ${inputData.past_attempts}`,
         inputData.belief_blockers && `Belief blockers: ${inputData.belief_blockers}`,
@@ -99,10 +106,11 @@ function extractDisplayContent(taskId: string, inputData: Record<string, unknown
       }
       break;
 
+    // ==================== MESSAGING PHASE ====================
     case "messaging_core_message":
       if (inputData.core_message) {
         const msg = String(inputData.core_message);
-        bullets.push(msg.length > 120 ? msg.substring(0, 120) + "..." : msg);
+        bullets.push(truncate(msg, 120));
         fullContent = msg;
       }
       break;
@@ -110,7 +118,7 @@ function extractDisplayContent(taskId: string, inputData: Record<string, unknown
     case "messaging_transformation_statement":
       if (inputData.transformation_statement) {
         const stmt = String(inputData.transformation_statement);
-        bullets.push(`"${stmt.length > 120 ? stmt.substring(0, 120) + "..." : stmt}"`);
+        bullets.push(`"${truncate(stmt, 120)}"`);
         fullContent = stmt;
       }
       break;
@@ -123,7 +131,7 @@ function extractDisplayContent(taskId: string, inputData: Record<string, unknown
         inputData.talking_point_4,
         inputData.talking_point_5,
       ].filter(Boolean).map(String);
-      bullets.push(...points.slice(0, 3).map(p => p.length > 60 ? p.substring(0, 60) + "..." : p));
+      bullets.push(...points.slice(0, 3).map(p => truncate(p, 60)));
       fullContent = points.join("\n\n");
       break;
 
@@ -135,8 +143,136 @@ function extractDisplayContent(taskId: string, inputData: Record<string, unknown
         inputData.objection_4,
         inputData.objection_5,
       ].filter(Boolean).map(String);
-      bullets.push(...objections.slice(0, 3).map(o => o.length > 60 ? o.substring(0, 60) + "..." : o));
+      bullets.push(...objections.slice(0, 3).map(o => truncate(o, 60)));
       fullContent = objections.join("\n\n");
+      break;
+
+    // ==================== BUILD PHASE ====================
+    case "build_choose_platform":
+      if (inputData.platform_type) bullets.push(`Platform type: ${inputData.platform_type}`);
+      if (inputData.platform_name) bullets.push(`Using: ${inputData.platform_name}`);
+      fullContent = [
+        inputData.platform_type && `Platform type: ${inputData.platform_type}`,
+        inputData.platform_name && `Specific platform: ${inputData.platform_name}`,
+      ].filter(Boolean).join("\n\n");
+      break;
+
+    case "build_main_page_setup":
+      const pageChecks = [];
+      if (inputData.page_created) pageChecks.push("Page created");
+      if (inputData.description_added) pageChecks.push("Description added");
+      if (inputData.next_step_clear) pageChecks.push("Next step is clear");
+      bullets.push(...pageChecks.slice(0, 3));
+      fullContent = pageChecks.join("\n");
+      break;
+
+    case "build_email_platform":
+      if (inputData.email_platform) bullets.push(`Email platform: ${inputData.email_platform}`);
+      if (inputData.email_test_sent) bullets.push(`Test email: ${inputData.email_test_sent}`);
+      fullContent = [
+        inputData.email_platform && `Email platform: ${inputData.email_platform}`,
+        inputData.email_test_sent && `Test email sent: ${inputData.email_test_sent}`,
+      ].filter(Boolean).join("\n\n");
+      break;
+
+    case "build_payments_setup":
+      if (inputData.payment_provider) bullets.push(`Payment provider: ${inputData.payment_provider}`);
+      if (inputData.test_payment_complete) bullets.push(`Test payment: ${inputData.test_payment_complete}`);
+      fullContent = [
+        inputData.payment_provider && `Payment provider: ${inputData.payment_provider}`,
+        inputData.test_payment_complete && `Test payment: ${inputData.test_payment_complete}`,
+      ].filter(Boolean).join("\n\n");
+      break;
+
+    case "build_phase_review":
+      const buildChecks = [];
+      if (inputData.platform_chosen) buildChecks.push("Platform chosen");
+      if (inputData.page_ready) buildChecks.push("Main page ready");
+      if (inputData.ready_to_share) buildChecks.push("Ready to share");
+      bullets.push(...buildChecks.slice(0, 3));
+      fullContent = buildChecks.join("\n");
+      break;
+
+    // ==================== CONTENT PHASE ====================
+    case "content_choose_platforms":
+      if (inputData.platforms) {
+        const platforms = String(inputData.platforms);
+        bullets.push(truncate(platforms, 80));
+        fullContent = platforms;
+      }
+      break;
+
+    case "content_define_themes":
+      const themes = [
+        inputData.theme_1,
+        inputData.theme_2,
+        inputData.theme_3,
+        inputData.theme_4,
+        inputData.theme_5,
+      ].filter(Boolean).map(String);
+      bullets.push(...themes.slice(0, 3).map(t => truncate(t, 50)));
+      fullContent = themes.join("\n");
+      break;
+
+    case "content_plan_launch_window":
+      if (inputData.launch_window_days) bullets.push(`${inputData.launch_window_days} day launch window`);
+      if (inputData.planned_posts_summary) bullets.push(truncate(String(inputData.planned_posts_summary), 80));
+      fullContent = [
+        inputData.launch_window_days && `Launch window: ${inputData.launch_window_days} days`,
+        inputData.planned_posts_summary && `Posts:\n${inputData.planned_posts_summary}`,
+      ].filter(Boolean).join("\n\n");
+      break;
+
+    case "content_write_captions":
+      if (inputData.captions_written) bullets.push(`Captions: ${inputData.captions_written}`);
+      if (inputData.sample_caption) bullets.push(truncate(String(inputData.sample_caption), 80));
+      fullContent = [
+        inputData.captions_written && `Status: ${inputData.captions_written}`,
+        inputData.sample_caption && `Sample caption:\n${inputData.sample_caption}`,
+      ].filter(Boolean).join("\n\n");
+      break;
+
+    case "content_phase_review":
+      const contentChecks = [];
+      if (inputData.platforms_chosen) contentChecks.push("Platforms chosen");
+      if (inputData.themes_defined) contentChecks.push("Themes defined");
+      if (inputData.posts_planned) contentChecks.push("Posts planned");
+      if (inputData.captions_drafted) contentChecks.push("Captions drafted");
+      if (inputData.ready_to_share) contentChecks.push("Ready to share");
+      bullets.push(...contentChecks.slice(0, 3));
+      fullContent = contentChecks.join("\n");
+      break;
+
+    // ==================== LAUNCH PHASE ====================
+    case "launch_set_dates":
+      if (inputData.launch_date) bullets.push(`Launch date: ${inputData.launch_date}`);
+      if (inputData.cart_open_date) bullets.push(`Cart opens: ${inputData.cart_open_date}`);
+      if (inputData.cart_close_date) bullets.push(`Cart closes: ${inputData.cart_close_date}`);
+      fullContent = [
+        inputData.launch_date && `Launch date: ${inputData.launch_date}`,
+        inputData.cart_open_date && `Cart opens: ${inputData.cart_open_date}`,
+        inputData.cart_close_date && `Cart closes: ${inputData.cart_close_date}`,
+      ].filter(Boolean).join("\n");
+      break;
+
+    case "launch_confirm_checklist":
+    case "launch_phase_review":
+      const launchChecks = Object.entries(inputData)
+        .filter(([key, val]) => val === true && !key.includes("_"))
+        .map(([key]) => key.replace(/_/g, " "));
+      bullets.push(...launchChecks.slice(0, 3));
+      fullContent = launchChecks.join("\n");
+      break;
+
+    // ==================== POST-LAUNCH PHASE ====================
+    case "postlaunch_review":
+      if (inputData.wins) bullets.push(`Wins: ${truncate(String(inputData.wins), 60)}`);
+      if (inputData.lessons) bullets.push(`Lessons: ${truncate(String(inputData.lessons), 60)}`);
+      fullContent = [
+        inputData.wins && `Wins:\n${inputData.wins}`,
+        inputData.lessons && `Lessons:\n${inputData.lessons}`,
+        inputData.next_steps && `Next steps:\n${inputData.next_steps}`,
+      ].filter(Boolean).join("\n\n");
       break;
 
     default:
@@ -151,7 +287,7 @@ function extractDisplayContent(taskId: string, inputData: Record<string, unknown
         .map(([_, val]) => String(val));
       
       if (values.length > 0) {
-        bullets.push(...values.slice(0, 2).map(v => v.length > 80 ? v.substring(0, 80) + "..." : v));
+        bullets.push(...values.slice(0, 2).map(v => truncate(v, 80)));
         fullContent = values.join("\n\n");
       }
       break;
@@ -162,6 +298,7 @@ function extractDisplayContent(taskId: string, inputData: Record<string, unknown
 
 // Map task IDs to human-readable block labels
 const TASK_LABELS: Record<string, string> = {
+  // Planning
   planning_define_audience: "Audience",
   planning_define_problem: "Problem",
   planning_define_dream_outcome: "Dream Outcome",
@@ -170,6 +307,7 @@ const TASK_LABELS: Record<string, string> = {
   planning_choose_launch_path: "Launch Path",
   planning_offer_stack: "Offer Stack",
   planning_phase_review: "Planning Review",
+  // Messaging
   messaging_core_message: "Core Message",
   messaging_transformation_statement: "Transformation",
   messaging_talking_points: "Talking Points",
@@ -177,17 +315,24 @@ const TASK_LABELS: Record<string, string> = {
   messaging_phase_review: "Messaging Review",
   messaging_social_bio: "Social Bio",
   messaging_visual_direction: "Visual Direction",
+  // Build
   build_choose_platform: "Platform Choice",
-  build_main_page_setup: "Main Page",
+  build_main_page_setup: "Main Page Setup",
   build_email_platform: "Email Platform",
-  build_payments_setup: "Payments",
+  build_payments_setup: "Payments Setup",
   build_phase_review: "Build Review",
-  content_calendar_setup: "Content Calendar",
-  content_prelaunch_content: "Pre-launch Content",
+  // Content
+  content_choose_platforms: "Content Platforms",
+  content_define_themes: "Content Themes",
+  content_plan_launch_window: "Launch Content Plan",
+  content_write_captions: "Captions",
   content_phase_review: "Content Review",
+  // Launch
   launch_set_dates: "Launch Dates",
   launch_capture_starting_point: "Starting Metrics",
+  launch_confirm_checklist: "Launch Checklist",
   launch_phase_review: "Launch Review",
+  // Post-Launch
   postlaunch_review: "Post-Launch Review",
   postlaunch_capture_ending_point: "Ending Metrics",
 };
@@ -207,12 +352,39 @@ export function usePhaseSnapshot(projectId: string | undefined) {
 
       if (error) throw error;
 
-      // Also fetch offers for the offer stack
-      const { data: offers } = await supabase
-        .from("offers")
-        .select("title, offer_type, price, price_type, slot_type")
-        .eq("project_id", projectId)
-        .order("slot_position");
+      // Fetch additional data in parallel
+      const [offersRes, socialBiosRes, brandColorsRes, brandFontsRes, launchSnapshotsRes] = await Promise.all([
+        supabase
+          .from("offers")
+          .select("title, offer_type, price, price_type, slot_type")
+          .eq("project_id", projectId)
+          .order("slot_position"),
+        supabase
+          .from("social_bios")
+          .select("platform, bio_content, formula_id")
+          .eq("project_id", projectId),
+        supabase
+          .from("brand_colors")
+          .select("hex_color, name, position")
+          .eq("project_id", projectId)
+          .order("position"),
+        supabase
+          .from("brand_fonts")
+          .select("font_family, font_category, font_source")
+          .eq("project_id", projectId),
+        supabase
+          .from("launch_snapshots")
+          .select("*")
+          .eq("project_id", projectId)
+          .eq("snapshot_type", "starting")
+          .maybeSingle(),
+      ]);
+
+      const offers = offersRes.data || [];
+      const socialBios = socialBiosRes.data || [];
+      const brandColors = brandColorsRes.data || [];
+      const brandFonts = brandFontsRes.data || [];
+      const startingSnapshot = launchSnapshotsRes.data;
 
       // Build task outputs map
       const taskOutputs = new Map<string, TaskOutput>();
@@ -241,7 +413,7 @@ export function usePhaseSnapshot(projectId: string | undefined) {
           if (!output) continue;
 
           // Special handling for offer stack
-          if (template.taskId === "planning_offer_stack" && offers && offers.length > 0) {
+          if (template.taskId === "planning_offer_stack" && offers.length > 0) {
             const offerBullets = offers.slice(0, 3).map(o => {
               const price = o.price ? `$${o.price.toLocaleString()}${o.price_type === "recurring" ? "/mo" : ""}` : "";
               return `${o.title || o.offer_type}${price ? ` • ${price}` : ""}`;
@@ -255,6 +427,93 @@ export function usePhaseSnapshot(projectId: string | undefined) {
               taskId: template.taskId,
               taskRoute: output.route,
             });
+            continue;
+          }
+
+          // Special handling for social bio
+          if (template.taskId === "messaging_social_bio" && socialBios.length > 0) {
+            const bioBullets = socialBios.slice(0, 3).map(b => 
+              `${b.platform}: ${truncate(b.bio_content, 60)}`
+            );
+            
+            blocks.push({
+              id: template.taskId,
+              label: TASK_LABELS[template.taskId] || template.title,
+              bullets: bioBullets,
+              fullContent: socialBios.map(b => `${b.platform.toUpperCase()}\n${b.bio_content}`).join("\n\n"),
+              taskId: template.taskId,
+              taskRoute: output.route,
+            });
+            continue;
+          }
+
+          // Special handling for visual direction
+          if (template.taskId === "messaging_visual_direction" && (brandColors.length > 0 || brandFonts.length > 0)) {
+            const visualBullets: string[] = [];
+            
+            if (brandColors.length > 0) {
+              visualBullets.push(`Colors: ${brandColors.slice(0, 4).map(c => c.hex_color).join(", ")}`);
+            }
+            if (brandFonts.length > 0) {
+              const fontList = brandFonts.slice(0, 3).map(f => f.font_family).join(", ");
+              visualBullets.push(`Fonts: ${fontList}`);
+            }
+            
+            const fullParts: string[] = [];
+            if (brandColors.length > 0) {
+              fullParts.push(`COLORS\n${brandColors.map(c => c.name ? `${c.name}: ${c.hex_color}` : c.hex_color).join("\n")}`);
+            }
+            if (brandFonts.length > 0) {
+              fullParts.push(`FONTS\n${brandFonts.map(f => `${f.font_category}: ${f.font_family} (${f.font_source})`).join("\n")}`);
+            }
+            
+            blocks.push({
+              id: template.taskId,
+              label: TASK_LABELS[template.taskId] || template.title,
+              bullets: visualBullets,
+              fullContent: fullParts.join("\n\n"),
+              taskId: template.taskId,
+              taskRoute: output.route,
+            });
+            continue;
+          }
+
+          // Special handling for starting point metrics
+          if (template.taskId === "launch_capture_starting_point" && startingSnapshot) {
+            const metricBullets: string[] = [];
+            
+            if (startingSnapshot.email_list_size) {
+              metricBullets.push(`Email list: ${startingSnapshot.email_list_size.toLocaleString()}`);
+            }
+            const totalFollowers = (startingSnapshot.instagram_followers || 0) + 
+              (startingSnapshot.facebook_followers || 0) + 
+              (startingSnapshot.tiktok_followers || 0);
+            if (totalFollowers > 0) {
+              metricBullets.push(`Social followers: ${totalFollowers.toLocaleString()}`);
+            }
+            if (startingSnapshot.monthly_revenue) {
+              metricBullets.push(`Monthly revenue: $${startingSnapshot.monthly_revenue.toLocaleString()}`);
+            }
+            
+            const fullMetrics: string[] = [];
+            if (startingSnapshot.email_list_size) fullMetrics.push(`Email list size: ${startingSnapshot.email_list_size.toLocaleString()}`);
+            if (startingSnapshot.instagram_followers) fullMetrics.push(`Instagram followers: ${startingSnapshot.instagram_followers.toLocaleString()}`);
+            if (startingSnapshot.facebook_followers) fullMetrics.push(`Facebook followers: ${startingSnapshot.facebook_followers.toLocaleString()}`);
+            if (startingSnapshot.tiktok_followers) fullMetrics.push(`TikTok followers: ${startingSnapshot.tiktok_followers.toLocaleString()}`);
+            if (startingSnapshot.monthly_revenue) fullMetrics.push(`Monthly revenue: $${startingSnapshot.monthly_revenue.toLocaleString()}`);
+            if (startingSnapshot.ytd_revenue) fullMetrics.push(`YTD revenue: $${startingSnapshot.ytd_revenue.toLocaleString()}`);
+            if (startingSnapshot.confidence_level) fullMetrics.push(`Confidence level: ${startingSnapshot.confidence_level}`);
+            
+            if (metricBullets.length > 0) {
+              blocks.push({
+                id: template.taskId,
+                label: TASK_LABELS[template.taskId] || template.title,
+                bullets: metricBullets,
+                fullContent: fullMetrics.join("\n"),
+                taskId: template.taskId,
+                taskRoute: output.route,
+              });
+            }
             continue;
           }
 
