@@ -305,31 +305,38 @@ const getEmailContent = (
 
     case "playbook_ready":
       return {
-        subject: "Your Launch Playbook is taking shape",
+        subject: "Your Launch Playbook is ready",
         html: `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333;">
             <p style="font-size: 16px; line-height: 1.6;">Hi ${firstName},</p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              You've completed two projects now. That means something valuable is emerging — your personal launch playbook.
+              You've completed a couple of projects in Launchely — and something new is ready for you.
             </p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              This is a collection of patterns from your past launches: what worked, what you learned, what you might do differently next time.
+              Your Launch Playbook is a quiet reflection of how you tend to plan, message, and launch.<br/>
+              There's no scoring, no advice, and nothing to fix. It's simply a way to see what's been consistent for you over time.
             </p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              It's there whenever you want to look back — and it'll only get richer with each launch you complete.
+              You don't need to use it for anything right now.<br/>
+              But if you're curious, you can take a look here:
             </p>
             
             <p style="margin: 30px 0;">
               <a href="${appUrl}/playbook" 
                  style="display: inline-block; background: #333; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">
-                View your playbook
+                👉 View your Launch Playbook
               </a>
             </p>
             
             <p style="font-size: 16px; line-height: 1.6; color: #666;">
+              This will continue to grow as you complete more projects — at your pace.
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">
+              —<br/>
               Launchely
             </p>
           </div>
@@ -378,14 +385,14 @@ const getEmailContent = (
 };
 
 // Check if we can send a product email (max 1 per week)
-// Exception: onboarding emails (welcome, project_created) and state-change emails (launch_completed) always go through
+// Exception: onboarding emails (welcome, project_created) and state-change emails always go through
 async function canSendProductEmail(
   supabase: any, 
   userId: string, 
   emailType: EmailType
 ): Promise<boolean> {
   // Onboarding and state-change emails always go through
-  const alwaysAllowed: EmailType[] = ["welcome", "project_created", "launch_completed", "project_completed"];
+  const alwaysAllowed: EmailType[] = ["welcome", "project_created", "launch_completed", "project_completed", "playbook_ready"];
   if (alwaysAllowed.includes(emailType)) return true;
 
   // Check last product email sent (excluding always-allowed emails)
@@ -396,7 +403,7 @@ async function canSendProductEmail(
     .from("email_logs")
     .select("id")
     .eq("user_id", userId)
-    .not("email_type", "in", '("welcome","project_created","launch_completed","project_completed")') // Exclude always-allowed
+    .not("email_type", "in", '("welcome","project_created","launch_completed","project_completed","playbook_ready")') // Exclude always-allowed
     .gte("sent_at", oneWeekAgo.toISOString())
     .limit(1);
 
