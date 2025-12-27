@@ -10,6 +10,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Friendly names for funnel types
 const FUNNEL_TYPE_LABELS: Record<string, string> = {
@@ -149,11 +150,18 @@ export const PhaseSection = ({
         <div className="flex items-center gap-3">
           <Icon className="w-5 h-5 text-muted-foreground" />
           <span className="font-medium">{label}</span>
-          {isProOnly && (
-            <Crown className="w-4 h-4 text-yellow-500" />
-          )}
           {!isPrerequisiteComplete && (
             <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+          )}
+          {isProOnly && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Crown className="w-4 h-4 text-yellow-500 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Pro feature - Upgrade to access</p>
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
         <div className="flex items-center gap-3">
