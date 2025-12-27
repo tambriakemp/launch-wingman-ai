@@ -269,14 +269,23 @@ export function useProjectLifecycle({ projectId }: UseProjectLifecycleOptions): 
         .eq('status', 'completed');
       
       if (completedCount === 2) {
-        // Send playbook_ready email (fire and forget)
-        supabase.functions.invoke("send-notification-email", {
-          body: {
-            email_type: "playbook_ready",
-            user_id: user?.id,
-            data: {},
-          },
-        }).catch((err) => console.error("Failed to send playbook ready email:", err));
+        // Check if playbook_ready email was ever sent to this user
+        const { count: playbookEmailCount } = await supabase
+          .from('email_logs')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user?.id)
+          .eq('email_type', 'playbook_ready');
+        
+        // Only send if never sent before
+        if (playbookEmailCount === 0) {
+          supabase.functions.invoke("send-notification-email", {
+            body: {
+              email_type: "playbook_ready",
+              user_id: user?.id,
+              data: {},
+            },
+          }).catch((err) => console.error("Failed to send playbook ready email:", err));
+        }
       }
       
       return true;
