@@ -624,6 +624,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
           icon={Wrench}
           tasks={getBuildTasksForFunnel(currentFunnelType)}
           prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks()]}
+          isProOnly
         />
 
         <PhaseSection
@@ -632,6 +633,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
           icon={PenTool}
           tasks={getContentTasksForFunnel(currentFunnelType)}
           prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasksForFunnel(currentFunnelType)]}
+          isProOnly
         />
 
         <PhaseSection
@@ -640,6 +642,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
           icon={Rocket}
           tasks={getLaunchTasksForFunnel(currentFunnelType)}
           prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType)]}
+          isProOnly
         />
 
         <PhaseSection
@@ -648,6 +651,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
           icon={Flag}
           tasks={getPostLaunchTasks()}
           prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType), ...getLaunchTasksForFunnel(currentFunnelType)]}
+          isProOnly
         />
       </div>
 

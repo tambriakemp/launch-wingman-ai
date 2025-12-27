@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Circle, Lock, ChevronRight, ChevronDown, LucideIcon, Sparkles } from "lucide-react";
+import { Check, Circle, Lock, ChevronRight, ChevronDown, LucideIcon, Sparkles, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,6 +29,7 @@ interface PhaseSectionProps {
   tasks: TaskTemplate[];
   prerequisiteTasks?: TaskTemplate[];
   defaultOpen?: boolean;
+  isProOnly?: boolean;
 }
 
 export const PhaseSection = ({
@@ -38,6 +39,7 @@ export const PhaseSection = ({
   tasks,
   prerequisiteTasks = [],
   defaultOpen = true,
+  isProOnly = false,
 }: PhaseSectionProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -147,6 +149,9 @@ export const PhaseSection = ({
         <div className="flex items-center gap-3">
           <Icon className="w-5 h-5 text-muted-foreground" />
           <span className="font-medium">{label}</span>
+          {isProOnly && (
+            <Crown className="w-4 h-4 text-yellow-500" />
+          )}
           {!isPrerequisiteComplete && (
             <Lock className="w-3.5 h-3.5 text-muted-foreground" />
           )}
