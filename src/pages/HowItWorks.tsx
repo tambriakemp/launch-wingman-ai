@@ -21,6 +21,7 @@ import {
   Rocket,
   ArrowRight,
   CheckCircle2,
+  Package,
 } from "lucide-react";
 
 const steps = [
@@ -122,6 +123,20 @@ const steps = [
       "Drag-and-drop task management",
       "Launch calendar timeline",
       "Social media scheduling",
+    ],
+  },
+  {
+    number: "08",
+    icon: Package,
+    title: "Access Your Resources",
+    description: "Browse the Content Vault for ready-made templates, social posts, ebooks, and design assets.",
+    color: "bg-orange-500/10 text-orange-500",
+    mockup: TasksMockup,
+    details: [
+      "9+ resource categories",
+      "Ready-to-use templates",
+      "Canva links & presets",
+      "Pro-exclusive access",
     ],
   },
 ];

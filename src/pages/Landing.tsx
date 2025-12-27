@@ -24,6 +24,7 @@ import {
   FileText,
   Wand2,
   Brain,
+  Package,
 } from "lucide-react";
 
 const features = [
@@ -58,10 +59,10 @@ const features = [
     href: "/features/execute",
   },
   {
-    icon: Sparkles,
-    title: "AI Everywhere",
-    description: "AI-powered tools throughout—from transformation statements to complete sales pages.",
-    href: "/features/messaging",
+    icon: Package,
+    title: "Content Vault",
+    description: "Access ready-to-use templates, social posts, ebooks, presets, and more.",
+    href: "/features/content-vault",
   },
 ];
 

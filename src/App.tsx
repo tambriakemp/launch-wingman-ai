@@ -29,6 +29,7 @@ import PlanFeature from "./pages/features/PlanFeature";
 import BrandingFeature from "./pages/features/BrandingFeature";
 import MessagingFeature from "./pages/features/MessagingFeature";
 import ExecuteFeature from "./pages/features/ExecuteFeature";
+import ContentVaultFeature from "./pages/features/ContentVaultFeature";
 
 // Additional public pages
 import About from "./pages/About";
@@ -93,6 +94,7 @@ const App = () => (
             <Route path="/features/branding" element={<BrandingFeature />} />
             <Route path="/features/messaging" element={<MessagingFeature />} />
             <Route path="/features/execute" element={<ExecuteFeature />} />
+            <Route path="/features/content-vault" element={<ContentVaultFeature />} />
             
             {/* Smart redirect to last used project */}
             <Route path="/app" element={<ProtectedRoute><AppRedirect /></ProtectedRoute>} />

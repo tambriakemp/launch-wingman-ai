@@ -12,6 +12,7 @@ const footerLinks = {
     { name: "Branding", href: "/features/branding" },
     { name: "Messaging", href: "/features/messaging" },
     { name: "Execute", href: "/features/execute" },
+    { name: "Content Vault", href: "/features/content-vault" },
   ],
   company: [
     { name: "About", href: "/about" },

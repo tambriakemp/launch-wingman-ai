@@ -36,6 +36,7 @@ const plans = [
       { name: "Social Media Scheduling", included: false },
       { name: "Export Phase Snapshot", included: false },
       { name: "Full Sales Copy Builder", included: false },
+      { name: "Content Vault", included: false },
     ],
   },
   {
@@ -61,6 +62,7 @@ const plans = [
       { name: "Relaunch Mode", included: true },
       { name: "Insights & Analytics History", included: true },
       { name: "Cross-Project Content Visibility", included: true },
+      { name: "Content Vault Access", included: true },
       { name: "Priority Support", included: true },
     ],
   },
@@ -222,6 +224,7 @@ const Pricing = () => {
                   { feature: "Relaunch Mode", free: false, pro: true },
                   { feature: "Insights & Analytics", free: false, pro: true },
                   { feature: "Cross-Project Visibility", free: false, pro: true },
+                  { feature: "Content Vault", free: false, pro: true },
                   { feature: "Priority Support", free: false, pro: true },
                 ].map((row, index) => (
                   <tr key={index} className="border-b border-border/50">

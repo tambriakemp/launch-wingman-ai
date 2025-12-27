@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown, ClipboardCheck, Layout, Palette, MessageSquare, Rocket, LogOut } from "lucide-react";
+import { Menu, X, ChevronDown, ClipboardCheck, Layout, Palette, MessageSquare, Rocket, LogOut, Package } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const featureLinks = [
@@ -35,6 +35,12 @@ const featureLinks = [
     description: "Manage and launch",
     href: "/features/execute",
     icon: Rocket,
+  },
+  {
+    title: "Content Vault",
+    description: "Templates & resources library",
+    href: "/features/content-vault",
+    icon: Package,
   },
 ];
 
