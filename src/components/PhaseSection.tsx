@@ -11,6 +11,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 
 // Friendly names for funnel types
 const FUNNEL_TYPE_LABELS: Record<string, string> = {
@@ -43,10 +44,11 @@ export const PhaseSection = ({
   isProOnly = false,
 }: PhaseSectionProps) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isSubscribed } = useAuth();
   const [projectTasks, setProjectTasks] = useState<ProjectTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   useEffect(() => {
     const fetchProjectTasks = async () => {
@@ -153,10 +155,18 @@ export const PhaseSection = ({
           {!isPrerequisiteComplete && (
             <Lock className="w-3.5 h-3.5 text-muted-foreground" />
           )}
-          {isProOnly && (
+          {isProOnly && !isSubscribed && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Crown className="w-4 h-4 text-yellow-500 cursor-help" />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowUpgradeDialog(true);
+                  }}
+                  className="hover:scale-110 transition-transform"
+                >
+                  <Crown className="w-4 h-4 text-yellow-500" />
+                </button>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Pro feature - Upgrade to access</p>
@@ -261,6 +271,12 @@ export const PhaseSection = ({
           })}
         </div>
       </CollapsibleContent>
+      
+      <UpgradeDialog 
+        open={showUpgradeDialog} 
+        onOpenChange={setShowUpgradeDialog} 
+        feature={label}
+      />
     </Collapsible>
   );
 };
