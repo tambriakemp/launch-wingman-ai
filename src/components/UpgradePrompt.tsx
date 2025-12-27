@@ -8,11 +8,13 @@ interface UpgradePromptProps {
   feature: FeatureKey;
   variant?: "inline" | "card" | "banner";
   className?: string;
+  customMessage?: string;
 }
 
-export const UpgradePrompt = ({ feature, variant = "inline", className = "" }: UpgradePromptProps) => {
+export const UpgradePrompt = ({ feature, variant = "inline", className = "", customMessage }: UpgradePromptProps) => {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const featureName = FEATURE_DISPLAY_NAMES[feature];
+  const displayMessage = customMessage || `${featureName} is a Pro feature`;
 
   if (variant === "banner") {
     return (
@@ -23,7 +25,7 @@ export const UpgradePrompt = ({ feature, variant = "inline", className = "" }: U
               <Crown className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <p className="font-medium text-foreground">{featureName} is a Pro feature</p>
+              <p className="font-medium text-foreground">{displayMessage}</p>
               <p className="text-sm text-muted-foreground">Upgrade to unlock this and more</p>
             </div>
           </div>
@@ -45,7 +47,7 @@ export const UpgradePrompt = ({ feature, variant = "inline", className = "" }: U
           </div>
           <h3 className="text-lg font-semibold text-foreground mb-2">Pro Feature</h3>
           <p className="text-muted-foreground mb-4">
-            {featureName} is available on the Pro plan. Upgrade to unlock all features.
+            {customMessage || `${featureName} is available on the Pro plan. Upgrade to unlock all features.`}
           </p>
           <Button onClick={() => setShowUpgrade(true)} className="w-full">
             <Crown className="w-4 h-4 mr-2" />
