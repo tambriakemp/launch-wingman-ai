@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown, ClipboardCheck, Layout, Palette, MessageSquare, Rocket, LogOut, Package } from "lucide-react";
+import { Menu, X, ChevronDown, ClipboardCheck, Layout, Palette, MessageSquare, Rocket, LogOut, Package, BarChart3, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const featureLinks = [
@@ -41,6 +41,18 @@ const featureLinks = [
     description: "Templates & resources library",
     href: "/features/content-vault",
     icon: Package,
+  },
+  {
+    title: "Insights",
+    description: "Track your launch metrics",
+    href: "/features/insights",
+    icon: BarChart3,
+  },
+  {
+    title: "Relaunch",
+    description: "Iterate on past launches",
+    href: "/features/relaunch",
+    icon: RefreshCw,
   },
 ];
 
