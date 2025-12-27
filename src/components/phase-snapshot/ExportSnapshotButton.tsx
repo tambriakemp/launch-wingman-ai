@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { Download } from "lucide-react";
+import { Download, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PHASE_LABELS, Phase } from "@/types/tasks";
 import type { PhaseData } from "@/hooks/usePhaseSnapshot";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 
 interface ExportSnapshotButtonProps {
   phases: PhaseData[];
@@ -12,8 +14,17 @@ interface ExportSnapshotButtonProps {
 
 export function ExportSnapshotButton({ phases, projectName = "Project" }: ExportSnapshotButtonProps) {
   const [isExporting, setIsExporting] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const { hasAccess } = useFeatureAccess();
+
+  const canExport = hasAccess('export_snapshot');
 
   const handleExportPDF = () => {
+    if (!canExport) {
+      setShowUpgrade(true);
+      return;
+    }
+    
     setIsExporting(true);
     
     try {
@@ -285,15 +296,19 @@ export function ExportSnapshotButton({ phases, projectName = "Project" }: Export
   }
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      disabled={isExporting}
-      onClick={handleExportPDF}
-      className="gap-2"
-    >
-      <Download className="w-4 h-4" />
-      Export PDF
-    </Button>
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={isExporting}
+        onClick={handleExportPDF}
+        className="gap-2"
+      >
+        <Download className="w-4 h-4" />
+        Export PDF
+        {!canExport && <Crown className="w-3 h-3 text-primary" />}
+      </Button>
+      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} feature="Export Phase Snapshot" />
+    </>
   );
 }

@@ -580,14 +580,18 @@ const Settings = () => {
                       <span className="font-semibold text-foreground">Upgrade to Pro</span>
                     </div>
                     <div className="flex items-baseline gap-1 mb-4">
-                      <span className="text-3xl font-bold text-foreground">$20</span>
+                      <span className="text-3xl font-bold text-foreground">$25</span>
                       <span className="text-muted-foreground">/month</span>
                     </div>
                     <ul className="space-y-2 mb-4">
                       {[
                         "Unlimited projects",
-                        "AI transformation generator",
-                        "Advanced calendar",
+                        "Unlimited AI content ideas",
+                        "Unlimited saved drafts",
+                        "Full sales copy builder",
+                        "Relaunch mode",
+                        "Insights & analytics",
+                        "Export phase snapshot",
                         "Priority support",
                       ].map((feature, i) => (
                         <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">

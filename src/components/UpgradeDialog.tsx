@@ -19,10 +19,12 @@ interface UpgradeDialogProps {
 
 const proFeatures = [
   "Unlimited projects",
-  "Visual direction tools",
-  "Sales copy & messaging builders",
-  "Social media posting",
-  "Tasks & execution tools",
+  "Unlimited AI content ideas",
+  "Unlimited saved drafts", 
+  "Full sales copy builder",
+  "Relaunch mode",
+  "Insights & analytics",
+  "Export phase snapshot",
   "Priority support",
 ];
 

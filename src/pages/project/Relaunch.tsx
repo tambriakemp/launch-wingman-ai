@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { RelaunchFlow } from "@/components/relaunch";
 import { ProjectState } from "@/types/projectLifecycle";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
 
 export default function Relaunch() {
   const { id } = useParams();
@@ -43,11 +45,25 @@ export default function Relaunch() {
     }
   }, [projectStatus, id, navigate]);
 
+  const { hasAccess } = useFeatureAccess();
+  const canRelaunch = hasAccess('relaunch_mode');
+
   if (isLoading || !id) {
     return (
       <ProjectLayout>
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </ProjectLayout>
+    );
+  }
+
+  // Show upgrade prompt if user doesn't have access
+  if (!canRelaunch) {
+    return (
+      <ProjectLayout>
+        <div className="max-w-md mx-auto py-16 px-4">
+          <UpgradePrompt feature="relaunch_mode" variant="card" />
         </div>
       </ProjectLayout>
     );
