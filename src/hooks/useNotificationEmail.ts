@@ -10,7 +10,8 @@ export type NotificationEmailType =
   | "relaunch_invitation"
   | "check_in_reminder"
   | "playbook_ready"
-  | "paused_project_reminder";
+  | "paused_project_reminder"
+  | "pro_upgrade";
 
 interface SendEmailOptions {
   emailType: NotificationEmailType;

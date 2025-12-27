@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,6 +37,7 @@ const handler = async (req: Request): Promise<Response> => {
     checkInReminders: 0,
     relaunchInvitations: 0,
     pausedReminders: 0,
+    proUpgradeEmails: 0,
     errors: [] as string[],
   };
 
@@ -423,6 +425,212 @@ const handler = async (req: Request): Promise<Response> => {
           console.error("Paused reminder error:", err);
           results.errors.push(`Paused reminder failed for ${proj.user_id}`);
         }
+      }
+    }
+
+    // ===== 4. SOFT PRO UPGRADE EMAILS =====
+    // Send when: 2+ check-ins completed OR hit free project limit (3 projects)
+    // Rules: Not within first 30 days, not already Pro, max 1 per quarter
+    console.log("Processing pro upgrade emails...");
+
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const stripe = stripeKey ? new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" }) : null;
+    
+    const thirtyDaysAgoForSignup = new Date(now);
+    thirtyDaysAgoForSignup.setDate(thirtyDaysAgoForSignup.getDate() - 30);
+    const ninetyDaysAgo = new Date(now);
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+    // Get users with 2+ check-ins
+    const { data: eligibleByCheckIns } = await supabase
+      .from("check_ins")
+      .select("user_id")
+      .gte("created_at", "1970-01-01"); // All check-ins
+    
+    // Count check-ins per user
+    const checkInCounts = new Map<string, number>();
+    if (eligibleByCheckIns) {
+      for (const ci of eligibleByCheckIns) {
+        checkInCounts.set(ci.user_id, (checkInCounts.get(ci.user_id) || 0) + 1);
+      }
+    }
+    
+    const usersWithTwoCheckIns = Array.from(checkInCounts.entries())
+      .filter(([_, count]) => count >= 2)
+      .map(([userId]) => userId);
+
+    // Get users who hit free project limit (3+ projects)
+    const { data: projectCounts } = await supabase
+      .from("projects")
+      .select("user_id");
+    
+    const projectCountMap = new Map<string, number>();
+    if (projectCounts) {
+      for (const p of projectCounts) {
+        projectCountMap.set(p.user_id, (projectCountMap.get(p.user_id) || 0) + 1);
+      }
+    }
+    
+    const usersAtProjectLimit = Array.from(projectCountMap.entries())
+      .filter(([_, count]) => count >= 3)
+      .map(([userId]) => userId);
+
+    // Combine eligible users (unique)
+    const eligibleUserIds = [...new Set([...usersWithTwoCheckIns, ...usersAtProjectLimit])];
+    
+    console.log(`Found ${eligibleUserIds.length} potentially eligible users for pro upgrade`);
+
+    for (const userId of eligibleUserIds) {
+      try {
+        // Check if user signed up more than 30 days ago
+        const { data: { users } } = await supabase.auth.admin.listUsers();
+        const user = users?.find(u => u.id === userId);
+        
+        if (!user?.email) {
+          console.log(`Skipping ${userId}: no email found`);
+          continue;
+        }
+
+        const signupDate = new Date(user.created_at);
+        if (signupDate > thirtyDaysAgoForSignup) {
+          console.log(`Skipping ${userId}: signed up less than 30 days ago`);
+          continue;
+        }
+
+        // Check if already on Pro (has active Stripe subscription)
+        if (stripe) {
+          const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+          if (customers.data.length > 0) {
+            const subscriptions = await stripe.subscriptions.list({
+              customer: customers.data[0].id,
+              status: "active",
+              limit: 1,
+            });
+            if (subscriptions.data.length > 0) {
+              console.log(`Skipping ${userId}: already on Pro`);
+              continue;
+            }
+          }
+        }
+
+        // Check email preferences (product_emails_enabled)
+        const { data: emailPref } = await supabase
+          .from("email_preferences")
+          .select("product_emails_enabled")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (emailPref?.product_emails_enabled === false) {
+          console.log(`Skipping ${userId}: opted out of product emails`);
+          continue;
+        }
+
+        // Check if pro_upgrade email was sent in the last 90 days (max 1 per quarter)
+        const { count: recentProEmail } = await supabase
+          .from("email_logs")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .eq("email_type", "pro_upgrade")
+          .gte("sent_at", ninetyDaysAgo.toISOString());
+
+        if ((recentProEmail || 0) > 0) {
+          console.log(`Skipping ${userId}: pro upgrade email sent in last 90 days`);
+          continue;
+        }
+
+        // Rate limit check (1 product email per week)
+        const weekAgo = new Date(now);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        
+        const { count: recentEmails } = await supabase
+          .from("email_logs")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .in("email_type", ["check_in_reminder", "relaunch_invitation", "playbook_ready", "paused_project_reminder", "pro_upgrade"])
+          .gte("sent_at", weekAgo.toISOString());
+
+        if ((recentEmails || 0) > 0) {
+          console.log(`Skipping ${userId}: rate limited`);
+          continue;
+        }
+
+        // Get user profile
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("first_name")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        const firstName = profile?.first_name || user.user_metadata?.first_name || "there";
+
+        // Send email with exact copy from spec
+        await resend.emails.send({
+          from: "Launchely <hello@launchely.com>",
+          to: [user.email],
+          subject: "If you want to go a little deeper",
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333;">
+              <p style="font-size: 16px; line-height: 1.6;">Hi ${firstName},</p>
+              
+              <p style="font-size: 16px; line-height: 1.6;">
+                Launchely is designed to support you whether you're actively launching or just thinking things through.
+              </p>
+              
+              <p style="font-size: 16px; line-height: 1.6;">
+                Some people choose to stay on the Core plan and use Launchely as needed.<br/>
+                Others move to Pro because they want deeper continuity — more space to reuse past work, reflect across launches, and let Launchely remember more over time.
+              </p>
+              
+              <p style="font-size: 16px; line-height: 1.6;">
+                There's no right choice, and no rush to decide.
+              </p>
+              
+              <p style="font-size: 16px; line-height: 1.6;">
+                If you're curious, here's what Pro adds — quietly and without changing how you use the app:
+              </p>
+              
+              <ul style="font-size: 16px; line-height: 1.8; color: #555; margin: 20px 0;">
+                <li>Deeper Project Memory across relaunches</li>
+                <li>A more detailed Launch Playbook as patterns emerge</li>
+                <li>Ongoing Check-Ins that adapt over time</li>
+                <li>Unlimited projects, whenever you need them</li>
+              </ul>
+              
+              <p style="font-size: 16px; line-height: 1.6;">
+                If that sounds useful right now, you can take a look here:
+              </p>
+              
+              <p style="margin: 30px 0;">
+                <a href="${APP_URL}/pricing" 
+                   style="display: inline-block; background: #333; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">
+                  👉 View Pro plan
+                </a>
+              </p>
+              
+              <p style="font-size: 16px; line-height: 1.6; color: #666;">
+                And if not, that's completely fine.<br/>
+                Launchely will keep working the same way either way.
+              </p>
+              
+              <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">
+                —<br/>
+                Launchely
+              </p>
+            </div>
+          `,
+        });
+
+        // Log the email
+        await supabase.from("email_logs").insert({
+          user_id: userId,
+          email_type: "pro_upgrade",
+        });
+
+        console.log(`Sent pro upgrade email to ${userId}`);
+        results.proUpgradeEmails++;
+      } catch (err) {
+        console.error("Pro upgrade email error:", err);
+        results.errors.push(`Pro upgrade failed for ${userId}`);
       }
     }
 

@@ -18,7 +18,8 @@ type EmailType =
   | "relaunch_invitation"
   | "check_in_reminder"
   | "playbook_ready"
-  | "paused_project_reminder";
+  | "paused_project_reminder"
+  | "pro_upgrade";
 
 interface EmailRequest {
   email_type: EmailType;
@@ -370,6 +371,61 @@ const getEmailContent = (
             </p>
             
             <p style="font-size: 16px; line-height: 1.6; color: #666;">
+              Launchely
+            </p>
+          </div>
+        `,
+      };
+
+    case "pro_upgrade":
+      return {
+        subject: "If you want to go a little deeper",
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333;">
+            <p style="font-size: 16px; line-height: 1.6;">Hi ${firstName},</p>
+            
+            <p style="font-size: 16px; line-height: 1.6;">
+              Launchely is designed to support you whether you're actively launching or just thinking things through.
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6;">
+              Some people choose to stay on the Core plan and use Launchely as needed.<br/>
+              Others move to Pro because they want deeper continuity — more space to reuse past work, reflect across launches, and let Launchely remember more over time.
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6;">
+              There's no right choice, and no rush to decide.
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6;">
+              If you're curious, here's what Pro adds — quietly and without changing how you use the app:
+            </p>
+            
+            <ul style="font-size: 16px; line-height: 1.8; color: #555; margin: 20px 0;">
+              <li>Deeper Project Memory across relaunches</li>
+              <li>A more detailed Launch Playbook as patterns emerge</li>
+              <li>Ongoing Check-Ins that adapt over time</li>
+              <li>Unlimited projects, whenever you need them</li>
+            </ul>
+            
+            <p style="font-size: 16px; line-height: 1.6;">
+              If that sounds useful right now, you can take a look here:
+            </p>
+            
+            <p style="margin: 30px 0;">
+              <a href="${appUrl}/pricing" 
+                 style="display: inline-block; background: #333; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">
+                👉 View Pro plan
+              </a>
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6; color: #666;">
+              And if not, that's completely fine.<br/>
+              Launchely will keep working the same way either way.
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">
+              —<br/>
               Launchely
             </p>
           </div>
