@@ -186,25 +186,37 @@ const getEmailContent = (
             <p style="font-size: 16px; line-height: 1.6;">Hi ${firstName},</p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              You've completed your project "${data?.projectName || "project"}". That's worth acknowledging.
+              Your project "${data?.projectName || "project"}" is complete ✔️
             </p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              Whether it was a small launch or a big one, every finished project teaches you something. Those lessons compound over time.
+              Closing the loop matters.<br/>
+              It gives you space to reflect, rest, or decide what comes next — without pressure to move on immediately.
             </p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              If you'd like, you can revisit your project summary anytime — or simply move on when you're ready for what's next.
+              You don't need to plan your next step right now.<br/>
+              When you're ready, you can revisit this project, relaunch it, or start something entirely new.
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6;">
+              For now, here's a snapshot of what you've completed:
             </p>
             
             <p style="margin: 30px 0;">
               <a href="${appUrl}/projects/${data?.projectId || ""}" 
                  style="display: inline-block; background: #333; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">
-                View project summary
+                👉 View project summary
               </a>
             </p>
             
             <p style="font-size: 16px; line-height: 1.6; color: #666;">
+              Take your time.<br/>
+              You finished something — and that matters.
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">
+              —<br/>
               Launchely
             </p>
           </div>
@@ -359,7 +371,7 @@ async function canSendProductEmail(
   emailType: EmailType
 ): Promise<boolean> {
   // Onboarding and state-change emails always go through
-  const alwaysAllowed: EmailType[] = ["welcome", "project_created", "launch_completed"];
+  const alwaysAllowed: EmailType[] = ["welcome", "project_created", "launch_completed", "project_completed"];
   if (alwaysAllowed.includes(emailType)) return true;
 
   // Check last product email sent (excluding always-allowed emails)
@@ -370,7 +382,7 @@ async function canSendProductEmail(
     .from("email_logs")
     .select("id")
     .eq("user_id", userId)
-    .not("email_type", "in", '("welcome","project_created","launch_completed")') // Exclude always-allowed
+    .not("email_type", "in", '("welcome","project_created","launch_completed","project_completed")') // Exclude always-allowed
     .gte("sent_at", oneWeekAgo.toISOString())
     .limit(1);
 
