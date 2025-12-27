@@ -102,21 +102,32 @@ const getEmailContent = (
             <p style="font-size: 16px; line-height: 1.6;">Hi ${firstName},</p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              Your project "${data?.projectName || "new project"}" is ready to go.
+              Your project "${data?.projectName || "new project"}" is ready ✨
             </p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              There's no rush — just one step at a time. Your next task is waiting whenever you're ready.
+              You don't need to have everything figured out yet.<br/>
+              Launchely will guide you one step at a time — starting with the next task that actually matters.
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6;">
+              Whenever you're ready, you can continue here:
             </p>
             
             <p style="margin: 30px 0;">
               <a href="${appUrl}/projects/${data?.projectId || ""}" 
                  style="display: inline-block; background: #333; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">
-                Open your project
+                👉 Continue your project
               </a>
             </p>
             
             <p style="font-size: 16px; line-height: 1.6; color: #666;">
+              No pressure to move fast.<br/>
+              Just focus on the step in front of you.
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">
+              —<br/>
               Launchely
             </p>
           </div>
@@ -334,15 +345,16 @@ const getEmailContent = (
 };
 
 // Check if we can send a product email (max 1 per week)
+// Exception: welcome and project_created are onboarding emails and always go through
 async function canSendProductEmail(
   supabase: any, 
   userId: string, 
   emailType: EmailType
 ): Promise<boolean> {
-  // Transactional emails (welcome) always go through
-  if (emailType === "welcome") return true;
+  // Onboarding emails (welcome, project_created) always go through
+  if (emailType === "welcome" || emailType === "project_created") return true;
 
-  // Check last product email sent
+  // Check last product email sent (excluding onboarding emails)
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -350,7 +362,7 @@ async function canSendProductEmail(
     .from("email_logs")
     .select("id")
     .eq("user_id", userId)
-    .neq("email_type", "welcome") // Exclude transactional
+    .not("email_type", "in", '("welcome","project_created")') // Exclude onboarding emails
     .gte("sent_at", oneWeekAgo.toISOString())
     .limit(1);
 
