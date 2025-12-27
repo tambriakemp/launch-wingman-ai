@@ -33,7 +33,7 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "$20",
+    price: "$25",
     period: "/month",
     description: "Everything you need to launch like a pro",
     cta: "Go Pro",
@@ -68,7 +68,7 @@ const faqs = [
   },
   {
     question: "How does billing work?",
-    answer: "Pro is billed monthly at $20/month. You can cancel anytime, and you'll keep access until the end of your billing period. No long-term contracts or hidden fees.",
+    answer: "Pro is billed monthly at $25/month. You can cancel anytime, and you'll keep access until the end of your billing period. No long-term contracts or hidden fees.",
   },
   {
     question: "Do you offer refunds?",
