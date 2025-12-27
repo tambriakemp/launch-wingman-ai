@@ -17,6 +17,7 @@ import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { CheckInSettings } from "@/components/check-in";
 import { ToneSettings } from "@/components/settings/ToneSettings";
 import { AnnualReviewView } from "@/components/settings/AnnualReviewView";
+import { EmailPreferencesSettings } from "@/components/settings/EmailPreferencesSettings";
 import { useAnnualReview } from "@/hooks/useAnnualReview";
 import {
   User,

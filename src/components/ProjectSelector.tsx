@@ -175,6 +175,15 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
       resetDialog();
       navigate(`/projects/${data.id}/offer`);
       toast.success("Project created successfully");
+      
+      // Send project_created email (fire and forget)
+      supabase.functions.invoke("send-notification-email", {
+        body: {
+          email_type: "project_created",
+          user_id: user!.id,
+          data: { projectId: data.id, projectName: data.name },
+        },
+      }).catch((err) => console.error("Failed to send project created email:", err));
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Failed to create project");
