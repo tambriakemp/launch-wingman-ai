@@ -265,31 +265,38 @@ const getEmailContent = (
 
     case "check_in_reminder":
       return {
-        subject: "A gentle check-in",
+        subject: "A quick moment to reflect",
         html: `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333;">
             <p style="font-size: 16px; line-height: 1.6;">Hi ${firstName},</p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              It's time for your ${data?.cadence || "regular"} check-in — a quiet moment to reflect on where you are and what you want next.
+              Just checking in.
             </p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              There's nothing to track or measure. Just a few questions to help you reconnect with your direction.
+              This isn't a reminder or a push to do anything — just a quick moment to notice where you are and what feels right next.
             </p>
             
             <p style="font-size: 16px; line-height: 1.6;">
-              This is optional. Take it whenever you're ready, or skip it entirely if now isn't the right time.
+              If you want, you can take a short check-in inside Launchely.<br/>
+              It takes a minute or two, and there's nothing you have to decide.
             </p>
             
             <p style="margin: 30px 0;">
-              <a href="${appUrl}/app" 
+              <a href="${appUrl}/app?checkin=true" 
                  style="display: inline-block; background: #333; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">
-                Start check-in
+                👉 Start check-in
               </a>
             </p>
             
             <p style="font-size: 16px; line-height: 1.6; color: #666;">
+              Or feel free to ignore this and come back whenever it makes sense.<br/>
+              Launchely will be here either way.
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">
+              —<br/>
               Launchely
             </p>
           </div>

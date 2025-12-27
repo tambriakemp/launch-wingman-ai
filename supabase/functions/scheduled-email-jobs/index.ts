@@ -40,7 +40,8 @@ const handler = async (req: Request): Promise<Response> => {
   };
 
   try {
-    // ===== 1. CHECK-IN REMINDERS =====
+    // ===== 1. MONTHLY/QUARTERLY CHECK-IN REMINDERS =====
+    // Send based on user's selected cadence, skip if check-in completed in last 7 days
     console.log("Processing check-in reminders...");
     
     const { data: checkInPrefs, error: checkInError } = await supabase
@@ -55,9 +56,27 @@ const handler = async (req: Request): Promise<Response> => {
         try {
           // Skip if snoozed
           if (pref.snoozed_until && new Date(pref.snoozed_until) > now) {
+            console.log(`Skipping ${pref.user_id}: snoozed until ${pref.snoozed_until}`);
             continue;
           }
 
+          // Check if user completed a check-in in the last 7 days
+          const sevenDaysAgo = new Date(now);
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          
+          const { data: recentCheckIn } = await supabase
+            .from("check_ins")
+            .select("id")
+            .eq("user_id", pref.user_id)
+            .gte("created_at", sevenDaysAgo.toISOString())
+            .limit(1);
+
+          if (recentCheckIn && recentCheckIn.length > 0) {
+            console.log(`Skipping ${pref.user_id}: completed check-in in last 7 days`);
+            continue;
+          }
+
+          // Calculate if check-in is due based on cadence
           const lastCheckIn = pref.last_check_in_at ? new Date(pref.last_check_in_at) : null;
           const cadence = pref.cadence || "monthly";
           const monthsToAdd = cadence === "quarterly" ? 3 : 1;
@@ -71,9 +90,12 @@ const handler = async (req: Request): Promise<Response> => {
             isDue = now >= nextDue;
           }
 
-          if (!isDue) continue;
+          if (!isDue) {
+            console.log(`Skipping ${pref.user_id}: check-in not yet due`);
+            continue;
+          }
 
-          // Check email preferences
+          // Check email preferences (check_in_emails_enabled)
           const { data: emailPref } = await supabase
             .from("email_preferences")
             .select("check_in_emails_enabled")
@@ -81,10 +103,11 @@ const handler = async (req: Request): Promise<Response> => {
             .maybeSingle();
 
           if (emailPref?.check_in_emails_enabled === false) {
+            console.log(`Skipping ${pref.user_id}: opted out of check-in emails`);
             continue;
           }
 
-          // Check rate limit (1 product email per week)
+          // Rate limit check (1 product email per week)
           const weekAgo = new Date(now);
           weekAgo.setDate(weekAgo.getDate() - 7);
           
@@ -95,7 +118,10 @@ const handler = async (req: Request): Promise<Response> => {
             .in("email_type", ["check_in_reminder", "relaunch_invitation", "playbook_ready", "paused_project_reminder"])
             .gte("sent_at", weekAgo.toISOString());
 
-          if ((count || 0) > 0) continue;
+          if ((count || 0) > 0) {
+            console.log(`Skipping ${pref.user_id}: rate limited`);
+            continue;
+          }
 
           // Get user email from profile
           const { data: profile } = await supabase
@@ -107,21 +133,52 @@ const handler = async (req: Request): Promise<Response> => {
           const { data: { users } } = await supabase.auth.admin.listUsers();
           const user = users?.find(u => u.id === pref.user_id);
           
-          if (!user?.email) continue;
+          if (!user?.email) {
+            console.log(`Skipping ${pref.user_id}: no email found`);
+            continue;
+          }
 
           const firstName = profile?.first_name || user.user_metadata?.first_name || "there";
           
+          // Send email with exact copy from spec
           await resend.emails.send({
             from: "Launchely <hello@launchely.com>",
             to: [user.email],
-            subject: "A moment to pause and reflect",
+            subject: "A quick moment to reflect",
             html: `
-              <p>Hi ${firstName},</p>
-              <p>Your ${cadence} check-in is ready whenever you are.</p>
-              <p>This isn't about measuring progress or hitting goals. It's simply a moment to pause, reflect, and reconnect with what matters to you.</p>
-              <p><a href="${APP_URL}/app">Start your check-in</a></p>
-              <p>No rush. No pressure.</p>
-              <p>Launchely</p>
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333;">
+                <p style="font-size: 16px; line-height: 1.6;">Hi ${firstName},</p>
+                
+                <p style="font-size: 16px; line-height: 1.6;">
+                  Just checking in.
+                </p>
+                
+                <p style="font-size: 16px; line-height: 1.6;">
+                  This isn't a reminder or a push to do anything — just a quick moment to notice where you are and what feels right next.
+                </p>
+                
+                <p style="font-size: 16px; line-height: 1.6;">
+                  If you want, you can take a short check-in inside Launchely.<br/>
+                  It takes a minute or two, and there's nothing you have to decide.
+                </p>
+                
+                <p style="margin: 30px 0;">
+                  <a href="${APP_URL}/app?checkin=true" 
+                     style="display: inline-block; background: #333; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">
+                    👉 Start check-in
+                  </a>
+                </p>
+                
+                <p style="font-size: 16px; line-height: 1.6; color: #666;">
+                  Or feel free to ignore this and come back whenever it makes sense.<br/>
+                  Launchely will be here either way.
+                </p>
+                
+                <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">
+                  —<br/>
+                  Launchely
+                </p>
+              </div>
             `,
           });
 
@@ -130,6 +187,7 @@ const handler = async (req: Request): Promise<Response> => {
             email_type: "check_in_reminder",
           });
 
+          console.log(`Sent check-in reminder to ${pref.user_id}`);
           results.checkInReminders++;
         } catch (err) {
           console.error("Check-in reminder error:", err);
