@@ -305,7 +305,7 @@ export default function OfferSnapshotTask() {
       await completeTask('planning_offer_stack', { offers: offers.filter(o => !o.isSkipped) });
       
       toast.success("Offer stack saved! Your offer ecosystem is taking shape.");
-      navigate(`/projects/${projectId}/offer`);
+      navigate(`/projects/${projectId}/dashboard`);
     } catch (error) {
       console.error("Complete error:", error);
       toast.error("Failed to save. Please try again.");
@@ -319,7 +319,7 @@ export default function OfferSnapshotTask() {
     try {
       await saveOffersToDb(offers);
       toast.success("Progress saved!");
-      navigate(`/projects/${projectId}/offer`);
+      navigate(`/projects/${projectId}/dashboard`);
     } catch (error) {
       console.error("Save error:", error);
       toast.error("Failed to save. Please try again.");
@@ -345,7 +345,7 @@ export default function OfferSnapshotTask() {
       <div className="min-h-screen bg-background">
         <div className="max-w-2xl mx-auto px-4 py-12">
           <Link
-            to={`/projects/${projectId}/offer`}
+            to={`/projects/${projectId}/dashboard`}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -358,7 +358,7 @@ export default function OfferSnapshotTask() {
             <p className="text-muted-foreground mb-4">
               Please complete the "Choose how you'll sell your offer" task first.
             </p>
-            <Button onClick={() => navigate(`/projects/${projectId}/offer`)}>
+            <Button onClick={() => navigate(`/projects/${projectId}/dashboard`)}>
               Go to Dashboard
             </Button>
           </div>
@@ -378,7 +378,7 @@ export default function OfferSnapshotTask() {
         {/* Header */}
         <div className="mb-8">
           <Link
-            to={`/projects/${projectId}/offer`}
+            to={`/projects/${projectId}/dashboard`}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />

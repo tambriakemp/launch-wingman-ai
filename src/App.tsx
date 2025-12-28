@@ -124,12 +124,17 @@ const App = () => (
               }
             />
             <Route
-              path="/projects/:id/offer"
+              path="/projects/:id/dashboard"
               element={
                 <ProtectedRoute>
                   <ProjectPlan />
                 </ProtectedRoute>
               }
+            />
+            {/* Legacy redirect from /offer to /dashboard */}
+            <Route
+              path="/projects/:id/offer"
+              element={<Navigate to="../dashboard" replace />}
             />
             {/* Execute routes */}
             <Route

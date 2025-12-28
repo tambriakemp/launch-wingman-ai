@@ -123,7 +123,7 @@ export default function StartingPointTask() {
 
       queryClient.invalidateQueries({ queryKey: ['launch-snapshots', projectId] });
       toast.success("Starting point captured!");
-      navigate(`/projects/${projectId}/offer`);
+      navigate(`/projects/${projectId}/dashboard`);
     } catch (error) {
       console.error('Error saving starting point:', error);
       toast.error("Failed to save. Please try again.");
@@ -142,7 +142,7 @@ export default function StartingPointTask() {
         skipped: true,
       });
       toast.success("Task skipped. You can always come back to this later.");
-      navigate(`/projects/${projectId}/offer`);
+      navigate(`/projects/${projectId}/dashboard`);
     } catch (error) {
       console.error('Error skipping task:', error);
       toast.error("Failed to skip task.");
@@ -171,7 +171,7 @@ export default function StartingPointTask() {
         {/* Header */}
         <div className="mb-8">
           <Link
-            to={`/projects/${projectId}/offer`}
+            to={`/projects/${projectId}/dashboard`}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />

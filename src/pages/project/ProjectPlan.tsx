@@ -15,12 +15,12 @@ const ProjectPlan = () => {
   
   // Determine which component to render based on route
   // Base route (/projects/:id) = Dashboard with lifecycle views
-  // /projects/:id/offer = Offer builder without lifecycle views
-  const isOfferRoute = section === "offer";
+  // /projects/:id/dashboard = Offer builder without lifecycle views
+  const isDashboardRoute = section === "dashboard";
 
   return (
     <ProjectLayout>
-      {isOfferRoute ? (
+      {isDashboardRoute ? (
         <OfferOverviewContent projectId={id} />
       ) : (
         <FunnelOverviewContent projectId={id} />
