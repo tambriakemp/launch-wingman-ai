@@ -258,7 +258,7 @@ export default function TaskDetail() {
       await completeTask(taskId, inputData);
       
       toast.success("Great work! Task saved and marked complete.");
-      navigate(`/projects/${projectId}/offer`);
+      navigate(`/projects/${projectId}/dashboard`);
     } catch (error) {
       console.error("Error saving task:", error);
       toast.error("Failed to save task. Please try again.");
@@ -363,7 +363,7 @@ export default function TaskDetail() {
         {/* Header / Context Section */}
         <div className="mb-10">
           <Link
-            to={`/projects/${projectId}/offer`}
+            to={`/projects/${projectId}/dashboard`}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />

@@ -108,7 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .limit(1);
 
     if (projects && projects.length > 0) {
-      navigate(`/projects/${projects[0].id}/offer`);
+      navigate(`/projects/${projects[0].id}/dashboard`);
     } else {
       navigate("/projects");
     }

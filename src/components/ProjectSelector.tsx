@@ -173,7 +173,7 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["projects-selector"] });
       resetDialog();
-      navigate(`/projects/${data.id}/offer`);
+      navigate(`/projects/${data.id}/dashboard`);
       toast.success("Project created successfully");
       
       // Send project_created email (fire and forget)

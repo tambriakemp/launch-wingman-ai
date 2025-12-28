@@ -87,7 +87,7 @@ const VisualDirectionTask = () => {
       queryClient.invalidateQueries({ queryKey: ["project-tasks", projectId] });
       if (variables.status === "completed") {
         toast({ title: "Task completed!", description: "Your visual direction has been saved." });
-        navigate(`/projects/${projectId}/plan`);
+        navigate(`/projects/${projectId}/dashboard`);
       }
     },
     onError: (error) => {
@@ -134,7 +134,7 @@ const VisualDirectionTask = () => {
         {/* Header / Context Section */}
         <div className="mb-10">
           <Link
-            to={`/projects/${projectId}/offer`}
+            to={`/projects/${projectId}/dashboard`}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -314,7 +314,7 @@ const VisualDirectionTask = () => {
         <div className="flex flex-col sm:flex-row justify-end gap-3">
           <Button 
             variant="outline"
-            onClick={() => navigate(`/projects/${projectId}/plan`)}
+            onClick={() => navigate(`/projects/${projectId}/dashboard`)}
             className="w-full sm:w-auto"
           >
             Save for Later

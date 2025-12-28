@@ -157,7 +157,7 @@ const AppRedirect = () => {
               .maybeSingle();
             
             if (existingProject) {
-              navigate(`/projects/${lastProject.id}/offer`, { replace: true });
+              navigate(`/projects/${lastProject.id}/dashboard`, { replace: true });
               return;
             } else {
               // Clear invalid localStorage
@@ -186,7 +186,7 @@ const AppRedirect = () => {
             id: projects[0].id,
             name: projects[0].name
           }));
-          navigate(`/projects/${projects[0].id}/offer`, { replace: true });
+          navigate(`/projects/${projects[0].id}/dashboard`, { replace: true });
         } else {
           // No projects exist - show create project UI
           setShowCreateProject(true);
@@ -270,7 +270,7 @@ const AppRedirect = () => {
         },
       }).catch((err) => console.error("Failed to send project created email:", err));
       
-      navigate(`/projects/${newProject.id}/offer`, { replace: true });
+      navigate(`/projects/${newProject.id}/dashboard`, { replace: true });
     } catch (error) {
       console.error('Error creating project:', error);
       toast.error('Failed to create project');
