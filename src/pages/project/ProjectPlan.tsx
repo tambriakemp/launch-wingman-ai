@@ -1,10 +1,7 @@
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { useParams, useLocation } from "react-router-dom";
-import ProjectFunnelOverviewContent from "./plan/FunnelOverviewContent";
-
-const sectionMap: Record<string, React.ComponentType<{ projectId: string }>> = {
-  offer: ProjectFunnelOverviewContent,
-};
+import FunnelOverviewContent from "./plan/FunnelOverviewContent";
+import OfferOverviewContent from "./plan/OfferOverviewContent";
 
 const ProjectPlan = () => {
   const { id } = useParams();
@@ -16,14 +13,18 @@ const ProjectPlan = () => {
   const pathParts = location.pathname.split("/");
   const section = pathParts[pathParts.length - 1];
   
-  // Default to "offer" (funnel overview) if on base project path
-  const SectionComponent = sectionMap[section] || sectionMap["offer"];
-
-  if (!SectionComponent) return null;
+  // Determine which component to render based on route
+  // Base route (/projects/:id) = Dashboard with lifecycle views
+  // /projects/:id/offer = Offer builder without lifecycle views
+  const isOfferRoute = section === "offer";
 
   return (
     <ProjectLayout>
-      <SectionComponent projectId={id} />
+      {isOfferRoute ? (
+        <OfferOverviewContent projectId={id} />
+      ) : (
+        <FunnelOverviewContent projectId={id} />
+      )}
     </ProjectLayout>
   );
 };
