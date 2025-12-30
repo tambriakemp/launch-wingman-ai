@@ -6,7 +6,6 @@ export { StuckHelpCard } from "./StuckHelpCard";
 export { StuckHelpDialog } from "./StuckHelpDialog";
 export { DailyMotivationCard } from "./DailyMotivationCard";
 export { PhaseCelebrationCard } from "./PhaseCelebrationCard";
-export { PathwayPreviewCard } from "./PathwayPreviewCard";
 export { ProjectCompletedView } from "./ProjectCompletedView";
 export { ProjectPausedView } from "./ProjectPausedView";
 export { ProjectLaunchedView } from "./ProjectLaunchedView";
