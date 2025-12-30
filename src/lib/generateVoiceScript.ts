@@ -6,7 +6,7 @@ import { VOICE_SCRIPTS } from "@/data/voiceScripts";
  */
 export function generateVoiceScript(
   taskId: string,
-  whyItMatters: string,
+  whyItMatters?: string,
   instructions?: string
 ): string | null {
   // Check for custom script first
@@ -15,7 +15,7 @@ export function generateVoiceScript(
   }
 
   // Generate fallback from task data if we have meaningful content
-  if (!whyItMatters || whyItMatters.length < 50) {
+  if (!whyItMatters || typeof whyItMatters !== 'string' || whyItMatters.length < 50) {
     return null;
   }
 
