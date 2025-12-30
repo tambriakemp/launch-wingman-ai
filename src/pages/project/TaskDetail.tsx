@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StuckHelpDialog } from "@/components/dashboard/StuckHelpDialog";
 import { AIResponseRenderer } from "@/components/ui/ai-response-renderer";
 import { FunnelDiagram } from "@/components/funnel/FunnelDiagram";
+import { VoiceSnippetButton } from "@/components/ui/voice-snippet-button";
 import { LAUNCH_PATH_FUNNEL_STEPS } from "@/data/launchPathFunnels";
 import { toast } from "sonner";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
@@ -21,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getLearnMoreArticleId } from "@/data/taskLearnMoreLinks";
 import { useAuth } from "@/contexts/AuthContext";
 import { MVLCallout, MVLLaunchIntro, MVLLaunchComplete } from "@/components/mvl";
+import { generateVoiceScript, hasVoiceSnippetSupport } from "@/lib/generateVoiceScript";
 
 export default function TaskDetail() {
   const { id: projectId, taskId } = useParams();
@@ -468,9 +470,17 @@ export default function TaskDetail() {
 
         {/* Why This Matters Section */}
         <section className="mb-10">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">
-            Why this matters
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Why this matters
+            </h2>
+            {hasVoiceSnippetSupport(taskTemplate.taskId, taskTemplate.whyItMatters) && (
+              <VoiceSnippetButton
+                taskId={taskTemplate.taskId}
+                script={generateVoiceScript(taskTemplate.taskId, taskTemplate.whyItMatters, taskTemplate.instructions?.join(' ')) || ''}
+              />
+            )}
+          </div>
           <p className="text-foreground/80 leading-relaxed">
             {taskTemplate.whyItMatters}
           </p>
