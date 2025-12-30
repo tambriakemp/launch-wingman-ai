@@ -14,6 +14,7 @@ import {
   StuckHelpDialog,
   DailyMotivationCard,
   PhaseCelebrationCard,
+  PathwayPreviewCard,
   ProjectCompletedView,
   ProjectPausedView,
   ProjectLaunchedView,
@@ -278,6 +279,11 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
         currentPhase={currentPhaseLabel}
         isPhaseComplete={isPhaseComplete}
         reassuranceText={getReassuranceText(activePhase, isPhaseComplete, nextPhaseAfterCompleted)}
+      />
+
+      <PathwayPreviewCard
+        activePhase={activePhase}
+        phaseStatuses={phaseStatuses}
       />
 
       {hasContent && (
