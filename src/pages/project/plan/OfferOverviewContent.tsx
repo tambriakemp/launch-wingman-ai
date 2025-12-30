@@ -127,7 +127,7 @@ const OfferOverviewContent = ({ projectId }: Props) => {
   // Convert DB offers to OfferSlotData format
   const offerSlotData: OfferSlotData[] = offers?.length
     ? offers.map((o) => ({
-        slotType: o.slot_type,
+        slotType: o.slot_type || "core", // Defensive: ensure slotType is never undefined
         title: o.title || "",
         description: o.description || "",
         offerType: o.offer_type || "",
