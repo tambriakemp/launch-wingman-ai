@@ -20,6 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getLearnMoreArticleId } from "@/data/taskLearnMoreLinks";
 import { useAuth } from "@/contexts/AuthContext";
+import { MVLCallout, MVLLaunchIntro, MVLLaunchComplete } from "@/components/mvl";
 
 export default function TaskDetail() {
   const { id: projectId, taskId } = useParams();
@@ -38,6 +39,9 @@ export default function TaskDetail() {
   const [hasShownExamples, setHasShownExamples] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [showLaunchIntro, setShowLaunchIntro] = useState(false);
+  const [showLaunchComplete, setShowLaunchComplete] = useState(false);
+  const [mvlTransformationShown, setMvlTransformationShown] = useState(false);
   const isInitialized = useRef(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -103,6 +107,27 @@ export default function TaskDetail() {
       startTask(taskId);
     }
   }, [taskId, projectTask, engineLoading, startTask]);
+
+  // Check if this is first launch phase task and show intro
+  useEffect(() => {
+    if (!taskId || !taskTemplate || engineLoading) return;
+    
+    // Only show launch intro for first launch task if user hasn't seen it for this project
+    if (taskTemplate.phase === 'launch') {
+      const launchPhaseTasks = projectTasks.filter(pt => {
+        const template = getTaskTemplate(pt.taskId);
+        return template?.phase === 'launch' && (pt.status === 'completed' || pt.status === 'in_progress');
+      });
+      
+      // If this is the first time entering launch phase (no launch tasks started/completed)
+      const launchIntroKey = `mvl_launch_intro_${projectId}`;
+      const hasSeenIntro = localStorage.getItem(launchIntroKey);
+      
+      if (launchPhaseTasks.length === 0 && !hasSeenIntro) {
+        setShowLaunchIntro(true);
+      }
+    }
+  }, [taskId, taskTemplate, engineLoading, projectTasks, projectId, getTaskTemplate]);
 
   // Auto-save function
   const saveInputData = useCallback(async () => {
@@ -257,6 +282,27 @@ export default function TaskDetail() {
 
       await completeTask(taskId, inputData);
       
+      // MVL: Show transformation statement confirmation (placement #2)
+      if (taskId === 'messaging_transformation_statement') {
+        setMvlTransformationShown(true);
+        toast.success("Great work! Task saved and marked complete.");
+        // Brief pause to show MVL message before navigating
+        setTimeout(() => {
+          navigate(`/projects/${projectId}/dashboard`);
+        }, 2500);
+        return;
+      }
+      
+      // MVL: Show launch complete confirmation (placement #4)
+      if (taskId === 'launch_phase_review') {
+        setShowLaunchComplete(true);
+        // Brief pause to show MVL message before navigating
+        setTimeout(() => {
+          navigate(`/projects/${projectId}/dashboard`);
+        }, 3000);
+        return;
+      }
+      
       toast.success("Great work! Task saved and marked complete.");
       navigate(`/projects/${projectId}/dashboard`);
     } catch (error) {
@@ -265,6 +311,13 @@ export default function TaskDetail() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Handle dismissing launch intro
+  const handleLaunchIntroContinue = () => {
+    const launchIntroKey = `mvl_launch_intro_${projectId}`;
+    localStorage.setItem(launchIntroKey, 'true');
+    setShowLaunchIntro(false);
   };
 
   // Get the primary input value for Help Me Choose mode detection
@@ -356,6 +409,24 @@ export default function TaskDetail() {
 
   const phaseLabel = PHASE_LABELS[taskTemplate.phase] || taskTemplate.phase;
   const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
+  
+  // MVL: Show launch intro screen (placement #3)
+  if (showLaunchIntro) {
+    return (
+      <div className="min-h-screen bg-background">
+        <MVLLaunchIntro onContinue={handleLaunchIntroContinue} />
+      </div>
+    );
+  }
+  
+  // MVL: Show launch complete screen (placement #4)
+  if (showLaunchComplete) {
+    return (
+      <div className="min-h-screen bg-background">
+        <MVLLaunchComplete />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -705,6 +776,16 @@ export default function TaskDetail() {
                 You're ready to save and continue!
               </p>
             </div>
+          )}
+          
+          {/* MVL: Planning Phase Review callout (placement #1) */}
+          {taskId === 'planning_phase_review' && isTaskComplete && (
+            <MVLCallout variant="planning" className="mt-6" />
+          )}
+          
+          {/* MVL: Transformation Statement inline confirmation (placement #2) */}
+          {taskId === 'messaging_transformation_statement' && mvlTransformationShown && (
+            <MVLCallout variant="transformation" className="mt-6" />
           )}
         </section>
 
