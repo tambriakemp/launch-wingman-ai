@@ -83,3 +83,15 @@ verify_jwt = false
 
 [functions.elevenlabs-tts]
 verify_jwt = false
+
+[functions.instagram-auth-start]
+verify_jwt = false
+
+[functions.instagram-auth-callback]
+verify_jwt = false
+
+[functions.instagram-get-accounts]
+verify_jwt = false
+
+[functions.post-to-instagram]
+verify_jwt = false

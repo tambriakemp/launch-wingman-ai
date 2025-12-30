@@ -82,6 +82,8 @@ const Settings = () => {
   // Social connections state
   const [isConnectingPinterest, setIsConnectingPinterest] = useState(false);
   const [isDisconnectingPinterest, setIsDisconnectingPinterest] = useState(false);
+  const [isConnectingInstagram, setIsConnectingInstagram] = useState(false);
+  const [isDisconnectingInstagram, setIsDisconnectingInstagram] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   // Annual Review state
@@ -117,6 +119,7 @@ const Settings = () => {
   });
 
   const pinterestConnection = socialConnections.find(c => c.platform === 'pinterest');
+  const instagramConnection = socialConnections.find(c => c.platform === 'instagram');
 
   // Delete project mutation
   const deleteProjectMutation = useMutation({
@@ -185,6 +188,15 @@ const Settings = () => {
     } else if (searchParams.get('pinterest_error')) {
       const error = searchParams.get('pinterest_error');
       toast.error(`Failed to connect Pinterest: ${error}`);
+    }
+    
+    // Handle Instagram OAuth callback
+    if (searchParams.get('instagram_connected') === 'true') {
+      toast.success("Instagram connected successfully!");
+      refetchConnections();
+    } else if (searchParams.get('instagram_error')) {
+      const error = searchParams.get('instagram_error');
+      toast.error(`Failed to connect Instagram: ${error}`);
     }
   }, [searchParams, checkSubscription, refetchConnections]);
 
@@ -330,6 +342,53 @@ const Settings = () => {
       toast.error("Failed to disconnect Pinterest");
     } finally {
       setIsDisconnectingPinterest(false);
+    }
+  };
+
+  const handleConnectInstagram = async () => {
+    if (!user) return;
+    
+    setIsConnectingInstagram(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('instagram-auth-start', {
+        body: { 
+          redirect_url: '/settings' 
+        }
+      });
+      
+      if (error) throw error;
+      if (data?.url) {
+        // Open in new tab since OAuth can't run in iframes
+        window.open(data.url, '_blank');
+        toast.info("Instagram login opened in a new tab. Complete the authorization there.");
+        setIsConnectingInstagram(false);
+      }
+    } catch (error) {
+      console.error('Instagram connect error:', error);
+      toast.error("Failed to connect Instagram. Please try again.");
+      setIsConnectingInstagram(false);
+    }
+  };
+
+  const handleDisconnectInstagram = async () => {
+    if (!user || !instagramConnection) return;
+    
+    setIsDisconnectingInstagram(true);
+    try {
+      const { error } = await supabase
+        .from('social_connections')
+        .delete()
+        .eq('id', instagramConnection.id);
+      
+      if (error) throw error;
+      
+      toast.success("Instagram disconnected");
+      refetchConnections();
+    } catch (error) {
+      console.error('Instagram disconnect error:', error);
+      toast.error("Failed to disconnect Instagram");
+    } finally {
+      setIsDisconnectingInstagram(false);
     }
   };
 
@@ -705,9 +764,73 @@ const Settings = () => {
                   )}
                 </div>
 
+                {/* Instagram Connection */}
+                <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#833AB4] via-[#E4405F] to-[#FCAF45] flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="currentColor">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Instagram</p>
+                      {instagramConnection ? (
+                        <p className="text-sm text-muted-foreground">
+                          Connected as @{instagramConnection.account_name || 'Instagram User'}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Not connected</p>
+                      )}
+                    </div>
+                  </div>
+                  {instagramConnection ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDisconnectInstagram}
+                      disabled={isDisconnectingInstagram}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      {isDisconnectingInstagram ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Unlink className="w-4 h-4 mr-1" />
+                          Disconnect
+                        </>
+                      )}
+                    </Button>
+                  ) : isSubscribed ? (
+                    <Button
+                      size="sm"
+                      onClick={handleConnectInstagram}
+                      disabled={isConnectingInstagram}
+                    >
+                      {isConnectingInstagram ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Link2 className="w-4 h-4 mr-1" />
+                          Connect
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowUpgradeDialog(true)}
+                      className="gap-1.5"
+                    >
+                      <Crown className="w-3.5 h-3.5 text-primary" />
+                      Pro
+                    </Button>
+                  )}
+                </div>
+
                 {/* Future platforms placeholder */}
                 <p className="text-xs text-muted-foreground pt-2">
-                  More platforms coming soon: Twitter/X, Instagram, Facebook
+                  More platforms coming soon: Twitter/X, Facebook
                 </p>
               </div>
             </CardContent>
