@@ -24,7 +24,7 @@ export const PLATFORMS: PlatformConfig[] = [
     maxMedia: 10,
     supportsVideo: true,
     maxCaptionLength: 2200,
-    hidden: true,
+    hidden: false,
   },
   {
     id: "facebook",

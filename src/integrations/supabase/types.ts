@@ -1442,6 +1442,7 @@ export type Database = {
           account_name: string | null
           created_at: string
           id: string
+          page_id: string | null
           platform: string
           refresh_token: string | null
           token_expires_at: string | null
@@ -1454,6 +1455,7 @@ export type Database = {
           account_name?: string | null
           created_at?: string
           id?: string
+          page_id?: string | null
           platform: string
           refresh_token?: string | null
           token_expires_at?: string | null
@@ -1466,6 +1468,7 @@ export type Database = {
           account_name?: string | null
           created_at?: string
           id?: string
+          page_id?: string | null
           platform?: string
           refresh_token?: string | null
           token_expires_at?: string | null
