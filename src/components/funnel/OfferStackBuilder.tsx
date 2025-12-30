@@ -99,10 +99,15 @@ export const OfferStackBuilder = ({
   };
 
   const getSlotConfig = (offer: OfferSlotData): OfferSlotConfig => {
-    const config = funnelConfig.offerSlots.find(s => s.type === offer.slotType);
+    // Defensive: ensure slotType is always a valid string to prevent charAt crash
+    const safeSlotType = typeof offer.slotType === "string" && offer.slotType.trim() 
+      ? offer.slotType 
+      : "core";
+    
+    const config = funnelConfig.offerSlots.find(s => s.type === safeSlotType);
     return config || {
-      type: offer.slotType,
-      label: offer.slotType.charAt(0).toUpperCase() + offer.slotType.slice(1).replace(/-/g, ' '),
+      type: safeSlotType,
+      label: safeSlotType.charAt(0).toUpperCase() + safeSlotType.slice(1).replace(/-/g, ' '),
       description: 'Custom offer slot',
       isRequired: false,
       recommendedOfferTypes: [],

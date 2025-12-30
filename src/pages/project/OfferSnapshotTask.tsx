@@ -178,10 +178,10 @@ export default function OfferSnapshotTask() {
       // Load existing offers for this funnel type
       const loadedOffers: OfferSlotData[] = existingOffers.map(o => ({
         id: o.id,
-        slotType: o.slot_type,
+        slotType: o.slot_type || "core", // Defensive: ensure slotType is never undefined
         title: o.title || '',
         description: o.description || '',
-        offerType: o.offer_type,
+        offerType: o.offer_type || '',
         price: o.price?.toString() || '',
         priceType: o.price_type || 'one-time',
         // Configured if offerType exists (title is optional)
