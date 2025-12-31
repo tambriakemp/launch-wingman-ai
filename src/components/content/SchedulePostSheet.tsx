@@ -193,11 +193,16 @@ export function SchedulePostSheet({
 
     setIsPosting(true);
     try {
+      // Determine if it's a video or image based on media_type
+      const isVideo = formData.media_type === "video";
+      
       const response = await supabase.functions.invoke("post-to-instagram", {
         body: {
           caption: formData.content,
-          mediaUrl: formData.media_url,
-          mediaType: formData.media_type === "video" ? "VIDEO" : "IMAGE",
+          ...(isVideo 
+            ? { videoUrl: formData.media_url, mediaType: "video" }
+            : { imageUrl: formData.media_url, mediaType: "image" }
+          ),
         },
       });
 
