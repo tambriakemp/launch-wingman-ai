@@ -10,12 +10,13 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-interface ContentItem {
+interface ContentPlannerItem {
   id: string;
   title: string;
   description: string | null;
   content_type: string;
   phase: string;
+  day_number: number;
   status: string;
   scheduled_at: string | null;
   scheduled_platforms: string[] | null;
@@ -23,11 +24,11 @@ interface ContentItem {
 
 interface CalendarDayPopoverProps {
   date: Date;
-  items: ContentItem[];
+  items: ContentPlannerItem[];
   children: React.ReactNode;
   onCreatePost: (date: Date) => void;
-  onEditPost: (item: ContentItem) => void;
-  onSchedulePost: (item: ContentItem) => void;
+  onEditPost: (item: ContentPlannerItem) => void;
+  onSchedulePost: (item: ContentPlannerItem) => void;
   onDeletePost: (id: string) => void;
 }
 
