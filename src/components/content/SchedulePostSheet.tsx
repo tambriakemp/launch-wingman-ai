@@ -60,6 +60,7 @@ export function SchedulePostSheet({
     scheduled_platforms: [] as string[],
     pinterest_board_id: null as string | null,
     link_url: "",
+    instagram_post_type: "feed" as "feed" | "reel" | "story",
   });
 
   const isAlreadyScheduled = !!(contentItem?.scheduled_at);
@@ -78,6 +79,7 @@ export function SchedulePostSheet({
         scheduled_platforms: existingPlatforms,
         pinterest_board_id: null,
         link_url: "",
+        instagram_post_type: "feed",
       });
 
       // If already scheduled, pre-populate the date/time and set mode to schedule
@@ -191,14 +193,19 @@ export function SchedulePostSheet({
       return;
     }
 
+    // Validate media type for specific post types
+    const isVideo = formData.media_type === "video";
+    if (formData.instagram_post_type === "reel" && !isVideo) {
+      toast.error("Reels require a video");
+      return;
+    }
+
     setIsPosting(true);
     try {
-      // Determine if it's a video or image based on media_type
-      const isVideo = formData.media_type === "video";
-      
       const response = await supabase.functions.invoke("post-to-instagram", {
         body: {
           caption: formData.content,
+          postType: formData.instagram_post_type,
           ...(isVideo 
             ? { videoUrl: formData.media_url, mediaType: "video" }
             : { imageUrl: formData.media_url, mediaType: "image" }
@@ -388,6 +395,45 @@ export function SchedulePostSheet({
                     setFormData((prev) => ({ ...prev, pinterest_board_id: boardId }))
                   }
                 />
+              )}
+
+              {/* Instagram Post Type Selector */}
+              {formData.scheduled_platforms.includes("instagram") && instagramConnection && (
+                <div className="space-y-2">
+                  <Label className="text-xs">Instagram Post Type</Label>
+                  <div className="flex gap-2">
+                    {[
+                      { value: "feed", label: "Feed Post", icon: "📷" },
+                      { value: "reel", label: "Reel", icon: "🎬" },
+                      { value: "story", label: "Story", icon: "⏱️" },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            instagram_post_type: option.value as "feed" | "reel" | "story",
+                          }))
+                        }
+                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border text-sm transition-colors ${
+                          formData.instagram_post_type === option.value
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background border-border hover:bg-muted"
+                        }`}
+                      >
+                        <span>{option.icon}</span>
+                        <span>{option.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {formData.instagram_post_type === "reel" && (
+                    <p className="text-xs text-muted-foreground">Reels require a video file</p>
+                  )}
+                  {formData.instagram_post_type === "story" && (
+                    <p className="text-xs text-muted-foreground">Stories disappear after 24 hours</p>
+                  )}
+                </div>
               )}
 
               {/* Title */}
