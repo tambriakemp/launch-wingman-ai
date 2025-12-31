@@ -34,7 +34,7 @@ interface ContentPlannerItem {
 
 interface ContentCalendarViewProps {
   projectId: string;
-  onCreatePost: (date?: Date) => void;
+  onCreatePost: () => void;
   onEditPost: (item: ContentPlannerItem) => void;
   onSchedulePost: (item: ContentPlannerItem) => void;
 }
