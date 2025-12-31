@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { Plus, Pencil, CalendarClock, Trash2, CheckCircle2, Clock } from "lucide-react";
+import { Plus, CalendarClock, Trash2, CheckCircle2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -110,9 +110,9 @@ export const CalendarDayPopover = ({
                       variant="ghost"
                       size="sm"
                       className="h-7 text-xs flex-1"
-                      onClick={() => onEditPost(item)}
+                      onClick={() => onSchedulePost(item)}
                     >
-                      <Pencil className="w-3 h-3 mr-1" />
+                      <CalendarClock className="w-3 h-3 mr-1" />
                       Edit
                     </Button>
                     <Button
