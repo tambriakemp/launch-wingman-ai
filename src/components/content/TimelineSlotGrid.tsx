@@ -17,7 +17,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { SchedulePostSheet } from "./SchedulePostSheet";
+import { PostEditorSheet } from "./PostEditorSheet";
 
 import { ContentCalendarView } from "./ContentCalendarView";
 import { format } from "date-fns";
@@ -96,8 +96,9 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
   const { isSubscribed, user } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const [expandedPhases, setExpandedPhases] = useState<string[]>(["pre-launch-week-1"]);
-  const [scheduleSheetOpen, setScheduleSheetOpen] = useState(false);
+  const [postEditorOpen, setPostEditorOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ContentPlannerItem | null>(null);
+  const [isCreateMode, setIsCreateMode] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const queryClient = useQueryClient();
 
@@ -114,12 +115,13 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
     },
   });
 
-  const handleOpenSchedule = (item: ContentPlannerItem) => {
+  const handleOpenEditor = (item: ContentPlannerItem) => {
     setSelectedItem(item);
-    setScheduleSheetOpen(true);
+    setIsCreateMode(false);
+    setPostEditorOpen(true);
   };
 
-  const handleScheduled = () => {
+  const handleEditorSaved = () => {
     queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
   };
 
@@ -203,13 +205,13 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
 
   const handleCalendarSchedulePost = (item: ContentPlannerItem) => {
     if (isSubscribed) {
-      handleOpenSchedule(item);
+      handleOpenEditor(item);
     } else {
       setShowUpgradeDialog(true);
     }
   };
 
-  const handleCreateNewPost = async () => {
+  const handleCreateNewPost = () => {
     if (!user) {
       toast.error("You must be logged in");
       return;
@@ -220,48 +222,10 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
       return;
     }
 
-    try {
-      // Create a new content planner item
-      const { data, error } = await supabase
-        .from("content_planner")
-        .insert({
-          project_id: projectId,
-          user_id: user.id,
-          title: "New Post",
-          description: null,
-          content: null,
-          content_type: "general",
-          phase: "pre-launch-week-1",
-          day_number: 1,
-          time_of_day: "morning",
-          status: "idea",
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
-
-      // Open schedule sheet with the new item
-      setSelectedItem({
-        id: data.id,
-        title: data.title,
-        description: data.description,
-        content_type: data.content_type,
-        phase: data.phase,
-        day_number: data.day_number,
-        time_of_day: data.time_of_day,
-        status: data.status,
-        content: data.content,
-        scheduled_at: data.scheduled_at,
-        scheduled_platforms: data.scheduled_platforms,
-      });
-      setScheduleSheetOpen(true);
-    } catch (error) {
-      console.error("Error creating post:", error);
-      toast.error("Failed to create post");
-    }
+    // Open the editor in create mode - no DB record created until save/schedule
+    setSelectedItem(null);
+    setIsCreateMode(true);
+    setPostEditorOpen(true);
   };
 
   if (isLoading) {
@@ -434,7 +398,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                                   </Badge>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="start">
-                                                  <DropdownMenuItem onClick={() => handleOpenSchedule(item)}>
+                                                  <DropdownMenuItem onClick={() => handleOpenEditor(item)}>
                                                     <CalendarClock className="w-4 h-4 mr-2" />
                                                     Reschedule
                                                   </DropdownMenuItem>
@@ -479,7 +443,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                             <DropdownMenuItem
                                               onClick={() => {
                                                 if (isSubscribed) {
-                                                  handleOpenSchedule(item);
+                                                  handleOpenEditor(item);
                                                 } else {
                                                   setShowUpgradeDialog(true);
                                                 }
@@ -533,20 +497,14 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
       </>
       )}
 
-      {/* Schedule Post Sheet */}
-      <SchedulePostSheet
-        open={scheduleSheetOpen}
-        onOpenChange={setScheduleSheetOpen}
+      {/* Post Editor Sheet */}
+      <PostEditorSheet
+        open={postEditorOpen}
+        onOpenChange={setPostEditorOpen}
         projectId={projectId}
-        contentItem={selectedItem ? {
-          id: selectedItem.id,
-          title: selectedItem.title,
-          content: selectedItem.content,
-          description: selectedItem.description,
-          scheduled_at: selectedItem.scheduled_at,
-          scheduled_platforms: selectedItem.scheduled_platforms,
-        } : null}
-        onScheduled={handleScheduled}
+        existingItem={selectedItem}
+        isCreateMode={isCreateMode}
+        onSaved={handleEditorSaved}
       />
 
       {/* Upgrade Dialog for scheduling feature */}
