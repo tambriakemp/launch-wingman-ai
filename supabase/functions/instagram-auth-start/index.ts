@@ -69,23 +69,26 @@ serve(async (req) => {
       redirect_url: redirectUrl,
     }));
 
-    // Instagram/Facebook OAuth scopes
+    // Instagram/Facebook OAuth scopes - include business_management for asset-based auth
     const scopes = [
       "instagram_basic",
       "instagram_content_publish",
       "pages_read_engagement",
       "pages_show_list",
+      "business_management",
     ].join(",");
 
-    // Build Facebook OAuth URL
+    // Build Facebook OAuth URL with rerequest to force fresh consent
     const authUrl = new URL("https://www.facebook.com/v21.0/dialog/oauth");
     authUrl.searchParams.set("client_id", FACEBOOK_APP_ID);
     authUrl.searchParams.set("redirect_uri", callbackUrl);
     authUrl.searchParams.set("scope", scopes);
     authUrl.searchParams.set("response_type", "code");
     authUrl.searchParams.set("state", state);
+    authUrl.searchParams.set("auth_type", "rerequest"); // Force re-prompt for permissions
+    authUrl.searchParams.set("return_scopes", "true"); // Return granted scopes for debugging
 
-    console.log(`Instagram auth started for user ${user.id.substring(0, 8)}...`);
+    console.log(`Instagram auth started for user ${user.id.substring(0, 8)}... with scopes: ${scopes}`);
 
     return new Response(
       JSON.stringify({ url: authUrl.toString() }),
