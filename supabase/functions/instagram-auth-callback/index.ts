@@ -10,8 +10,15 @@ serve(async (req) => {
     const stateParam = url.searchParams.get("state");
     const error = url.searchParams.get("error");
     const errorReason = url.searchParams.get("error_reason");
+    const grantedScopes = url.searchParams.get("granted_scopes");
 
-    console.log("Instagram callback received:", { hasCode: !!code, hasState: !!stateParam, error, errorReason });
+    console.log("Instagram callback received:", { 
+      hasCode: !!code, 
+      hasState: !!stateParam, 
+      error, 
+      errorReason,
+      grantedScopes 
+    });
 
     // Handle OAuth errors
     if (error) {
@@ -86,24 +93,90 @@ serve(async (req) => {
       console.warn("Failed to get long-lived token, using short-lived");
     }
 
+    // Debug token to inspect permissions and granular scopes
+    console.log("Debugging token permissions...");
+    const debugResponse = await fetch(
+      `https://graph.facebook.com/v21.0/debug_token?input_token=${accessToken}&access_token=${FACEBOOK_APP_ID}|${FACEBOOK_APP_SECRET}`
+    );
+    
+    let granularScopes: Array<{ scope: string; target_ids?: string[] }> = [];
+    
+    if (debugResponse.ok) {
+      const debugData = await debugResponse.json();
+      console.log("Token debug info:", JSON.stringify({
+        scopes: debugData.data?.scopes,
+        granular_scopes: debugData.data?.granular_scopes,
+        is_valid: debugData.data?.is_valid,
+        user_id: debugData.data?.user_id
+      }));
+      granularScopes = debugData.data?.granular_scopes || [];
+    } else {
+      console.warn("Failed to debug token:", await debugResponse.text());
+    }
+
     // Get user's Facebook Pages
     console.log("Fetching user's Facebook pages...");
     const pagesResponse = await fetch(
-      `https://graph.facebook.com/v21.0/me/accounts?access_token=${accessToken}`
+      `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token&limit=200&access_token=${accessToken}`
     );
 
-    if (!pagesResponse.ok) {
-      const errorText = await pagesResponse.text();
-      console.error("Failed to get pages:", errorText);
-      return Response.redirect(`${APP_URL}/settings?instagram_error=pages_fetch_failed`);
+    let pages: Array<{ id: string; name: string; access_token: string }> = [];
+
+    if (pagesResponse.ok) {
+      const pagesData = await pagesResponse.json();
+      pages = pagesData.data || [];
+      console.log(`Found ${pages.length} Facebook pages from /me/accounts`);
+    } else {
+      console.warn("Failed to get pages from /me/accounts:", await pagesResponse.text());
     }
 
-    const pagesData = await pagesResponse.json();
-    const pages = pagesData.data || [];
-
-    console.log(`Found ${pages.length} Facebook pages`);
+    // Fallback: If /me/accounts is empty, extract page IDs from granular_scopes
+    if (pages.length === 0 && granularScopes.length > 0) {
+      console.log("No pages from /me/accounts, trying granular_scopes fallback...");
+      
+      // Find page IDs from granular scopes (pages_show_list, pages_read_engagement, etc.)
+      const pageIds = new Set<string>();
+      for (const gs of granularScopes) {
+        if (gs.target_ids && gs.target_ids.length > 0) {
+          for (const id of gs.target_ids) {
+            pageIds.add(id);
+          }
+        }
+      }
+      
+      console.log(`Found ${pageIds.size} page IDs from granular_scopes:`, Array.from(pageIds));
+      
+      // Fetch each page directly
+      for (const pageId of pageIds) {
+        try {
+          const pageResponse = await fetch(
+            `https://graph.facebook.com/v21.0/${pageId}?fields=id,name,access_token&access_token=${accessToken}`
+          );
+          
+          if (pageResponse.ok) {
+            const pageData = await pageResponse.json();
+            if (pageData.id && pageData.access_token) {
+              pages.push({
+                id: pageData.id,
+                name: pageData.name || "Unknown Page",
+                access_token: pageData.access_token
+              });
+              console.log(`Successfully fetched page: ${pageData.name} (${pageData.id})`);
+            }
+          } else {
+            const errorText = await pageResponse.text();
+            console.warn(`Failed to fetch page ${pageId}:`, errorText);
+          }
+        } catch (e) {
+          console.warn(`Error fetching page ${pageId}:`, e);
+        }
+      }
+      
+      console.log(`Total pages after granular_scopes fallback: ${pages.length}`);
+    }
 
     if (pages.length === 0) {
+      console.error("No pages found after all attempts. granular_scopes:", JSON.stringify(granularScopes));
       return Response.redirect(`${APP_URL}/settings?instagram_error=no_pages_found`);
     }
 
@@ -114,7 +187,7 @@ serve(async (req) => {
     let pageAccessToken: string | null = null;
 
     for (const page of pages) {
-      console.log(`Checking page "${page.name}" for Instagram account...`);
+      console.log(`Checking page "${page.name}" (${page.id}) for Instagram account...`);
       
       const igResponse = await fetch(
         `https://graph.facebook.com/v21.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
@@ -138,7 +211,11 @@ serve(async (req) => {
           
           console.log(`Found Instagram account: ${instagramUsername} (${instagramAccountId})`);
           break;
+        } else {
+          console.log(`Page "${page.name}" has no Instagram Business Account`);
         }
+      } else {
+        console.warn(`Failed to check IG for page ${page.id}:`, await igResponse.text());
       }
     }
 
