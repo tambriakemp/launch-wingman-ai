@@ -36,6 +36,8 @@ import {
   Unlink,
   Pen,
   BookOpen,
+  RefreshCw,
+  AlertTriangle,
 } from "lucide-react";
 
 interface Profile {
@@ -55,6 +57,7 @@ interface SocialConnection {
   platform: string;
   account_name: string | null;
   created_at: string;
+  token_expires_at: string | null;
 }
 
 const Settings = () => {
@@ -110,13 +113,16 @@ const Settings = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("social_connections")
-        .select("id, platform, account_name, created_at")
+        .select("id, platform, account_name, created_at, token_expires_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as SocialConnection[];
     },
     enabled: !!user,
   });
+
+  // State for refreshing tokens
+  const [isRefreshingInstagram, setIsRefreshingInstagram] = useState(false);
 
   const pinterestConnection = socialConnections.find(c => c.platform === 'pinterest');
   const instagramConnection = socialConnections.find(c => c.platform === 'instagram');
@@ -391,6 +397,61 @@ const Settings = () => {
       setIsDisconnectingInstagram(false);
     }
   };
+
+  const handleRefreshInstagram = async () => {
+    if (!user || !instagramConnection) return;
+    
+    setIsRefreshingInstagram(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please sign in again");
+        return;
+      }
+      
+      const response = await supabase.functions.invoke('instagram-refresh-token', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      
+      if (response.error) throw response.error;
+      
+      const data = response.data;
+      
+      if (data.needs_reconnect) {
+        toast.error(data.message || "Token expired. Please reconnect your account.");
+        return;
+      }
+      
+      toast.success("Instagram connection refreshed!");
+      refetchConnections();
+    } catch (error) {
+      console.error('Instagram refresh error:', error);
+      toast.error("Failed to refresh Instagram connection. Try reconnecting.");
+    } finally {
+      setIsRefreshingInstagram(false);
+    }
+  };
+
+  // Helper to check Instagram token status
+  const getInstagramTokenStatus = () => {
+    if (!instagramConnection?.token_expires_at) return null;
+    
+    const expiresAt = new Date(instagramConnection.token_expires_at);
+    const now = new Date();
+    const daysUntilExpiry = Math.floor((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilExpiry < 0) {
+      return { status: 'expired', message: 'Expired', daysUntilExpiry };
+    } else if (daysUntilExpiry <= 7) {
+      return { status: 'expiring_soon', message: `Expires in ${daysUntilExpiry} days`, daysUntilExpiry };
+    } else {
+      return { status: 'valid', message: `Expires in ${daysUntilExpiry} days`, daysUntilExpiry };
+    }
+  };
+
+  const instagramTokenStatus = getInstagramTokenStatus();
 
   const hasProfileChanges = firstName !== (profile.first_name || "") || lastName !== (profile.last_name || "");
 
@@ -775,31 +836,82 @@ const Settings = () => {
                     <div>
                       <p className="font-medium text-foreground">Instagram</p>
                       {instagramConnection ? (
-                        <p className="text-sm text-muted-foreground">
-                          Connected as @{instagramConnection.account_name || 'Instagram User'}
-                        </p>
+                        <div className="flex flex-col gap-0.5">
+                          <p className="text-sm text-muted-foreground">
+                            Connected as @{instagramConnection.account_name || 'Instagram User'}
+                          </p>
+                          {instagramTokenStatus && (
+                            <p className={`text-xs flex items-center gap-1 ${
+                              instagramTokenStatus.status === 'expired' 
+                                ? 'text-destructive' 
+                                : instagramTokenStatus.status === 'expiring_soon'
+                                ? 'text-yellow-600 dark:text-yellow-500'
+                                : 'text-muted-foreground'
+                            }`}>
+                              {instagramTokenStatus.status === 'expired' && (
+                                <AlertTriangle className="w-3 h-3" />
+                              )}
+                              {instagramTokenStatus.message}
+                            </p>
+                          )}
+                        </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">Not connected</p>
                       )}
                     </div>
                   </div>
                   {instagramConnection ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDisconnectInstagram}
-                      disabled={isDisconnectingInstagram}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      {isDisconnectingInstagram ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Unlink className="w-4 h-4 mr-1" />
-                          Disconnect
-                        </>
-                      )}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {/* Show Refresh button if token is expiring soon or Reconnect if expired */}
+                      {instagramTokenStatus?.status === 'expired' ? (
+                        <Button
+                          size="sm"
+                          onClick={handleConnectInstagram}
+                          disabled={isConnectingInstagram}
+                        >
+                          {isConnectingInstagram ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Link2 className="w-4 h-4 mr-1" />
+                              Reconnect
+                            </>
+                          )}
+                        </Button>
+                      ) : instagramTokenStatus?.status === 'expiring_soon' ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleRefreshInstagram}
+                          disabled={isRefreshingInstagram}
+                        >
+                          {isRefreshingInstagram ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <RefreshCw className="w-4 h-4 mr-1" />
+                              Refresh
+                            </>
+                          )}
+                        </Button>
+                      ) : null}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDisconnectInstagram}
+                        disabled={isDisconnectingInstagram}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        {isDisconnectingInstagram ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Unlink className="w-4 h-4 mr-1" />
+                            Disconnect
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   ) : isSubscribed ? (
                     <Button
                       size="sm"
