@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronRight, Pencil, MoreHorizontal, Trash2, CalendarClock, Clock, CheckCircle2, Crown } from "lucide-react";
+import { ChevronDown, ChevronRight, Pencil, MoreHorizontal, Trash2, CalendarClock, Clock, CheckCircle2, Crown, Plus, List, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,13 +13,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { SchedulePostSheet } from "./SchedulePostSheet";
+import { CreatePostDialog } from "./CreatePostDialog";
+import { ContentCalendarView } from "./ContentCalendarView";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
+
+type ViewMode = "timeline" | "calendar";
 
 interface TimelineSlotGridProps {
   projectId: string;
@@ -89,8 +94,10 @@ const CONTENT_TYPE_COLORS: Record<string, string> = {
 
 export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridProps) => {
   const { isSubscribed } = useAuth();
+  const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const [expandedPhases, setExpandedPhases] = useState<string[]>(["pre-launch-week-1"]);
   const [scheduleSheetOpen, setScheduleSheetOpen] = useState(false);
+  const [createPostOpen, setCreatePostOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ContentPlannerItem | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const queryClient = useQueryClient();
@@ -186,6 +193,42 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
     }
   };
 
+  const handleCalendarEditPost = (item: ContentPlannerItem) => {
+    onWritePost({
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      contentType: item.content_type,
+    });
+  };
+
+  const handleCalendarSchedulePost = (item: ContentPlannerItem) => {
+    if (isSubscribed) {
+      handleOpenSchedule(item);
+    } else {
+      setShowUpgradeDialog(true);
+    }
+  };
+
+  const handleCreatePostFromDialog = (item: { id: string; title: string; content: string | null; content_type: string }) => {
+    setCreatePostOpen(false);
+    // Open schedule sheet with the new item
+    setSelectedItem({
+      id: item.id,
+      title: item.title,
+      description: null,
+      content_type: item.content_type,
+      phase: "pre-launch-week-1",
+      day_number: 1,
+      time_of_day: "morning",
+      status: item.content ? "draft" : "idea",
+      content: item.content,
+      scheduled_at: null,
+      scheduled_platforms: null,
+    });
+    setScheduleSheetOpen(true);
+  };
+
   if (isLoading) {
     return (
       <div className="py-12 text-center">
@@ -196,14 +239,49 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
 
   return (
     <div className="space-y-4">
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-foreground">Launch Content Timeline</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Content you've assigned to specific days. Click edit to write or update your posts.
-        </p>
+      {/* Header with view toggle and create button */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-xl font-semibold text-foreground">Launch Content Timeline</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {viewMode === "timeline" 
+              ? "Content organized by launch phases. Click edit to write or update posts."
+              : "View scheduled content on your calendar. Click any day to manage posts."}
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as ViewMode)}>
+            <ToggleGroupItem value="timeline" aria-label="Timeline view" className="gap-1.5">
+              <List className="w-4 h-4" />
+              <span className="hidden sm:inline">Timeline</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="calendar" aria-label="Calendar view" className="gap-1.5">
+              <CalendarDays className="w-4 h-4" />
+              <span className="hidden sm:inline">Calendar</span>
+            </ToggleGroupItem>
+          </ToggleGroup>
+          
+          {viewMode === "timeline" && (
+            <Button size="sm" onClick={() => setCreatePostOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Create Post
+            </Button>
+          )}
+        </div>
       </div>
 
-      <div className="space-y-3">
+      {/* View Content */}
+      {viewMode === "calendar" ? (
+        <ContentCalendarView
+          projectId={projectId}
+          onCreatePost={() => setCreatePostOpen(true)}
+          onEditPost={handleCalendarEditPost}
+          onSchedulePost={handleCalendarSchedulePost}
+        />
+      ) : (
+        <>
+        <div className="space-y-3">
         {PHASES.map((phase) => {
           const isExpanded = expandedPhases.includes(phase.id);
           const phaseItems = getPhaseItems(phase.id);
@@ -406,13 +484,27 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
         })}
       </div>
 
-      {plannerItems.length === 0 && (
+      {plannerItems.length === 0 && viewMode === "timeline" && (
         <div className="text-center py-12 border border-dashed border-border rounded-lg bg-muted/10">
-          <p className="text-sm text-muted-foreground">
-            No content assigned yet. Go to the Ideas tab and click "Turn into a post" on any idea.
+          <p className="text-sm text-muted-foreground mb-3">
+            No content assigned yet.
           </p>
+          <Button variant="outline" size="sm" onClick={() => setCreatePostOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Create your first post
+          </Button>
         </div>
       )}
+      </>
+      )}
+
+      {/* Create Post Dialog */}
+      <CreatePostDialog
+        open={createPostOpen}
+        onOpenChange={setCreatePostOpen}
+        projectId={projectId}
+        onSchedulePost={handleCreatePostFromDialog}
+      />
 
       {/* Schedule Post Sheet */}
       <SchedulePostSheet
