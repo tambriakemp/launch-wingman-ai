@@ -26,7 +26,7 @@ interface CalendarDayPopoverProps {
   date: Date;
   items: ContentPlannerItem[];
   children: React.ReactNode;
-  onCreatePost: (date: Date) => void;
+  onCreatePost: () => void;
   onEditPost: (item: ContentPlannerItem) => void;
   onSchedulePost: (item: ContentPlannerItem) => void;
   onDeletePost: (id: string) => void;
@@ -150,7 +150,7 @@ export const CalendarDayPopover = ({
             variant="outline"
             size="sm"
             className="w-full"
-            onClick={() => onCreatePost(date)}
+            onClick={() => onCreatePost()}
           >
             <Plus className="w-4 h-4 mr-2" />
             Create Post

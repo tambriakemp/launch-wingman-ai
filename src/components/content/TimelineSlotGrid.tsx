@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { SchedulePostSheet } from "./SchedulePostSheet";
-import { CreatePostDialog } from "./CreatePostDialog";
+
 import { ContentCalendarView } from "./ContentCalendarView";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
@@ -93,11 +93,10 @@ const CONTENT_TYPE_COLORS: Record<string, string> = {
 };
 
 export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridProps) => {
-  const { isSubscribed } = useAuth();
+  const { isSubscribed, user } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const [expandedPhases, setExpandedPhases] = useState<string[]>(["pre-launch-week-1"]);
   const [scheduleSheetOpen, setScheduleSheetOpen] = useState(false);
-  const [createPostOpen, setCreatePostOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ContentPlannerItem | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const queryClient = useQueryClient();
@@ -210,23 +209,59 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
     }
   };
 
-  const handleCreatePostFromDialog = (item: { id: string; title: string; content: string | null; content_type: string }) => {
-    setCreatePostOpen(false);
-    // Open schedule sheet with the new item
-    setSelectedItem({
-      id: item.id,
-      title: item.title,
-      description: null,
-      content_type: item.content_type,
-      phase: "pre-launch-week-1",
-      day_number: 1,
-      time_of_day: "morning",
-      status: item.content ? "draft" : "idea",
-      content: item.content,
-      scheduled_at: null,
-      scheduled_platforms: null,
-    });
-    setScheduleSheetOpen(true);
+  const handleCreateNewPost = async () => {
+    if (!user) {
+      toast.error("You must be logged in");
+      return;
+    }
+
+    if (!isSubscribed) {
+      setShowUpgradeDialog(true);
+      return;
+    }
+
+    try {
+      // Create a new content planner item
+      const { data, error } = await supabase
+        .from("content_planner")
+        .insert({
+          project_id: projectId,
+          user_id: user.id,
+          title: "New Post",
+          description: null,
+          content: null,
+          content_type: "general",
+          phase: "pre-launch-week-1",
+          day_number: 1,
+          time_of_day: "morning",
+          status: "idea",
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+
+      // Open schedule sheet with the new item
+      setSelectedItem({
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        content_type: data.content_type,
+        phase: data.phase,
+        day_number: data.day_number,
+        time_of_day: data.time_of_day,
+        status: data.status,
+        content: data.content,
+        scheduled_at: data.scheduled_at,
+        scheduled_platforms: data.scheduled_platforms,
+      });
+      setScheduleSheetOpen(true);
+    } catch (error) {
+      console.error("Error creating post:", error);
+      toast.error("Failed to create post");
+    }
   };
 
   if (isLoading) {
@@ -263,7 +298,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
           </ToggleGroup>
           
           {viewMode === "timeline" && (
-            <Button size="sm" onClick={() => setCreatePostOpen(true)}>
+            <Button size="sm" onClick={handleCreateNewPost}>
               <Plus className="w-4 h-4 mr-2" />
               Create Post
             </Button>
@@ -275,7 +310,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
       {viewMode === "calendar" ? (
         <ContentCalendarView
           projectId={projectId}
-          onCreatePost={() => setCreatePostOpen(true)}
+          onCreatePost={handleCreateNewPost}
           onEditPost={handleCalendarEditPost}
           onSchedulePost={handleCalendarSchedulePost}
         />
@@ -489,7 +524,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
           <p className="text-sm text-muted-foreground mb-3">
             No content assigned yet.
           </p>
-          <Button variant="outline" size="sm" onClick={() => setCreatePostOpen(true)}>
+          <Button variant="outline" size="sm" onClick={handleCreateNewPost}>
             <Plus className="w-4 h-4 mr-2" />
             Create your first post
           </Button>
@@ -497,14 +532,6 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
       )}
       </>
       )}
-
-      {/* Create Post Dialog */}
-      <CreatePostDialog
-        open={createPostOpen}
-        onOpenChange={setCreatePostOpen}
-        projectId={projectId}
-        onSchedulePost={handleCreatePostFromDialog}
-      />
 
       {/* Schedule Post Sheet */}
       <SchedulePostSheet
