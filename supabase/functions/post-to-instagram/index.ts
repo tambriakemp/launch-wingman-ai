@@ -123,8 +123,151 @@ serve(async (req) => {
     let postId: string;
     let postUrl: string;
 
-    if (mediaType === "image" && imageUrl) {
-      // Single image post
+    // Handle stories first (before checking mediaType)
+    if (postType === "story") {
+      // Story post (image or video)
+      console.log("Creating story post...");
+      
+      const isStoryVideo = mediaType === "video" || !!videoUrl;
+      const storyMediaUrl = videoUrl || imageUrl;
+      
+      if (!storyMediaUrl) {
+        return new Response(
+          JSON.stringify({ error: "Stories require an image or video URL" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Step 1: Create story container
+      const containerBody: Record<string, string> = {
+        media_type: "STORIES",
+        access_token: accessToken,
+      };
+      
+      if (isStoryVideo) {
+        containerBody.video_url = storyMediaUrl;
+      } else {
+        containerBody.image_url = storyMediaUrl;
+      }
+      
+      const containerResponse = await fetch(
+        `https://graph.facebook.com/v21.0/${instagramAccountId}/media`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(containerBody),
+        }
+      );
+
+      if (!containerResponse.ok) {
+        const errorText = await containerResponse.text();
+        console.error("Failed to create story container:", errorText);
+        return new Response(
+          JSON.stringify({ error: "Failed to create story container", details: errorText }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const containerData = await containerResponse.json();
+      console.log("Created story container:", containerData.id);
+
+      // Step 2: Wait for processing
+      await waitForContainerReady(containerData.id, accessToken, isStoryVideo ? 60 : 30);
+
+      // Step 3: Publish story
+      const publishResponse = await fetch(
+        `https://graph.facebook.com/v21.0/${instagramAccountId}/media_publish`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            creation_id: containerData.id,
+            access_token: accessToken,
+          }),
+        }
+      );
+
+      if (!publishResponse.ok) {
+        const errorText = await publishResponse.text();
+        console.error("Failed to publish story:", errorText);
+        return new Response(
+          JSON.stringify({ error: "Failed to publish story", details: errorText }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const publishData = await publishResponse.json();
+      postId = publishData.id;
+
+    } else if (postType === "reel" || (mediaType === "video" && videoUrl)) {
+      // Reel/Video post
+      const videoUrlToUse = videoUrl || imageUrl;
+      if (!videoUrlToUse) {
+        return new Response(
+          JSON.stringify({ error: "Reels require a video URL" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      console.log("Creating reel post...");
+      
+      // Step 1: Create video container
+      const containerResponse = await fetch(
+        `https://graph.facebook.com/v21.0/${instagramAccountId}/media`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            media_type: "REELS",
+            video_url: videoUrlToUse,
+            caption: caption || "",
+            access_token: accessToken,
+          }),
+        }
+      );
+
+      if (!containerResponse.ok) {
+        const errorText = await containerResponse.text();
+        console.error("Failed to create reel container:", errorText);
+        return new Response(
+          JSON.stringify({ error: "Failed to create reel container", details: errorText }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const containerData = await containerResponse.json();
+      console.log("Created reel container:", containerData.id);
+
+      // Step 2: Wait for video processing
+      await waitForContainerReady(containerData.id, accessToken, 60);
+
+      // Step 3: Publish reel
+      const publishResponse = await fetch(
+        `https://graph.facebook.com/v21.0/${instagramAccountId}/media_publish`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            creation_id: containerData.id,
+            access_token: accessToken,
+          }),
+        }
+      );
+
+      if (!publishResponse.ok) {
+        const errorText = await publishResponse.text();
+        console.error("Failed to publish reel:", errorText);
+        return new Response(
+          JSON.stringify({ error: "Failed to publish reel", details: errorText }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const publishData = await publishResponse.json();
+      postId = publishData.id;
+
+    } else if (mediaType === "image" && imageUrl) {
+      // Single image feed post
       console.log("Creating single image post...");
       
       // Step 1: Create media container
@@ -154,7 +297,7 @@ serve(async (req) => {
       const containerId = containerData.id;
       console.log("Created container:", containerId);
 
-      // Step 2: Wait for container to be ready (usually instant for images)
+      // Step 2: Wait for container to be ready
       await waitForContainerReady(containerId, accessToken);
 
       // Step 3: Publish the container
@@ -266,148 +409,6 @@ serve(async (req) => {
         console.error("Failed to publish carousel:", errorText);
         return new Response(
           JSON.stringify({ error: "Failed to publish carousel", details: errorText }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const publishData = await publishResponse.json();
-      postId = publishData.id;
-
-    } else if ((mediaType === "video" && videoUrl) || postType === "reel") {
-      // Reel/Video post
-      const videoUrlToUse = videoUrl || imageUrl; // imageUrl might contain video for reels
-      if (!videoUrlToUse) {
-        return new Response(
-          JSON.stringify({ error: "Reels require a video URL" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      console.log("Creating reel post...");
-      
-      // Step 1: Create video container
-      const containerResponse = await fetch(
-        `https://graph.facebook.com/v21.0/${instagramAccountId}/media`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            media_type: "REELS",
-            video_url: videoUrlToUse,
-            caption: caption || "",
-            access_token: accessToken,
-          }),
-        }
-      );
-
-      if (!containerResponse.ok) {
-        const errorText = await containerResponse.text();
-        console.error("Failed to create reel container:", errorText);
-        return new Response(
-          JSON.stringify({ error: "Failed to create reel container", details: errorText }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const containerData = await containerResponse.json();
-      console.log("Created reel container:", containerData.id);
-
-      // Step 2: Wait for video processing (can take longer)
-      await waitForContainerReady(containerData.id, accessToken, 60);
-
-      // Step 3: Publish reel
-      const publishResponse = await fetch(
-        `https://graph.facebook.com/v21.0/${instagramAccountId}/media_publish`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            creation_id: containerData.id,
-            access_token: accessToken,
-          }),
-        }
-      );
-
-      if (!publishResponse.ok) {
-        const errorText = await publishResponse.text();
-        console.error("Failed to publish reel:", errorText);
-        return new Response(
-          JSON.stringify({ error: "Failed to publish reel", details: errorText }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const publishData = await publishResponse.json();
-      postId = publishData.id;
-
-    } else if (postType === "story") {
-      // Story post (image or video)
-      console.log("Creating story post...");
-      
-      const isStoryVideo = mediaType === "video" || !!videoUrl;
-      const storyMediaUrl = videoUrl || imageUrl;
-      
-      if (!storyMediaUrl) {
-        return new Response(
-          JSON.stringify({ error: "Stories require an image or video URL" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      // Step 1: Create story container
-      const containerBody: Record<string, string> = {
-        media_type: "STORIES",
-        access_token: accessToken,
-      };
-      
-      if (isStoryVideo) {
-        containerBody.video_url = storyMediaUrl;
-      } else {
-        containerBody.image_url = storyMediaUrl;
-      }
-      
-      const containerResponse = await fetch(
-        `https://graph.facebook.com/v21.0/${instagramAccountId}/media`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(containerBody),
-        }
-      );
-
-      if (!containerResponse.ok) {
-        const errorText = await containerResponse.text();
-        console.error("Failed to create story container:", errorText);
-        return new Response(
-          JSON.stringify({ error: "Failed to create story container", details: errorText }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const containerData = await containerResponse.json();
-      console.log("Created story container:", containerData.id);
-
-      // Step 2: Wait for processing
-      await waitForContainerReady(containerData.id, accessToken, isStoryVideo ? 60 : 30);
-
-      // Step 3: Publish story
-      const publishResponse = await fetch(
-        `https://graph.facebook.com/v21.0/${instagramAccountId}/media_publish`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            creation_id: containerData.id,
-            access_token: accessToken,
-          }),
-        }
-      );
-
-      if (!publishResponse.ok) {
-        const errorText = await publishResponse.text();
-        console.error("Failed to publish story:", errorText);
-        return new Response(
-          JSON.stringify({ error: "Failed to publish story", details: errorText }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
