@@ -113,12 +113,24 @@ export function SchedulePostSheet({
     enabled: !!user,
   });
 
-  const handlePostNow = async () => {
-    if (!formData.scheduled_platforms.includes("pinterest")) {
-      toast.error("Please select Pinterest to post");
-      return;
-    }
+  // Check if Instagram is connected
+  const { data: instagramConnection } = useQuery({
+    queryKey: ["instagram-connection", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("social_connections")
+        .select("id, account_name, account_id, page_id")
+        .eq("user_id", user!.id)
+        .eq("platform", "instagram")
+        .single();
 
+      if (error) return null;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const postToPinterest = async () => {
     if (!formData.pinterest_board_id) {
       toast.error("Please select a Pinterest board");
       return;
@@ -165,6 +177,75 @@ export function SchedulePostSheet({
       toast.error(error.message || "Failed to post to Pinterest");
     } finally {
       setIsPosting(false);
+    }
+  };
+
+  const postToInstagram = async () => {
+    if (!formData.media_url) {
+      toast.error("Instagram requires an image or video");
+      return;
+    }
+
+    if (!instagramConnection) {
+      toast.error("Please connect your Instagram account first");
+      return;
+    }
+
+    setIsPosting(true);
+    try {
+      const response = await supabase.functions.invoke("post-to-instagram", {
+        body: {
+          caption: formData.content,
+          mediaUrl: formData.media_url,
+          mediaType: formData.media_type === "video" ? "VIDEO" : "IMAGE",
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Failed to post to Instagram");
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      // Update the content_planner item with scheduled info
+      if (contentItem?.id) {
+        await supabase
+          .from("content_planner")
+          .update({
+            scheduled_platforms: formData.scheduled_platforms,
+            scheduled_at: new Date().toISOString(),
+            status: "completed",
+          })
+          .eq("id", contentItem.id);
+      }
+
+      toast.success("Posted to Instagram successfully!");
+      onScheduled?.();
+      onOpenChange(false);
+    } catch (error: any) {
+      console.error("Error posting to Instagram:", error);
+      toast.error(error.message || "Failed to post to Instagram");
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
+  const handlePostNow = async () => {
+    const selectedPlatform = formData.scheduled_platforms[0];
+
+    if (!selectedPlatform) {
+      toast.error("Please select a platform to post");
+      return;
+    }
+
+    if (selectedPlatform === "pinterest") {
+      await postToPinterest();
+    } else if (selectedPlatform === "instagram") {
+      await postToInstagram();
+    } else {
+      toast.error(`Posting to ${selectedPlatform} is not yet supported`);
     }
   };
 
