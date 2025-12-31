@@ -8,7 +8,7 @@ import { ContentTypeFilter } from "./ContentTypeFilter";
 import { TalkingPointsSection } from "./TalkingPointsSection";
 import { SavedIdeasLink } from "./SavedIdeasLink";
 import { SavedIdeasSheet } from "./SavedIdeasSheet";
-import { DraftPanel } from "./DraftPanel";
+import { PostEditorSheet } from "./PostEditorSheet";
 import { TimelineSlotGrid } from "./TimelineSlotGrid";
 import { SalesPageCopyTab } from "./sales-copy";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
@@ -39,11 +39,9 @@ interface ContentTabProps {
 export const ContentTab = ({ projectId }: ContentTabProps) => {
   const [activeTab, setActiveTab] = useState<ContentViewTab>("ideas");
   const [selectedContentType, setSelectedContentType] = useState<ContentType>("general");
-  const [draftPanelOpen, setDraftPanelOpen] = useState(false);
+  const [postEditorOpen, setPostEditorOpen] = useState(false);
   const [savedSheetOpen, setSavedSheetOpen] = useState(false);
   const [selectedTalkingPoint, setSelectedTalkingPoint] = useState<TalkingPoint | null>(null);
-  const [selectedSavedItem, setSelectedSavedItem] = useState<SavedItem | null>(null);
-  const [pendingSlotInfo, setPendingSlotInfo] = useState<SlotInfo | null>(null);
   
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -77,17 +75,8 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   });
 
   const handleTurnIntoPost = (talkingPoint: TalkingPoint) => {
-    setSelectedSavedItem(null);
     setSelectedTalkingPoint(talkingPoint);
-    setPendingSlotInfo(null);
-    setDraftPanelOpen(true);
-  };
-
-  const handleOpenSavedItem = (item: SavedItem) => {
-    setSelectedTalkingPoint(null);
-    setSelectedSavedItem(item);
-    setPendingSlotInfo(null);
-    setDraftPanelOpen(true);
+    setPostEditorOpen(true);
   };
 
   const handleTimelineWritePost = (item: {
@@ -102,14 +91,8 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
       description: item.description || "",
       contentType: item.contentType as ContentType,
     };
-    setSelectedSavedItem(null);
     setSelectedTalkingPoint(asTalkingPoint);
-    setPendingSlotInfo(null);
-    setDraftPanelOpen(true);
-  };
-
-  const handleSlotAssign = (slotInfo: SlotInfo) => {
-    setPendingSlotInfo(slotInfo);
+    setPostEditorOpen(true);
   };
 
   const currentPhase = project?.active_phase || "planning";
@@ -218,21 +201,21 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
         open={savedSheetOpen}
         onOpenChange={setSavedSheetOpen}
         projectId={projectId}
-        onOpenItem={handleOpenSavedItem}
+        onOpenItem={() => {}}
       />
 
-      {/* Draft Panel with timeline assignment */}
-      <DraftPanel
-        open={draftPanelOpen}
-        onOpenChange={setDraftPanelOpen}
+      {/* Post Editor Sheet - unified for ideas and timeline */}
+      <PostEditorSheet
+        open={postEditorOpen}
+        onOpenChange={setPostEditorOpen}
         projectId={projectId}
         talkingPoint={selectedTalkingPoint}
-        savedItem={selectedSavedItem}
         currentPhase={currentPhase}
         funnelType={funnelType}
         audienceData={funnel}
-        slotInfo={pendingSlotInfo}
-        onSlotAssign={handleSlotAssign}
+        onSaved={() => {
+          queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+        }}
       />
     </div>
   );
