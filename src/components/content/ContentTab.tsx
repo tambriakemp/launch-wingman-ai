@@ -13,6 +13,7 @@ import { TimelineSlotGrid } from "./TimelineSlotGrid";
 import { ContentCalendarView } from "./ContentCalendarView";
 import { SalesPageCopyTab } from "./sales-copy";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { SavedItem } from "./SavedIdeasSection";
@@ -204,11 +205,22 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
         />
       ) : activeTab === "social-schedule" ? (
         <div className="space-y-4">
-          <div>
-            <h2 className="text-xl font-semibold text-foreground">Social Media Schedule</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              View scheduled content on your calendar. Click any day to manage posts.
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-foreground">Social Media Schedule</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                View scheduled content on your calendar. Click any day to manage posts.
+              </p>
+            </div>
+            <Button
+              onClick={() => {
+                setSelectedTalkingPoint(null);
+                setPostEditorOpen(true);
+              }}
+              size="sm"
+            >
+              Create Post
+            </Button>
           </div>
           <ContentCalendarView
             projectId={projectId}
@@ -243,7 +255,16 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
         open={savedSheetOpen}
         onOpenChange={setSavedSheetOpen}
         projectId={projectId}
-        onOpenItem={() => {}}
+        onOpenItem={(item) => {
+          // Open the draft in the post editor
+          setSelectedTalkingPoint({
+            id: item.id,
+            title: item.title,
+            description: item.content,
+            contentType: item.contentType as ContentType,
+          });
+          setPostEditorOpen(true);
+        }}
       />
 
       {/* Post Editor Sheet - unified for ideas and timeline */}
