@@ -84,6 +84,8 @@ interface PostEditorSheetProps {
   existingItem?: ContentPlannerItem | null;
   // Mode 3: Creating a new blank post (no pre-population)
   isCreateMode?: boolean;
+  // Mode 4: Editing an existing saved draft (from content_drafts table)
+  existingDraftId?: string | null;
   // Context data
   currentPhase?: string;
   funnelType?: string | null;
@@ -133,6 +135,7 @@ export function PostEditorSheet({
   talkingPoint,
   existingItem,
   isCreateMode = false,
+  existingDraftId,
   currentPhase = "planning",
   funnelType,
   audienceData,
@@ -140,6 +143,9 @@ export function PostEditorSheet({
 }: PostEditorSheetProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  // Track the current draft ID (from content_drafts table)
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
 
   // Content state
   const [title, setTitle] = useState("");
@@ -245,29 +251,54 @@ export function PostEditorSheet({
         setScheduledDate(null);
         setScheduledTime("09:00");
       }
+      setCurrentDraftId(null);
     } else if (talkingPoint) {
-      // Creating from talking point - generate draft
-      setTitle(talkingPoint.title);
-      setContentType(talkingPoint.contentType || "general");
-      setIsAssignedToTimeline(false);
-      setTimelineItemId(null);
-      setTimelineOpen(false);
-      setScheduleMode("now");
-      setScheduledDate(null);
-      setFormData({
-        media_url: null,
-        media_type: null,
-        scheduled_platforms: [],
-        pinterest_board_id: null,
-        link_url: "",
-        instagram_post_type: "feed",
-      });
-      generateDraft();
+      // Check if this is from an existing draft (existingDraftId provided)
+      if (existingDraftId) {
+        // Editing an existing saved draft
+        setTitle(talkingPoint.title);
+        setContent(talkingPoint.description);
+        setContentType(talkingPoint.contentType || "general");
+        setCurrentDraftId(existingDraftId);
+        setIsAssignedToTimeline(false);
+        setTimelineItemId(null);
+        setTimelineOpen(false);
+        setScheduleMode("now");
+        setScheduledDate(null);
+        setFormData({
+          media_url: null,
+          media_type: null,
+          scheduled_platforms: [],
+          pinterest_board_id: null,
+          link_url: "",
+          instagram_post_type: "feed",
+        });
+      } else {
+        // Creating from talking point - generate draft
+        setTitle(talkingPoint.title);
+        setContentType(talkingPoint.contentType || "general");
+        setCurrentDraftId(null);
+        setIsAssignedToTimeline(false);
+        setTimelineItemId(null);
+        setTimelineOpen(false);
+        setScheduleMode("now");
+        setScheduledDate(null);
+        setFormData({
+          media_url: null,
+          media_type: null,
+          scheduled_platforms: [],
+          pinterest_board_id: null,
+          link_url: "",
+          instagram_post_type: "feed",
+        });
+        generateDraft();
+      }
     } else if (isCreateMode) {
       // Creating new blank post
       setTitle("");
       setContent("");
       setContentType("general");
+      setCurrentDraftId(null);
       setIsAssignedToTimeline(false);
       setTimelineItemId(null);
       setTimelineOpen(false);
@@ -405,8 +436,21 @@ export function PostEditorSheet({
 
         if (error) throw error;
         toast.success("Draft updated");
+      } else if (currentDraftId) {
+        // Update existing saved draft
+        const { error } = await supabase
+          .from("content_drafts")
+          .update({
+            title: title || "Untitled draft",
+            content: content,
+            content_type: contentType,
+          })
+          .eq("id", currentDraftId);
+
+        if (error) throw error;
+        toast.success("Draft updated");
       } else {
-        // Save as content draft (not on timeline)
+        // Save as new content draft (not on timeline)
         const { error } = await supabase.from("content_drafts").insert({
           project_id: projectId,
           user_id: user.id,
