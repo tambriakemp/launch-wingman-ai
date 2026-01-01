@@ -161,11 +161,18 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
           <div className="space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <h2 className="text-lg font-medium text-foreground">What to say next</h2>
-              <ContentTypeFilter 
-                selected={selectedContentType} 
-                onChange={setSelectedContentType} 
+              {/* Saved ideas link - top right of ideas section */}
+              <SavedIdeasLink 
+                projectId={projectId} 
+                onOpen={() => setSavedSheetOpen(true)} 
               />
             </div>
+            
+            {/* Content type filter row */}
+            <ContentTypeFilter 
+              selected={selectedContentType} 
+              onChange={setSelectedContentType} 
+            />
 
             <TalkingPointsSection
               projectId={projectId}
@@ -174,14 +181,6 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
               funnelType={funnelType}
               audienceData={funnel}
               onTurnIntoPost={handleTurnIntoPost}
-            />
-          </div>
-
-          {/* Saved ideas link - under ideas section */}
-          <div className="pt-4 border-t border-border">
-            <SavedIdeasLink 
-              projectId={projectId} 
-              onOpen={() => setSavedSheetOpen(true)} 
             />
           </div>
         </div>

@@ -181,6 +181,8 @@ export function PostEditorSheet({
 
   const isAlreadyScheduled = !!(existingItem?.scheduled_at);
   const isEditingExisting = !!existingItem;
+  // Posted content = status is "completed" (successfully posted to social platform)
+  const isPostedContent = existingItem?.status === "completed";
 
   // Check social connections
   const { data: pinterestConnection } = useQuery({
@@ -723,7 +725,9 @@ export function PostEditorSheet({
       >
         <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <SheetTitle>
-            {isCreateMode
+            {isPostedContent
+              ? "View Posted Content"
+              : isCreateMode
               ? "Create Post"
               : isEditingExisting
               ? "Edit Post"
@@ -751,7 +755,29 @@ export function PostEditorSheet({
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Enter post title..."
+                    disabled={isPostedContent}
+                    readOnly={isPostedContent}
                   />
+                </div>
+
+                {/* Content Type Dropdown - outside of timeline */}
+                <div className="space-y-2">
+                  <Label className="text-xs">Content Type</Label>
+                  <Select
+                    value={contentType}
+                    onValueChange={setContentType}
+                    disabled={isPostedContent}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select content type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">General posts</SelectItem>
+                      <SelectItem value="stories">Stories / prompts</SelectItem>
+                      <SelectItem value="offer">Offer explanation</SelectItem>
+                      <SelectItem value="behind-the-scenes">Behind-the-scenes</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Category badge and guidance */}
@@ -777,10 +803,13 @@ export function PostEditorSheet({
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="Your content will appear here..."
                     className="min-h-[150px] resize-none"
+                    disabled={isPostedContent}
+                    readOnly={isPostedContent}
                   />
                 </div>
 
-                {/* Adjust Tone Section - moved under content */}
+                {/* Adjust Tone Section - hidden for posted content */}
+                {!isPostedContent && (
                 <div className="space-y-3">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Adjust tone
@@ -834,8 +863,10 @@ export function PostEditorSheet({
                     </Button>
                   </div>
                 </div>
+                )}
 
-                {/* Platform Selector Section - moved above media */}
+                {/* Platform Selector Section - hidden for posted content */}
+                {!isPostedContent && (
                 <div className="space-y-4 pt-6 mt-4 border-t">
                   <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                     <span>✨</span>
@@ -918,28 +949,34 @@ export function PostEditorSheet({
                     </div>
                   )}
                 </div>
+                )}
 
-                {/* Media Upload - now after platform selector */}
-                <MediaUploader
-                  projectId={projectId}
-                  mediaUrl={formData.media_url}
-                  mediaType={formData.media_type}
-                  onMediaChange={(url, type) =>
-                    setFormData((prev) => ({ ...prev, media_url: url, media_type: type }))
-                  }
-                />
+                {/* Media Upload - hidden for posted content */}
+                {!isPostedContent && (
+                  <MediaUploader
+                    projectId={projectId}
+                    mediaUrl={formData.media_url}
+                    mediaType={formData.media_type}
+                    onMediaChange={(url, type) =>
+                      setFormData((prev) => ({ ...prev, media_url: url, media_type: type }))
+                    }
+                  />
+                )}
 
-                {/* Schedule Options */}
-                <ScheduleDateTimePicker
-                  mode={scheduleMode}
-                  onModeChange={setScheduleMode}
-                  date={scheduledDate}
-                  onDateChange={setScheduledDate}
-                  time={scheduledTime}
-                  onTimeChange={setScheduledTime}
-                />
+                {/* Schedule Options - hidden for posted content */}
+                {!isPostedContent && (
+                  <ScheduleDateTimePicker
+                    mode={scheduleMode}
+                    onModeChange={setScheduleMode}
+                    date={scheduledDate}
+                    onDateChange={setScheduledDate}
+                    time={scheduledTime}
+                    onTimeChange={setScheduledTime}
+                  />
+                )}
 
-                {/* Add to Launch Timeline Section */}
+                {/* Add to Launch Timeline Section - hidden for posted content */}
+                {!isPostedContent && (
                 <Collapsible open={timelineOpen} onOpenChange={setTimelineOpen}>
                   <CollapsibleTrigger asChild>
                     <Button
@@ -1009,25 +1046,6 @@ export function PostEditorSheet({
                       </div>
                     </div>
 
-                    {/* Content Type Selector */}
-                    <div className="space-y-2">
-                      <Label htmlFor="content-type">Content Type</Label>
-                      <Select
-                        value={contentType}
-                        onValueChange={setContentType}
-                      >
-                        <SelectTrigger id="content-type">
-                          <SelectValue placeholder="Select content type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="general">General posts</SelectItem>
-                          <SelectItem value="stories">Stories / prompts</SelectItem>
-                          <SelectItem value="offer">Offer explanation</SelectItem>
-                          <SelectItem value="behind-the-scenes">Behind-the-scenes</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
                     {!isAssignedToTimeline && (
                       <Button
                         onClick={handleAddToTimeline}
@@ -1042,6 +1060,7 @@ export function PostEditorSheet({
                     )}
                   </CollapsibleContent>
                 </Collapsible>
+                )}
               </>
             )}
           </div>
@@ -1076,74 +1095,80 @@ export function PostEditorSheet({
               )}
               {copied ? "Copied" : "Copy"}
             </Button>
-            <Button
-              variant="outline"
-              onClick={handleSaveDraft}
-              disabled={!content.trim() || saving}
-            >
-              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save draft
-            </Button>
-            {isEditingExisting && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                {deleting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Trash2 className="w-4 h-4" />
+            {!isPostedContent && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={handleSaveDraft}
+                  disabled={!content.trim() || saving}
+                >
+                  {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Save draft
+                </Button>
+                {isEditingExisting && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    {deleting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </Button>
                 )}
-              </Button>
-            )}
-            {isAlreadyScheduled && (
-              <Button
-                variant="destructive"
-                onClick={handleCancelSchedule}
-                disabled={isCancelling}
-              >
-                {isCancelling ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <X className="w-4 h-4 mr-2" />
+                {isAlreadyScheduled && (
+                  <Button
+                    variant="destructive"
+                    onClick={handleCancelSchedule}
+                    disabled={isCancelling}
+                  >
+                    {isCancelling ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <X className="w-4 h-4 mr-2" />
+                    )}
+                    Cancel Schedule
+                  </Button>
                 )}
-                Cancel Schedule
-              </Button>
-            )}
-          </div>
-          <div className="flex gap-2">
-            {scheduleMode === "now" ? (
-              <Button
-                onClick={handlePostNow}
-                disabled={isPosting || !formData.scheduled_platforms.length}
-                className="bg-rose-500 hover:bg-rose-600"
-              >
-                {isPosting ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Send className="w-4 h-4 mr-2" />
-                )}
-                Post Now
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSchedule}
-                disabled={
-                  isScheduling || !scheduledDate || !formData.scheduled_platforms.length
-                }
-              >
-                {isScheduling ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Send className="w-4 h-4 mr-2" />
-                )}
-                {isAlreadyScheduled ? "Reschedule" : "Schedule"}
-              </Button>
+              </>
             )}
           </div>
+          {!isPostedContent && (
+            <div className="flex gap-2">
+              {scheduleMode === "now" ? (
+                <Button
+                  onClick={handlePostNow}
+                  disabled={isPosting || !formData.scheduled_platforms.length}
+                  className="bg-rose-500 hover:bg-rose-600"
+                >
+                  {isPosting ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-2" />
+                  )}
+                  Post Now
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSchedule}
+                  disabled={
+                    isScheduling || !scheduledDate || !formData.scheduled_platforms.length
+                  }
+                >
+                  {isScheduling ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-2" />
+                  )}
+                  {isAlreadyScheduled ? "Reschedule" : "Schedule"}
+                </Button>
+              )}
+            </div>
+          )}
         </SheetFooter>
       </SheetContent>
     </Sheet>
