@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronRight, MoreHorizontal, Trash2, CalendarClock, Clock, CheckCircle2, Crown, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, MoreHorizontal, Trash2, CalendarClock, Clock, CheckCircle2, Crown, Plus, Sparkles, Loader2 } from "lucide-react";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { PostEditorSheet } from "./PostEditorSheet";
+import { getDayTemplates, TimelineTemplate } from "@/data/timelineTemplates";
 
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
@@ -45,6 +46,13 @@ interface ContentPlannerItem {
   content: string | null;
   scheduled_at: string | null;
   scheduled_platforms: string[] | null;
+}
+
+interface GeneratedSuggestion {
+  title: string;
+  description: string;
+  template_type: string;
+  content_type: string;
 }
 
 const PHASES = [
@@ -100,6 +108,14 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const queryClient = useQueryClient();
+  
+  // State for AI-generated suggestions
+  const [suggestions, setSuggestions] = useState<Record<string, GeneratedSuggestion>>({});
+  const [loadingSuggestions, setLoadingSuggestions] = useState<Record<string, boolean>>({});
+  const [generatingPhase, setGeneratingPhase] = useState<string | null>(null);
+  
+  // State for creating from suggestion
+  const [creatingFromSuggestion, setCreatingFromSuggestion] = useState<string | null>(null);
 
   const { data: plannerItems = [], isLoading } = useQuery({
     queryKey: ["content-planner", projectId],
@@ -169,11 +185,131 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
     );
   };
 
+  // Check if a template slot is already filled by an existing item
+  const isSlotFilled = (phaseId: string, dayNumber: number, timeOfDay: string) => {
+    return plannerItems.some(
+      item => item.phase === phaseId && 
+              item.day_number === dayNumber && 
+              item.time_of_day === timeOfDay
+    );
+  };
+
+  // Get suggestion key for tracking state
+  const getSuggestionKey = (template: TimelineTemplate) => {
+    return `${template.phase}-${template.day_number}-${template.time_of_day}`;
+  };
+
+  // Generate AI suggestion for a single template
+  const generateSuggestion = async (template: TimelineTemplate) => {
+    const key = getSuggestionKey(template);
+    setLoadingSuggestions(prev => ({ ...prev, [key]: true }));
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-timeline-suggestions', {
+        body: { projectId, template }
+      });
+      
+      if (error) throw error;
+      
+      setSuggestions(prev => ({ ...prev, [key]: data }));
+    } catch (error) {
+      console.error("Error generating suggestion:", error);
+      toast.error("Failed to generate suggestion");
+    } finally {
+      setLoadingSuggestions(prev => ({ ...prev, [key]: false }));
+    }
+  };
+
+  // Generate suggestions for all empty slots in a phase
+  const generatePhasesuggestions = async (phaseId: string) => {
+    const templates = getDayTemplates(phaseId, 1)
+      .concat(getDayTemplates(phaseId, 2))
+      .concat(getDayTemplates(phaseId, 3))
+      .concat(getDayTemplates(phaseId, 4))
+      .concat(getDayTemplates(phaseId, 5))
+      .concat(getDayTemplates(phaseId, 6))
+      .concat(getDayTemplates(phaseId, 7))
+      .filter(t => !isSlotFilled(phaseId, t.day_number, t.time_of_day));
+    
+    if (templates.length === 0) {
+      toast.info("All slots in this phase are already filled");
+      return;
+    }
+    
+    setGeneratingPhase(phaseId);
+    
+    try {
+      // Generate in batches of 3 for better UX
+      for (let i = 0; i < templates.length; i += 3) {
+        const batch = templates.slice(i, i + 3);
+        await Promise.all(batch.map(t => generateSuggestion(t)));
+      }
+      toast.success(`Generated ${templates.length} suggestions`);
+    } catch (error) {
+      console.error("Error generating phase suggestions:", error);
+      toast.error("Failed to generate some suggestions");
+    } finally {
+      setGeneratingPhase(null);
+    }
+  };
+
+  // Create a post from a suggestion
+  const createFromSuggestion = async (template: TimelineTemplate, suggestion: GeneratedSuggestion) => {
+    if (!user) {
+      toast.error("You must be logged in");
+      return;
+    }
+    
+    const key = getSuggestionKey(template);
+    setCreatingFromSuggestion(key);
+    
+    try {
+      const { error } = await supabase
+        .from("content_planner")
+        .insert({
+          project_id: projectId,
+          user_id: user.id,
+          phase: template.phase,
+          day_number: template.day_number,
+          time_of_day: template.time_of_day,
+          content_type: suggestion.content_type,
+          title: suggestion.title,
+          description: suggestion.description,
+          status: "planned",
+        });
+      
+      if (error) throw error;
+      
+      // Clear the suggestion since it's now a real item
+      setSuggestions(prev => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+      toast.success("Added to timeline");
+    } catch (error) {
+      console.error("Error creating from suggestion:", error);
+      toast.error("Failed to create post");
+    } finally {
+      setCreatingFromSuggestion(null);
+    }
+  };
+
   const getCompletionPercentage = (phaseId: string) => {
     const items = getPhaseItems(phaseId);
-    if (items.length === 0) return 0;
-    const completed = items.filter((item) => item.status === "completed" || item.status === "draft").length;
-    return Math.round((completed / items.length) * 100);
+    const templates = getDayTemplates(phaseId, 1)
+      .concat(getDayTemplates(phaseId, 2))
+      .concat(getDayTemplates(phaseId, 3))
+      .concat(getDayTemplates(phaseId, 4))
+      .concat(getDayTemplates(phaseId, 5))
+      .concat(getDayTemplates(phaseId, 6))
+      .concat(getDayTemplates(phaseId, 7));
+    
+    if (templates.length === 0) return 0;
+    const filled = items.length;
+    return Math.round((filled / templates.length) * 100);
   };
 
   const handleDeleteClick = (id: string) => {
@@ -254,7 +390,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
         <div>
           <h2 className="text-xl font-semibold text-foreground">Launch Content Timeline</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Content organized by launch phases. Click edit to write or update posts.
+            AI-suggested content slots for your launch. Generate ideas or add your own.
           </p>
         </div>
         
@@ -270,6 +406,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
           const isExpanded = expandedPhases.includes(phase.id);
           const phaseItems = getPhaseItems(phase.id);
           const completionPercent = getCompletionPercentage(phase.id);
+          const isGenerating = generatingPhase === phase.id;
 
           return (
             <Card key={phase.id} variant="elevated" className="overflow-hidden">
@@ -312,141 +449,289 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                     transition={{ duration: 0.2 }}
                   >
                     <CardContent className="pt-0 pb-4">
-                      {phaseItems.length === 0 ? (
-                        <div className="text-center py-8 border border-dashed border-border rounded-lg bg-muted/20">
-                          <p className="text-sm text-muted-foreground mb-2">No content for this week yet</p>
-                          <p className="text-xs text-muted-foreground">
-                            Go to the Ideas tab and click "Turn into a post" on any idea
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-1">
-                          {DAYS.map((day) => {
-                            const dayItems = getDayItems(phase.id, day);
-                            if (dayItems.length === 0) return null;
+                      {/* Generate All Button */}
+                      <div className="flex justify-end mb-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            generatePhasesuggestions(phase.id);
+                          }}
+                          disabled={isGenerating}
+                        >
+                          {isGenerating ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-4 h-4 mr-2" />
+                              Generate All Ideas
+                            </>
+                          )}
+                        </Button>
+                      </div>
 
-                            return (
-                              <div key={day} className="space-y-2">
-                                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground pt-3 pb-1">
-                                  <span>Day {day}</span>
-                                  <div className="flex-1 h-px bg-border" />
-                                </div>
-                                {dayItems.map((item) => (
-                                  <div
-                                    key={item.id}
-                                    className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card hover:bg-accent/30 transition-colors group"
+                      <div className="space-y-1">
+                        {(phase.id === "launch" ? [1, 2, 3, 4] : DAYS).map((day) => {
+                          const dayItems = getDayItems(phase.id, day);
+                          const dayTemplates = getDayTemplates(phase.id, day);
+                          
+                          // Skip days with no templates (e.g., days 5-7 for launch phase)
+                          if (dayTemplates.length === 0 && dayItems.length === 0) return null;
+
+                          return (
+                            <div key={day} className="space-y-2">
+                              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground pt-3 pb-1">
+                                <span>Day {day}</span>
+                                <div className="flex-1 h-px bg-border" />
+                              </div>
+                              
+                              {/* Existing items */}
+                              {dayItems.map((item) => (
+                                <div
+                                  key={item.id}
+                                  className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card hover:bg-accent/30 transition-colors group"
+                                >
+                                  <div 
+                                    className={cn(
+                                      "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
+                                      CONTENT_TYPE_COLORS[item.content_type] || "bg-slate-500"
+                                    )}
                                   >
-                                    <div 
+                                    <span className="text-xs font-bold text-white uppercase">
+                                      {item.content_type.charAt(0)}
+                                    </span>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="font-medium text-foreground text-sm line-clamp-1">
+                                          {item.title}
+                                        </h4>
+                                        {item.description && (
+                                          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                                            {item.description}
+                                          </p>
+                                        )}
+                                        <div className="flex items-center gap-2 mt-1.5">
+                                          <Badge variant="secondary" className="text-xs capitalize">
+                                            {item.content_type.replace("-", " ")}
+                                          </Badge>
+                                          {item.status === "draft" && !item.scheduled_at && (
+                                            <Badge variant="outline" className="text-xs">
+                                              Draft ready
+                                            </Badge>
+                                          )}
+                                          {item.status === "completed" && item.scheduled_at && (
+                                            <Badge className="text-xs bg-primary/10 text-primary border-primary/20 gap-1">
+                                              <CheckCircle2 className="w-3 h-3" />
+                                              Posted {format(new Date(item.scheduled_at), "MMM d")}
+                                            </Badge>
+                                          )}
+                                          {item.scheduled_at && item.status !== "completed" && (
+                                            <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                <Badge 
+                                                  className="text-xs bg-amber-500/10 text-amber-600 border-amber-200 gap-1 cursor-pointer hover:bg-amber-500/20 transition-colors"
+                                                >
+                                                  <Clock className="w-3 h-3" />
+                                                  Scheduled: {format(new Date(item.scheduled_at), "MMM d, h:mm a")}
+                                                </Badge>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent align="start">
+                                                <DropdownMenuItem onClick={() => handleOpenEditor(item)}>
+                                                  <CalendarClock className="w-4 h-4 mr-2" />
+                                                  Reschedule
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem 
+                                                  className="text-destructive"
+                                                  onClick={() => handleUnschedule(item.id)}
+                                                >
+                                                  <Trash2 className="w-4 h-4 mr-2" />
+                                                  Unschedule
+                                                </DropdownMenuItem>
+                                              </DropdownMenuContent>
+                                            </DropdownMenu>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                          >
+                                            <MoreHorizontal className="w-4 h-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="min-w-[160px]">
+                                          <DropdownMenuItem
+                                            onClick={() => {
+                                              if (item.status === "completed") {
+                                                handleOpenEditor(item);
+                                              } else if (isSubscribed) {
+                                                handleOpenEditor(item);
+                                              } else {
+                                                setShowUpgradeDialog(true);
+                                              }
+                                            }}
+                                          >
+                                            <CalendarClock className="w-4 h-4 mr-2" />
+                                            {item.status === "completed" ? "View Posted" : "Schedule / Edit"}
+                                            {item.status !== "completed" && !isSubscribed && (
+                                              <Crown className="w-3.5 h-3.5 ml-auto text-yellow-500" />
+                                            )}
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem
+                                            className="text-destructive"
+                                            onClick={() => handleDeleteClick(item.id)}
+                                          >
+                                            <Trash2 className="w-4 h-4 mr-2" />
+                                            Remove
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                              
+                              {/* Suggested slots (unfilled templates) */}
+                              {dayTemplates
+                                .filter(t => !isSlotFilled(phase.id, t.day_number, t.time_of_day))
+                                .map((template) => {
+                                  const key = getSuggestionKey(template);
+                                  const suggestion = suggestions[key];
+                                  const isLoading = loadingSuggestions[key];
+                                  const isCreating = creatingFromSuggestion === key;
+                                  
+                                  return (
+                                    <div
+                                      key={key}
                                       className={cn(
-                                        "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
-                                        CONTENT_TYPE_COLORS[item.content_type] || "bg-slate-500"
+                                        "flex items-start gap-3 p-3 rounded-lg border-2 border-dashed transition-colors",
+                                        suggestion 
+                                          ? "border-primary/40 bg-primary/5" 
+                                          : "border-border/60 bg-muted/20"
                                       )}
                                     >
-                                      <span className="text-xs font-bold text-white uppercase">
-                                        {item.content_type.charAt(0)}
-                                      </span>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-start justify-between gap-2">
-                                        <div className="flex-1 min-w-0">
-                                          <h4 className="font-medium text-foreground text-sm line-clamp-1">
-                                            {item.title}
-                                          </h4>
-                                          {item.description && (
-                                            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                                              {item.description}
-                                            </p>
-                                          )}
-                                          <div className="flex items-center gap-2 mt-1.5">
-                                            <Badge variant="secondary" className="text-xs capitalize">
-                                              {item.content_type.replace("-", " ")}
-                                            </Badge>
-                                            {item.status === "draft" && !item.scheduled_at && (
-                                              <Badge variant="outline" className="text-xs">
-                                                Draft ready
-                                              </Badge>
+                                      <div 
+                                        className={cn(
+                                          "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
+                                          suggestion 
+                                            ? CONTENT_TYPE_COLORS[suggestion.content_type] || "bg-slate-500"
+                                            : "bg-muted"
+                                        )}
+                                      >
+                                        {isLoading ? (
+                                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                                        ) : (
+                                          <Sparkles className={cn(
+                                            "w-4 h-4",
+                                            suggestion ? "text-white" : "text-muted-foreground"
+                                          )} />
+                                        )}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div className="flex-1 min-w-0">
+                                            {suggestion ? (
+                                              <>
+                                                <h4 className="font-medium text-foreground text-sm line-clamp-2">
+                                                  {suggestion.title}
+                                                </h4>
+                                                <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                                                  {suggestion.description}
+                                                </p>
+                                              </>
+                                            ) : (
+                                              <>
+                                                <h4 className="font-medium text-muted-foreground text-sm">
+                                                  {template.title_template}
+                                                </h4>
+                                                <p className="text-xs text-muted-foreground/70 line-clamp-1 mt-0.5">
+                                                  {template.time_of_day} • {template.template_type.replace(/-/g, ' ')}
+                                                </p>
+                                              </>
                                             )}
-                                            {item.status === "completed" && item.scheduled_at && (
-                                              <Badge className="text-xs bg-primary/10 text-primary border-primary/20 gap-1">
-                                                <CheckCircle2 className="w-3 h-3" />
-                                                Posted {format(new Date(item.scheduled_at), "MMM d")}
+                                            <div className="flex items-center gap-2 mt-2">
+                                              <Badge 
+                                                variant="outline" 
+                                                className={cn(
+                                                  "text-xs",
+                                                  suggestion && "border-primary/30 text-primary"
+                                                )}
+                                              >
+                                                {suggestion ? "AI Generated" : "Suggested"}
                                               </Badge>
-                                            )}
-                                            {item.scheduled_at && item.status !== "completed" && (
-                                              <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                  <Badge 
-                                                    className="text-xs bg-amber-500/10 text-amber-600 border-amber-200 gap-1 cursor-pointer hover:bg-amber-500/20 transition-colors"
-                                                  >
-                                                    <Clock className="w-3 h-3" />
-                                                    Scheduled: {format(new Date(item.scheduled_at), "MMM d, h:mm a")}
-                                                  </Badge>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="start">
-                                                  <DropdownMenuItem onClick={() => handleOpenEditor(item)}>
-                                                    <CalendarClock className="w-4 h-4 mr-2" />
-                                                    Reschedule
-                                                  </DropdownMenuItem>
-                                                  <DropdownMenuSeparator />
-                                                  <DropdownMenuItem 
-                                                    className="text-destructive"
-                                                    onClick={() => handleUnschedule(item.id)}
-                                                  >
-                                                    <Trash2 className="w-4 h-4 mr-2" />
-                                                    Unschedule
-                                                  </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                              </DropdownMenu>
+                                              <Badge variant="secondary" className="text-xs capitalize">
+                                                {template.content_type.replace("-", " ")}
+                                              </Badge>
+                                            </div>
+                                          </div>
+                                          <div className="flex gap-1">
+                                            {suggestion ? (
+                                              <>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  onClick={() => generateSuggestion(template)}
+                                                  disabled={isLoading}
+                                                  className="h-8 px-2"
+                                                >
+                                                  <Sparkles className="w-3.5 h-3.5" />
+                                                </Button>
+                                                <Button
+                                                  variant="default"
+                                                  size="sm"
+                                                  onClick={() => createFromSuggestion(template, suggestion)}
+                                                  disabled={isCreating}
+                                                  className="h-8"
+                                                >
+                                                  {isCreating ? (
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                  ) : (
+                                                    <>
+                                                      <Plus className="w-3.5 h-3.5 mr-1" />
+                                                      Add
+                                                    </>
+                                                  )}
+                                                </Button>
+                                              </>
+                                            ) : (
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => generateSuggestion(template)}
+                                                disabled={isLoading}
+                                                className="h-8"
+                                              >
+                                                {isLoading ? (
+                                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                ) : (
+                                                  <>
+                                                    <Sparkles className="w-3.5 h-3.5 mr-1" />
+                                                    Generate
+                                                  </>
+                                                )}
+                                              </Button>
                                             )}
                                           </div>
                                         </div>
-                                        <DropdownMenu>
-                                          <DropdownMenuTrigger asChild>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            >
-                                              <MoreHorizontal className="w-4 h-4" />
-                                            </Button>
-                                          </DropdownMenuTrigger>
-                                          <DropdownMenuContent align="end" className="min-w-[160px]">
-                                            <DropdownMenuItem
-                                              onClick={() => {
-                                                if (item.status === "completed") {
-                                                  handleOpenEditor(item);
-                                                } else if (isSubscribed) {
-                                                  handleOpenEditor(item);
-                                                } else {
-                                                  setShowUpgradeDialog(true);
-                                                }
-                                              }}
-                                            >
-                                              <CalendarClock className="w-4 h-4 mr-2" />
-                                              {item.status === "completed" ? "View Posted" : "Schedule / Edit"}
-                                              {item.status !== "completed" && !isSubscribed && (
-                                                <Crown className="w-3.5 h-3.5 ml-auto text-yellow-500" />
-                                              )}
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem
-                                              className="text-destructive"
-                                              onClick={() => handleDeleteClick(item.id)}
-                                            >
-                                              <Trash2 className="w-4 h-4 mr-2" />
-                                              Remove
-                                            </DropdownMenuItem>
-                                          </DropdownMenuContent>
-                                        </DropdownMenu>
                                       </div>
                                     </div>
-                                  </div>
-                                ))}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                                  );
+                                })}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </CardContent>
                   </motion.div>
                 )}
