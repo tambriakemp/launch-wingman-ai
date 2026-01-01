@@ -1,11 +1,13 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import ScrollToTop from "@/components/ScrollToTop";
+import { initGA, trackPageView } from "@/lib/analytics";
 import Landing from "./pages/Landing";
 import HowItWorks from "./pages/HowItWorks";
 import Pricing from "./pages/Pricing";
@@ -68,6 +70,20 @@ const queryClient = new QueryClient({
   },
 });
 
+// Initialize GA on app load
+initGA();
+
+// Component to track page views on route changes
+const PageViewTracker = () => {
+  const location = useLocation();
+  
+  useEffect(() => {
+    trackPageView(location.pathname + location.search);
+  }, [location]);
+  
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -75,6 +91,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <PageViewTracker />
           <ScrollToTop />
           <ImpersonationBanner />
           <Routes>

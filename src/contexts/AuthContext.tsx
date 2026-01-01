@@ -3,6 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { trackLogin, trackSignup, trackLogout, setUserId, clearUserId } from "@/lib/analytics";
 
 interface AuthContextType {
   user: User | null;
@@ -133,6 +134,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Track signup activity and notify admins
       await trackActivity('signup', true);
       
+      // Track signup with Google Analytics
+      trackSignup('email');
+      setUserId(signUpData.user.id);
+      
       // Send welcome email (fire and forget)
       supabase.functions.invoke("send-notification-email", {
         body: {
@@ -161,14 +166,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     
-    if (!error) {
+    if (!error && data.user) {
       // Track login activity
       await trackActivity('login');
+      
+      // Track login with Google Analytics
+      trackLogin('email');
+      setUserId(data.user.id);
+      
       await navigateToProject();
     }
     
@@ -176,6 +186,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Track logout with Google Analytics
+    trackLogout();
+    clearUserId();
+    
     // Clear impersonation data if exists
     localStorage.removeItem(ADMIN_SESSION_KEY);
     localStorage.removeItem(IMPERSONATION_KEY);
