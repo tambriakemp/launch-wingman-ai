@@ -350,17 +350,18 @@ export function PostEditorSheet({
   };
 
   const handleGenerateIdea = async () => {
-    if (!title.trim()) return;
-
     setGeneratingIdea(true);
     try {
+      // Use title if available, otherwise use a generic prompt based on content type
+      const ideaTitle = title.trim() || `Create a ${CATEGORY_LABELS[contentType] || "general"} post`;
+      
       const { data, error } = await supabase.functions.invoke("generate-content-draft", {
         body: {
           projectId,
           talkingPoint: {
             id: "manual",
-            title: title,
-            description: title,
+            title: ideaTitle,
+            description: ideaTitle,
             contentType: contentType,
           },
           currentPhase,
@@ -891,32 +892,7 @@ export function PostEditorSheet({
                   />
                 </div>
 
-                {/* Content Type Dropdown - outside of timeline */}
-                <div className="space-y-2">
-                  <Label className="text-xs">Content Type</Label>
-                  <Select
-                    value={contentType}
-                    onValueChange={setContentType}
-                    disabled={isPostedContent}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select content type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="general">General posts</SelectItem>
-                      <SelectItem value="stories">Stories / prompts</SelectItem>
-                      <SelectItem value="offer">Offer explanation</SelectItem>
-                      <SelectItem value="behind-the-scenes">Behind-the-scenes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Category badge and guidance */}
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs">
-                    {CATEGORY_LABELS[contentType] || "General"}
-                  </Badge>
-                </div>
+                {/* Category guidance */}
                 <p className="text-sm text-muted-foreground italic">
                   {CATEGORY_GUIDANCE[contentType] || CATEGORY_GUIDANCE.general}
                 </p>
@@ -938,22 +914,37 @@ export function PostEditorSheet({
                     readOnly={isPostedContent}
                   />
                   
-                  {/* Generate Ideas Button */}
+                  {/* Content Type + Generate Ideas Row */}
                   {!isPostedContent && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleGenerateIdea}
-                      disabled={generatingIdea || !title.trim()}
-                      className="mt-2"
-                    >
-                      {generatingIdea ? (
-                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                      ) : (
-                        <Wand2 className="w-3.5 h-3.5 mr-1.5" />
-                      )}
-                      {hasGeneratedIdea ? "Regenerate" : "Generate Ideas"}
-                    </Button>
+                    <div className="flex items-center gap-3 mt-2">
+                      <Select
+                        value={contentType}
+                        onValueChange={setContentType}
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Content type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="general">General posts</SelectItem>
+                          <SelectItem value="stories">Stories / prompts</SelectItem>
+                          <SelectItem value="offer">Offer explanation</SelectItem>
+                          <SelectItem value="behind-the-scenes">Behind-the-scenes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGenerateIdea}
+                        disabled={generatingIdea}
+                      >
+                        {generatingIdea ? (
+                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                        ) : (
+                          <Wand2 className="w-3.5 h-3.5 mr-1.5" />
+                        )}
+                        {hasGeneratedIdea ? "Regenerate" : "Generate Ideas"}
+                      </Button>
+                    </div>
                   )}
                 </div>
 
