@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { trackContentGeneration } from "@/lib/analytics";
 
 interface CreatePostDialogProps {
   open: boolean;
@@ -112,6 +113,9 @@ export const CreatePostDialog = ({
         .single();
 
       if (error) throw error;
+
+      // Track content creation with Google Analytics
+      trackContentGeneration(contentType);
 
       queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
       toast.success("Post created successfully");

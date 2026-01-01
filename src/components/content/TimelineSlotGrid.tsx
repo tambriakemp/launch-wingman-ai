@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { PostEditorSheet } from "./PostEditorSheet";
 import { SuggestionViewDialog } from "./SuggestionViewDialog";
 import { getDayTemplates, TimelineTemplate } from "@/data/timelineTemplates";
+import { trackTimelineSuggestion, trackContentGeneration } from "@/lib/analytics";
 
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
@@ -273,6 +274,9 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
       // Update local state for immediate UI feedback
       setLocalSuggestions(prev => ({ ...prev, [key]: data }));
       
+      // Track GA event
+      trackTimelineSuggestion('generate');
+      
       // Refresh DB suggestions
       queryClient.invalidateQueries({ queryKey: ["timeline-suggestions", projectId] });
     } catch (error) {
@@ -361,6 +365,10 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
       
       // Close view dialog if open
       setViewDialogOpen(false);
+      
+      // Track GA event
+      trackTimelineSuggestion('accept');
+      trackContentGeneration(suggestion.content_type);
       
       queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
       queryClient.invalidateQueries({ queryKey: ["timeline-suggestions", projectId] });
