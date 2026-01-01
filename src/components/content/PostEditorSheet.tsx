@@ -423,6 +423,7 @@ export function PostEditorSheet({
 
       queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
       queryClient.invalidateQueries({ queryKey: ["content-drafts", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["saved-content-counts", projectId] });
       onSaved?.();
       onOpenChange(false);
     } catch (error) {
