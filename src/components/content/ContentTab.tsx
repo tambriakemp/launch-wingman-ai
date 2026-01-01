@@ -44,6 +44,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   const [postEditorOpen, setPostEditorOpen] = useState(false);
   const [savedSheetOpen, setSavedSheetOpen] = useState(false);
   const [selectedTalkingPoint, setSelectedTalkingPoint] = useState<TalkingPoint | null>(null);
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -263,6 +264,8 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
             description: item.content,
             contentType: item.contentType as ContentType,
           });
+          // If it's a draft, track the ID so we can update it
+          setEditingDraftId(item.type === "draft" ? item.id : null);
           setPostEditorOpen(true);
         }}
       />
@@ -270,9 +273,15 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
       {/* Post Editor Sheet - unified for ideas and timeline */}
       <PostEditorSheet
         open={postEditorOpen}
-        onOpenChange={setPostEditorOpen}
+        onOpenChange={(open) => {
+          setPostEditorOpen(open);
+          if (!open) {
+            setEditingDraftId(null);
+          }
+        }}
         projectId={projectId}
         talkingPoint={selectedTalkingPoint}
+        existingDraftId={editingDraftId}
         currentPhase={currentPhase}
         funnelType={funnelType}
         audienceData={funnel}
