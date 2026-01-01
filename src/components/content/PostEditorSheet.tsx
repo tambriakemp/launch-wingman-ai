@@ -733,7 +733,7 @@ export function PostEditorSheet({
 
         {/* Two Column Layout */}
         <div className="flex-1 overflow-hidden flex">
-          {/* Left Column - Content Editor */}
+          {/* Left Column - Content Editor & Scheduling */}
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
             {generating ? (
               <div className="flex items-center justify-center py-12">
@@ -777,6 +777,110 @@ export function PostEditorSheet({
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="Your content will appear here..."
                     className="min-h-[150px] resize-none"
+                  />
+                </div>
+
+                {/* Media Upload */}
+                <MediaUploader
+                  projectId={projectId}
+                  mediaUrl={formData.media_url}
+                  mediaType={formData.media_type}
+                  onMediaChange={(url, type) =>
+                    setFormData((prev) => ({ ...prev, media_url: url, media_type: type }))
+                  }
+                />
+
+                {/* Platform Selector Section */}
+                <div className="space-y-4 pt-4 border-t">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <span>✨</span>
+                    <span>Schedule / Post</span>
+                  </div>
+
+                  {/* Platform Selector */}
+                  <div className="space-y-2">
+                    <Label className="text-xs">Post To</Label>
+                    <PlatformSelector
+                      selected={formData.scheduled_platforms}
+                      onChange={(platforms) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          scheduled_platforms: platforms,
+                        }));
+                      }}
+                    />
+                  </div>
+
+                  {/* Pinterest Board Selector */}
+                  {formData.scheduled_platforms.includes("pinterest") &&
+                    pinterestConnection && (
+                      <PinterestBoardSelector
+                        selectedBoard={formData.pinterest_board_id}
+                        onBoardChange={(boardId) =>
+                          setFormData((prev) => ({ ...prev, pinterest_board_id: boardId }))
+                        }
+                      />
+                    )}
+
+                  {/* Instagram Post Type Selector */}
+                  {formData.scheduled_platforms.includes("instagram") &&
+                    instagramConnection && (
+                      <div className="space-y-2">
+                        <Label className="text-xs">Instagram Post Type</Label>
+                        <div className="flex gap-2">
+                          {[
+                            { value: "feed", label: "Feed", icon: "📷" },
+                            { value: "reel", label: "Reel", icon: "🎬" },
+                            { value: "story", label: "Story", icon: "⏱️" },
+                          ].map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  instagram_post_type: option.value as
+                                    | "feed"
+                                    | "reel"
+                                    | "story",
+                                }))
+                              }
+                              className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md border text-xs transition-colors ${
+                                formData.instagram_post_type === option.value
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background border-border hover:bg-muted"
+                              }`}
+                            >
+                              <span>{option.icon}</span>
+                              <span>{option.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Link URL for Pinterest */}
+                  {formData.scheduled_platforms.includes("pinterest") && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Link URL (optional)</Label>
+                      <Input
+                        value={formData.link_url}
+                        onChange={(e) =>
+                          setFormData((prev) => ({ ...prev, link_url: e.target.value }))
+                        }
+                        placeholder="https://..."
+                      />
+                    </div>
+                  )}
+
+                  {/* Schedule Options */}
+                  <ScheduleDateTimePicker
+                    mode={scheduleMode}
+                    onModeChange={setScheduleMode}
+                    date={scheduledDate}
+                    onDateChange={setScheduledDate}
+                    time={scheduledTime}
+                    onTimeChange={setScheduledTime}
                   />
                 </div>
 
@@ -957,114 +1061,11 @@ export function PostEditorSheet({
             )}
           </div>
 
-          {/* Right Column - Scheduling & Preview */}
-          <div className="w-[320px] border-l bg-muted/30 p-6 overflow-y-auto space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <span>✨</span>
-                <span>Schedule / Post</span>
-              </div>
-
-              {/* Platform Selector */}
-              <div className="space-y-2">
-                <Label className="text-xs">Post To</Label>
-                <PlatformSelector
-                  selected={formData.scheduled_platforms}
-                  onChange={(platforms) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      scheduled_platforms: platforms,
-                    }));
-                  }}
-                />
-              </div>
-
-              {/* Pinterest Board Selector */}
-              {formData.scheduled_platforms.includes("pinterest") &&
-                pinterestConnection && (
-                  <PinterestBoardSelector
-                    selectedBoard={formData.pinterest_board_id}
-                    onBoardChange={(boardId) =>
-                      setFormData((prev) => ({ ...prev, pinterest_board_id: boardId }))
-                    }
-                  />
-                )}
-
-              {/* Instagram Post Type Selector */}
-              {formData.scheduled_platforms.includes("instagram") &&
-                instagramConnection && (
-                  <div className="space-y-2">
-                    <Label className="text-xs">Instagram Post Type</Label>
-                    <div className="flex gap-2">
-                      {[
-                        { value: "feed", label: "Feed", icon: "📷" },
-                        { value: "reel", label: "Reel", icon: "🎬" },
-                        { value: "story", label: "Story", icon: "⏱️" },
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              instagram_post_type: option.value as
-                                | "feed"
-                                | "reel"
-                                | "story",
-                            }))
-                          }
-                          className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md border text-xs transition-colors ${
-                            formData.instagram_post_type === option.value
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-background border-border hover:bg-muted"
-                          }`}
-                        >
-                          <span>{option.icon}</span>
-                          <span>{option.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-              {/* Link URL for Pinterest */}
-              {formData.scheduled_platforms.includes("pinterest") && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Link URL (optional)</Label>
-                  <Input
-                    value={formData.link_url}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, link_url: e.target.value }))
-                    }
-                    placeholder="https://..."
-                  />
-                </div>
-              )}
-
-              {/* Media Upload */}
-              <MediaUploader
-                projectId={projectId}
-                mediaUrl={formData.media_url}
-                mediaType={formData.media_type}
-                onMediaChange={(url, type) =>
-                  setFormData((prev) => ({ ...prev, media_url: url, media_type: type }))
-                }
-              />
-
-              {/* Schedule Options */}
-              <div className="pt-4 border-t">
-                <ScheduleDateTimePicker
-                  mode={scheduleMode}
-                  onModeChange={setScheduleMode}
-                  date={scheduledDate}
-                  onDateChange={setScheduledDate}
-                  time={scheduledTime}
-                  onTimeChange={setScheduledTime}
-                />
-              </div>
-            </div>
-
-            {/* Preview */}
+          {/* Right Column - Preview Only */}
+          <div className="w-[320px] border-l bg-muted/30 p-6 overflow-y-auto flex flex-col">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">
+              Preview
+            </p>
             <SocialPostPreview
               platforms={formData.scheduled_platforms}
               content={content}
