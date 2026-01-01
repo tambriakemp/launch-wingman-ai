@@ -780,17 +780,62 @@ export function PostEditorSheet({
                   />
                 </div>
 
-                {/* Media Upload */}
-                <MediaUploader
-                  projectId={projectId}
-                  mediaUrl={formData.media_url}
-                  mediaType={formData.media_type}
-                  onMediaChange={(url, type) =>
-                    setFormData((prev) => ({ ...prev, media_url: url, media_type: type }))
-                  }
-                />
+                {/* Adjust Tone Section - moved under content */}
+                <div className="space-y-3">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Adjust tone
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => adjustTone("simplify")}
+                      disabled={!!adjusting || !content}
+                    >
+                      {adjusting === "simplify" ? (
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                      ) : (
+                        <Wand2 className="w-3.5 h-3.5 mr-1.5" />
+                      )}
+                      Simplify
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => adjustTone("shorter")}
+                      disabled={!!adjusting || !content}
+                    >
+                      {adjusting === "shorter" && (
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                      )}
+                      Make it shorter
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => adjustTone("calmer")}
+                      disabled={!!adjusting || !content}
+                    >
+                      {adjusting === "calmer" && (
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                      )}
+                      Calmer
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => adjustTone("direct")}
+                      disabled={!!adjusting || !content}
+                    >
+                      {adjusting === "direct" && (
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                      )}
+                      More direct
+                    </Button>
+                  </div>
+                </div>
 
-                {/* Platform Selector Section */}
+                {/* Platform Selector Section - moved above media */}
                 <div className="space-y-4 pt-4 border-t">
                   <div className="flex items-center gap-2 text-sm font-medium">
                     <span>✨</span>
@@ -872,17 +917,27 @@ export function PostEditorSheet({
                       />
                     </div>
                   )}
-
-                  {/* Schedule Options */}
-                  <ScheduleDateTimePicker
-                    mode={scheduleMode}
-                    onModeChange={setScheduleMode}
-                    date={scheduledDate}
-                    onDateChange={setScheduledDate}
-                    time={scheduledTime}
-                    onTimeChange={setScheduledTime}
-                  />
                 </div>
+
+                {/* Media Upload - now after platform selector */}
+                <MediaUploader
+                  projectId={projectId}
+                  mediaUrl={formData.media_url}
+                  mediaType={formData.media_type}
+                  onMediaChange={(url, type) =>
+                    setFormData((prev) => ({ ...prev, media_url: url, media_type: type }))
+                  }
+                />
+
+                {/* Schedule Options */}
+                <ScheduleDateTimePicker
+                  mode={scheduleMode}
+                  onModeChange={setScheduleMode}
+                  date={scheduledDate}
+                  onDateChange={setScheduledDate}
+                  time={scheduledTime}
+                  onTimeChange={setScheduledTime}
+                />
 
                 {/* Add to Launch Timeline Section */}
                 <Collapsible open={timelineOpen} onOpenChange={setTimelineOpen}>
@@ -967,96 +1022,6 @@ export function PostEditorSheet({
                     )}
                   </CollapsibleContent>
                 </Collapsible>
-
-                {/* Adjust Tone Section */}
-                <div className="space-y-3">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Adjust tone
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => adjustTone("simplify")}
-                      disabled={!!adjusting || !content}
-                    >
-                      {adjusting === "simplify" ? (
-                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                      ) : (
-                        <Wand2 className="w-3.5 h-3.5 mr-1.5" />
-                      )}
-                      Simplify
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => adjustTone("shorter")}
-                      disabled={!!adjusting || !content}
-                    >
-                      {adjusting === "shorter" && (
-                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                      )}
-                      Make it shorter
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => adjustTone("calmer")}
-                      disabled={!!adjusting || !content}
-                    >
-                      {adjusting === "calmer" && (
-                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                      )}
-                      Calmer
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => adjustTone("direct")}
-                      disabled={!!adjusting || !content}
-                    >
-                      {adjusting === "direct" && (
-                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                      )}
-                      More direct
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Copy & Save Draft */}
-                <div className="flex items-center gap-2 pt-4 border-t border-border">
-                  <Button variant="outline" onClick={handleCopy} disabled={!content}>
-                    {copied ? (
-                      <Check className="w-4 h-4 mr-2" />
-                    ) : (
-                      <Copy className="w-4 h-4 mr-2" />
-                    )}
-                    {copied ? "Copied" : "Copy"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleSaveDraft}
-                    disabled={!content.trim() || saving}
-                  >
-                    {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Save draft
-                  </Button>
-                  {isEditingExisting && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleDelete}
-                      disabled={deleting}
-                      className="text-muted-foreground hover:text-destructive ml-auto"
-                    >
-                      {deleting ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </Button>
-                  )}
-                </div>
               </>
             )}
           </div>
@@ -1083,6 +1048,37 @@ export function PostEditorSheet({
             <Button variant="outline" onClick={handleClose}>
               Close
             </Button>
+            <Button variant="outline" onClick={handleCopy} disabled={!content}>
+              {copied ? (
+                <Check className="w-4 h-4 mr-2" />
+              ) : (
+                <Copy className="w-4 h-4 mr-2" />
+              )}
+              {copied ? "Copied" : "Copy"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleSaveDraft}
+              disabled={!content.trim() || saving}
+            >
+              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Save draft
+            </Button>
+            {isEditingExisting && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                {deleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+              </Button>
+            )}
             {isAlreadyScheduled && (
               <Button
                 variant="destructive"
