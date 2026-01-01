@@ -249,7 +249,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
           </p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col items-end gap-2">
           <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as ViewMode)}>
             <ToggleGroupItem value="timeline" aria-label="Timeline view" className="gap-1.5">
               <List className="w-4 h-4" />
@@ -261,12 +261,10 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
             </ToggleGroupItem>
           </ToggleGroup>
           
-          {viewMode === "timeline" && (
-            <Button size="sm" onClick={handleCreateNewPost}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Post
-            </Button>
-          )}
+          <Button size="sm" onClick={handleCreateNewPost}>
+            <Plus className="w-4 h-4 mr-2" />
+            Create Post
+          </Button>
         </div>
       </div>
 

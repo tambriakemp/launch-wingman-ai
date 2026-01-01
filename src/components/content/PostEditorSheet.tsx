@@ -836,11 +836,11 @@ export function PostEditorSheet({
                 </div>
 
                 {/* Platform Selector Section - moved above media */}
-                <div className="space-y-4 pt-4 border-t">
-                  <div className="flex items-center gap-2 text-sm font-medium">
+                <div className="space-y-4 pt-6 mt-4 border-t">
+                  <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                     <span>✨</span>
                     <span>Schedule / Post</span>
-                  </div>
+                  </h3>
 
                   {/* Platform Selector */}
                   <div className="space-y-2">
@@ -1008,6 +1008,26 @@ export function PostEditorSheet({
                         </Select>
                       </div>
                     </div>
+
+                    {/* Content Type Selector */}
+                    <div className="space-y-2">
+                      <Label htmlFor="content-type">Content Type</Label>
+                      <Select
+                        value={contentType}
+                        onValueChange={setContentType}
+                      >
+                        <SelectTrigger id="content-type">
+                          <SelectValue placeholder="Select content type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="general">General posts</SelectItem>
+                          <SelectItem value="stories">Stories / prompts</SelectItem>
+                          <SelectItem value="offer">Offer explanation</SelectItem>
+                          <SelectItem value="behind-the-scenes">Behind-the-scenes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     {!isAssignedToTimeline && (
                       <Button
                         onClick={handleAddToTimeline}
