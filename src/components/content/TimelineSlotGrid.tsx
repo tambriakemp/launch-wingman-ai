@@ -425,22 +425,10 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                           </DropdownMenuTrigger>
                                           <DropdownMenuContent align="end" className="min-w-[160px]">
                                             <DropdownMenuItem
-                                              onClick={() =>
-                                                onWritePost({
-                                                  id: item.id,
-                                                  title: item.title,
-                                                  description: item.description,
-                                                  contentType: item.content_type,
-                                                })
-                                              }
-                                            >
-                                              <Pencil className="w-4 h-4 mr-2" />
-                                              Write / Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem
                                               onClick={() => {
-                                                if (isSubscribed) {
+                                                if (item.status === "completed") {
+                                                  handleOpenEditor(item);
+                                                } else if (isSubscribed) {
                                                   handleOpenEditor(item);
                                                 } else {
                                                   setShowUpgradeDialog(true);
@@ -448,8 +436,8 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                               }}
                                             >
                                               <CalendarClock className="w-4 h-4 mr-2" />
-                                              Schedule
-                                              {!isSubscribed && (
+                                              {item.status === "completed" ? "View Posted" : "Schedule / Edit"}
+                                              {item.status !== "completed" && !isSubscribed && (
                                                 <Crown className="w-3.5 h-3.5 ml-auto text-yellow-500" />
                                               )}
                                             </DropdownMenuItem>
