@@ -353,7 +353,8 @@ export function PostEditorSheet({
     setGeneratingIdea(true);
     try {
       // Use title if available, otherwise use a generic prompt based on content type
-      const ideaTitle = title.trim() || `Create a ${CATEGORY_LABELS[contentType] || "general"} post`;
+      const hasTitle = title.trim().length > 0;
+      const ideaTitle = hasTitle ? title.trim() : `Create a ${CATEGORY_LABELS[contentType] || "general"} post`;
       
       const { data, error } = await supabase.functions.invoke("generate-content-draft", {
         body: {
@@ -368,6 +369,7 @@ export function PostEditorSheet({
           funnelType,
           audienceData,
           contentType,
+          generateTitle: !hasTitle,
         },
       });
 
@@ -376,6 +378,11 @@ export function PostEditorSheet({
       if (data?.draft) {
         setContent(data.draft);
         setHasGeneratedIdea(true);
+      }
+      
+      // Set the generated title if one was returned
+      if (data?.title && !hasTitle) {
+        setTitle(data.title);
       }
     } catch (error) {
       console.error("Error generating idea:", error);

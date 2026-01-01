@@ -198,9 +198,9 @@ serve(async (req) => {
   }
 
   try {
-    const { projectId, talkingPoint, existingDraft, adjustment, currentPhase, funnelType, audienceData, contentType } = await req.json();
+    const { projectId, talkingPoint, existingDraft, adjustment, currentPhase, funnelType, audienceData, contentType, generateTitle } = await req.json();
 
-    console.log("Generating content draft:", { projectId, hasExistingDraft: !!existingDraft, adjustment, contentType });
+    console.log("Generating content draft:", { projectId, hasExistingDraft: !!existingDraft, adjustment, contentType, generateTitle });
 
     const categoryConfig = CATEGORY_DRAFTING[contentType] || CATEGORY_DRAFTING.general;
 
@@ -291,7 +291,13 @@ Write 2-4 short paragraphs that feel genuine and conversational.
 The post should be adaptable - something the creator can personalize.
 Stay true to the category's intent: "${categoryConfig.intent}"
 
-Return ONLY the draft text, no explanations or formatting instructions.`;
+${generateTitle ? `
+IMPORTANT: Also generate a compelling, concise title for this post (5-10 words max).
+Return your response in this exact format:
+TITLE: [your generated title here]
+CONTENT:
+[your draft content here]
+` : "Return ONLY the draft text, no explanations or formatting instructions."}`;
     } else {
       throw new Error("Either talkingPoint or existingDraft with adjustment is required");
     }
@@ -328,7 +334,24 @@ Return ONLY the draft text, no explanations or formatting instructions.`;
 
     console.log("Generated draft length:", draft.length);
 
-    return new Response(JSON.stringify({ draft: draft.trim() }), {
+    // Parse title and content if generateTitle was requested
+    let generatedTitle: string | undefined;
+    let finalDraft = draft.trim();
+    
+    if (generateTitle && draft.includes("TITLE:") && draft.includes("CONTENT:")) {
+      const titleMatch = draft.match(/TITLE:\s*(.+?)(?:\n|CONTENT:)/s);
+      const contentMatch = draft.match(/CONTENT:\s*([\s\S]+)/);
+      
+      if (titleMatch && contentMatch) {
+        generatedTitle = titleMatch[1].trim();
+        finalDraft = contentMatch[1].trim();
+      }
+    }
+
+    return new Response(JSON.stringify({ 
+      draft: finalDraft,
+      ...(generatedTitle && { title: generatedTitle })
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
