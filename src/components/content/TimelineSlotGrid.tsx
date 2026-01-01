@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronRight, Pencil, MoreHorizontal, Trash2, CalendarClock, Clock, CheckCircle2, Crown, Plus, List, CalendarDays } from "lucide-react";
+import { ChevronDown, ChevronRight, MoreHorizontal, Trash2, CalendarClock, Clock, CheckCircle2, Crown, Plus, List, CalendarDays } from "lucide-react";
+import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -100,6 +101,9 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
   const [selectedItem, setSelectedItem] = useState<ContentPlannerItem | null>(null);
   const [isCreateMode, setIsCreateMode] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: plannerItems = [], isLoading } = useQuery({
@@ -177,20 +181,32 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
     return Math.round((completed / items.length) * 100);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (id: string) => {
+    setItemToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+    
+    setIsDeleting(true);
     try {
       const { error } = await supabase
         .from("content_planner")
         .delete()
-        .eq("id", id);
+        .eq("id", itemToDelete);
       
       if (error) throw error;
       
       queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
       toast.success("Removed from timeline");
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
     } catch (error) {
       console.error("Error deleting:", error);
       toast.error("Failed to remove");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -444,7 +460,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem
                                               className="text-destructive"
-                                              onClick={() => handleDelete(item.id)}
+                                              onClick={() => handleDeleteClick(item.id)}
                                             >
                                               <Trash2 className="w-4 h-4 mr-2" />
                                               Remove
@@ -498,6 +514,16 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
         open={showUpgradeDialog} 
         onOpenChange={setShowUpgradeDialog} 
         feature="Social Media Scheduling"
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        title="Remove from Timeline"
+        description="Are you sure you want to remove this content from your timeline? This action cannot be undone."
+        isDeleting={isDeleting}
       />
     </div>
   );
