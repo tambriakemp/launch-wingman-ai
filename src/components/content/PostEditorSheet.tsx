@@ -565,11 +565,50 @@ export function PostEditorSheet({
     }
   };
 
+  // Validate required fields before posting
+  const validatePostRequirements = (platform: string): boolean => {
+    const errors: string[] = [];
+    
+    // Content is always required
+    if (!content?.trim()) {
+      errors.push("Post content is required");
+    }
+    
+    // Platform-specific validations
+    if (platform === "pinterest") {
+      if (!formData.media_url) {
+        errors.push("Pinterest requires an image");
+      }
+      if (!formData.pinterest_board_id) {
+        errors.push("Please select a Pinterest board");
+      }
+    } else if (platform === "instagram") {
+      if (!formData.media_url) {
+        errors.push("Instagram requires an image or video");
+      }
+      if (!instagramConnection) {
+        errors.push("Please connect your Instagram account first");
+      }
+    }
+    
+    if (errors.length > 0) {
+      errors.forEach((error) => toast.error(error));
+      return false;
+    }
+    
+    return true;
+  };
+
   const handlePostNow = async () => {
     const selectedPlatform = formData.scheduled_platforms[0];
 
     if (!selectedPlatform) {
       toast.error("Please select a platform to post");
+      return;
+    }
+    
+    // Validate requirements before posting
+    if (!validatePostRequirements(selectedPlatform)) {
       return;
     }
 
@@ -591,6 +630,13 @@ export function PostEditorSheet({
       toast.error("Please select at least one platform");
       return;
     }
+    
+    // Validate requirements for the selected platform
+    const selectedPlatform = formData.scheduled_platforms[0];
+    if (!validatePostRequirements(selectedPlatform)) {
+      return;
+    }
+    
     if (!user) return;
 
     // Ensure we have a timeline item first
