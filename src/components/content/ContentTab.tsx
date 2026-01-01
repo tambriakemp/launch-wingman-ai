@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Lightbulb, CalendarDays, FileText } from "lucide-react";
+import { Lightbulb, CalendarDays, FileText, List } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ContentContextHeader } from "./ContentContextHeader";
@@ -10,6 +10,7 @@ import { SavedIdeasLink } from "./SavedIdeasLink";
 import { SavedIdeasSheet } from "./SavedIdeasSheet";
 import { PostEditorSheet } from "./PostEditorSheet";
 import { TimelineSlotGrid } from "./TimelineSlotGrid";
+import { ContentCalendarView } from "./ContentCalendarView";
 import { SalesPageCopyTab } from "./sales-copy";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { cn } from "@/lib/utils";
@@ -18,7 +19,7 @@ import type { SavedItem } from "./SavedIdeasSection";
 
 export type ContentType = "general" | "stories" | "offer" | "behind-the-scenes";
 
-type ContentViewTab = "ideas" | "my-timeline" | "sales-copy";
+type ContentViewTab = "ideas" | "my-timeline" | "social-schedule" | "sales-copy";
 
 interface TalkingPoint {
   id: string;
@@ -137,8 +138,20 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
               : "border-transparent text-muted-foreground hover:text-foreground"
           )}
         >
-          <CalendarDays className="w-4 h-4" />
+          <List className="w-4 h-4" />
           Launch Content Timeline
+        </button>
+        <button
+          onClick={() => setActiveTab("social-schedule")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
+            activeTab === "social-schedule"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <CalendarDays className="w-4 h-4" />
+          Social Media Schedule
         </button>
         <button
           onClick={() => setActiveTab("sales-copy")}
@@ -189,6 +202,38 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
           projectId={projectId}
           onWritePost={handleTimelineWritePost}
         />
+      ) : activeTab === "social-schedule" ? (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold text-foreground">Social Media Schedule</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              View scheduled content on your calendar. Click any day to manage posts.
+            </p>
+          </div>
+          <ContentCalendarView
+            projectId={projectId}
+            onCreatePost={() => {
+              setSelectedTalkingPoint(null);
+              setPostEditorOpen(true);
+            }}
+            onEditPost={(item) => {
+              handleTimelineWritePost({
+                id: item.id,
+                title: item.title,
+                description: item.description,
+                contentType: item.content_type,
+              });
+            }}
+            onSchedulePost={(item) => {
+              handleTimelineWritePost({
+                id: item.id,
+                title: item.title,
+                description: item.description,
+                contentType: item.content_type,
+              });
+            }}
+          />
+        </div>
       ) : (
         <SalesPageCopyTab projectId={projectId} />
       )}
