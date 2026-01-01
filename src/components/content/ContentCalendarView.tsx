@@ -151,15 +151,9 @@ export const ContentCalendarView = ({
             {format(currentMonth, "MMMM yyyy")}
           </h2>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={goToToday}>
-            Today
-          </Button>
-          <Button size="sm" onClick={() => onCreatePost()}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create Post
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" onClick={goToToday}>
+          Today
+        </Button>
       </div>
 
       {/* Calendar Grid */}
