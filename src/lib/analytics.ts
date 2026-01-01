@@ -74,3 +74,16 @@ export const trackAIAssist = (feature: string) => {
 export const trackTimelineSuggestion = (action: 'generate' | 'accept' | 'regenerate') => {
   trackEvent('Timeline', 'suggestion', action);
 };
+
+// Social post events
+export const trackSocialPostPublish = (platform: string, postType?: string) => {
+  trackEvent('Social', 'publish', postType ? `${platform}_${postType}` : platform);
+};
+
+export const trackSocialPostSchedule = (platform: string) => {
+  trackEvent('Social', 'schedule', platform);
+};
+
+export const trackSocialPostScheduleCancel = (platform: string) => {
+  trackEvent('Social', 'schedule_cancel', platform);
+};
