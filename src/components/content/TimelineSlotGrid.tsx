@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronRight, MoreHorizontal, Trash2, CalendarClock, Clock, CheckCircle2, Crown, Plus, Sparkles, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronRight, MoreHorizontal, Trash2, CalendarClock, Clock, CheckCircle2, Crown, Plus, Sparkles, Loader2, Eye } from "lucide-react";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
 import { PostEditorSheet } from "./PostEditorSheet";
+import { SuggestionViewDialog } from "./SuggestionViewDialog";
 import { getDayTemplates, TimelineTemplate } from "@/data/timelineTemplates";
 
 import { format } from "date-fns";
@@ -49,6 +49,7 @@ interface ContentPlannerItem {
 }
 
 interface GeneratedSuggestion {
+  id?: string;
   title: string;
   description: string;
   template_type: string;
@@ -109,14 +110,20 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
   const [isDeleting, setIsDeleting] = useState(false);
   const queryClient = useQueryClient();
   
-  // State for AI-generated suggestions
-  const [suggestions, setSuggestions] = useState<Record<string, GeneratedSuggestion>>({});
+  // State for AI-generated suggestions (local state for immediate UI updates)
+  const [localSuggestions, setLocalSuggestions] = useState<Record<string, GeneratedSuggestion>>({});
   const [loadingSuggestions, setLoadingSuggestions] = useState<Record<string, boolean>>({});
   const [generatingPhase, setGeneratingPhase] = useState<string | null>(null);
   
   // State for creating from suggestion
   const [creatingFromSuggestion, setCreatingFromSuggestion] = useState<string | null>(null);
+  
+  // State for view dialog
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [selectedSuggestionKey, setSelectedSuggestionKey] = useState<string | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<TimelineTemplate | null>(null);
 
+  // Fetch existing content planner items
   const { data: plannerItems = [], isLoading } = useQuery({
     queryKey: ["content-planner", projectId],
     queryFn: async () => {
@@ -128,6 +135,34 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
       if (error) throw error;
       return data as ContentPlannerItem[];
     },
+  });
+
+  // Fetch persisted suggestions from database
+  const { data: dbSuggestions = [] } = useQuery({
+    queryKey: ["timeline-suggestions", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("timeline_suggestions")
+        .select("*")
+        .eq("project_id", projectId);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Merge DB suggestions with local state
+  const suggestions = { ...localSuggestions };
+  dbSuggestions.forEach((s: any) => {
+    const key = `${s.phase}-${s.day_number}-${s.time_of_day}`;
+    if (!suggestions[key]) {
+      suggestions[key] = {
+        id: s.id,
+        title: s.title,
+        description: s.description,
+        template_type: s.template_type,
+        content_type: s.content_type,
+      };
+    }
   });
 
   const handleOpenEditor = (item: ContentPlannerItem) => {
@@ -199,8 +234,13 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
     return `${template.phase}-${template.day_number}-${template.time_of_day}`;
   };
 
-  // Generate AI suggestion for a single template
+  // Generate AI suggestion for a single template and save to DB
   const generateSuggestion = async (template: TimelineTemplate) => {
+    if (!user) {
+      toast.error("You must be logged in");
+      return;
+    }
+    
     const key = getSuggestionKey(template);
     setLoadingSuggestions(prev => ({ ...prev, [key]: true }));
     
@@ -211,7 +251,30 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
       
       if (error) throw error;
       
-      setSuggestions(prev => ({ ...prev, [key]: data }));
+      // Save to database (upsert)
+      const { error: dbError } = await supabase
+        .from("timeline_suggestions")
+        .upsert({
+          project_id: projectId,
+          user_id: user.id,
+          phase: template.phase,
+          day_number: template.day_number,
+          time_of_day: template.time_of_day,
+          template_type: data.template_type,
+          content_type: data.content_type,
+          title: data.title,
+          description: data.description,
+        }, { onConflict: 'project_id,phase,day_number,time_of_day' });
+      
+      if (dbError) {
+        console.error("Error saving suggestion to DB:", dbError);
+      }
+      
+      // Update local state for immediate UI feedback
+      setLocalSuggestions(prev => ({ ...prev, [key]: data }));
+      
+      // Refresh DB suggestions
+      queryClient.invalidateQueries({ queryKey: ["timeline-suggestions", projectId] });
     } catch (error) {
       console.error("Error generating suggestion:", error);
       toast.error("Failed to generate suggestion");
@@ -280,14 +343,27 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
       
       if (error) throw error;
       
-      // Clear the suggestion since it's now a real item
-      setSuggestions(prev => {
+      // Delete the suggestion from DB since it's now a real item
+      await supabase
+        .from("timeline_suggestions")
+        .delete()
+        .eq("project_id", projectId)
+        .eq("phase", template.phase)
+        .eq("day_number", template.day_number)
+        .eq("time_of_day", template.time_of_day);
+      
+      // Clear local state
+      setLocalSuggestions(prev => {
         const next = { ...prev };
         delete next[key];
         return next;
       });
       
+      // Close view dialog if open
+      setViewDialogOpen(false);
+      
       queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["timeline-suggestions", projectId] });
       toast.success("Added to timeline");
     } catch (error) {
       console.error("Error creating from suggestion:", error);
@@ -681,9 +757,23 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                                 <Button
                                                   variant="ghost"
                                                   size="sm"
+                                                  onClick={() => {
+                                                    setSelectedSuggestionKey(key);
+                                                    setSelectedTemplate(template);
+                                                    setViewDialogOpen(true);
+                                                  }}
+                                                  className="h-8 px-2"
+                                                  title="View full suggestion"
+                                                >
+                                                  <Eye className="w-3.5 h-3.5" />
+                                                </Button>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
                                                   onClick={() => generateSuggestion(template)}
                                                   disabled={isLoading}
                                                   className="h-8 px-2"
+                                                  title="Regenerate"
                                                 >
                                                   <Sparkles className="w-3.5 h-3.5" />
                                                 </Button>
@@ -778,6 +868,30 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
         title="Remove from Timeline"
         description="Are you sure you want to remove this content from your timeline? This action cannot be undone."
         isDeleting={isDeleting}
+      />
+
+      {/* Suggestion View Dialog */}
+      <SuggestionViewDialog
+        open={viewDialogOpen}
+        onOpenChange={setViewDialogOpen}
+        suggestion={selectedSuggestionKey ? suggestions[selectedSuggestionKey] : null}
+        templateInfo={selectedTemplate ? {
+          phase: selectedTemplate.phase,
+          day_number: selectedTemplate.day_number,
+          time_of_day: selectedTemplate.time_of_day,
+        } : undefined}
+        onAdd={() => {
+          if (selectedTemplate && selectedSuggestionKey && suggestions[selectedSuggestionKey]) {
+            createFromSuggestion(selectedTemplate, suggestions[selectedSuggestionKey]);
+          }
+        }}
+        onRegenerate={() => {
+          if (selectedTemplate) {
+            generateSuggestion(selectedTemplate);
+          }
+        }}
+        isAdding={creatingFromSuggestion === selectedSuggestionKey}
+        isRegenerating={selectedSuggestionKey ? loadingSuggestions[selectedSuggestionKey] : false}
       />
     </div>
   );

@@ -1571,6 +1571,59 @@ export type Database = {
           },
         ]
       }
+      timeline_suggestions: {
+        Row: {
+          content_type: string
+          created_at: string
+          day_number: number
+          description: string
+          id: string
+          phase: string
+          project_id: string
+          template_type: string
+          time_of_day: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          day_number: number
+          description: string
+          id?: string
+          phase: string
+          project_id: string
+          template_type: string
+          time_of_day: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          day_number?: number
+          description?: string
+          id?: string
+          phase?: string
+          project_id?: string
+          template_type?: string
+          time_of_day?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeline_suggestions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_activity: {
         Row: {
           created_at: string
