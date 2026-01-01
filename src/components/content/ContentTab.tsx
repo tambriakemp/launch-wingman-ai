@@ -113,6 +113,14 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
         />
       </div>
 
+      {/* Saved Ideas Link - accessible from all tabs */}
+      <div className="flex justify-end">
+        <SavedIdeasLink 
+          projectId={projectId} 
+          onOpen={() => setSavedSheetOpen(true)} 
+        />
+      </div>
+
       {/* Tab Navigation */}
       <div className="flex items-center gap-1 border-b border-border">
         <button
