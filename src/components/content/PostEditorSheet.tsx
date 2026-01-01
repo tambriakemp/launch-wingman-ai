@@ -154,6 +154,8 @@ export function PostEditorSheet({
 
   // Loading states
   const [generating, setGenerating] = useState(false);
+  const [generatingIdea, setGeneratingIdea] = useState(false);
+  const [hasGeneratedIdea, setHasGeneratedIdea] = useState(false);
   const [adjusting, setAdjusting] = useState<ToneAdjustment | null>(null);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -224,6 +226,9 @@ export function PostEditorSheet({
   // Initialize form when opening
   useEffect(() => {
     if (!open) return;
+
+    // Reset generation state when opening
+    setHasGeneratedIdea(false);
 
     if (existingItem) {
       // Editing existing item
@@ -341,6 +346,41 @@ export function PostEditorSheet({
       setContent(`${talkingPoint.description}\n\nShare your thoughts on this...`);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleGenerateIdea = async () => {
+    if (!title.trim()) return;
+
+    setGeneratingIdea(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-content-draft", {
+        body: {
+          projectId,
+          talkingPoint: {
+            id: "manual",
+            title: title,
+            description: title,
+            contentType: contentType,
+          },
+          currentPhase,
+          funnelType,
+          audienceData,
+          contentType,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.draft) {
+        setContent(data.draft);
+        setHasGeneratedIdea(true);
+      }
+    } catch (error) {
+      console.error("Error generating idea:", error);
+      toast.error("Failed to generate content");
+    } finally {
+      setGeneratingIdea(false);
     }
   };
 
@@ -897,6 +937,24 @@ export function PostEditorSheet({
                     disabled={isPostedContent}
                     readOnly={isPostedContent}
                   />
+                  
+                  {/* Generate Ideas Button */}
+                  {!isPostedContent && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGenerateIdea}
+                      disabled={generatingIdea || !title.trim()}
+                      className="mt-2"
+                    >
+                      {generatingIdea ? (
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                      ) : (
+                        <Wand2 className="w-3.5 h-3.5 mr-1.5" />
+                      )}
+                      {hasGeneratedIdea ? "Regenerate" : "Generate Ideas"}
+                    </Button>
+                  )}
                 </div>
 
                 {/* Adjust Tone Section - hidden for posted content */}

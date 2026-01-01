@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Lightbulb, CalendarDays, FileText, List } from "lucide-react";
+import { CalendarDays, FileText, List } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ContentContextHeader } from "./ContentContextHeader";
-import { ContentTypeFilter } from "./ContentTypeFilter";
-import { TalkingPointsSection } from "./TalkingPointsSection";
 import { SavedIdeasLink } from "./SavedIdeasLink";
 import { SavedIdeasSheet } from "./SavedIdeasSheet";
 import { PostEditorSheet } from "./PostEditorSheet";
@@ -15,12 +13,11 @@ import { SalesPageCopyTab } from "./sales-copy";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import type { SavedItem } from "./SavedIdeasSection";
 
 export type ContentType = "general" | "stories" | "offer" | "behind-the-scenes";
 
-type ContentViewTab = "ideas" | "my-timeline" | "social-schedule" | "sales-copy";
+type ContentViewTab = "my-timeline" | "social-schedule" | "sales-copy";
 
 interface TalkingPoint {
   id: string;
@@ -39,8 +36,7 @@ interface ContentTabProps {
 }
 
 export const ContentTab = ({ projectId }: ContentTabProps) => {
-  const [activeTab, setActiveTab] = useState<ContentViewTab>("ideas");
-  const [selectedContentType, setSelectedContentType] = useState<ContentType>("general");
+  const [activeTab, setActiveTab] = useState<ContentViewTab>("my-timeline");
   const [postEditorOpen, setPostEditorOpen] = useState(false);
   const [savedSheetOpen, setSavedSheetOpen] = useState(false);
   const [selectedTalkingPoint, setSelectedTalkingPoint] = useState<TalkingPoint | null>(null);
@@ -120,18 +116,6 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
       {/* Tab Navigation */}
       <div className="flex items-center gap-1 border-b border-border">
         <button
-          onClick={() => setActiveTab("ideas")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
-            activeTab === "ideas"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Lightbulb className="w-4 h-4" />
-          Ideas
-        </button>
-        <button
           onClick={() => setActiveTab("my-timeline")}
           className={cn(
             "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
@@ -170,36 +154,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
       </div>
 
       {/* Tab Content */}
-      {activeTab === "ideas" ? (
-        <div className="space-y-12">
-          {/* Section B: What to Say Next (Primary Focus) */}
-          <div className="space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <h2 className="text-lg font-medium text-foreground">What to say next</h2>
-              {/* Saved ideas link - top right of ideas section */}
-              <SavedIdeasLink 
-                projectId={projectId} 
-                onOpen={() => setSavedSheetOpen(true)} 
-              />
-            </div>
-            
-            {/* Content type filter row */}
-            <ContentTypeFilter 
-              selected={selectedContentType} 
-              onChange={setSelectedContentType} 
-            />
-
-            <TalkingPointsSection
-              projectId={projectId}
-              contentType={selectedContentType}
-              currentPhase={currentPhase}
-              funnelType={funnelType}
-              audienceData={funnel}
-              onTurnIntoPost={handleTurnIntoPost}
-            />
-          </div>
-        </div>
-      ) : activeTab === "my-timeline" ? (
+      {activeTab === "my-timeline" ? (
         <TimelineSlotGrid
           projectId={projectId}
           onWritePost={handleTimelineWritePost}
