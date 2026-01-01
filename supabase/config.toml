@@ -95,3 +95,6 @@ verify_jwt = false
 
 [functions.post-to-instagram]
 verify_jwt = false
+
+[functions.generate-timeline-suggestions]
+verify_jwt = false
