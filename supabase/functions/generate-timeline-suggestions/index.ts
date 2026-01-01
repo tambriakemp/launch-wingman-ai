@@ -16,83 +16,121 @@ interface TimelineTemplate {
   description_template: string;
 }
 
-// Fetch project context for personalization
+// Fetch project context for personalization - comprehensive data from planning & messaging phases
 async function fetchProjectContext(supabase: any, projectId: string) {
-  console.log("Fetching project context for:", projectId);
+  console.log("Fetching comprehensive project context for:", projectId);
   
   const [funnelResult, offersResult, projectResult, tasksResult] = await Promise.all([
     supabase.from("funnels").select("*").eq("project_id", projectId).maybeSingle(),
-    supabase.from("offers").select("*").eq("project_id", projectId).eq("slot_type", "core").maybeSingle(),
+    supabase.from("offers").select("*").eq("project_id", projectId),
     supabase.from("projects").select("*").eq("id", projectId).maybeSingle(),
     supabase.from("project_tasks").select("*").eq("project_id", projectId).eq("status", "completed"),
   ]);
 
   return {
     funnel: funnelResult.data,
-    offer: offersResult.data,
+    offers: offersResult.data || [],
     project: projectResult.data,
     completedTasks: tasksResult.data || [],
   };
 }
 
-// Build context string from project data
+// Build comprehensive context string from project data
 function buildContextString(context: Record<string, any>): string {
   const parts: string[] = [];
 
+  // Project basics
   if (context.project?.name) {
-    parts.push(`Project: ${context.project.name}`);
+    parts.push(`**Project Name:** ${context.project.name}`);
   }
 
   if (context.project?.transformation_statement) {
-    parts.push(`Transformation: ${context.project.transformation_statement}`);
+    parts.push(`**Main Transformation Statement:** ${context.project.transformation_statement}`);
   }
 
+  // Funnel / Audience data (from Planning & Messaging phases)
   if (context.funnel) {
-    if (context.funnel.target_audience) {
-      parts.push(`Target Audience: ${context.funnel.target_audience}`);
+    const f = context.funnel;
+    
+    if (f.niche) {
+      parts.push(`**Niche:** ${f.niche}`);
     }
-    if (context.funnel.primary_pain_point) {
-      parts.push(`Primary Pain Point: ${context.funnel.primary_pain_point}`);
+    if (f.target_audience) {
+      parts.push(`**Target Audience:** ${f.target_audience}`);
     }
-    if (context.funnel.desired_outcome) {
-      parts.push(`Desired Outcome: ${context.funnel.desired_outcome}`);
+    if (f.primary_pain_point) {
+      parts.push(`**Primary Pain Point:** ${f.primary_pain_point}`);
     }
-    if (context.funnel.niche) {
-      parts.push(`Niche: ${context.funnel.niche}`);
+    if (f.desired_outcome) {
+      parts.push(`**Desired Outcome/Dream Result:** ${f.desired_outcome}`);
     }
-    if (context.funnel.problem_statement) {
-      parts.push(`Problem Statement: ${context.funnel.problem_statement}`);
+    if (f.problem_statement) {
+      parts.push(`**Problem Statement:** ${f.problem_statement}`);
+    }
+    
+    // Pain symptoms from messaging phase
+    if (f.pain_symptoms && Array.isArray(f.pain_symptoms) && f.pain_symptoms.length > 0) {
+      parts.push(`**Pain Symptoms (what audience experiences):**\n${f.pain_symptoms.map((s: any) => `- ${s.symptom || s}`).join('\n')}`);
+    }
+    
+    // Sub-audiences from messaging phase
+    if (f.sub_audiences && Array.isArray(f.sub_audiences) && f.sub_audiences.length > 0) {
+      parts.push(`**Sub-Audiences:**\n${f.sub_audiences.map((s: any) => `- ${s.name || s.title || s}`).join('\n')}`);
+    }
+    
+    // Likelihood elements (what makes transformation believable)
+    if (f.likelihood_elements && Array.isArray(f.likelihood_elements) && f.likelihood_elements.length > 0) {
+      parts.push(`**What Makes Success Likely:**\n${f.likelihood_elements.map((e: any) => `- ${e.element || e}`).join('\n')}`);
+    }
+    
+    // Time/effort elements
+    if (f.time_effort_elements && Array.isArray(f.time_effort_elements) && f.time_effort_elements.length > 0) {
+      parts.push(`**Time/Effort Messaging:**\n${f.time_effort_elements.map((e: any) => `- ${e.element || e}`).join('\n')}`);
+    }
+    
+    if (f.main_objections) {
+      parts.push(`**Main Objections to Address:** ${f.main_objections}`);
     }
   }
 
-  if (context.offer) {
-    if (context.offer.title) {
-      parts.push(`Offer: ${context.offer.title}`);
-    }
-    if (context.offer.description) {
-      parts.push(`Offer Description: ${context.offer.description}`);
-    }
-    if (context.offer.transformation_statement) {
-      parts.push(`Offer Transformation: ${context.offer.transformation_statement}`);
+  // Offers (core and additional)
+  const offers = context.offers || [];
+  if (offers.length > 0) {
+    const coreOffer = offers.find((o: any) => o.slot_type === 'core');
+    
+    if (coreOffer) {
+      parts.push(`\n**CORE OFFER:**`);
+      if (coreOffer.title) parts.push(`- Title: ${coreOffer.title}`);
+      if (coreOffer.description) parts.push(`- Description: ${coreOffer.description}`);
+      if (coreOffer.transformation_statement) parts.push(`- Transformation: ${coreOffer.transformation_statement}`);
+      if (coreOffer.price) parts.push(`- Price: $${coreOffer.price}`);
+      if (coreOffer.main_deliverables && coreOffer.main_deliverables.length > 0) {
+        parts.push(`- Main Deliverables: ${coreOffer.main_deliverables.join(', ')}`);
+      }
     }
   }
 
-  // Include relevant completed task inputs
+  // Completed task inputs (captures user's specific answers from planning/messaging)
   const relevantTasks = context.completedTasks?.filter((t: any) => 
     t.input_data && Object.keys(t.input_data).length > 0
   ) || [];
   
   if (relevantTasks.length > 0) {
-    const taskContext = relevantTasks.slice(0, 5).map((t: any) => {
-      const inputs = Object.entries(t.input_data || {})
-        .filter(([_, v]) => v && String(v).length > 0)
-        .map(([k, v]) => `${k}: ${String(v).slice(0, 200)}`)
-        .join("; ");
-      return inputs;
-    }).filter(Boolean).join("\n");
+    const taskContext: string[] = [];
     
-    if (taskContext) {
-      parts.push(`Additional Context from completed tasks:\n${taskContext}`);
+    relevantTasks.forEach((t: any) => {
+      const inputs = t.input_data || {};
+      Object.entries(inputs).forEach(([key, value]) => {
+        if (value && String(value).trim().length > 0) {
+          // Clean up key name for readability
+          const cleanKey = key.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+          taskContext.push(`- ${cleanKey}: ${String(value).slice(0, 300)}`);
+        }
+      });
+    });
+    
+    if (taskContext.length > 0) {
+      parts.push(`\n**User's Custom Inputs from Completed Tasks:**\n${taskContext.slice(0, 15).join('\n')}`);
     }
   }
 
