@@ -114,7 +114,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
   // State for AI-generated suggestions (local state for immediate UI updates)
   const [localSuggestions, setLocalSuggestions] = useState<Record<string, GeneratedSuggestion>>({});
   const [loadingSuggestions, setLoadingSuggestions] = useState<Record<string, boolean>>({});
-  const [generatingPhase, setGeneratingPhase] = useState<string | null>(null);
+  const [isGeneratingAll, setIsGeneratingAll] = useState(false);
   
   // State for creating from suggestion
   const [creatingFromSuggestion, setCreatingFromSuggestion] = useState<string | null>(null);
@@ -287,36 +287,49 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
     }
   };
 
-  // Generate suggestions for all empty slots in a phase
-  const generatePhasesuggestions = async (phaseId: string) => {
-    const templates = getDayTemplates(phaseId, 1)
-      .concat(getDayTemplates(phaseId, 2))
-      .concat(getDayTemplates(phaseId, 3))
-      .concat(getDayTemplates(phaseId, 4))
-      .concat(getDayTemplates(phaseId, 5))
-      .concat(getDayTemplates(phaseId, 6))
-      .concat(getDayTemplates(phaseId, 7))
-      .filter(t => !isSlotFilled(phaseId, t.day_number, t.time_of_day));
+  // Generate suggestions for all empty slots across ALL phases
+  const generateAllIdeas = async () => {
+    if (!user) {
+      toast.error("You must be logged in");
+      return;
+    }
+
+    // Collect all empty templates across all phases
+    const allEmptyTemplates: TimelineTemplate[] = [];
     
-    if (templates.length === 0) {
-      toast.info("All slots in this phase are already filled");
+    for (const phase of PHASES) {
+      const days = phase.id === "launch" ? [1, 2, 3, 4] : DAYS;
+      for (const day of days) {
+        const dayTemplates = getDayTemplates(phase.id, day);
+        const emptyTemplates = dayTemplates.filter(
+          t => !isSlotFilled(phase.id, t.day_number, t.time_of_day) && 
+               !suggestions[getSuggestionKey(t)]
+        );
+        allEmptyTemplates.push(...emptyTemplates);
+      }
+    }
+    
+    if (allEmptyTemplates.length === 0) {
+      toast.info("All slots already have suggestions or content");
       return;
     }
     
-    setGeneratingPhase(phaseId);
+    setIsGeneratingAll(true);
     
     try {
       // Generate in batches of 3 for better UX
-      for (let i = 0; i < templates.length; i += 3) {
-        const batch = templates.slice(i, i + 3);
+      let generatedCount = 0;
+      for (let i = 0; i < allEmptyTemplates.length; i += 3) {
+        const batch = allEmptyTemplates.slice(i, i + 3);
         await Promise.all(batch.map(t => generateSuggestion(t)));
+        generatedCount += batch.length;
       }
-      toast.success(`Generated ${templates.length} suggestions`);
+      toast.success(`Generated ${generatedCount} ideas across all phases`);
     } catch (error) {
-      console.error("Error generating phase suggestions:", error);
+      console.error("Error generating all suggestions:", error);
       toast.error("Failed to generate some suggestions");
     } finally {
-      setGeneratingPhase(null);
+      setIsGeneratingAll(false);
     }
   };
 
@@ -469,7 +482,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
 
   return (
     <div className="space-y-4">
-      {/* Header with create button */}
+      {/* Header with Generate All Ideas button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Launch Content Timeline</h2>
@@ -478,9 +491,22 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
           </p>
         </div>
         
-        <Button size="sm" onClick={handleCreateNewPost}>
-          <Plus className="w-4 h-4 mr-2" />
-          Create Post
+        <Button 
+          size="sm" 
+          onClick={generateAllIdeas}
+          disabled={isGeneratingAll}
+        >
+          {isGeneratingAll ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Generate All Ideas
+            </>
+          )}
         </Button>
       </div>
 
@@ -490,7 +516,6 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
           const isExpanded = expandedPhases.includes(phase.id);
           const phaseItems = getPhaseItems(phase.id);
           const completionPercent = getCompletionPercentage(phase.id);
-          const isGenerating = generatingPhase === phase.id;
 
           return (
             <Card key={phase.id} variant="elevated" className="overflow-hidden">
@@ -533,31 +558,6 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                     transition={{ duration: 0.2 }}
                   >
                     <CardContent className="pt-0 pb-4">
-                      {/* Generate All Button */}
-                      <div className="flex justify-end mb-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            generatePhasesuggestions(phase.id);
-                          }}
-                          disabled={isGenerating}
-                        >
-                          {isGenerating ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="w-4 h-4 mr-2" />
-                              Generate All Ideas
-                            </>
-                          )}
-                        </Button>
-                      </div>
-
                       <div className="space-y-1">
                         {(phase.id === "launch" ? [1, 2, 3, 4] : DAYS).map((day) => {
                           const dayItems = getDayItems(phase.id, day);
