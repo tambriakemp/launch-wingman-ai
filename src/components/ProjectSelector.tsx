@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { trackProjectCreation } from "@/lib/analytics";
 
 interface ProjectSelectorProps {
   currentProjectId?: string;
@@ -175,6 +176,9 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
       resetDialog();
       navigate(`/projects/${data.id}/dashboard`);
       toast.success("Project created successfully");
+      
+      // Track project creation with Google Analytics
+      trackProjectCreation(data.name);
       
       // Send project_created email (fire and forget)
       supabase.functions.invoke("send-notification-email", {

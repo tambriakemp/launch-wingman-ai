@@ -23,6 +23,7 @@ import { getLearnMoreArticleId } from "@/data/taskLearnMoreLinks";
 import { useAuth } from "@/contexts/AuthContext";
 import { MVLCallout, MVLLaunchIntro, MVLLaunchComplete } from "@/components/mvl";
 import { generateVoiceScript, hasVoiceSnippetSupport } from "@/lib/generateVoiceScript";
+import { trackTaskCompletion, trackTaskStart, trackAIAssist } from "@/lib/analytics";
 
 export default function TaskDetail() {
   const { id: projectId, taskId } = useParams();
@@ -105,10 +106,11 @@ export default function TaskDetail() {
 
   // Mark task as started when user opens it
   useEffect(() => {
-    if (taskId && !projectTask && !engineLoading) {
+    if (taskId && !projectTask && !engineLoading && taskTemplate) {
       startTask(taskId);
+      trackTaskStart(taskTemplate.title);
     }
-  }, [taskId, projectTask, engineLoading, startTask]);
+  }, [taskId, projectTask, engineLoading, startTask, taskTemplate]);
 
   // Check if this is first launch phase task and show intro
   useEffect(() => {
@@ -284,6 +286,9 @@ export default function TaskDetail() {
 
       await completeTask(taskId, inputData);
       
+      // Track task completion with Google Analytics
+      trackTaskCompletion(taskTemplate?.title || taskId);
+      
       // MVL: Show transformation statement confirmation (placement #2)
       if (taskId === 'messaging_transformation_statement') {
         setMvlTransformationShown(true);
@@ -385,6 +390,9 @@ export default function TaskDetail() {
       }
 
       setAiResponse(data.response);
+      
+      // Track AI assist with Google Analytics
+      trackAIAssist(`${taskTemplate?.taskId || 'task'}_${mode}`);
       
       // Track that examples have been shown
       if (mode === 'examples') {
