@@ -291,15 +291,48 @@ Write 2-4 short paragraphs that feel genuine and conversational.
 The post should be adaptable - something the creator can personalize.
 Stay true to the category's intent: "${categoryConfig.intent}"
 
-${generateTitle ? `
-IMPORTANT: Also generate a compelling, concise title for this post (5-10 words max).
-Return your response in this exact format:
-TITLE: [your generated title here]
-CONTENT:
-[your draft content here]
-` : "Return ONLY the draft text, no explanations or formatting instructions."}`;
+${generateTitle ? "Also generate a compelling, concise title for this post (5-10 words max)." : "Return ONLY the draft text, no explanations or formatting instructions."}`;
     } else {
       throw new Error("Either talkingPoint or existingDraft with adjustment is required");
+    }
+
+    const requestBody: any = {
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 600,
+    };
+
+    // Use tool calling for structured output when we need a title
+    if (generateTitle) {
+      requestBody.tools = [
+        {
+          type: "function",
+          function: {
+            name: "create_post",
+            description: "Create a social media post with a title and content",
+            parameters: {
+              type: "object",
+              properties: {
+                title: { 
+                  type: "string",
+                  description: "A compelling, concise title for the post (5-10 words)"
+                },
+                content: { 
+                  type: "string",
+                  description: "The full post content (2-4 paragraphs)"
+                }
+              },
+              required: ["title", "content"],
+              additionalProperties: false
+            }
+          }
+        }
+      ];
+      requestBody.tool_choice = { type: "function", function: { name: "create_post" } };
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -308,15 +341,7 @@ CONTENT:
         "Authorization": `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        temperature: 0.7,
-        max_tokens: 500,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -326,26 +351,30 @@ CONTENT:
     }
 
     const aiData = await response.json();
-    const draft = aiData.choices?.[0]?.message?.content;
-
-    if (!draft) {
-      throw new Error("No content in AI response");
-    }
-
-    console.log("Generated draft length:", draft.length);
-
-    // Parse title and content if generateTitle was requested
-    let generatedTitle: string | undefined;
-    let finalDraft = draft.trim();
     
-    if (generateTitle && draft.includes("TITLE:") && draft.includes("CONTENT:")) {
-      const titleMatch = draft.match(/TITLE:\s*(.+?)(?:\n|CONTENT:)/s);
-      const contentMatch = draft.match(/CONTENT:\s*([\s\S]+)/);
-      
-      if (titleMatch && contentMatch) {
-        generatedTitle = titleMatch[1].trim();
-        finalDraft = contentMatch[1].trim();
+    let generatedTitle: string | undefined;
+    let finalDraft: string;
+
+    // Check if response is a tool call (structured output)
+    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+    if (toolCall && toolCall.function?.arguments) {
+      try {
+        const parsed = JSON.parse(toolCall.function.arguments);
+        generatedTitle = parsed.title;
+        finalDraft = parsed.content;
+        console.log("Parsed tool call - title:", generatedTitle, "content length:", finalDraft?.length);
+      } catch (e) {
+        console.error("Failed to parse tool call arguments:", e);
+        throw new Error("Failed to parse AI response");
       }
+    } else {
+      // Regular text response (no tool call)
+      const draft = aiData.choices?.[0]?.message?.content;
+      if (!draft) {
+        throw new Error("No content in AI response");
+      }
+      finalDraft = draft.trim();
+      console.log("Regular response - draft length:", finalDraft.length);
     }
 
     return new Response(JSON.stringify({ 
