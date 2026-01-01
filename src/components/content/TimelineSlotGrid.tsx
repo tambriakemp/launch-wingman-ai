@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronRight, MoreHorizontal, Trash2, CalendarClock, Clock, CheckCircle2, Crown, Plus, List, CalendarDays } from "lucide-react";
+import { ChevronDown, ChevronRight, MoreHorizontal, Trash2, CalendarClock, Clock, CheckCircle2, Crown, Plus } from "lucide-react";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -14,18 +14,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { PostEditorSheet } from "./PostEditorSheet";
 
-import { ContentCalendarView } from "./ContentCalendarView";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
-
-type ViewMode = "timeline" | "calendar";
 
 interface TimelineSlotGridProps {
   projectId: string;
@@ -95,7 +91,6 @@ const CONTENT_TYPE_COLORS: Record<string, string> = {
 
 export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridProps) => {
   const { isSubscribed, user } = useAuth();
-  const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const [expandedPhases, setExpandedPhases] = useState<string[]>(["pre-launch-week-1"]);
   const [postEditorOpen, setPostEditorOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ContentPlannerItem | null>(null);
@@ -254,47 +249,23 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
 
   return (
     <div className="space-y-4">
-      {/* Header with view toggle and create button */}
+      {/* Header with create button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Launch Content Timeline</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {viewMode === "timeline" 
-              ? "Content organized by launch phases. Click edit to write or update posts."
-              : "View scheduled content on your calendar. Click any day to manage posts."}
+            Content organized by launch phases. Click edit to write or update posts.
           </p>
         </div>
         
-        <div className="flex flex-col items-end gap-2">
-          <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as ViewMode)}>
-            <ToggleGroupItem value="timeline" aria-label="Timeline view" className="gap-1.5">
-              <List className="w-4 h-4" />
-              <span className="hidden sm:inline">Timeline</span>
-            </ToggleGroupItem>
-            <ToggleGroupItem value="calendar" aria-label="Calendar view" className="gap-1.5">
-              <CalendarDays className="w-4 h-4" />
-              <span className="hidden sm:inline">Calendar</span>
-            </ToggleGroupItem>
-          </ToggleGroup>
-          
-          <Button size="sm" onClick={handleCreateNewPost}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create Post
-          </Button>
-        </div>
+        <Button size="sm" onClick={handleCreateNewPost}>
+          <Plus className="w-4 h-4 mr-2" />
+          Create Post
+        </Button>
       </div>
 
-      {/* View Content */}
-      {viewMode === "calendar" ? (
-        <ContentCalendarView
-          projectId={projectId}
-          onCreatePost={handleCreateNewPost}
-          onEditPost={handleCalendarEditPost}
-          onSchedulePost={handleCalendarSchedulePost}
-        />
-      ) : (
-        <>
-        <div className="space-y-3">
+      {/* Timeline Content */}
+      <div className="space-y-3">
         {PHASES.map((phase) => {
           const isExpanded = expandedPhases.includes(phase.id);
           const phaseItems = getPhaseItems(phase.id);
@@ -485,7 +456,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
         })}
       </div>
 
-      {plannerItems.length === 0 && viewMode === "timeline" && (
+      {plannerItems.length === 0 && (
         <div className="text-center py-12 border border-dashed border-border rounded-lg bg-muted/10">
           <p className="text-sm text-muted-foreground mb-3">
             No content assigned yet.
@@ -495,8 +466,6 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
             Create your first post
           </Button>
         </div>
-      )}
-      </>
       )}
 
       {/* Post Editor Sheet */}
