@@ -102,21 +102,11 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
     <div className="max-w-3xl mx-auto space-y-8 pb-12">
       {/* Section A: Orientation Header */}
       <div className="space-y-4">
-        <div className="flex items-start justify-between gap-4">
-          <PlanPageHeader
-            title="Content"
-            description="Ideas for what to say next, based on where you are in your project."
-            tipText="These are starting points, not requirements. Use what feels right for you."
-          />
-          
-          {/* Saved ideas link - subtle, top right */}
-          <div className="shrink-0 pt-1">
-            <SavedIdeasLink 
-              projectId={projectId} 
-              onOpen={() => setSavedSheetOpen(true)} 
-            />
-          </div>
-        </div>
+        <PlanPageHeader
+          title="Content"
+          description="Ideas for what to say next, based on where you are in your project."
+          tipText="These are starting points, not requirements. Use what feels right for you."
+        />
 
         <ContentContextHeader 
           currentPhase={currentPhase} 
@@ -184,6 +174,14 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
               funnelType={funnelType}
               audienceData={funnel}
               onTurnIntoPost={handleTurnIntoPost}
+            />
+          </div>
+
+          {/* Saved ideas link - under ideas section */}
+          <div className="pt-4 border-t border-border">
+            <SavedIdeasLink 
+              projectId={projectId} 
+              onOpen={() => setSavedSheetOpen(true)} 
             />
           </div>
         </div>

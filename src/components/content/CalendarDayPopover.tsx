@@ -118,15 +118,6 @@ export const CalendarDayPopover = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 text-xs flex-1"
-                      onClick={() => onSchedulePost(item)}
-                    >
-                      <CalendarClock className="w-3 h-3 mr-1" />
-                      Schedule
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
                       className="h-7 text-xs text-destructive hover:text-destructive"
                       onClick={() => onDeletePost(item.id)}
                     >
