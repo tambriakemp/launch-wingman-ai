@@ -21,6 +21,7 @@ import { MediaUploader } from "./MediaUploader";
 import { SocialPostPreview } from "./SocialPostPreview";
 import { PinterestBoardSelector } from "./PinterestBoardSelector";
 import { ScheduleDateTimePicker } from "./ScheduleDateTimePicker";
+import { trackSocialPostPublish, trackSocialPostSchedule, trackSocialPostScheduleCancel } from "@/lib/analytics";
 
 interface SchedulePostSheetProps {
   open: boolean;
@@ -172,6 +173,7 @@ export function SchedulePostSheet({
       }
 
       toast.success("Posted to Pinterest successfully!");
+      trackSocialPostPublish('pinterest');
       onScheduled?.();
       onOpenChange(false);
     } catch (error: any) {
@@ -234,6 +236,7 @@ export function SchedulePostSheet({
       }
 
       toast.success("Posted to Instagram successfully!");
+      trackSocialPostPublish('instagram', formData.instagram_post_type);
       onScheduled?.();
       onOpenChange(false);
     } catch (error: any) {
@@ -309,6 +312,7 @@ export function SchedulePostSheet({
       }
 
       toast.success("Post scheduled successfully!");
+      trackSocialPostSchedule(formData.scheduled_platforms[0]);
       onScheduled?.();
       onOpenChange(false);
     } catch (error: any) {
@@ -342,6 +346,7 @@ export function SchedulePostSheet({
 
       queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
       toast.success("Scheduled post cancelled");
+      trackSocialPostScheduleCancel(contentItem?.scheduled_platforms?.[0] || 'unknown');
       onScheduled?.();
       onOpenChange(false);
     } catch (error: any) {

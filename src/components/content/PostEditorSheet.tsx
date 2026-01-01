@@ -44,6 +44,7 @@ import { MediaUploader } from "./MediaUploader";
 import { SocialPostPreview } from "./SocialPostPreview";
 import { PinterestBoardSelector } from "./PinterestBoardSelector";
 import { ScheduleDateTimePicker } from "./ScheduleDateTimePicker";
+import { trackSocialPostPublish, trackSocialPostSchedule, trackSocialPostScheduleCancel } from "@/lib/analytics";
 
 // Types for the unified component
 interface TalkingPoint {
@@ -589,6 +590,7 @@ export function PostEditorSheet({
       }
 
       toast.success("Posted to Pinterest successfully!");
+      trackSocialPostPublish('pinterest');
       queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
       onSaved?.();
       onOpenChange(false);
@@ -647,6 +649,7 @@ export function PostEditorSheet({
       }
 
       toast.success("Posted to Instagram successfully!");
+      trackSocialPostPublish('instagram', formData.instagram_post_type);
       queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
       onSaved?.();
       onOpenChange(false);
@@ -796,6 +799,7 @@ export function PostEditorSheet({
         .eq("id", itemId);
 
       toast.success("Post scheduled successfully!");
+      trackSocialPostSchedule(formData.scheduled_platforms[0]);
       queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
       onSaved?.();
       onOpenChange(false);
@@ -828,6 +832,7 @@ export function PostEditorSheet({
 
       queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
       toast.success("Scheduled post cancelled");
+      trackSocialPostScheduleCancel(existingItem?.scheduled_platforms?.[0] || 'unknown');
       onSaved?.();
       onOpenChange(false);
     } catch (error: any) {
