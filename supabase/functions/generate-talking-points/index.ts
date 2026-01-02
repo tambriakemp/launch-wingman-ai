@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -92,6 +93,18 @@ serve(async (req) => {
     const { projectId, contentType, currentPhase, funnelType, audienceData, previousIdeas = [] } = await req.json();
 
     console.log("Generating talking points:", { projectId, contentType, currentPhase, funnelType, isRefresh: previousIdeas.length > 0 });
+
+    // Extract user ID from auth header
+    const authHeader = req.headers.get('authorization');
+    let userId: string | null = null;
+    if (authHeader) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabase.auth.getUser(token);
+      userId = user?.id || null;
+    }
 
     const phaseContext = PHASE_CONTEXT[currentPhase] || "general project phase";
     const categoryConfig = CATEGORY_INTENTS[contentType] || CATEGORY_INTENTS.general;
@@ -210,6 +223,26 @@ Return JSON in this exact format:
     } catch (parseError) {
       console.error("Failed to parse AI response:", content);
       throw new Error("Failed to parse AI response");
+    }
+
+    // Log AI usage
+    if (userId) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        await supabase.from('ai_usage_logs').insert({
+          user_id: userId,
+          project_id: projectId || null,
+          function_name: 'generate-talking-points',
+          model: 'google/gemini-2.5-flash',
+          tokens_used: aiData.usage?.total_tokens || null,
+          success: true,
+        });
+      } catch (logError) {
+        console.error('[GENERATE-TALKING-POINTS] Failed to log AI usage:', logError);
+      }
     }
 
     console.log("Generated talking points:", parsed.talkingPoints?.length, previousIdeas.length > 0 ? "(refresh)" : "(initial)");
