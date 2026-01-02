@@ -1,9 +1,25 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+async function logAiUsage(supabase: any, userId: string | null, projectId: string | null, functionName: string, model: string, success: boolean) {
+  if (!userId) return;
+  try {
+    await supabase.from("ai_usage_logs").insert({
+      user_id: userId,
+      project_id: projectId,
+      function_name: functionName,
+      model: model,
+      success: success,
+    });
+  } catch (error) {
+    console.error("Failed to log AI usage:", error);
+  }
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -11,12 +27,17 @@ serve(async (req) => {
   }
 
   try {
-    const { blockingIssue, currentTask, taskContext, projectContext } = await req.json();
+    const { blockingIssue, currentTask, taskContext, projectContext, projectId, userId } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
 
     const systemPrompt = `You are a supportive, calm business coach helping online entrepreneurs launch their offers. Your role is to help users when they feel stuck on a task.
 
@@ -49,6 +70,7 @@ Please provide encouragement and break this down into simple steps they can foll
 
     console.log("Calling Lovable AI for stuck help...");
 
+    const model = "google/gemini-2.5-flash";
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -56,7 +78,7 @@ Please provide encouragement and break this down into simple steps they can foll
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -67,6 +89,7 @@ Please provide encouragement and break this down into simple steps they can foll
     if (!response.ok) {
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
+      await logAiUsage(supabase, userId, projectId, "get-stuck-help", model, false);
       
       if (response.status === 429) {
         return new Response(
@@ -87,10 +110,14 @@ Please provide encouragement and break this down into simple steps they can foll
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
+      await logAiUsage(supabase, userId, projectId, "get-stuck-help", model, false);
       throw new Error("No content in AI response");
     }
 
     console.log("AI response received:", content);
+
+    // Log successful AI usage
+    await logAiUsage(supabase, userId, projectId, "get-stuck-help", model, true);
 
     // Parse the JSON response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
