@@ -40,18 +40,19 @@ serve(async (req) => {
     const adminUser = userData.user;
     if (!adminUser?.email) throw new Error("User not authenticated");
     
-    // Check if user is admin
+    // Check if user is admin or manager
     const { data: roleData, error: roleError } = await supabaseClient
       .from('user_roles')
       .select('role')
       .eq('user_id', adminUser.id)
-      .eq('role', 'admin')
-      .single();
+      .in('role', ['admin', 'manager'])
+      .limit(1);
     
-    if (roleError || !roleData) {
-      throw new Error("Unauthorized: Admin access required");
+    if (roleError || !roleData || roleData.length === 0) {
+      throw new Error("Unauthorized: Admin or Manager access required");
     }
-    logStep("Admin verified", { adminId: sanitizeId(adminUser.id) });
+    const userRole = roleData[0].role;
+    logStep("Staff access verified", { userId: sanitizeId(adminUser.id), role: userRole });
 
     // Get all users from auth.users
     const { data: authUsers, error: authError } = await supabaseClient.auth.admin.listUsers();
