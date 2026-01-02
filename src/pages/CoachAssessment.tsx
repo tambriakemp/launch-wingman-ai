@@ -24,6 +24,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { trackAssessmentCompletion } from "@/lib/analytics";
+import { trackAssessmentComplete } from "@/lib/activityTracking";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -466,6 +468,11 @@ const CoachAssessment = () => {
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(assessment));
     setSavedAssessment(assessment);
+    
+    // Track assessment completion
+    trackAssessmentCompletion('Coach Assessment');
+    trackAssessmentComplete('coach_assessment', 'Coach Assessment');
+    
     toast({
       title: "Assessment Saved",
       description: "Your assessment has been saved successfully.",

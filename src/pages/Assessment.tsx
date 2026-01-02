@@ -20,6 +20,8 @@ import {
   Rocket,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { trackAssessmentCompletion } from "@/lib/analytics";
+import { trackAssessmentComplete } from "@/lib/activityTracking";
 
 interface Question {
   id: number;
@@ -343,6 +345,11 @@ const Assessment = () => {
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(assessment));
     setSavedAssessment(assessment);
+    
+    // Track assessment completion
+    trackAssessmentCompletion('Launch Assessment');
+    trackAssessmentComplete('launch_assessment', 'Launch Assessment', totalScore);
+    
     toast({
       title: "Assessment Saved",
       description: "Your assessment has been saved successfully.",

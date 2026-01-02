@@ -61,6 +61,11 @@ export const trackTaskStart = (taskName: string) => {
   trackEvent('Task', 'start', taskName);
 };
 
+// Assessment events
+export const trackAssessmentCompletion = (assessmentName: string) => {
+  trackEvent('Assessment', 'complete', assessmentName);
+};
+
 // Project events
 export const trackProjectCreation = (projectName: string) => {
   trackEvent('Project', 'create', projectName);

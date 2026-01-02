@@ -129,6 +129,7 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const eventType = body.event_type || 'login';
     const isNewSignup = body.is_new_signup || false;
+    const metadata = body.metadata || {};
     const userAgent = req.headers.get("user-agent") || null;
     const forwardedFor = req.headers.get("x-forwarded-for");
     const ipAddress = forwardedFor ? forwardedFor.split(",")[0].trim() : null;
@@ -141,6 +142,7 @@ serve(async (req) => {
         event_type: eventType,
         ip_address: ipAddress,
         user_agent: userAgent,
+        metadata: metadata,
       });
 
     if (activityError) {
