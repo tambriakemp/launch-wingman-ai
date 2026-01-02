@@ -18,6 +18,8 @@ import {
   DollarSign,
   Package,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { getAssessmentData, ASSESSMENT_KEYS } from "@/lib/assessmentStorage";
 
 interface SavedLaunchAssessment {
   answers: Record<number, number>;
@@ -72,7 +74,7 @@ const assessments = [
     color: "text-primary",
     bgColor: "bg-primary/10",
     categories: ["Pre-Launch Content", "Engagement", "Trust Building", "Data Gathering", "Launch Mindset"],
-    storageKey: "coach_hub_launch_assessment",
+    storageKey: ASSESSMENT_KEYS.LAUNCH,
   },
   {
     id: "coach",
@@ -85,7 +87,7 @@ const assessments = [
     color: "text-secondary",
     bgColor: "bg-secondary/10",
     categories: ["Maya (Community Builder)", "Derek (Direct Seller)", "Lauren (Product-Centric)"],
-    storageKey: "coach_hub_coach_assessment",
+    storageKey: ASSESSMENT_KEYS.COACH,
   },
   {
     id: "why-statement",
@@ -98,11 +100,12 @@ const assessments = [
     color: "text-accent",
     bgColor: "bg-accent/10",
     categories: ["Current Reality", "Desired Future", "8 Benefits", "Deeper Why", "Commitment"],
-    storageKey: "coach_hub_why_statement",
+    storageKey: ASSESSMENT_KEYS.WHY_STATEMENT,
   },
 ];
 
 const Assessments = () => {
+  const { user } = useAuth();
   const [savedResults, setSavedResults] = useState<{
     launch: SavedLaunchAssessment | null;
     coach: SavedCoachAssessment | null;
@@ -114,17 +117,19 @@ const Assessments = () => {
   });
 
   useEffect(() => {
-    // Load saved assessments from localStorage
-    const launchData = localStorage.getItem("coach_hub_launch_assessment");
-    const coachData = localStorage.getItem("coach_hub_coach_assessment");
-    const whyData = localStorage.getItem("coach_hub_why_statement");
+    if (!user?.id) return;
+    
+    // Load saved assessments from localStorage with user-scoped keys
+    const launchData = getAssessmentData<SavedLaunchAssessment>(ASSESSMENT_KEYS.LAUNCH, user.id);
+    const coachData = getAssessmentData<SavedCoachAssessment>(ASSESSMENT_KEYS.COACH, user.id);
+    const whyData = getAssessmentData<SavedWhyStatement>(ASSESSMENT_KEYS.WHY_STATEMENT, user.id);
 
     setSavedResults({
-      launch: launchData ? JSON.parse(launchData) : null,
-      coach: coachData ? JSON.parse(coachData) : null,
-      whyStatement: whyData ? JSON.parse(whyData) : null,
+      launch: launchData,
+      coach: coachData,
+      whyStatement: whyData,
     });
-  }, []);
+  }, [user?.id]);
 
   const getAssessmentResult = (assessmentId: string) => {
     switch (assessmentId) {

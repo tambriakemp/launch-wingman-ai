@@ -13,6 +13,8 @@ import { SalesPageCopyTab } from "./sales-copy";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
 import type { SavedItem } from "./SavedIdeasSection";
 
 export type ContentType = "general" | "stories" | "offer" | "behind-the-scenes";
@@ -43,6 +45,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   
   const { user } = useAuth();
+  const { hasAccess } = useFeatureAccess();
   const queryClient = useQueryClient();
 
   // Fetch project data for phase and funnel type
@@ -168,48 +171,52 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
           onWritePost={handleTimelineWritePost}
         />
       ) : activeTab === "social-schedule" ? (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-foreground">Social Media Schedule</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                View scheduled content on your calendar. Click any day to manage posts.
-              </p>
+        hasAccess('social_calendar') ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-foreground">Social Media Schedule</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  View scheduled content on your calendar. Click any day to manage posts.
+                </p>
+              </div>
+              <Button
+                onClick={() => {
+                  setSelectedTalkingPoint(null);
+                  setPostEditorOpen(true);
+                }}
+                size="sm"
+              >
+                Create Post
+              </Button>
             </div>
-            <Button
-              onClick={() => {
+            <ContentCalendarView
+              projectId={projectId}
+              onCreatePost={() => {
                 setSelectedTalkingPoint(null);
                 setPostEditorOpen(true);
               }}
-              size="sm"
-            >
-              Create Post
-            </Button>
+              onEditPost={(item) => {
+                handleTimelineWritePost({
+                  id: item.id,
+                  title: item.title,
+                  description: item.description,
+                  contentType: item.content_type,
+                });
+              }}
+              onSchedulePost={(item) => {
+                handleTimelineWritePost({
+                  id: item.id,
+                  title: item.title,
+                  description: item.description,
+                  contentType: item.content_type,
+                });
+              }}
+            />
           </div>
-          <ContentCalendarView
-            projectId={projectId}
-            onCreatePost={() => {
-              setSelectedTalkingPoint(null);
-              setPostEditorOpen(true);
-            }}
-            onEditPost={(item) => {
-              handleTimelineWritePost({
-                id: item.id,
-                title: item.title,
-                description: item.description,
-                contentType: item.content_type,
-              });
-            }}
-            onSchedulePost={(item) => {
-              handleTimelineWritePost({
-                id: item.id,
-                title: item.title,
-                description: item.description,
-                contentType: item.content_type,
-              });
-            }}
-          />
-        </div>
+        ) : (
+          <UpgradePrompt feature="social_calendar" variant="card" />
+        )
       ) : (
         <SalesPageCopyTab projectId={projectId} />
       )}

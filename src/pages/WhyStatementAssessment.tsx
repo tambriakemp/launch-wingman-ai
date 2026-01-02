@@ -24,8 +24,8 @@ import {
   RefreshCw,
   Save,
 } from "lucide-react";
-
-const STORAGE_KEY = "coach_hub_why_statement_assessment";
+import { useAuth } from "@/contexts/AuthContext";
+import { getAssessmentData, setAssessmentData, ASSESSMENT_KEYS } from "@/lib/assessmentStorage";
 
 const launchFeelings = [
   "Exhausted",
@@ -195,6 +195,7 @@ const parts: { key: PartKey; title: string; icon: React.ElementType }[] = [
 const WhyStatementAssessment = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [currentPart, setCurrentPart] = useState(0);
   const [data, setData] = useState<AssessmentData>(initialData);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -202,18 +203,18 @@ const WhyStatementAssessment = () => {
 
   // Load saved progress on mount
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!user?.id) return;
+    const saved = getAssessmentData<any>(ASSESSMENT_KEYS.WHY_STATEMENT, user.id);
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        if (parsed.data) setData(parsed.data);
-        if (parsed.currentPart !== undefined) setCurrentPart(parsed.currentPart);
-        if (parsed.visitedParts) setVisitedParts(parsed.visitedParts);
+        if (saved.data) setData(saved.data);
+        if (saved.currentPart !== undefined) setCurrentPart(saved.currentPart);
+        if (saved.visitedParts) setVisitedParts(saved.visitedParts);
       } catch (e) {
         console.error("Failed to load saved progress", e);
       }
     }
-  }, []);
+  }, [user?.id]);
 
   const updateData = <K extends keyof AssessmentData>(key: K, value: AssessmentData[K]) => {
     setData((prev) => ({ ...prev, [key]: value }));
@@ -254,13 +255,14 @@ const WhyStatementAssessment = () => {
   };
 
   const handleSaveProgress = () => {
+    if (!user?.id) return;
     const progressData = {
       data,
       currentPart,
       visitedParts,
       savedAt: new Date().toISOString(),
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(progressData));
+    setAssessmentData(ASSESSMENT_KEYS.WHY_STATEMENT, user.id, progressData);
     toast({
       title: "Progress Saved",
       description: "Your progress has been saved. You can continue later.",
@@ -268,13 +270,14 @@ const WhyStatementAssessment = () => {
   };
 
   const handleSave = () => {
+    if (!user?.id) return;
     const progressData = {
       data,
       currentPart: parts.length - 1,
       visitedParts: parts.map((_, i) => i),
       completedAt: new Date().toISOString(),
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(progressData));
+    setAssessmentData(ASSESSMENT_KEYS.WHY_STATEMENT, user.id, progressData);
     toast({
       title: "Assessment Saved",
       description: "Your Why Statement worksheet has been saved successfully.",

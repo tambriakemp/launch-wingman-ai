@@ -28,6 +28,7 @@ import { trackAssessmentCompletion } from "@/lib/analytics";
 import { trackAssessmentComplete } from "@/lib/activityTracking";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { getAssessmentData, setAssessmentData, ASSESSMENT_KEYS } from "@/lib/assessmentStorage";
 
 type CoachType = "maya" | "derek" | "lauren";
 
