@@ -52,6 +52,26 @@ serve(async (req) => {
     const user = userData.user;
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Check if user has admin or manager role - they get full access without Stripe lookup
+    const { data: roleData } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .in('role', ['admin', 'manager'])
+      .limit(1);
+
+    if (roleData && roleData.length > 0) {
+      logStep("User has staff role - granting full access", { role: roleData[0].role });
+      return new Response(JSON.stringify({
+        subscribed: true,
+        subscription_end: null,
+        source: "role"
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     

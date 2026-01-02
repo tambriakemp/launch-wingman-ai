@@ -25,8 +25,8 @@ export const SectionList = ({
   onEditSection, 
   onBack 
 }: SectionListProps) => {
-  const { isSubscribed, isAdmin, hasAccess } = useFeatureAccess();
-  const hasFullAccess = isSubscribed || isAdmin;
+  const { isSubscribed, hasAdminAccess, hasAccess } = useFeatureAccess();
+  const hasFullAccess = isSubscribed || hasAdminAccess;
   
   const isSectionLocked = (sectionId: string): boolean => {
     if (hasFullAccess) return false;

@@ -72,8 +72,8 @@ export const TalkingPointsSection = ({
   const [refreshing, setRefreshing] = useState(false);
   const [dailyUsage, setDailyUsage] = useState<DailyUsage>(() => getDailyUsage());
   const { user } = useAuth();
-  const { isSubscribed, isAdmin, getRemainingDailyIdeas } = useFeatureAccess();
-  const hasFullAccess = isSubscribed || isAdmin;
+  const { isSubscribed, hasAdminAccess, getRemainingDailyIdeas } = useFeatureAccess();
+  const hasFullAccess = isSubscribed || hasAdminAccess;
   
   const previousIdeasRef = useRef<string[]>([]);
   

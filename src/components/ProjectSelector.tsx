@@ -78,8 +78,8 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
   });
   const navigate = useNavigate();
   const { user, isSubscribed } = useAuth();
-  const { isAdmin } = useFeatureAccess();
-  const hasFullAccess = isSubscribed || isAdmin;
+  const { hasAdminAccess } = useFeatureAccess();
+  const hasFullAccess = isSubscribed || hasAdminAccess;
   const queryClient = useQueryClient();
 
   const { data: projects, isLoading } = useQuery({
