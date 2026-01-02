@@ -1,25 +1,17 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { S3Client, ListObjectsV2Command } from "https://esm.sh/@aws-sdk/client-s3@3.400.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface SyncResult {
-  added: number;
-  skipped: number;
-  errors: string[];
-  files: { path: string; action: string }[];
-}
-
-// File extensions for photos and videos
-const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
-const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.webm', '.avi', '.mkv'];
+// File extension helpers
+const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp"];
+const VIDEO_EXTENSIONS = [".mp4", ".mov", ".avi", ".webm", ".mkv", ".m4v"];
 
 function getFileExtension(filename: string): string {
-  const lastDot = filename.lastIndexOf('.');
-  return lastDot !== -1 ? filename.substring(lastDot).toLowerCase() : '';
+  const lastDot = filename.lastIndexOf(".");
+  return lastDot !== -1 ? filename.slice(lastDot).toLowerCase() : "";
 }
 
 function isImageFile(filename: string): boolean {
@@ -31,299 +23,423 @@ function isVideoFile(filename: string): boolean {
 }
 
 function cleanFilename(filename: string): string {
-  // Remove extension, replace hyphens/underscores with spaces, capitalize words
-  const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
-  return nameWithoutExt
-    .replace(/[-_]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
+  const withoutExt = filename.replace(/\.[^/.]+$/, "");
+  return withoutExt
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
 }
 
-function parsePath(key: string): { category: string; subcategory: string | null; filename: string } | null {
-  const parts = key.split('/').filter(p => p.length > 0);
-  
+function parsePath(key: string): { category: string; subcategory: string; filename: string } | null {
+  const parts = key.split("/").filter(Boolean);
   if (parts.length === 0) return null;
-  
-  // Expected structure: category/subcategory/filename OR category/filename
+
+  const filename = parts[parts.length - 1];
   if (parts.length === 1) {
-    // Just a filename at root
-    return { category: 'general', subcategory: null, filename: parts[0] };
-  } else if (parts.length === 2) {
-    // category/filename
-    return { category: parts[0], subcategory: null, filename: parts[1] };
-  } else {
-    // category/subcategory/filename (or deeper)
-    return { 
-      category: parts[0], 
-      subcategory: parts[1], 
-      filename: parts[parts.length - 1] 
-    };
+    return { category: "general", subcategory: "general", filename };
   }
+  if (parts.length === 2) {
+    return { category: parts[0].toLowerCase(), subcategory: "general", filename };
+  }
+  return {
+    category: parts[0].toLowerCase(),
+    subcategory: parts[1].toLowerCase(),
+    filename,
+  };
+}
+
+// AWS Signature V4 implementation using Web Crypto API
+async function hmacSha256(key: ArrayBuffer, message: string): Promise<ArrayBuffer> {
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    key,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  return await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(message));
+}
+
+async function sha256(message: string): Promise<string> {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function toHex(buffer: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function getSignatureKey(
+  secretKey: string,
+  dateStamp: string,
+  region: string,
+  service: string
+): Promise<ArrayBuffer> {
+  const kDate = await hmacSha256(new TextEncoder().encode("AWS4" + secretKey).buffer as ArrayBuffer, dateStamp);
+  const kRegion = await hmacSha256(kDate, region);
+  const kService = await hmacSha256(kRegion, service);
+  const kSigning = await hmacSha256(kService, "aws4_request");
+  return kSigning;
+}
+
+interface R2ListResult {
+  keys: string[];
+  isTruncated: boolean;
+  nextContinuationToken?: string;
+}
+
+async function listR2Objects(
+  accountId: string,
+  bucketName: string,
+  accessKeyId: string,
+  secretAccessKey: string,
+  continuationToken?: string
+): Promise<R2ListResult> {
+  const region = "auto";
+  const service = "s3";
+  const host = `${accountId}.r2.cloudflarestorage.com`;
+  const endpoint = `https://${host}/${bucketName}`;
+
+  const now = new Date();
+  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
+  const dateStamp = amzDate.slice(0, 8);
+
+  // Build query parameters
+  const queryParams = new URLSearchParams();
+  queryParams.set("list-type", "2");
+  queryParams.set("max-keys", "1000");
+  if (continuationToken) {
+    queryParams.set("continuation-token", continuationToken);
+  }
+  const queryString = queryParams.toString();
+
+  // Create canonical request
+  const method = "GET";
+  const canonicalUri = `/${bucketName}`;
+  const canonicalQueryString = queryString
+    .split("&")
+    .sort()
+    .join("&");
+  const payloadHash = await sha256("");
+  const canonicalHeaders = `host:${host}\nx-amz-content-sha256:${payloadHash}\nx-amz-date:${amzDate}\n`;
+  const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
+
+  const canonicalRequest = [
+    method,
+    canonicalUri,
+    canonicalQueryString,
+    canonicalHeaders,
+    signedHeaders,
+    payloadHash,
+  ].join("\n");
+
+  // Create string to sign
+  const algorithm = "AWS4-HMAC-SHA256";
+  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+  const stringToSign = [
+    algorithm,
+    amzDate,
+    credentialScope,
+    await sha256(canonicalRequest),
+  ].join("\n");
+
+  // Calculate signature
+  const signingKey = await getSignatureKey(secretAccessKey, dateStamp, region, service);
+  const signatureBuffer = await hmacSha256(signingKey, stringToSign);
+  const signature = toHex(signatureBuffer);
+
+  // Create authorization header
+  const authorizationHeader = `${algorithm} Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+  // Make request
+  const url = `${endpoint}?${queryString}`;
+  console.log(`[SYNC-R2] Listing objects from R2...`);
+  
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Host: host,
+      "x-amz-content-sha256": payloadHash,
+      "x-amz-date": amzDate,
+      Authorization: authorizationHeader,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`[SYNC-R2] R2 API error: ${response.status} - ${errorText.slice(0, 500)}`);
+    throw new Error(`R2 API error: ${response.status} - ${errorText.slice(0, 200)}`);
+  }
+
+  const xmlText = await response.text();
+  
+  // Parse XML response
+  const keys: string[] = [];
+  const keyMatches = xmlText.matchAll(/<Key>([^<]+)<\/Key>/g);
+  for (const match of keyMatches) {
+    keys.push(match[1]);
+  }
+
+  const isTruncatedMatch = xmlText.match(/<IsTruncated>(true|false)<\/IsTruncated>/);
+  const isTruncated = isTruncatedMatch?.[1] === "true";
+
+  const tokenMatch = xmlText.match(/<NextContinuationToken>([^<]+)<\/NextContinuationToken>/);
+  const nextToken = tokenMatch?.[1];
+
+  console.log(`[SYNC-R2] Found ${keys.length} objects, truncated: ${isTruncated}`);
+
+  return {
+    keys,
+    isTruncated,
+    nextContinuationToken: nextToken,
+  };
+}
+
+async function listAllR2Objects(
+  accountId: string,
+  bucketName: string,
+  accessKeyId: string,
+  secretAccessKey: string
+): Promise<string[]> {
+  const allKeys: string[] = [];
+  let continuationToken: string | undefined;
+
+  do {
+    const result = await listR2Objects(
+      accountId,
+      bucketName,
+      accessKeyId,
+      secretAccessKey,
+      continuationToken
+    );
+    allKeys.push(...result.keys);
+    continuationToken = result.isTruncated ? result.nextContinuationToken : undefined;
+  } while (continuationToken);
+
+  return allKeys;
+}
+
+interface SyncResult {
+  added: number;
+  skipped: number;
+  errors: string[];
+  files: { path: string; action: string }[];
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get R2 credentials from environment
-    const accountId = Deno.env.get('R2_ACCOUNT_ID');
-    const accessKeyId = Deno.env.get('R2_ACCESS_KEY_ID');
-    const secretAccessKey = Deno.env.get('R2_SECRET_ACCESS_KEY');
-    const bucketName = Deno.env.get('R2_BUCKET_NAME');
-    const publicUrl = Deno.env.get('R2_PUBLIC_URL');
+    console.log("[SYNC-R2] Function started");
 
-    if (!accountId || !accessKeyId || !secretAccessKey || !bucketName || !publicUrl) {
-      console.error('Missing R2 configuration');
+    // Get R2 credentials from environment
+    const r2AccountId = Deno.env.get("R2_ACCOUNT_ID");
+    const r2AccessKeyId = Deno.env.get("R2_ACCESS_KEY_ID");
+    const r2SecretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY");
+    const r2BucketName = Deno.env.get("R2_BUCKET_NAME");
+    const r2PublicUrl = Deno.env.get("R2_PUBLIC_URL");
+
+    if (!r2AccountId || !r2AccessKeyId || !r2SecretAccessKey || !r2BucketName || !r2PublicUrl) {
+      console.error("[SYNC-R2] Missing R2 configuration");
       return new Response(
-        JSON.stringify({ error: 'R2 configuration incomplete. Please check all secrets are set.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Missing R2 configuration. Please set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, and R2_PUBLIC_URL secrets." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Authenticate admin user
-    const authHeader = req.headers.get('Authorization');
+    // Authenticate user
+    const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'Authorization required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Missing authorization header" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify admin role
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
+
     if (userError || !user) {
+      console.error("[SYNC-R2] Auth error:", userError);
       return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // Check admin role
     const { data: roleData } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
       .single();
 
-    if (!roleData || roleData.role !== 'admin') {
+    if (!roleData) {
+      console.error("[SYNC-R2] User is not admin");
       return new Response(
-        JSON.stringify({ error: 'Admin access required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Admin access required" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log('Starting R2 sync for admin:', user.email);
+    console.log("[SYNC-R2] Admin verified, listing R2 objects...");
 
-    // Create S3 client for R2
-    const s3Client = new S3Client({
-      region: 'auto',
-      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-    });
+    // List all objects from R2
+    const allKeys = await listAllR2Objects(r2AccountId, r2BucketName, r2AccessKeyId, r2SecretAccessKey);
+    console.log(`[SYNC-R2] Total objects found: ${allKeys.length}`);
 
-    // List all objects in the bucket
-    const allObjects: { Key: string }[] = [];
-    let continuationToken: string | undefined;
+    // Filter to only media files
+    const mediaKeys = allKeys.filter((key) => isImageFile(key) || isVideoFile(key));
+    console.log(`[SYNC-R2] Media files found: ${mediaKeys.length}`);
 
-    do {
-      const command = new ListObjectsV2Command({
-        Bucket: bucketName,
-        ContinuationToken: continuationToken,
-      });
-
-      const response = await s3Client.send(command);
-      
-      if (response.Contents) {
-        allObjects.push(...response.Contents.filter(obj => obj.Key).map(obj => ({ Key: obj.Key! })));
-      }
-      
-      continuationToken = response.NextContinuationToken;
-    } while (continuationToken);
-
-    console.log(`Found ${allObjects.length} objects in R2 bucket`);
-
-    // Filter for image and video files
-    const mediaFiles = allObjects.filter(obj => 
-      isImageFile(obj.Key) || isVideoFile(obj.Key)
-    );
-
-    console.log(`Found ${mediaFiles.length} media files`);
-
-    // Fetch existing categories and subcategories
+    // Get existing categories
     const { data: categories } = await supabase
-      .from('content_vault_categories')
-      .select('id, slug, name');
+      .from("content_vault_categories")
+      .select("id, slug");
 
-    const { data: subcategories } = await supabase
-      .from('content_vault_subcategories')
-      .select('id, slug, name, category_id');
-
-    // Fetch existing resource URLs to check for duplicates
-    const { data: existingResources } = await supabase
-      .from('content_vault_resources')
-      .select('resource_url');
-
-    const existingUrls = new Set(existingResources?.map(r => r.resource_url) || []);
-
-    // Create lookup maps
-    const categoryMap = new Map(categories?.map(c => [c.slug.toLowerCase(), c]) || []);
-    const subcategoryMap = new Map(subcategories?.map(s => [`${s.category_id}-${s.slug.toLowerCase()}`, s]) || []);
-
-    // Find photos and videos categories
-    const photosCategory = categories?.find(c => c.slug === 'photos');
-    const videosCategory = categories?.find(c => c.slug === 'videos');
+    const photosCategory = categories?.find((c) => c.slug === "photos");
+    const videosCategory = categories?.find((c) => c.slug === "videos");
 
     if (!photosCategory || !videosCategory) {
       return new Response(
-        JSON.stringify({ 
-          error: 'Photos or Videos category not found in content vault. Please create them first.' 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Photos or Videos category not found in vault" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const result: SyncResult = {
-      added: 0,
-      skipped: 0,
-      errors: [],
-      files: [],
-    };
+    // Get existing subcategories
+    const { data: existingSubcategories } = await supabase
+      .from("content_vault_subcategories")
+      .select("id, slug, category_id");
 
-    // Process each media file
-    for (const obj of mediaFiles) {
-      const parsed = parsePath(obj.Key);
-      if (!parsed) {
-        result.errors.push(`Could not parse path: ${obj.Key}`);
-        continue;
-      }
+    // Get existing resources to avoid duplicates
+    const { data: existingResources } = await supabase
+      .from("content_vault_resources")
+      .select("resource_url");
 
-      const resourceUrl = `${publicUrl.replace(/\/$/, '')}/${obj.Key}`;
+    const existingUrls = new Set(existingResources?.map((r) => r.resource_url) || []);
 
-      // Check for duplicate
-      if (existingUrls.has(resourceUrl)) {
-        result.skipped++;
-        result.files.push({ path: obj.Key, action: 'skipped (duplicate)' });
-        continue;
-      }
+    const result: SyncResult = { added: 0, skipped: 0, errors: [], files: [] };
+    const subcategoryCache = new Map<string, string>();
 
-      // Determine target category based on file type
-      const isImage = isImageFile(parsed.filename);
-      const targetCategory = isImage ? photosCategory : videosCategory;
+    // Pre-populate cache with existing subcategories
+    existingSubcategories?.forEach((sub) => {
+      const key = `${sub.category_id}:${sub.slug}`;
+      subcategoryCache.set(key, sub.id);
+    });
 
-      // Try to find or create subcategory based on path
-      let subcategoryId: string | null = null;
-      
-      if (parsed.subcategory) {
-        const subcatSlug = parsed.subcategory.toLowerCase().replace(/\s+/g, '-');
-        const subcatKey = `${targetCategory.id}-${subcatSlug}`;
-        
-        const existingSubcat = subcategoryMap.get(subcatKey);
-        if (existingSubcat) {
-          subcategoryId = existingSubcat.id;
-        } else {
-          // Create new subcategory
-          const { data: newSubcat, error: subcatError } = await supabase
-            .from('content_vault_subcategories')
+    for (const key of mediaKeys) {
+      try {
+        const resourceUrl = `${r2PublicUrl.replace(/\/$/, "")}/${key}`;
+
+        if (existingUrls.has(resourceUrl)) {
+          result.skipped++;
+          result.files.push({ path: key, action: "skipped (exists)" });
+          continue;
+        }
+
+        const parsed = parsePath(key);
+        if (!parsed) {
+          result.skipped++;
+          result.files.push({ path: key, action: "skipped (invalid path)" });
+          continue;
+        }
+
+        const isImage = isImageFile(parsed.filename);
+        const targetCategoryId = isImage ? photosCategory.id : videosCategory.id;
+        const subcategorySlug = parsed.subcategory.replace(/\s+/g, "-").toLowerCase();
+
+        // Get or create subcategory
+        const cacheKey = `${targetCategoryId}:${subcategorySlug}`;
+        let subcategoryId = subcategoryCache.get(cacheKey);
+
+        if (!subcategoryId) {
+          // Get max position
+          const { data: maxPosData } = await supabase
+            .from("content_vault_subcategories")
+            .select("position")
+            .eq("category_id", targetCategoryId)
+            .order("position", { ascending: false })
+            .limit(1);
+
+          const nextPosition = (maxPosData?.[0]?.position ?? 0) + 1;
+
+          const { data: newSub, error: subError } = await supabase
+            .from("content_vault_subcategories")
             .insert({
-              category_id: targetCategory.id,
-              name: cleanFilename(parsed.subcategory),
-              slug: subcatSlug,
-              position: 0,
+              category_id: targetCategoryId,
+              name: parsed.subcategory.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+              slug: subcategorySlug,
+              position: nextPosition,
             })
-            .select('id')
+            .select("id")
             .single();
 
-          if (subcatError) {
-            result.errors.push(`Failed to create subcategory for ${obj.Key}: ${subcatError.message}`);
+          if (subError) {
+            result.errors.push(`Failed to create subcategory for ${key}: ${subError.message}`);
             continue;
           }
-          
-          subcategoryId = newSubcat.id;
-          subcategoryMap.set(subcatKey, { id: newSubcat.id, slug: subcatSlug, name: cleanFilename(parsed.subcategory), category_id: targetCategory.id });
+
+          subcategoryId = newSub.id;
+          subcategoryCache.set(cacheKey, subcategoryId!);
         }
-      } else {
-        // Use default subcategory or first available
-        const defaultSubcats = subcategories?.filter(s => s.category_id === targetCategory.id);
-        if (defaultSubcats && defaultSubcats.length > 0) {
-          subcategoryId = defaultSubcats[0].id;
-        } else {
-          // Create a default subcategory
-          const { data: newSubcat, error: subcatError } = await supabase
-            .from('content_vault_subcategories')
-            .insert({
-              category_id: targetCategory.id,
-              name: 'General',
-              slug: 'general',
-              position: 0,
-            })
-            .select('id')
-            .single();
 
-          if (subcatError) {
-            result.errors.push(`Failed to create default subcategory: ${subcatError.message}`);
-            continue;
-          }
-          
-          subcategoryId = newSubcat.id;
-        }
-      }
+        // Get max position for resource
+        const { data: maxResPos } = await supabase
+          .from("content_vault_resources")
+          .select("position")
+          .eq("subcategory_id", subcategoryId)
+          .order("position", { ascending: false })
+          .limit(1);
 
-      if (!subcategoryId) {
-        result.errors.push(`No subcategory found for ${obj.Key}`);
-        continue;
-      }
+        const resourcePosition = (maxResPos?.[0]?.position ?? 0) + 1;
 
-      // Insert resource
-      const { error: insertError } = await supabase
-        .from('content_vault_resources')
-        .insert({
+        // Insert resource
+        const { error: insertError } = await supabase.from("content_vault_resources").insert({
           subcategory_id: subcategoryId,
           title: cleanFilename(parsed.filename),
-          description: null,
-          cover_image_url: isImage ? resourceUrl : null,
-          resource_type: 'download',
           resource_url: resourceUrl,
-          tags: parsed.subcategory ? [cleanFilename(parsed.subcategory)] : [],
-          position: 0,
+          resource_type: isImage ? "image" : "video",
+          position: resourcePosition,
         });
 
-      if (insertError) {
-        result.errors.push(`Failed to insert ${obj.Key}: ${insertError.message}`);
-        result.files.push({ path: obj.Key, action: 'error' });
-      } else {
+        if (insertError) {
+          result.errors.push(`Failed to insert ${key}: ${insertError.message}`);
+          continue;
+        }
+
         result.added++;
-        result.files.push({ path: obj.Key, action: 'added' });
+        result.files.push({ path: key, action: "added" });
         existingUrls.add(resourceUrl);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        result.errors.push(`Error processing ${key}: ${errorMessage}`);
       }
     }
 
-    console.log('Sync complete:', result);
+    console.log(`[SYNC-R2] Sync complete: added=${result.added}, skipped=${result.skipped}, errors=${result.errors.length}`);
 
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (err: unknown) {
+    console.error("[SYNC-R2] Fatal error:", err);
+    const errorMessage = err instanceof Error ? err.message : String(err);
     return new Response(
-      JSON.stringify(result),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('Sync error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: errorMessage || "Unknown error occurred" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
