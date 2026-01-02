@@ -25,7 +25,7 @@ import {
   Save,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAssessmentData, setAssessmentData, ASSESSMENT_KEYS } from "@/lib/assessmentStorage";
+import { getAssessmentData, setAssessmentData, removeAssessmentData, ASSESSMENT_KEYS } from "@/lib/assessmentStorage";
 
 const launchFeelings = [
   "Exhausted",
@@ -286,7 +286,9 @@ const WhyStatementAssessment = () => {
   };
 
   const handleRetake = () => {
-    localStorage.removeItem(STORAGE_KEY);
+    if (user?.id) {
+      removeAssessmentData(ASSESSMENT_KEYS.WHY_STATEMENT, user.id);
+    }
     setData(initialData);
     setCurrentPart(0);
     setIsCompleted(false);

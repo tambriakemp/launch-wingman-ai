@@ -41,6 +41,7 @@ interface User {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   last_active: string | null;
+  is_admin: boolean;
 }
 
 interface ImpersonationLog {
@@ -93,10 +94,10 @@ const MobileUserCard = ({
           </div>
         </div>
         <Badge
-          variant={user.subscription_status === 'pro' ? 'default' : 'secondary'}
-          className={user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
+          variant={user.is_admin ? 'default' : user.subscription_status === 'pro' ? 'default' : 'secondary'}
+          className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
         >
-          {user.subscription_status === 'pro' ? 'Pro' : 'Free'}
+          {user.is_admin ? 'Admin' : user.subscription_status === 'pro' ? 'Pro' : 'Free'}
         </Badge>
       </div>
       <div className="grid grid-cols-2 gap-2 text-sm mb-3">
@@ -879,10 +880,10 @@ const AdminDashboard = () => {
                           </TableCell>
                           <TableCell>
                             <Badge
-                              variant={user.subscription_status === 'pro' ? 'default' : 'secondary'}
-                              className={user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
+                              variant={user.is_admin ? 'default' : user.subscription_status === 'pro' ? 'default' : 'secondary'}
+                              className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
                             >
-                              {user.subscription_status === 'pro' ? 'Pro' : 'Free'}
+                              {user.is_admin ? 'Admin' : user.subscription_status === 'pro' ? 'Pro' : 'Free'}
                             </Badge>
                           </TableCell>
                           <TableCell>
