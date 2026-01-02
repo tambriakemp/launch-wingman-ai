@@ -4,6 +4,7 @@ import { Check, Circle, Lock, ChevronRight, ChevronDown, LucideIcon, Sparkles, C
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { TaskTemplate, ProjectTask, TaskStatus } from "@/types/tasks";
 import {
   Collapsible,
@@ -44,7 +45,9 @@ export const PhaseSection = ({
   isProOnly = false,
 }: PhaseSectionProps) => {
   const navigate = useNavigate();
-  const { user, isSubscribed } = useAuth();
+  const { user } = useAuth();
+  const { isSubscribed, isAdmin } = useFeatureAccess();
+  const hasFullAccess = isSubscribed || isAdmin;
   const [projectTasks, setProjectTasks] = useState<ProjectTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -155,7 +158,7 @@ export const PhaseSection = ({
           {!isPrerequisiteComplete && (
             <Lock className="w-3.5 h-3.5 text-muted-foreground" />
           )}
-          {isProOnly && !isSubscribed && (
+          {isProOnly && !hasFullAccess && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button

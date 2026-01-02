@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
@@ -63,6 +64,8 @@ interface SocialConnection {
 
 const Settings = () => {
   const { user, isSubscribed, subscriptionEnd, checkSubscription } = useAuth();
+  const { isAdmin, tier } = useFeatureAccess();
+  const hasFullAccess = isSubscribed || isAdmin;
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [searchParams] = useSearchParams();
@@ -646,38 +649,44 @@ const Settings = () => {
               </div>
             </CardHeader>
             <CardContent>
-              {isSubscribed ? (
-                /* Pro Plan - Active Subscription */
+              {hasFullAccess ? (
+                /* Pro or Admin Plan - Full Access */
                 <div className="space-y-4">
-                  <div className="flex items-start justify-between p-4 bg-primary/5 border-2 border-primary/20 rounded-lg">
+                  <div className={`flex items-start justify-between p-4 rounded-lg ${isAdmin ? 'bg-purple-500/10 border-2 border-purple-500/20' : 'bg-primary/5 border-2 border-primary/20'}`}>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <Crown className="w-5 h-5 text-primary" />
-                        <span className="font-semibold text-foreground">Pro Plan</span>
-                        <span className="px-2 py-0.5 bg-primary/20 text-primary text-xs rounded-full">
-                          Active
+                        <Crown className={`w-5 h-5 ${isAdmin ? 'text-purple-500' : 'text-primary'}`} />
+                        <span className="font-semibold text-foreground">
+                          {isAdmin ? 'Admin Access' : 'Pro Plan'}
+                        </span>
+                        <span className={`px-2 py-0.5 text-xs rounded-full ${isAdmin ? 'bg-purple-500/20 text-purple-600' : 'bg-primary/20 text-primary'}`}>
+                          {isAdmin ? 'Full Access' : 'Active'}
                         </span>
                       </div>
-                      <p className="text-sm text-muted-foreground">Unlimited projects included</p>
-                      {subscriptionEnd && (
+                      <p className="text-sm text-muted-foreground">
+                        {isAdmin ? 'Full access to all features' : 'Unlimited projects included'}
+                      </p>
+                      {!isAdmin && subscriptionEnd && (
                         <p className="text-xs text-muted-foreground mt-1">
                           Renews on {new Date(subscriptionEnd).toLocaleDateString()}
                         </p>
                       )}
                     </div>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleManageSubscription}
-                    disabled={isOpeningPortal}
-                  >
-                    {isOpeningPortal ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Settings2 className="w-4 h-4" />
-                    )}
-                    Manage Subscription
-                  </Button>
+                  {!isAdmin && (
+                    <Button 
+                      variant="outline" 
+                      onClick={handleManageSubscription}
+                      disabled={isOpeningPortal}
+                    >
+                      {isOpeningPortal ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Settings2 className="w-4 h-4" />
+                      )}
+                      Manage Subscription
+                    </Button>
+                  )}
                 </div>
               ) : (
                 /* Free Plan - Show Upgrade */

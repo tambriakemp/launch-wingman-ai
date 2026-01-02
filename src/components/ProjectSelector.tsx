@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, addWeeks, subWeeks } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,6 +78,8 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
   });
   const navigate = useNavigate();
   const { user, isSubscribed } = useAuth();
+  const { isAdmin } = useFeatureAccess();
+  const hasFullAccess = isSubscribed || isAdmin;
   const queryClient = useQueryClient();
 
   const { data: projects, isLoading } = useQuery({
@@ -222,8 +225,8 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
   const handleOpenCreateDialog = () => {
     setOpen(false);
     
-    // Free users limited to 1 project
-    if (!isSubscribed && projects && projects.length >= 1) {
+    // Free users limited to 1 project (admins have full access)
+    if (!hasFullAccess && projects && projects.length >= 1) {
       setShowUpgradeDialog(true);
       return;
     }

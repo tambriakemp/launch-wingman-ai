@@ -25,10 +25,11 @@ export const SectionList = ({
   onEditSection, 
   onBack 
 }: SectionListProps) => {
-  const { isSubscribed, hasAccess } = useFeatureAccess();
+  const { isSubscribed, isAdmin, hasAccess } = useFeatureAccess();
+  const hasFullAccess = isSubscribed || isAdmin;
   
   const isSectionLocked = (sectionId: string): boolean => {
-    if (isSubscribed) return false;
+    if (hasFullAccess) return false;
     return !FREE_SECTION_IDS.includes(sectionId);
   };
   const getSlotLabel = (slotType: string) => {
@@ -171,7 +172,7 @@ export const SectionList = ({
       </div>
 
       {/* Pro upgrade prompt for free users */}
-      {!isSubscribed && (
+      {!hasFullAccess && (
         <div className="pt-4">
           <UpgradePrompt
             feature="full_sales_copy"
