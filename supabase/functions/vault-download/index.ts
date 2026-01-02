@@ -22,20 +22,62 @@ serve(async (req) => {
       );
     }
 
-    // Validate URL is from allowed R2 bucket
-    const R2_PUBLIC_URL = Deno.env.get('R2_PUBLIC_URL');
-    if (!R2_PUBLIC_URL || !url.startsWith(R2_PUBLIC_URL)) {
-      console.error('URL not from allowed domain:', url);
+    // Get and normalize R2_PUBLIC_URL
+    let r2PublicUrl = Deno.env.get('R2_PUBLIC_URL');
+    if (!r2PublicUrl) {
+      console.error('R2_PUBLIC_URL not configured');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Normalize R2_PUBLIC_URL - ensure it has https:// prefix
+    if (!r2PublicUrl.startsWith('http://') && !r2PublicUrl.startsWith('https://')) {
+      r2PublicUrl = `https://${r2PublicUrl}`;
+    }
+
+    // Parse allowed host from R2_PUBLIC_URL
+    let allowedHost: string;
+    try {
+      allowedHost = new URL(r2PublicUrl).host;
+    } catch {
+      console.error('Invalid R2_PUBLIC_URL format:', r2PublicUrl);
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Encode the URL to handle spaces and special characters
+    const encodedUrl = encodeURI(url);
+    
+    // Validate URL is from allowed R2 bucket host
+    let requestedHost: string;
+    try {
+      requestedHost = new URL(encodedUrl).host;
+    } catch {
+      console.error('Invalid URL format:', url);
+      return new Response(
+        JSON.stringify({ error: 'Invalid URL format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('URL validation:', { allowedHost, requestedHost, urlPreview: url.substring(0, 100) });
+
+    if (requestedHost !== allowedHost) {
+      console.error('URL host not allowed:', { requestedHost, allowedHost });
       return new Response(
         JSON.stringify({ error: 'Invalid URL domain' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Downloading file:', url);
+    console.log('Downloading file:', encodedUrl);
 
     // Fetch the file from R2
-    const response = await fetch(url);
+    const response = await fetch(encodedUrl);
     
     if (!response.ok) {
       console.error('Failed to fetch file:', response.status, response.statusText);
@@ -51,16 +93,14 @@ serve(async (req) => {
     // Decode URL-encoded characters
     filename = decodeURIComponent(filename);
 
-    // Get content type from response
-    const contentType = response.headers.get('content-type') || 'application/octet-stream';
-
-    console.log('Serving file:', filename, 'Content-Type:', contentType);
+    console.log('Serving file:', filename);
 
     // Stream the response with download headers
+    // Use application/octet-stream to ensure Supabase client returns a Blob
     return new Response(response.body, {
       headers: {
         ...corsHeaders,
-        'Content-Type': contentType,
+        'Content-Type': 'application/octet-stream',
         'Content-Disposition': `attachment; filename="${filename}"`,
         'Cache-Control': 'no-cache',
       },

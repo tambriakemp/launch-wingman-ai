@@ -74,11 +74,11 @@ export const ResourceLightbox = ({
 
       if (error) throw error;
 
-      // The response is the file blob
-      const blob = new Blob([data]);
-      const url = window.URL.createObjectURL(blob);
+      // Handle the blob response - data may already be a Blob or need wrapping
+      const blob = data instanceof Blob ? data : new Blob([data], { type: 'application/octet-stream' });
+      const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
+      a.href = blobUrl;
       
       // Extract filename from URL
       const urlParts = currentResource.resource_url.split('/');
@@ -88,7 +88,7 @@ export const ResourceLightbox = ({
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(blobUrl);
       
       toast.success("Download started!");
     } catch (error) {
