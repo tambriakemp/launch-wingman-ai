@@ -1,5 +1,8 @@
 project_id = "ydhagqgurqhlguxkkppb"
 
+[functions.sync-r2-vault]
+verify_jwt = false
+
 [functions.send-assessment-reminder]
 verify_jwt = false
 

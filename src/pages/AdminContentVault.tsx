@@ -2,6 +2,7 @@ import { ArrowLeft, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { VaultCsvUploader } from "@/components/admin/VaultCsvUploader";
+import { R2SyncCard } from "@/components/admin/R2SyncCard";
 
 const AdminContentVault = () => {
   const navigate = useNavigate();
@@ -26,12 +27,15 @@ const AdminContentVault = () => {
           <div>
             <h1 className="text-2xl font-semibold">Content Vault Management</h1>
             <p className="text-muted-foreground">
-              Bulk upload resources via CSV file
+              Bulk upload resources via CSV or sync from R2
             </p>
           </div>
         </div>
 
-        <VaultCsvUploader />
+        <div className="space-y-6">
+          <R2SyncCard />
+          <VaultCsvUploader />
+        </div>
       </div>
     </div>
   );
