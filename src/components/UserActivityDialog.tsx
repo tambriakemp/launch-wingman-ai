@@ -230,6 +230,23 @@ const ActivityContent = ({
 
   const uniqueIPs = [...new Set(activities.map(a => a.ip_address).filter(Boolean))];
 
+  // Fetch AI usage for this user
+  const [aiCallCount, setAiCallCount] = useState<number>(0);
+  
+  useEffect(() => {
+    const fetchAiUsage = async () => {
+      if (!user?.id) return;
+      const { count, error } = await supabase
+        .from('ai_usage_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      if (!error && count !== null) {
+        setAiCallCount(count);
+      }
+    };
+    fetchAiUsage();
+  }, [user?.id]);
+
   return (
     <div className="flex flex-col h-full">
       {/* Summary Stats */}
@@ -249,6 +266,10 @@ const ActivityContent = ({
         <div>
           <span className="text-muted-foreground">Assessments:</span>{' '}
           <span className="font-medium">{activities.filter(a => a.event_type === 'assessment_complete').length}</span>
+        </div>
+        <div>
+          <span className="text-muted-foreground">AI Calls:</span>{' '}
+          <span className="font-medium">{aiCallCount}</span>
         </div>
       </div>
 

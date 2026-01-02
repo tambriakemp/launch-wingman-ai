@@ -1,4 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdmin } from "@/hooks/useAdmin";
 
 // Feature keys for gating
 export type FeatureKey = 
@@ -11,7 +12,8 @@ export type FeatureKey =
   | 'multiple_offers_sales_copy'
   | 'unlimited_ideas'
   | 'unlimited_drafts'
-  | 'content_vault';
+  | 'content_vault'
+  | 'social_calendar';
 
 // Limits for free plan
 export const FREE_PLAN_LIMITS = {
@@ -33,6 +35,7 @@ export const PRO_FEATURES: FeatureKey[] = [
   'unlimited_ideas',
   'unlimited_drafts',
   'content_vault',
+  'social_calendar',
 ];
 
 // Feature display names for UI
@@ -47,56 +50,68 @@ export const FEATURE_DISPLAY_NAMES: Record<FeatureKey, string> = {
   unlimited_ideas: 'Unlimited Daily Ideas',
   unlimited_drafts: 'Unlimited Content Drafts',
   content_vault: 'Content Vault',
+  social_calendar: 'Social Media Calendar',
 };
+
+// Subscription tier type
+export type SubscriptionTier = 'free' | 'pro' | 'admin';
 
 export const useFeatureAccess = () => {
   const { isSubscribed } = useAuth();
+  const { isAdmin } = useAdmin();
+
+  // Determine the subscription tier
+  const tier: SubscriptionTier = isAdmin ? 'admin' : isSubscribed ? 'pro' : 'free';
 
   // Check if user has access to a specific feature
+  // Admins always have full access
   const hasAccess = (feature: FeatureKey): boolean => {
+    if (isAdmin) return true;
     if (isSubscribed) return true;
     // Free users don't have access to Pro features
     return !PRO_FEATURES.includes(feature);
   };
 
-  // Get limits for free plan (returns null for Pro users = unlimited)
+  // Get limits for free plan (returns null for Pro/Admin users = unlimited)
   const getLimit = (limitKey: keyof typeof FREE_PLAN_LIMITS): number | string[] | null => {
-    if (isSubscribed) return null; // No limits for Pro
+    if (isAdmin || isSubscribed) return null; // No limits for Pro/Admin
     return FREE_PLAN_LIMITS[limitKey];
   };
 
   // Check if user can create more projects
   const canCreateProject = (currentProjectCount: number): boolean => {
-    if (isSubscribed) return true;
+    if (isAdmin || isSubscribed) return true;
     return currentProjectCount < FREE_PLAN_LIMITS.maxProjects;
   };
 
   // Check if user can save more drafts
   const canSaveDraft = (currentDraftCount: number): boolean => {
-    if (isSubscribed) return true;
+    if (isAdmin || isSubscribed) return true;
     return currentDraftCount < FREE_PLAN_LIMITS.maxDrafts;
   };
 
   // Check if a sales copy section is available
   const canAccessSalesCopySection = (sectionId: string): boolean => {
-    if (isSubscribed) return true;
+    if (isAdmin || isSubscribed) return true;
     return FREE_PLAN_LIMITS.salesCopySections.includes(sectionId);
   };
 
-  // Get remaining daily ideas (returns null for Pro = unlimited)
+  // Get remaining daily ideas (returns null for Pro/Admin = unlimited)
   const getRemainingDailyIdeas = (usedToday: number): number | null => {
-    if (isSubscribed) return null;
+    if (isAdmin || isSubscribed) return null;
     return Math.max(0, FREE_PLAN_LIMITS.dailyIdeas - usedToday);
   };
 
-  // Get remaining drafts (returns null for Pro = unlimited)
+  // Get remaining drafts (returns null for Pro/Admin = unlimited)
   const getRemainingDrafts = (currentCount: number): number | null => {
-    if (isSubscribed) return null;
+    if (isAdmin || isSubscribed) return null;
     return Math.max(0, FREE_PLAN_LIMITS.maxDrafts - currentCount);
   };
 
   return {
     isSubscribed,
+    isAdmin,
+    tier,
     hasAccess,
     getLimit,
     canCreateProject,
@@ -104,6 +119,6 @@ export const useFeatureAccess = () => {
     canAccessSalesCopySection,
     getRemainingDailyIdeas,
     getRemainingDrafts,
-    limits: isSubscribed ? null : FREE_PLAN_LIMITS,
+    limits: (isAdmin || isSubscribed) ? null : FREE_PLAN_LIMITS,
   };
 };

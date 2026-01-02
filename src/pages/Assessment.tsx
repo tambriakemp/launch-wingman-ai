@@ -22,6 +22,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { trackAssessmentCompletion } from "@/lib/analytics";
 import { trackAssessmentComplete } from "@/lib/activityTracking";
+import { useAuth } from "@/contexts/AuthContext";
+import { getAssessmentData, setAssessmentData, ASSESSMENT_KEYS } from "@/lib/assessmentStorage";
 
 interface Question {
   id: number;
@@ -266,10 +268,9 @@ const getResultCategory = (score: number) => {
   }
 };
 
-const STORAGE_KEY = "coach_hub_launch_assessment";
-
 const Assessment = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -280,20 +281,21 @@ const Assessment = () => {
   const [hasStarted, setHasStarted] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!user?.id) return;
+    
+    const saved = getAssessmentData<SavedAssessment>(ASSESSMENT_KEYS.LAUNCH, user.id);
     if (saved) {
-      const parsed = JSON.parse(saved);
-      setSavedAssessment(parsed);
+      setSavedAssessment(saved);
       
       // Auto-show results if assessment was completed
-      if (parsed.completedAt) {
-        setAnswers(parsed.answers);
-        setReflections(parsed.reflections || {});
+      if (saved.completedAt) {
+        setAnswers(saved.answers);
+        setReflections(saved.reflections || {});
         setShowResults(true);
         setHasStarted(true);
       }
     }
-  }, []);
+  }, [user?.id]);
 
   const totalScore = Object.values(answers).reduce((sum, points) => sum + points, 0);
   const progress = (Object.keys(answers).length / questions.length) * 100;
@@ -323,13 +325,14 @@ const Assessment = () => {
   };
 
   const handleSaveProgress = () => {
+    if (!user?.id) return;
     const progressData = {
       answers,
       reflections,
       currentQuestion,
       savedAt: new Date().toISOString(),
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(progressData));
+    setAssessmentData(ASSESSMENT_KEYS.LAUNCH, user.id, progressData);
     toast({
       title: "Progress Saved",
       description: "Your progress has been saved. You can continue later.",
@@ -337,13 +340,14 @@ const Assessment = () => {
   };
 
   const handleSave = () => {
+    if (!user?.id) return;
     const assessment: SavedAssessment = {
       answers,
       reflections,
       score: totalScore,
       completedAt: new Date().toISOString(),
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(assessment));
+    setAssessmentData(ASSESSMENT_KEYS.LAUNCH, user.id, assessment);
     setSavedAssessment(assessment);
     
     // Track assessment completion
