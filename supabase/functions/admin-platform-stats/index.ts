@@ -215,12 +215,82 @@ serve(async (req) => {
     };
     logStep("Onboarding funnel stats calculated");
 
+    // Fetch feature usage stats
+    const { count: funnelsCount } = await supabaseClient
+      .from('funnels')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: brandColorsCount } = await supabaseClient
+      .from('brand_colors')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: brandFontsCount } = await supabaseClient
+      .from('brand_fonts')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: brandPhotosCount } = await supabaseClient
+      .from('brand_photos')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: brandLogosCount } = await supabaseClient
+      .from('brand_logos')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: socialBiosCount } = await supabaseClient
+      .from('social_bios')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: salesPageCopyCount } = await supabaseClient
+      .from('sales_page_copy')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: launchSnapshotsCount } = await supabaseClient
+      .from('launch_snapshots')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: metricUpdatesCount } = await supabaseClient
+      .from('metric_updates')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: contentPlannerCount } = await supabaseClient
+      .from('content_planner')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: launchEventsCount } = await supabaseClient
+      .from('launch_events')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: checkInsCount } = await supabaseClient
+      .from('check_ins')
+      .select('*', { count: 'exact', head: true });
+
+    const featureUsage = {
+      funnelBuilder: funnelsCount || 0,
+      brandingColors: brandColorsCount || 0,
+      brandingFonts: brandFontsCount || 0,
+      brandingPhotos: brandPhotosCount || 0,
+      brandingLogos: brandLogosCount || 0,
+      socialBios: socialBiosCount || 0,
+      salesPageCopy: salesPageCopyCount || 0,
+      launchSnapshots: launchSnapshotsCount || 0,
+      metricUpdates: metricUpdatesCount || 0,
+      contentCalendar: contentPlannerCount || 0,
+      launchEvents: launchEventsCount || 0,
+      checkIns: checkInsCount || 0,
+      contentIdeas: contentIdeasCount || 0,
+      contentDrafts: contentDraftsCount || 0,
+      scheduledPosts: scheduledPostsCount || 0,
+      offers: offersCount || 0,
+    };
+    logStep("Feature usage stats calculated");
+
     const response = {
       projectStats,
       contentStats,
       engagementStats,
       offerStats,
       onboardingFunnel,
+      featureUsage,
       generatedAt: new Date().toISOString(),
     };
 

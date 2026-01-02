@@ -53,12 +53,32 @@ export interface OnboardingFunnel {
   offerCreationRate: number;
 }
 
+export interface FeatureUsage {
+  funnelBuilder: number;
+  brandingColors: number;
+  brandingFonts: number;
+  brandingPhotos: number;
+  brandingLogos: number;
+  socialBios: number;
+  salesPageCopy: number;
+  launchSnapshots: number;
+  metricUpdates: number;
+  contentCalendar: number;
+  launchEvents: number;
+  checkIns: number;
+  contentIdeas: number;
+  contentDrafts: number;
+  scheduledPosts: number;
+  offers: number;
+}
+
 export interface AdminPlatformStats {
   projectStats: ProjectStats;
   contentStats: ContentStats;
   engagementStats: EngagementStats;
   offerStats: OfferStats;
   onboardingFunnel: OnboardingFunnel;
+  featureUsage: FeatureUsage;
   generatedAt: string;
 }
 
