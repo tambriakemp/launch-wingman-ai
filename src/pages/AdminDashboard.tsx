@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Menu, Package, Pencil } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Menu, Package, Pencil, ShieldOff } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -29,6 +29,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { UserActivityDialog } from '@/components/UserActivityDialog';
 import { EditUserDialog } from '@/components/admin/EditUserDialog';
 import { AiUsageStatsCard, AiUsageTable } from '@/components/admin/AiUsageSection';
+import { AdminRoleToggle } from '@/components/admin/AdminRoleToggle';
+import { RevenueChurnChart } from '@/components/admin/RevenueChurnChart';
 
 interface User {
   id: string;
@@ -609,6 +611,9 @@ const AdminDashboard = () => {
           </Button>
         </div>
 
+        {/* Revenue/Churn Chart */}
+        <RevenueChurnChart users={users} />
+
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 md:mb-8">
           <Card>
@@ -910,19 +915,28 @@ const AdminDashboard = () => {
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               {user.id !== currentUser?.id && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleImpersonateClick(user)}
-                                  disabled={impersonateLoading === user.id}
-                                  title="View as this user"
-                                >
-                                  {impersonateLoading === user.id ? (
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Eye className="h-4 w-4" />
-                                  )}
-                                </Button>
+                                <>
+                                  <AdminRoleToggle
+                                    userId={user.id}
+                                    userEmail={user.email}
+                                    isAdmin={user.is_admin}
+                                    accessToken={session?.access_token || ''}
+                                    onRoleChanged={fetchUsers}
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleImpersonateClick(user)}
+                                    disabled={impersonateLoading === user.id}
+                                    title="View as this user"
+                                  >
+                                    {impersonateLoading === user.id ? (
+                                      <RefreshCw className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Eye className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </>
                               )}
                               {user.subscription_status === 'pro' ? (
                                 <Button
