@@ -24,6 +24,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 
 interface NavItem {
@@ -238,6 +239,8 @@ export const ProjectSidebar = () => {
   const isMobile = useIsMobile();
   const { isOpen, close } = useMobileSidebar();
   const { isSubscribed } = useAuth();
+  const { isAdmin } = useFeatureAccess();
+  const hasFullAccess = isSubscribed || isAdmin;
 
   // Use the projectId from params, or try to get from localStorage for global pages
   const [storedProjectId, setStoredProjectId] = useState<string | undefined>(undefined);
@@ -335,7 +338,7 @@ export const ProjectSidebar = () => {
     isStepAccessible,
     getLockedMessage,
     isActiveRoute,
-    isSubscribed,
+    isSubscribed: hasFullAccess,
     onUpgradeClick: handleUpgradeClick,
   };
 

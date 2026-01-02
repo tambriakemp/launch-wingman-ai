@@ -72,18 +72,19 @@ export const TalkingPointsSection = ({
   const [refreshing, setRefreshing] = useState(false);
   const [dailyUsage, setDailyUsage] = useState<DailyUsage>(() => getDailyUsage());
   const { user } = useAuth();
-  const { isSubscribed, getRemainingDailyIdeas } = useFeatureAccess();
+  const { isSubscribed, isAdmin, getRemainingDailyIdeas } = useFeatureAccess();
+  const hasFullAccess = isSubscribed || isAdmin;
   
   const previousIdeasRef = useRef<string[]>([]);
   
   const remainingIdeas = getRemainingDailyIdeas(dailyUsage.count);
-  const hasReachedLimit = !isSubscribed && remainingIdeas !== null && remainingIdeas <= 0;
+  const hasReachedLimit = !hasFullAccess && remainingIdeas !== null && remainingIdeas <= 0;
 
   const generateTalkingPoints = async (isRefresh = false) => {
     if (!user) return;
     
     // Check daily limit for free users
-    if (!isSubscribed && isRefresh) {
+    if (!hasFullAccess && isRefresh) {
       const currentUsage = getDailyUsage();
       if (currentUsage.count >= FREE_PLAN_LIMITS.dailyIdeas) {
         setDailyUsage(currentUsage);
@@ -120,7 +121,7 @@ export const TalkingPointsSection = ({
         setTalkingPoints(data.talkingPoints.slice(0, MAX_VISIBLE_CARDS));
         
         // Increment usage for free users on refresh
-        if (!isSubscribed && isRefresh) {
+        if (!hasFullAccess && isRefresh) {
           incrementDailyUsage();
           setDailyUsage(getDailyUsage());
         }
@@ -182,7 +183,7 @@ export const TalkingPointsSection = ({
       )}
 
       {/* Daily limit warning for free users */}
-      {!isSubscribed && remainingIdeas !== null && (
+      {!hasFullAccess && remainingIdeas !== null && (
         <div className="text-center">
           {hasReachedLimit ? (
             <UpgradePrompt

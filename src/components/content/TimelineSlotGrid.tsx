@@ -23,6 +23,7 @@ import { trackTimelineSuggestion, trackContentGeneration } from "@/lib/analytics
 
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 
 interface TimelineSlotGridProps {
@@ -100,7 +101,9 @@ const CONTENT_TYPE_COLORS: Record<string, string> = {
 };
 
 export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridProps) => {
-  const { isSubscribed, user } = useAuth();
+  const { user } = useAuth();
+  const { isSubscribed, isAdmin } = useFeatureAccess();
+  const hasFullAccess = isSubscribed || isAdmin;
   const [expandedPhases, setExpandedPhases] = useState<string[]>(["pre-launch-week-1"]);
   const [postEditorOpen, setPostEditorOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ContentPlannerItem | null>(null);
@@ -465,7 +468,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
       return;
     }
 
-    if (!isSubscribed) {
+    if (!hasFullAccess) {
       setShowUpgradeDialog(true);
       return;
     }
@@ -683,7 +686,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                           >
                                             <CalendarClock className="w-4 h-4 mr-2" />
                                             {item.status === "completed" ? "View Posted" : "Schedule / Edit"}
-                                            {item.status !== "completed" && !isSubscribed && (
+                                            {item.status !== "completed" && !hasFullAccess && (
                                               <Crown className="w-3.5 h-3.5 ml-auto text-yellow-500" />
                                             )}
                                           </DropdownMenuItem>
@@ -821,7 +824,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                                     <DropdownMenuItem onClick={handleCreateNewPost}>
                                                       <Plus className="w-4 h-4 mr-2" />
                                                       Create Post
-                                                      {!isSubscribed && (
+                                                      {!hasFullAccess && (
                                                         <Crown className="w-3.5 h-3.5 ml-auto text-yellow-500" />
                                                       )}
                                                     </DropdownMenuItem>
@@ -867,7 +870,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                                     <DropdownMenuItem onClick={handleCreateNewPost}>
                                                       <Plus className="w-4 h-4 mr-2" />
                                                       Create Post
-                                                      {!isSubscribed && (
+                                                      {!hasFullAccess && (
                                                         <Crown className="w-3.5 h-3.5 ml-auto text-yellow-500" />
                                                       )}
                                                     </DropdownMenuItem>
