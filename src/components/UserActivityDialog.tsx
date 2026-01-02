@@ -5,16 +5,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { format, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
-import { CalendarIcon, ChevronLeft, ChevronRight, Search, Download, RefreshCw, Monitor, Smartphone, Tablet } from 'lucide-react';
+import { CalendarIcon, ChevronLeft, ChevronRight, Search, Download, RefreshCw, Monitor, Smartphone, Tablet, ListFilter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Json } from '@/integrations/supabase/types';
 
 interface UserActivity {
   id: string;
@@ -23,7 +24,60 @@ interface UserActivity {
   ip_address: string | null;
   user_agent: string | null;
   created_at: string;
+  metadata: Json | null;
 }
+
+type EventTypeFilter = 'all' | 'login' | 'signup' | 'task_complete' | 'assessment_complete';
+
+const EVENT_TYPE_OPTIONS: { value: EventTypeFilter; label: string }[] = [
+  { value: 'all', label: 'All Events' },
+  { value: 'login', label: 'Logins' },
+  { value: 'signup', label: 'Signups' },
+  { value: 'task_complete', label: 'Tasks' },
+  { value: 'assessment_complete', label: 'Assessments' },
+];
+
+const getEventBadgeVariant = (eventType: string): 'default' | 'secondary' | 'outline' => {
+  switch (eventType) {
+    case 'login':
+    case 'signup':
+      return 'default';
+    case 'task_complete':
+      return 'secondary';
+    case 'assessment_complete':
+      return 'outline';
+    default:
+      return 'outline';
+  }
+};
+
+const formatEventType = (eventType: string): string => {
+  switch (eventType) {
+    case 'login':
+      return 'Login';
+    case 'signup':
+      return 'Signup';
+    case 'task_complete':
+      return 'Task Complete';
+    case 'assessment_complete':
+      return 'Assessment Complete';
+    default:
+      return eventType.charAt(0).toUpperCase() + eventType.slice(1);
+  }
+};
+
+const getEventDetails = (activity: UserActivity): string | null => {
+  if (!activity.metadata || typeof activity.metadata !== 'object') return null;
+  const meta = activity.metadata as Record<string, unknown>;
+  if (activity.event_type === 'task_complete' && meta.task_name) {
+    return meta.task_name as string;
+  }
+  if (activity.event_type === 'assessment_complete' && meta.assessment_name) {
+    const score = meta.score !== undefined ? ` (Score: ${meta.score})` : '';
+    return `${meta.assessment_name}${score}`;
+  }
+  return null;
+};
 
 interface UserActivityDialogProps {
   open: boolean;
@@ -94,17 +148,27 @@ const ActivityContent = ({
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
+  const [eventTypeFilter, setEventTypeFilter] = useState<EventTypeFilter>('all');
   const isMobile = useIsMobile();
 
   const filteredActivities = activities.filter(activity => {
+    // Event type filter
+    if (eventTypeFilter !== 'all' && activity.event_type !== eventTypeFilter) {
+      return false;
+    }
+    
+    // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       const matchesIP = activity.ip_address?.toLowerCase().includes(query);
       const matchesEvent = activity.event_type.toLowerCase().includes(query);
       const matchesBrowser = getBrowserInfo(activity.user_agent).toLowerCase().includes(query);
-      if (!matchesIP && !matchesEvent && !matchesBrowser) return false;
+      const details = getEventDetails(activity);
+      const matchesDetails = details?.toLowerCase().includes(query);
+      if (!matchesIP && !matchesEvent && !matchesBrowser && !matchesDetails) return false;
     }
     
+    // Date filter
     if (dateFrom || dateTo) {
       const activityDate = new Date(activity.created_at);
       if (dateFrom && dateTo) {
@@ -136,11 +200,12 @@ const ActivityContent = ({
       return;
     }
 
-    const headers = ['Event Type', 'IP Address', 'Browser', 'OS', 'Timestamp'];
+    const headers = ['Event Type', 'Details', 'IP Address', 'Browser', 'OS', 'Timestamp'];
     const csvContent = [
       headers.join(','),
       ...filteredActivities.map(activity => [
-        activity.event_type,
+        formatEventType(activity.event_type),
+        `"${getEventDetails(activity) || ''}"`,
         `"${activity.ip_address || 'Unknown'}"`,
         getBrowserInfo(activity.user_agent),
         getOSInfo(activity.user_agent),
@@ -156,34 +221,65 @@ const ActivityContent = ({
     toast.success('Activity exported successfully');
   };
 
+  const clearFilters = () => {
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    setEventTypeFilter('all');
+    setSearchQuery('');
+  };
+
   const uniqueIPs = [...new Set(activities.map(a => a.ip_address).filter(Boolean))];
 
   return (
     <div className="flex flex-col h-full">
       {/* Summary Stats */}
-      <div className="flex gap-4 py-2 border-b text-sm">
+      <div className="flex flex-wrap gap-4 py-2 border-b text-sm">
         <div>
-          <span className="text-muted-foreground">Total Logins:</span>{' '}
+          <span className="text-muted-foreground">Total Events:</span>{' '}
           <span className="font-medium">{activities.length}</span>
         </div>
         <div>
-          <span className="text-muted-foreground">Unique IPs:</span>{' '}
-          <span className="font-medium">{uniqueIPs.length}</span>
+          <span className="text-muted-foreground">Logins:</span>{' '}
+          <span className="font-medium">{activities.filter(a => a.event_type === 'login').length}</span>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Tasks:</span>{' '}
+          <span className="font-medium">{activities.filter(a => a.event_type === 'task_complete').length}</span>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Assessments:</span>{' '}
+          <span className="font-medium">{activities.filter(a => a.event_type === 'assessment_complete').length}</span>
         </div>
       </div>
 
       {/* Filters */}
       <div className="flex flex-col gap-3 py-3">
-        <div className="flex-1">
-          <div className="relative">
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by IP, event, browser..."
+              placeholder="Search by IP, event, task name..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               className="pl-9 h-9"
             />
           </div>
+          <Select 
+            value={eventTypeFilter} 
+            onValueChange={(v) => { setEventTypeFilter(v as EventTypeFilter); setCurrentPage(1); }}
+          >
+            <SelectTrigger className="w-[140px] h-9">
+              <ListFilter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Filter" />
+            </SelectTrigger>
+            <SelectContent>
+              {EVENT_TYPE_OPTIONS.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -239,9 +335,9 @@ const ActivityContent = ({
                 </PopoverContent>
               </Popover>
 
-              {(dateFrom || dateTo) && (
-                <Button variant="ghost" size="sm" onClick={clearDateFilters}>
-                  Clear
+              {(dateFrom || dateTo || eventTypeFilter !== 'all' || searchQuery) && (
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  Clear All
                 </Button>
               )}
             </>
@@ -269,33 +365,39 @@ const ActivityContent = ({
           <>
             {/* Mobile card view */}
             <div className="md:hidden space-y-2">
-              {paginatedActivities.map((activity) => (
-                <Card key={activity.id}>
-                  <CardContent className="p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge variant="outline" className="capitalize">
-                        {activity.event_type}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(activity.created_at), 'MMM d, h:mm a')}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">IP:</span>{' '}
-                        <span className="font-mono text-xs">{activity.ip_address || 'Unknown'}</span>
+              {paginatedActivities.map((activity) => {
+                const details = getEventDetails(activity);
+                return (
+                  <Card key={activity.id}>
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge variant={getEventBadgeVariant(activity.event_type)}>
+                          {formatEventType(activity.event_type)}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(activity.created_at), 'MMM d, h:mm a')}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        {getDeviceIcon(activity.user_agent)}
-                        <span>{getBrowserInfo(activity.user_agent)}</span>
+                      {details && (
+                        <p className="text-sm text-foreground mb-2">{details}</p>
+                      )}
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">IP:</span>{' '}
+                          <span className="font-mono text-xs">{activity.ip_address || 'Unknown'}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {getDeviceIcon(activity.user_agent)}
+                          <span>{getBrowserInfo(activity.user_agent)}</span>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
               {paginatedActivities.length === 0 && (
                 <p className="text-center py-8 text-muted-foreground">
-                  {searchQuery || dateFrom || dateTo ? 'No matching activity found' : 'No activity recorded'}
+                  {searchQuery || dateFrom || dateTo || eventTypeFilter !== 'all' ? 'No matching activity found' : 'No activity recorded'}
                 </p>
               )}
             </div>
@@ -306,40 +408,41 @@ const ActivityContent = ({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Event</TableHead>
+                    <TableHead>Details</TableHead>
                     <TableHead>IP Address</TableHead>
-                    <TableHead>Device</TableHead>
                     <TableHead>Browser / OS</TableHead>
                     <TableHead>Timestamp</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedActivities.map((activity) => (
-                    <TableRow key={activity.id}>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {activity.event_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {activity.ip_address || <span className="text-muted-foreground">Unknown</span>}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          {getDeviceIcon(activity.user_agent)}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {getBrowserInfo(activity.user_agent)} / {getOSInfo(activity.user_agent)}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(activity.created_at), 'MMM d, yyyy h:mm a')}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {paginatedActivities.map((activity) => {
+                    const details = getEventDetails(activity);
+                    return (
+                      <TableRow key={activity.id}>
+                        <TableCell>
+                          <Badge variant={getEventBadgeVariant(activity.event_type)}>
+                            {formatEventType(activity.event_type)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm max-w-[200px] truncate">
+                          {details || <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {activity.ip_address || <span className="text-muted-foreground">Unknown</span>}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {getBrowserInfo(activity.user_agent)} / {getOSInfo(activity.user_agent)}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {format(new Date(activity.created_at), 'MMM d, yyyy h:mm a')}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                   {paginatedActivities.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        {searchQuery || dateFrom || dateTo ? 'No matching activity found' : 'No activity recorded'}
+                        {searchQuery || dateFrom || dateTo || eventTypeFilter !== 'all' ? 'No matching activity found' : 'No activity recorded'}
                       </TableCell>
                     </TableRow>
                   )}

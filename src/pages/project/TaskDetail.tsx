@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { MVLCallout, MVLLaunchIntro, MVLLaunchComplete } from "@/components/mvl";
 import { generateVoiceScript, hasVoiceSnippetSupport } from "@/lib/generateVoiceScript";
 import { trackTaskCompletion, trackTaskStart, trackAIAssist } from "@/lib/analytics";
+import { trackTaskComplete } from "@/lib/activityTracking";
 
 export default function TaskDetail() {
   const { id: projectId, taskId } = useParams();
@@ -288,6 +289,9 @@ export default function TaskDetail() {
       
       // Track task completion with Google Analytics
       trackTaskCompletion(taskTemplate?.title || taskId);
+      
+      // Track task completion to backend activity log
+      trackTaskComplete(taskId, taskTemplate?.title || taskId);
       
       // MVL: Show transformation statement confirmation (placement #2)
       if (taskId === 'messaging_transformation_statement') {
