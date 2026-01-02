@@ -20,7 +20,7 @@ serve(async (req) => {
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ isAdmin: false }), {
+      return new Response(JSON.stringify({ isAdmin: false, isManager: false, role: null }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
@@ -30,31 +30,37 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     
     if (userError || !userData.user) {
-      return new Response(JSON.stringify({ isAdmin: false }), {
+      return new Response(JSON.stringify({ isAdmin: false, isManager: false, role: null }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
 
-    console.log('Checking admin for user:', userData.user.id, userData.user.email);
+    console.log('Checking roles for user:', userData.user.id, userData.user.email);
 
-    // Check if user has admin role
+    // Check all roles for the user (admin or manager)
     const { data: roleData, error: roleError } = await supabaseClient
       .from('user_roles')
       .select('role')
       .eq('user_id', userData.user.id)
-      .eq('role', 'admin')
-      .maybeSingle();
+      .in('role', ['admin', 'manager']);
 
-    console.log('Role query result:', { roleData, roleError, isAdmin: !!roleData });
+    console.log('Role query result:', { roleData, roleError });
 
-    return new Response(JSON.stringify({ isAdmin: !!roleData }), {
+    const roles = roleData?.map(r => r.role) || [];
+    const isAdmin = roles.includes('admin');
+    const isManager = roles.includes('manager');
+    
+    // Primary role: admin takes precedence over manager
+    const role = isAdmin ? 'admin' : isManager ? 'manager' : null;
+
+    return new Response(JSON.stringify({ isAdmin, isManager, role }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     console.error('Check admin error:', error);
-    return new Response(JSON.stringify({ isAdmin: false }), {
+    return new Response(JSON.stringify({ isAdmin: false, isManager: false, role: null }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

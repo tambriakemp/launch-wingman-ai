@@ -8,7 +8,7 @@ interface ProtectedAdminRouteProps {
 
 const ProtectedAdminRoute = ({ children }: ProtectedAdminRouteProps) => {
   const { user, loading: authLoading } = useAuth();
-  const { isAdmin, loading: adminLoading } = useAdmin();
+  const { hasAdminAccess, loading: adminLoading } = useAdmin();
 
   if (authLoading || adminLoading) {
     return (
@@ -22,7 +22,7 @@ const ProtectedAdminRoute = ({ children }: ProtectedAdminRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
-  if (!isAdmin) {
+  if (!hasAdminAccess) {
     return <Navigate to="/app" replace />;
   }
 
