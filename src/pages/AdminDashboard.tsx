@@ -46,6 +46,7 @@ interface User {
   subscription_amount_cents: number;
   last_active: string | null;
   is_admin: boolean;
+  is_manager: boolean;
 }
 
 interface ImpersonationLog {
@@ -98,10 +99,10 @@ const MobileUserCard = ({
           </div>
         </div>
         <Badge
-          variant={user.is_admin ? 'default' : user.subscription_status === 'pro' ? 'default' : 'secondary'}
-          className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
+          variant={user.is_admin || user.is_manager ? 'default' : user.subscription_status === 'pro' ? 'default' : 'secondary'}
+          className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
         >
-          {user.is_admin ? 'Admin' : user.subscription_status === 'pro' ? 'Pro' : 'Free'}
+          {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : 'Free'}
         </Badge>
       </div>
       <div className="grid grid-cols-2 gap-2 text-sm mb-3">
@@ -204,7 +205,7 @@ const AdminDashboard = () => {
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userDateFrom, setUserDateFrom] = useState<Date | undefined>(undefined);
   const [userDateTo, setUserDateTo] = useState<Date | undefined>(undefined);
-  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'free' | 'pro'>('all');
+  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'free' | 'pro' | 'admin' | 'manager'>('all');
   const [userCurrentPage, setUserCurrentPage] = useState(1);
 
   // Bulk selection state
@@ -242,7 +243,13 @@ const AdminDashboard = () => {
     }
     
     if (userStatusFilter !== 'all') {
-      result = result.filter(user => user.subscription_status === userStatusFilter);
+      if (userStatusFilter === 'admin') {
+        result = result.filter(user => user.is_admin);
+      } else if (userStatusFilter === 'manager') {
+        result = result.filter(user => user.is_manager);
+      } else {
+        result = result.filter(user => user.subscription_status === userStatusFilter);
+      }
     }
     
     if (userDateFrom || userDateTo) {
@@ -695,7 +702,7 @@ const AdminDashboard = () => {
                 {/* Status Filter */}
                 <div>
                   <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
-                  <Select value={userStatusFilter} onValueChange={(v) => setUserStatusFilter(v as 'all' | 'free' | 'pro')}>
+                  <Select value={userStatusFilter} onValueChange={(v) => setUserStatusFilter(v as 'all' | 'free' | 'pro' | 'admin' | 'manager')}>
                     <SelectTrigger className="w-[100px] md:w-[120px] h-9">
                       <SelectValue />
                     </SelectTrigger>
@@ -703,6 +710,8 @@ const AdminDashboard = () => {
                       <SelectItem value="all">All</SelectItem>
                       <SelectItem value="free">Free</SelectItem>
                       <SelectItem value="pro">Pro</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="manager">Manager</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -893,10 +902,10 @@ const AdminDashboard = () => {
                           </TableCell>
                           <TableCell>
                             <Badge
-                              variant={user.is_admin ? 'default' : user.subscription_status === 'pro' ? 'default' : 'secondary'}
-                              className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
+                              variant={user.is_admin || user.is_manager ? 'default' : user.subscription_status === 'pro' ? 'default' : 'secondary'}
+                              className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
                             >
-                              {user.is_admin ? 'Admin' : user.subscription_status === 'pro' ? 'Pro' : 'Free'}
+                              {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : 'Free'}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -930,6 +939,7 @@ const AdminDashboard = () => {
                                       userId={user.id}
                                       userEmail={user.email}
                                       isAdmin={user.is_admin}
+                                      isManager={user.is_manager}
                                       accessToken={session?.access_token || ''}
                                       onRoleChanged={fetchUsers}
                                     />
