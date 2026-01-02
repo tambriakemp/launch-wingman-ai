@@ -1,7 +1,10 @@
-import { ExternalLink, Download, Image as ImageIcon } from "lucide-react";
+import { useState } from "react";
+import { ExternalLink, Download, Image as ImageIcon, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ResourceCardProps {
   title: string;
@@ -22,6 +25,7 @@ export const ResourceCard = ({
   tags,
   onClick,
 }: ResourceCardProps) => {
+  const [isDownloading, setIsDownloading] = useState(false);
   const isCanvaLink = resourceType === 'canva_link';
   
   // Use resource URL as cover image for images/videos if no cover image specified
@@ -31,39 +35,55 @@ export const ResourceCard = ({
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
     
+    if (isDownloading) return;
+    
+    setIsDownloading(true);
+    toast.info("Starting download...");
+    
     try {
-      const response = await fetch(resourceUrl, { mode: 'cors' });
-      const blob = await response.blob();
+      const { data, error } = await supabase.functions.invoke('vault-download', {
+        body: { url: resourceUrl }
+      });
+
+      if (error) throw error;
+
+      // The response is the file blob
+      const blob = new Blob([data]);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      // Extract file extension from URL
+      
+      // Extract filename from URL
       const urlParts = resourceUrl.split('/');
-      const filename = urlParts[urlParts.length - 1] || title || "download";
+      const filename = decodeURIComponent(urlParts[urlParts.length - 1] || title || "download");
       a.download = filename;
       a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+      
+      toast.success("Download started!");
     } catch (error) {
       console.error("Download failed:", error);
-      // Fallback: create a download link with the original URL
-      const a = document.createElement("a");
-      a.href = resourceUrl;
-      const urlParts = resourceUrl.split('/');
-      a.download = urlParts[urlParts.length - 1] || title || "download";
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      toast.error("Download failed. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleCardClick = () => {
+    if (isCanvaLink) {
+      window.open(resourceUrl, '_blank');
+    } else {
+      onClick();
     }
   };
 
   return (
     <Card 
       className="group cursor-pointer overflow-hidden border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg"
-      onClick={onClick}
+      onClick={handleCardClick}
     >
       {/* Cover Image */}
       <div className="aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800/50 dark:to-slate-900/50 relative overflow-hidden">
@@ -99,16 +119,27 @@ export const ResourceCard = ({
           </Badge>
         </div>
 
-        {/* Hover Overlay with Download Button */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+        {/* Persistent Download Button - Always visible on mobile, hover on desktop */}
+        {!isCanvaLink && (
           <Button 
-            size="sm" 
-            onClick={isCanvaLink ? onClick : handleDownload}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg"
+            size="icon"
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="absolute bottom-3 right-3 h-10 w-10 rounded-full bg-black/70 text-white hover:bg-black/90 shadow-lg backdrop-blur-sm border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
           >
-            <Download className="w-4 h-4 mr-2" />
-            {isCanvaLink ? "Open in Canva" : "Download"}
+            {isDownloading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Download className="w-5 h-5" />
+            )}
           </Button>
+        )}
+
+        {/* Hover Overlay for desktop */}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
+          <span className="text-white text-sm font-medium">
+            {isCanvaLink ? "Open in Canva" : "Click to preview"}
+          </span>
         </div>
       </div>
 
