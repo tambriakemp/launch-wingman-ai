@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Download, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, X, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Resource {
   id: string;
@@ -24,6 +26,7 @@ export const ResourceLightbox = ({
   onOpenChange,
 }: ResourceLightboxProps) => {
   const [activeIndex, setActiveIndex] = useState(currentIndex);
+  const [isDownloading, setIsDownloading] = useState(false);
   
   const currentResource = resources[activeIndex];
   
@@ -59,34 +62,40 @@ export const ResourceLightbox = ({
   }, [open, goToPrevious, goToNext]);
 
   const handleDownload = async () => {
-    if (!currentResource) return;
+    if (!currentResource || isDownloading) return;
+    
+    setIsDownloading(true);
+    toast.info("Starting download...");
     
     try {
-      const response = await fetch(currentResource.resource_url, { mode: 'cors' });
-      const blob = await response.blob();
+      const { data, error } = await supabase.functions.invoke('vault-download', {
+        body: { url: currentResource.resource_url }
+      });
+
+      if (error) throw error;
+
+      // The response is the file blob
+      const blob = new Blob([data]);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      // Extract file extension from URL
+      
+      // Extract filename from URL
       const urlParts = currentResource.resource_url.split('/');
-      const filename = urlParts[urlParts.length - 1] || currentResource.title || "download";
+      const filename = decodeURIComponent(urlParts[urlParts.length - 1] || currentResource.title || "download");
       a.download = filename;
       a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+      
+      toast.success("Download started!");
     } catch (error) {
       console.error("Download failed:", error);
-      // Fallback: create a download link with the original URL
-      const a = document.createElement("a");
-      a.href = currentResource.resource_url;
-      const urlParts = currentResource.resource_url.split('/');
-      a.download = urlParts[urlParts.length - 1] || currentResource.title || "download";
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      toast.error("Download failed. Please try again.");
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -120,8 +129,13 @@ export const ResourceLightbox = ({
               size="icon"
               className="text-white hover:bg-white/20"
               onClick={handleDownload}
+              disabled={isDownloading}
             >
-              <Download className="w-5 h-5" />
+              {isDownloading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Download className="w-5 h-5" />
+              )}
             </Button>
             <Button
               variant="ghost"
@@ -151,8 +165,12 @@ export const ResourceLightbox = ({
           ) : (
             <div className="text-white text-center">
               <p className="mb-4">Preview not available for this file type</p>
-              <Button onClick={handleDownload}>
-                <Download className="w-4 h-4 mr-2" />
+              <Button onClick={handleDownload} disabled={isDownloading}>
+                {isDownloading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4 mr-2" />
+                )}
                 Download File
               </Button>
             </div>
