@@ -7,6 +7,7 @@ interface ResourceCardProps {
   title: string;
   description: string | null;
   coverImageUrl: string | null;
+  resourceUrl: string;
   resourceType: string;
   tags: string[];
   onClick: () => void;
@@ -19,6 +20,7 @@ export const ResourceCard = ({
   title, 
   description, 
   coverImageUrl, 
+  resourceUrl,
   resourceType, 
   tags,
   onClick,
@@ -27,6 +29,10 @@ export const ResourceCard = ({
   onDelete,
 }: ResourceCardProps) => {
   const isCanvaLink = resourceType === 'canva_link';
+  
+  // Use resource URL as cover image for images/videos if no cover image specified
+  const isMediaResource = /\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|mov)$/i.test(resourceUrl);
+  const displayImageUrl = coverImageUrl || (isMediaResource ? resourceUrl : null);
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -45,9 +51,9 @@ export const ResourceCard = ({
     >
       {/* Cover Image */}
       <div className="aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800/50 dark:to-slate-900/50 relative overflow-hidden">
-        {coverImageUrl ? (
+        {displayImageUrl ? (
           <img 
-            src={coverImageUrl} 
+            src={displayImageUrl} 
             alt={title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
