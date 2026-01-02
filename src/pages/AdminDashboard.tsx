@@ -32,7 +32,7 @@ import { EditUserDialog } from '@/components/admin/EditUserDialog';
 import { AiUsageTable, MrrStatsCard } from '@/components/admin/AiUsageSection';
 import { AdminRoleToggle } from '@/components/admin/AdminRoleToggle';
 import { RevenueChurnChart } from '@/components/admin/RevenueChurnChart';
-import { ProjectStatsCard, ContentStatsCard, EngagementStatsCard, OfferStatsCard } from '@/components/admin/PlatformStatsSection';
+import { ProjectStatsCard, ContentStatsCard, EngagementStatsCard, OfferStatsCard, OnboardingFunnelCard } from '@/components/admin/PlatformStatsSection';
 
 interface User {
   id: string;
@@ -48,6 +48,7 @@ interface User {
   last_active: string | null;
   is_admin: boolean;
   is_manager: boolean;
+  project_count: number;
 }
 
 interface ImpersonationLog {
@@ -74,7 +75,7 @@ const MobileUserCard = ({
   impersonateLoading, 
   currentUserId 
 }: {
-  user: User;
+  user: User & { project_count: number };
   isSelected: boolean;
   onToggleSelect: () => void;
   onActivity: () => void;
@@ -106,13 +107,17 @@ const MobileUserCard = ({
           {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : 'Free'}
         </Badge>
       </div>
-      <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+      <div className="grid grid-cols-3 gap-2 text-sm mb-3">
+        <div>
+          <span className="text-muted-foreground">Projects:</span>{' '}
+          <span className="font-medium">{user.project_count}</span>
+        </div>
         <div>
           <span className="text-muted-foreground">Joined:</span>{' '}
           {format(new Date(user.created_at), 'MMM d, yyyy')}
         </div>
         <div>
-          <span className="text-muted-foreground">Last Active:</span>{' '}
+          <span className="text-muted-foreground">Active:</span>{' '}
           {user.last_active ? formatDistanceToNow(new Date(user.last_active), { addSuffix: true }) : 'Never'}
         </div>
       </div>
@@ -632,6 +637,7 @@ const AdminDashboard = () => {
           <ContentStatsCard />
           <EngagementStatsCard />
           <OfferStatsCard />
+          <OnboardingFunnelCard />
         </div>
 
         {/* User Stats Cards */}
@@ -875,6 +881,7 @@ const AdminDashboard = () => {
                         </TableHead>
                         <TableHead>User</TableHead>
                         <TableHead>Email</TableHead>
+                        <TableHead>Projects</TableHead>
                         <TableHead>Joined</TableHead>
                         <TableHead>Last Active</TableHead>
                         <TableHead>Status</TableHead>
@@ -897,6 +904,14 @@ const AdminDashboard = () => {
                               : '—'}
                           </TableCell>
                           <TableCell>{user.email}</TableCell>
+                          <TableCell>
+                            <span className={cn(
+                              "font-medium",
+                              user.project_count === 0 && "text-muted-foreground"
+                            )}>
+                              {user.project_count}
+                            </span>
+                          </TableCell>
                           <TableCell>
                             {format(new Date(user.created_at), 'MMM d, yyyy')}
                           </TableCell>

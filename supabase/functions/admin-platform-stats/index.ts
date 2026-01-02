@@ -172,11 +172,55 @@ serve(async (req) => {
     };
     logStep("Offer stats calculated");
 
+    // Fetch onboarding funnel stats
+    const { data: authUsers, error: authError } = await supabaseClient.auth.admin.listUsers();
+    const totalUsers = authUsers?.users?.length || 0;
+
+    // Users with profile info (first_name or last_name filled)
+    const { data: profilesWithNames } = await supabaseClient
+      .from('profiles')
+      .select('user_id, first_name, last_name')
+      .or('first_name.neq.,last_name.neq.');
+    
+    const usersWithProfile = profilesWithNames?.filter(p => p.first_name || p.last_name).length || 0;
+
+    // Users with at least one project
+    const usersWithFirstProject = Object.keys(projectsPerUser).length;
+
+    // Users with at least one completed project task
+    const { data: completedTasks } = await supabaseClient
+      .from('project_tasks')
+      .select('user_id')
+      .eq('status', 'completed');
+    
+    const uniqueUsersWithCompletedTask = new Set(completedTasks?.map(t => t.user_id) || []).size;
+
+    // Users with at least one offer created (as proxy for assessment completion)
+    const { data: usersWithOffers } = await supabaseClient
+      .from('offers')
+      .select('user_id');
+    
+    const uniqueUsersWithOffer = new Set(usersWithOffers?.map(o => o.user_id) || []).size;
+
+    const onboardingFunnel = {
+      totalUsers,
+      usersWithProfile,
+      usersWithFirstProject,
+      usersWithFirstTask: uniqueUsersWithCompletedTask,
+      usersWithOffer: uniqueUsersWithOffer,
+      profileCompletionRate: totalUsers > 0 ? Math.round((usersWithProfile / totalUsers) * 100) : 0,
+      projectCreationRate: totalUsers > 0 ? Math.round((usersWithFirstProject / totalUsers) * 100) : 0,
+      taskCompletionRate: totalUsers > 0 ? Math.round((uniqueUsersWithCompletedTask / totalUsers) * 100) : 0,
+      offerCreationRate: totalUsers > 0 ? Math.round((uniqueUsersWithOffer / totalUsers) * 100) : 0,
+    };
+    logStep("Onboarding funnel stats calculated");
+
     const response = {
       projectStats,
       contentStats,
       engagementStats,
       offerStats,
+      onboardingFunnel,
       generatedAt: new Date().toISOString(),
     };
 

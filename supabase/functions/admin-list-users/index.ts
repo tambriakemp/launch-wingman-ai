@@ -69,6 +69,17 @@ serve(async (req) => {
       .from('user_roles')
       .select('user_id, role');
 
+    // Get project counts per user
+    const { data: projects } = await supabaseClient
+      .from('projects')
+      .select('user_id');
+    
+    const projectCounts: Record<string, number> = {};
+    projects?.forEach(p => {
+      projectCounts[p.user_id] = (projectCounts[p.user_id] || 0) + 1;
+    });
+    logStep("Fetched project counts", { totalProjects: projects?.length || 0 });
+
     // Get Stripe subscription info for each user
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
@@ -130,6 +141,7 @@ serve(async (req) => {
           last_active: profile?.last_active || null,
           is_admin: isAdmin,
           is_manager: isManager,
+          project_count: projectCounts[user.id] || 0,
         };
       })
     );
