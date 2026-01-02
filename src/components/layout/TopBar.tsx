@@ -18,7 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const TopBar = () => {
   const { user, signOut, isImpersonating, impersonatedUserEmail, stopImpersonation } = useAuth();
-  const { isAdmin } = useAdmin();
+  const { hasAdminAccess } = useAdmin();
   const isMobile = useIsMobile();
   const { toggle } = useMobileSidebar();
 
@@ -105,7 +105,7 @@ export const TopBar = () => {
                 Settings
               </Link>
             </DropdownMenuItem>
-            {isAdmin && !isImpersonating && (
+            {hasAdminAccess && !isImpersonating && (
               <DropdownMenuItem asChild>
                 <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
                   <Shield className="w-4 h-4" />

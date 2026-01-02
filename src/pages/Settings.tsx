@@ -64,8 +64,8 @@ interface SocialConnection {
 
 const Settings = () => {
   const { user, isSubscribed, subscriptionEnd, checkSubscription } = useAuth();
-  const { isAdmin, tier } = useFeatureAccess();
-  const hasFullAccess = isSubscribed || isAdmin;
+  const { hasAdminAccess, tier } = useFeatureAccess();
+  const hasFullAccess = isSubscribed || hasAdminAccess;
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [searchParams] = useSearchParams();
@@ -652,28 +652,28 @@ const Settings = () => {
               {hasFullAccess ? (
                 /* Pro or Admin Plan - Full Access */
                 <div className="space-y-4">
-                  <div className={`flex items-start justify-between p-4 rounded-lg ${isAdmin ? 'bg-purple-500/10 border-2 border-purple-500/20' : 'bg-primary/5 border-2 border-primary/20'}`}>
+                  <div className={`flex items-start justify-between p-4 rounded-lg ${hasAdminAccess ? 'bg-purple-500/10 border-2 border-purple-500/20' : 'bg-primary/5 border-2 border-primary/20'}`}>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <Crown className={`w-5 h-5 ${isAdmin ? 'text-purple-500' : 'text-primary'}`} />
+                        <Crown className={`w-5 h-5 ${hasAdminAccess ? 'text-purple-500' : 'text-primary'}`} />
                         <span className="font-semibold text-foreground">
-                          {isAdmin ? 'Admin Access' : 'Pro Plan'}
+                          {hasAdminAccess ? 'Staff Access' : 'Pro Plan'}
                         </span>
-                        <span className={`px-2 py-0.5 text-xs rounded-full ${isAdmin ? 'bg-purple-500/20 text-purple-600' : 'bg-primary/20 text-primary'}`}>
-                          {isAdmin ? 'Full Access' : 'Active'}
+                        <span className={`px-2 py-0.5 text-xs rounded-full ${hasAdminAccess ? 'bg-purple-500/20 text-purple-600' : 'bg-primary/20 text-primary'}`}>
+                          {hasAdminAccess ? 'Full Access' : 'Active'}
                         </span>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {isAdmin ? 'Full access to all features' : 'Unlimited projects included'}
+                        {hasAdminAccess ? 'Full access to all features' : 'Unlimited projects included'}
                       </p>
-                      {!isAdmin && subscriptionEnd && (
+                      {!hasAdminAccess && subscriptionEnd && (
                         <p className="text-xs text-muted-foreground mt-1">
                           Renews on {new Date(subscriptionEnd).toLocaleDateString()}
                         </p>
                       )}
                     </div>
                   </div>
-                  {!isAdmin && (
+                  {!hasAdminAccess && (
                     <Button 
                       variant="outline" 
                       onClick={handleManageSubscription}

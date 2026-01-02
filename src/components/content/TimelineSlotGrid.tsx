@@ -102,8 +102,8 @@ const CONTENT_TYPE_COLORS: Record<string, string> = {
 
 export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridProps) => {
   const { user } = useAuth();
-  const { isSubscribed, isAdmin } = useFeatureAccess();
-  const hasFullAccess = isSubscribed || isAdmin;
+  const { isSubscribed, hasAdminAccess } = useFeatureAccess();
+  const hasFullAccess = isSubscribed || hasAdminAccess;
   const [expandedPhases, setExpandedPhases] = useState<string[]>(["pre-launch-week-1"]);
   const [postEditorOpen, setPostEditorOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ContentPlannerItem | null>(null);

@@ -239,8 +239,8 @@ export const ProjectSidebar = () => {
   const isMobile = useIsMobile();
   const { isOpen, close } = useMobileSidebar();
   const { isSubscribed } = useAuth();
-  const { isAdmin } = useFeatureAccess();
-  const hasFullAccess = isSubscribed || isAdmin;
+  const { hasAdminAccess } = useFeatureAccess();
+  const hasFullAccess = isSubscribed || hasAdminAccess;
 
   // Use the projectId from params, or try to get from localStorage for global pages
   const [storedProjectId, setStoredProjectId] = useState<string | undefined>(undefined);
