@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,13 +14,25 @@ serve(async (req) => {
   }
 
   try {
-    const { niche, targetAudience, primaryPainPoint, desiredOutcome } = await req.json();
+    const { niche, targetAudience, primaryPainPoint, desiredOutcome, projectId } = await req.json();
 
     console.log('[GENERATE-PROBLEM-STATEMENT] Generating for:', { niche, targetAudience: targetAudience?.substring(0, 50) });
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
+    }
+
+    // Extract user ID from auth header
+    const authHeader = req.headers.get('authorization');
+    let userId: string | null = null;
+    if (authHeader) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabase.auth.getUser(token);
+      userId = user?.id || null;
     }
 
     const systemPrompt = `You are an expert marketing strategist who helps coaches and digital marketers craft compelling problem statements for their offers.
@@ -79,6 +92,26 @@ Generate a compelling 2-3 sentence problem statement that synthesizes these inpu
 
     const data = await response.json();
     const problemStatement = data.choices[0].message.content.trim();
+
+    // Log AI usage
+    if (userId) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        await supabase.from('ai_usage_logs').insert({
+          user_id: userId,
+          project_id: projectId || null,
+          function_name: 'generate-problem-statement',
+          model: 'google/gemini-2.5-flash',
+          tokens_used: data.usage?.total_tokens || null,
+          success: true,
+        });
+      } catch (logError) {
+        console.error('[GENERATE-PROBLEM-STATEMENT] Failed to log AI usage:', logError);
+      }
+    }
 
     console.log('[GENERATE-PROBLEM-STATEMENT] Generated successfully');
 

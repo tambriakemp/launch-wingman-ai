@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,25 +14,22 @@ serve(async (req) => {
   try {
     const { 
       sectionType,
-      part, // Optional: specific part to generate (e.g., "headlines", "subheadline", "cta")
+      part,
       audience, 
       problem, 
       desiredOutcome, 
       offerName, 
       offerType, 
       deliverables,
-      // Optional context for "whyDifferent" section
       attemptedSolutions,
       whyFails,
       uniqueApproach,
       inferContext,
-      // For offer details
       priceType,
       price,
-      // Count for benefits/faqs
       count,
-      // Transformation statement for cohesive messaging
       transformationStatement,
+      projectId,
     } = await req.json();
 
     // Build transformation context if available
@@ -45,11 +43,22 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Extract user ID from auth header
+    const authHeader = req.headers.get('authorization');
+    let userId: string | null = null;
+    if (authHeader) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabase.auth.getUser(token);
+      userId = user?.id || null;
+    }
+
     let systemPrompt = "";
     let userPrompt = "";
 
     if (sectionType === "hero") {
-      // Part-specific generation for hero section
       if (part === "headlines") {
         systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY headlines.
 
@@ -83,7 +92,6 @@ Tone: clear, confident, action-oriented
 Return ONLY valid JSON: { "ctas": ["cta1", "cta2", "cta3", "cta4"] }`;
         userPrompt = `Create CTA button text for: Audience: ${audience}, Offer: ${offerName}, Outcome: ${desiredOutcome}`;
       } else {
-        // Generate all parts (default behavior)
         systemPrompt = `You are a direct-response conversion copywriter.
 
 Write the HERO section for a sales page.
@@ -121,7 +129,6 @@ Generate compelling, specific copy that speaks directly to the audience's pain a
       }
 
     } else if (sectionType === "whyDifferent") {
-      // Build context section for whyDifferent
       let contextSection = "";
       
       if (inferContext) {
@@ -135,7 +142,6 @@ Why those fail: ${whyFails || "Not personalized to their specific situation"}
 Our unique approach: ${uniqueApproach || "Tailored, step-by-step guidance"}`;
       }
 
-      // Part-specific generation for whyDifferent section
       if (part === "openingParagraph") {
         systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY opening paragraphs.
 
@@ -162,7 +168,6 @@ Create 4 bridge sentence options that transition to the solution (builds anticip
 Return ONLY valid JSON: { "bridgeSentences": ["bridge1", "bridge2", "bridge3", "bridge4"] }`;
         userPrompt = `Create bridge sentences for: Audience: ${audience}, Offer: ${offerName}. ${contextSection}`;
       } else {
-        // Generate all parts (default behavior)
         systemPrompt = `You are a direct-response conversion copywriter.
 
 Write the "Why this is different" section for a sales page.
@@ -229,7 +234,6 @@ ${transformationContext}
 Generate ${benefitCount} specific, outcome-focused benefits that resonate with the target audience's desires.`;
 
     } else if (sectionType === "offerDetails") {
-      // Part-specific generation for offerDetails section
       if (part === "introduction") {
         systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY introduction paragraphs.
 
@@ -266,7 +270,6 @@ Create 4 guarantee statement options (risk-reversal, confident).
 Return ONLY valid JSON: { "guarantees": ["guarantee1", "guarantee2", "guarantee3", "guarantee4"] }`;
         userPrompt = `Create guarantee statements for: Offer: ${offerName}, Price: ${price ? `$${price}` : "Not specified"}`;
       } else {
-        // Generate all parts (default behavior)
         systemPrompt = `You are a direct-response conversion copywriter.
 
 Write the "What's Included" / Offer Details section for a sales page.
@@ -443,26 +446,28 @@ Generate ${faqCount} FAQs that address common concerns and move prospects closer
       throw new Error("Failed to parse AI response");
     }
 
-    // For hero section, also set legacy fields for backward compatibility
-    if (sectionType === "hero") {
-      result.subheadline = result.subheadlines?.[0] || "";
-      result.cta = result.ctas?.[0] || "";
-    }
-    
-    // For whyDifferent section, also set legacy fields
-    if (sectionType === "whyDifferent") {
-      result.openingParagraph = result.openingParagraphs?.[0] || "";
-      result.bridgeSentence = result.bridgeSentences?.[0] || "";
-    }
-    
-    // For offerDetails section, also set legacy fields
-    if (sectionType === "offerDetails") {
-      result.introduction = result.introductions?.[0] || "";
-      result.guarantee = result.guarantees?.[0] || "";
+    // Log AI usage
+    if (userId) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        await supabase.from('ai_usage_logs').insert({
+          user_id: userId,
+          project_id: projectId || null,
+          function_name: 'generate-sales-copy',
+          model: 'google/gemini-2.5-flash',
+          tokens_used: data.usage?.total_tokens || null,
+          success: true,
+        });
+      } catch (logError) {
+        console.error('[GENERATE-SALES-COPY] Failed to log AI usage:', logError);
+      }
     }
 
     return new Response(
-      JSON.stringify({ sectionType, ...result }),
+      JSON.stringify(result),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 

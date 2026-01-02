@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { niche, targetAudience } = await req.json();
+    const { niche, targetAudience, projectId } = await req.json();
     
     if (!niche) {
       return new Response(
@@ -23,6 +24,18 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    // Extract user ID from auth header
+    const authHeader = req.headers.get('authorization');
+    let userId: string | null = null;
+    if (authHeader) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabase.auth.getUser(token);
+      userId = user?.id || null;
     }
 
     const systemPrompt = `You are an expert marketing strategist specializing in audience segmentation for coaches and digital marketers. Your task is to suggest highly specific sub-audiences based on a niche and optional target audience description.
@@ -104,6 +117,26 @@ Generate 5 specific sub-audience segments and rate the specificity of the curren
     } catch (parseError) {
       console.error("Failed to parse AI response:", content);
       throw new Error("Failed to parse AI response");
+    }
+
+    // Log AI usage
+    if (userId) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        await supabase.from('ai_usage_logs').insert({
+          user_id: userId,
+          project_id: projectId || null,
+          function_name: 'generate-sub-audiences',
+          model: 'google/gemini-2.5-flash',
+          tokens_used: data.usage?.total_tokens || null,
+          success: true,
+        });
+      } catch (logError) {
+        console.error('[GENERATE-SUB-AUDIENCES] Failed to log AI usage:', logError);
+      }
     }
 
     console.log("Generated sub-audiences:", parsed);

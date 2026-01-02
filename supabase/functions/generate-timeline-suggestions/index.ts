@@ -235,6 +235,15 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY") || "";
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Extract user ID from auth header
+    const authHeader = req.headers.get('authorization');
+    let userId: string | null = null;
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabase.auth.getUser(token);
+      userId = user?.id || null;
+    }
+
     // Fetch project context
     const context = await fetchProjectContext(supabase, projectId);
     const contextString = buildContextString(context);
@@ -364,6 +373,22 @@ The description should be substantive and helpful - not just a vague prompt, but
     }
 
     const aiData = await response.json();
+
+    // Log AI usage
+    if (userId) {
+      try {
+        await supabase.from('ai_usage_logs').insert({
+          user_id: userId,
+          project_id: projectId || null,
+          function_name: 'generate-timeline-suggestions',
+          model: 'google/gemini-2.5-flash',
+          tokens_used: aiData.usage?.total_tokens || null,
+          success: true,
+        });
+      } catch (logError) {
+        console.error('[GENERATE-TIMELINE-SUGGESTIONS] Failed to log AI usage:', logError);
+      }
+    }
     
     // Parse tool call response
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];

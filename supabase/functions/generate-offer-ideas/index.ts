@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,11 +35,24 @@ serve(async (req) => {
       mainObjections,
       likelihoodElements,
       timeEffortElements,
+      projectId,
     } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    // Extract user ID from auth header
+    const authHeader = req.headers.get('authorization');
+    let userId: string | null = null;
+    if (authHeader) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabase.auth.getUser(token);
+      userId = user?.id || null;
     }
 
     const slotGuidance = slotType && SLOT_TYPE_GUIDANCE[slotType] 
@@ -188,6 +202,26 @@ Make sure the titles are catchy and the descriptions clearly articulate the valu
     } catch (parseError) {
       console.error("Failed to parse AI response:", content);
       throw new Error("Failed to parse offer ideas from AI response");
+    }
+
+    // Log AI usage
+    if (userId) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        await supabase.from('ai_usage_logs').insert({
+          user_id: userId,
+          project_id: projectId || null,
+          function_name: 'generate-offer-ideas',
+          model: 'google/gemini-2.5-flash',
+          tokens_used: data.usage?.total_tokens || null,
+          success: true,
+        });
+      } catch (logError) {
+        console.error('[GENERATE-OFFER-IDEAS] Failed to log AI usage:', logError);
+      }
     }
 
     console.log("Generated offer ideas successfully:", ideas?.ideas?.length);
