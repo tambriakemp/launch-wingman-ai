@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAdmin } from '@/hooks/useAdmin';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -177,6 +178,7 @@ const MobileUserCard = ({
 
 const AdminDashboard = () => {
   const { session, signOut, startImpersonation, user: currentUser } = useAuth();
+  const { isAdmin } = useAdmin();
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -613,11 +615,14 @@ const AdminDashboard = () => {
           </Button>
         </div>
 
-        {/* Revenue/Churn Chart */}
-        <RevenueChurnChart users={users} />
+        {/* Revenue/Churn Chart - Admin only */}
+        {isAdmin && <RevenueChurnChart users={users} />}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 md:mb-8">
+        <div className={cn(
+          "grid gap-2 md:gap-4 mb-4 md:mb-8",
+          isAdmin ? "grid-cols-2 md:grid-cols-4" : "grid-cols-3"
+        )}>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-1 md:pb-2 p-3 md:p-6">
               <CardTitle className="text-xs md:text-sm font-medium">Total Users</CardTitle>
@@ -645,7 +650,8 @@ const AdminDashboard = () => {
               <div className="text-xl md:text-2xl font-bold">{stats.freeUsers}</div>
             </CardContent>
           </Card>
-          <MrrStatsCard mrrCents={stats.mrrCents} />
+          {/* MRR Card - Admin only */}
+          {isAdmin && <MrrStatsCard mrrCents={stats.mrrCents} />}
         </div>
 
         {/* Users Card */}
@@ -918,13 +924,16 @@ const AdminDashboard = () => {
                               </Button>
                               {user.id !== currentUser?.id && (
                                 <>
-                                  <AdminRoleToggle
-                                    userId={user.id}
-                                    userEmail={user.email}
-                                    isAdmin={user.is_admin}
-                                    accessToken={session?.access_token || ''}
-                                    onRoleChanged={fetchUsers}
-                                  />
+                                  {/* AdminRoleToggle - only visible to full admins */}
+                                  {isAdmin && (
+                                    <AdminRoleToggle
+                                      userId={user.id}
+                                      userEmail={user.email}
+                                      isAdmin={user.is_admin}
+                                      accessToken={session?.access_token || ''}
+                                      onRoleChanged={fetchUsers}
+                                    />
+                                  )}
                                   <Button
                                     variant="outline"
                                     size="sm"
