@@ -57,49 +57,53 @@ serve(async (req) => {
       throw new Error("Missing required fields: user_id and action");
     }
 
-    if (!['grant_admin', 'remove_admin'].includes(action)) {
-      throw new Error("Invalid action. Must be 'grant_admin' or 'remove_admin'");
+    if (!['grant_admin', 'remove_admin', 'grant_manager', 'remove_manager'].includes(action)) {
+      throw new Error("Invalid action. Must be 'grant_admin', 'remove_admin', 'grant_manager', or 'remove_manager'");
     }
+
+    // Determine which role we're working with
+    const targetRole = action.includes('admin') ? 'admin' : 'manager';
+    const isGrantAction = action.startsWith('grant_');
 
     // Prevent self-modification
     if (user_id === adminUser.id) {
       throw new Error("You cannot modify your own admin status");
     }
 
-    logStep("Processing role change", { targetUserId: sanitizeId(user_id), action });
+    logStep("Processing role change", { targetUserId: sanitizeId(user_id), action, targetRole });
 
-    if (action === 'grant_admin') {
-      // Check if already admin
+    if (isGrantAction) {
+      // Check if already has role
       const { data: existingRole } = await supabaseClient
         .from('user_roles')
         .select('id')
         .eq('user_id', user_id)
-        .eq('role', 'admin')
+        .eq('role', targetRole)
         .single();
 
       if (existingRole) {
-        throw new Error("User is already an admin");
+        throw new Error(`User already has ${targetRole} role`);
       }
 
-      // Grant admin role
+      // Grant role
       const { error: insertError } = await supabaseClient
         .from('user_roles')
-        .insert({ user_id, role: 'admin' });
+        .insert({ user_id, role: targetRole });
 
-      if (insertError) throw new Error(`Failed to grant admin role: ${insertError.message}`);
+      if (insertError) throw new Error(`Failed to grant ${targetRole} role: ${insertError.message}`);
       
-      logStep("Admin role granted", { targetUserId: sanitizeId(user_id) });
+      logStep(`${targetRole} role granted`, { targetUserId: sanitizeId(user_id) });
     } else {
-      // Remove admin role
+      // Remove role
       const { error: deleteError } = await supabaseClient
         .from('user_roles')
         .delete()
         .eq('user_id', user_id)
-        .eq('role', 'admin');
+        .eq('role', targetRole);
 
-      if (deleteError) throw new Error(`Failed to remove admin role: ${deleteError.message}`);
+      if (deleteError) throw new Error(`Failed to remove ${targetRole} role: ${deleteError.message}`);
       
-      logStep("Admin role removed", { targetUserId: sanitizeId(user_id) });
+      logStep(`${targetRole} role removed`, { targetUserId: sanitizeId(user_id) });
     }
 
     // Log the action

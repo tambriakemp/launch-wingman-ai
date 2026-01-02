@@ -63,11 +63,10 @@ serve(async (req) => {
       .from('profiles')
       .select('user_id, first_name, last_name, last_active');
 
-    // Get all admin roles
-    const { data: adminRoles } = await supabaseClient
+    // Get all admin and manager roles
+    const { data: userRoles } = await supabaseClient
       .from('user_roles')
-      .select('user_id')
-      .eq('role', 'admin');
+      .select('user_id, role');
 
     // Get Stripe subscription info for each user
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -78,7 +77,9 @@ serve(async (req) => {
     const usersWithSubscriptions = await Promise.all(
       authUsers.users.map(async (user) => {
         const profile = profiles?.find(p => p.user_id === user.id);
-        const isAdmin = adminRoles?.some(r => r.user_id === user.id) || false;
+        const userRolesForUser = userRoles?.filter(r => r.user_id === user.id) || [];
+        const isAdmin = userRolesForUser.some(r => r.role === 'admin');
+        const isManager = userRolesForUser.some(r => r.role === 'manager');
         
         let subscriptionStatus = 'free';
         let subscriptionEnd = null;
@@ -127,6 +128,7 @@ serve(async (req) => {
           subscription_amount_cents: subscriptionAmountCents,
           last_active: profile?.last_active || null,
           is_admin: isAdmin,
+          is_manager: isManager,
         };
       })
     );
