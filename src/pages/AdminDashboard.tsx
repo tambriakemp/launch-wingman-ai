@@ -33,6 +33,8 @@ import { AiUsageTable, MrrStatsCard } from '@/components/admin/AiUsageSection';
 import { AdminRoleToggle } from '@/components/admin/AdminRoleToggle';
 import { RevenueChurnChart } from '@/components/admin/RevenueChurnChart';
 import { ProjectStatsCard, ContentStatsCard, EngagementStatsCard, OfferStatsCard, OnboardingFunnelCard } from '@/components/admin/PlatformStatsSection';
+import { FeatureUsageHeatmap } from '@/components/admin/FeatureUsageHeatmap';
+import { useAdminPlatformStats } from '@/hooks/useAdminPlatformStats';
 
 interface User {
   id: string;
@@ -61,6 +63,21 @@ interface ImpersonationLog {
 
 const LOGS_PER_PAGE = 10;
 const USERS_PER_PAGE = 10;
+
+// Feature Usage Heatmap Wrapper
+function FeatureUsageHeatmapWrapper() {
+  const { data: platformStats } = useAdminPlatformStats();
+  
+  if (!platformStats?.featureUsage) {
+    return null;
+  }
+  
+  return (
+    <div className="mb-4 md:mb-8">
+      <FeatureUsageHeatmap featureUsage={platformStats.featureUsage} />
+    </div>
+  );
+}
 
 // Mobile user card component
 const MobileUserCard = ({ 
@@ -639,6 +656,9 @@ const AdminDashboard = () => {
           <OfferStatsCard />
           <OnboardingFunnelCard />
         </div>
+
+        {/* Feature Usage Heatmap */}
+        <FeatureUsageHeatmapWrapper />
 
         {/* User Stats Cards */}
         <div className={cn(
