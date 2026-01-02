@@ -63,6 +63,12 @@ serve(async (req) => {
       .from('profiles')
       .select('user_id, first_name, last_name, last_active');
 
+    // Get all admin roles
+    const { data: adminRoles } = await supabaseClient
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'admin');
+
     // Get Stripe subscription info for each user
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
@@ -72,6 +78,7 @@ serve(async (req) => {
     const usersWithSubscriptions = await Promise.all(
       authUsers.users.map(async (user) => {
         const profile = profiles?.find(p => p.user_id === user.id);
+        const isAdmin = adminRoles?.some(r => r.user_id === user.id) || false;
         
         let subscriptionStatus = 'free';
         let subscriptionEnd = null;
@@ -112,6 +119,7 @@ serve(async (req) => {
           stripe_customer_id: stripeCustomerId,
           stripe_subscription_id: stripeSubscriptionId,
           last_active: profile?.last_active || null,
+          is_admin: isAdmin,
         };
       })
     );
