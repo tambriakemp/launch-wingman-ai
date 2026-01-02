@@ -278,9 +278,6 @@ const ContentVaultCategory = () => {
                   resourceType={resource.resource_type}
                   tags={resource.tags}
                   onClick={() => handleResourceClick(resource, index)}
-                  isAdmin={isAdmin}
-                  onEdit={() => setEditingResource(resource)}
-                  onDelete={() => setDeletingResource(resource)}
                 />
               ))}
             </div>
