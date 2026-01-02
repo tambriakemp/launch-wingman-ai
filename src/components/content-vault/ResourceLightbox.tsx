@@ -62,19 +62,31 @@ export const ResourceLightbox = ({
     if (!currentResource) return;
     
     try {
-      const response = await fetch(currentResource.resource_url);
+      const response = await fetch(currentResource.resource_url, { mode: 'cors' });
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = currentResource.title || "download";
+      // Extract file extension from URL
+      const urlParts = currentResource.resource_url.split('/');
+      const filename = urlParts[urlParts.length - 1] || currentResource.title || "download";
+      a.download = filename;
+      a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      // Fallback: open in new tab if download fails
-      window.open(currentResource.resource_url, "_blank");
+      console.error("Download failed:", error);
+      // Fallback: create a download link with the original URL
+      const a = document.createElement("a");
+      a.href = currentResource.resource_url;
+      const urlParts = currentResource.resource_url.split('/');
+      a.download = urlParts[urlParts.length - 1] || currentResource.title || "download";
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
   };
 

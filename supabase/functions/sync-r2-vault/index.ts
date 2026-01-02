@@ -296,13 +296,24 @@ Deno.serve(async (req) => {
 
     console.log("[SYNC-R2] Admin verified, listing R2 objects...");
 
+    // Define allowed folder prefixes (only sync from these folders)
+    const ALLOWED_PREFIXES = ["Photos/", "Videos/", "photos/", "videos/"];
+
     // List all objects from R2
     const allKeys = await listAllR2Objects(r2AccountId, r2BucketName, r2AccessKeyId, r2SecretAccessKey);
     console.log(`[SYNC-R2] Total objects found: ${allKeys.length}`);
 
-    // Filter to only media files
-    const mediaKeys = allKeys.filter((key) => isImageFile(key) || isVideoFile(key));
-    console.log(`[SYNC-R2] Media files found: ${mediaKeys.length}`);
+    // Filter to only media files within allowed folders
+    const mediaKeys = allKeys.filter((key) => {
+      // Check if file is in an allowed folder
+      const isInAllowedFolder = ALLOWED_PREFIXES.some((prefix) => key.startsWith(prefix));
+      if (!isInAllowedFolder) {
+        return false;
+      }
+      // Check if it's a media file
+      return isImageFile(key) || isVideoFile(key);
+    });
+    console.log(`[SYNC-R2] Media files in allowed folders: ${mediaKeys.length}`);
 
     // Get existing categories
     const { data: categories } = await supabase
