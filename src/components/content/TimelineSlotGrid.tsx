@@ -123,6 +123,10 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedSuggestionKey, setSelectedSuggestionKey] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<TimelineTemplate | null>(null);
+  
+  // State for clear all confirmation dialog
+  const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
+  const [isClearingAll, setIsClearingAll] = useState(false);
 
   // Fetch existing content planner items
   const { data: plannerItems = [], isLoading } = useQuery({
@@ -492,34 +496,17 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
         </div>
         
         <div className="flex items-center gap-2">
-          {(Object.keys(suggestions).length > 0) && (
+          {(Object.keys(suggestions).length > 0 || plannerItems.some(item => item.status !== "completed")) && (
             <Button 
               size="sm" 
               variant="outline"
-              onClick={async () => {
-                if (!user) return;
-                try {
-                  const { error } = await supabase
-                    .from("timeline_suggestions")
-                    .delete()
-                    .eq("project_id", projectId);
-                  
-                  if (error) throw error;
-                  
-                  setLocalSuggestions({});
-                  queryClient.invalidateQueries({ queryKey: ["timeline-suggestions", projectId] });
-                  toast.success("All suggestions cleared");
-                } catch (error) {
-                  console.error("Error clearing suggestions:", error);
-                  toast.error("Failed to clear suggestions");
-                }
-              }}
+              onClick={() => setClearAllDialogOpen(true)}
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Clear All
             </Button>
           )}
-          <Button 
+          <Button
             size="sm" 
             onClick={generateAllIdeas}
             disabled={isGeneratingAll}
@@ -944,6 +931,48 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
         title="Remove from Timeline"
         description="Are you sure you want to remove this content from your timeline? This action cannot be undone."
         isDeleting={isDeleting}
+      />
+
+      {/* Clear All Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={clearAllDialogOpen}
+        onOpenChange={setClearAllDialogOpen}
+        onConfirm={async () => {
+          if (!user) return;
+          setIsClearingAll(true);
+          try {
+            // Delete all suggestions
+            const { error: suggestionsError } = await supabase
+              .from("timeline_suggestions")
+              .delete()
+              .eq("project_id", projectId);
+            
+            if (suggestionsError) throw suggestionsError;
+            
+            // Delete all non-posted content planner items
+            const { error: plannerError } = await supabase
+              .from("content_planner")
+              .delete()
+              .eq("project_id", projectId)
+              .neq("status", "completed");
+            
+            if (plannerError) throw plannerError;
+            
+            setLocalSuggestions({});
+            queryClient.invalidateQueries({ queryKey: ["timeline-suggestions", projectId] });
+            queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+            toast.success("Timeline cleared");
+            setClearAllDialogOpen(false);
+          } catch (error) {
+            console.error("Error clearing timeline:", error);
+            toast.error("Failed to clear timeline");
+          } finally {
+            setIsClearingAll(false);
+          }
+        }}
+        title="Clear All Content"
+        description="This will remove all AI suggestions and all posts that haven't been published yet. Posted content will not be affected. This action cannot be undone."
+        isDeleting={isClearingAll}
       />
 
       {/* Suggestion View Dialog */}
