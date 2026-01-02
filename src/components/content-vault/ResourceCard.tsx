@@ -1,4 +1,4 @@
-import { ExternalLink, Download, Image as ImageIcon, Pencil, Trash2 } from "lucide-react";
+import { ExternalLink, Download, Image as ImageIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,6 @@ interface ResourceCardProps {
   resourceType: string;
   tags: string[];
   onClick: () => void;
-  isAdmin?: boolean;
-  onEdit?: () => void;
-  onDelete?: () => void;
 }
 
 export const ResourceCard = ({ 
@@ -24,9 +21,6 @@ export const ResourceCard = ({
   resourceType, 
   tags,
   onClick,
-  isAdmin = false,
-  onEdit,
-  onDelete,
 }: ResourceCardProps) => {
   const isCanvaLink = resourceType === 'canva_link';
   
@@ -34,14 +28,36 @@ export const ResourceCard = ({
   const isMediaResource = /\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|mov)$/i.test(resourceUrl);
   const displayImageUrl = coverImageUrl || (isMediaResource ? resourceUrl : null);
 
-  const handleEdit = (e: React.MouseEvent) => {
+  const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    onEdit?.();
-  };
-
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onDelete?.();
+    
+    try {
+      const response = await fetch(resourceUrl, { mode: 'cors' });
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      // Extract file extension from URL
+      const urlParts = resourceUrl.split('/');
+      const filename = urlParts[urlParts.length - 1] || title || "download";
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download failed:", error);
+      // Fallback: create a download link with the original URL
+      const a = document.createElement("a");
+      a.href = resourceUrl;
+      const urlParts = resourceUrl.split('/');
+      a.download = urlParts[urlParts.length - 1] || title || "download";
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
   };
 
   return (
@@ -83,31 +99,14 @@ export const ResourceCard = ({
           </Badge>
         </div>
 
-        {/* Admin Actions */}
-        {isAdmin && (
-          <div className="absolute top-3 left-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <Button
-              size="icon"
-              variant="secondary"
-              className="h-7 w-7 bg-background/90 backdrop-blur-sm hover:bg-background"
-              onClick={handleEdit}
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </Button>
-            <Button
-              size="icon"
-              variant="secondary"
-              className="h-7 w-7 bg-background/90 backdrop-blur-sm hover:bg-destructive hover:text-destructive-foreground"
-              onClick={handleDelete}
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-        )}
-
-        {/* Hover Overlay */}
-        <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-          <Button size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
+        {/* Hover Overlay with Download Button */}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+          <Button 
+            size="sm" 
+            onClick={isCanvaLink ? onClick : handleDownload}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg"
+          >
+            <Download className="w-4 h-4 mr-2" />
             {isCanvaLink ? "Open in Canva" : "Download"}
           </Button>
         </div>
