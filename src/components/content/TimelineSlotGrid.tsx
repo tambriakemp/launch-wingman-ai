@@ -491,23 +491,52 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
           </p>
         </div>
         
-        <Button 
-          size="sm" 
-          onClick={generateAllIdeas}
-          disabled={isGeneratingAll}
-        >
-          {isGeneratingAll ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4 mr-2" />
-              Generate All Ideas
-            </>
+        <div className="flex items-center gap-2">
+          {(Object.keys(suggestions).length > 0) && (
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={async () => {
+                if (!user) return;
+                try {
+                  const { error } = await supabase
+                    .from("timeline_suggestions")
+                    .delete()
+                    .eq("project_id", projectId);
+                  
+                  if (error) throw error;
+                  
+                  setLocalSuggestions({});
+                  queryClient.invalidateQueries({ queryKey: ["timeline-suggestions", projectId] });
+                  toast.success("All suggestions cleared");
+                } catch (error) {
+                  console.error("Error clearing suggestions:", error);
+                  toast.error("Failed to clear suggestions");
+                }
+              }}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Clear All
+            </Button>
           )}
-        </Button>
+          <Button 
+            size="sm" 
+            onClick={generateAllIdeas}
+            disabled={isGeneratingAll}
+          >
+            {isGeneratingAll ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generate All Ideas
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Timeline Content */}
