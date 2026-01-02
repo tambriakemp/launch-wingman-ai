@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UserActivityDialog } from '@/components/UserActivityDialog';
 import { EditUserDialog } from '@/components/admin/EditUserDialog';
+import { AiUsageStatsCard, AiUsageTable } from '@/components/admin/AiUsageSection';
 
 interface User {
   id: string;
@@ -608,7 +609,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-2 md:gap-4 mb-4 md:mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 md:mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-1 md:pb-2 p-3 md:p-6">
               <CardTitle className="text-xs md:text-sm font-medium">Total Users</CardTitle>
@@ -636,6 +637,7 @@ const AdminDashboard = () => {
               <div className="text-xl md:text-2xl font-bold">{stats.freeUsers}</div>
             </CardContent>
           </Card>
+          <AiUsageStatsCard />
         </div>
 
         {/* Users Card */}
@@ -1285,6 +1287,11 @@ const AdminDashboard = () => {
         user={activityDialog.user}
         accessToken={session?.access_token || ''}
       />
+
+      {/* AI Usage Section */}
+      <div className="container mx-auto px-4 pb-8">
+        <AiUsageTable />
+      </div>
 
       {/* Edit User Dialog */}
       <EditUserDialog

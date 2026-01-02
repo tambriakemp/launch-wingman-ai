@@ -18,6 +18,7 @@ import { CheckInSettings } from "@/components/check-in";
 import { ToneSettings } from "@/components/settings/ToneSettings";
 import { AnnualReviewView } from "@/components/settings/AnnualReviewView";
 import { EmailPreferencesSettings } from "@/components/settings/EmailPreferencesSettings";
+import { AiUsageCard } from "@/components/settings/AiUsageCard";
 import { useAnnualReview } from "@/hooks/useAnnualReview";
 import {
   User,
@@ -1102,6 +1103,15 @@ const Settings = () => {
           transition={{ delay: 0.3 }}
         >
           <EmailPreferencesSettings />
+        </motion.div>
+
+        {/* AI Usage Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <AiUsageCard />
         </motion.div>
 
         {/* Danger Zone */}

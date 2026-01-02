@@ -13,11 +13,10 @@ interface TaskAssistRequest {
   taskInstructions: string[];
   projectId: string;
   toneModifiers?: string;
-  currentInput?: string; // The current value of the primary input field
-  nicheContext?: string; // Optional niche context (e.g., 'business_entrepreneurship', 'health_wellness')
+  currentInput?: string;
+  nicheContext?: string;
 }
 
-// Map niche values to human-readable labels
 const NICHE_LABELS: Record<string, string> = {
   'business_entrepreneurship': 'Business / Entrepreneurship',
   'money_finance': 'Money / Finance',
@@ -35,11 +34,11 @@ interface ProjectContext {
   dreamOutcome?: string;
   offerName?: string;
   funnelType?: string;
+  userId?: string;
 }
 
 type InputState = 'EMPTY' | 'PARTIAL' | 'CLEAR';
 
-// Detect input state based on content
 function detectInputState(input: string | undefined): InputState {
   if (!input || input.trim() === '' || input.trim().length < 5) {
     return 'EMPTY';
@@ -48,7 +47,6 @@ function detectInputState(input: string | undefined): InputState {
   const trimmed = input.trim();
   const wordCount = trimmed.split(/\s+/).length;
   
-  // Check for vague/generic inputs
   const vaguePatterns = [
     /^(busy )?professionals?$/i,
     /^people who want/i,
@@ -69,12 +67,10 @@ function detectInputState(input: string | undefined): InputState {
   
   const isVague = vaguePatterns.some(pattern => pattern.test(trimmed));
   
-  // PARTIAL: short, vague, or generic inputs (under 15 words and vague)
   if (wordCount < 10 || isVague) {
     return 'PARTIAL';
   }
   
-  // CLEAR: has specific elements (situation/stage, problem, desire)
   const hasSpecificGroup = /\b(who|that|with|after|before|during|struggling|wanting|trying|seeking|looking)\b/i.test(trimmed);
   const hasSituation = /\b(after|before|during|when|while|just|recently|currently|now)\b/i.test(trimmed);
   const hasProblem = /\b(struggle|problem|challenge|frustrated|overwhelmed|stuck|confused|worried|stressed|burned out|burnout)\b/i.test(trimmed);
@@ -89,8 +85,21 @@ function detectInputState(input: string | undefined): InputState {
   return 'PARTIAL';
 }
 
+async function logAiUsage(supabase: any, userId: string, projectId: string | null, functionName: string, model: string, success: boolean) {
+  try {
+    await supabase.from("ai_usage_logs").insert({
+      user_id: userId,
+      project_id: projectId,
+      function_name: functionName,
+      model: model,
+      success: success,
+    });
+  } catch (error) {
+    console.error("Failed to log AI usage:", error);
+  }
+}
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -103,48 +112,44 @@ serve(async (req) => {
 
     const { mode, taskId, taskTitle, taskInstructions, projectId, toneModifiers, currentInput, nicheContext } = await req.json() as TaskAssistRequest;
 
-    // Get human-readable niche label
     const nicheLabel = nicheContext ? NICHE_LABELS[nicheContext] || nicheContext : undefined;
 
     console.log('[TASK-AI-ASSIST] Request received:', { mode, taskId, projectId, hasToneModifiers: !!toneModifiers, hasCurrentInput: !!currentInput, nicheContext, nicheLabel });
 
-    // Create Supabase client to fetch project context
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch project context
     let projectContext: ProjectContext = {};
     
-    // Get project data
     const { data: project } = await supabase
       .from('projects')
-      .select('name, transformation_statement, selected_funnel_type')
+      .select('name, transformation_statement, selected_funnel_type, user_id')
       .eq('id', projectId)
       .single();
 
-    // Get funnel/audience data
+    if (project) {
+      projectContext.userId = project.user_id;
+    }
+
     const { data: funnel } = await supabase
       .from('funnels')
       .select('target_audience, primary_pain_point, desired_outcome, niche, funnel_type')
       .eq('project_id', projectId)
       .maybeSingle();
 
-    // Get offers data
     const { data: offers } = await supabase
       .from('offers')
       .select('title, offer_type, target_audience')
       .eq('project_id', projectId)
       .limit(1);
 
-    // Get completed task data for context
     const { data: completedTasks } = await supabase
       .from('project_tasks')
       .select('task_id, input_data')
       .eq('project_id', projectId)
       .eq('status', 'completed');
 
-    // Build context from completed tasks
     if (completedTasks) {
       for (const task of completedTasks) {
         const data = task.input_data as Record<string, string> | null;
@@ -165,7 +170,6 @@ serve(async (req) => {
       }
     }
 
-    // Add funnel context
     if (funnel) {
       projectContext.audienceDescription = projectContext.audienceDescription || funnel.target_audience || undefined;
       projectContext.primaryProblem = projectContext.primaryProblem || funnel.primary_pain_point || undefined;
@@ -183,17 +187,13 @@ serve(async (req) => {
 
     console.log('[TASK-AI-ASSIST] Project context built:', projectContext);
 
-    // Build tone guidance from user's learned preferences
     const toneGuidance = toneModifiers 
       ? `\n\nIMPORTANT - Writing Style Preferences:\n${toneModifiers}`
       : '';
 
-    // Detect input state for help_me_choose mode
     const inputState = detectInputState(currentInput);
     console.log('[TASK-AI-ASSIST] Input state detected:', inputState, 'for input:', currentInput?.substring(0, 50));
 
-    // Build the system prompt based on mode
-    // Include niche context for help_me_choose and examples modes only (never for simplify)
     const nicheContextStr = nicheLabel && mode !== 'simplify' 
       ? `\n- General niche context: ${nicheLabel} (use this to loosely tailor examples and language - do NOT treat this as the "real" audience)` 
       : '';
@@ -205,21 +205,6 @@ ${projectContext.dreamOutcome ? `- Dream outcome: ${projectContext.dreamOutcome}
 ${projectContext.offerName ? `- Offer name: ${projectContext.offerName}` : ''}
 ${projectContext.funnelType ? `- Launch path: ${projectContext.funnelType}` : ''}${nicheContextStr}${toneGuidance}`;
 
-    // Build niche-aware context for Help Me Choose (only for EMPTY and PARTIAL modes)
-    const nicheAwareContext = nicheLabel ? `
-
-NICHE CONTEXT (OPTIONAL - Use subtly, never authoritatively):
-Selected niche: ${nicheLabel}
-
-NICHE RULES:
-- Niche is contextual, NEVER authoritative
-- User-written input ALWAYS has priority over niche
-- Niche may only guide examples and framing, never conclusions
-- Do NOT say "Because you chose this niche…" or "Most people in this niche…"
-- Approved phrasing: "Since you selected…", "If helpful…", "Some people start by…"
-- If niche conflicts with user input, IGNORE niche completely` : '';
-
-    // Help Me Choose prompts based on input state
     const helpMeChoosePrompts: Record<InputState, string> = {
       EMPTY: `You are a calm, supportive assistant helping a beginner find a starting point. You are NOT a recommendation engine.
 
@@ -352,11 +337,9 @@ Make the refinement only slightly better than what they wrote - don't completely
 ${baseContext}`,
     };
 
-    // Build previous task context for contextual examples when current input is empty
     const buildPreviousTaskContext = (): string => {
       const contextParts: string[] = [];
       
-      // Task-specific context mapping: what previous data is relevant for each task
       if (taskId === 'planning_define_problem') {
         if (projectContext.audienceDescription) {
           contextParts.push(`Target audience (from previous task): "${projectContext.audienceDescription}"`);
@@ -369,7 +352,6 @@ ${baseContext}`,
           contextParts.push(`Main problem (from previous task): "${projectContext.primaryProblem}"`);
         }
       } else if (taskId === 'planning_time_effort_perception') {
-        // Time & Effort Perception task: needs audience, problem, and dream outcome
         if (projectContext.audienceDescription) {
           contextParts.push(`Target audience: "${projectContext.audienceDescription}"`);
         }
@@ -390,7 +372,6 @@ ${baseContext}`,
           contextParts.push(`Dream outcome: "${projectContext.dreamOutcome}"`);
         }
       } else {
-        // For any other task, include all available context
         if (projectContext.audienceDescription) {
           contextParts.push(`Target audience: "${projectContext.audienceDescription}"`);
         }
@@ -431,444 +412,74 @@ CRITICAL RULES - YOU MUST FOLLOW THESE:
 ✗ NEVER validate or critique user input
 ✗ NEVER push users toward niche-specific decisions
 ${currentInput ? `
-USER INPUT CONTEXT (PRIMARY - examples should be in the SAME DOMAIN):
-The user has written: "${currentInput}"
+USER'S CURRENT INPUT (do not replace or critique):
+"${currentInput}"` : ''}
 
-INPUT-AWARE RULES:
-- Examples MUST be in the SAME DOMAIN/TOPIC as the user's input
-- Examples should show ALTERNATIVE ANGLES within that domain
-- Examples should explore DIFFERENT AUDIENCE SEGMENTS or VARIATIONS of the same topic
-- Do NOT mirror or reword the user's exact input
-- Do NOT validate or critique their input
-- Use the user's topic as the foundation, then show other directions within that space
+${hasPreviousContext ? `PREVIOUS TASK CONTEXT (use to make examples contextual):
+${previousTaskContext}` : ''}
 
-EXAMPLE OF EXPECTED BEHAVIOR:
-If user wrote "Women over 40 who need help budgeting", examples should be:
-- Other audiences who also deal with budgeting/finances (same domain, different angle)
-- NOT generic examples about unrelated topics
-- NOT examples that just reword "Women over 40 who need help budgeting"
-` : (hasPreviousContext ? `
-PREVIOUS TASK CONTEXT (PRIMARY - use this to generate relevant examples):
-${previousTaskContext}
-
-CONTEXT-AWARE RULES:
-- Since the user hasn't written anything for THIS field yet, use the PREVIOUS TASK DATA to generate RELEVANT examples
-- Examples MUST be contextual to the previous task data above
-- For "main problem" tasks: Generate PROBLEM examples that this specific audience would face
-- For "dream outcome" tasks: Generate OUTCOME examples relevant to the audience and their problem
-- Do NOT generate generic examples that ignore the previous context
-- Examples should feel like natural continuations of what the user already defined
-
-EXAMPLE OF EXPECTED BEHAVIOR:
-If previous context says "Target audience: Women over 40 who need help budgeting"
-And this task is "Identify your audience's main problem":
-- Generate PROBLEM examples specific to women over 40 with budgeting challenges
-- E.g., "Feeling anxious about having no retirement savings despite working for decades"
-- E.g., "Struggling to balance paying off debt while also enjoying their current life"
-- NOT generic problems like "Busy parents feeling overwhelmed"
-` : '')}
-${nicheLabel ? `
-NICHE CONTEXT (${currentInput || hasPreviousContext ? 'TERTIARY' : 'SECONDARY'} - light framing only):
-Selected niche: ${nicheLabel}
-${currentInput ? '- When user input exists, USER INPUT takes priority over niche' : (hasPreviousContext ? '- When previous task context exists, that takes priority over niche' : '- Use niche as a framing lens for examples')}
-- Niche provides LIGHT CONTEXT, never direction
-- Examples must NOT imply the niche is the correct choice
-- Niche may only be referenced as a soft qualifier
-
-APPROVED niche phrasing (OPTIONAL, only if no user input AND no previous context):
-- "If it helps, here are a few example directions often seen within ${nicheLabel}:"
-
-DISALLOWED niche phrasing:
-- "Because you chose ${nicheLabel}…"
-- "Most people in ${nicheLabel} should…"` : ''}
-
-INPUT STATE: ${inputState}
-${inputState === 'EMPTY' && hasPreviousContext ? 'Goal: Generate examples that are CONTEXTUAL to the previous task data. Examples should be directly relevant to what the user has already defined.' : ''}
-${inputState === 'EMPTY' && !hasPreviousContext ? 'Goal: Help user understand what this field could look like. Use niche (if available) or generic examples.' : ''}
-${inputState === 'PARTIAL' ? 'Goal: Show alternative angles WITHIN THE SAME DOMAIN as their input. Examples should explore related audience segments or variations.' : ''}
-${inputState === 'CLEAR' ? 'Goal: Show alternative angles WITHIN THE SAME DOMAIN as their input. Provide contrast through different approaches to the same topic.' : ''}
-
-REQUIRED CLOSING based on input state:
-${inputState === 'EMPTY' ? '"These are just examples — you don\'t need to match them."' : ''}
-${inputState === 'PARTIAL' ? '"You can use these as inspiration, or ignore them completely."' : ''}
-${inputState === 'CLEAR' ? '"There\'s no single right way to answer this."' : ''}
-
-IMPORTANT: You MUST respond with valid JSON in this exact format:
+REQUIRED OUTPUT FORMAT - You MUST respond with valid JSON:
 \`\`\`json
 {
-  "header": "Examples to help you think",${currentInput ? '' : (hasPreviousContext ? `
-  "contextNote": "Based on your target audience, here are example problems they might face:",` : (nicheLabel ? `
-  "nicheContext": "If it helps, here are a few example directions often seen within ${nicheLabel}:",` : ''))}
   "examples": [
     {
-      "label": "Example",
-      "content": "${currentInput ? 'One clear sentence in the same domain as the user input but with a different angle...' : (hasPreviousContext ? 'One clear sentence showing a CONTEXTUAL example based on previous task data...' : 'One clear sentence describing a fictional, generic example...')}"
+      "label": "Example A",
+      "content": "Generic, one-sentence example that relates to this task"
     },
     {
-      "label": "Example",
-      "content": "${currentInput ? 'Another clear sentence exploring a different approach within the same topic area...' : (hasPreviousContext ? 'Another CONTEXTUAL example that builds on what the user already defined...' : 'Another clear sentence with a different approach...')}"
+      "label": "Example B",
+      "content": "Another generic, one-sentence example"
+    },
+    {
+      "label": "Example C",
+      "content": "A third generic, one-sentence example"
     }
   ],
-  "closing": "{{Use the required closing text based on input state above}}"
+  "footer": "These are just ideas — yours might look completely different."
 }
 \`\`\`
 
-${currentInput ? `Generate examples that explore the SAME DOMAIN/TOPIC as "${currentInput}" but show DIFFERENT ANGLES (different audience segments, different pain points within the topic, different life stages, etc.). Do NOT include nicheContext when user input exists.` : (hasPreviousContext ? `Generate examples that are DIRECTLY RELEVANT to the previous task data. Examples must feel like natural continuations of what the user already defined. Use contextNote instead of nicheContext.` : (nicheLabel ? `Tailor examples to loosely relate to "${nicheLabel}" but keep them generic, fictional, and non-prescriptive. The nicheContext line is OPTIONAL.` : ''))}
-Task context: "${taskTitle}"
+Generate examples specifically relevant to: "${taskTitle}"
+Task instructions: ${taskInstructions.join('. ')}
+${nicheLabel ? `The user selected "${nicheLabel}" as their general niche — use this only to loosely inform example topics, not to prescribe what they should choose.` : ''}
+
 ${baseContext}`,
 
-      simplify: `You are a rewriting assistant. Your ONLY job is to make the user's text clearer and lighter WITHOUT changing meaning, strategy, or intent.
+      simplify: `You are a plain-language writing assistant helping a non-technical user understand task instructions.
 
-The user has written: "${currentInput}"
+RULES:
+- Use simple, everyday words
+- Break complex concepts into smaller pieces
+- Avoid jargon or marketing-speak
+- Keep the same meaning, just make it clearer
+- Use 2nd person ("you") and friendly tone
+- Keep it under 3 sentences per instruction
 
-CRITICAL RULES - YOU MUST FOLLOW THESE:
-✓ Reduce sentence length
-✓ Remove redundancy
-✓ Replace complex phrases with clearer ones
-✓ Improve readability
-✓ Preserve the user's voice and tone
-✓ Keep meaning IDENTICAL
-
-✗ NEVER add new ideas
-✗ NEVER change strategy
-✗ NEVER improve positioning
-✗ NEVER make it more persuasive
-✗ NEVER make it more "salesy"
-✗ NEVER add urgency or hype
-✗ NEVER introduce jargon
-✗ NEVER correct the user conceptually
-
-The output should sound like: "What the user meant — just cleaner."
-
-TONE RULES:
-- Calm, neutral, non-judgmental
-- No praise ("this is great")
-- No critique ("this was confusing")
-- The user's original text is always treated as valid
-
-IMPORTANT: You MUST respond with valid JSON in this exact format:
+REQUIRED OUTPUT FORMAT - You MUST respond with valid JSON:
 \`\`\`json
 {
-  "opening": "Here's a simpler version that keeps your meaning the same:",
-  "simplifiedText": "{{The user's text, rewritten to be clearer and lighter while keeping the exact same meaning}}",
-  "note": "This keeps your original intent, just makes it easier to read."
+  "simplified": [
+    "Simplified version of instruction 1",
+    "Simplified version of instruction 2"
+  ]
 }
 \`\`\`
 
-DO NOT include explanations, coaching, suggestions, or alternatives.
-The simplified text must preserve the user's exact meaning and voice.
-
-${baseContext}`,
+Simplify these instructions for: "${taskTitle}"
+Original instructions:
+${taskInstructions.map((inst, i) => `${i + 1}. ${inst}`).join('\n')}`
     };
 
-    // Launch funnel task IDs that need special handling
-    const launchFunnelTaskIds = [
-      'planning_launch_window',
-      'planning_launch_completion',
-      'messaging_why_now',
-      'messaging_missed_timing',
-      'build_launch_access',
-      'content_decision_support',
-      'launch_set_expectations'
-    ];
-    
-    const isLaunchFunnelTask = launchFunnelTaskIds.includes(taskId);
-    
-    // Membership funnel task IDs that need special handling
-    const membershipFunnelTaskIds = [
-      'planning_membership_commitment',
-      'planning_membership_rhythm',
-      'messaging_renewal_framing',
-      'messaging_ongoing_access_framing',
-      'build_membership_container',
-      'content_retention_content',
-      'launch_set_joining_expectations'
-    ];
-    
-    const isMembershipFunnelTask = membershipFunnelTaskIds.includes(taskId);
-    
-    // Build launch-specific rules for AI prompts
-    const getLaunchTaskRules = (taskId: string): string => {
-      const launchRules: Record<string, string> = {
-        'planning_launch_window': `SPECIAL RULES FOR THIS TASK:
-- Help define timing with clarity, NOT urgency or pressure
-- Never suggest countdown timers, scarcity tactics, or FOMO language
-- Focus on intentional timing and preparation, not manufactured urgency
-- This is about WHEN the offer is available, not creating pressure to act`,
-        'planning_launch_completion': `SPECIAL RULES FOR THIS TASK:
-- Help define what "done" looks like without metrics or sales goals
-- Never suggest revenue targets, conversion rates, or numerical benchmarks
-- Focus on emotional/practical endpoints like "when enrollment closes" or "when I feel ready to rest"
-- This is about personal completion, not performance metrics`,
-        'messaging_why_now': `SPECIAL RULES FOR THIS TASK:
-- Help articulate timing relevance, NOT urgency or scarcity
-- Never use phrases like "limited time", "act now", "don't miss out"
-- Focus on natural timing, readiness, and relevance
-- This is about WHY this moment matters, not pressuring people to act`,
-        'messaging_missed_timing': `SPECIAL RULES FOR THIS TASK:
-- Help explain what happens if someone doesn't join, WITHOUT pressure
-- Never imply they'll "miss out forever" or use guilt-based language
-- Focus on honest, calm communication about future availability
-- This is about building trust through transparency, not fear`,
-        'build_launch_access': `SPECIAL RULES FOR THIS TASK:
-- Help define HOW people access the offer, NOT specific tools or platforms
-- Never recommend specific software, payment processors, or tech stacks
-- Focus on the experience and structure, not implementation details
-- Examples should be abstract like "enrollment window" or "application period"`,
-        'content_decision_support': `SPECIAL RULES FOR THIS TASK:
-- Help plan content that supports UNDERSTANDING, not urgency
-- Never suggest countdown content, scarcity posts, or pressure tactics
-- Focus on explanation, reassurance, and helping people decide if it's right for them
-- This is about informed decision-making, not conversion optimization`,
-        'launch_set_expectations': `SPECIAL RULES FOR THIS TASK:
-- Help set clear expectations WITHOUT pressure or urgency
-- Never suggest creating artificial deadlines or scarcity
-- Focus on clarity for both the creator and the audience
-- This is about reducing stress and building trust through transparency`
-      };
-      return launchRules[taskId] || '';
-    };
-    
-    // Build membership-specific rules for AI prompts
-    const getMembershipTaskRules = (taskId: string): string => {
-      const membershipRules: Record<string, string> = {
-        'planning_membership_commitment': `SPECIAL RULES FOR THIS TASK:
-- Help define commitment level with SUSTAINABILITY in mind, not maximizing engagement
-- Never suggest strategies to "lock in" members or create exit barriers
-- Focus on genuine value alignment, not retention tactics
-- This is about clarity on what members are committing to, not pressure to stay`,
-        'planning_membership_rhythm': `SPECIAL RULES FOR THIS TASK:
-- Help define a sustainable rhythm that works for BOTH creator and members
-- Never suggest content treadmills, daily requirements, or overwhelming schedules
-- Focus on steady and manageable over constant and exhausting
-- This is about finding a pace that protects energy while providing value`,
-        'messaging_renewal_framing': `SPECIAL RULES FOR THIS TASK:
-- Help frame renewals with HONESTY and clarity, not manipulation
-- Never suggest guilt-based language, fear of missing out, or sunk-cost framing
-- Focus on genuine reasons to stay vs. pressure to not leave
-- This is about building trust through transparent value communication`,
-        'messaging_ongoing_access_framing': `SPECIAL RULES FOR THIS TASK:
-- Help address the "do I need this forever?" question HONESTLY
-- Never suggest language that avoids the question or creates dependency
-- Focus on clarity about ongoing value without pressure to stay indefinitely
-- This is about respecting member autonomy and building trust`,
-        'build_membership_container': `SPECIAL RULES FOR THIS TASK:
-- Help define the core experience WITHOUT prescribing specific tools or platforms
-- Never recommend specific software, apps, or technical implementations
-- Focus on what members GET ACCESS TO, not how it's technically delivered
-- Examples should be abstract like "content library", "community space", "regular touchpoints"`,
-        'content_retention_content': `SPECIAL RULES FOR THIS TASK:
-- Help plan content that keeps members SUPPORTED, not overwhelmed
-- Never suggest content treadmills, constant novelty requirements, or unsustainable schedules
-- Focus on steady, reassuring content over constant output
-- This is about sustainable value delivery, not content volume metrics`,
-        'launch_set_joining_expectations': `SPECIAL RULES FOR THIS TASK:
-- Help set expectations that PREVENT churn through clarity, not sales tactics
-- Never suggest hiding limitations or over-promising features
-- Focus on honest alignment of what the membership is and isn't
-- This is about reducing future regret by setting clear expectations upfront`
-      };
-      return membershipRules[taskId] || '';
-    };
-
-    const userPrompts: Record<string, string> = {
-      help_me_choose: taskId === 'planning_time_effort_perception'
-        ? (inputState === 'EMPTY' 
-          ? `I'm working on this task: "${taskTitle}"
-
-SPECIAL RULES FOR THIS TASK:
-- Help me name PATTERNS about how change feels, NOT actions to take
-- Never suggest specific tactics, steps, or prescribe what my audience should do
-- Focus on perception, feeling, and emotional/cognitive relief
-- This is about WHY change feels manageable, not WHAT to do
-
-Here are the instructions:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-I haven't started yet and need help finding a starting point about how my offer reduces perceived effort.`
-          : inputState === 'PARTIAL'
-          ? `I'm working on this task: "${taskTitle}"
-
-SPECIAL RULES FOR THIS TASK:
-- Help me refine PATTERNS about how change feels, NOT actions
-- Never suggest specific tactics, steps, or prescribe what my audience should do
-
-Here are the instructions:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-Here's what I've written so far: "${currentInput}"
-
-Help me make this more specific while keeping it about PERCEPTION, not tactics.`
-          : `I'm working on this task: "${taskTitle}"
-
-SPECIAL RULES FOR THIS TASK:
-- Polish without adding tactics or prescribed actions
-
-Here are the instructions:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-Here's what I've written: "${currentInput}"
-
-Help me polish this while preserving its focus on perception and feeling.`)
-        : isLaunchFunnelTask
-        ? (inputState === 'EMPTY' 
-          ? `I'm working on this task: "${taskTitle}"
-
-${getLaunchTaskRules(taskId)}
-
-Here are the instructions:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-I haven't started yet and need help finding a starting point.`
-          : inputState === 'PARTIAL'
-          ? `I'm working on this task: "${taskTitle}"
-
-${getLaunchTaskRules(taskId)}
-
-Here are the instructions:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-Here's what I've written so far: "${currentInput}"
-
-Help me make this more specific while keeping it focused on clarity and intentionality, never urgency.`
-          : `I'm working on this task: "${taskTitle}"
-
-${getLaunchTaskRules(taskId)}
-
-Here are the instructions:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-Here's what I've written: "${currentInput}"
-
-Help me polish this while preserving its focus on clarity and trust-building.`)
-        : isMembershipFunnelTask
-        ? (inputState === 'EMPTY' 
-          ? `I'm working on this task: "${taskTitle}"
-
-${getMembershipTaskRules(taskId)}
-
-Here are the instructions:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-I haven't started yet and need help finding a starting point.`
-          : inputState === 'PARTIAL'
-          ? `I'm working on this task: "${taskTitle}"
-
-${getMembershipTaskRules(taskId)}
-
-Here are the instructions:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-Here's what I've written so far: "${currentInput}"
-
-Help me make this more specific while keeping it focused on sustainability and ongoing value, never pressure.`
-          : `I'm working on this task: "${taskTitle}"
-
-${getMembershipTaskRules(taskId)}
-
-Here are the instructions:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-Here's what I've written: "${currentInput}"
-
-Help me polish this while preserving its focus on sustainable value and member trust.`)
-        : (inputState === 'EMPTY' 
-        ? `I'm working on this task: "${taskTitle}"
-
-Here are the instructions:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-I haven't started yet and need help finding a starting point.`
-        : inputState === 'PARTIAL'
-        ? `I'm working on this task: "${taskTitle}"
-
-Here are the instructions:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-Here's what I've written so far: "${currentInput}"
-
-I feel like this is too vague. Can you help me make it more specific?`
-        : `I'm working on this task: "${taskTitle}"
-
-Here are the instructions:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-Here's what I've written: "${currentInput}"
-
-Does this look good? Can you help me polish it?`),
-
-      examples: taskId === 'planning_time_effort_perception' 
-        ? `Show me examples for this task: "${taskTitle}"
-
-SPECIAL RULES FOR THIS TASK - YOU MUST FOLLOW THESE:
-- Show ONLY abstract examples about perception and feeling, NOT tactics or actions
-- Examples must describe STATES or FEELINGS, never steps, tools, or platforms
-- Approved example types: "An early moment of clarity", "A feeling of calm instead of overwhelm", "Less decision-making upfront"
-- NEVER suggest specific tactics, strategies, timelines, or workloads
-- Focus on emotional and cognitive relief, NOT outcomes or results
-
-Instructions for this task:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-${currentInput ? `My current input (do NOT reference this directly): "${currentInput}"` : 'I haven\'t written anything yet.'}
-
-Show 2-3 abstract examples about perception and feeling — not tactics or steps.`
-        : isLaunchFunnelTask
-        ? `Show me examples for this task: "${taskTitle}"
-
-${getLaunchTaskRules(taskId)}
-
-LAUNCH FUNNEL EXAMPLE RULES - YOU MUST FOLLOW THESE:
-- Examples must focus on CLARITY and INTENTIONALITY, never urgency or scarcity
-- Never use phrases like "limited time", "act now", "don't miss out", "last chance"
-- Examples should feel calm, clear, and supportive — not pressuring
-- Focus on honest communication and trust-building
-- No countdown language, no FOMO tactics, no artificial deadlines
-
-Instructions for this task:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-${currentInput ? `My current input (do NOT reference this directly): "${currentInput}"` : 'I haven\'t written anything yet.'}
-
-Show 2-3 examples that emphasize clarity and intentionality — never urgency or pressure.`
-        : isMembershipFunnelTask
-        ? `Show me examples for this task: "${taskTitle}"
-
-${getMembershipTaskRules(taskId)}
-
-MEMBERSHIP FUNNEL EXAMPLE RULES - YOU MUST FOLLOW THESE:
-- Examples must focus on ONGOING VALUE and SUSTAINABILITY, never pressure or content treadmills
-- Never suggest guilt-based retention, lock-in tactics, or dependency language
-- Examples should feel supportive, sustainable, and honest — not overwhelming
-- Focus on genuine value delivery and member autonomy
-- No constant content requirements, no daily engagement mandates, no churn manipulation
-
-Instructions for this task:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-${currentInput ? `My current input (do NOT reference this directly): "${currentInput}"` : 'I haven\'t written anything yet.'}
-
-Show 2-3 examples that emphasize sustainable value and member trust — never pressure or content treadmills.`
-        : `Show me examples for this task: "${taskTitle}"
-
-Instructions for this task:
-${taskInstructions?.map((i, idx) => `${idx + 1}. ${i}`).join('\n') || 'No specific instructions provided.'}
-
-${currentInput ? `My current input (do NOT reference this directly): "${currentInput}"` : 'I haven\'t written anything yet.'}
-
-Show 2-3 generic, fictional examples to help me understand what kind of answer this is asking for.`,
-
-      simplify: `Please simplify this text I've written: "${currentInput}"
-
-Make it clearer and lighter while keeping the exact same meaning. Do not add ideas, change strategy, or make it more persuasive.`,
-    };
-
-    // Validate that we have prompts for the requested mode
-    if (!systemPrompts[mode] || !userPrompts[mode]) {
-      console.error('[TASK-AI-ASSIST] Unknown mode:', mode);
-      throw new Error(`Unknown assist mode: ${mode}`);
+    const systemPrompt = systemPrompts[mode];
+    if (!systemPrompt) {
+      throw new Error(`Invalid mode: ${mode}`);
     }
 
+    const userPrompt = `Please help me with this task: "${taskTitle}"`;
+
+    console.log('[TASK-AI-ASSIST] Calling AI with mode:', mode);
+
+    const model = "google/gemini-2.5-flash";
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -876,54 +487,77 @@ Make it clearer and lighter while keeping the exact same meaning. Do not add ide
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model,
         messages: [
-          { role: 'system', content: systemPrompts[mode] },
-          { role: 'user', content: userPrompts[mode] },
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
         ],
-        max_tokens: 600,
       }),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[TASK-AI-ASSIST] AI gateway error:', response.status, errorText);
-      
+      if (projectContext.userId) {
+        await logAiUsage(supabase, projectContext.userId, projectId, "task-ai-assist", model, false);
+      }
       if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
       if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'AI usage limit reached. Please try again later.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return new Response(JSON.stringify({ error: 'AI credits exhausted. Please add credits to continue.' }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
-      
-      throw new Error(`AI gateway error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('[TASK-AI-ASSIST] AI gateway error:', response.status, errorText);
+      throw new Error('Failed to get AI assistance');
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      throw new Error('No response from AI');
+      if (projectContext.userId) {
+        await logAiUsage(supabase, projectContext.userId, projectId, "task-ai-assist", model, false);
+      }
+      throw new Error('No content in AI response');
     }
 
-    console.log('[TASK-AI-ASSIST] Response generated successfully, input state:', inputState);
+    console.log('[TASK-AI-ASSIST] AI response received, length:', content.length);
 
-    return new Response(
-      JSON.stringify({ response: content, inputState }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    // Log successful AI usage
+    if (projectContext.userId) {
+      await logAiUsage(supabase, projectContext.userId, projectId, "task-ai-assist", model, true);
+    }
 
+    // Parse JSON from response
+    const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, content];
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonMatch[1].trim());
+    } catch (parseError) {
+      console.error('[TASK-AI-ASSIST] JSON parse error:', parseError, 'Content:', content);
+      // Try to extract JSON object directly
+      const objectMatch = content.match(/\{[\s\S]*\}/);
+      if (objectMatch) {
+        parsed = JSON.parse(objectMatch[0]);
+      } else {
+        throw new Error('Could not parse AI response as JSON');
+      }
+    }
+
+    return new Response(JSON.stringify(parsed), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     console.error('[TASK-AI-ASSIST] Error:', error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });

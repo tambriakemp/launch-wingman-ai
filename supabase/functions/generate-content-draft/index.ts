@@ -88,7 +88,7 @@ async function fetchProjectContext(supabase: any, projectId: string) {
     // Fetch project transformation statement
     const { data: project } = await supabase
       .from("projects")
-      .select("transformation_statement, name, description")
+      .select("transformation_statement, name, description, user_id")
       .eq("id", projectId)
       .single();
 
@@ -192,6 +192,21 @@ function buildContextString(context: Record<string, any>): string {
   return parts.join("\n\n");
 }
 
+// Log AI usage
+async function logAiUsage(supabase: any, userId: string, projectId: string | null, functionName: string, model: string, success: boolean) {
+  try {
+    await supabase.from("ai_usage_logs").insert({
+      user_id: userId,
+      project_id: projectId,
+      function_name: functionName,
+      model: model,
+      success: success,
+    });
+  } catch (error) {
+    console.error("Failed to log AI usage:", error);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -204,16 +219,19 @@ serve(async (req) => {
 
     const categoryConfig = CATEGORY_DRAFTING[contentType] || CATEGORY_DRAFTING.general;
 
-    // Initialize Supabase client and fetch project context
+    // Initialize Supabase client
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Fetch project context and get userId
     let projectContext = "";
+    let userId: string | null = null;
     if (projectId) {
-      const supabase = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-      );
-      
       const context = await fetchProjectContext(supabase, projectId);
       projectContext = buildContextString(context);
+      userId = context.project?.user_id || null;
       console.log("Fetched project context length:", projectContext.length);
     }
 
@@ -296,8 +314,9 @@ ${generateTitle ? "Also generate a compelling, concise title for this post (5-10
       throw new Error("Either talkingPoint or existingDraft with adjustment is required");
     }
 
+    const model = "google/gemini-2.5-flash";
     const requestBody: any = {
-      model: "google/gemini-2.5-flash",
+      model,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -347,6 +366,7 @@ ${generateTitle ? "Also generate a compelling, concise title for this post (5-10
     if (!response.ok) {
       const errorText = await response.text();
       console.error("AI API error:", errorText);
+      if (userId) await logAiUsage(supabase, userId, projectId, "generate-content-draft", model, false);
       throw new Error(`AI API error: ${response.status}`);
     }
 
@@ -365,16 +385,23 @@ ${generateTitle ? "Also generate a compelling, concise title for this post (5-10
         console.log("Parsed tool call - title:", generatedTitle, "content length:", finalDraft?.length);
       } catch (e) {
         console.error("Failed to parse tool call arguments:", e);
+        if (userId) await logAiUsage(supabase, userId, projectId, "generate-content-draft", model, false);
         throw new Error("Failed to parse AI response");
       }
     } else {
       // Regular text response (no tool call)
       const draft = aiData.choices?.[0]?.message?.content;
       if (!draft) {
+        if (userId) await logAiUsage(supabase, userId, projectId, "generate-content-draft", model, false);
         throw new Error("No content in AI response");
       }
       finalDraft = draft.trim();
       console.log("Regular response - draft length:", finalDraft.length);
+    }
+
+    // Log successful AI usage
+    if (userId) {
+      await logAiUsage(supabase, userId, projectId, "generate-content-draft", model, true);
     }
 
     return new Response(JSON.stringify({ 

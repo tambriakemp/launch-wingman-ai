@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage_logs: {
+        Row: {
+          created_at: string
+          function_name: string
+          id: string
+          model: string
+          project_id: string | null
+          success: boolean
+          tokens_used: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          function_name: string
+          id?: string
+          model: string
+          project_id?: string | null
+          success?: boolean
+          tokens_used?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          function_name?: string
+          id?: string
+          model?: string
+          project_id?: string | null
+          success?: boolean
+          tokens_used?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       brand_colors: {
         Row: {
           created_at: string
