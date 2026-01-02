@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UserActivityDialog } from '@/components/UserActivityDialog';
 import { EditUserDialog } from '@/components/admin/EditUserDialog';
-import { AiUsageStatsCard, AiUsageTable } from '@/components/admin/AiUsageSection';
+import { AiUsageTable, MrrStatsCard } from '@/components/admin/AiUsageSection';
 import { AdminRoleToggle } from '@/components/admin/AdminRoleToggle';
 import { RevenueChurnChart } from '@/components/admin/RevenueChurnChart';
 
@@ -643,7 +643,7 @@ const AdminDashboard = () => {
               <div className="text-xl md:text-2xl font-bold">{stats.freeUsers}</div>
             </CardContent>
           </Card>
-          <AiUsageStatsCard />
+          <MrrStatsCard proUserCount={stats.proUsers} />
         </div>
 
         {/* Users Card */}
