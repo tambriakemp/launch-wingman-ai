@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAdminPlatformStats } from '@/hooks/useAdminPlatformStats';
-import { Layers, FileText, Users2, Gift, TrendingUp, Calendar, MessageSquare, Link2 } from 'lucide-react';
+import { Layers, FileText, Users2, Gift, TrendingUp, Calendar, MessageSquare, Link2, Filter } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
 
 export function ProjectStatsCard() {
   const { data, isLoading } = useAdminPlatformStats();
@@ -226,6 +227,69 @@ export function OfferStatsCard() {
           <span className="font-medium">
             {stats?.avgOfferPrice ? `$${stats.avgOfferPrice.toLocaleString()}` : '—'}
           </span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function OnboardingFunnelCard() {
+  const { data, isLoading } = useAdminPlatformStats();
+
+  if (isLoading) {
+    return (
+      <Card className="col-span-2">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <Filter className="h-4 w-4" />
+            Onboarding Funnel
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Skeleton className="h-6 w-full" />
+          <Skeleton className="h-6 w-full" />
+          <Skeleton className="h-6 w-full" />
+          <Skeleton className="h-6 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const funnel = data?.onboardingFunnel;
+
+  const funnelSteps = [
+    { label: 'Profile Completed', count: funnel?.usersWithProfile || 0, rate: funnel?.profileCompletionRate || 0 },
+    { label: 'First Project', count: funnel?.usersWithFirstProject || 0, rate: funnel?.projectCreationRate || 0 },
+    { label: 'First Offer Created', count: funnel?.usersWithOffer || 0, rate: funnel?.offerCreationRate || 0 },
+    { label: 'First Task Done', count: funnel?.usersWithFirstTask || 0, rate: funnel?.taskCompletionRate || 0 },
+  ];
+
+  return (
+    <Card className="col-span-2">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <Filter className="h-4 w-4" />
+          Onboarding Funnel
+          <span className="text-muted-foreground font-normal ml-auto">
+            {funnel?.totalUsers || 0} total users
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {funnelSteps.map((step, index) => (
+            <div key={step.label} className="space-y-1">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {index + 1}. {step.label}
+                </span>
+                <span className="font-medium">
+                  {step.count} <span className="text-muted-foreground">({step.rate}%)</span>
+                </span>
+              </div>
+              <Progress value={step.rate} className="h-2" />
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>

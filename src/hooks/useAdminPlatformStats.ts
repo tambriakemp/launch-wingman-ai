@@ -41,11 +41,24 @@ export interface OfferStats {
   avgOfferPrice: number;
 }
 
+export interface OnboardingFunnel {
+  totalUsers: number;
+  usersWithProfile: number;
+  usersWithFirstProject: number;
+  usersWithFirstTask: number;
+  usersWithOffer: number;
+  profileCompletionRate: number;
+  projectCreationRate: number;
+  taskCompletionRate: number;
+  offerCreationRate: number;
+}
+
 export interface AdminPlatformStats {
   projectStats: ProjectStats;
   contentStats: ContentStats;
   engagementStats: EngagementStats;
   offerStats: OfferStats;
+  onboardingFunnel: OnboardingFunnel;
   generatedAt: string;
 }
 
