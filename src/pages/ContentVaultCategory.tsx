@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { ResourceCard } from "@/components/content-vault/ResourceCard";
 import { ResourceEditDialog } from "@/components/content-vault/ResourceEditDialog";
+import { ResourceLightbox } from "@/components/content-vault/ResourceLightbox";
 import { VaultFilters } from "@/components/content-vault/VaultFilters";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useAdmin } from "@/hooks/useAdmin";
@@ -50,9 +51,10 @@ const ContentVaultCategory = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
-  // Edit/Delete state
+  // Edit/Delete/Lightbox state
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
   const [deletingResource, setDeletingResource] = useState<Resource | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   // Fetch category
   const { data: category, isLoading: categoryLoading } = useQuery({
@@ -163,8 +165,16 @@ const ContentVaultCategory = () => {
     });
   }, [resources, selectedSubcategory, searchQuery, selectedTags]);
 
-  const handleResourceClick = (resource: Resource) => {
-    window.open(resource.resource_url, '_blank');
+  const handleResourceClick = (resource: Resource, index: number) => {
+    // Check if it's a media file that can be shown in lightbox
+    const isMedia = /\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|mov)$/i.test(resource.resource_url);
+    
+    if (isMedia) {
+      setLightboxIndex(index);
+    } else {
+      // For non-media files (like Canva links), open in new tab
+      window.open(resource.resource_url, '_blank');
+    }
   };
 
   // Show upgrade prompt for free users
@@ -258,15 +268,16 @@ const ContentVaultCategory = () => {
             </div>
           ) : filteredResources.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-              {filteredResources.map((resource) => (
+              {filteredResources.map((resource, index) => (
                 <ResourceCard
                   key={resource.id}
                   title={resource.title}
                   description={resource.description}
                   coverImageUrl={resource.cover_image_url}
+                  resourceUrl={resource.resource_url}
                   resourceType={resource.resource_type}
                   tags={resource.tags}
-                  onClick={() => handleResourceClick(resource)}
+                  onClick={() => handleResourceClick(resource, index)}
                   isAdmin={isAdmin}
                   onEdit={() => setEditingResource(resource)}
                   onDelete={() => setDeletingResource(resource)}
@@ -300,6 +311,14 @@ const ContentVaultCategory = () => {
         title="Delete Resource"
         description={`Are you sure you want to delete "${deletingResource?.title}"? This action cannot be undone.`}
         isDeleting={deleteMutation.isPending}
+      />
+
+      {/* Lightbox */}
+      <ResourceLightbox
+        resources={filteredResources}
+        currentIndex={lightboxIndex ?? 0}
+        open={lightboxIndex !== null}
+        onOpenChange={(open) => !open && setLightboxIndex(null)}
       />
     </ProjectLayout>
   );
