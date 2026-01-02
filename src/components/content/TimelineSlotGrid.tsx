@@ -776,16 +776,6 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                                   <Eye className="w-3.5 h-3.5" />
                                                 </Button>
                                                 <Button
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  onClick={() => generateSuggestion(template)}
-                                                  disabled={isLoading}
-                                                  className="h-8 px-2"
-                                                  title="Regenerate"
-                                                >
-                                                  <Sparkles className="w-3.5 h-3.5" />
-                                                </Button>
-                                                <Button
                                                   variant="default"
                                                   size="sm"
                                                   onClick={() => createFromSuggestion(template, suggestion)}
@@ -801,24 +791,73 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                                     </>
                                                   )}
                                                 </Button>
+                                                <DropdownMenu>
+                                                  <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="icon"
+                                                      className="h-8 w-8"
+                                                    >
+                                                      <MoreHorizontal className="w-4 h-4" />
+                                                    </Button>
+                                                  </DropdownMenuTrigger>
+                                                  <DropdownMenuContent align="end" className="min-w-[160px]">
+                                                    <DropdownMenuItem onClick={handleCreateNewPost}>
+                                                      <Plus className="w-4 h-4 mr-2" />
+                                                      Create Post
+                                                      {!isSubscribed && (
+                                                        <Crown className="w-3.5 h-3.5 ml-auto text-yellow-500" />
+                                                      )}
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem 
+                                                      onClick={() => generateSuggestion(template)}
+                                                      disabled={isLoading}
+                                                    >
+                                                      <Sparkles className="w-4 h-4 mr-2" />
+                                                      Regenerate Idea
+                                                    </DropdownMenuItem>
+                                                  </DropdownMenuContent>
+                                                </DropdownMenu>
                                               </>
                                             ) : (
-                                              <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => generateSuggestion(template)}
-                                                disabled={isLoading}
-                                                className="h-8"
-                                              >
-                                                {isLoading ? (
-                                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                ) : (
-                                                  <>
-                                                    <Sparkles className="w-3.5 h-3.5 mr-1" />
-                                                    Generate
-                                                  </>
-                                                )}
-                                              </Button>
+                                              <>
+                                                <Button
+                                                  variant="outline"
+                                                  size="sm"
+                                                  onClick={() => generateSuggestion(template)}
+                                                  disabled={isLoading}
+                                                  className="h-8"
+                                                >
+                                                  {isLoading ? (
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                  ) : (
+                                                    <>
+                                                      <Sparkles className="w-3.5 h-3.5 mr-1" />
+                                                      Generate
+                                                    </>
+                                                  )}
+                                                </Button>
+                                                <DropdownMenu>
+                                                  <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="icon"
+                                                      className="h-8 w-8"
+                                                    >
+                                                      <MoreHorizontal className="w-4 h-4" />
+                                                    </Button>
+                                                  </DropdownMenuTrigger>
+                                                  <DropdownMenuContent align="end" className="min-w-[160px]">
+                                                    <DropdownMenuItem onClick={handleCreateNewPost}>
+                                                      <Plus className="w-4 h-4 mr-2" />
+                                                      Create Post
+                                                      {!isSubscribed && (
+                                                        <Crown className="w-3.5 h-3.5 ml-auto text-yellow-500" />
+                                                      )}
+                                                    </DropdownMenuItem>
+                                                  </DropdownMenuContent>
+                                                </DropdownMenu>
+                                              </>
                                             )}
                                           </div>
                                         </div>
