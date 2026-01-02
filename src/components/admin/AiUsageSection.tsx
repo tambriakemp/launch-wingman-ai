@@ -5,15 +5,12 @@ import { getFunctionLabel } from "@/hooks/useAiUsage";
 import { Loader2, Sparkles, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 
-// Pro subscription price in cents (from Stripe)
-const PRO_MONTHLY_PRICE_CENTS = 2500;
-
 interface MrrCardProps {
-  proUserCount: number;
+  mrrCents: number;
 }
 
-export function MrrStatsCard({ proUserCount }: MrrCardProps) {
-  const mrr = (proUserCount * PRO_MONTHLY_PRICE_CENTS) / 100;
+export function MrrStatsCard({ mrrCents }: MrrCardProps) {
+  const mrr = mrrCents / 100;
   const arr = mrr * 12;
 
   return (

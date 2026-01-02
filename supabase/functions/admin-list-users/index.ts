@@ -84,6 +84,7 @@ serve(async (req) => {
         let subscriptionEnd = null;
         let stripeCustomerId = null;
         let stripeSubscriptionId = null;
+        let subscriptionAmountCents = 0;
 
         if (user.email) {
           try {
@@ -97,9 +98,14 @@ serve(async (req) => {
               });
               
               if (subscriptions.data.length > 0) {
+                const subscription = subscriptions.data[0];
                 subscriptionStatus = 'pro';
-                subscriptionEnd = new Date(subscriptions.data[0].current_period_end * 1000).toISOString();
-                stripeSubscriptionId = subscriptions.data[0].id;
+                subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+                stripeSubscriptionId = subscription.id;
+                
+                // Get actual amount from subscription item (handles discounts, free upgrades, etc.)
+                const priceAmount = subscription.items.data[0]?.price?.unit_amount || 0;
+                subscriptionAmountCents = priceAmount;
               }
             }
           } catch (err: unknown) {
@@ -118,6 +124,7 @@ serve(async (req) => {
           subscription_end: subscriptionEnd,
           stripe_customer_id: stripeCustomerId,
           stripe_subscription_id: stripeSubscriptionId,
+          subscription_amount_cents: subscriptionAmountCents,
           last_active: profile?.last_active || null,
           is_admin: isAdmin,
         };

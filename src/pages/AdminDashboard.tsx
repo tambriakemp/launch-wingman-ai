@@ -42,6 +42,7 @@ interface User {
   subscription_end: string | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
+  subscription_amount_cents: number;
   last_active: string | null;
   is_admin: boolean;
 }
@@ -566,6 +567,7 @@ const AdminDashboard = () => {
     totalUsers: users.length,
     proUsers: users.filter(u => u.subscription_status === 'pro').length,
     freeUsers: users.filter(u => u.subscription_status === 'free').length,
+    mrrCents: users.reduce((sum, u) => sum + (u.subscription_amount_cents || 0), 0),
   };
 
   return (
@@ -643,7 +645,7 @@ const AdminDashboard = () => {
               <div className="text-xl md:text-2xl font-bold">{stats.freeUsers}</div>
             </CardContent>
           </Card>
-          <MrrStatsCard proUserCount={stats.proUsers} />
+          <MrrStatsCard mrrCents={stats.mrrCents} />
         </div>
 
         {/* Users Card */}
