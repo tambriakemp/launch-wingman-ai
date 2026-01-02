@@ -32,6 +32,7 @@ import { EditUserDialog } from '@/components/admin/EditUserDialog';
 import { AiUsageTable, MrrStatsCard } from '@/components/admin/AiUsageSection';
 import { AdminRoleToggle } from '@/components/admin/AdminRoleToggle';
 import { RevenueChurnChart } from '@/components/admin/RevenueChurnChart';
+import { ProjectStatsCard, ContentStatsCard, EngagementStatsCard, OfferStatsCard } from '@/components/admin/PlatformStatsSection';
 
 interface User {
   id: string;
@@ -625,7 +626,15 @@ const AdminDashboard = () => {
         {/* Revenue/Churn Chart - Admin only */}
         {isAdmin && <RevenueChurnChart users={users} />}
 
-        {/* Stats Cards */}
+        {/* Platform Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 md:mb-8">
+          <ProjectStatsCard />
+          <ContentStatsCard />
+          <EngagementStatsCard />
+          <OfferStatsCard />
+        </div>
+
+        {/* User Stats Cards */}
         <div className={cn(
           "grid gap-2 md:gap-4 mb-4 md:mb-8",
           isAdmin ? "grid-cols-2 md:grid-cols-4" : "grid-cols-3"
