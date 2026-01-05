@@ -12,7 +12,8 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronRight, Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ChevronRight, Package, Trash2, X, CheckSquare } from "lucide-react";
 import { toast } from "sonner";
 
 interface Category {
@@ -55,6 +56,11 @@ const ContentVaultCategory = () => {
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
   const [deletingResource, setDeletingResource] = useState<Resource | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  
+  // Bulk selection state (admin only)
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   // Fetch category
   const { data: category, isLoading: categoryLoading } = useQuery({
@@ -107,7 +113,7 @@ const ContentVaultCategory = () => {
     enabled: canAccessVault && !!subcategories && subcategories.length > 0,
   });
 
-  // Delete mutation
+  // Single delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (resourceId: string) => {
       const { error } = await supabase
@@ -124,6 +130,28 @@ const ContentVaultCategory = () => {
     },
     onError: (error) => {
       toast.error("Failed to delete resource: " + error.message);
+    },
+  });
+
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase
+        .from('content_vault_resources')
+        .delete()
+        .in('id', ids);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['content-vault-resources'] });
+      toast.success(`${selectedIds.size} resources deleted successfully`);
+      setSelectedIds(new Set());
+      setIsSelectionMode(false);
+      setShowBulkDeleteConfirm(false);
+    },
+    onError: (error) => {
+      toast.error("Failed to delete resources: " + error.message);
     },
   });
 
@@ -166,6 +194,12 @@ const ContentVaultCategory = () => {
   }, [resources, selectedSubcategory, searchQuery, selectedTags]);
 
   const handleResourceClick = (resource: Resource, index: number) => {
+    // Don't open lightbox in selection mode
+    if (isSelectionMode) {
+      toggleSelection(resource.id);
+      return;
+    }
+    
     // Check if it's a media file that can be shown in lightbox
     const isMedia = /\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|mov)$/i.test(resource.resource_url);
     
@@ -175,6 +209,27 @@ const ContentVaultCategory = () => {
       // For non-media files (like Canva links), open in new tab
       window.open(resource.resource_url, '_blank');
     }
+  };
+
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedIds(new Set(filteredResources.map(r => r.id)));
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+    setIsSelectionMode(false);
   };
 
   // Show upgrade prompt for free users
@@ -240,10 +295,56 @@ const ContentVaultCategory = () => {
 
         <div className="max-w-7xl mx-auto px-6 py-8">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">{category.name}</h1>
-            {category.description && (
-              <p className="text-muted-foreground">{category.description}</p>
+          <div className="mb-8 flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">{category.name}</h1>
+              {category.description && (
+                <p className="text-muted-foreground">{category.description}</p>
+              )}
+            </div>
+            
+            {/* Admin Bulk Actions */}
+            {isAdmin && (
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {isSelectionMode ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={selectAll}
+                    >
+                      <CheckSquare className="w-4 h-4 mr-2" />
+                      Select All ({filteredResources.length})
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setShowBulkDeleteConfirm(true)}
+                      disabled={selectedIds.size === 0}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete ({selectedIds.size})
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearSelection}
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsSelectionMode(true)}
+                  >
+                    <CheckSquare className="w-4 h-4 mr-2" />
+                    Bulk Select
+                  </Button>
+                )}
+              </div>
             )}
           </div>
 
@@ -278,6 +379,9 @@ const ContentVaultCategory = () => {
                   resourceType={resource.resource_type}
                   tags={resource.tags}
                   onClick={() => handleResourceClick(resource, index)}
+                  isSelectable={isSelectionMode}
+                  isSelected={selectedIds.has(resource.id)}
+                  onSelectionChange={() => toggleSelection(resource.id)}
                 />
               ))}
             </div>
@@ -300,7 +404,7 @@ const ContentVaultCategory = () => {
         onOpenChange={(open) => !open && setEditingResource(null)}
       />
 
-      {/* Delete Confirmation */}
+      {/* Single Delete Confirmation */}
       <DeleteConfirmationDialog
         open={!!deletingResource}
         onOpenChange={(open) => !open && setDeletingResource(null)}
@@ -308,6 +412,16 @@ const ContentVaultCategory = () => {
         title="Delete Resource"
         description={`Are you sure you want to delete "${deletingResource?.title}"? This action cannot be undone.`}
         isDeleting={deleteMutation.isPending}
+      />
+
+      {/* Bulk Delete Confirmation */}
+      <DeleteConfirmationDialog
+        open={showBulkDeleteConfirm}
+        onOpenChange={setShowBulkDeleteConfirm}
+        onConfirm={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
+        title="Delete Multiple Resources"
+        description={`Are you sure you want to delete ${selectedIds.size} resources? This action cannot be undone.`}
+        isDeleting={bulkDeleteMutation.isPending}
       />
 
       {/* Lightbox */}

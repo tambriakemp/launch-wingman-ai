@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { ExternalLink, Download, Image as ImageIcon, Loader2 } from "lucide-react";
+import { ExternalLink, Download, Image as ImageIcon, Loader2, Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -14,6 +15,9 @@ interface ResourceCardProps {
   resourceType: string;
   tags: string[];
   onClick: () => void;
+  isSelectable?: boolean;
+  isSelected?: boolean;
+  onSelectionChange?: (selected: boolean) => void;
 }
 
 export const ResourceCard = ({ 
@@ -24,6 +28,9 @@ export const ResourceCard = ({
   resourceType, 
   tags,
   onClick,
+  isSelectable = false,
+  isSelected = false,
+  onSelectionChange,
 }: ResourceCardProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const isCanvaLink = resourceType === 'canva_link';
@@ -80,9 +87,13 @@ export const ResourceCard = ({
     }
   };
 
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <Card 
-      className="group cursor-pointer overflow-hidden border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg"
+      className={`group cursor-pointer overflow-hidden border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg ${isSelected ? 'ring-2 ring-primary border-primary' : ''}`}
       onClick={handleCardClick}
     >
       {/* Cover Image */}
@@ -99,6 +110,25 @@ export const ResourceCard = ({
           </div>
         )}
         
+        {/* Selection Checkbox for Admin */}
+        {isSelectable && (
+          <div 
+            className="absolute top-3 left-3 z-10"
+            onClick={handleCheckboxClick}
+          >
+            <div 
+              className={`h-6 w-6 rounded-md border-2 flex items-center justify-center cursor-pointer transition-all ${
+                isSelected 
+                  ? 'bg-primary border-primary' 
+                  : 'bg-background/90 border-border hover:border-primary/50'
+              }`}
+              onClick={() => onSelectionChange?.(!isSelected)}
+            >
+              {isSelected && <Check className="w-4 h-4 text-primary-foreground" />}
+            </div>
+          </div>
+        )}
+
         {/* Resource Type Badge - Only show for Canva links */}
         {isCanvaLink && (
           <div className="absolute top-3 right-3">
