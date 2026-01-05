@@ -19,7 +19,7 @@ interface Category {
 
 const ContentVault = () => {
   const navigate = useNavigate();
-  const { hasAccess } = useFeatureAccess();
+  const { hasAccess, isLoading: accessLoading } = useFeatureAccess();
   const canAccessVault = hasAccess('content_vault');
 
   const { data: categories, isLoading } = useQuery({
@@ -39,6 +39,24 @@ const ContentVault = () => {
   const handleCategoryClick = (slug: string) => {
     navigate(`/content-vault/${slug}`);
   };
+
+  // Show loading state while checking permissions
+  if (accessLoading) {
+    return (
+      <ProjectLayout>
+        <div className="min-h-screen bg-background">
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <VaultHeader />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-72 rounded-xl" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </ProjectLayout>
+    );
+  }
 
   // Show upgrade prompt for free users
   if (!canAccessVault) {
