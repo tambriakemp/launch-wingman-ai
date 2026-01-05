@@ -99,25 +99,18 @@ export const ResourceCard = ({
           </div>
         )}
         
-        {/* Resource Type Badge */}
-        <div className="absolute top-3 right-3">
-          <Badge 
-            variant="secondary" 
-            className="bg-background/90 backdrop-blur-sm text-xs font-medium"
-          >
-            {isCanvaLink ? (
-              <>
-                <ExternalLink className="w-3 h-3 mr-1" />
-                Canva
-              </>
-            ) : (
-              <>
-                <Download className="w-3 h-3 mr-1" />
-                Download
-              </>
-            )}
-          </Badge>
-        </div>
+        {/* Resource Type Badge - Only show for Canva links */}
+        {isCanvaLink && (
+          <div className="absolute top-3 right-3">
+            <Badge 
+              variant="secondary" 
+              className="bg-background/90 backdrop-blur-sm text-xs font-medium"
+            >
+              <ExternalLink className="w-3 h-3 mr-1" />
+              Canva
+            </Badge>
+          </div>
+        )}
 
         {/* Persistent Download Button - Always visible on mobile, hover on desktop */}
         {!isCanvaLink && (
