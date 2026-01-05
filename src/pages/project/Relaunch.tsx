@@ -45,10 +45,10 @@ export default function Relaunch() {
     }
   }, [projectStatus, id, navigate]);
 
-  const { hasAccess } = useFeatureAccess();
+  const { hasAccess, isLoading: accessLoading } = useFeatureAccess();
   const canRelaunch = hasAccess('relaunch_mode');
 
-  if (isLoading || !id) {
+  if (isLoading || accessLoading || !id) {
     return (
       <ProjectLayout>
         <div className="flex items-center justify-center py-16">

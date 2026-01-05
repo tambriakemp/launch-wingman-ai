@@ -22,7 +22,7 @@ import { UpgradePrompt } from "@/components/UpgradePrompt";
 export default function Insights() {
   const { id: projectId } = useParams();
   const { user } = useAuth();
-  const { hasAccess } = useFeatureAccess();
+  const { hasAccess, isLoading: accessLoading } = useFeatureAccess();
   const queryClient = useQueryClient();
   const [isMetricSheetOpen, setIsMetricSheetOpen] = useState(false);
   
@@ -240,10 +240,15 @@ export default function Insights() {
           </div>
         </div>
 
-        {/* Upgrade prompt for free users */}
-        {!canAccessInsights && (
+        {/* Show loading state while checking permissions */}
+        {accessLoading ? (
+          <div className="space-y-6">
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        ) : !canAccessInsights ? (
           <UpgradePrompt feature="insights_history" variant="banner" />
-        )}
+        ) : null}
 
         {isLoading ? (
           <div className="space-y-6">
