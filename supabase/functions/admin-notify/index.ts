@@ -12,7 +12,7 @@ const logStep = (step: string, details?: any) => {
 };
 
 interface NotificationRequest {
-  type: 'suspicious_activity' | 'new_signup' | 'subscription_change';
+  type: 'suspicious_activity' | 'new_signup' | 'subscription_change' | 'pro_signup' | 'pro_cancellation';
   user_email: string;
   user_id?: string;
   details: {
@@ -23,6 +23,7 @@ interface NotificationRequest {
     unique_ips_count?: number;
     login_count?: number;
     time_window?: string;
+    user_name?: string;
   };
 }
 
@@ -137,6 +138,38 @@ serve(async (req) => {
               <p><strong>Email:</strong> ${notification.user_email}</p>
               <p><strong>New Status:</strong> ${notification.details.subscription_status || 'Unknown'}</p>
             </div>
+            <p style="color: #6b7280; font-size: 12px;">This is an automated notification from Launchely.</p>
+          </div>
+        `;
+        break;
+
+      case 'pro_signup':
+        subject = `🎉 New Pro Subscriber - ${notification.user_email}`;
+        htmlContent = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #059669;">🎉 New Pro Subscription!</h2>
+            <p>A user has upgraded to Pro:</p>
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 16px 0;">
+              <p><strong>Email:</strong> ${notification.user_email}</p>
+              ${notification.details.user_name ? `<p><strong>Name:</strong> ${notification.details.user_name}</p>` : ''}
+            </div>
+            <p>💰 New recurring revenue! You can view this user in the admin dashboard.</p>
+            <p style="color: #6b7280; font-size: 12px;">This is an automated notification from Launchely.</p>
+          </div>
+        `;
+        break;
+
+      case 'pro_cancellation':
+        subject = `😢 Pro Cancellation - ${notification.user_email}`;
+        htmlContent = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #dc2626;">😢 Pro Subscription Cancelled</h2>
+            <p>A user has cancelled their Pro subscription:</p>
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin: 16px 0;">
+              <p><strong>Email:</strong> ${notification.user_email}</p>
+              ${notification.details.user_name ? `<p><strong>Name:</strong> ${notification.details.user_name}</p>` : ''}
+            </div>
+            <p>Consider reaching out to understand why they cancelled.</p>
             <p style="color: #6b7280; font-size: 12px;">This is an automated notification from Launchely.</p>
           </div>
         `;
