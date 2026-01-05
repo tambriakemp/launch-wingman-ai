@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode, useCallback } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -56,11 +56,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // Track previous subscription state to detect changes
+  const prevSubscribedRef = useRef<boolean | null>(null);
+  const hasCheckedInitialSubscription = useRef(false);
+
+  const notifyAdminOfSubscriptionChange = useCallback(async (type: 'pro_signup' | 'pro_cancellation', userEmail: string, userName?: string) => {
+    try {
+      await supabase.functions.invoke('admin-notify', {
+        body: {
+          type,
+          user_email: userEmail,
+          details: {
+            user_name: userName,
+          },
+        },
+      });
+      console.log(`[AuthContext] Admin notified of ${type} for ${userEmail}`);
+    } catch (error) {
+      console.error('[AuthContext] Failed to notify admin:', error);
+    }
+  }, []);
+
   const checkSubscription = useCallback(async () => {
     if (!session) {
       setIsSubscribed(false);
       setSubscriptionEnd(null);
       setSubscriptionLoading(false);
+      prevSubscribedRef.current = null;
+      hasCheckedInitialSubscription.current = false;
       return;
     }
 
@@ -71,14 +94,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error('Error checking subscription:', error);
         return;
       }
-      setIsSubscribed(data?.subscribed ?? false);
+      
+      const newSubscribed = data?.subscribed ?? false;
+      const previousSubscribed = prevSubscribedRef.current;
+      
+      // Only check for changes after the initial subscription check
+      if (hasCheckedInitialSubscription.current && previousSubscribed !== null) {
+        const userEmail = user?.email || session.user?.email;
+        const userName = user?.user_metadata?.first_name 
+          ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}`.trim()
+          : undefined;
+        
+        // Detect Pro signup: was not subscribed, now is subscribed
+        if (!previousSubscribed && newSubscribed && userEmail) {
+          notifyAdminOfSubscriptionChange('pro_signup', userEmail, userName);
+        }
+        
+        // Detect Pro cancellation: was subscribed, now is not subscribed
+        if (previousSubscribed && !newSubscribed && userEmail) {
+          notifyAdminOfSubscriptionChange('pro_cancellation', userEmail, userName);
+        }
+      }
+      
+      prevSubscribedRef.current = newSubscribed;
+      hasCheckedInitialSubscription.current = true;
+      
+      setIsSubscribed(newSubscribed);
       setSubscriptionEnd(data?.subscription_end ?? null);
     } catch (error) {
       console.error('Error checking subscription:', error);
     } finally {
       setSubscriptionLoading(false);
     }
-  }, [session]);
+  }, [session, user, notifyAdminOfSubscriptionChange]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
