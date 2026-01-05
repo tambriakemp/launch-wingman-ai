@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,72 +16,51 @@ serve(async (req) => {
     const { url } = await req.json();
     
     if (!url) {
-      console.error('No URL provided');
+      console.error('[vault-download] No URL provided');
       return new Response(
         JSON.stringify({ error: 'URL is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get and normalize R2_PUBLIC_URL
-    let r2PublicUrl = Deno.env.get('R2_PUBLIC_URL');
-    if (!r2PublicUrl) {
-      console.error('R2_PUBLIC_URL not configured');
+    console.log('[vault-download] Request received:', { urlPreview: url.substring(0, 80) });
+
+    // Validate URL exists in the vault database (prevents SSRF)
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { data: resource, error: dbError } = await supabase
+      .from('content_vault_resources')
+      .select('id')
+      .eq('resource_url', url)
+      .maybeSingle();
+
+    if (dbError) {
+      console.error('[vault-download] Database error:', dbError);
       return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
+        JSON.stringify({ error: 'Failed to validate resource' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Normalize R2_PUBLIC_URL - ensure it has https:// prefix
-    if (!r2PublicUrl.startsWith('http://') && !r2PublicUrl.startsWith('https://')) {
-      r2PublicUrl = `https://${r2PublicUrl}`;
-    }
-
-    // Parse allowed host from R2_PUBLIC_URL
-    let allowedHost: string;
-    try {
-      allowedHost = new URL(r2PublicUrl).host;
-    } catch {
-      console.error('Invalid R2_PUBLIC_URL format:', r2PublicUrl);
+    if (!resource) {
+      console.error('[vault-download] URL not found in vault:', { urlPreview: url.substring(0, 80) });
       return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Resource not found in vault' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Encode the URL to handle spaces and special characters
     const encodedUrl = encodeURI(url);
-    
-    // Validate URL is from allowed R2 bucket host
-    let requestedHost: string;
-    try {
-      requestedHost = new URL(encodedUrl).host;
-    } catch {
-      console.error('Invalid URL format:', url);
-      return new Response(
-        JSON.stringify({ error: 'Invalid URL format' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('URL validation:', { allowedHost, requestedHost, urlPreview: url.substring(0, 100) });
-
-    if (requestedHost !== allowedHost) {
-      console.error('URL host not allowed:', { requestedHost, allowedHost });
-      return new Response(
-        JSON.stringify({ error: 'Invalid URL domain' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('Downloading file:', encodedUrl);
+    console.log('[vault-download] Fetching file:', encodedUrl.substring(0, 80));
 
     // Fetch the file from R2
     const response = await fetch(encodedUrl);
     
     if (!response.ok) {
-      console.error('Failed to fetch file:', response.status, response.statusText);
+      console.error('[vault-download] Failed to fetch file:', response.status, response.statusText);
       return new Response(
         JSON.stringify({ error: 'Failed to fetch file' }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -90,13 +70,11 @@ serve(async (req) => {
     // Extract filename from URL
     const urlParts = url.split('/');
     let filename = urlParts[urlParts.length - 1] || 'download';
-    // Decode URL-encoded characters
     filename = decodeURIComponent(filename);
 
-    console.log('Serving file:', filename);
+    console.log('[vault-download] Serving file:', filename);
 
     // Stream the response with download headers
-    // Use application/octet-stream to ensure Supabase client returns a Blob
     return new Response(response.body, {
       headers: {
         ...corsHeaders,
@@ -108,7 +86,7 @@ serve(async (req) => {
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Download error:', error);
+    console.error('[vault-download] Error:', error);
     return new Response(
       JSON.stringify({ error: 'Download failed', details: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
