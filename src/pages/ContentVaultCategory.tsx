@@ -44,7 +44,7 @@ interface Resource {
 const ContentVaultCategory = () => {
   const { categorySlug } = useParams();
   const queryClient = useQueryClient();
-  const { hasAccess } = useFeatureAccess();
+  const { hasAccess, isLoading: accessLoading } = useFeatureAccess();
   const { isAdmin } = useAdmin();
   const canAccessVault = hasAccess('content_vault');
 
@@ -231,6 +231,23 @@ const ContentVaultCategory = () => {
     setSelectedIds(new Set());
     setIsSelectionMode(false);
   };
+
+  // Show loading state while checking permissions
+  if (accessLoading) {
+    return (
+      <ProjectLayout>
+        <div className="min-h-screen bg-background p-6">
+          <Skeleton className="h-8 w-48 mb-4" />
+          <Skeleton className="h-12 w-full mb-6" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} className="h-64 rounded-xl" />
+            ))}
+          </div>
+        </div>
+      </ProjectLayout>
+    );
+  }
 
   // Show upgrade prompt for free users
   if (!canAccessVault) {

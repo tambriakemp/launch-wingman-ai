@@ -41,6 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [impersonatedUserEmail, setImpersonatedUserEmail] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -59,9 +60,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!session) {
       setIsSubscribed(false);
       setSubscriptionEnd(null);
+      setSubscriptionLoading(false);
       return;
     }
 
+    setSubscriptionLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('check-subscription');
       if (error) {
@@ -72,6 +75,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSubscriptionEnd(data?.subscription_end ?? null);
     } catch (error) {
       console.error('Error checking subscription:', error);
+    } finally {
+      setSubscriptionLoading(false);
     }
   }, [session]);
 
@@ -339,7 +344,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{ 
       user, 
       session, 
-      loading, 
+      loading: loading || subscriptionLoading, 
       isSubscribed, 
       subscriptionEnd,
       isImpersonating,

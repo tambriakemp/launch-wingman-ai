@@ -57,8 +57,11 @@ export const FEATURE_DISPLAY_NAMES: Record<FeatureKey, string> = {
 export type SubscriptionTier = 'free' | 'pro' | 'admin';
 
 export const useFeatureAccess = () => {
-  const { isSubscribed } = useAuth();
-  const { hasAdminAccess } = useAdmin();
+  const { isSubscribed, loading: authLoading } = useAuth();
+  const { hasAdminAccess, loading: adminLoading } = useAdmin();
+
+  // Combined loading state - don't make access decisions until both checks complete
+  const isLoading = authLoading || adminLoading;
 
   // Determine the subscription tier
   // hasAdminAccess = admin OR manager, both get full access
@@ -110,6 +113,7 @@ export const useFeatureAccess = () => {
   };
 
   return {
+    isLoading,
     isSubscribed,
     hasAdminAccess,
     tier,
