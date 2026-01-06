@@ -271,27 +271,6 @@ export const SectionEditor = ({
         </Card>
       </div>
 
-      {/* AI-Generated Examples */}
-      {hasFormulas && examples.length > 0 && (
-        <div className="space-y-3">
-          <label className="text-sm font-medium">{getExamplesLabel(section.id)}</label>
-          <Card className="bg-primary/5 border-primary/20">
-            <CardContent className="py-3 space-y-3">
-              {examples.map((example, idx) => (
-                <div 
-                  key={idx} 
-                  className="text-sm p-2 bg-background/50 rounded cursor-pointer hover:bg-background/80 transition-colors"
-                  onClick={() => handleUseExample(example)}
-                >
-                  <p>{example}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Click to use</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       {/* Editor */}
       <div className="space-y-3">
         <label className="text-sm font-medium">Your draft</label>
@@ -302,16 +281,6 @@ export const SectionEditor = ({
           className="min-h-[200px] resize-y"
         />
       </div>
-
-      {/* AI Suggestions Panel */}
-      {showAiSuggestions && (
-        <AiSuggestions
-          suggestions={aiSuggestions}
-          isLoading={isGenerating}
-          onUseSuggestion={handleUseSuggestion}
-          onClose={() => setShowAiSuggestions(false)}
-        />
-      )}
 
       {/* AI Help buttons */}
       {!showAiSuggestions && (
@@ -348,6 +317,38 @@ export const SectionEditor = ({
               {examples.length > 0 ? 'Regenerate Examples' : 'Generate Examples'}
             </Button>
           )}
+        </div>
+      )}
+
+      {/* AI Suggestions Panel */}
+      {showAiSuggestions && (
+        <AiSuggestions
+          suggestions={aiSuggestions}
+          isLoading={isGenerating}
+          onUseSuggestion={handleUseSuggestion}
+          onClose={() => setShowAiSuggestions(false)}
+        />
+      )}
+
+      {/* AI-Generated Examples (below draft like Need help? section) */}
+      {hasFormulas && examples.length > 0 && (
+        <div className="p-5 rounded-xl bg-muted/30 border border-border/50 space-y-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <label className="text-sm font-medium">{getExamplesLabel(section.id)}</label>
+          </div>
+          <div className="space-y-2">
+            {examples.map((example, idx) => (
+              <div 
+                key={idx} 
+                className="text-sm p-3 bg-background/50 rounded-lg cursor-pointer hover:bg-background/80 transition-colors border border-border/30"
+                onClick={() => handleUseExample(example)}
+              >
+                <p>{example}</p>
+                <p className="text-xs text-muted-foreground mt-1">Click to use</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
