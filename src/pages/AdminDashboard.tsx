@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Menu, Package, Pencil, ShieldOff } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Menu, Package, Pencil, ShieldOff, BookOpen } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -636,11 +636,17 @@ const AdminDashboard = () => {
 
       <main className="container mx-auto px-4 py-4 md:py-8">
         {/* Quick Actions */}
-        <div className="mb-4 md:mb-6">
+        <div className="mb-4 md:mb-6 flex flex-wrap gap-2">
           <Button asChild variant="outline" size="sm">
             <Link to="/admin/content-vault">
               <Package className="h-4 w-4 mr-2" />
               Manage Content Vault
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/docs">
+              <BookOpen className="h-4 w-4 mr-2" />
+              Training & Docs
             </Link>
           </Button>
         </div>
