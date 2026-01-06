@@ -25,7 +25,7 @@ import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
-import { CONTENT_TYPE_COLORS } from "./contentTypeColors";
+import { CONTENT_TYPE_COLORS, CONTENT_TYPE_LABELS } from "./contentTypeColors";
 
 interface TimelineSlotGridProps {
   projectId: string;
@@ -614,8 +614,14 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                           </p>
                                         )}
                                         <div className="flex items-center gap-2 mt-1.5">
-                                          <Badge variant="secondary" className="text-xs capitalize">
-                                            {item.content_type.replace("-", " ")}
+                                          <Badge
+                                            variant="secondary"
+                                            className={cn(
+                                              "text-xs text-white",
+                                              CONTENT_TYPE_COLORS[item.content_type] || "bg-slate-500"
+                                            )}
+                                          >
+                                            {CONTENT_TYPE_LABELS[item.content_type] || item.content_type.replace(/-/g, " ")}
                                           </Badge>
                                           {item.status === "draft" && !item.scheduled_at && (
                                             <Badge variant="outline" className="text-xs">
@@ -767,8 +773,14 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                               >
                                                 {suggestion ? "AI Generated" : "Suggested"}
                                               </Badge>
-                                              <Badge variant="secondary" className="text-xs capitalize">
-                                                {template.content_type.replace("-", " ")}
+                                              <Badge
+                                                variant="secondary"
+                                                className={cn(
+                                                  "text-xs text-white",
+                                                  CONTENT_TYPE_COLORS[template.content_type] || "bg-slate-500"
+                                                )}
+                                              >
+                                                {CONTENT_TYPE_LABELS[template.content_type] || template.content_type.replace(/-/g, " ")}
                                               </Badge>
                                             </div>
                                           </div>
