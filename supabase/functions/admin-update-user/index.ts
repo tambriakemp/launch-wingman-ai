@@ -152,13 +152,23 @@ serve(async (req) => {
         emailSent = await sendEmailUpdateNotification(new_email, old_email || 'your previous email');
       }
 
-      // Log the action
+      // Log to legacy table
       await supabaseClient.from('impersonation_logs').insert({
         admin_user_id: adminUser.id,
         admin_email: adminUser.email,
         target_user_id: user_id,
         target_email: new_email,
         action: 'email_update'
+      });
+
+      // Log to admin_action_logs for comprehensive audit
+      await supabaseClient.from('admin_action_logs').insert({
+        admin_user_id: adminUser.id,
+        admin_email: adminUser.email,
+        target_user_id: user_id,
+        target_email: new_email,
+        action_type: 'email_updated',
+        action_details: { old_email: old_email || 'unknown', new_email }
       });
 
       console.log(`Email updated successfully for user ${user_id} to ${new_email}`);
@@ -219,13 +229,23 @@ serve(async (req) => {
         emailSent = await sendTempPasswordNotification(userEmail, tempPassword);
       }
 
-      // Log the action (don't log the password!)
+      // Log to legacy table (don't log the password!)
       await supabaseClient.from('impersonation_logs').insert({
         admin_user_id: adminUser.id,
         admin_email: adminUser.email,
         target_user_id: user_id,
         target_email: updatedUser.user?.email || 'unknown',
         action: 'temp_password_set'
+      });
+
+      // Log to admin_action_logs for comprehensive audit
+      await supabaseClient.from('admin_action_logs').insert({
+        admin_user_id: adminUser.id,
+        admin_email: adminUser.email,
+        target_user_id: user_id,
+        target_email: updatedUser.user?.email || 'unknown',
+        action_type: 'password_reset',
+        action_details: { email_sent: emailSent }
       });
 
       console.log(`Temporary password set for user ${user_id}`);

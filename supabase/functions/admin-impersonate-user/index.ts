@@ -108,7 +108,7 @@ serve(async (req) => {
       );
     }
 
-    // Log the impersonation event
+    // Log the impersonation event to legacy table
     const { error: logError } = await supabaseAdmin
       .from('impersonation_logs')
       .insert({
@@ -121,8 +121,17 @@ serve(async (req) => {
 
     if (logError) {
       console.error('[IMPERSONATE] Failed to log impersonation event');
-      // Don't fail the request, just log the error
     }
+
+    // Also log to admin_action_logs for comprehensive audit
+    await supabaseAdmin.from('admin_action_logs').insert({
+      admin_user_id: callerUser.id,
+      admin_email: callerUser.email,
+      target_user_id: targetUser.id,
+      target_email: targetUser.email,
+      action_type: 'impersonation_start',
+      action_details: {}
+    });
 
     console.log('[IMPERSONATE] Session generated successfully');
 

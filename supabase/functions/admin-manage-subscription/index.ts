@@ -64,6 +64,15 @@ serve(async (req) => {
       await stripe.subscriptions.cancel(stripe_subscription_id);
       logStep("Subscription cancelled", { stripe_subscription_id });
       
+      // Log to admin_action_logs
+      await supabaseClient.from('admin_action_logs').insert({
+        admin_user_id: adminUser.id,
+        admin_email: adminUser.email,
+        target_email: user_email,
+        action_type: 'subscription_cancelled',
+        action_details: { stripe_subscription_id }
+      });
+      
       return new Response(JSON.stringify({ success: true, message: "Subscription cancelled" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -125,6 +134,15 @@ serve(async (req) => {
       });
 
       logStep("Pro subscription granted", { customerId, subscriptionId: subscription.id });
+      
+      // Log to admin_action_logs
+      await supabaseClient.from('admin_action_logs').insert({
+        admin_user_id: adminUser.id,
+        admin_email: adminUser.email,
+        target_email: user_email,
+        action_type: 'subscription_granted',
+        action_details: { subscription_id: subscription.id, customer_id: customerId }
+      });
       
       return new Response(JSON.stringify({ 
         success: true, 
