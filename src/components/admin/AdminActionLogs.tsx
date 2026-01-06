@@ -36,7 +36,8 @@ const ACTION_TYPE_LABELS: Record<string, { label: string; variant: 'default' | '
   subscription_granted: { label: 'Pro Granted', variant: 'default' },
   email_updated: { label: 'Email Updated', variant: 'outline' },
   password_reset: { label: 'Password Reset', variant: 'outline' },
-  impersonation_start: { label: 'Impersonation', variant: 'secondary' },
+  impersonation_start: { label: 'View As Started', variant: 'secondary' },
+  impersonation_end: { label: 'View As Ended', variant: 'outline' },
 };
 
 const LOGS_PER_PAGE = 15;

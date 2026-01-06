@@ -28,7 +28,7 @@ serve(async (req) => {
       );
     }
 
-    // Log the impersonation end event
+    // Log to impersonation_logs for backward compatibility
     const { error: logError } = await supabaseAdmin
       .from('impersonation_logs')
       .insert({
@@ -40,7 +40,23 @@ serve(async (req) => {
       });
 
     if (logError) {
-      console.error('[LOG-IMPERSONATION-END] Error:', logError);
+      console.error('[LOG-IMPERSONATION-END] Error logging to impersonation_logs:', logError);
+    }
+
+    // Also log to admin_action_logs for unified audit trail
+    const { error: actionLogError } = await supabaseAdmin
+      .from('admin_action_logs')
+      .insert({
+        admin_user_id: adminUserId,
+        admin_email: adminEmail,
+        target_user_id: targetUserId,
+        target_email: targetEmail,
+        action_type: 'impersonation_end',
+        action_details: { ended_at: new Date().toISOString() },
+      });
+
+    if (actionLogError) {
+      console.error('[LOG-IMPERSONATION-END] Error logging to admin_action_logs:', actionLogError);
       return new Response(
         JSON.stringify({ error: 'Failed to log impersonation end' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
