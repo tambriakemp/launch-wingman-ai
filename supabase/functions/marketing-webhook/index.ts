@@ -15,6 +15,8 @@ interface MarketingContact {
   subscription_start: string | null;
   subscription_end: string | null;
   event_type: string;
+  list: string;
+  tags: string[];
 }
 
 interface WebhookRequest {
@@ -248,5 +250,7 @@ async function buildContact(
     subscription_start: subscriptionStart,
     subscription_end: subscriptionEnd,
     event_type: eventType,
+    list: "Launchely",
+    tags: [membership === "pro" ? "launchely-pro" : "launchely-free"],
   };
 }
