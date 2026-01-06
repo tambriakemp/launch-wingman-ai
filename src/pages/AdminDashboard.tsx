@@ -13,7 +13,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Package, Pencil, BookOpen, BarChart3, FileText, Sparkles } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Package, Pencil, BookOpen, BarChart3, FileText, Sparkles, Bell } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -41,6 +41,7 @@ import { DeleteUserDialog } from '@/components/admin/DeleteUserDialog';
 import { AdminActionLogs } from '@/components/admin/AdminActionLogs';
 import { UserProjectsDialog } from '@/components/admin/UserProjectsDialog';
 import { ExportUserDataDialog } from '@/components/admin/ExportUserDataDialog';
+import { MonitoringTab } from '@/components/admin/MonitoringTab';
 
 interface User {
   id: string;
@@ -616,6 +617,10 @@ const AdminDashboard = () => {
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Activity Logs</span>
             </TabsTrigger>
+            <TabsTrigger value="monitoring" className="gap-2">
+              <Bell className="h-4 w-4" />
+              <span className="hidden sm:inline">Monitoring</span>
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -1074,6 +1079,11 @@ const AdminDashboard = () => {
           {/* Activity Logs Tab */}
           <TabsContent value="activity" className="space-y-4 md:space-y-8">
             <AdminActionLogs />
+          </TabsContent>
+
+          {/* Monitoring Tab */}
+          <TabsContent value="monitoring" className="space-y-4 md:space-y-8">
+            <MonitoringTab users={users} />
           </TabsContent>
         </Tabs>
       </main>
