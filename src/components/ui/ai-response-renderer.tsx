@@ -400,8 +400,11 @@ export function AIResponseRenderer({ response, mode }: AIResponseRendererProps) 
 
   // Handle "examples" mode
   if (mode === 'examples' && parsed) {
-    // Check for new neutral examples format
+    // Check for new neutral examples format (with header)
     const hasNewFormat = 'header' in parsed && 'examples' in parsed && Array.isArray((parsed as Record<string, unknown>).examples);
+    
+    // Check for simplified examples format (just examples array and footer)
+    const hasSimpleFormat = 'examples' in parsed && Array.isArray((parsed as Record<string, unknown>).examples);
     
     if (hasNewFormat) {
       const data = parsed as unknown as NewExamplesResponse;
@@ -439,6 +442,35 @@ export function AIResponseRenderer({ response, mode }: AIResponseRendererProps) 
           <p className="text-sm text-muted-foreground italic">
             {data.closing}
           </p>
+        </div>
+      );
+    }
+    
+    // Handle simplified format (examples array with footer)
+    if (hasSimpleFormat) {
+      const data = parsed as { examples: Array<{ label: string; content: string }>; footer?: string };
+      return (
+        <div className="space-y-4">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Examples
+          </p>
+          
+          <div className="space-y-3">
+            {data.examples.map((example, index) => (
+              <NeutralExampleCard 
+                key={index} 
+                label={example.label} 
+                content={example.content} 
+                index={index} 
+              />
+            ))}
+          </div>
+          
+          {data.footer && (
+            <p className="text-sm text-muted-foreground italic">
+              {data.footer}
+            </p>
+          )}
         </div>
       );
     }
@@ -649,7 +681,7 @@ export function AIResponseRenderer({ response, mode }: AIResponseRendererProps) 
 
   // Handle "simplify" mode
   if (mode === 'simplify' && parsed) {
-    // Check for new simplify format
+    // Check for new simplify format (simplifiedText string)
     const hasSimplifiedText = 'simplifiedText' in parsed && typeof (parsed as Record<string, unknown>).simplifiedText === 'string';
     if (hasSimplifiedText) {
       const data = parsed as unknown as NewSimplifyResponse;
@@ -666,6 +698,30 @@ export function AIResponseRenderer({ response, mode }: AIResponseRendererProps) 
               {data.note}
             </p>
           )}
+        </div>
+      );
+    }
+    
+    // Handle simplified array format (from edge function)
+    const hasSimplifiedArray = 'simplified' in parsed && Array.isArray((parsed as Record<string, unknown>).simplified);
+    if (hasSimplifiedArray) {
+      const data = parsed as { simplified: string[] };
+      return (
+        <div className="space-y-4">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Simplified instructions
+          </p>
+          
+          <div className="space-y-3">
+            {data.simplified.map((step, index) => (
+              <StepCard 
+                key={index} 
+                stepNumber={index + 1} 
+                title={`Step ${index + 1}`} 
+                content={step} 
+              />
+            ))}
+          </div>
         </div>
       );
     }
