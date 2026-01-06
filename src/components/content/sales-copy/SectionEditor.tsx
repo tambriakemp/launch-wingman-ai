@@ -62,11 +62,12 @@ export const SectionEditor = ({
   const queryClient = useQueryClient();
   const [content, setContent] = useState(draft?.content || "");
   const [isSaving, setIsSaving] = useState(false);
-  const [showAiSuggestions, setShowAiSuggestions] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [examples, setExamples] = useState<string[]>([]);
   const [isGeneratingExamples, setIsGeneratingExamples] = useState(false);
+  // Track which AI panel is currently visible: 'suggestions' | 'examples' | null
+  const [activeAiPanel, setActiveAiPanel] = useState<'suggestions' | 'examples' | null>(null);
 
   const handleSave = async (status: 'drafted' | 'skipped' = 'drafted') => {
     if (!user) return;
@@ -122,7 +123,8 @@ export const SectionEditor = ({
   const handleGenerateAi = async () => {
     if (!section.aiEnabled) return;
     setIsGenerating(true);
-    setShowAiSuggestions(true);
+    setActiveAiPanel('suggestions');
+    setExamples([]); // Clear examples when generating suggestions
 
     try {
       const response = await supabase.functions.invoke("generate-sales-copy", {
@@ -151,7 +153,7 @@ export const SectionEditor = ({
     } catch (error) {
       console.error("AI generation error:", error);
       toast.error("Could not generate suggestions. Try again.");
-      setShowAiSuggestions(false);
+      setActiveAiPanel(null);
     } finally {
       setIsGenerating(false);
     }
@@ -163,13 +165,16 @@ export const SectionEditor = ({
     } else {
       setContent(suggestion);
     }
-    setShowAiSuggestions(false);
+    setActiveAiPanel(null);
+    setAiSuggestions([]);
     toast.success("Suggestion added to your draft");
   };
 
   const handleGenerateExamples = async () => {
     if (!section.headlineFormulas || section.headlineFormulas.length === 0) return;
     setIsGeneratingExamples(true);
+    setActiveAiPanel('examples');
+    setAiSuggestions([]); // Clear suggestions when generating examples
 
     try {
       const response = await supabase.functions.invoke("generate-sales-copy", {
@@ -200,6 +205,7 @@ export const SectionEditor = ({
     } catch (error) {
       console.error("Examples generation error:", error);
       toast.error("Could not generate examples. Try again.");
+      setActiveAiPanel(null);
     } finally {
       setIsGeneratingExamples(false);
     }
@@ -211,6 +217,8 @@ export const SectionEditor = ({
     } else {
       setContent(example);
     }
+    setActiveAiPanel(null);
+    setExamples([]);
     toast.success("Example added to your draft");
   };
 
@@ -282,73 +290,95 @@ export const SectionEditor = ({
         />
       </div>
 
-      {/* AI Help buttons */}
-      {!showAiSuggestions && (
-        <div className="flex items-center gap-2">
-          {section.aiEnabled && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGenerateAi}
-              disabled={isGenerating}
-            >
-              {isGenerating ? (
-                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-              ) : (
-                <Sparkles className="w-4 h-4 mr-1.5" />
-              )}
-              Help me write this
-            </Button>
-          )}
-          {hasFormulas && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGenerateExamples}
-              disabled={isGeneratingExamples}
-            >
-              {isGeneratingExamples ? (
-                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-              ) : examples.length > 0 ? (
-                <RefreshCw className="w-4 h-4 mr-1.5" />
-              ) : (
-                <Sparkles className="w-4 h-4 mr-1.5" />
-              )}
-              {examples.length > 0 ? 'Regenerate Examples' : 'Generate Examples'}
-            </Button>
-          )}
-        </div>
-      )}
+      {/* AI Help buttons - always visible */}
+      <div className="flex items-center gap-2">
+        {section.aiEnabled && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleGenerateAi}
+            disabled={isGenerating || isGeneratingExamples}
+          >
+            {isGenerating ? (
+              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+            ) : activeAiPanel === 'suggestions' && aiSuggestions.length > 0 ? (
+              <RefreshCw className="w-4 h-4 mr-1.5" />
+            ) : (
+              <Sparkles className="w-4 h-4 mr-1.5" />
+            )}
+            {activeAiPanel === 'suggestions' && aiSuggestions.length > 0 ? 'Regenerate' : 'Help me write this'}
+          </Button>
+        )}
+        {hasFormulas && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleGenerateExamples}
+            disabled={isGeneratingExamples || isGenerating}
+          >
+            {isGeneratingExamples ? (
+              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+            ) : activeAiPanel === 'examples' && examples.length > 0 ? (
+              <RefreshCw className="w-4 h-4 mr-1.5" />
+            ) : (
+              <Sparkles className="w-4 h-4 mr-1.5" />
+            )}
+            {activeAiPanel === 'examples' && examples.length > 0 ? 'Regenerate Examples' : 'Generate Examples'}
+          </Button>
+        )}
+      </div>
 
-      {/* AI Suggestions Panel */}
-      {showAiSuggestions && (
+      {/* AI Suggestions Panel - only shows when activeAiPanel is 'suggestions' */}
+      {activeAiPanel === 'suggestions' && (
         <AiSuggestions
           suggestions={aiSuggestions}
           isLoading={isGenerating}
           onUseSuggestion={handleUseSuggestion}
-          onClose={() => setShowAiSuggestions(false)}
+          onClose={() => {
+            setActiveAiPanel(null);
+            setAiSuggestions([]);
+          }}
         />
       )}
 
-      {/* AI-Generated Examples (below draft like Need help? section) */}
-      {hasFormulas && examples.length > 0 && (
+      {/* AI-Generated Examples - only shows when activeAiPanel is 'examples' */}
+      {activeAiPanel === 'examples' && (
         <div className="p-5 rounded-xl bg-muted/30 border border-border/50 space-y-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <label className="text-sm font-medium">{getExamplesLabel(section.id)}</label>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <label className="text-sm font-medium">{getExamplesLabel(section.id)}</label>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setActiveAiPanel(null);
+                setExamples([]);
+              }}
+              className="text-muted-foreground hover:text-foreground h-6 px-2"
+            >
+              ✕
+            </Button>
           </div>
-          <div className="space-y-2">
-            {examples.map((example, idx) => (
-              <div 
-                key={idx} 
-                className="text-sm p-3 bg-background/50 rounded-lg cursor-pointer hover:bg-background/80 transition-colors border border-border/30"
-                onClick={() => handleUseExample(example)}
-              >
-                <p>{example}</p>
-                <p className="text-xs text-muted-foreground mt-1">Click to use</p>
-              </div>
-            ))}
-          </div>
+          {isGeneratingExamples ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {examples.map((example, idx) => (
+                <div 
+                  key={idx} 
+                  className="text-sm p-3 bg-background/50 rounded-lg cursor-pointer hover:bg-background/80 transition-colors border border-border/30"
+                  onClick={() => handleUseExample(example)}
+                >
+                  <p>{example}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Click to use</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
