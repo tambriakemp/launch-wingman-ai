@@ -39,6 +39,8 @@ import { useAdminPlatformStats } from '@/hooks/useAdminPlatformStats';
 import { UserStatusToggle } from '@/components/admin/UserStatusToggle';
 import { DeleteUserDialog } from '@/components/admin/DeleteUserDialog';
 import { AdminActionLogs } from '@/components/admin/AdminActionLogs';
+import { UserProjectsDialog } from '@/components/admin/UserProjectsDialog';
+import { ExportUserDataDialog } from '@/components/admin/ExportUserDataDialog';
 
 interface User {
   id: string;
@@ -153,6 +155,18 @@ const MobileUserCard = ({
             <Pencil className="h-4 w-4 mr-1" />
             Edit
           </Button>
+          <UserProjectsDialog
+            userId={user.id}
+            userEmail={user.email}
+            userName={`${user.first_name || ''} ${user.last_name || ''}`.trim()}
+            accessToken={accessToken}
+          />
+          <ExportUserDataDialog
+            userId={user.id}
+            userEmail={user.email}
+            userName={`${user.first_name || ''} ${user.last_name || ''}`.trim()}
+            accessToken={accessToken}
+          />
           {user.id !== currentUserId && (
             <>
               {isAdmin && (
@@ -920,6 +934,18 @@ const AdminDashboard = () => {
                                     >
                                       <Pencil className="h-4 w-4" />
                                     </Button>
+                                    <UserProjectsDialog
+                                      userId={user.id}
+                                      userEmail={user.email}
+                                      userName={`${user.first_name || ''} ${user.last_name || ''}`.trim()}
+                                      accessToken={session?.access_token || ''}
+                                    />
+                                    <ExportUserDataDialog
+                                      userId={user.id}
+                                      userEmail={user.email}
+                                      userName={`${user.first_name || ''} ${user.last_name || ''}`.trim()}
+                                      accessToken={session?.access_token || ''}
+                                    />
                                     {user.id !== currentUser?.id && (
                                       <>
                                         {isAdmin && (
