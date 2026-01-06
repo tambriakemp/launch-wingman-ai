@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { CategoryCard } from "@/components/content-vault/CategoryCard";
+import { CategoryEditDialog } from "@/components/content-vault/CategoryEditDialog";
 import { VaultHeader } from "@/components/content-vault/VaultHeader";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { useAdmin } from "@/hooks/useAdmin";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -20,7 +23,10 @@ interface Category {
 const ContentVault = () => {
   const navigate = useNavigate();
   const { hasAccess, isLoading: accessLoading } = useFeatureAccess();
+  const { hasAdminAccess } = useAdmin();
   const canAccessVault = hasAccess('content_vault');
+  
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
   const { data: categories, isLoading } = useQuery({
     queryKey: ['content-vault-categories'],
@@ -97,6 +103,8 @@ const ContentVault = () => {
                   description={category.description}
                   coverImageUrl={category.cover_image_url}
                   onClick={() => handleCategoryClick(category.slug)}
+                  showEditButton={hasAdminAccess}
+                  onEditClick={() => setEditingCategory(category)}
                 />
               ))}
             </div>
@@ -104,6 +112,15 @@ const ContentVault = () => {
             <div className="text-center py-16">
               <p className="text-muted-foreground">No categories available yet.</p>
             </div>
+          )}
+
+          {/* Edit Dialog */}
+          {editingCategory && (
+            <CategoryEditDialog
+              open={!!editingCategory}
+              onOpenChange={(open) => !open && setEditingCategory(null)}
+              category={editingCategory}
+            />
           )}
         </div>
       </div>

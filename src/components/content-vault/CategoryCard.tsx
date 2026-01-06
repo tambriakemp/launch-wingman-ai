@@ -1,4 +1,4 @@
-import { ArrowRight, Image as ImageIcon } from "lucide-react";
+import { ArrowRight, Image as ImageIcon, Pencil } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -7,14 +7,40 @@ interface CategoryCardProps {
   description: string | null;
   coverImageUrl: string | null;
   onClick: () => void;
+  showEditButton?: boolean;
+  onEditClick?: () => void;
 }
 
-export const CategoryCard = ({ name, description, coverImageUrl, onClick }: CategoryCardProps) => {
+export const CategoryCard = ({ 
+  name, 
+  description, 
+  coverImageUrl, 
+  onClick,
+  showEditButton,
+  onEditClick,
+}: CategoryCardProps) => {
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEditClick?.();
+  };
+
   return (
     <Card 
-      className="group cursor-pointer overflow-hidden border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg"
+      className="group cursor-pointer overflow-hidden border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg relative"
       onClick={onClick}
     >
+      {/* Edit Button for Admin/Manager */}
+      {showEditButton && (
+        <Button
+          variant="secondary"
+          size="icon"
+          className="absolute top-2 right-2 z-10 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={handleEditClick}
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      )}
+
       {/* Cover Image */}
       <div className="aspect-[4/3] bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20 relative overflow-hidden">
         {coverImageUrl ? (
