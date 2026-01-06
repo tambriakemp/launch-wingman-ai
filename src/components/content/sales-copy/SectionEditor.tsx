@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { ArrowLeft, Sparkles, Loader2, SkipForward, ChevronDown, ChevronUp, Lightbulb } from "lucide-react";
+import { ArrowLeft, Sparkles, Loader2, SkipForward, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,6 +28,27 @@ interface SectionEditorProps {
   onClose: () => void;
 }
 
+// Get section-appropriate label for examples
+function getExamplesLabel(sectionId: string): string {
+  const labelMap: Record<string, string> = {
+    'opening-headline': 'Headline Examples',
+    'paint-the-problem': 'Opening Examples',
+    'look-into-future': 'Vision Examples',
+    'introduce-offer': 'Introduction Examples',
+    'offer-differentiator': 'Differentiator Examples',
+    'the-results': 'Results Examples',
+    'the-features': 'Feature Examples',
+    'the-investment': 'Pricing Copy Examples',
+    'the-guarantee': 'Guarantee Examples',
+    'introduce-yourself': 'Bio Examples',
+    'is-this-for-you': 'Qualifier Examples',
+    'why-now': 'Urgency Examples',
+    'frequent-objections': 'FAQ Examples',
+    'final-cta': 'CTA Examples',
+  };
+  return labelMap[sectionId] || 'Examples';
+}
+
 export const SectionEditor = ({
   projectId,
   section,
@@ -45,7 +65,8 @@ export const SectionEditor = ({
   const [showAiSuggestions, setShowAiSuggestions] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [formulasOpen, setFormulasOpen] = useState(false);
+  const [examples, setExamples] = useState<string[]>([]);
+  const [isGeneratingExamples, setIsGeneratingExamples] = useState(false);
 
   const handleSave = async (status: 'drafted' | 'skipped' = 'drafted') => {
     if (!user) return;
@@ -146,6 +167,53 @@ export const SectionEditor = ({
     toast.success("Suggestion added to your draft");
   };
 
+  const handleGenerateExamples = async () => {
+    if (!section.headlineFormulas || section.headlineFormulas.length === 0) return;
+    setIsGeneratingExamples(true);
+
+    try {
+      const response = await supabase.functions.invoke("generate-sales-copy", {
+        body: {
+          sectionType: mapSectionToApiType(section.id),
+          sectionId: section.id,
+          generateExamples: true,
+          formulas: section.headlineFormulas,
+          audience: funnel?.target_audience || offer.targetAudience,
+          problem: funnel?.primary_pain_point || offer.primaryPainPoint,
+          desiredOutcome: funnel?.desired_outcome || offer.desiredOutcome,
+          offerName: offer.title || "This offer",
+          offerType: offer.offerType,
+          deliverables: offer.mainDeliverables,
+          priceType: offer.priceType,
+          price: offer.price,
+          transformationStatement,
+          projectId,
+          niche: funnel?.niche || offer.niche,
+          problemStatement: funnel?.problem_statement,
+        },
+      });
+
+      if (response.error) throw response.error;
+
+      const generatedExamples = extractExamples(response.data);
+      setExamples(generatedExamples);
+    } catch (error) {
+      console.error("Examples generation error:", error);
+      toast.error("Could not generate examples. Try again.");
+    } finally {
+      setIsGeneratingExamples(false);
+    }
+  };
+
+  const handleUseExample = (example: string) => {
+    if (content.trim()) {
+      setContent(prev => prev + "\n\n" + example);
+    } else {
+      setContent(example);
+    }
+    toast.success("Example added to your draft");
+  };
+
   const hasFormulas = section.headlineFormulas && section.headlineFormulas.length > 0;
   const hasQuestions = section.questionPrompts && section.questionPrompts.length > 0;
 
@@ -203,31 +271,45 @@ export const SectionEditor = ({
         </Card>
       </div>
 
-      {/* Headline Formulas */}
+      {/* AI-Generated Examples */}
       {hasFormulas && (
-        <Collapsible open={formulasOpen} onOpenChange={setFormulasOpen}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground hover:text-foreground">
-              <span className="flex items-center gap-2">
-                <Lightbulb className="w-4 h-4" />
-                Headline Formulas ({section.headlineFormulas!.length})
-              </span>
-              {formulasOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">{getExamplesLabel(section.id)}</label>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGenerateExamples}
+              disabled={isGeneratingExamples}
+            >
+              {isGeneratingExamples ? (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              ) : examples.length > 0 ? (
+                <RefreshCw className="w-4 h-4 mr-1.5" />
+              ) : (
+                <Sparkles className="w-4 h-4 mr-1.5" />
+              )}
+              {examples.length > 0 ? 'Regenerate' : 'Generate Examples'}
             </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-2">
+          </div>
+          
+          {examples.length > 0 && (
             <Card className="bg-primary/5 border-primary/20">
               <CardContent className="py-3 space-y-3">
-                {section.headlineFormulas!.map((formula, idx) => (
-                  <div key={idx} className="text-sm space-y-1">
-                    <p className="font-mono text-xs bg-background/50 p-2 rounded">{formula.template}</p>
-                    <p className="text-muted-foreground italic pl-2">Ex: {formula.example}</p>
+                {examples.map((example, idx) => (
+                  <div 
+                    key={idx} 
+                    className="text-sm p-2 bg-background/50 rounded cursor-pointer hover:bg-background/80 transition-colors"
+                    onClick={() => handleUseExample(example)}
+                  >
+                    <p>{example}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Click to use</p>
                   </div>
                 ))}
               </CardContent>
             </Card>
-          </CollapsibleContent>
-        </Collapsible>
+          )}
+        </div>
       )}
 
       {/* Editor */}
@@ -362,6 +444,35 @@ function extractSuggestions(data: unknown, sectionId: string): string[] {
   }
   if (response.copy && typeof response.copy === 'string') {
     return [response.copy];
+  }
+  
+  return [];
+}
+
+// Helper to extract examples from AI response
+function extractExamples(data: unknown): string[] {
+  if (!data || typeof data !== 'object') return [];
+  
+  const response = data as Record<string, unknown>;
+  
+  // Look for examples in various possible keys
+  const exampleKeys = ['examples', 'headlines', 'options', 'suggestions', 'copy', 'content'];
+  
+  for (const key of exampleKeys) {
+    if (response[key] && Array.isArray(response[key])) {
+      const arr = response[key] as unknown[];
+      return arr.map(item => {
+        if (typeof item === 'string') return item.trim();
+        if (typeof item === 'object' && item !== null) {
+          const obj = item as Record<string, unknown>;
+          if (obj.text) return String(obj.text).trim();
+          if (obj.example) return String(obj.example).trim();
+          if (obj.content) return String(obj.content).trim();
+          if (obj.headline) return String(obj.headline).trim();
+        }
+        return String(item).trim();
+      }).filter(Boolean);
+    }
   }
   
   return [];
