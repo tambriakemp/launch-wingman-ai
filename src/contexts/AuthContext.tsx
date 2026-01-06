@@ -60,8 +60,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const prevSubscribedRef = useRef<boolean | null>(null);
   const hasCheckedInitialSubscription = useRef(false);
 
-  const notifyAdminOfSubscriptionChange = useCallback(async (type: 'pro_signup' | 'pro_cancellation', userEmail: string, userName?: string) => {
+  const notifyAdminOfSubscriptionChange = useCallback(async (type: 'pro_signup' | 'pro_cancellation', userEmail: string, userName?: string, userId?: string) => {
     try {
+      // Notify admin
       await supabase.functions.invoke('admin-notify', {
         body: {
           type,
@@ -72,6 +73,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       });
       console.log(`[AuthContext] Admin notified of ${type} for ${userEmail}`);
+
+      // Trigger marketing webhook for subscription changes
+      if (userId) {
+        const eventType = type === 'pro_signup' ? 'subscription_started' : 'subscription_cancelled';
+        supabase.functions.invoke('marketing-webhook', {
+          body: {
+            action: 'sync_user',
+            user_id: userId,
+            event_type: eventType,
+          },
+        }).then(() => {
+          console.log(`[AuthContext] Marketing webhook triggered: ${eventType}`);
+        }).catch((err) => {
+          console.error('[AuthContext] Marketing webhook failed:', err);
+        });
+      }
     } catch (error) {
       console.error('[AuthContext] Failed to notify admin:', error);
     }
@@ -101,18 +118,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Only check for changes after the initial subscription check
       if (hasCheckedInitialSubscription.current && previousSubscribed !== null) {
         const userEmail = user?.email || session.user?.email;
+        const userId = user?.id || session.user?.id;
         const userName = user?.user_metadata?.first_name 
           ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}`.trim()
           : undefined;
         
         // Detect Pro signup: was not subscribed, now is subscribed
         if (!previousSubscribed && newSubscribed && userEmail) {
-          notifyAdminOfSubscriptionChange('pro_signup', userEmail, userName);
+          notifyAdminOfSubscriptionChange('pro_signup', userEmail, userName, userId);
         }
         
         // Detect Pro cancellation: was subscribed, now is not subscribed
         if (previousSubscribed && !newSubscribed && userEmail) {
-          notifyAdminOfSubscriptionChange('pro_cancellation', userEmail, userName);
+          notifyAdminOfSubscriptionChange('pro_cancellation', userEmail, userName, userId);
         }
       }
       
@@ -198,6 +216,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           user_id: signUpData.user.id,
         },
       }).catch((err) => console.error("Failed to send welcome email:", err));
+
+      // Trigger marketing webhook for new signup (fire and forget)
+      supabase.functions.invoke("marketing-webhook", {
+        body: {
+          action: "sync_user",
+          user_id: signUpData.user.id,
+          event_type: "user_signup",
+        },
+      }).then(() => {
+        console.log("[AuthContext] Marketing webhook triggered: user_signup");
+      }).catch((err) => console.error("Failed to trigger marketing webhook:", err));
       
       // Only navigate if not explicitly skipped (e.g., for Pro checkout flow)
       if (!skipNavigation) {
