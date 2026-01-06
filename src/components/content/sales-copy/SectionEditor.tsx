@@ -272,43 +272,23 @@ export const SectionEditor = ({
       </div>
 
       {/* AI-Generated Examples */}
-      {hasFormulas && (
+      {hasFormulas && examples.length > 0 && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">{getExamplesLabel(section.id)}</label>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGenerateExamples}
-              disabled={isGeneratingExamples}
-            >
-              {isGeneratingExamples ? (
-                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-              ) : examples.length > 0 ? (
-                <RefreshCw className="w-4 h-4 mr-1.5" />
-              ) : (
-                <Sparkles className="w-4 h-4 mr-1.5" />
-              )}
-              {examples.length > 0 ? 'Regenerate' : 'Generate Examples'}
-            </Button>
-          </div>
-          
-          {examples.length > 0 && (
-            <Card className="bg-primary/5 border-primary/20">
-              <CardContent className="py-3 space-y-3">
-                {examples.map((example, idx) => (
-                  <div 
-                    key={idx} 
-                    className="text-sm p-2 bg-background/50 rounded cursor-pointer hover:bg-background/80 transition-colors"
-                    onClick={() => handleUseExample(example)}
-                  >
-                    <p>{example}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Click to use</p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
+          <label className="text-sm font-medium">{getExamplesLabel(section.id)}</label>
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="py-3 space-y-3">
+              {examples.map((example, idx) => (
+                <div 
+                  key={idx} 
+                  className="text-sm p-2 bg-background/50 rounded cursor-pointer hover:bg-background/80 transition-colors"
+                  onClick={() => handleUseExample(example)}
+                >
+                  <p>{example}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Click to use</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -333,21 +313,42 @@ export const SectionEditor = ({
         />
       )}
 
-      {/* AI Help button */}
-      {section.aiEnabled && !showAiSuggestions && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleGenerateAi}
-          disabled={isGenerating}
-        >
-          {isGenerating ? (
-            <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-          ) : (
-            <Sparkles className="w-4 h-4 mr-1.5" />
+      {/* AI Help buttons */}
+      {!showAiSuggestions && (
+        <div className="flex items-center gap-2">
+          {section.aiEnabled && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGenerateAi}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4 mr-1.5" />
+              )}
+              Help me write this
+            </Button>
           )}
-          Help me write this
-        </Button>
+          {hasFormulas && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGenerateExamples}
+              disabled={isGeneratingExamples}
+            >
+              {isGeneratingExamples ? (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              ) : examples.length > 0 ? (
+                <RefreshCw className="w-4 h-4 mr-1.5" />
+              ) : (
+                <Sparkles className="w-4 h-4 mr-1.5" />
+              )}
+              {examples.length > 0 ? 'Regenerate Examples' : 'Generate Examples'}
+            </Button>
+          )}
+        </div>
       )}
 
       {/* Action buttons */}
