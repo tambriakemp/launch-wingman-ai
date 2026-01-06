@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Plus, RefreshCw, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CONTENT_TYPE_COLORS } from "./contentTypeColors";
+import { CONTENT_TYPE_COLORS, CONTENT_TYPE_LABELS } from "./contentTypeColors";
 
 interface SuggestionViewDialogProps {
   open: boolean;
@@ -63,8 +63,14 @@ export const SuggestionViewDialog = ({
               <Badge variant="outline" className="border-primary/30 text-primary text-xs">
                 AI Generated
               </Badge>
-              <Badge variant="secondary" className="text-xs capitalize">
-                {suggestion.content_type.replace("-", " ")}
+              <Badge 
+                variant="secondary" 
+                className={cn(
+                  "text-xs text-white",
+                  CONTENT_TYPE_COLORS[suggestion.content_type] || "bg-slate-500"
+                )}
+              >
+                {CONTENT_TYPE_LABELS[suggestion.content_type] || suggestion.content_type.replace(/-/g, " ")}
               </Badge>
               <Badge variant="secondary" className="text-xs capitalize">
                 {suggestion.template_type.replace(/-/g, " ")}
