@@ -10,7 +10,7 @@ import { SalesPagePreviewDialog } from "./SalesPagePreviewDialog";
 import type { SalesCopySection, SectionDraft, OfferForCopy } from "./types";
 
 // Map section IDs to the free plan allowed sections
-const FREE_SECTION_IDS = ['headline', 'promise', 'cta', 'pain-point', 'confirmation'];
+const FREE_SECTION_IDS = ['opening-headline', 'paint-the-problem', 'final-cta', 'introduce-offer'];
 
 interface SectionListProps {
   sections: SalesCopySection[];

@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { ArrowLeft, Sparkles, Eye, Wand2, Loader2, SkipForward } from "lucide-react";
+import { ArrowLeft, Sparkles, Loader2, SkipForward, ChevronDown, ChevronUp, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,13 +45,14 @@ export const SectionEditor = ({
   const [showAiSuggestions, setShowAiSuggestions] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [formulasOpen, setFormulasOpen] = useState(false);
+  const [questionsOpen, setQuestionsOpen] = useState(false);
 
   const handleSave = async (status: 'drafted' | 'skipped' = 'drafted') => {
     if (!user) return;
     setIsSaving(true);
 
     try {
-      // Check if record exists
       const { data: existing } = await supabase
         .from("sales_page_copy")
         .select("id, sections")
@@ -105,6 +108,7 @@ export const SectionEditor = ({
       const response = await supabase.functions.invoke("generate-sales-copy", {
         body: {
           sectionType: mapSectionToApiType(section.id),
+          sectionId: section.id,
           audience: funnel?.target_audience || offer.targetAudience,
           problem: funnel?.primary_pain_point || offer.primaryPainPoint,
           desiredOutcome: funnel?.desired_outcome || offer.desiredOutcome,
@@ -114,12 +118,14 @@ export const SectionEditor = ({
           priceType: offer.priceType,
           price: offer.price,
           transformationStatement,
+          projectId,
+          niche: funnel?.niche || offer.niche,
+          problemStatement: funnel?.problem_statement,
         },
       });
 
       if (response.error) throw response.error;
 
-      // Parse suggestions from response
       const suggestions = extractSuggestions(response.data, section.id);
       setAiSuggestions(suggestions);
     } catch (error) {
@@ -132,7 +138,6 @@ export const SectionEditor = ({
   };
 
   const handleUseSuggestion = (suggestion: string) => {
-    // Don't overwrite - append or show options
     if (content.trim()) {
       setContent(prev => prev + "\n\n" + suggestion);
     } else {
@@ -141,6 +146,9 @@ export const SectionEditor = ({
     setShowAiSuggestions(false);
     toast.success("Suggestion added to your draft");
   };
+
+  const hasFormulas = section.headlineFormulas && section.headlineFormulas.length > 0;
+  const hasQuestions = section.questionPrompts && section.questionPrompts.length > 0;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-12">
@@ -157,6 +165,10 @@ export const SectionEditor = ({
 
       {/* Section header */}
       <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs">Block {section.blockNumber}</Badge>
+          <Badge variant="secondary" className="text-xs capitalize">{section.group}</Badge>
+        </div>
         <h1 className="text-xl font-semibold">{section.label}</h1>
         
         <Card className="bg-muted/30 border-border/50">
@@ -176,6 +188,62 @@ export const SectionEditor = ({
           </CardContent>
         </Card>
       </div>
+
+      {/* Headline Formulas */}
+      {hasFormulas && (
+        <Collapsible open={formulasOpen} onOpenChange={setFormulasOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground hover:text-foreground">
+              <span className="flex items-center gap-2">
+                <Lightbulb className="w-4 h-4" />
+                Headline Formulas ({section.headlineFormulas!.length})
+              </span>
+              {formulasOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2">
+            <Card className="bg-primary/5 border-primary/20">
+              <CardContent className="py-3 space-y-3">
+                {section.headlineFormulas!.map((formula, idx) => (
+                  <div key={idx} className="text-sm space-y-1">
+                    <p className="font-mono text-xs bg-background/50 p-2 rounded">{formula.template}</p>
+                    <p className="text-muted-foreground italic pl-2">Ex: {formula.example}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
+      {/* Question Prompts */}
+      {hasQuestions && (
+        <Collapsible open={questionsOpen} onOpenChange={setQuestionsOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground hover:text-foreground">
+              <span className="flex items-center gap-2">
+                <Lightbulb className="w-4 h-4" />
+                Questions to Answer ({section.questionPrompts!.length})
+              </span>
+              {questionsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2">
+            <Card className="bg-secondary/30">
+              <CardContent className="py-3">
+                <ul className="space-y-2 text-sm">
+                  {section.questionPrompts!.map((q, idx) => (
+                    <li key={idx} className="flex gap-2">
+                      <span className="text-muted-foreground">{idx + 1}.</span>
+                      <span>{q}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
 
       {/* Editor */}
       <div className="space-y-3">
@@ -198,48 +266,21 @@ export const SectionEditor = ({
         />
       )}
 
-      {/* AI Help buttons */}
+      {/* AI Help button */}
       {section.aiEnabled && !showAiSuggestions && (
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleGenerateAi}
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4 mr-1.5" />
-            )}
-            Help me write this
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              // Show examples - could be another modal or inline
-              toast.info("Examples coming soon");
-            }}
-          >
-            <Eye className="w-4 h-4 mr-1.5" />
-            Show examples
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              if (content.trim()) {
-                // Simplify existing content
-                toast.info("Simplify feature coming soon");
-              }
-            }}
-            disabled={!content.trim()}
-          >
-            <Wand2 className="w-4 h-4 mr-1.5" />
-            Simplify this
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleGenerateAi}
+          disabled={isGenerating}
+        >
+          {isGenerating ? (
+            <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+          ) : (
+            <Sparkles className="w-4 h-4 mr-1.5" />
+          )}
+          Help me write this
+        </Button>
       )}
 
       {/* Action buttons */}
@@ -271,21 +312,20 @@ export const SectionEditor = ({
 // Helper to map section IDs to API section types
 function mapSectionToApiType(sectionId: string): string {
   const mapping: Record<string, string> = {
-    'headline': 'hero',
-    'problem-awareness': 'whyDifferent',
-    'desired-outcome': 'benefits',
-    'why-different': 'whyDifferent',
-    'offer-breakdown': 'offerDetails',
-    'who-its-for': 'benefits',
-    'social-proof': 'testimonials',
-    'cta': 'hero',
-    'pain-point': 'whyDifferent',
-    'promise': 'benefits',
-    'whats-inside': 'offerDetails',
-    'authority': 'whyDifferent',
-    'why-application': 'whyDifferent',
-    'confirmation': 'hero',
-    'next-steps': 'offerDetails',
+    'opening-headline': 'hero',
+    'paint-the-problem': 'paintProblem',
+    'look-into-future': 'lookFuture',
+    'introduce-offer': 'introduceOffer',
+    'offer-differentiator': 'whyDifferent',
+    'the-results': 'results',
+    'the-features': 'offerDetails',
+    'the-investment': 'investment',
+    'the-guarantee': 'guarantee',
+    'introduce-yourself': 'aboutMe',
+    'is-this-for-you': 'isThisForYou',
+    'why-now': 'whyNow',
+    'frequent-objections': 'faqs',
+    'final-cta': 'finalCta',
   };
   return mapping[sectionId] || 'hero';
 }
@@ -296,20 +336,28 @@ function extractSuggestions(data: unknown, sectionId: string): string[] {
   
   const response = data as Record<string, unknown>;
   
-  // Try different response formats
-  if (response.headlines && Array.isArray(response.headlines)) {
-    return response.headlines as string[];
-  }
-  if (response.subheadlines && Array.isArray(response.subheadlines)) {
-    return response.subheadlines as string[];
-  }
-  if (response.openingParagraphs && Array.isArray(response.openingParagraphs)) {
-    return response.openingParagraphs as string[];
-  }
-  if (response.benefits && Array.isArray(response.benefits)) {
-    return (response.benefits as Array<{ title?: string; description?: string }>).map(
-      b => `${b.title || ''}: ${b.description || ''}`
-    );
+  // Try different response formats based on what the AI returns
+  const possibleKeys = [
+    'headlines', 'subheadlines', 'openingParagraphs', 'paragraphs',
+    'bullets', 'results', 'features', 'guarantees', 'questions',
+    'options', 'suggestions', 'copy'
+  ];
+  
+  for (const key of possibleKeys) {
+    if (response[key] && Array.isArray(response[key])) {
+      const arr = response[key] as unknown[];
+      return arr.map(item => {
+        if (typeof item === 'string') return item;
+        if (typeof item === 'object' && item !== null) {
+          const obj = item as Record<string, unknown>;
+          if (obj.text) return String(obj.text);
+          if (obj.title && obj.description) return `${obj.title}: ${obj.description}`;
+          if (obj.question && obj.answer) return `Q: ${obj.question}\nA: ${obj.answer}`;
+          return JSON.stringify(item);
+        }
+        return String(item);
+      });
+    }
   }
   
   return [];
