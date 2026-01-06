@@ -90,25 +90,25 @@ export const SectionList = ({
             Choose different offer
           </Button>
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPreviewOpen(true)}
-            disabled={!hasDraftedContent}
-          >
-            <Eye className="w-4 h-4 mr-1" />
-            Preview Page
-          </Button>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-foreground text-background font-normal">
+              {getSlotLabel(offer.slotType)}
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPreviewOpen(true)}
+              disabled={!hasDraftedContent}
+            >
+              <Eye className="w-4 h-4 mr-1" />
+              Preview Page
+            </Button>
+          </div>
         </div>
         
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-medium">
-            {offerTitle}
-          </h2>
-          <Badge variant="outline" className="font-normal">
-            {getSlotLabel(offer.slotType)}
-          </Badge>
-        </div>
+        <h2 className="text-lg font-medium">
+          {offerTitle}
+        </h2>
         <p className="text-sm text-muted-foreground">
           Work through these sections at your own pace. Skip what doesn't apply.
         </p>
