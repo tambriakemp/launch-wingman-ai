@@ -13,7 +13,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Package, Pencil, BookOpen, BarChart3, FileText } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Package, Pencil, BookOpen, BarChart3, FileText, Sparkles } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -701,6 +701,10 @@ const AdminDashboard = () => {
               <Activity className="h-4 w-4" />
               <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
+            <TabsTrigger value="ai-usage" className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              <span className="hidden sm:inline">AI Usage</span>
+            </TabsTrigger>
             <TabsTrigger value="activity" className="gap-2">
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Activity Logs</span>
@@ -1158,6 +1162,10 @@ const AdminDashboard = () => {
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-4 md:space-y-8">
             <FeatureUsageHeatmapWrapper />
+          </TabsContent>
+
+          {/* AI Usage Tab */}
+          <TabsContent value="ai-usage" className="space-y-4 md:space-y-8">
             <AiUsageTable />
           </TabsContent>
 
