@@ -85,24 +85,24 @@ export function ChurnRiskCard({ data, loading, onRefresh, onSendReengagement }: 
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+      <CardHeader className="p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
               <TrendingDown className="h-5 w-5 text-orange-500" />
               Churn Risk Monitor
             </CardTitle>
-            <CardDescription>Identify and engage at-risk users</CardDescription>
+            <CardDescription className="text-xs md:text-sm">Identify and engage at-risk users</CardDescription>
           </div>
           {onRefresh && (
-            <Button variant="outline" size="sm" onClick={onRefresh}>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={onRefresh}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="p-4 md:p-6 pt-0 space-y-6">
         {/* Risk Distribution & MRR at Risk */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Risk Distribution */}
@@ -179,33 +179,40 @@ export function ChurnRiskCard({ data, loading, onRefresh, onSendReengagement }: 
                 {proAtRiskUsers.map((user) => (
                   <div
                     key={user.id}
-                    className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                   >
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="font-medium truncate">
-                          {user.firstName || user.lastName
-                            ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
-                            : user.email}
-                        </p>
-                        {getRiskBadge(user.riskLevel)}
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <User className="h-5 w-5 text-primary" />
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Last active: {user.lastActive
-                          ? formatDistanceToNow(new Date(user.lastActive), { addSuffix: true })
-                          : 'Never'}
-                        <span className="mx-2">•</span>
-                        {user.daysInactive} days inactive
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <p className="font-medium truncate">
+                            {user.firstName || user.lastName
+                              ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+                              : user.email}
+                          </p>
+                          {getRiskBadge(user.riskLevel)}
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          <span className="block sm:inline">
+                            Last active: {user.lastActive
+                              ? formatDistanceToNow(new Date(user.lastActive), { addSuffix: true })
+                              : 'Never'}
+                          </span>
+                          <span className="hidden sm:inline mx-2">•</span>
+                          <span className="block sm:inline">
+                            {user.daysInactive} days inactive
+                          </span>
+                        </p>
+                      </div>
                     </div>
                     {onSendReengagement && (
                       <Button
                         variant="outline"
                         size="sm"
+                        className="w-full sm:w-auto flex-shrink-0"
                         onClick={() => onSendReengagement(user.id, user.email)}
                       >
                         <Mail className="h-4 w-4 mr-1" />
