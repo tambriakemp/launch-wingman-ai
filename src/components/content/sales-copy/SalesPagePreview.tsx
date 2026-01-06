@@ -56,10 +56,10 @@ export const SalesPagePreview = ({
 
   // Determine section styling based on its type
   const isHeadlineSection = (sectionId: string) => 
-    ['headline', 'promise'].includes(sectionId);
+    ['opening-headline', 'introduce-offer'].includes(sectionId);
   
   const isCtaSection = (sectionId: string) => 
-    ['cta', 'final-cta'].includes(sectionId);
+    ['final-cta', 'the-investment'].includes(sectionId);
 
   return (
     <div className="space-y-4">
