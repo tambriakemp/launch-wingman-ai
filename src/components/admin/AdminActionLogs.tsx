@@ -33,6 +33,7 @@ const ACTION_TYPE_LABELS: Record<string, { label: string; variant: 'default' | '
   role_granted: { label: 'Role Granted', variant: 'default', category: 'user_management' },
   role_removed: { label: 'Role Removed', variant: 'secondary', category: 'user_management' },
   email_updated: { label: 'Email Updated', variant: 'outline', category: 'user_management' },
+  email_update: { label: 'Email Updated', variant: 'outline', category: 'user_management' },
   password_reset: { label: 'Password Reset', variant: 'outline', category: 'user_management' },
   subscription_cancelled: { label: 'Sub Cancelled', variant: 'destructive', category: 'subscriptions' },
   subscription_granted: { label: 'Pro Granted', variant: 'default', category: 'subscriptions' },
