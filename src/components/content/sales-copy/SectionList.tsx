@@ -84,7 +84,7 @@ export const SectionList = ({
             variant="ghost"
             size="sm"
             onClick={onBack}
-            className="text-muted-foreground hover:text-foreground -ml-2"
+            className="bg-amber-100 text-amber-900 hover:bg-amber-200 hover:text-amber-900 -ml-2"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
             Choose different offer
