@@ -360,9 +360,24 @@ export function AdminActionLogs() {
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between mb-2">
                       {getActionBadge(log.action_type)}
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(log.created_at), 'MMM d, h:mm a')}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {hasDetails(log.action_details) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={() => {
+                              setSelectedLog(log);
+                              setDetailsDialogOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(log.created_at), 'MMM d, h:mm a')}
+                        </span>
+                      </div>
                     </div>
                     <p className="text-sm">
                       <span className="text-muted-foreground">Admin:</span> {log.admin_email}
