@@ -26,18 +26,24 @@ interface ActionLog {
   created_at: string;
 }
 
-const ACTION_TYPE_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  user_disabled: { label: 'Disabled', variant: 'destructive' },
-  user_enabled: { label: 'Enabled', variant: 'default' },
-  user_deleted: { label: 'Deleted', variant: 'destructive' },
-  role_granted: { label: 'Role Granted', variant: 'default' },
-  role_removed: { label: 'Role Removed', variant: 'secondary' },
-  subscription_cancelled: { label: 'Sub Cancelled', variant: 'destructive' },
-  subscription_granted: { label: 'Pro Granted', variant: 'default' },
-  email_updated: { label: 'Email Updated', variant: 'outline' },
-  password_reset: { label: 'Password Reset', variant: 'outline' },
-  impersonation_start: { label: 'View As Started', variant: 'secondary' },
-  impersonation_end: { label: 'View As Ended', variant: 'outline' },
+const ACTION_TYPE_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; category: string }> = {
+  user_disabled: { label: 'Disabled', variant: 'destructive', category: 'user_management' },
+  user_enabled: { label: 'Enabled', variant: 'default', category: 'user_management' },
+  user_deleted: { label: 'Deleted', variant: 'destructive', category: 'user_management' },
+  role_granted: { label: 'Role Granted', variant: 'default', category: 'user_management' },
+  role_removed: { label: 'Role Removed', variant: 'secondary', category: 'user_management' },
+  email_updated: { label: 'Email Updated', variant: 'outline', category: 'user_management' },
+  password_reset: { label: 'Password Reset', variant: 'outline', category: 'user_management' },
+  subscription_cancelled: { label: 'Sub Cancelled', variant: 'destructive', category: 'subscriptions' },
+  subscription_granted: { label: 'Pro Granted', variant: 'default', category: 'subscriptions' },
+  impersonation_start: { label: 'View As Started', variant: 'secondary', category: 'impersonation' },
+  impersonation_end: { label: 'View As Ended', variant: 'outline', category: 'impersonation' },
+};
+
+const ACTION_CATEGORIES: Record<string, string> = {
+  user_management: 'User Management',
+  subscriptions: 'Subscriptions',
+  impersonation: 'Impersonation',
 };
 
 const LOGS_PER_PAGE = 15;
@@ -48,6 +54,7 @@ export function AdminActionLogs() {
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [actionFilter, setActionFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -86,6 +93,13 @@ export function AdminActionLogs() {
       );
     }
 
+    if (categoryFilter !== 'all') {
+      result = result.filter((log) => {
+        const actionConfig = ACTION_TYPE_LABELS[log.action_type];
+        return actionConfig?.category === categoryFilter;
+      });
+    }
+
     if (actionFilter !== 'all') {
       result = result.filter((log) => log.action_type === actionFilter);
     }
@@ -105,7 +119,7 @@ export function AdminActionLogs() {
     }
 
     return result;
-  }, [logs, searchQuery, actionFilter, dateFrom, dateTo]);
+  }, [logs, searchQuery, categoryFilter, actionFilter, dateFrom, dateTo]);
 
   const totalPages = Math.ceil(filteredLogs.length / LOGS_PER_PAGE);
   const paginatedLogs = useMemo(() => {
@@ -113,9 +127,29 @@ export function AdminActionLogs() {
     return filteredLogs.slice(startIndex, startIndex + LOGS_PER_PAGE);
   }, [filteredLogs, currentPage]);
 
+  const uniqueActionTypes = useMemo(() => {
+    return [...new Set(logs.map((log) => log.action_type))];
+  }, [logs]);
+
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, actionFilter, dateFrom, dateTo]);
+  }, [searchQuery, categoryFilter, actionFilter, dateFrom, dateTo]);
+
+  // Reset action filter when category changes
+  useEffect(() => {
+    setActionFilter('all');
+  }, [categoryFilter]);
+
+  // Get action types filtered by selected category
+  const filteredActionTypes = useMemo(() => {
+    if (categoryFilter === 'all') {
+      return uniqueActionTypes;
+    }
+    return uniqueActionTypes.filter((type) => {
+      const actionConfig = ACTION_TYPE_LABELS[type];
+      return actionConfig?.category === categoryFilter;
+    });
+  }, [uniqueActionTypes, categoryFilter]);
 
   const clearDateFilters = () => {
     setDateFrom(undefined);
@@ -159,10 +193,6 @@ export function AdminActionLogs() {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const uniqueActionTypes = useMemo(() => {
-    return [...new Set(logs.map((log) => log.action_type))];
-  }, [logs]);
-
   return (
     <Card>
       <CardHeader className="p-4 md:p-6">
@@ -204,14 +234,31 @@ export function AdminActionLogs() {
           </div>
 
           <div>
+            <Label className="text-xs text-muted-foreground mb-1 block">Category</Label>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-[150px] h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {Object.entries(ACTION_CATEGORIES).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <Label className="text-xs text-muted-foreground mb-1 block">Action Type</Label>
             <Select value={actionFilter} onValueChange={setActionFilter}>
-              <SelectTrigger className="w-[160px] h-9">
+              <SelectTrigger className="w-[150px] h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Actions</SelectItem>
-                {uniqueActionTypes.map((type) => (
+                {filteredActionTypes.map((type) => (
                   <SelectItem key={type} value={type}>
                     {ACTION_TYPE_LABELS[type]?.label || type}
                   </SelectItem>
@@ -295,7 +342,7 @@ export function AdminActionLogs() {
               ))}
               {paginatedLogs.length === 0 && (
                 <p className="text-center py-8 text-muted-foreground">
-                  {searchQuery || actionFilter !== 'all' || dateFrom || dateTo
+                  {searchQuery || categoryFilter !== 'all' || actionFilter !== 'all' || dateFrom || dateTo
                     ? 'No matching logs found'
                     : 'No admin actions logged yet'}
                 </p>
@@ -333,7 +380,7 @@ export function AdminActionLogs() {
                   {paginatedLogs.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        {searchQuery || actionFilter !== 'all' || dateFrom || dateTo
+                        {searchQuery || categoryFilter !== 'all' || actionFilter !== 'all' || dateFrom || dateTo
                           ? 'No matching logs found'
                           : 'No admin actions logged yet'}
                       </TableCell>
