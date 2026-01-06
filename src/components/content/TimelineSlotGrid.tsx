@@ -93,12 +93,7 @@ const PHASES = [
 
 const DAYS = [1, 2, 3, 4, 5, 6, 7];
 
-const CONTENT_TYPE_COLORS: Record<string, string> = {
-  general: "bg-slate-500",
-  stories: "bg-amber-500",
-  offer: "bg-emerald-500",
-  "behind-the-scenes": "bg-cyan-500",
-};
+import { CONTENT_TYPE_COLORS } from "./contentTypeColors";
 
 export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridProps) => {
   const { user } = useAuth();

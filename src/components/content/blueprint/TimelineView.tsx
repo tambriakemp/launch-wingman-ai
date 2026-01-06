@@ -10,6 +10,7 @@ import {
 } from "@/data/blueprintContent";
 import type { ContentType } from "@/components/content/ContentTab";
 import { cn } from "@/lib/utils";
+import { CONTENT_TYPE_COLORS, CONTENT_TYPE_LABELS } from "@/components/content/contentTypeColors";
 
 interface TimelineViewProps {
   projectId: string;
@@ -113,6 +114,14 @@ export const TimelineView = ({
                         {idea.title}
                       </h4>
                       <div className="flex flex-wrap gap-1">
+                        <Badge 
+                          className={cn(
+                            "text-[10px] font-normal py-0 h-4 text-white",
+                            CONTENT_TYPE_COLORS[idea.contentType] || "bg-slate-500"
+                          )}
+                        >
+                          {CONTENT_TYPE_LABELS[idea.contentType] || idea.contentType}
+                        </Badge>
                         {idea.formats.slice(0, 2).map((format) => (
                           <Badge 
                             key={format} 
