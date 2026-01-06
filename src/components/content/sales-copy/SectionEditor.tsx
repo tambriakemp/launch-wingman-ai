@@ -330,35 +330,108 @@ function mapSectionToApiType(sectionId: string): string {
   return mapping[sectionId] || 'hero';
 }
 
+// Section-specific response key mappings for 14-block structure
+const SECTION_RESPONSE_KEYS: Record<string, string[]> = {
+  'opening-headline': ['headlines', 'options', 'suggestions'],
+  'paint-the-problem': ['openingParagraphs', 'paragraphs', 'problemParagraphs', 'suggestions'],
+  'look-into-future': ['futureParagraphs', 'paragraphs', 'visionStatements', 'suggestions'],
+  'introduce-offer': ['introductions', 'paragraphs', 'offerIntros', 'suggestions'],
+  'offer-differentiator': ['differentiators', 'paragraphs', 'uniquePoints', 'suggestions'],
+  'the-results': ['results', 'bullets', 'outcomes', 'transformations', 'suggestions'],
+  'the-features': ['features', 'bullets', 'modules', 'deliverables', 'suggestions'],
+  'the-investment': ['investmentFrames', 'pricingCopy', 'paragraphs', 'suggestions'],
+  'the-guarantee': ['guarantees', 'paragraphs', 'promiseCopy', 'suggestions'],
+  'introduce-yourself': ['bioParagraphs', 'paragraphs', 'aboutSections', 'suggestions'],
+  'is-this-for-you': ['qualifiers', 'bullets', 'forYouStatements', 'notForYouStatements', 'suggestions'],
+  'why-now': ['urgencyCopy', 'paragraphs', 'timingReasons', 'suggestions'],
+  'frequent-objections': ['faqs', 'objectionHandlers', 'questions', 'suggestions'],
+  'final-cta': ['ctaCopy', 'closingParagraphs', 'finalStatements', 'suggestions'],
+};
+
 // Helper to extract suggestions from AI response
 function extractSuggestions(data: unknown, sectionId: string): string[] {
   if (!data || typeof data !== 'object') return [];
   
   const response = data as Record<string, unknown>;
   
-  // Try different response formats based on what the AI returns
-  const possibleKeys = [
+  // Get section-specific keys first, then fall back to generic keys
+  const sectionKeys = SECTION_RESPONSE_KEYS[sectionId] || [];
+  const genericKeys = [
     'headlines', 'subheadlines', 'openingParagraphs', 'paragraphs',
     'bullets', 'results', 'features', 'guarantees', 'questions',
-    'options', 'suggestions', 'copy'
+    'options', 'suggestions', 'copy', 'content'
   ];
   
-  for (const key of possibleKeys) {
+  const keysToTry = [...sectionKeys, ...genericKeys.filter(k => !sectionKeys.includes(k))];
+  
+  for (const key of keysToTry) {
     if (response[key] && Array.isArray(response[key])) {
       const arr = response[key] as unknown[];
-      return arr.map(item => {
-        if (typeof item === 'string') return item;
-        if (typeof item === 'object' && item !== null) {
-          const obj = item as Record<string, unknown>;
-          if (obj.text) return String(obj.text);
-          if (obj.title && obj.description) return `${obj.title}: ${obj.description}`;
-          if (obj.question && obj.answer) return `Q: ${obj.question}\nA: ${obj.answer}`;
-          return JSON.stringify(item);
-        }
-        return String(item);
-      });
+      return arr.map(item => formatSuggestionItem(item, sectionId)).filter(Boolean);
     }
   }
   
+  // If no array found, check for direct text content
+  if (response.content && typeof response.content === 'string') {
+    return [response.content];
+  }
+  if (response.copy && typeof response.copy === 'string') {
+    return [response.copy];
+  }
+  
   return [];
+}
+
+// Format individual suggestion items based on their structure
+function formatSuggestionItem(item: unknown, sectionId: string): string {
+  if (typeof item === 'string') return item.trim();
+  
+  if (typeof item === 'object' && item !== null) {
+    const obj = item as Record<string, unknown>;
+    
+    // Handle FAQ/objection format
+    if (obj.question && obj.answer) {
+      return `**Q: ${obj.question}**\n${obj.answer}`;
+    }
+    
+    // Handle result/feature with title + description
+    if (obj.title && obj.description) {
+      return `**${obj.title}**\n${obj.description}`;
+    }
+    
+    // Handle "for you" / "not for you" format
+    if (obj.forYou || obj.notForYou) {
+      const parts: string[] = [];
+      if (obj.forYou) parts.push(`✓ This is for you if: ${obj.forYou}`);
+      if (obj.notForYou) parts.push(`✗ This is NOT for you if: ${obj.notForYou}`);
+      return parts.join('\n');
+    }
+    
+    // Handle feature/module with bullets
+    if (obj.name && obj.bullets && Array.isArray(obj.bullets)) {
+      const bullets = (obj.bullets as string[]).map(b => `  • ${b}`).join('\n');
+      return `**${obj.name}**\n${bullets}`;
+    }
+    
+    // Handle headline with subheadline
+    if (obj.headline && obj.subheadline) {
+      return `${obj.headline}\n\n${obj.subheadline}`;
+    }
+    
+    // Handle simple text field
+    if (obj.text) return String(obj.text).trim();
+    if (obj.copy) return String(obj.copy).trim();
+    if (obj.content) return String(obj.content).trim();
+    
+    // Handle result transformations
+    if (obj.before && obj.after) {
+      return `From: ${obj.before}\nTo: ${obj.after}`;
+    }
+    
+    // Last resort: stringify non-empty objects
+    const str = JSON.stringify(item);
+    return str !== '{}' ? str : '';
+  }
+  
+  return String(item).trim();
 }
