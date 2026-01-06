@@ -991,6 +991,45 @@ export type Database = {
         }
         Relationships: []
       }
+      marketing_webhook_logs: {
+        Row: {
+          created_at: string
+          email: string
+          error_message: string | null
+          event_type: string
+          id: string
+          membership: string
+          response_status: number | null
+          success: boolean
+          tags_added: string[] | null
+          tags_removed: string[] | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          membership: string
+          response_status?: number | null
+          success?: boolean
+          tags_added?: string[] | null
+          tags_removed?: string[] | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          membership?: string
+          response_status?: number | null
+          success?: boolean
+          tags_added?: string[] | null
+          tags_removed?: string[] | null
+        }
+        Relationships: []
+      }
       metric_updates: {
         Row: {
           created_at: string

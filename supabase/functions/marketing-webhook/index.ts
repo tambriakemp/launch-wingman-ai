@@ -16,7 +16,8 @@ interface MarketingContact {
   subscription_end: string | null;
   event_type: string;
   list: string;
-  tags: string[];
+  tags_to_add: string[];
+  tags_to_remove: string[];
 }
 
 interface WebhookRequest {
@@ -129,7 +130,7 @@ serve(async (req) => {
       }
     }
 
-    // Send to webhook
+    // Send to webhook and log results
     const results = [];
     for (const contact of contacts) {
       try {
@@ -149,29 +150,56 @@ serve(async (req) => {
         });
 
         const responseText = await response.text();
+        const success = response.ok;
+        
         results.push({
           email: contact.email,
-          success: response.ok,
+          success,
           status: response.status,
           response: responseText.substring(0, 200),
+        });
+
+        // Log to database
+        await supabaseClient.from("marketing_webhook_logs").insert({
+          email: contact.email,
+          event_type: contact.event_type,
+          membership: contact.membership,
+          tags_added: contact.tags_to_add,
+          tags_removed: contact.tags_to_remove,
+          success,
+          response_status: response.status,
+          error_message: success ? null : responseText.substring(0, 500),
         });
 
         console.log(`Webhook sent for ${contact.email}: ${response.status}`);
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
         console.error(`Error sending webhook for ${contact.email}:`, error);
+        
         results.push({
           email: contact.email,
           success: false,
           error: errorMessage,
         });
+
+        // Log failure to database
+        await supabaseClient.from("marketing_webhook_logs").insert({
+          email: contact.email,
+          event_type: contact.event_type,
+          membership: contact.membership,
+          tags_added: contact.tags_to_add,
+          tags_removed: contact.tags_to_remove,
+          success: false,
+          error_message: errorMessage,
+        });
       }
     }
 
-    // Log the action
+    // Log the admin action
     await supabaseClient.from("admin_action_logs").insert({
       admin_user_id: userData.user.id,
-      action: "marketing_webhook_sync",
+      admin_email: userData.user.email || "unknown",
+      action_type: "marketing_webhook_sync",
       target_user_id: user_id || null,
       action_details: {
         action,
@@ -242,6 +270,27 @@ async function buildContact(
     }
   }
 
+  // Determine tags based on membership and event type
+  let tagsToAdd: string[] = [];
+  let tagsToRemove: string[] = [];
+
+  if (membership === "pro") {
+    tagsToAdd = ["launchely-pro"];
+    tagsToRemove = ["launchely-free"];
+  } else {
+    tagsToAdd = ["launchely-free"];
+    tagsToRemove = ["launchely-pro"];
+  }
+
+  // For subscription events, always ensure proper tag swap
+  if (eventType === "subscription_started" || eventType === "subscription_created") {
+    tagsToAdd = ["launchely-pro"];
+    tagsToRemove = ["launchely-free"];
+  } else if (eventType === "subscription_cancelled" || eventType === "subscription_ended") {
+    tagsToAdd = ["launchely-free"];
+    tagsToRemove = ["launchely-pro"];
+  }
+
   return {
     email,
     first_name: firstName,
@@ -251,6 +300,7 @@ async function buildContact(
     subscription_end: subscriptionEnd,
     event_type: eventType,
     list: "Launchely",
-    tags: [membership === "pro" ? "launchely-pro" : "launchely-free"],
+    tags_to_add: tagsToAdd,
+    tags_to_remove: tagsToRemove,
   };
 }
