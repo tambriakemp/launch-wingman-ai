@@ -196,14 +196,14 @@ export function AlertsWidget({
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+      <CardHeader className="p-4 md:p-6 pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
               Alerts Needing Attention
             </CardTitle>
-            <CardDescription>Issues requiring admin review</CardDescription>
+            <CardDescription className="text-xs md:text-sm">Issues requiring admin review</CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-lg px-3 py-1">
@@ -217,7 +217,7 @@ export function AlertsWidget({
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 md:p-6 pt-0">
         {alerts.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <ShieldAlert className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -229,23 +229,25 @@ export function AlertsWidget({
             {alerts.map((alert) => (
               <div
                 key={alert.id}
-                className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                className="flex flex-col sm:flex-row sm:items-start gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
               >
-                <div className="flex-shrink-0 mt-0.5">
-                  {getAlertIcon(alert.type)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    {getAlertBadge(alert.type)}
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      {getCategoryIcon(alert.category)}
-                      {alert.category}
-                    </span>
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className="flex-shrink-0 mt-0.5">
+                    {getAlertIcon(alert.type)}
                   </div>
-                  <p className="text-sm">{alert.message}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      {getAlertBadge(alert.type)}
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        {getCategoryIcon(alert.category)}
+                        {alert.category}
+                      </span>
+                    </div>
+                    <p className="text-sm">{alert.message}</p>
+                  </div>
                 </div>
                 {alert.action && (
-                  <Button variant="outline" size="sm" onClick={alert.action}>
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto flex-shrink-0" onClick={alert.action}>
                     {alert.actionLabel}
                   </Button>
                 )}

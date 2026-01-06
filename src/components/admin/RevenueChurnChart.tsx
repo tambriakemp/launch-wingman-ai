@@ -93,14 +93,14 @@ export function RevenueChurnChart({ users }: RevenueChurnChartProps) {
   return (
     <Card className="mb-4 md:mb-8">
       <CardHeader className="p-4 md:p-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <CardTitle className="text-base md:text-lg">Subscription Trends</CardTitle>
             <CardDescription className="text-xs md:text-sm">
               Monthly new Pro subscribers vs. churned (last 6 months)
             </CardDescription>
           </div>
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm">
             <div className="flex items-center gap-1">
               <div className="h-3 w-3 rounded bg-[hsl(var(--chart-1))]" />
               <span className="text-muted-foreground">New Pro: {stats.totalNewPro}</span>

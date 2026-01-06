@@ -98,29 +98,29 @@ export function SystemHealthCard({ data, loading, onRefresh }: SystemHealthCardP
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+      <CardHeader className="p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             {getStatusIcon()}
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex flex-wrap items-center gap-2 text-base md:text-lg">
                 System Health
                 {getStatusBadge()}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs md:text-sm">
                 Last checked {formatDistanceToNow(new Date(data.lastChecked), { addSuffix: true })}
               </CardDescription>
             </div>
           </div>
           {onRefresh && (
-            <Button variant="outline" size="sm" onClick={onRefresh}>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={onRefresh}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="p-4 md:p-6 pt-0 space-y-6">
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-muted/50 rounded-lg p-4 text-center">
@@ -157,23 +157,27 @@ export function SystemHealthCard({ data, loading, onRefresh }: SystemHealthCardP
         </div>
 
         {/* Database Status */}
-        <div className="flex items-center gap-4 p-4 rounded-lg border">
-          <Database className={`h-6 w-6 ${data.database.healthy ? 'text-emerald-500' : 'text-destructive'}`} />
-          <div className="flex-1">
-            <p className="font-medium">Database</p>
-            <p className="text-sm text-muted-foreground">
-              {data.database.healthy ? 'Connected' : 'Connection issues'}
-            </p>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 rounded-lg border">
+          <div className="flex items-center gap-4 flex-1">
+            <Database className={`h-6 w-6 flex-shrink-0 ${data.database.healthy ? 'text-emerald-500' : 'text-destructive'}`} />
+            <div className="flex-1">
+              <p className="font-medium">Database</p>
+              <p className="text-sm text-muted-foreground">
+                {data.database.healthy ? 'Connected' : 'Connection issues'}
+              </p>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="font-medium">{data.database.latencyMs}ms</p>
-            <p className="text-xs text-muted-foreground">Latency</p>
+          <div className="flex items-center justify-between sm:justify-end gap-4">
+            <div className="text-left sm:text-right">
+              <p className="font-medium">{data.database.latencyMs}ms</p>
+              <p className="text-xs text-muted-foreground">Latency</p>
+            </div>
+            {data.database.healthy ? (
+              <Badge className="bg-emerald-500">Online</Badge>
+            ) : (
+              <Badge variant="destructive">Offline</Badge>
+            )}
           </div>
-          {data.database.healthy ? (
-            <Badge className="bg-emerald-500">Online</Badge>
-          ) : (
-            <Badge variant="destructive">Offline</Badge>
-          )}
         </div>
 
         {/* Function Stats */}
@@ -183,7 +187,44 @@ export function SystemHealthCard({ data, loading, onRefresh }: SystemHealthCardP
               <Clock className="h-4 w-4" />
               AI Functions (Last 24h)
             </h4>
-            <div className="border rounded-lg overflow-hidden">
+            {/* Mobile view - cards */}
+            <div className="md:hidden space-y-2">
+              {data.functions.map((fn) => {
+                const errorRate = fn.calls > 0 ? (fn.errors / fn.calls) * 100 : 0;
+                return (
+                  <div key={fn.name} className="p-3 rounded-lg border bg-card">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="font-medium text-sm">{formatFunctionName(fn.name)}</p>
+                      {errorRate > 10 ? (
+                        <Badge variant="destructive" className="text-xs">
+                          {errorRate.toFixed(0)}% errors
+                        </Badge>
+                      ) : errorRate > 0 ? (
+                        <Badge className="bg-amber-500 text-xs">
+                          {errorRate.toFixed(0)}% errors
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">OK</Badge>
+                      )}
+                    </div>
+                    <div className="flex gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Calls: </span>
+                        <span className="font-medium">{fn.calls}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Errors: </span>
+                        <span className={fn.errors > 0 ? 'text-destructive font-medium' : 'text-muted-foreground'}>
+                          {fn.errors}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Desktop view - table */}
+            <div className="hidden md:block border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow>
