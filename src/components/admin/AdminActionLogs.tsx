@@ -9,11 +9,40 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { RefreshCw, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, ClipboardList } from 'lucide-react';
+import { RefreshCw, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, ClipboardList, Eye } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Json } from '@/integrations/supabase/types';
+
+// Helper to check if action_details has meaningful content
+const hasDetails = (details: Json): boolean => {
+  if (!details) return false;
+  if (typeof details !== 'object') return false;
+  if (Array.isArray(details)) return details.length > 0;
+  return Object.keys(details as object).length > 0;
+};
+
+// Format detail key to human readable label
+const formatDetailKey = (key: string): string => {
+  return key
+    .replace(/_/g, ' ')
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, (str) => str.toUpperCase())
+    .trim();
+};
+
+// Render a single detail value
+const renderDetailValue = (value: unknown): string => {
+  if (value === null || value === undefined) return '—';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'number') return value.toLocaleString();
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.join(', ') || '—';
+  if (typeof value === 'object') return JSON.stringify(value, null, 2);
+  return String(value);
+};
 
 interface ActionLog {
   id: string;
@@ -61,6 +90,8 @@ export function AdminActionLogs() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [actionFilter, setActionFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedLog, setSelectedLog] = useState<ActionLog | null>(null);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -374,10 +405,19 @@ export function AdminActionLogs() {
                       <TableCell className="font-medium">{log.admin_email}</TableCell>
                       <TableCell>{log.target_email || '—'}</TableCell>
                       <TableCell>{getActionBadge(log.action_type)}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                        {log.action_details && typeof log.action_details === 'object'
-                          ? JSON.stringify(log.action_details)
-                          : '—'}
+                      <TableCell className="text-center">
+                        {hasDetails(log.action_details) ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedLog(log);
+                              setDetailsDialogOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        ) : null}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -427,6 +467,30 @@ export function AdminActionLogs() {
           </>
         )}
       </CardContent>
+
+      {/* Details Dialog */}
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Action Details</DialogTitle>
+            {selectedLog && (
+              <DialogDescription>
+                {ACTION_TYPE_LABELS[selectedLog.action_type]?.label || selectedLog.action_type} — {format(new Date(selectedLog.created_at), 'MMM d, yyyy h:mm a')}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          {selectedLog && selectedLog.action_details && typeof selectedLog.action_details === 'object' && (
+            <div className="space-y-3 mt-2">
+              {Object.entries(selectedLog.action_details as Record<string, unknown>).map(([key, value]) => (
+                <div key={key} className="flex flex-col gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">{formatDetailKey(key)}</span>
+                  <span className="text-sm">{renderDetailValue(value)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
