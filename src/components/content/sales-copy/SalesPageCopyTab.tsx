@@ -126,17 +126,19 @@ export const SalesPageCopyTab = ({ projectId }: SalesPageCopyTabProps) => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-12">
-      {/* Header */}
-      <PlanPageHeader
-        title="Sales Page Copy"
-        description="Write your sales page one section at a time, based on your funnel and offers."
-        tipText="This is guidance — not a template. You can skip or rewrite anything."
-      />
-
-      {/* Context Display */}
-      {funnelConfig && (
-        <FunnelContextDisplay funnelConfig={funnelConfig} />
-      )}
+      {/* Header with funnel badge */}
+      <div className="flex items-start justify-between gap-4">
+        <PlanPageHeader
+          title="Sales Page Copy"
+          description="Write your sales page one section at a time, based on your funnel and offers."
+          tipText="This is guidance — not a template. You can skip or rewrite anything."
+        />
+        {funnelConfig && (
+          <span className="shrink-0 mt-1 inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+            {funnelConfig.name}
+          </span>
+        )}
+      </div>
 
       {/* Offer Selection or Section List */}
       {!selectedOfferId ? (
