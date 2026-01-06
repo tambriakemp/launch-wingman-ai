@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAdminSystemHealth } from '@/hooks/useAdminSystemHealth';
 import { useAdminChurnRisk } from '@/hooks/useAdminChurnRisk';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,8 +8,10 @@ import { ChurnRiskCard } from './ChurnRiskCard';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Send, Loader2, Users, FlaskConical } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Send, Loader2, Users, FlaskConical, History, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 
 interface MonitoringTabProps {
   users?: Array<{
@@ -20,10 +22,25 @@ interface MonitoringTabProps {
   }>;
 }
 
+interface WebhookLog {
+  id: string;
+  email: string;
+  event_type: string;
+  membership: string;
+  tags_added: string[];
+  tags_removed: string[];
+  success: boolean;
+  error_message: string | null;
+  response_status: number | null;
+  created_at: string;
+}
+
 export function MonitoringTab({ users = [] }: MonitoringTabProps) {
   const { user } = useAuth();
   const [syncLoading, setSyncLoading] = useState(false);
   const [testLoading, setTestLoading] = useState(false);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [webhookLogs, setWebhookLogs] = useState<WebhookLog[]>([]);
   const [lastSyncResult, setLastSyncResult] = useState<{
     contacts_synced: number;
     success_count: number;
@@ -44,6 +61,29 @@ export function MonitoringTab({ users = [] }: MonitoringTabProps) {
     isLoading: churnLoading,
     refetch: refetchChurn,
   } = useAdminChurnRisk();
+
+  // Fetch webhook logs
+  const fetchWebhookLogs = async () => {
+    setLogsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('marketing_webhook_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      setWebhookLogs(data || []);
+    } catch (error) {
+      console.error('Error fetching webhook logs:', error);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchWebhookLogs();
+  }, []);
 
   // Calculate disabled users count from users prop
   const disabledUsersCount = users.filter(
@@ -67,6 +107,7 @@ export function MonitoringTab({ users = [] }: MonitoringTabProps) {
   const handleRefreshAll = () => {
     refetchHealth();
     refetchChurn();
+    fetchWebhookLogs();
     toast.success('Monitoring data refreshed');
   };
 
@@ -107,6 +148,9 @@ export function MonitoringTab({ users = [] }: MonitoringTabProps) {
           `Synced ${successCount} of ${data.contacts_synced} contacts. Some failed.`
         );
       }
+
+      // Refresh logs after sync
+      fetchWebhookLogs();
     } catch (error) {
       console.error('Marketing sync error:', error);
       toast.error('Failed to sync contacts to marketing platform');
@@ -142,6 +186,9 @@ export function MonitoringTab({ users = [] }: MonitoringTabProps) {
         });
         toast.error('Test webhook failed - check configuration');
       }
+
+      // Refresh logs after test
+      fetchWebhookLogs();
     } catch (error) {
       console.error('Test webhook error:', error);
       setLastTestResult({ success: false, message: 'Failed to send test webhook' });
@@ -233,6 +280,97 @@ export function MonitoringTab({ users = [] }: MonitoringTabProps) {
               </p>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Webhook Activity Log */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <History className="h-5 w-5" />
+                Webhook Activity Log
+              </CardTitle>
+              <CardDescription>
+                Recent marketing webhook events and their status
+              </CardDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={fetchWebhookLogs}
+              disabled={logsLoading}
+            >
+              <RefreshCw className={`h-4 w-4 ${logsLoading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {logsLoading && webhookLogs.length === 0 ? (
+            <div className="flex items-center justify-center py-8 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin mr-2" />
+              Loading logs...
+            </div>
+          ) : webhookLogs.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No webhook activity yet. Send a test webhook to get started.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {webhookLogs.map((log) => (
+                <div
+                  key={log.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 border rounded-lg"
+                >
+                  <div className="flex items-start gap-3">
+                    {log.success ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{log.email}</p>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-xs">
+                          {log.event_type}
+                        </Badge>
+                        <Badge 
+                          variant={log.membership === 'pro' ? 'default' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {log.membership}
+                        </Badge>
+                        {log.tags_added && log.tags_added.length > 0 && (
+                          <span className="text-xs text-green-600">
+                            +{log.tags_added.join(', ')}
+                          </span>
+                        )}
+                        {log.tags_removed && log.tags_removed.length > 0 && (
+                          <span className="text-xs text-muted-foreground line-through">
+                            {log.tags_removed.join(', ')}
+                          </span>
+                        )}
+                      </div>
+                      {log.error_message && (
+                        <p className="text-xs text-destructive mt-1 truncate max-w-md">
+                          {log.error_message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground shrink-0 sm:text-right">
+                    {format(new Date(log.created_at), 'MMM d, h:mm a')}
+                    {log.response_status && (
+                      <span className="ml-2">
+                        HTTP {log.response_status}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
