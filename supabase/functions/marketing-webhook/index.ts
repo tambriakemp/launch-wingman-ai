@@ -254,11 +254,17 @@ async function buildFluentCRMContact(
 ): Promise<{ contact: FluentCRMContact; logData: ContactLogData }> {
   let membership: "free" | "pro" = "free";
 
+  console.log(`[FluentCRM] Building contact for ${email}`);
+
   if (stripe) {
     try {
       const customers = await stripe.customers.list({ email, limit: 1 });
+      console.log(`[FluentCRM] ${email} - Stripe customer found: ${customers.data.length > 0}`);
+      
       if (customers.data.length > 0) {
         const customerId = customers.data[0].id;
+        console.log(`[FluentCRM] ${email} - Customer ID: ${customerId}`);
+        
         const subscriptions = await stripe.subscriptions.list({
           customer: customerId,
           status: "all",
@@ -267,14 +273,19 @@ async function buildFluentCRMContact(
 
         if (subscriptions.data.length > 0) {
           const sub = subscriptions.data[0];
+          console.log(`[FluentCRM] ${email} - Subscription status: ${sub.status}`);
           if (sub.status === "active" || sub.status === "trialing") {
             membership = "pro";
           }
+        } else {
+          console.log(`[FluentCRM] ${email} - No subscriptions found`);
         }
       }
     } catch (error) {
-      console.error(`Error fetching Stripe data for ${email}:`, error);
+      console.error(`[FluentCRM] Error fetching Stripe data for ${email}:`, error);
     }
+  } else {
+    console.log(`[FluentCRM] ${email} - No Stripe client available`);
   }
 
   // For subscription events, override membership based on event type
@@ -287,6 +298,8 @@ async function buildFluentCRMContact(
   // Build FluentCRM-compatible contact with numeric IDs
   const isPro = membership === "pro";
   
+  console.log(`[FluentCRM] ${email} - Final membership: ${membership} (isPro: ${isPro})`);
+  
   const contact: FluentCRMContact = {
     email,
     first_name: firstName,
@@ -297,6 +310,8 @@ async function buildFluentCRMContact(
     attach_tags: isPro ? [FLUENTCRM_PRO_TAG_ID] : [FLUENTCRM_FREE_TAG_ID],
     detach_tags: isPro ? [FLUENTCRM_FREE_TAG_ID] : [FLUENTCRM_PRO_TAG_ID],
   };
+
+  console.log(`[FluentCRM] ${email} - Payload: attach_tags=${JSON.stringify(contact.attach_tags)}, detach_tags=${JSON.stringify(contact.detach_tags)}, lists=${JSON.stringify(contact.lists)}`);
 
   // For logging purposes, keep human-readable tag names
   const logData: ContactLogData = {
