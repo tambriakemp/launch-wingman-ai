@@ -6,12 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { UploadableScreenshot } from "@/components/admin/UploadableScreenshot";
 import { 
   ArrowLeft, BookOpen, Shield, Code, Users, 
   CheckCircle2, AlertTriangle, Info, Search,
   MousePointerClick, Eye, UserCog, CreditCard,
   BarChart3, Database, Key, Zap, Settings,
-  Activity, FileText, Lock, ExternalLink
+  Activity, Lock, ExternalLink
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,18 +40,7 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementTy
   </div>
 );
 
-// Visual placeholder for screenshots
-const ScreenshotPlaceholder = ({ title, description }: { title: string; description: string }) => (
-  <div className="my-4 rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/30 p-6 text-center">
-    <div className="flex flex-col items-center gap-2">
-      <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-        <FileText className="h-6 w-6 text-muted-foreground" />
-      </div>
-      <p className="font-medium text-sm">{title}</p>
-      <p className="text-xs text-muted-foreground max-w-xs">{description}</p>
-    </div>
-  </div>
-);
+// Removed ScreenshotPlaceholder - now using UploadableScreenshot from components
 
 // Code block component
 const CodeBlock = ({ children, title }: { children: string; title?: string }) => (
@@ -173,7 +163,7 @@ const AdminDocs = () => {
                           description="View the app as any user sees it for troubleshooting"
                         />
                         <FeatureCard 
-                          icon={FileText} 
+                          icon={BookOpen} 
                           title="Content Vault" 
                           description="Manage resources, templates, and educational content"
                         />
@@ -184,9 +174,9 @@ const AdminDocs = () => {
                         />
                       </div>
 
-                      <ScreenshotPlaceholder 
-                        title="Admin Dashboard Overview" 
-                        description="The main dashboard shows platform stats at the top, followed by the users table"
+                      <UploadableScreenshot 
+                        screenshotKey="manager-dashboard-overview" 
+                        alt="Admin Dashboard Overview"
                       />
 
                       <Callout type="tip">
@@ -229,9 +219,9 @@ const AdminDocs = () => {
                         <p>Click any column header to sort. Click again to reverse the order.</p>
                       </Step>
 
-                      <ScreenshotPlaceholder 
-                        title="Users Table with Filters" 
-                        description="Search bar at top, filter options, and sortable columns"
+                      <UploadableScreenshot 
+                        screenshotKey="manager-users-table" 
+                        alt="Users Table with Filters"
                       />
 
                       <h4 className="font-semibold mb-4 mt-8">Understanding User Information</h4>
@@ -265,7 +255,7 @@ const AdminDocs = () => {
                   <AccordionItem value="content-vault">
                     <AccordionTrigger className="text-left">
                       <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-primary" />
+                        <Database className="h-4 w-4 text-primary" />
                         Content Vault Management
                       </div>
                     </AccordionTrigger>
@@ -295,9 +285,9 @@ const AdminDocs = () => {
                         Changes save automatically.</p>
                       </Step>
 
-                      <ScreenshotPlaceholder 
-                        title="Content Vault Admin Interface" 
-                        description="Category list on the left, resources grid on the right with add/edit controls"
+                      <UploadableScreenshot 
+                        screenshotKey="manager-content-vault" 
+                        alt="Content Vault Admin Interface"
                       />
 
                       <Callout type="tip">
@@ -337,9 +327,9 @@ const AdminDocs = () => {
                         A yellow banner at the top confirms you're impersonating.</p>
                       </Step>
 
-                      <ScreenshotPlaceholder 
-                        title="Impersonation Banner" 
-                        description="Yellow warning banner showing 'Viewing as [user email]' with Stop button"
+                      <UploadableScreenshot 
+                        screenshotKey="manager-impersonation-banner" 
+                        alt="Impersonation Banner"
                       />
 
                       <h4 className="font-semibold mb-4 mt-8">Ending Impersonation</h4>
@@ -502,9 +492,9 @@ const AdminDocs = () => {
                           />
                         </div>
 
-                        <ScreenshotPlaceholder 
-                          title="Admin Dashboard - Full View" 
-                          description="Revenue chart, expanded stats, and full user management controls"
+                        <UploadableScreenshot 
+                          screenshotKey="admin-dashboard-full" 
+                          alt="Admin Dashboard - Full View"
                         />
                       </AccordionContent>
                     </AccordionItem>
@@ -536,9 +526,9 @@ const AdminDocs = () => {
                           This creates a non-Stripe subscription.</p>
                         </Step>
 
-                        <ScreenshotPlaceholder 
-                          title="Subscription Action Menu" 
-                          description="Dropdown showing 'Grant Pro', 'Cancel Subscription' options"
+                        <UploadableScreenshot 
+                          screenshotKey="admin-subscription-menu" 
+                          alt="Subscription Action Menu"
                         />
 
                         <h4 className="font-semibold mb-4 mt-8">Bulk Subscription Actions</h4>
@@ -654,9 +644,9 @@ const AdminDocs = () => {
                           />
                         </div>
 
-                        <ScreenshotPlaceholder 
-                          title="Revenue & Churn Chart" 
-                          description="Line graph showing MRR trend and bar chart for monthly churn"
+                        <UploadableScreenshot 
+                          screenshotKey="admin-revenue-chart" 
+                          alt="Revenue & Churn Chart"
                         />
 
                         <h4 className="font-semibold mb-4 mt-8">Platform Statistics</h4>
@@ -727,9 +717,9 @@ const AdminDocs = () => {
                           </ul>
                         </Step>
 
-                        <ScreenshotPlaceholder 
-                          title="Impersonation Logs Table" 
-                          description="Table showing admin email, target email, action type, and timestamp"
+                        <UploadableScreenshot 
+                          screenshotKey="admin-impersonation-logs" 
+                          alt="Impersonation Logs Table"
                         />
 
                         <Callout type="info">
