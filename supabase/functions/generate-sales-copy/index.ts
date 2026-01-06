@@ -699,6 +699,8 @@ serve(async (req) => {
       problemStatement,
       niche,
       projectId,
+      generateExamples,
+      formulas,
     } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -723,8 +725,50 @@ serve(async (req) => {
     let systemPrompt = "";
     let userPrompt = "";
 
+    // Handle examples generation using formulas
+    if (generateExamples && formulas && Array.isArray(formulas) && projectId) {
+      console.log(`[GENERATE-SALES-COPY] Generating examples for section: ${sectionId}`);
+      
+      // Fetch comprehensive context from the project
+      const context = await fetchProjectContext(supabase, projectId);
+      
+      // Build the context prompt
+      const contextPrompt = buildContextPrompt(
+        context,
+        { offerName, offerType, deliverables, price, priceType, niche },
+        { audience, problem, desiredOutcome, transformationStatement, problemStatement, niche }
+      );
+      
+      const formulasText = formulas.map((f: { template: string; example: string }, i: number) => 
+        `Formula ${i + 1}: ${f.template}\n   Example: ${f.example}`
+      ).join("\n\n");
+      
+      systemPrompt = `You are a direct-response copywriter specializing in sales page copy.
+
+Your job is to generate 3-5 concrete examples based on the provided formulas, customized for the specific offer and audience.
+
+${contextPrompt}
+
+IMPORTANT RULES:
+1. Each example should follow one of the provided formula patterns
+2. Replace ALL placeholders with specific content from the context
+3. Make examples feel natural and conversational, not template-like
+4. Vary the formulas used - don't just use the same one repeatedly
+5. Output should be ready to use - no placeholders or brackets remaining
+
+Return ONLY valid JSON:
+{
+  "examples": ["example1", "example2", "example3", "example4", "example5"]
+}`;
+
+      userPrompt = `Generate 3-5 customized examples using these formulas:
+
+${formulasText}
+
+Use the offer and audience context to make each example specific, compelling, and ready to use.`;
+    }
     // Check if we're using the new 14-block framework
-    if (sectionId && projectId) {
+    else if (sectionId && projectId) {
       console.log(`[GENERATE-SALES-COPY] Using 14-block framework for section: ${sectionId}`);
       
       // Fetch comprehensive context from the project
