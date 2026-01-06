@@ -10,7 +10,7 @@ const sanitizeId = (id: string) => id ? `${id.substring(0, 8)}...` : 'unknown';
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[ADMIN-TOGGLE-ROLE] ${step}${detailsStr}`);
+  console.log(`[ADMIN-USER-STATUS] ${step}${detailsStr}`);
 };
 
 serve(async (req) => {
@@ -57,76 +57,64 @@ serve(async (req) => {
       throw new Error("Missing required fields: user_id and action");
     }
 
-    if (!['grant_admin', 'remove_admin', 'grant_manager', 'remove_manager'].includes(action)) {
-      throw new Error("Invalid action. Must be 'grant_admin', 'remove_admin', 'grant_manager', or 'remove_manager'");
+    if (!['disable', 'enable'].includes(action)) {
+      throw new Error("Invalid action. Must be 'disable' or 'enable'");
     }
-
-    // Determine which role we're working with
-    const targetRole = action.includes('admin') ? 'admin' : 'manager';
-    const isGrantAction = action.startsWith('grant_');
 
     // Prevent self-modification
     if (user_id === adminUser.id) {
-      throw new Error("You cannot modify your own admin status");
+      throw new Error("You cannot modify your own account status");
     }
 
-    logStep("Processing role change", { targetUserId: sanitizeId(user_id), action, targetRole });
+    logStep("Processing status change", { targetUserId: sanitizeId(user_id), action });
 
-    if (isGrantAction) {
-      // Check if already has role
-      const { data: existingRole } = await supabaseClient
-        .from('user_roles')
-        .select('id')
-        .eq('user_id', user_id)
-        .eq('role', targetRole)
-        .single();
-
-      if (existingRole) {
-        throw new Error(`User already has ${targetRole} role`);
-      }
-
-      // Grant role
-      const { error: insertError } = await supabaseClient
-        .from('user_roles')
-        .insert({ user_id, role: targetRole });
-
-      if (insertError) throw new Error(`Failed to grant ${targetRole} role: ${insertError.message}`);
-      
-      logStep(`${targetRole} role granted`, { targetUserId: sanitizeId(user_id) });
-    } else {
-      // Remove role
-      const { error: deleteError } = await supabaseClient
-        .from('user_roles')
-        .delete()
-        .eq('user_id', user_id)
-        .eq('role', targetRole);
-
-      if (deleteError) throw new Error(`Failed to remove ${targetRole} role: ${deleteError.message}`);
-      
-      logStep(`${targetRole} role removed`, { targetUserId: sanitizeId(user_id) });
-    }
-
-    // Get target user email for logging
+    // Get target user info for logging
     const { data: targetUserData } = await supabaseClient.auth.admin.getUserById(user_id);
     const targetEmail = targetUserData?.user?.email || 'unknown';
 
-    // Log to legacy table
-    await supabaseClient.from('impersonation_logs').insert({
-      admin_user_id: adminUser.id,
-      admin_email: adminUser.email,
-      target_user_id: user_id,
-      target_email: targetEmail,
-      action: action,
-    });
+    if (action === 'disable') {
+      // Set banned_until to far future (100 years)
+      const bannedUntil = new Date();
+      bannedUntil.setFullYear(bannedUntil.getFullYear() + 100);
 
-    // Log to admin_action_logs for comprehensive audit
+      const { error: updateError } = await supabaseClient
+        .from('profiles')
+        .update({ banned_until: bannedUntil.toISOString() })
+        .eq('user_id', user_id);
+
+      if (updateError) throw new Error(`Failed to disable user: ${updateError.message}`);
+
+      // Also update user metadata in auth
+      await supabaseClient.auth.admin.updateUserById(user_id, {
+        user_metadata: { disabled: true }
+      });
+      
+      logStep("User disabled", { targetUserId: sanitizeId(user_id) });
+    } else {
+      // Remove ban
+      const { error: updateError } = await supabaseClient
+        .from('profiles')
+        .update({ banned_until: null })
+        .eq('user_id', user_id);
+
+      if (updateError) throw new Error(`Failed to enable user: ${updateError.message}`);
+
+      // Update user metadata in auth
+      await supabaseClient.auth.admin.updateUserById(user_id, {
+        user_metadata: { disabled: false }
+      });
+      
+      logStep("User enabled", { targetUserId: sanitizeId(user_id) });
+    }
+
+    // Log the action to admin_action_logs
     await supabaseClient.from('admin_action_logs').insert({
       admin_user_id: adminUser.id,
       admin_email: adminUser.email,
       target_user_id: user_id,
       target_email: targetEmail,
-      action_type: isGrantAction ? 'role_granted' : 'role_removed',
-      action_details: { role: targetRole, action }
+      action_type: action === 'disable' ? 'user_disabled' : 'user_enabled',
+      action_details: { action }
     });
 
     return new Response(JSON.stringify({ success: true, action }), {

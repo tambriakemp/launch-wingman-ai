@@ -107,3 +107,9 @@ verify_jwt = false
 
 [functions.admin-platform-stats]
 verify_jwt = false
+
+[functions.admin-user-status]
+verify_jwt = false
+
+[functions.admin-delete-user]
+verify_jwt = false

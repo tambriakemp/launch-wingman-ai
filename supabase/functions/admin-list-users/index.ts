@@ -59,10 +59,10 @@ serve(async (req) => {
     if (authError) throw new Error(`Failed to list users: ${authError.message}`);
     logStep("Fetched auth users", { count: authUsers.users.length });
 
-    // Get all profiles with last_active
+    // Get all profiles with last_active and banned_until
     const { data: profiles } = await supabaseClient
       .from('profiles')
-      .select('user_id, first_name, last_name, last_active');
+      .select('user_id, first_name, last_name, last_active, banned_until');
 
     // Get all admin and manager roles
     const { data: userRoles } = await supabaseClient
@@ -142,6 +142,7 @@ serve(async (req) => {
           is_admin: isAdmin,
           is_manager: isManager,
           project_count: projectCounts[user.id] || 0,
+          banned_until: profile?.banned_until || null,
         };
       })
     );

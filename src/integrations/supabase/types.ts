@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_action_logs: {
+        Row: {
+          action_details: Json | null
+          action_type: string
+          admin_email: string
+          admin_user_id: string
+          created_at: string | null
+          id: string
+          target_email: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action_details?: Json | null
+          action_type: string
+          admin_email: string
+          admin_user_id: string
+          created_at?: string | null
+          id?: string
+          target_email?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action_details?: Json | null
+          action_type?: string
+          admin_email?: string
+          admin_user_id?: string
+          created_at?: string | null
+          id?: string
+          target_email?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       ai_usage_logs: {
         Row: {
           created_at: string
@@ -1115,6 +1148,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          banned_until: string | null
           created_at: string
           first_name: string | null
           id: string
@@ -1124,6 +1158,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          banned_until?: string | null
           created_at?: string
           first_name?: string | null
           id?: string
@@ -1133,6 +1168,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          banned_until?: string | null
           created_at?: string
           first_name?: string | null
           id?: string

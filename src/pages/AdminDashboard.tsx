@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Menu, Package, Pencil, ShieldOff, BookOpen } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Menu, Package, Pencil, ShieldOff, BookOpen, Ban, Trash2 } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -35,6 +35,9 @@ import { RevenueChurnChart } from '@/components/admin/RevenueChurnChart';
 import { ProjectStatsCard, ContentStatsCard, EngagementStatsCard, OfferStatsCard, OnboardingFunnelCard } from '@/components/admin/PlatformStatsSection';
 import { FeatureUsageHeatmap } from '@/components/admin/FeatureUsageHeatmap';
 import { useAdminPlatformStats } from '@/hooks/useAdminPlatformStats';
+import { UserStatusToggle } from '@/components/admin/UserStatusToggle';
+import { DeleteUserDialog } from '@/components/admin/DeleteUserDialog';
+import { AdminActionLogs } from '@/components/admin/AdminActionLogs';
 
 interface User {
   id: string;
@@ -51,6 +54,7 @@ interface User {
   is_admin: boolean;
   is_manager: boolean;
   project_count: number;
+  banned_until: string | null;
 }
 
 interface ImpersonationLog {
@@ -90,7 +94,10 @@ const MobileUserCard = ({
   onAction, 
   actionLoading, 
   impersonateLoading, 
-  currentUserId 
+  currentUserId,
+  accessToken,
+  onRefresh,
+  isAdmin
 }: {
   user: User & { project_count: number };
   isSelected: boolean;
@@ -102,103 +109,134 @@ const MobileUserCard = ({
   actionLoading: string | null;
   impersonateLoading: string | null;
   currentUserId: string | undefined;
-}) => (
-  <Card className={cn("mb-3", isSelected && "ring-2 ring-primary")}>
-    <CardContent className="p-4">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <Checkbox checked={isSelected} onCheckedChange={onToggleSelect} />
+  accessToken: string;
+  onRefresh: () => void;
+  isAdmin: boolean;
+}) => {
+  const isDisabled = user.banned_until && new Date(user.banned_until) > new Date();
+  
+  return (
+    <Card className={cn("mb-3", isSelected && "ring-2 ring-primary", isDisabled && "opacity-75")}>
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <Checkbox checked={isSelected} onCheckedChange={onToggleSelect} />
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="font-medium">
+                  {user.first_name || user.last_name
+                    ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                    : '—'}
+                </p>
+                {isDisabled && (
+                  <Badge variant="destructive" className="text-xs">Disabled</Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground truncate max-w-[180px]">{user.email}</p>
+            </div>
+          </div>
+          <Badge
+            variant={user.is_admin || user.is_manager ? 'default' : user.subscription_status === 'pro' ? 'default' : 'secondary'}
+            className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
+          >
+            {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : 'Free'}
+          </Badge>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-sm mb-3">
           <div>
-            <p className="font-medium">
-              {user.first_name || user.last_name
-                ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
-                : '—'}
-            </p>
-            <p className="text-sm text-muted-foreground truncate max-w-[180px]">{user.email}</p>
+            <span className="text-muted-foreground">Projects:</span>{' '}
+            <span className="font-medium">{user.project_count}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Joined:</span>{' '}
+            {format(new Date(user.created_at), 'MMM d, yyyy')}
+          </div>
+          <div>
+            <span className="text-muted-foreground">Active:</span>{' '}
+            {user.last_active ? formatDistanceToNow(new Date(user.last_active), { addSuffix: true }) : 'Never'}
           </div>
         </div>
-        <Badge
-          variant={user.is_admin || user.is_manager ? 'default' : user.subscription_status === 'pro' ? 'default' : 'secondary'}
-          className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
-        >
-          {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : 'Free'}
-        </Badge>
-      </div>
-      <div className="grid grid-cols-3 gap-2 text-sm mb-3">
-        <div>
-          <span className="text-muted-foreground">Projects:</span>{' '}
-          <span className="font-medium">{user.project_count}</span>
-        </div>
-        <div>
-          <span className="text-muted-foreground">Joined:</span>{' '}
-          {format(new Date(user.created_at), 'MMM d, yyyy')}
-        </div>
-        <div>
-          <span className="text-muted-foreground">Active:</span>{' '}
-          {user.last_active ? formatDistanceToNow(new Date(user.last_active), { addSuffix: true }) : 'Never'}
-        </div>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={onActivity}>
-          <Activity className="h-4 w-4 mr-1" />
-          Activity
-        </Button>
-        <Button variant="outline" size="sm" onClick={onEdit}>
-          <Pencil className="h-4 w-4 mr-1" />
-          Edit
-        </Button>
-        {user.id !== currentUserId && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onImpersonate}
-            disabled={impersonateLoading === user.id}
-          >
-            {impersonateLoading === user.id ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <Eye className="h-4 w-4 mr-1" />
-            )}
-            View
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={onActivity}>
+            <Activity className="h-4 w-4 mr-1" />
+            Activity
           </Button>
-        )}
-        {user.subscription_status === 'pro' ? (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => onAction('cancel')}
-            disabled={actionLoading === user.id}
-          >
-            {actionLoading === user.id ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                <X className="h-4 w-4 mr-1" />
-                Cancel
-              </>
-            )}
+          <Button variant="outline" size="sm" onClick={onEdit}>
+            <Pencil className="h-4 w-4 mr-1" />
+            Edit
           </Button>
-        ) : (
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => onAction('grant_pro')}
-            disabled={actionLoading === user.id}
-          >
-            {actionLoading === user.id ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                <Crown className="h-4 w-4 mr-1" />
-                Grant Pro
-              </>
-            )}
-          </Button>
-        )}
-      </div>
-    </CardContent>
-  </Card>
-);
+          {user.id !== currentUserId && (
+            <>
+              {isAdmin && (
+                <UserStatusToggle
+                  userId={user.id}
+                  userEmail={user.email}
+                  isDisabled={!!isDisabled}
+                  accessToken={accessToken}
+                  onStatusChanged={onRefresh}
+                />
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onImpersonate}
+                disabled={impersonateLoading === user.id}
+              >
+                {impersonateLoading === user.id ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Eye className="h-4 w-4 mr-1" />
+                )}
+                View
+              </Button>
+            </>
+          )}
+          {user.subscription_status === 'pro' ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onAction('cancel')}
+              disabled={actionLoading === user.id}
+            >
+              {actionLoading === user.id ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <X className="h-4 w-4 mr-1" />
+                  Cancel
+                </>
+              )}
+            </Button>
+          ) : (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => onAction('grant_pro')}
+              disabled={actionLoading === user.id}
+            >
+              {actionLoading === user.id ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Crown className="h-4 w-4 mr-1" />
+                  Grant Pro
+                </>
+              )}
+            </Button>
+          )}
+          {user.id !== currentUserId && isAdmin && (
+            <DeleteUserDialog
+              userId={user.id}
+              userEmail={user.email}
+              accessToken={accessToken}
+              onUserDeleted={onRefresh}
+            />
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 const AdminDashboard = () => {
   const { session, signOut, startImpersonation, user: currentUser } = useAuth();
@@ -883,6 +921,9 @@ const AdminDashboard = () => {
                       actionLoading={actionLoading}
                       impersonateLoading={impersonateLoading}
                       currentUserId={currentUser?.id}
+                      accessToken={session?.access_token || ''}
+                      onRefresh={fetchUsers}
+                      isAdmin={isAdmin}
                     />
                   ))}
                   {paginatedUsers.length === 0 && (
@@ -916,136 +957,161 @@ const AdminDashboard = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paginatedUsers.map((user) => (
-                        <TableRow key={user.id} className={selectedUsers.has(user.id) ? 'bg-muted/30' : ''}>
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedUsers.has(user.id)}
-                              onCheckedChange={() => toggleUserSelection(user.id)}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {user.first_name || user.last_name
-                              ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
-                              : '—'}
-                          </TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>
-                            <span className={cn(
-                              "font-medium",
-                              user.project_count === 0 && "text-muted-foreground"
-                            )}>
-                              {user.project_count}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {format(new Date(user.created_at), 'MMM d, yyyy')}
-                          </TableCell>
-                          <TableCell>
-                            {user.last_active ? (
-                              <span className="text-muted-foreground text-sm">
-                                {formatDistanceToNow(new Date(user.last_active), { addSuffix: true })}
+                      {paginatedUsers.map((user) => {
+                        const isDisabled = user.banned_until && new Date(user.banned_until) > new Date();
+                        return (
+                          <TableRow key={user.id} className={cn(selectedUsers.has(user.id) ? 'bg-muted/30' : '', isDisabled && 'opacity-75')}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedUsers.has(user.id)}
+                                onCheckedChange={() => toggleUserSelection(user.id)}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {user.first_name || user.last_name
+                                  ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                                  : '—'}
+                                {isDisabled && (
+                                  <Badge variant="destructive" className="text-xs">Disabled</Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>{user.email}</TableCell>
+                            <TableCell>
+                              <span className={cn(
+                                "font-medium",
+                                user.project_count === 0 && "text-muted-foreground"
+                              )}>
+                                {user.project_count}
                               </span>
-                            ) : (
-                              <span className="text-muted-foreground/50 text-sm">Never</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={user.is_admin || user.is_manager ? 'default' : user.subscription_status === 'pro' ? 'default' : 'secondary'}
-                              className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
-                            >
-                              {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : 'Free'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {user.subscription_end
-                              ? format(new Date(user.subscription_end), 'MMM d')
-                              : '—'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setActivityDialog({ open: true, user })}
-                                title="View activity log"
+                            </TableCell>
+                            <TableCell>
+                              {format(new Date(user.created_at), 'MMM d, yyyy')}
+                            </TableCell>
+                            <TableCell>
+                              {user.last_active ? (
+                                <span className="text-muted-foreground text-sm">
+                                  {formatDistanceToNow(new Date(user.last_active), { addSuffix: true })}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground/50 text-sm">Never</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={user.is_admin || user.is_manager ? 'default' : user.subscription_status === 'pro' ? 'default' : 'secondary'}
+                                className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
                               >
-                                <Activity className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setEditUserDialog({ open: true, user })}
-                                title="Edit user"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              {user.id !== currentUser?.id && (
-                                <>
-                                  {/* AdminRoleToggle - only visible to full admins */}
-                                  {isAdmin && (
-                                    <AdminRoleToggle
-                                      userId={user.id}
-                                      userEmail={user.email}
-                                      isAdmin={user.is_admin}
-                                      isManager={user.is_manager}
-                                      accessToken={session?.access_token || ''}
-                                      onRoleChanged={fetchUsers}
-                                    />
-                                  )}
+                                {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : 'Free'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {user.subscription_end
+                                ? format(new Date(user.subscription_end), 'MMM d')
+                                : '—'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setActivityDialog({ open: true, user })}
+                                  title="View activity log"
+                                >
+                                  <Activity className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setEditUserDialog({ open: true, user })}
+                                  title="Edit user"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                {user.id !== currentUser?.id && (
+                                  <>
+                                    {/* AdminRoleToggle - only visible to full admins */}
+                                    {isAdmin && (
+                                      <>
+                                        <AdminRoleToggle
+                                          userId={user.id}
+                                          userEmail={user.email}
+                                          isAdmin={user.is_admin}
+                                          isManager={user.is_manager}
+                                          accessToken={session?.access_token || ''}
+                                          onRoleChanged={fetchUsers}
+                                        />
+                                        <UserStatusToggle
+                                          userId={user.id}
+                                          userEmail={user.email}
+                                          isDisabled={!!isDisabled}
+                                          accessToken={session?.access_token || ''}
+                                          onStatusChanged={fetchUsers}
+                                        />
+                                      </>
+                                    )}
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleImpersonateClick(user)}
+                                      disabled={impersonateLoading === user.id}
+                                      title="View as this user"
+                                    >
+                                      {impersonateLoading === user.id ? (
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Eye className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </>
+                                )}
+                                {user.subscription_status === 'pro' ? (
                                   <Button
-                                    variant="outline"
+                                    variant="destructive"
                                     size="sm"
-                                    onClick={() => handleImpersonateClick(user)}
-                                    disabled={impersonateLoading === user.id}
-                                    title="View as this user"
+                                    onClick={() => handleAction('cancel', user)}
+                                    disabled={actionLoading === user.id}
                                   >
-                                    {impersonateLoading === user.id ? (
+                                    {actionLoading === user.id ? (
                                       <RefreshCw className="h-4 w-4 animate-spin" />
                                     ) : (
-                                      <Eye className="h-4 w-4" />
+                                      <>
+                                        <X className="h-4 w-4 mr-1" />
+                                        Cancel
+                                      </>
                                     )}
                                   </Button>
-                                </>
-                              )}
-                              {user.subscription_status === 'pro' ? (
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleAction('cancel', user)}
-                                  disabled={actionLoading === user.id}
-                                >
-                                  {actionLoading === user.id ? (
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <>
-                                      <X className="h-4 w-4 mr-1" />
-                                      Cancel
-                                    </>
-                                  )}
-                                </Button>
-                              ) : (
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={() => handleAction('grant_pro', user)}
-                                  disabled={actionLoading === user.id}
-                                >
-                                  {actionLoading === user.id ? (
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <>
-                                      <Crown className="h-4 w-4 mr-1" />
-                                      Grant Pro
-                                    </>
-                                  )}
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                                ) : (
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => handleAction('grant_pro', user)}
+                                    disabled={actionLoading === user.id}
+                                  >
+                                    {actionLoading === user.id ? (
+                                      <RefreshCw className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <>
+                                        <Crown className="h-4 w-4 mr-1" />
+                                        Grant Pro
+                                      </>
+                                    )}
+                                  </Button>
+                                )}
+                                {user.id !== currentUser?.id && isAdmin && (
+                                  <DeleteUserDialog
+                                    userId={user.id}
+                                    userEmail={user.email}
+                                    accessToken={session?.access_token || ''}
+                                    onUserDeleted={fetchUsers}
+                                  />
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                       {paginatedUsers.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
@@ -1298,6 +1364,13 @@ const AdminDashboard = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Admin Action Logs - Admin only */}
+        {isAdmin && (
+          <div className="mt-4 md:mt-8">
+            <AdminActionLogs />
+          </div>
+        )}
       </main>
 
       {/* Confirmation Dialog */}
