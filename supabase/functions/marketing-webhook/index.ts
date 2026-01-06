@@ -7,17 +7,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface MarketingContact {
+// FluentCRM IDs
+const FLUENTCRM_LIST_ID = 14;       // Launchely list
+const FLUENTCRM_PRO_TAG_ID = 69;    // launchely-pro tag
+const FLUENTCRM_FREE_TAG_ID = 70;   // launchely-free tag
+
+// FluentCRM contact structure
+interface FluentCRMContact {
   email: string;
   first_name: string | null;
   last_name: string | null;
+  status: string;
+  __force_update: string;
+  lists: number[];
+  attach_tags: number[];
+  detach_tags: number[];
+}
+
+// Internal logging data
+interface ContactLogData {
   membership: "free" | "pro";
-  subscription_start: string | null;
-  subscription_end: string | null;
-  event_type: string;
-  list: string;
-  tags_to_add: string[];
-  tags_to_remove: string[];
+  tagsAdded: string[];
+  tagsRemoved: string[];
 }
 
 interface WebhookRequest {
@@ -78,7 +89,7 @@ serve(async (req) => {
       stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     }
 
-    const contacts: MarketingContact[] = [];
+    const contactsToSync: { contact: FluentCRMContact; logData: ContactLogData; eventType: string }[] = [];
 
     if (action === "sync_user" && user_id) {
       // Sync single user
@@ -91,14 +102,14 @@ serve(async (req) => {
       const { data: authUser } = await supabaseClient.auth.admin.getUserById(user_id);
 
       if (authUser?.user?.email) {
-        const contact = await buildContact(
+        const { contact, logData } = await buildFluentCRMContact(
           authUser.user.email,
           profile?.first_name,
           profile?.last_name,
           stripe,
           event_type
         );
-        contacts.push(contact);
+        contactsToSync.push({ contact, logData, eventType: event_type });
       }
     } else if (action === "sync_all") {
       // Sync all users
@@ -117,22 +128,22 @@ serve(async (req) => {
         for (const user of authData.users) {
           if (user.email) {
             const profile = profileMap.get(user.id);
-            const contact = await buildContact(
+            const { contact, logData } = await buildFluentCRMContact(
               user.email,
               profile?.first_name,
               profile?.last_name,
               stripe,
               event_type
             );
-            contacts.push(contact);
+            contactsToSync.push({ contact, logData, eventType: event_type });
           }
         }
       }
     }
 
-    // Send to webhook and log results
+    // Send to FluentCRM webhook and log results
     const results = [];
-    for (const contact of contacts) {
+    for (const { contact, logData, eventType: contactEventType } of contactsToSync) {
       try {
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
@@ -142,6 +153,8 @@ serve(async (req) => {
           headers["Authorization"] = `Bearer ${webhookApiKey}`;
           headers["X-API-Key"] = webhookApiKey;
         }
+
+        console.log(`Sending to FluentCRM: ${JSON.stringify(contact)}`);
 
         const response = await fetch(webhookUrl, {
           method: "POST",
@@ -162,19 +175,19 @@ serve(async (req) => {
         // Log to database
         await supabaseClient.from("marketing_webhook_logs").insert({
           email: contact.email,
-          event_type: contact.event_type,
-          membership: contact.membership,
-          tags_added: contact.tags_to_add,
-          tags_removed: contact.tags_to_remove,
+          event_type: contactEventType,
+          membership: logData.membership,
+          tags_added: logData.tagsAdded,
+          tags_removed: logData.tagsRemoved,
           success,
           response_status: response.status,
           error_message: success ? null : responseText.substring(0, 500),
         });
 
-        console.log(`Webhook sent for ${contact.email}: ${response.status}`);
+        console.log(`FluentCRM webhook sent for ${contact.email}: ${response.status} - ${responseText.substring(0, 100)}`);
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        console.error(`Error sending webhook for ${contact.email}:`, error);
+        console.error(`Error sending FluentCRM webhook for ${contact.email}:`, error);
         
         results.push({
           email: contact.email,
@@ -185,10 +198,10 @@ serve(async (req) => {
         // Log failure to database
         await supabaseClient.from("marketing_webhook_logs").insert({
           email: contact.email,
-          event_type: contact.event_type,
-          membership: contact.membership,
-          tags_added: contact.tags_to_add,
-          tags_removed: contact.tags_to_remove,
+          event_type: contactEventType,
+          membership: logData.membership,
+          tags_added: logData.tagsAdded,
+          tags_removed: logData.tagsRemoved,
           success: false,
           error_message: errorMessage,
         });
@@ -203,7 +216,7 @@ serve(async (req) => {
       target_user_id: user_id || null,
       action_details: {
         action,
-        contacts_count: contacts.length,
+        contacts_count: contactsToSync.length,
         success_count: results.filter((r) => r.success).length,
       },
     });
@@ -211,7 +224,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        contacts_synced: contacts.length,
+        contacts_synced: contactsToSync.length,
         results,
       }),
       {
@@ -232,16 +245,14 @@ serve(async (req) => {
   }
 });
 
-async function buildContact(
+async function buildFluentCRMContact(
   email: string,
   firstName: string | null,
   lastName: string | null,
   stripe: Stripe | null,
   eventType: string
-): Promise<MarketingContact> {
+): Promise<{ contact: FluentCRMContact; logData: ContactLogData }> {
   let membership: "free" | "pro" = "free";
-  let subscriptionStart: string | null = null;
-  let subscriptionEnd: string | null = null;
 
   if (stripe) {
     try {
@@ -259,10 +270,6 @@ async function buildContact(
           if (sub.status === "active" || sub.status === "trialing") {
             membership = "pro";
           }
-          subscriptionStart = new Date(sub.start_date * 1000).toISOString();
-          subscriptionEnd = sub.current_period_end
-            ? new Date(sub.current_period_end * 1000).toISOString()
-            : null;
         }
       }
     } catch (error) {
@@ -270,37 +277,33 @@ async function buildContact(
     }
   }
 
-  // Determine tags based on membership and event type
-  let tagsToAdd: string[] = [];
-  let tagsToRemove: string[] = [];
-
-  if (membership === "pro") {
-    tagsToAdd = ["launchely-pro"];
-    tagsToRemove = ["launchely-free"];
-  } else {
-    tagsToAdd = ["launchely-free"];
-    tagsToRemove = ["launchely-pro"];
-  }
-
-  // For subscription events, always ensure proper tag swap
+  // For subscription events, override membership based on event type
   if (eventType === "subscription_started" || eventType === "subscription_created") {
-    tagsToAdd = ["launchely-pro"];
-    tagsToRemove = ["launchely-free"];
+    membership = "pro";
   } else if (eventType === "subscription_cancelled" || eventType === "subscription_ended") {
-    tagsToAdd = ["launchely-free"];
-    tagsToRemove = ["launchely-pro"];
+    membership = "free";
   }
 
-  return {
+  // Build FluentCRM-compatible contact with numeric IDs
+  const isPro = membership === "pro";
+  
+  const contact: FluentCRMContact = {
     email,
     first_name: firstName,
     last_name: lastName,
-    membership,
-    subscription_start: subscriptionStart,
-    subscription_end: subscriptionEnd,
-    event_type: eventType,
-    list: "Launchely",
-    tags_to_add: tagsToAdd,
-    tags_to_remove: tagsToRemove,
+    status: "subscribed",
+    __force_update: "yes",
+    lists: [FLUENTCRM_LIST_ID],
+    attach_tags: isPro ? [FLUENTCRM_PRO_TAG_ID] : [FLUENTCRM_FREE_TAG_ID],
+    detach_tags: isPro ? [FLUENTCRM_FREE_TAG_ID] : [FLUENTCRM_PRO_TAG_ID],
   };
+
+  // For logging purposes, keep human-readable tag names
+  const logData: ContactLogData = {
+    membership,
+    tagsAdded: isPro ? ["launchely-pro"] : ["launchely-free"],
+    tagsRemoved: isPro ? ["launchely-free"] : ["launchely-pro"],
+  };
+
+  return { contact, logData };
 }
