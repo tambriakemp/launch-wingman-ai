@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useAdminSystemHealth } from '@/hooks/useAdminSystemHealth';
 import { useAdminChurnRisk } from '@/hooks/useAdminChurnRisk';
+import { useAuth } from '@/contexts/AuthContext';
 import { AlertsWidget } from './AlertsWidget';
 import { SystemHealthCard } from './SystemHealthCard';
 import { ChurnRiskCard } from './ChurnRiskCard';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Send, Loader2, Users } from 'lucide-react';
+import { Send, Loader2, Users, FlaskConical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface MonitoringTabProps {
@@ -20,10 +21,16 @@ interface MonitoringTabProps {
 }
 
 export function MonitoringTab({ users = [] }: MonitoringTabProps) {
+  const { user } = useAuth();
   const [syncLoading, setSyncLoading] = useState(false);
+  const [testLoading, setTestLoading] = useState(false);
   const [lastSyncResult, setLastSyncResult] = useState<{
     contacts_synced: number;
     success_count: number;
+  } | null>(null);
+  const [lastTestResult, setLastTestResult] = useState<{
+    success: boolean;
+    message: string;
   } | null>(null);
 
   const {
@@ -108,6 +115,42 @@ export function MonitoringTab({ users = [] }: MonitoringTabProps) {
     }
   };
 
+  const handleTestWebhook = async () => {
+    if (!user?.id) {
+      toast.error('No user session found');
+      return;
+    }
+
+    setTestLoading(true);
+    setLastTestResult(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('marketing-webhook', {
+        body: { action: 'sync_user', user_id: user.id, event_type: 'test_webhook' },
+      });
+
+      if (error) throw error;
+
+      const result = data.results?.[0];
+      if (result?.success) {
+        setLastTestResult({ success: true, message: 'Test webhook sent successfully!' });
+        toast.success('Test webhook sent successfully!');
+      } else {
+        setLastTestResult({ 
+          success: false, 
+          message: result?.error || `HTTP ${result?.status}: ${result?.response || 'Unknown error'}` 
+        });
+        toast.error('Test webhook failed - check configuration');
+      }
+    } catch (error) {
+      console.error('Test webhook error:', error);
+      setLastTestResult({ success: false, message: 'Failed to send test webhook' });
+      toast.error('Failed to send test webhook');
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Alerts Widget */}
@@ -132,7 +175,40 @@ export function MonitoringTab({ users = [] }: MonitoringTabProps) {
             Send contact data (name, email, membership, dates) to your email marketing platform
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Test Webhook */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 bg-muted/50 rounded-lg">
+            <Button
+              variant="outline"
+              onClick={handleTestWebhook}
+              disabled={testLoading}
+              className="gap-2"
+            >
+              {testLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Testing...
+                </>
+              ) : (
+                <>
+                  <FlaskConical className="h-4 w-4" />
+                  Test Webhook
+                </>
+              )}
+            </Button>
+            {lastTestResult && (
+              <p className={`text-sm ${lastTestResult.success ? 'text-green-600' : 'text-destructive'}`}>
+                {lastTestResult.message}
+              </p>
+            )}
+            {!lastTestResult && (
+              <p className="text-sm text-muted-foreground">
+                Sends your admin account as a test contact
+              </p>
+            )}
+          </div>
+
+          {/* Sync All */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <Button
               onClick={handleSyncToMarketing}
