@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, FileText, List } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ContentContextHeader } from "./ContentContextHeader";
+
 import { SavedIdeasLink } from "./SavedIdeasLink";
 import { SavedIdeasSheet } from "./SavedIdeasSheet";
 import { PostEditorSheet } from "./PostEditorSheet";
@@ -103,18 +103,11 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-12">
       {/* Section A: Orientation Header */}
-      <div className="space-y-4">
-        <PlanPageHeader
-          title="Content"
-          description="Ideas for what to say next, based on where you are in your project."
-          tipText="These are starting points, not requirements. Use what feels right for you."
-        />
-
-        <ContentContextHeader 
-          currentPhase={currentPhase} 
-          funnelType={funnelType} 
-        />
-      </div>
+      <PlanPageHeader
+        title="Content"
+        description="Ideas for what to say next, based on where you are in your project."
+        tipText="These are starting points, not requirements. Use what feels right for you."
+      />
 
       {/* Saved Ideas Link - accessible from all tabs */}
       <div className="flex justify-end">
