@@ -72,6 +72,28 @@ serve(async (req) => {
         action_type: 'subscription_cancelled',
         action_details: { stripe_subscription_id }
       });
+
+      // Trigger marketing webhook to update tags
+      if (user_email) {
+        const { data: authUsers } = await supabaseClient.auth.admin.listUsers();
+        const targetUser = authUsers?.users?.find(u => u.email === user_email);
+        if (targetUser) {
+          const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/marketing-webhook`;
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            },
+            body: JSON.stringify({
+              action: "sync_user",
+              user_id: targetUser.id,
+              event_type: "subscription_cancelled",
+            }),
+          });
+          logStep("Marketing webhook triggered for subscription_cancelled", { userId: targetUser.id });
+        }
+      }
       
       return new Response(JSON.stringify({ success: true, message: "Subscription cancelled" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -143,6 +165,26 @@ serve(async (req) => {
         action_type: 'subscription_granted',
         action_details: { subscription_id: subscription.id, customer_id: customerId }
       });
+
+      // Trigger marketing webhook to update tags
+      const { data: authUsers } = await supabaseClient.auth.admin.listUsers();
+      const targetUser = authUsers?.users?.find(u => u.email === user_email);
+      if (targetUser) {
+        const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/marketing-webhook`;
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({
+            action: "sync_user",
+            user_id: targetUser.id,
+            event_type: "subscription_started",
+          }),
+        });
+        logStep("Marketing webhook triggered for subscription_started", { userId: targetUser.id });
+      }
       
       return new Response(JSON.stringify({ 
         success: true, 
