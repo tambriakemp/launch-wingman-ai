@@ -46,7 +46,6 @@ export const SectionEditor = ({
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [formulasOpen, setFormulasOpen] = useState(false);
-  const [questionsOpen, setQuestionsOpen] = useState(false);
 
   const handleSave = async (status: 'drafted' | 'skipped' = 'drafted') => {
     if (!user) return;
@@ -185,6 +184,21 @@ export const SectionEditor = ({
               </p>
               <p className="text-sm">{section.whatToDo}</p>
             </div>
+            {hasQuestions && (
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                  Questions to answer
+                </p>
+                <ul className="space-y-1 text-sm">
+                  {section.questionPrompts!.map((q, idx) => (
+                    <li key={idx} className="flex gap-2">
+                      <span className="text-muted-foreground">{idx + 1}.</span>
+                      <span>{q}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -210,35 +224,6 @@ export const SectionEditor = ({
                     <p className="text-muted-foreground italic pl-2">Ex: {formula.example}</p>
                   </div>
                 ))}
-              </CardContent>
-            </Card>
-          </CollapsibleContent>
-        </Collapsible>
-      )}
-
-      {/* Question Prompts */}
-      {hasQuestions && (
-        <Collapsible open={questionsOpen} onOpenChange={setQuestionsOpen}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground hover:text-foreground">
-              <span className="flex items-center gap-2">
-                <Lightbulb className="w-4 h-4" />
-                Questions to Answer ({section.questionPrompts!.length})
-              </span>
-              {questionsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-2">
-            <Card className="bg-secondary/30">
-              <CardContent className="py-3">
-                <ul className="space-y-2 text-sm">
-                  {section.questionPrompts!.map((q, idx) => (
-                    <li key={idx} className="flex gap-2">
-                      <span className="text-muted-foreground">{idx + 1}.</span>
-                      <span>{q}</span>
-                    </li>
-                  ))}
-                </ul>
               </CardContent>
             </Card>
           </CollapsibleContent>
