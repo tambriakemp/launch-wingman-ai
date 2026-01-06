@@ -1,10 +1,12 @@
-import { ArrowLeft, Check, Minus, Pencil, Lock } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, Check, Minus, Pencil, Lock, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useFeatureAccess, FREE_PLAN_LIMITS } from "@/hooks/useFeatureAccess";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
+import { SalesPagePreviewDialog } from "./SalesPagePreviewDialog";
 import type { SalesCopySection, SectionDraft, OfferForCopy } from "./types";
 
 // Map section IDs to the free plan allowed sections
@@ -25,6 +27,7 @@ export const SectionList = ({
   onEditSection, 
   onBack 
 }: SectionListProps) => {
+  const [previewOpen, setPreviewOpen] = useState(false);
   const { isSubscribed, hasAdminAccess, hasAccess } = useFeatureAccess();
   const hasFullAccess = isSubscribed || hasAdminAccess;
   
@@ -69,23 +72,38 @@ export const SectionList = ({
     }
   };
 
+  const hasDraftedContent = sections.some(s => drafts[s.id]?.status === 'drafted');
+  const offerTitle = offer.title || `${getSlotLabel(offer.slotType)} Page`;
+
   return (
     <div className="space-y-6">
-      {/* Header with back button */}
+      {/* Header with back button and preview */}
       <div className="space-y-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onBack}
-          className="text-muted-foreground hover:text-foreground -ml-2 mb-2"
-        >
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Choose different offer
-        </Button>
+        <div className="flex items-center justify-between mb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="text-muted-foreground hover:text-foreground -ml-2"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Choose different offer
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPreviewOpen(true)}
+            disabled={!hasDraftedContent}
+          >
+            <Eye className="w-4 h-4 mr-1" />
+            Preview Page
+          </Button>
+        </div>
         
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-medium">
-            {offer.title || `${getSlotLabel(offer.slotType)} Page`}
+            {offerTitle}
           </h2>
           <Badge variant="outline" className="font-normal">
             {getSlotLabel(offer.slotType)}
@@ -95,6 +113,16 @@ export const SectionList = ({
           Work through these sections at your own pace. Skip what doesn't apply.
         </p>
       </div>
+
+      {/* Preview Dialog */}
+      <SalesPagePreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        sections={sections}
+        drafts={drafts}
+        offerTitle={offerTitle}
+        onEditSection={onEditSection}
+      />
 
       {/* Section cards */}
       <div className="space-y-2">
