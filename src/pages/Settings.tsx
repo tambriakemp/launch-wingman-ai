@@ -20,6 +20,8 @@ import { ToneSettings } from "@/components/settings/ToneSettings";
 import { AnnualReviewView } from "@/components/settings/AnnualReviewView";
 import { EmailPreferencesSettings } from "@/components/settings/EmailPreferencesSettings";
 import { AiUsageCard } from "@/components/settings/AiUsageCard";
+import { ExportMyDataDialog } from "@/components/settings/ExportMyDataDialog";
+import { DeleteMyAccountDialog } from "@/components/settings/DeleteMyAccountDialog";
 import { useAnnualReview } from "@/hooks/useAnnualReview";
 import {
   User,
@@ -1141,10 +1143,29 @@ const Settings = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <Button variant="destructive" onClick={() => toast.error("Account deletion is disabled.")}>
-                Delete Account
-              </Button>
+            <CardContent className="space-y-6">
+              {/* Export My Data */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Export My Data</h4>
+                <p className="text-sm text-muted-foreground">
+                  Download a copy of all your data including projects, content, and settings.
+                </p>
+                <ExportMyDataDialog />
+              </div>
+
+              <Separator />
+
+              {/* Delete Account */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-destructive" />
+                  Delete Account
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  Permanently delete your account and all associated data. This action cannot be undone.
+                </p>
+                <DeleteMyAccountDialog />
+              </div>
             </CardContent>
           </Card>
         </motion.div>

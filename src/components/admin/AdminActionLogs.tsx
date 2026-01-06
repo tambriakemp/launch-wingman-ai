@@ -39,12 +39,15 @@ const ACTION_TYPE_LABELS: Record<string, { label: string; variant: 'default' | '
   subscription_granted: { label: 'Pro Granted', variant: 'default', category: 'subscriptions' },
   impersonation_start: { label: 'View As Started', variant: 'secondary', category: 'impersonation' },
   impersonation_end: { label: 'View As Ended', variant: 'outline', category: 'impersonation' },
+  user_data_exported: { label: 'Data Exported', variant: 'outline', category: 'data_management' },
+  user_projects_viewed: { label: 'Projects Viewed', variant: 'outline', category: 'data_management' },
 };
 
 const ACTION_CATEGORIES: Record<string, string> = {
   user_management: 'User Management',
   subscriptions: 'Subscriptions',
   impersonation: 'Impersonation',
+  data_management: 'Data Management',
 };
 
 const LOGS_PER_PAGE = 15;

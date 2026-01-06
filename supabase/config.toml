@@ -113,3 +113,18 @@ verify_jwt = false
 
 [functions.admin-delete-user]
 verify_jwt = false
+
+[functions.admin-get-user-projects]
+verify_jwt = false
+
+[functions.admin-export-user-data]
+verify_jwt = false
+
+[functions.export-my-data]
+verify_jwt = false
+
+[functions.delete-my-account]
+verify_jwt = false
+
+[functions.instagram-refresh-token]
+verify_jwt = false
