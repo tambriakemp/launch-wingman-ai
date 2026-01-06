@@ -393,7 +393,7 @@ export default function TaskDetail() {
         return;
       }
 
-      setAiResponse(data.response);
+      setAiResponse(JSON.stringify(data));
       
       // Track AI assist with Google Analytics
       trackAIAssist(`${taskTemplate?.taskId || 'task'}_${mode}`);
