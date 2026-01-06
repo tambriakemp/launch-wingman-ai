@@ -6,6 +6,672 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Fetch comprehensive context from planning/messaging phases
+async function fetchProjectContext(supabase: any, projectId: string) {
+  // Fetch funnel data (messaging phase)
+  const { data: funnel } = await supabase
+    .from("funnels")
+    .select("*")
+    .eq("project_id", projectId)
+    .maybeSingle();
+
+  // Fetch project data
+  const { data: project } = await supabase
+    .from("projects")
+    .select("transformation_statement, transformation_style, name, description")
+    .eq("id", projectId)
+    .maybeSingle();
+
+  // Fetch relevant completed tasks for messaging data
+  const { data: tasks } = await supabase
+    .from("project_tasks")
+    .select("task_id, input_data, status")
+    .eq("project_id", projectId)
+    .in("status", ["completed", "started"])
+    .in("task_id", [
+      "core-message",
+      "talking-points", 
+      "dream-outcome",
+      "audience-definition",
+      "value-proposition",
+      "offer-stack",
+    ]);
+
+  // Parse task data
+  const taskData: Record<string, any> = {};
+  if (tasks && Array.isArray(tasks)) {
+    for (const task of tasks as any[]) {
+      if (task.input_data) {
+        taskData[task.task_id] = task.input_data;
+      }
+    }
+  }
+
+  return {
+    funnel: funnel as Record<string, any> | null,
+    project: project as Record<string, any> | null,
+    taskData,
+  };
+}
+
+// Build context string from all messaging/planning data
+function buildContextPrompt(
+  context: { funnel: Record<string, any> | null; project: Record<string, any> | null; taskData: Record<string, any> },
+  offer: { offerName?: string; offerType?: string; deliverables?: string[]; price?: number; priceType?: string; niche?: string },
+  provided: { audience?: string; problem?: string; desiredOutcome?: string; transformationStatement?: string; problemStatement?: string; niche?: string }
+) {
+  const { funnel, project, taskData } = context;
+  
+  // Extract messaging data with fallbacks
+  const targetAudience = funnel?.target_audience || provided.audience || "Not specified";
+  const primaryPainPoint = funnel?.primary_pain_point || provided.problem || "Not specified";
+  const desiredOutcome = funnel?.desired_outcome || provided.desiredOutcome || "Not specified";
+  const niche = funnel?.niche || provided.niche || offer.niche || "Not specified";
+  const problemStatement = funnel?.problem_statement || provided.problemStatement || "";
+  const transformationStatement = project?.transformation_statement || provided.transformationStatement || "";
+  
+  // Pain symptoms from messaging
+  const painSymptoms = funnel?.pain_symptoms as Array<{ symptom?: string; description?: string }> | null;
+  const painSymptomsText = painSymptoms?.map(s => s.symptom || s.description).filter(Boolean).join("\n- ") || "";
+  
+  // Likelihood elements (what's stopped them before)
+  const likelihoodElements = funnel?.likelihood_elements as Array<{ type?: string; content?: string }> | null;
+  const likelihoodText = likelihoodElements?.map(e => e.content).filter(Boolean).join("\n- ") || "";
+  
+  // Time/effort concerns
+  const timeEffortElements = funnel?.time_effort_elements as Array<{ type?: string; content?: string }> | null;
+  const timeEffortText = timeEffortElements?.map(e => e.content).filter(Boolean).join("\n- ") || "";
+  
+  // Sub-audiences
+  const subAudiences = funnel?.sub_audiences as Array<{ name?: string; description?: string }> | null;
+  const subAudiencesText = subAudiences?.map(s => s.name).filter(Boolean).join(", ") || "";
+  
+  // Main objections
+  const mainObjections = funnel?.main_objections as string || "";
+
+  return `
+=== COMPREHENSIVE OFFER & AUDIENCE CONTEXT ===
+
+IDEAL CUSTOMER PROFILE:
+- Target Audience: ${targetAudience}
+- Niche: ${niche}
+${subAudiencesText ? `- Sub-audiences: ${subAudiencesText}` : ""}
+
+THEIR CURRENT PAIN & FRUSTRATIONS:
+- Primary Pain Point: ${primaryPainPoint}
+${painSymptomsText ? `- Daily Frustrations:\n  - ${painSymptomsText}` : ""}
+${problemStatement ? `- Problem Statement: ${problemStatement}` : ""}
+
+WHAT HAS STOPPED THEM BEFORE:
+${likelihoodText ? `- ${likelihoodText}` : "- Generic solutions that didn't work for their specific situation"}
+
+THEIR CONCERNS ABOUT TIME & EFFORT:
+${timeEffortText ? `- ${timeEffortText}` : "- Worried about time commitment and complexity"}
+
+${mainObjections ? `COMMON OBJECTIONS:\n${mainObjections}` : ""}
+
+DESIRED TRANSFORMATION:
+- Desired Outcome: ${desiredOutcome}
+${transformationStatement ? `- Core Transformation Promise: "${transformationStatement}"` : ""}
+
+OFFER DETAILS:
+- Offer Name: ${offer.offerName || "Not specified"}
+- Offer Type: ${offer.offerType || "Digital product"}
+- Price: ${offer.price ? `$${offer.price}` : "Not specified"}
+- Price Type: ${offer.priceType || "One-time"}
+- Main Deliverables: ${offer.deliverables?.join(", ") || "Not specified"}
+
+=== END CONTEXT ===
+
+IMPORTANT: Use ALL of the above context to create copy that:
+1. Speaks directly to their specific pain points and frustrations
+2. Addresses their concerns and what has stopped them before
+3. Paints a vivid picture of their desired outcome
+4. Positions the offer as the solution to their specific problems
+5. Uses language and examples relevant to their niche
+`;
+}
+
+// Section-specific prompts for all 14 blocks
+function getSectionPrompt(sectionId: string, contextPrompt: string, offer: { offerName?: string; offerType?: string; deliverables?: string[]; price?: number }) {
+  const prompts: Record<string, { system: string; user: string }> = {
+    // BLOCK 1: Opening Headline
+    "opening-headline": {
+      system: `You are a direct-response copywriter specializing in sales pages. Your task is to create compelling opening headlines.
+
+HEADLINE FORMULAS TO USE (pick the best 5):
+1. "<Achieve outcome> in <timeframe> WITHOUT <biggest pain point>"
+   Example: "Confidently create a gorgeous sales page in less than a week WITHOUT spending thousands of dollars on a team"
+
+2. "Are you ready to <desired outcome>?"
+   Example: "Are you ready to stop living your life on autopilot?"
+
+3. "Learn the skills, strategies & tools you need to <outcome>"
+   Example: "Learn the skills, strategies & tools you need to build a thriving business"
+
+4. "Attention <ideal customer group>: <outcome> in <timeframe>"
+   Example: "Attention Online Course Creators: Launch Your Signature Course in One Month"
+
+5. "How to <desired result> with little or no previous experience"
+   Example: "How to Write High-Converting Sales Copy with No Copywriting Background"
+
+6. "The biggest mistake(s) <ideal customer group> make when trying to <topic>"
+   Example: "The Biggest Mistakes Coaches Make When Trying to Fill Their Programs"
+
+7. "What if you could <outcome> without <pain point>?"
+   Example: "What if you could build a six-figure business without burning out?"
+
+RULES:
+- Speak to BOTH the problem AND the desired result
+- Be specific, not vague
+- Avoid generic words like "transform" without specifics
+- Make the reader feel understood immediately
+
+Return ONLY valid JSON:
+{
+  "headlines": ["headline1", "headline2", "headline3", "headline4", "headline5"],
+  "recommendedHeadline": 0
+}`,
+      user: `${contextPrompt}
+
+Generate 5 compelling opening headlines that grab attention and speak directly to this audience's pain and desires.`
+    },
+
+    // BLOCK 2: Paint the Problem
+    "paint-the-problem": {
+      system: `You are a direct-response copywriter. Your task is to "paint the problem" - making readers feel understood by calling out their exact frustrations.
+
+OPENING PATTERNS TO USE:
+1. "You know you should <X>... but you have no clue where to begin."
+2. "Does this sound familiar?"
+3. "You know you need to be doing <X>, but you're feeling stuck, overwhelmed and distracted by all the options."
+4. "There are <#> huge mistakes I see when people try to <topic>"
+5. "Let me guess..."
+6. "If you're like most <audience>..."
+
+STRUCTURE:
+- Start with an opening hook using one of the patterns above
+- List 4-6 specific frustrations as bullet points
+- Make each frustration visceral and specific
+- End with a transitional sentence that leads to hope
+
+RULES:
+- Use the EXACT pain symptoms and frustrations from the context
+- Be empathetic, not condescending
+- Make them nod their head in recognition
+- Don't offer the solution yet - just validate the struggle
+
+Return ONLY valid JSON:
+{
+  "paragraphs": [
+    "Opening hook paragraph 1",
+    "Opening hook paragraph 2",
+    "Opening hook paragraph 3"
+  ],
+  "bullets": [
+    "Frustration bullet 1",
+    "Frustration bullet 2",
+    "Frustration bullet 3",
+    "Frustration bullet 4"
+  ]
+}`,
+      user: `${contextPrompt}
+
+Write copy that paints a vivid picture of their current struggles. Use their exact pain symptoms and frustrations from the context above.`
+    },
+
+    // BLOCK 3: Look Into the Future
+    "look-into-future": {
+      system: `You are a direct-response copywriter. Your task is to help readers envision their possible future after working with you.
+
+OPENING PATTERNS TO USE:
+1. "Can you imagine how it would feel to <outcome>?"
+2. "How would your <life/business> be different if you could:"
+3. "Imagine being able to <outcome> without <pain point>"
+4. "What if you could finally..."
+5. "Picture this..."
+
+STRUCTURE:
+- Start with an aspirational opening
+- List 4-6 specific future outcomes as bullet points
+- Each outcome should be specific and emotional
+- End with a bridge to the solution
+
+RULES:
+- Focus on feelings and experiences, not just achievements
+- Use specific outcomes from their desired transformation
+- Make it feel achievable but aspirational
+- Create contrast with the "paint the problem" section
+
+Return ONLY valid JSON:
+{
+  "openings": [
+    "Aspirational opening 1",
+    "Aspirational opening 2",
+    "Aspirational opening 3"
+  ],
+  "futureOutcomes": [
+    "Future outcome bullet 1",
+    "Future outcome bullet 2",
+    "Future outcome bullet 3",
+    "Future outcome bullet 4"
+  ]
+}`,
+      user: `${contextPrompt}
+
+Help them envision a compelling future. What will their life/business look like after achieving the transformation?`
+    },
+
+    // BLOCK 4: Introduce Your Offer
+    "introduce-offer": {
+      system: `You are a direct-response copywriter. Your task is to introduce the offer with impact.
+
+STRUCTURE:
+1. A "big reveal" headline introducing the offer name
+2. A subheadline that states the core promise/transformation
+3. 2-3 sentence description of what the offer is
+
+PATTERNS TO USE:
+- "Introducing, <offer name>"
+- "<offer name>: <big promise subhead>"
+- "The <unique approach> to <outcome>"
+
+RULES:
+- Make the introduction feel like a revelation
+- State the core result clearly
+- Keep it focused - don't list features yet
+- Build anticipation
+
+Return ONLY valid JSON:
+{
+  "introductions": [
+    { "headline": "Introducing headline 1", "subhead": "Subheadline 1", "description": "2-3 sentence description" },
+    { "headline": "Introducing headline 2", "subhead": "Subheadline 2", "description": "2-3 sentence description" },
+    { "headline": "Introducing headline 3", "subhead": "Subheadline 3", "description": "2-3 sentence description" }
+  ]
+}`,
+      user: `${contextPrompt}
+
+Create 3 compelling ways to introduce this offer. Make it feel like the solution they've been waiting for.`
+    },
+
+    // BLOCK 5: Offer Differentiator
+    "offer-differentiator": {
+      system: `You are a direct-response copywriter. Your task is to explain what makes this offer different from everything else.
+
+PATTERNS TO USE:
+- "What makes <offer name> different?"
+- "Here's how <offer name> is different from other courses:"
+- "<offer name> is the first of its kind that not only teaches you <X> but also <Y>"
+- "Unlike other programs that..."
+
+STRUCTURE:
+1. Opening that positions this as unique
+2. 3-5 comparison points showing what's different
+3. Clear statement of the unique approach/methodology
+
+RULES:
+- Address what they've likely tried before (from context)
+- Show why previous approaches failed
+- Position this as the solution that addresses their specific barriers
+- Be specific about the unique methodology
+
+Return ONLY valid JSON:
+{
+  "openings": ["Opening 1", "Opening 2", "Opening 3"],
+  "differentiators": [
+    "What makes this different point 1",
+    "What makes this different point 2",
+    "What makes this different point 3",
+    "What makes this different point 4"
+  ]
+}`,
+      user: `${contextPrompt}
+
+Explain what makes this offer unique. Address what has stopped them before and why this approach is different.`
+    },
+
+    // BLOCK 6: The Results
+    "the-results": {
+      system: `You are a direct-response copywriter. Your task is to list specific results they will achieve.
+
+PATTERNS TO USE:
+- "You'll learn how to:"
+- "By the end of this program, you'll be able to:"
+- "This [workshop/course/program] will teach you how to:"
+
+STRUCTURE FOR EACH RESULT:
+"[Action verb] [specific skill/outcome] so that [benefit/impact]"
+
+Examples:
+- "Learn how to write compelling headlines so that your content gets clicked"
+- "Master the art of storytelling so that your audience stays engaged"
+- "Create a content calendar so that you never run out of ideas"
+
+RULES:
+- Use action verbs (learn, master, create, build, discover, implement)
+- Include the "so that" to show the benefit
+- Be specific, not vague
+- Focus on outcomes they care about (from context)
+
+Return ONLY valid JSON:
+{
+  "headerOptions": ["Header option 1", "Header option 2", "Header option 3"],
+  "results": [
+    { "action": "Action statement", "benefit": "So that benefit" },
+    { "action": "Action statement 2", "benefit": "So that benefit 2" },
+    { "action": "Action statement 3", "benefit": "So that benefit 3" },
+    { "action": "Action statement 4", "benefit": "So that benefit 4" },
+    { "action": "Action statement 5", "benefit": "So that benefit 5" }
+  ]
+}`,
+      user: `${contextPrompt}
+
+List 5 specific results they will achieve. Focus on outcomes that address their pain points and move them toward their desired outcome.`
+    },
+
+    // BLOCK 7: The Features
+    "the-features": {
+      system: `You are a direct-response copywriter. Your task is to break down exactly what's included in the offer.
+
+PATTERNS TO USE:
+- "Here's what's inside:"
+- "Here's what you're going to get:"
+- "Your complete <offer name> includes:"
+
+FOR EACH MODULE/COMPONENT:
+- Compelling name
+- What's covered
+- The specific result it delivers
+
+BONUS STRUCTURE:
+- Bonus name
+- Perceived value ($XX value)
+- What's included and why it matters
+
+RULES:
+- Make module names outcome-focused, not feature-focused
+- Include specific deliverables
+- Show clear value for each component
+- Bonuses should feel like genuine extras
+
+Return ONLY valid JSON:
+{
+  "headerOptions": ["Header 1", "Header 2"],
+  "modules": [
+    { "name": "Module Name", "description": "What's covered", "result": "What they'll achieve" },
+    { "name": "Module 2", "description": "What's covered", "result": "What they'll achieve" }
+  ],
+  "bonuses": [
+    { "name": "Bonus Name", "value": "$97 value", "description": "What's included and benefit" }
+  ]
+}`,
+      user: `${contextPrompt}
+
+Break down what's included in this offer. Create compelling module names and descriptions based on the deliverables provided.`
+    },
+
+    // BLOCK 8: The Investment
+    "the-investment": {
+      system: `You are a direct-response copywriter. Your task is to present the price with proper value context.
+
+STRUCTURE:
+1. Stack the value first (what they're getting)
+2. Show the contrast (what it would cost elsewhere or to figure out alone)
+3. Reveal the investment
+4. Payment options if applicable
+
+PATTERNS TO USE:
+- "When you add that all up, it comes out to a value of <$XXX>, but you can enroll today for a special investment of <$XXX>."
+- "Get instant access to <offer name> for only $XX"
+- "Your investment: $XX"
+- "Are you ready to <big result>?"
+
+RULES:
+- Build value before revealing price
+- Make the price feel like a no-brainer
+- Include payment plan options if relevant
+- Focus on what they get, not just what they pay
+
+Return ONLY valid JSON:
+{
+  "valueStack": ["Value item 1", "Value item 2", "Value item 3"],
+  "investmentStatements": [
+    "Investment statement option 1",
+    "Investment statement option 2",
+    "Investment statement option 3"
+  ],
+  "ctaOptions": ["CTA button text 1", "CTA button text 2", "CTA button text 3"]
+}`,
+      user: `${contextPrompt}
+
+Create investment section copy that stacks value and makes the price feel like an incredible deal.`
+    },
+
+    // BLOCK 9: The Guarantee
+    "the-guarantee": {
+      system: `You are a direct-response copywriter. Your task is to create risk-reversal guarantee copy.
+
+PATTERNS TO USE:
+- "We want you to be 100% confident when you enroll in <offer name>"
+- "You're protected with our 100% risk-free money back guarantee"
+- "There's literally no risk involved, because you're backed by our <#>-day money back guarantee!"
+- "Buy it, try it, apply it. You're backed by our 100% money back guarantee."
+- "You have nothing to lose and everything to gain"
+
+STRUCTURE:
+1. Headline stating the guarantee
+2. Explanation of what the guarantee covers
+3. What they need to do to qualify (if anything)
+4. Reassurance statement
+
+RULES:
+- Make it feel generous and confident
+- Be clear about terms
+- Reduce all perceived risk
+- Show you believe in the product
+
+Return ONLY valid JSON:
+{
+  "guarantees": [
+    { "headline": "Guarantee headline 1", "explanation": "Full guarantee explanation 1" },
+    { "headline": "Guarantee headline 2", "explanation": "Full guarantee explanation 2" },
+    { "headline": "Guarantee headline 3", "explanation": "Full guarantee explanation 3" }
+  ]
+}`,
+      user: `${contextPrompt}
+
+Create 3 guarantee statement options that eliminate risk and build confidence.`
+    },
+
+    // BLOCK 10: Introduce Yourself
+    "introduce-yourself": {
+      system: `You are a direct-response copywriter. Your task is to create an "About Me" section that builds trust.
+
+PATTERNS TO USE:
+- "Meet <name> - your new <fun title>!"
+- "I can't wait to meet you inside <offer name>!"
+- "Hey, I'm <name> and just <X> years ago, I <relate to pain point>"
+- "Here's the thing about me..."
+
+STRUCTURE:
+1. Relatable opening that connects to their pain
+2. Your journey/transformation
+3. Why you created this offer
+4. Credentials that matter (results-focused)
+5. Personal touch/invitation
+
+RULES:
+- Lead with relatability, not credentials
+- Share your "before" that mirrors their current state
+- Focus on results you've achieved for yourself and others
+- End with warmth and invitation
+
+Return ONLY valid JSON:
+{
+  "aboutMeOptions": [
+    { "opening": "Opening hook", "body": "Full about me section", "closing": "Warm closing" },
+    { "opening": "Opening hook 2", "body": "Full about me section 2", "closing": "Warm closing 2" },
+    { "opening": "Opening hook 3", "body": "Full about me section 3", "closing": "Warm closing 3" }
+  ]
+}`,
+      user: `${contextPrompt}
+
+Create 3 "About Me" section options. The creator should be positioned as someone who understands the audience's struggles because they've been there.`
+    },
+
+    // BLOCK 11: Is This For You?
+    "is-this-for-you": {
+      system: `You are a direct-response copywriter. Your task is to help readers self-qualify.
+
+PATTERNS TO USE:
+- "<offer name> is PERFECT for you if..."
+- "Is this right for you?"
+- "<#> Ways to Know You're Ready to Achieve <outcome>"
+- "Not sure if <offer name> is right for you?"
+
+STRUCTURE:
+1. "This is for you if..." bullets (4-6 points)
+2. "This is NOT for you if..." bullets (3-4 points)
+
+RULES:
+- "For you" points should be aspirational but achievable
+- "Not for you" points should filter out wrong-fit people
+- Be honest and specific
+- Help them make an empowered decision
+
+Return ONLY valid JSON:
+{
+  "headerOptions": ["Header option 1", "Header option 2"],
+  "forYouBullets": [
+    "You are perfect for this if bullet 1",
+    "You are perfect for this if bullet 2",
+    "You are perfect for this if bullet 3",
+    "You are perfect for this if bullet 4"
+  ],
+  "notForYouBullets": [
+    "This is NOT for you if bullet 1",
+    "This is NOT for you if bullet 2",
+    "This is NOT for you if bullet 3"
+  ]
+}`,
+      user: `${contextPrompt}
+
+Create "Is This For You?" copy that helps readers self-qualify and feel confident about their decision.`
+    },
+
+    // BLOCK 12: Why Now
+    "why-now": {
+      system: `You are a direct-response copywriter. Your task is to create urgency and remind them why they need this NOW.
+
+PATTERNS TO USE:
+- "Don't let another year go by before you <outcome>. Here's why you need to get inside <offer name> today..."
+- "If you've made it this far..."
+- "Here's the truth..."
+- "You've tried waiting. You've tried doing it alone. How's that working out?"
+- "The cost of waiting is..."
+
+STRUCTURE:
+1. Remind them of the cost of inaction
+2. Show what they're risking by waiting
+3. Paint the contrast (their life with vs without this)
+4. Clear call to action
+
+RULES:
+- Create genuine urgency, not fake scarcity
+- Remind them of their pain and desired outcome
+- Focus on opportunity cost
+- Be encouraging, not pushy
+
+Return ONLY valid JSON:
+{
+  "whyNowOptions": [
+    { "opening": "Urgency opening", "body": "Full why now section", "callToAction": "CTA statement" },
+    { "opening": "Urgency opening 2", "body": "Full why now section 2", "callToAction": "CTA statement 2" }
+  ]
+}`,
+      user: `${contextPrompt}
+
+Create "Why Now" copy that creates genuine urgency. Remind them of the cost of staying stuck.`
+    },
+
+    // BLOCK 13: FAQs/Objections
+    "frequent-objections": {
+      system: `You are a direct-response copywriter. Your task is to address common objections through FAQs.
+
+COMMON OBJECTION CATEGORIES:
+1. Money: "I can't afford this right now"
+2. Time: "I'm too busy to do this right now"
+3. Readiness: "I'm not sure I'm at the right level yet"
+4. Trust: "I've signed up for programs like this before and they haven't worked"
+5. Specifics: Questions about format, access, support
+
+PATTERNS FOR ANSWERS:
+- Acknowledge the concern
+- Reframe it
+- Provide the solution/answer
+- End with reassurance
+
+RULES:
+- Use their actual objections from the context
+- Be empathetic, not defensive
+- Turn objections into reasons to buy
+- Keep answers concise but thorough
+
+Return ONLY valid JSON:
+{
+  "faqs": [
+    { "question": "Objection as question 1", "answer": "Empathetic, thorough answer 1" },
+    { "question": "Objection as question 2", "answer": "Empathetic, thorough answer 2" },
+    { "question": "Objection as question 3", "answer": "Empathetic, thorough answer 3" },
+    { "question": "Objection as question 4", "answer": "Empathetic, thorough answer 4" },
+    { "question": "Objection as question 5", "answer": "Empathetic, thorough answer 5" }
+  ]
+}`,
+      user: `${contextPrompt}
+
+Create 5 FAQs that address their biggest objections and concerns. Turn objections into reasons to buy.`
+    },
+
+    // BLOCK 14: Final CTA
+    "final-cta": {
+      system: `You are a direct-response copywriter. Your task is to create a compelling final call-to-action.
+
+PATTERNS TO USE:
+- "Enroll in <offer name> today!"
+- "I'm ready, <name>!"
+- "Yes, I want to <achieve outcome>!"
+- "Get instant access now"
+- "Join us inside <offer name>"
+
+STRUCTURE:
+1. Final headline that summarizes the transformation
+2. Brief reminder of what they get
+3. Strong CTA button text
+4. Last reassurance (guarantee mention)
+
+RULES:
+- Keep it simple - they've read the whole page
+- Remind them of the outcome, not the features
+- Make the CTA action-oriented
+- Include one final reassurance
+
+Return ONLY valid JSON:
+{
+  "finalCtaOptions": [
+    { "headline": "Final headline 1", "reminder": "Brief value reminder", "ctaButton": "CTA button text", "reassurance": "Final reassurance" },
+    { "headline": "Final headline 2", "reminder": "Brief value reminder 2", "ctaButton": "CTA button text 2", "reassurance": "Final reassurance 2" }
+  ]
+}`,
+      user: `${contextPrompt}
+
+Create 2 compelling final CTA options for readers who've made it to the bottom of the page.`
+    },
+  };
+
+  return prompts[sectionId] || prompts["opening-headline"];
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -14,6 +680,7 @@ serve(async (req) => {
   try {
     const { 
       sectionType,
+      sectionId, // New: actual section ID from the 14-block framework
       part,
       audience, 
       problem, 
@@ -29,13 +696,10 @@ serve(async (req) => {
       price,
       count,
       transformationStatement,
+      problemStatement,
+      niche,
       projectId,
     } = await req.json();
-
-    // Build transformation context if available
-    const transformationContext = transformationStatement 
-      ? `\n\nCORE TRANSFORMATION PROMISE (use this as the foundation for all copy):\n"${transformationStatement}"\n\nEnsure all copy aligns with and reinforces this core transformation message.`
-      : '';
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
@@ -46,10 +710,11 @@ serve(async (req) => {
     // Extract user ID from auth header
     const authHeader = req.headers.get('authorization');
     let userId: string | null = null;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
     if (authHeader) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-      const supabase = createClient(supabaseUrl, supabaseKey);
       const token = authHeader.replace('Bearer ', '');
       const { data: { user } } = await supabase.auth.getUser(token);
       userId = user?.id || null;
@@ -58,9 +723,38 @@ serve(async (req) => {
     let systemPrompt = "";
     let userPrompt = "";
 
-    if (sectionType === "hero") {
-      if (part === "headlines") {
-        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY headlines.
+    // Check if we're using the new 14-block framework
+    if (sectionId && projectId) {
+      console.log(`[GENERATE-SALES-COPY] Using 14-block framework for section: ${sectionId}`);
+      
+      // Fetch comprehensive context from the project
+      const context = await fetchProjectContext(supabase, projectId);
+      
+      // Build the context prompt
+      const contextPrompt = buildContextPrompt(
+        context,
+        { offerName, offerType, deliverables, price, priceType, niche },
+        { audience, problem, desiredOutcome, transformationStatement, problemStatement, niche }
+      );
+      
+      // Get section-specific prompts
+      const sectionPrompts = getSectionPrompt(sectionId, contextPrompt, { offerName, offerType, deliverables, price });
+      
+      systemPrompt = sectionPrompts.system;
+      userPrompt = sectionPrompts.user;
+      
+    } else {
+      // Legacy support for old section types
+      console.log(`[GENERATE-SALES-COPY] Using legacy prompts for section: ${sectionType}`);
+      
+      // Build transformation context if available
+      const transformationContext = transformationStatement 
+        ? `\n\nCORE TRANSFORMATION PROMISE (use this as the foundation for all copy):\n"${transformationStatement}"\n\nEnsure all copy aligns with and reinforces this core transformation message.`
+        : '';
+
+      if (sectionType === "hero") {
+        if (part === "headlines") {
+          systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY headlines.
 
 Create 5 headline options using these bold promise patterns:
 1) Do (desired outcome) without (main obstacle)
@@ -72,320 +766,182 @@ Create 5 headline options using these bold promise patterns:
 Tone: clear, confident, modern (not hypey)
 
 Return ONLY valid JSON: { "headlines": ["h1", "h2", "h3", "h4", "h5"], "recommendedHeadline": 0 }`;
-        userPrompt = `Create headlines for: Audience: ${audience}, Problem: ${problem}, Outcome: ${desiredOutcome}, Offer: ${offerName}`;
-      } else if (part === "subheadline") {
-        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY subheadlines.
+          userPrompt = `Create headlines for: Audience: ${audience}, Problem: ${problem}, Outcome: ${desiredOutcome}, Offer: ${offerName}`;
+        } else if (part === "subheadline") {
+          systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY subheadlines.
 
 Create 4 subheadline options (1-2 sentences each that expand on the headline promise).
 
 Tone: clear, confident, modern
 
 Return ONLY valid JSON: { "subheadlines": ["sub1", "sub2", "sub3", "sub4"] }`;
-        userPrompt = `Create subheadlines for: Audience: ${audience}, Problem: ${problem}, Outcome: ${desiredOutcome}, Offer: ${offerName}`;
-      } else if (part === "cta") {
-        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY CTA button text options.
+          userPrompt = `Create subheadlines for: Audience: ${audience}, Problem: ${problem}, Outcome: ${desiredOutcome}, Offer: ${offerName}`;
+        } else if (part === "cta") {
+          systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY CTA button text options.
 
 Create 4 CTA button text options (action-oriented, 2-5 words each).
 
 Tone: clear, confident, action-oriented
 
 Return ONLY valid JSON: { "ctas": ["cta1", "cta2", "cta3", "cta4"] }`;
-        userPrompt = `Create CTA button text for: Audience: ${audience}, Offer: ${offerName}, Outcome: ${desiredOutcome}`;
-      } else {
-        systemPrompt = `You are a direct-response conversion copywriter.
+          userPrompt = `Create CTA button text for: Audience: ${audience}, Offer: ${offerName}, Outcome: ${desiredOutcome}`;
+        } else {
+          systemPrompt = `You are a direct-response conversion copywriter.
 
 Write the HERO section for a sales page.
 
 Requirements:
-- Create 5 headline options using these bold promise patterns:
-  1) Do (desired outcome) without (main obstacle)
-  2) Stop (pain), start (desired outcome)
-  3) The fastest way to (desired outcome) for (audience)
-  4) Finally, (achieve result) without (common frustration)
-  5) What if you could (desired outcome) in (timeframe)?
-- Create 4 subheadline options (1-2 sentences each that expand on the promise)
-- Create 4 CTA button text options (action-oriented, 2-5 words each)
+- Create 5 headline options using bold promise patterns
+- Create 4 subheadline options (1-2 sentences each)
+- Create 4 CTA button text options
 
 Tone: clear, confident, modern (not hypey)
-Avoid vague words like "aligned", "empowered", "transform your life" unless backed by specifics.
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON:
 {
   "headlines": ["headline1", "headline2", "headline3", "headline4", "headline5"],
   "recommendedHeadline": 0,
   "subheadlines": ["subheadline1", "subheadline2", "subheadline3", "subheadline4"],
   "ctas": ["cta1", "cta2", "cta3", "cta4"]
 }`;
-
-        userPrompt = `Create HERO section copy for:
+          userPrompt = `Create HERO section copy for:
 - Target Audience: ${audience || "Not specified"}
 - Core Problem: ${problem || "Not specified"}
 - Desired Outcome: ${desiredOutcome || "Not specified"}
 - Offer Name: ${offerName || "Not specified"}
-- Offer Type: ${offerType || "Digital product"}
-- Main Deliverables: ${deliverables?.join(", ") || "Not specified"}
-${transformationContext}
-Generate compelling, specific copy that speaks directly to the audience's pain and desired transformation.`;
-      }
+${transformationContext}`;
+        }
 
-    } else if (sectionType === "whyDifferent") {
-      let contextSection = "";
-      
-      if (inferContext) {
-        contextSection = `Based on the audience and problem, infer:
-- What solutions they've likely tried before
-- Why those solutions typically fail for this audience
-- What makes a better approach for solving this problem`;
-      } else {
-        contextSection = `What they've tried: ${attemptedSolutions || "Generic solutions"}
-Why those fail: ${whyFails || "Not personalized to their specific situation"}
-Our unique approach: ${uniqueApproach || "Tailored, step-by-step guidance"}`;
-      }
+      } else if (sectionType === "whyDifferent" || sectionType === "paintProblem" || sectionType === "lookFuture" || sectionType === "introduceOffer") {
+        // Map to new section IDs for consistent handling
+        const sectionMapping: Record<string, string> = {
+          'whyDifferent': 'offer-differentiator',
+          'paintProblem': 'paint-the-problem',
+          'lookFuture': 'look-into-future',
+          'introduceOffer': 'introduce-offer',
+        };
+        
+        const mappedSectionId = sectionMapping[sectionType] || sectionType;
+        
+        if (projectId) {
+          const context = await fetchProjectContext(supabase, projectId);
+          const contextPrompt = buildContextPrompt(
+            context,
+            { offerName, offerType, deliverables, price, priceType, niche },
+            { audience, problem, desiredOutcome, transformationStatement, problemStatement, niche }
+          );
+          const sectionPrompts = getSectionPrompt(mappedSectionId, contextPrompt, { offerName, offerType, deliverables, price });
+          systemPrompt = sectionPrompts.system;
+          userPrompt = sectionPrompts.user;
+        } else {
+          // Basic fallback
+          systemPrompt = `You are a direct-response conversion copywriter. Create compelling copy for this section.
+Return valid JSON with appropriate fields.`;
+          userPrompt = `Create copy for: Audience: ${audience}, Problem: ${problem}, Outcome: ${desiredOutcome}`;
+        }
 
-      if (part === "openingParagraph") {
-        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY opening paragraphs.
-
-Create 4 opening paragraph options, each starting with "You're tired of…" (2-3 sentences, empathetic, specific).
-
-Tone: understanding, confident, not condescending
-
-Return ONLY valid JSON: { "openingParagraphs": ["p1", "p2", "p3", "p4"] }`;
-        userPrompt = `Create opening paragraphs for: Audience: ${audience}, Problem: ${problem}. ${contextSection}`;
-      } else if (part === "comparisonBullets") {
-        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY comparison bullets.
-
-Create 3-5 comparison bullets using this pattern:
-"You thought about (solution A) BUT (why it didn't work)"
-"You also considered (solution B) BUT (limitation)"
-
-Return ONLY valid JSON: { "comparisonBullets": ["bullet1", "bullet2", "bullet3", "bullet4"] }`;
-        userPrompt = `Create comparison bullets for: Audience: ${audience}, Problem: ${problem}. ${contextSection}`;
-      } else if (part === "bridgeSentence") {
-        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY bridge sentences.
-
-Create 4 bridge sentence options that transition to the solution (builds anticipation).
-
-Return ONLY valid JSON: { "bridgeSentences": ["bridge1", "bridge2", "bridge3", "bridge4"] }`;
-        userPrompt = `Create bridge sentences for: Audience: ${audience}, Offer: ${offerName}. ${contextSection}`;
-      } else {
+      } else if (sectionType === "benefits" || sectionType === "results") {
+        const benefitCount = count || 4;
         systemPrompt = `You are a direct-response conversion copywriter.
 
-Write the "Why this is different" section for a sales page.
+Generate ${benefitCount} key benefits/results using the Feature → Benefit → Outcome format.
 
-Requirements:
-- 4 opening paragraph options, each starting with "You're tired of…" (2-3 sentences, empathetic, specific)
-- 3-5 comparison bullets using this pattern:
-  "You thought about (solution A) BUT (why it didn't work)"
-  "You also considered (solution B) BUT (limitation)"
-- 4 bridge sentence options that transition to the solution (builds anticipation)
-
-Tone: understanding, confident, not condescending
-
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON:
 {
-  "openingParagraphs": ["paragraph1", "paragraph2", "paragraph3", "paragraph4"],
-  "comparisonBullets": ["bullet1", "bullet2", "bullet3"],
-  "bridgeSentences": ["bridge1", "bridge2", "bridge3", "bridge4"]
-}`;
-
-        userPrompt = `Create "Why This Is Different" section for:
-- Target Audience: ${audience || "Not specified"}
-- Core Problem: ${problem || "Not specified"}  
-- Desired Outcome: ${desiredOutcome || "Not specified"}
-- Offer Name: ${offerName || "Not specified"}
-
-${contextSection}
-${transformationContext}
-Write copy that validates their frustration and positions this offer as the solution they've been looking for.`;
-      }
-
-    } else if (sectionType === "benefits") {
-      const benefitCount = count || 4;
-      systemPrompt = `You are a direct-response conversion copywriter.
-
-Write the KEY BENEFITS section for a sales page.
-
-Requirements:
-- Generate exactly ${benefitCount} key benefits for this offer
-- Each benefit should have:
-  - A bold, outcome-focused title (3-5 words)
-  - A 1-2 sentence description explaining the benefit
-- Use the Feature → Benefit → Outcome format
-- Focus on what the customer GETS, not what the product IS
-
-Tone: clear, benefit-focused, specific
-
-Return ONLY valid JSON in this exact format:
-{
-  "benefits": [
-    { "title": "Benefit Title Here", "description": "1-2 sentence description of this benefit and its impact." },
-    { "title": "Another Benefit", "description": "Description of benefit." }
+  "results": [
+    { "action": "Learn how to...", "benefit": "so that..." }
   ]
 }`;
+        userPrompt = `Create benefits for: Audience: ${audience}, Offer: ${offerName}, Outcome: ${desiredOutcome}
+${transformationContext}`;
 
-      userPrompt = `Create KEY BENEFITS section for:
-- Target Audience: ${audience || "Not specified"}
-- Core Problem: ${problem || "Not specified"}
-- Desired Outcome: ${desiredOutcome || "Not specified"}
-- Offer Name: ${offerName || "Not specified"}
-- Offer Type: ${offerType || "Digital product"}
-- Main Deliverables: ${deliverables?.join(", ") || "Not specified"}
-${transformationContext}
-Generate ${benefitCount} specific, outcome-focused benefits that resonate with the target audience's desires.`;
+      } else if (sectionType === "offerDetails" || sectionType === "investment" || sectionType === "guarantee") {
+        const sectionMapping: Record<string, string> = {
+          'offerDetails': 'the-features',
+          'investment': 'the-investment',
+          'guarantee': 'the-guarantee',
+        };
+        
+        const mappedSectionId = sectionMapping[sectionType] || sectionType;
+        
+        if (projectId) {
+          const context = await fetchProjectContext(supabase, projectId);
+          const contextPrompt = buildContextPrompt(
+            context,
+            { offerName, offerType, deliverables, price, priceType, niche },
+            { audience, problem, desiredOutcome, transformationStatement, problemStatement, niche }
+          );
+          const sectionPrompts = getSectionPrompt(mappedSectionId, contextPrompt, { offerName, offerType, deliverables, price });
+          systemPrompt = sectionPrompts.system;
+          userPrompt = sectionPrompts.user;
+        } else {
+          systemPrompt = `You are a direct-response copywriter. Create compelling offer details.
+Return valid JSON.`;
+          userPrompt = `Create copy for: Offer: ${offerName}, Price: ${price}`;
+        }
 
-    } else if (sectionType === "offerDetails") {
-      if (part === "introduction") {
-        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY introduction paragraphs.
+      } else if (sectionType === "faqs") {
+        const faqCount = count || 5;
+        if (projectId) {
+          const context = await fetchProjectContext(supabase, projectId);
+          const contextPrompt = buildContextPrompt(
+            context,
+            { offerName, offerType, deliverables, price, priceType, niche },
+            { audience, problem, desiredOutcome, transformationStatement, problemStatement, niche }
+          );
+          const sectionPrompts = getSectionPrompt('frequent-objections', contextPrompt, { offerName, offerType, deliverables, price });
+          systemPrompt = sectionPrompts.system;
+          userPrompt = sectionPrompts.user;
+        } else {
+          systemPrompt = `You are a direct-response copywriter. Generate ${faqCount} FAQs.
+Return valid JSON: { "faqs": [{ "question": "...", "answer": "..." }] }`;
+          userPrompt = `Create FAQs for: Offer: ${offerName}, Audience: ${audience}`;
+        }
 
-Create 4 introduction paragraph options (2-3 sentences each about what they get access to).
+      } else if (sectionType === "aboutMe" || sectionType === "isThisForYou" || sectionType === "whyNow" || sectionType === "finalCta") {
+        const sectionMapping: Record<string, string> = {
+          'aboutMe': 'introduce-yourself',
+          'isThisForYou': 'is-this-for-you',
+          'whyNow': 'why-now',
+          'finalCta': 'final-cta',
+        };
+        
+        const mappedSectionId = sectionMapping[sectionType] || sectionType;
+        
+        if (projectId) {
+          const context = await fetchProjectContext(supabase, projectId);
+          const contextPrompt = buildContextPrompt(
+            context,
+            { offerName, offerType, deliverables, price, priceType, niche },
+            { audience, problem, desiredOutcome, transformationStatement, problemStatement, niche }
+          );
+          const sectionPrompts = getSectionPrompt(mappedSectionId, contextPrompt, { offerName, offerType, deliverables, price });
+          systemPrompt = sectionPrompts.system;
+          userPrompt = sectionPrompts.user;
+        } else {
+          systemPrompt = `You are a direct-response copywriter. Create compelling copy.
+Return valid JSON.`;
+          userPrompt = `Create copy for: Offer: ${offerName}, Audience: ${audience}`;
+        }
 
-Tone: clear, value-stacking, confident
-
-Return ONLY valid JSON: { "introductions": ["intro1", "intro2", "intro3", "intro4"] }`;
-        userPrompt = `Create introduction paragraphs for: Offer: ${offerName}, Audience: ${audience}, Deliverables: ${deliverables?.join(", ")}`;
-      } else if (part === "modules") {
-        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY modules.
-
-Create 4-6 modules/components with:
-- Module name (compelling, outcome-focused)
-- Module description (what's covered and what they'll achieve)
-
-Return ONLY valid JSON: { "modules": [{ "name": "Module Name", "description": "Description." }] }`;
-        userPrompt = `Create modules for: Offer: ${offerName}, Type: ${offerType}, Deliverables: ${deliverables?.join(", ")}, Outcome: ${desiredOutcome}`;
-      } else if (part === "bonuses") {
-        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY bonuses.
-
-Create 2-3 bonuses with:
-- Bonus name
-- Perceived value (make it realistic based on content)
-- Description of what's included
-
-Return ONLY valid JSON: { "bonuses": [{ "name": "Bonus Name", "value": "$97", "description": "What's included." }] }`;
-        userPrompt = `Create bonuses for: Offer: ${offerName}, Type: ${offerType}, Price: ${price ? `$${price}` : "mid-range"}`;
-      } else if (part === "guarantee") {
-        systemPrompt = `You are a direct-response conversion copywriter. Generate ONLY guarantee statements.
-
-Create 4 guarantee statement options (risk-reversal, confident).
-
-Return ONLY valid JSON: { "guarantees": ["guarantee1", "guarantee2", "guarantee3", "guarantee4"] }`;
-        userPrompt = `Create guarantee statements for: Offer: ${offerName}, Price: ${price ? `$${price}` : "Not specified"}`;
-      } else {
+      } else if (sectionType === "testimonials") {
         systemPrompt = `You are a direct-response conversion copywriter.
-
-Write the "What's Included" / Offer Details section for a sales page.
-
-Requirements:
-- 4 introduction paragraph options (2-3 sentences each about what they get access to)
-- 4-6 modules/components with:
-  - Module name (compelling, outcome-focused)
-  - Module description (what's covered and what they'll achieve)
-- 2-3 bonuses with:
-  - Bonus name
-  - Perceived value (make it realistic based on content)
-  - Description of what's included
-- 4 guarantee statement options (risk-reversal, confident)
-
-Tone: clear, value-stacking, confident
-
-Return ONLY valid JSON in this exact format:
-{
-  "introductions": ["intro1", "intro2", "intro3", "intro4"],
-  "modules": [
-    { "name": "Module Name", "description": "What's covered and outcome." }
-  ],
-  "bonuses": [
-    { "name": "Bonus Name", "value": "$97", "description": "What's included." }
-  ],
-  "guarantees": ["guarantee1", "guarantee2", "guarantee3", "guarantee4"]
-}`;
-
-        userPrompt = `Create "What's Included" section for:
-- Target Audience: ${audience || "Not specified"}
-- Core Problem: ${problem || "Not specified"}
-- Desired Outcome: ${desiredOutcome || "Not specified"}
-- Offer Name: ${offerName || "Not specified"}
-- Offer Type: ${offerType || "Digital product"}
-- Main Deliverables: ${deliverables?.join(", ") || "Not specified"}
-- Price: ${price ? `$${price}` : "Not specified"}
-- Price Type: ${priceType || "One-time"}
-${transformationContext}
-Create compelling offer details that stack value and reduce perceived risk.`;
-      }
-
-    } else if (sectionType === "testimonials") {
-      systemPrompt = `You are a direct-response conversion copywriter.
-
-Generate SAMPLE testimonials that can be used as templates for collecting real testimonials.
-
-Requirements:
-- Generate 3 realistic-sounding sample testimonials
-- Each testimonial should follow the Problem → Solution → Result format
-- Include:
-  - Placeholder client name (realistic)
-  - Specific result achieved
-  - Quote in first person
-- Make them believable and specific, not generic praise
-
-NOTE: These are TEMPLATES to guide collecting real testimonials. Mark them clearly as samples.
-
-Return ONLY valid JSON in this exact format:
+Generate 3 SAMPLE testimonials (templates to guide collecting real testimonials).
+Return ONLY valid JSON:
 {
   "testimonials": [
-    { "name": "[Sample] Sarah M.", "result": "Specific result achieved", "quote": "First-person testimonial..." }
+    { "name": "[Sample] Name", "result": "Specific result", "quote": "First-person testimonial..." }
   ]
 }`;
+        userPrompt = `Create sample testimonials for: Audience: ${audience}, Offer: ${offerName}, Outcome: ${desiredOutcome}
+${transformationContext}`;
 
-      userPrompt = `Create SAMPLE testimonials for:
-- Target Audience: ${audience || "Not specified"}
-- Core Problem: ${problem || "Not specified"}
-- Desired Outcome: ${desiredOutcome || "Not specified"}
-- Offer Name: ${offerName || "Not specified"}
-- Offer Type: ${offerType || "Digital product"}
-${transformationContext}
-Generate realistic sample testimonials that showcase the transformation this offer provides.`;
-
-    } else if (sectionType === "faqs") {
-      const faqCount = count || 5;
-      systemPrompt = `You are a direct-response conversion copywriter.
-
-Write the FAQ section for a sales page.
-
-Requirements:
-- Generate exactly ${faqCount} common FAQs that prospects would ask before buying
-- Include questions about:
-  - Who this is for (and not for)
-  - Time commitment
-  - Guarantee/refund policy
-  - Results timeline
-  - Technical requirements (if applicable)
-  - Support/access details
-- Answers should handle objections and build confidence
-
-Tone: clear, reassuring, confident
-
-Return ONLY valid JSON in this exact format:
-{
-  "faqs": [
-    { "question": "Question here?", "answer": "Clear, helpful answer." }
-  ]
-}`;
-
-      userPrompt = `Create FAQ section for:
-- Target Audience: ${audience || "Not specified"}
-- Core Problem: ${problem || "Not specified"}
-- Desired Outcome: ${desiredOutcome || "Not specified"}
-- Offer Name: ${offerName || "Not specified"}
-- Offer Type: ${offerType || "Digital product"}
-- Price: ${price ? `$${price}` : "Not specified"}
-- Price Type: ${priceType || "One-time"}
-${transformationContext}
-Generate ${faqCount} FAQs that address common concerns and move prospects closer to purchasing.`;
-
-    } else {
-      throw new Error("Invalid section type. Use 'hero', 'whyDifferent', 'benefits', 'offerDetails', 'testimonials', or 'faqs'");
+      } else {
+        throw new Error(`Invalid section type: ${sectionType}. Use one of the 14-block section IDs or legacy types.`);
+      }
     }
 
-    console.log(`Generating ${sectionType} section copy`);
+    console.log(`[GENERATE-SALES-COPY] Generating copy with prompts ready`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -416,7 +972,7 @@ Generate ${faqCount} FAQs that address common concerns and move prospects closer
         );
       }
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("[GENERATE-SALES-COPY] AI gateway error:", response.status, errorText);
       throw new Error("Failed to generate sales copy");
     }
 
@@ -427,7 +983,7 @@ Generate ${faqCount} FAQs that address common concerns and move prospects closer
       throw new Error("No content generated");
     }
 
-    console.log("AI response:", content);
+    console.log("[GENERATE-SALES-COPY] AI response received");
 
     // Parse JSON response
     let result;
@@ -439,20 +995,17 @@ Generate ${faqCount} FAQs that address common concerns and move prospects closer
       if (objectMatch) {
         result = JSON.parse(objectMatch[0]);
       } else {
-        result = JSON.parse(jsonStr);
+        throw new Error("No JSON object found in response");
       }
     } catch (parseError) {
-      console.error("Failed to parse AI response:", content);
+      console.error("[GENERATE-SALES-COPY] JSON parse error:", parseError);
+      console.error("[GENERATE-SALES-COPY] Raw content:", content);
       throw new Error("Failed to parse AI response");
     }
 
-    // Log AI usage
+    // Log AI usage if user is authenticated
     if (userId) {
       try {
-        const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-        const supabase = createClient(supabaseUrl, supabaseKey);
-        
         await supabase.from('ai_usage_logs').insert({
           user_id: userId,
           project_id: projectId || null,
@@ -466,13 +1019,12 @@ Generate ${faqCount} FAQs that address common concerns and move prospects closer
       }
     }
 
-    return new Response(
-      JSON.stringify(result),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
   } catch (error) {
-    console.error("Error in generate-sales-copy:", error);
+    console.error("[GENERATE-SALES-COPY] Error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
