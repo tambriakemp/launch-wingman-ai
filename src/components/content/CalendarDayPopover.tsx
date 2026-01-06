@@ -9,6 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { CONTENT_TYPE_COLORS } from "./contentTypeColors";
 
 interface ContentPlannerItem {
   id: string;
@@ -31,13 +32,6 @@ interface CalendarDayPopoverProps {
   onSchedulePost: (item: ContentPlannerItem) => void;
   onDeletePost: (id: string) => void;
 }
-
-const CONTENT_TYPE_COLORS: Record<string, string> = {
-  general: "bg-slate-500",
-  stories: "bg-amber-500",
-  offer: "bg-emerald-500",
-  "behind-the-scenes": "bg-cyan-500",
-};
 
 export const CalendarDayPopover = ({
   date,

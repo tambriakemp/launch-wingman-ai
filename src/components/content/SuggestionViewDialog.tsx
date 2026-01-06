@@ -3,13 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Plus, RefreshCw, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const CONTENT_TYPE_COLORS: Record<string, string> = {
-  general: "bg-slate-500",
-  stories: "bg-amber-500",
-  offer: "bg-emerald-500",
-  "behind-the-scenes": "bg-cyan-500",
-};
+import { CONTENT_TYPE_COLORS } from "./contentTypeColors";
 
 interface SuggestionViewDialogProps {
   open: boolean;
