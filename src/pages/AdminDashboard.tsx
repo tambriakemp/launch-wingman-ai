@@ -11,8 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Menu, Package, Pencil, ShieldOff, BookOpen, Ban, Trash2 } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, History, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Package, Pencil, BookOpen, BarChart3, FileText } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -76,11 +77,7 @@ function FeatureUsageHeatmapWrapper() {
     return null;
   }
   
-  return (
-    <div className="mb-4 md:mb-8">
-      <FeatureUsageHeatmap featureUsage={platformStats.featureUsage} />
-    </div>
-  );
+  return <FeatureUsageHeatmap featureUsage={platformStats.featureUsage} />;
 }
 
 // Mobile user card component
@@ -689,688 +686,693 @@ const AdminDashboard = () => {
           </Button>
         </div>
 
-        {/* Revenue/Churn Chart - Admin only */}
-        {isAdmin && <RevenueChurnChart users={users} />}
+        {/* Tabbed Content */}
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="mb-6 w-full justify-start overflow-x-auto">
+            <TabsTrigger value="overview" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="gap-2">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Users</span>
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2">
+              <Activity className="h-4 w-4" />
+              <span className="hidden sm:inline">Analytics</span>
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="gap-2">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Activity Logs</span>
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Platform Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 md:mb-8">
-          <ProjectStatsCard />
-          <ContentStatsCard />
-          <EngagementStatsCard />
-          <OfferStatsCard />
-          <OnboardingFunnelCard />
-        </div>
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-4 md:space-y-8">
+            {/* Revenue/Churn Chart - Admin only */}
+            {isAdmin && <RevenueChurnChart users={users} />}
 
-        {/* Feature Usage Heatmap */}
-        <FeatureUsageHeatmapWrapper />
-
-        {/* User Stats Cards */}
-        <div className={cn(
-          "grid gap-2 md:gap-4 mb-4 md:mb-8",
-          isAdmin ? "grid-cols-2 md:grid-cols-4" : "grid-cols-3"
-        )}>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-1 md:pb-2 p-3 md:p-6">
-              <CardTitle className="text-xs md:text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground hidden sm:block" />
-            </CardHeader>
-            <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-              <div className="text-xl md:text-2xl font-bold">{stats.totalUsers}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-1 md:pb-2 p-3 md:p-6">
-              <CardTitle className="text-xs md:text-sm font-medium">Pro</CardTitle>
-              <Crown className="h-3 w-3 md:h-4 md:w-4 text-amber-500 hidden sm:block" />
-            </CardHeader>
-            <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-              <div className="text-xl md:text-2xl font-bold">{stats.proUsers}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-1 md:pb-2 p-3 md:p-6">
-              <CardTitle className="text-xs md:text-sm font-medium">Free</CardTitle>
-              <CreditCard className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground hidden sm:block" />
-            </CardHeader>
-            <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-              <div className="text-xl md:text-2xl font-bold">{stats.freeUsers}</div>
-            </CardContent>
-          </Card>
-          {/* MRR Card - Admin only */}
-          {isAdmin && <MrrStatsCard mrrCents={stats.mrrCents} />}
-        </div>
-
-        {/* Users Card */}
-        <Card>
-          <CardHeader className="p-4 md:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <CardTitle className="text-base md:text-lg">User Accounts</CardTitle>
-                <CardDescription className="text-xs md:text-sm">Manage user subscriptions and access</CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={exportUsersToCSV} disabled={filteredUsers.length === 0} className="text-xs md:text-sm">
-                  <Download className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                  <span className="hidden sm:inline">Export CSV</span>
-                  <span className="sm:hidden">Export</span>
-                </Button>
-                <Button variant="outline" size="sm" onClick={fetchUsers} disabled={loading}>
-                  <RefreshCw className={cn("h-3 w-3 md:h-4 md:w-4", loading && 'animate-spin')} />
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6 pt-0">
-            {/* User Filters */}
-            <div className="mb-4 space-y-3 md:space-y-0 md:flex md:flex-wrap md:items-end md:gap-4">
-              {/* Search */}
-              <div className="flex-1 min-w-[200px] max-w-sm">
-                <Label className="text-xs text-muted-foreground mb-1 block">Search</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by name or email..."
-                    value={userSearchQuery}
-                    onChange={(e) => setUserSearchQuery(e.target.value)}
-                    className="pl-9 h-9"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-end gap-2 md:gap-4">
-                {/* Status Filter */}
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
-                  <Select value={userStatusFilter} onValueChange={(v) => setUserStatusFilter(v as 'all' | 'free' | 'pro' | 'admin' | 'manager')}>
-                    <SelectTrigger className="w-[100px] md:w-[120px] h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="free">Free</SelectItem>
-                      <SelectItem value="pro">Pro</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="manager">Manager</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Date filters - hidden on mobile, shown in popover */}
-                <div className="hidden md:block">
-                  <Label className="text-xs text-muted-foreground mb-1 block">Joined From</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className={cn(
-                          "w-[130px] justify-start text-left font-normal h-9",
-                          !userDateFrom && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {userDateFrom ? format(userDateFrom, "MMM d") : "Select"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={userDateFrom}
-                        onSelect={setUserDateFrom}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div className="hidden md:block">
-                  <Label className="text-xs text-muted-foreground mb-1 block">Joined To</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className={cn(
-                          "w-[130px] justify-start text-left font-normal h-9",
-                          !userDateTo && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {userDateTo ? format(userDateTo, "MMM d") : "Select"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={userDateTo}
-                        onSelect={setUserDateTo}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                {(userDateFrom || userDateTo) && (
-                  <Button variant="ghost" size="sm" onClick={clearUserDateFilters} className="h-9">
-                    Clear
-                  </Button>
-                )}
-              </div>
+            {/* Platform Stats Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+              <ProjectStatsCard />
+              <ContentStatsCard />
+              <EngagementStatsCard />
+              <OfferStatsCard />
+              <OnboardingFunnelCard />
             </div>
 
-            {/* Bulk Actions Bar */}
-            {selectedUsers.size > 0 && (
-              <div className="mb-4 p-3 bg-muted/50 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <CheckSquare className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium">{selectedUsers.size} selected</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setBulkConfirmDialog({ open: true, action: 'grant_pro' })}
-                    disabled={bulkActionLoading || getEligibleUsers('grant_pro').length === 0}
-                  >
-                    <Crown className="h-4 w-4 mr-1" />
-                    Grant Pro ({getEligibleUsers('grant_pro').length})
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setBulkConfirmDialog({ open: true, action: 'cancel' })}
-                    disabled={bulkActionLoading || getEligibleUsers('cancel').length === 0}
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Cancel ({getEligibleUsers('cancel').length})
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={clearSelection}>
-                    Clear
-                  </Button>
-                </div>
-              </div>
-            )}
+            {/* User Stats Cards */}
+            <div className={cn(
+              "grid gap-2 md:gap-4",
+              isAdmin ? "grid-cols-2 md:grid-cols-4" : "grid-cols-3"
+            )}>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-1 md:pb-2 p-3 md:p-6">
+                  <CardTitle className="text-xs md:text-sm font-medium">Total Users</CardTitle>
+                  <Users className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground hidden sm:block" />
+                </CardHeader>
+                <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                  <div className="text-xl md:text-2xl font-bold">{stats.totalUsers}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-1 md:pb-2 p-3 md:p-6">
+                  <CardTitle className="text-xs md:text-sm font-medium">Pro</CardTitle>
+                  <Crown className="h-3 w-3 md:h-4 md:w-4 text-amber-500 hidden sm:block" />
+                </CardHeader>
+                <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                  <div className="text-xl md:text-2xl font-bold">{stats.proUsers}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-1 md:pb-2 p-3 md:p-6">
+                  <CardTitle className="text-xs md:text-sm font-medium">Free</CardTitle>
+                  <CreditCard className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground hidden sm:block" />
+                </CardHeader>
+                <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                  <div className="text-xl md:text-2xl font-bold">{stats.freeUsers}</div>
+                </CardContent>
+              </Card>
+              {/* MRR Card - Admin only */}
+              {isAdmin && <MrrStatsCard mrrCents={stats.mrrCents} />}
+            </div>
+          </TabsContent>
 
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : (
-              <>
-                {/* Mobile card view */}
-                <div className="md:hidden">
-                  <div className="mb-3 flex items-center gap-2">
-                    <Checkbox
-                      checked={paginatedUsers.length > 0 && selectedUsers.size === paginatedUsers.length}
-                      onCheckedChange={toggleSelectAll}
-                    />
-                    <span className="text-sm text-muted-foreground">Select all</span>
+          {/* Users Tab */}
+          <TabsContent value="users">
+            <Card>
+              <CardHeader className="p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-base md:text-lg">User Accounts</CardTitle>
+                    <CardDescription className="text-xs md:text-sm">Manage user subscriptions and access</CardDescription>
                   </div>
-                  {paginatedUsers.map((user) => (
-                    <MobileUserCard
-                      key={user.id}
-                      user={user}
-                      isSelected={selectedUsers.has(user.id)}
-                      onToggleSelect={() => toggleUserSelection(user.id)}
-                      onActivity={() => setActivityDialog({ open: true, user })}
-                      onEdit={() => setEditUserDialog({ open: true, user })}
-                      onImpersonate={() => handleImpersonateClick(user)}
-                      onAction={(action) => handleAction(action, user)}
-                      actionLoading={actionLoading}
-                      impersonateLoading={impersonateLoading}
-                      currentUserId={currentUser?.id}
-                      accessToken={session?.access_token || ''}
-                      onRefresh={fetchUsers}
-                      isAdmin={isAdmin}
-                    />
-                  ))}
-                  {paginatedUsers.length === 0 && (
-                    <p className="text-center py-8 text-muted-foreground">
-                      {userSearchQuery || userDateFrom || userDateTo || userStatusFilter !== 'all' 
-                        ? 'No matching users found' 
-                        : 'No users found'}
-                    </p>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={exportUsersToCSV} disabled={filteredUsers.length === 0} className="text-xs md:text-sm">
+                      <Download className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                      <span className="hidden sm:inline">Export CSV</span>
+                      <span className="sm:hidden">Export</span>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={fetchUsers} disabled={loading}>
+                      <RefreshCw className={cn("h-3 w-3 md:h-4 md:w-4", loading && 'animate-spin')} />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 md:p-6 pt-0">
+                {/* User Filters */}
+                <div className="mb-4 space-y-3 md:space-y-0 md:flex md:flex-wrap md:items-end md:gap-4">
+                  {/* Search */}
+                  <div className="flex-1 min-w-[200px] max-w-sm">
+                    <Label className="text-xs text-muted-foreground mb-1 block">Search</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by name or email..."
+                        value={userSearchQuery}
+                        onChange={(e) => setUserSearchQuery(e.target.value)}
+                        className="pl-9 h-9"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-end gap-2 md:gap-4">
+                    {/* Status Filter */}
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
+                      <Select value={userStatusFilter} onValueChange={(v) => setUserStatusFilter(v as 'all' | 'free' | 'pro' | 'admin' | 'manager')}>
+                        <SelectTrigger className="w-[100px] md:w-[120px] h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="free">Free</SelectItem>
+                          <SelectItem value="pro">Pro</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="manager">Manager</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Date filters - hidden on mobile, shown in popover */}
+                    <div className="hidden md:block">
+                      <Label className="text-xs text-muted-foreground mb-1 block">Joined From</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={cn(
+                              "w-[130px] justify-start text-left font-normal h-9",
+                              !userDateFrom && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {userDateFrom ? format(userDateFrom, "MMM d") : "Select"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={userDateFrom}
+                            onSelect={setUserDateFrom}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    <div className="hidden md:block">
+                      <Label className="text-xs text-muted-foreground mb-1 block">Joined To</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={cn(
+                              "w-[130px] justify-start text-left font-normal h-9",
+                              !userDateTo && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {userDateTo ? format(userDateTo, "MMM d") : "Select"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={userDateTo}
+                            onSelect={setUserDateTo}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    {(userDateFrom || userDateTo) && (
+                      <Button variant="ghost" size="sm" onClick={clearUserDateFilters} className="h-9">
+                        Clear
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
-                {/* Desktop table view */}
-                <div className="hidden md:block overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-10">
-                          <Checkbox
-                            checked={paginatedUsers.length > 0 && selectedUsers.size === paginatedUsers.length}
-                            onCheckedChange={toggleSelectAll}
-                          />
-                        </TableHead>
-                        <TableHead>User</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Projects</TableHead>
-                        <TableHead>Joined</TableHead>
-                        <TableHead>Last Active</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Sub End</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paginatedUsers.map((user) => {
-                        const isDisabled = user.banned_until && new Date(user.banned_until) > new Date();
-                        return (
-                          <TableRow key={user.id} className={cn(selectedUsers.has(user.id) ? 'bg-muted/30' : '', isDisabled && 'opacity-75')}>
-                            <TableCell>
+                {/* Bulk Actions Bar */}
+                {selectedUsers.size > 0 && (
+                  <div className="mb-4 p-3 bg-muted/50 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <CheckSquare className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">{selectedUsers.size} selected</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setBulkConfirmDialog({ open: true, action: 'grant_pro' })}
+                        disabled={bulkActionLoading || getEligibleUsers('grant_pro').length === 0}
+                      >
+                        <Crown className="h-4 w-4 mr-1" />
+                        Grant Pro ({getEligibleUsers('grant_pro').length})
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setBulkConfirmDialog({ open: true, action: 'cancel' })}
+                        disabled={bulkActionLoading || getEligibleUsers('cancel').length === 0}
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Cancel ({getEligibleUsers('cancel').length})
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={clearSelection}>
+                        Clear
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Mobile card view */}
+                    <div className="md:hidden">
+                      <div className="mb-3 flex items-center gap-2">
+                        <Checkbox
+                          checked={paginatedUsers.length > 0 && selectedUsers.size === paginatedUsers.length}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                        <span className="text-sm text-muted-foreground">Select all</span>
+                      </div>
+                      {paginatedUsers.map((user) => (
+                        <MobileUserCard
+                          key={user.id}
+                          user={user}
+                          isSelected={selectedUsers.has(user.id)}
+                          onToggleSelect={() => toggleUserSelection(user.id)}
+                          onActivity={() => setActivityDialog({ open: true, user })}
+                          onEdit={() => setEditUserDialog({ open: true, user })}
+                          onImpersonate={() => handleImpersonateClick(user)}
+                          onAction={(action) => handleAction(action, user)}
+                          actionLoading={actionLoading}
+                          impersonateLoading={impersonateLoading}
+                          currentUserId={currentUser?.id}
+                          accessToken={session?.access_token || ''}
+                          onRefresh={fetchUsers}
+                          isAdmin={isAdmin}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Desktop table view */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-10">
                               <Checkbox
-                                checked={selectedUsers.has(user.id)}
-                                onCheckedChange={() => toggleUserSelection(user.id)}
+                                checked={paginatedUsers.length > 0 && selectedUsers.size === paginatedUsers.length}
+                                onCheckedChange={toggleSelectAll}
                               />
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              <div className="flex items-center gap-2">
-                                {user.first_name || user.last_name
-                                  ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
-                                  : '—'}
-                                {isDisabled && (
-                                  <Badge variant="destructive" className="text-xs">Disabled</Badge>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>{user.email}</TableCell>
-                            <TableCell>
-                              <span className={cn(
-                                "font-medium",
-                                user.project_count === 0 && "text-muted-foreground"
-                              )}>
-                                {user.project_count}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              {format(new Date(user.created_at), 'MMM d, yyyy')}
-                            </TableCell>
-                            <TableCell>
-                              {user.last_active ? (
-                                <span className="text-muted-foreground text-sm">
-                                  {formatDistanceToNow(new Date(user.last_active), { addSuffix: true })}
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground/50 text-sm">Never</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={user.is_admin || user.is_manager ? 'default' : user.subscription_status === 'pro' ? 'default' : 'secondary'}
-                                className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
-                              >
-                                {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : 'Free'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {user.subscription_end
-                                ? format(new Date(user.subscription_end), 'MMM d')
-                                : '—'}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setActivityDialog({ open: true, user })}
-                                  title="View activity log"
-                                >
-                                  <Activity className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setEditUserDialog({ open: true, user })}
-                                  title="Edit user"
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                {user.id !== currentUser?.id && (
-                                  <>
-                                    {/* AdminRoleToggle - only visible to full admins */}
-                                    {isAdmin && (
-                                      <>
-                                        <AdminRoleToggle
-                                          userId={user.id}
-                                          userEmail={user.email}
-                                          isAdmin={user.is_admin}
-                                          isManager={user.is_manager}
-                                          accessToken={session?.access_token || ''}
-                                          onRoleChanged={fetchUsers}
-                                        />
-                                        <UserStatusToggle
-                                          userId={user.id}
-                                          userEmail={user.email}
-                                          isDisabled={!!isDisabled}
-                                          accessToken={session?.access_token || ''}
-                                          onStatusChanged={fetchUsers}
-                                        />
-                                      </>
+                            </TableHead>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Joined</TableHead>
+                            <TableHead>Projects</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Ends</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {paginatedUsers.map((user) => {
+                            const isDisabled = user.banned_until && new Date(user.banned_until) > new Date();
+                            return (
+                              <TableRow key={user.id} className={cn(isDisabled && "opacity-75")}>
+                                <TableCell>
+                                  <Checkbox
+                                    checked={selectedUsers.has(user.id)}
+                                    onCheckedChange={() => toggleUserSelection(user.id)}
+                                  />
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                  <div className="flex items-center gap-2">
+                                    {user.first_name || user.last_name
+                                      ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                                      : '—'}
+                                    {isDisabled && (
+                                      <Badge variant="destructive" className="text-xs">Disabled</Badge>
                                     )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>{user.email}</TableCell>
+                                <TableCell>
+                                  {format(new Date(user.created_at), 'MMM d, yyyy')}
+                                </TableCell>
+                                <TableCell>{user.project_count}</TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant={user.is_admin || user.is_manager ? 'default' : user.subscription_status === 'pro' ? 'default' : 'secondary'}
+                                    className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
+                                  >
+                                    {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : 'Free'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {user.subscription_end
+                                    ? format(new Date(user.subscription_end), 'MMM d')
+                                    : '—'}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex items-center justify-end gap-2">
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => handleImpersonateClick(user)}
-                                      disabled={impersonateLoading === user.id}
-                                      title="View as this user"
+                                      onClick={() => setActivityDialog({ open: true, user })}
+                                      title="View activity log"
                                     >
-                                      {impersonateLoading === user.id ? (
-                                        <RefreshCw className="h-4 w-4 animate-spin" />
-                                      ) : (
-                                        <Eye className="h-4 w-4" />
-                                      )}
+                                      <Activity className="h-4 w-4" />
                                     </Button>
-                                  </>
-                                )}
-                                {user.subscription_status === 'pro' ? (
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => handleAction('cancel', user)}
-                                    disabled={actionLoading === user.id}
-                                  >
-                                    {actionLoading === user.id ? (
-                                      <RefreshCw className="h-4 w-4 animate-spin" />
-                                    ) : (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setEditUserDialog({ open: true, user })}
+                                      title="Edit user"
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    {user.id !== currentUser?.id && (
                                       <>
-                                        <X className="h-4 w-4 mr-1" />
-                                        Cancel
+                                        {/* AdminRoleToggle - only visible to full admins */}
+                                        {isAdmin && (
+                                          <>
+                                            <AdminRoleToggle
+                                              userId={user.id}
+                                              userEmail={user.email}
+                                              isAdmin={user.is_admin}
+                                              isManager={user.is_manager}
+                                              accessToken={session?.access_token || ''}
+                                              onRoleChanged={fetchUsers}
+                                            />
+                                            <UserStatusToggle
+                                              userId={user.id}
+                                              userEmail={user.email}
+                                              isDisabled={!!isDisabled}
+                                              accessToken={session?.access_token || ''}
+                                              onStatusChanged={fetchUsers}
+                                            />
+                                          </>
+                                        )}
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleImpersonateClick(user)}
+                                          disabled={impersonateLoading === user.id}
+                                          title="View as this user"
+                                        >
+                                          {impersonateLoading === user.id ? (
+                                            <RefreshCw className="h-4 w-4 animate-spin" />
+                                          ) : (
+                                            <Eye className="h-4 w-4" />
+                                          )}
+                                        </Button>
                                       </>
                                     )}
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    variant="default"
-                                    size="sm"
-                                    onClick={() => handleAction('grant_pro', user)}
-                                    disabled={actionLoading === user.id}
-                                  >
-                                    {actionLoading === user.id ? (
-                                      <RefreshCw className="h-4 w-4 animate-spin" />
+                                    {user.subscription_status === 'pro' ? (
+                                      <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => handleAction('cancel', user)}
+                                        disabled={actionLoading === user.id}
+                                      >
+                                        {actionLoading === user.id ? (
+                                          <RefreshCw className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <>
+                                            <X className="h-4 w-4 mr-1" />
+                                            Cancel
+                                          </>
+                                        )}
+                                      </Button>
                                     ) : (
-                                      <>
-                                        <Crown className="h-4 w-4 mr-1" />
-                                        Grant Pro
-                                      </>
+                                      <Button
+                                        variant="default"
+                                        size="sm"
+                                        onClick={() => handleAction('grant_pro', user)}
+                                        disabled={actionLoading === user.id}
+                                      >
+                                        {actionLoading === user.id ? (
+                                          <RefreshCw className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <>
+                                            <Crown className="h-4 w-4 mr-1" />
+                                            Grant Pro
+                                          </>
+                                        )}
+                                      </Button>
                                     )}
-                                  </Button>
-                                )}
-                                {user.id !== currentUser?.id && isAdmin && (
-                                  <DeleteUserDialog
-                                    userId={user.id}
-                                    userEmail={user.email}
-                                    accessToken={session?.access_token || ''}
-                                    onUserDeleted={fetchUsers}
-                                  />
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                      {paginatedUsers.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                            {userSearchQuery || userDateFrom || userDateTo || userStatusFilter !== 'all' 
-                              ? 'No matching users found' 
-                              : 'No users found'}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                                    {user.id !== currentUser?.id && isAdmin && (
+                                      <DeleteUserDialog
+                                        userId={user.id}
+                                        userEmail={user.email}
+                                        accessToken={session?.access_token || ''}
+                                        onUserDeleted={fetchUsers}
+                                      />
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                          {paginatedUsers.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                                {userSearchQuery || userDateFrom || userDateTo || userStatusFilter !== 'all' 
+                                  ? 'No matching users found' 
+                                  : 'No users found'}
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
 
-                {/* Pagination */}
-                {userTotalPages > 1 && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between mt-4 pt-4 border-t gap-3">
-                    <p className="text-xs md:text-sm text-muted-foreground">
-                      {((userCurrentPage - 1) * USERS_PER_PAGE) + 1}–{Math.min(userCurrentPage * USERS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setUserCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={userCurrentPage === 1}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <span className="text-xs md:text-sm text-muted-foreground">
-                        {userCurrentPage} / {userTotalPages}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setUserCurrentPage(p => Math.min(userTotalPages, p + 1))}
-                        disabled={userCurrentPage === userTotalPages}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
+                    {/* Pagination */}
+                    {userTotalPages > 1 && (
+                      <div className="flex flex-col sm:flex-row items-center justify-between mt-4 pt-4 border-t gap-3">
+                        <p className="text-xs md:text-sm text-muted-foreground">
+                          {((userCurrentPage - 1) * USERS_PER_PAGE) + 1}–{Math.min(userCurrentPage * USERS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setUserCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={userCurrentPage === 1}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <span className="text-xs md:text-sm text-muted-foreground">
+                            {userCurrentPage} / {userTotalPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setUserCurrentPage(p => Math.min(userTotalPages, p + 1))}
+                            disabled={userCurrentPage === userTotalPages}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="space-y-4 md:space-y-8">
+            <FeatureUsageHeatmapWrapper />
+            <AiUsageTable />
+          </TabsContent>
+
+          {/* Activity Logs Tab */}
+          <TabsContent value="activity" className="space-y-4 md:space-y-8">
+            {/* Impersonation Logs */}
+            <Card>
+              <CardHeader className="p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <History className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+                    <div>
+                      <CardTitle className="text-base md:text-lg">Impersonation Activity</CardTitle>
+                      <CardDescription className="text-xs md:text-sm">Recent admin impersonation sessions</CardDescription>
                     </div>
                   </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Impersonation Logs */}
-        <Card className="mt-4 md:mt-8">
-          <CardHeader className="p-4 md:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <History className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
-                <div>
-                  <CardTitle className="text-base md:text-lg">Impersonation Activity</CardTitle>
-                  <CardDescription className="text-xs md:text-sm">Recent admin impersonation sessions</CardDescription>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={exportLogsToCSV} disabled={filteredLogs.length === 0} className="text-xs md:text-sm">
+                      <Download className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                      <span className="hidden sm:inline">Export CSV</span>
+                      <span className="sm:hidden">Export</span>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={fetchImpersonationLogs} disabled={logsLoading}>
+                      <RefreshCw className={cn("h-3 w-3 md:h-4 md:w-4", logsLoading && 'animate-spin')} />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={exportLogsToCSV} disabled={filteredLogs.length === 0} className="text-xs md:text-sm">
-                  <Download className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                  <span className="hidden sm:inline">Export CSV</span>
-                  <span className="sm:hidden">Export</span>
-                </Button>
-                <Button variant="outline" size="sm" onClick={fetchImpersonationLogs} disabled={logsLoading}>
-                  <RefreshCw className={cn("h-3 w-3 md:h-4 md:w-4", logsLoading && 'animate-spin')} />
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6 pt-0">
-            {/* Filters */}
-            <div className="mb-4 space-y-3 md:space-y-0 md:flex md:flex-wrap md:items-end md:gap-4">
-              <div className="flex-1 min-w-[200px] max-w-sm">
-                <Label className="text-xs text-muted-foreground mb-1 block">Search</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by email..."
-                    value={logSearchQuery}
-                    onChange={(e) => setLogSearchQuery(e.target.value)}
-                    className="pl-9 h-9"
-                  />
-                </div>
-              </div>
-
-              <div className="hidden md:flex md:items-end md:gap-4">
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">From</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className={cn(
-                          "w-[130px] justify-start text-left font-normal h-9",
-                          !dateFrom && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateFrom ? format(dateFrom, "MMM d") : "Select"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={dateFrom}
-                        onSelect={setDateFrom}
-                        initialFocus
-                        className="pointer-events-auto"
+              </CardHeader>
+              <CardContent className="p-4 md:p-6 pt-0">
+                {/* Filters */}
+                <div className="mb-4 space-y-3 md:space-y-0 md:flex md:flex-wrap md:items-end md:gap-4">
+                  <div className="flex-1 min-w-[200px] max-w-sm">
+                    <Label className="text-xs text-muted-foreground mb-1 block">Search</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by email..."
+                        value={logSearchQuery}
+                        onChange={(e) => setLogSearchQuery(e.target.value)}
+                        className="pl-9 h-9"
                       />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                    </div>
+                  </div>
 
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">To</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className={cn(
-                          "w-[130px] justify-start text-left font-normal h-9",
-                          !dateTo && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateTo ? format(dateTo, "MMM d") : "Select"}
+                  <div className="hidden md:flex md:items-end md:gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1 block">From</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={cn(
+                              "w-[130px] justify-start text-left font-normal h-9",
+                              !dateFrom && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {dateFrom ? format(dateFrom, "MMM d") : "Select"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={dateFrom}
+                            onSelect={setDateFrom}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1 block">To</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={cn(
+                              "w-[130px] justify-start text-left font-normal h-9",
+                              !dateTo && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {dateTo ? format(dateTo, "MMM d") : "Select"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={dateTo}
+                            onSelect={setDateTo}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    {(dateFrom || dateTo) && (
+                      <Button variant="ghost" size="sm" onClick={clearDateFilters} className="h-9">
+                        Clear
                       </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={dateTo}
-                        onSelect={setDateTo}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
+                    )}
+                  </div>
                 </div>
 
-                {(dateFrom || dateTo) && (
-                  <Button variant="ghost" size="sm" onClick={clearDateFilters} className="h-9">
-                    Clear
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {logsLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : (
-              <>
-                {/* Mobile card view for logs */}
-                <div className="md:hidden space-y-3">
-                  {paginatedLogs.map((log) => (
-                    <Card key={log.id}>
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <Badge variant={log.action === 'start' ? 'default' : 'secondary'}>
-                            {log.action === 'start' ? 'Started' : 'Ended'}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(log.created_at), 'MMM d, h:mm a')}
-                          </span>
-                        </div>
-                        <p className="text-sm"><span className="text-muted-foreground">Admin:</span> {log.admin_email}</p>
-                        <p className="text-sm"><span className="text-muted-foreground">Target:</span> {log.target_email}</p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  {paginatedLogs.length === 0 && (
-                    <p className="text-center py-8 text-muted-foreground">
-                      {logSearchQuery || dateFrom || dateTo ? 'No matching logs found' : 'No impersonation activity'}
-                    </p>
-                  )}
-                </div>
-
-                {/* Desktop table view */}
-                <div className="hidden md:block overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Admin</TableHead>
-                        <TableHead>Target User</TableHead>
-                        <TableHead>Action</TableHead>
-                        <TableHead>Timestamp</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                {logsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Mobile card view for logs */}
+                    <div className="md:hidden space-y-3">
                       {paginatedLogs.map((log) => (
-                        <TableRow key={log.id}>
-                          <TableCell className="font-medium">{log.admin_email}</TableCell>
-                          <TableCell>{log.target_email}</TableCell>
-                          <TableCell>
-                            <Badge variant={log.action === 'start' ? 'default' : 'secondary'}>
-                              {log.action === 'start' ? 'Started' : 'Ended'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {format(new Date(log.created_at), 'MMM d, yyyy h:mm a')}
-                          </TableCell>
-                        </TableRow>
+                        <Card key={log.id}>
+                          <CardContent className="p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <Badge variant={log.action === 'start' ? 'default' : 'secondary'}>
+                                {log.action === 'start' ? 'Started' : 'Ended'}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(log.created_at), 'MMM d, h:mm a')}
+                              </span>
+                            </div>
+                            <p className="text-sm"><span className="text-muted-foreground">Admin:</span> {log.admin_email}</p>
+                            <p className="text-sm"><span className="text-muted-foreground">Target:</span> {log.target_email}</p>
+                          </CardContent>
+                        </Card>
                       ))}
                       {paginatedLogs.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                            {logSearchQuery || dateFrom || dateTo ? 'No matching logs found' : 'No impersonation activity'}
-                          </TableCell>
-                        </TableRow>
+                        <p className="text-center py-8 text-muted-foreground">
+                          {logSearchQuery || dateFrom || dateTo ? 'No matching logs found' : 'No impersonation activity'}
+                        </p>
                       )}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between mt-4 pt-4 border-t gap-3">
-                    <p className="text-xs md:text-sm text-muted-foreground">
-                      {((currentPage - 1) * LOGS_PER_PAGE) + 1}–{Math.min(currentPage * LOGS_PER_PAGE, filteredLogs.length)} of {filteredLogs.length}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <span className="text-xs md:text-sm text-muted-foreground">
-                        {currentPage} / {totalPages}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
                     </div>
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
 
-        {/* Admin Action Logs - Admin only */}
-        {isAdmin && (
-          <div className="mt-4 md:mt-8">
-            <AdminActionLogs />
-          </div>
-        )}
+                    {/* Desktop table view */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Admin</TableHead>
+                            <TableHead>Target User</TableHead>
+                            <TableHead>Action</TableHead>
+                            <TableHead>Timestamp</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {paginatedLogs.map((log) => (
+                            <TableRow key={log.id}>
+                              <TableCell className="font-medium">{log.admin_email}</TableCell>
+                              <TableCell>{log.target_email}</TableCell>
+                              <TableCell>
+                                <Badge variant={log.action === 'start' ? 'default' : 'secondary'}>
+                                  {log.action === 'start' ? 'Started' : 'Ended'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {format(new Date(log.created_at), 'MMM d, yyyy h:mm a')}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          {paginatedLogs.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                                {logSearchQuery || dateFrom || dateTo ? 'No matching logs found' : 'No impersonation activity'}
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex flex-col sm:flex-row items-center justify-between mt-4 pt-4 border-t gap-3">
+                        <p className="text-xs md:text-sm text-muted-foreground">
+                          {((currentPage - 1) * LOGS_PER_PAGE) + 1}–{Math.min(currentPage * LOGS_PER_PAGE, filteredLogs.length)} of {filteredLogs.length}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <span className="text-xs md:text-sm text-muted-foreground">
+                            {currentPage} / {totalPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Admin Action Logs - Admin only */}
+            {isAdmin && <AdminActionLogs />}
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Confirmation Dialog */}
@@ -1446,11 +1448,6 @@ const AdminDashboard = () => {
         user={activityDialog.user}
         accessToken={session?.access_token || ''}
       />
-
-      {/* AI Usage Section */}
-      <div className="container mx-auto px-4 pb-8">
-        <AiUsageTable />
-      </div>
 
       {/* Edit User Dialog */}
       <EditUserDialog
