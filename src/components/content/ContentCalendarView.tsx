@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { CalendarDayPopover } from "./CalendarDayPopover";
 import { toast } from "sonner";
+import { CONTENT_TYPE_COLORS } from "./contentTypeColors";
 
 interface ContentPlannerItem {
   id: string;
@@ -38,13 +39,6 @@ interface ContentCalendarViewProps {
   onEditPost: (item: ContentPlannerItem) => void;
   onSchedulePost: (item: ContentPlannerItem) => void;
 }
-
-const CONTENT_TYPE_COLORS: Record<string, string> = {
-  general: "bg-slate-500",
-  stories: "bg-amber-500",
-  offer: "bg-emerald-500",
-  "behind-the-scenes": "bg-cyan-500",
-};
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 

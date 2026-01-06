@@ -25,6 +25,7 @@ import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { CONTENT_TYPE_COLORS } from "./contentTypeColors";
 
 interface TimelineSlotGridProps {
   projectId: string;
@@ -92,8 +93,6 @@ const PHASES = [
 ];
 
 const DAYS = [1, 2, 3, 4, 5, 6, 7];
-
-import { CONTENT_TYPE_COLORS } from "./contentTypeColors";
 
 export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridProps) => {
   const { user } = useAuth();
