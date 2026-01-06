@@ -134,3 +134,6 @@ verify_jwt = false
 
 [functions.admin-churn-risk]
 verify_jwt = false
+
+[functions.marketing-webhook]
+verify_jwt = false
