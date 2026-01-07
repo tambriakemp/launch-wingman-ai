@@ -180,33 +180,108 @@ function buildContextString(context: Record<string, any>): string {
     
     relevantTasks.forEach((t: any) => {
       const data = t.input_data || {};
+      const taskId = t.task_id || '';
       
-      // Extract key meaningful fields
-      if (data.transformation_statement) {
-        insights.push(`Transformation: ${data.transformation_statement}`);
+      // ========== PLANNING PHASE TASKS ==========
+      if (taskId === 'planning_define_audience') {
+        if (data.audience_description) {
+          insights.push(`TARGET AUDIENCE DEFINITION: ${data.audience_description}`);
+        }
+        if (data.niche_context) {
+          insights.push(`NICHE CONTEXT: ${data.niche_context.replace(/_/g, ' ')}`);
+        }
       }
-      if (data.offer_name) {
-        insights.push(`Offer: ${data.offer_name}`);
+      
+      if (taskId === 'planning_define_problem') {
+        if (data.primary_problem) {
+          insights.push(`PRIMARY PROBLEM: ${data.primary_problem}`);
+        }
+        if (data.problem_details) {
+          insights.push(`PROBLEM DETAILS: ${data.problem_details}`);
+        }
       }
-      if (data.why_statement) {
-        insights.push(`Why Statement: ${data.why_statement}`);
+      
+      if (taskId === 'planning_define_dream_outcome') {
+        if (data.dream_outcome) {
+          insights.push(`DREAM OUTCOME: ${data.dream_outcome}`);
+        }
+        if (data.outcome_details) {
+          insights.push(`OUTCOME DETAILS: ${data.outcome_details}`);
+        }
       }
-      if (data.belief_statement) {
-        insights.push(`Core Belief: ${data.belief_statement}`);
+      
+      if (taskId === 'planning_time_effort_perception') {
+        if (data.quick_wins) insights.push(`EARLY WINS THEY'LL EXPERIENCE: ${data.quick_wins}`);
+        if (data.friction_reducers) insights.push(`HOW YOU SIMPLIFY THE PROCESS: ${data.friction_reducers}`);
+        if (data.effort_reframe) insights.push(`EFFORT PERCEPTION REFRAME: ${data.effort_reframe}`);
+        if (data.time_to_results) insights.push(`TIME TO RESULTS: ${data.time_to_results}`);
       }
-      if (data.audience_description) {
-        insights.push(`Audience Description: ${data.audience_description}`);
+      
+      if (taskId === 'planning_perceived_likelihood') {
+        if (data.past_attempts) insights.push(`WHAT THEY'VE TRIED BEFORE: ${data.past_attempts}`);
+        if (data.belief_blockers) insights.push(`SKEPTICISM/DOUBT POINTS: ${data.belief_blockers}`);
+        if (data.belief_builders) insights.push(`TRUST BUILDERS (why it works for them): ${data.belief_builders}`);
+        if (data.credibility_points) insights.push(`CREDIBILITY ELEMENTS: ${data.credibility_points}`);
       }
-      if (data.unique_approach) {
-        insights.push(`Unique Approach: ${data.unique_approach}`);
+      
+      // ========== MESSAGING PHASE TASKS ==========
+      if (taskId === 'messaging_core_message') {
+        if (data.core_message) {
+          insights.push(`CORE MESSAGE: ${data.core_message}`);
+        }
+        if (data.belief_statement) {
+          insights.push(`CORE BELIEF: ${data.belief_statement}`);
+        }
+        if (data.why_statement) {
+          insights.push(`WHY STATEMENT: ${data.why_statement}`);
+        }
       }
-      if (data.key_message) {
-        insights.push(`Key Message: ${data.key_message}`);
+      
+      if (taskId === 'messaging_transformation_statement') {
+        if (data.transformation_statement) {
+          insights.push(`TRANSFORMATION STATEMENT: ${data.transformation_statement}`);
+        }
+      }
+      
+      if (taskId === 'messaging_talking_points') {
+        const talkingPoints = [
+          data.talking_point_1,
+          data.talking_point_2,
+          data.talking_point_3,
+          data.talking_point_4,
+          data.talking_point_5,
+        ].filter(Boolean);
+        
+        if (talkingPoints.length > 0) {
+          insights.push(`KEY TALKING POINTS (themes to repeat in content):\n${talkingPoints.map((tp, i) => `  ${i + 1}. ${tp}`).join('\n')}`);
+        }
+      }
+      
+      if (taskId === 'messaging_common_objections') {
+        const objections = [
+          data.objection_1,
+          data.objection_2,
+          data.objection_3,
+          data.objection_4,
+          data.objection_5,
+        ].filter(Boolean);
+        
+        if (objections.length > 0) {
+          insights.push(`COMMON OBJECTIONS TO ADDRESS:\n${objections.map((obj, i) => `  ${i + 1}. ${obj}`).join('\n')}`);
+        }
+      }
+      
+      // Generic fallback for any other fields
+      if (!['planning_define_audience', 'planning_define_problem', 'planning_define_dream_outcome', 
+           'planning_time_effort_perception', 'planning_perceived_likelihood', 'messaging_core_message',
+           'messaging_transformation_statement', 'messaging_talking_points', 'messaging_common_objections'].includes(taskId)) {
+        if (data.unique_approach) insights.push(`UNIQUE APPROACH: ${data.unique_approach}`);
+        if (data.key_message) insights.push(`KEY MESSAGE: ${data.key_message}`);
       }
     });
     
     if (insights.length > 0) {
-      parts.push(`COMPLETED WORK INSIGHTS:\n${insights.slice(0, 10).join('\n')}`);
+      parts.push(`=== COMPLETED PLANNING & MESSAGING WORK ===\n${insights.join('\n\n')}`);
     }
   }
 
@@ -274,6 +349,14 @@ serve(async (req) => {
 
 Your job is to generate a compelling, personalized content idea with a detailed description based on the creator's specific context from their completed planning and messaging work.
 
+CRITICAL: You MUST incorporate specific details from the creator's completed planning and messaging work:
+- Reference their exact audience description and pain points in your own words
+- Use their transformation statement language and tone as a guide
+- Incorporate their talking points as content angles when relevant
+- Naturally address objections they've identified
+- Build on their core message and beliefs
+- The content should feel like it was written BY the creator, using THEIR language and insights
+
 CRITICAL RULES (APPLY TO ALL CONTENT):
 - Never use urgency language (no "limited time", "act now", "don't miss")
 - Never add hashtags or suggest hashtags
@@ -305,8 +388,16 @@ Description Template: ${template.description_template}`;
 
     const userPrompt = `Based on this creator's context, generate a personalized content idea for this timeline slot.
 
-=== CREATOR'S BUSINESS CONTEXT ===
+=== CREATOR'S FULL BUSINESS CONTEXT ===
 ${contextString || "No specific project context available - create something generic but compelling for a course/coaching launch."}
+
+=== HOW TO USE THIS CONTEXT ===
+- Their CORE MESSAGE and TRANSFORMATION STATEMENT should inform the angle and language
+- Their TALKING POINTS are themes they want to repeat in content - use these as content pillars
+- Their OBJECTIONS list shows concerns to naturally address through storytelling
+- Their AUDIENCE DEFINITION shows exactly who they're speaking to - use specific language
+- Their PAIN POINTS and DREAM OUTCOMES give you emotional hooks
+- Their BELIEF BUILDERS and SKEPTICISM POINTS show what to emphasize or overcome
 
 === YOUR TASK ===
 Generate a personalized ${template.template_type} content idea for ${template.phase.replace(/-/g, ' ')} Day ${template.day_number}.
@@ -314,12 +405,12 @@ Generate a personalized ${template.template_type} content idea for ${template.ph
 Create:
 1. A catchy, specific TITLE (5-12 words) that references their niche, audience, or transformation
 2. A detailed DESCRIPTION (2-3 sentences, 40-80 words) that:
-   - Provides a clear content direction or angle
-   - References specific elements from their business context (audience pain points, transformation, offer details)
-   - Feels like a content brief that helps them know exactly what to write about
+   - Uses THEIR specific language and terminology from the context above
+   - References specific elements (pain points, outcomes, objections, talking points)
+   - Feels like a natural extension of their existing messaging work
    - Matches the ${categoryConfig.tone} tone
 
-The description should be substantive and helpful - not just a vague prompt, but a specific content direction that incorporates their unique business context.`;
+The description should be substantive and helpful - incorporate their unique business context so it sounds like THEIR voice, not generic advice.`;
 
     // Use tool calling for structured output
     const requestBody = {
