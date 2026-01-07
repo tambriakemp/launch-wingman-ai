@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserTickets, useCreateTicket, SupportTicket } from "@/hooks/useSupportTickets";
+import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,17 @@ import {
   Send
 } from "lucide-react";
 import { format } from "date-fns";
+
+export const TICKET_CATEGORIES = [
+  { value: "general", label: "General Question" },
+  { value: "technical", label: "Technical Issue" },
+  { value: "billing", label: "Billing & Subscription" },
+  { value: "feature", label: "Feature Request" },
+  { value: "suggestion", label: "Make a Suggestion or Submit an Idea" },
+  { value: "bug", label: "Bug Report" },
+  { value: "account", label: "Account Help" },
+  { value: "other", label: "Other" },
+] as const;
 
 const faqs = [
   {
@@ -60,24 +71,25 @@ export default function HelpSupport() {
   const createTicket = useCreateTicket();
 
   const [showForm, setShowForm] = useState(false);
-  const [subject, setSubject] = useState("");
+  const [category, setCategory] = useState("");
   const [message, setMessage] = useState("");
   const [priority, setPriority] = useState("normal");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subject.trim() || !message.trim()) return;
+    if (!category || !message.trim()) return;
 
-    await createTicket.mutateAsync({ subject, message, priority });
-    setSubject("");
+    const categoryLabel = TICKET_CATEGORIES.find(c => c.value === category)?.label || category;
+    await createTicket.mutateAsync({ subject: categoryLabel, message, priority });
+    setCategory("");
     setMessage("");
     setPriority("normal");
     setShowForm(false);
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-4xl py-8 px-4">
+    <ProjectLayout>
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
@@ -129,15 +141,19 @@ export default function HelpSupport() {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="subject">Subject</Label>
-                  <Input
-                    id="subject"
-                    placeholder="Brief description of your issue"
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    required
-                    maxLength={200}
-                  />
+                  <Label htmlFor="category">What do you need help with?</Label>
+                  <Select value={category} onValueChange={setCategory} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TICKET_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="priority">Priority</Label>
@@ -156,7 +172,7 @@ export default function HelpSupport() {
                   <Label htmlFor="message">Message</Label>
                   <Textarea
                     id="message"
-                    placeholder="Please describe your issue in detail..."
+                    placeholder="Please describe your issue or idea in detail..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     required
@@ -165,7 +181,7 @@ export default function HelpSupport() {
                   />
                 </div>
                 <div className="flex gap-2">
-                  <Button type="submit" disabled={createTicket.isPending}>
+                  <Button type="submit" disabled={createTicket.isPending || !category}>
                     {createTicket.isPending ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : (
@@ -233,6 +249,6 @@ export default function HelpSupport() {
           </Card>
         )}
       </div>
-    </div>
+    </ProjectLayout>
   );
 }

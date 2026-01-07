@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTicket, useTicketMessages, useAddUserMessage, SupportTicket } from "@/hooks/useSupportTickets";
+import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -59,31 +60,35 @@ export default function HelpSupportTicket() {
 
   if (ticketLoading || messagesLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
+      <ProjectLayout>
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      </ProjectLayout>
     );
   }
 
   if (!ticket) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">Ticket not found</p>
-          <Button onClick={() => navigate("/help")}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Help
-          </Button>
+      <ProjectLayout>
+        <div className="flex items-center justify-center py-16">
+          <div className="text-center">
+            <p className="text-muted-foreground mb-4">Ticket not found</p>
+            <Button onClick={() => navigate("/help")}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Help
+            </Button>
+          </div>
         </div>
-      </div>
+      </ProjectLayout>
     );
   }
 
   const isResolved = ticket.status === "resolved";
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-3xl py-8 px-4">
+    <ProjectLayout>
+      <div className="max-w-3xl mx-auto">
         {/* Header */}
         <Button 
           variant="ghost" 
@@ -202,6 +207,6 @@ export default function HelpSupportTicket() {
           </Card>
         )}
       </div>
-    </div>
+    </ProjectLayout>
   );
 }
