@@ -232,16 +232,18 @@ const SidebarContent = ({
 
       {/* Sticky footer links */}
       <div className="mt-auto px-3 py-3 border-t border-sidebar-border space-y-0.5">
-        <a
-          href="https://docs.lovable.dev/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-          onClick={onNavigate}
+        <button
+          onClick={() => handleNavClick("/help")}
+          className={cn(
+            "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
+            isActiveRoute("/help")
+              ? "text-sidebar-accent-foreground font-medium"
+              : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+          )}
         >
-          <HelpCircle className="w-4 h-4" />
+          <HelpCircle className={cn("w-4 h-4", isActiveRoute("/help") && "text-sidebar-primary")} />
           <span>Help & Support</span>
-        </a>
+        </button>
         <button
           onClick={() => handleNavClick("/settings")}
           className={cn(
