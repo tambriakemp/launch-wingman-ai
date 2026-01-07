@@ -137,10 +137,9 @@ export const ResourceCard = ({
         {isCanvaLink && (
           <div className="absolute top-3 right-3">
             <Badge 
-              variant="secondary" 
-              className="bg-background/90 backdrop-blur-sm text-xs font-medium"
+              className="bg-[#7B2FF2] hover:bg-[#6B24D9] text-white text-xs font-semibold shadow-lg border-0 px-2.5 py-1"
             >
-              <ExternalLink className="w-3 h-3 mr-1" />
+              <ExternalLink className="w-3 h-3 mr-1.5" />
               Canva
             </Badge>
           </div>
