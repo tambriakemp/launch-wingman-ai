@@ -280,22 +280,42 @@ const Assessment = () => {
   const [savedAssessment, setSavedAssessment] = useState<SavedAssessment | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
 
+  // Load saved data on mount
   useEffect(() => {
     if (!user?.id) return;
     
-    const saved = getAssessmentData<SavedAssessment>(ASSESSMENT_KEYS.LAUNCH, user.id);
+    const saved = getAssessmentData<SavedAssessment & { currentQuestion?: number }>(ASSESSMENT_KEYS.LAUNCH, user.id);
     if (saved) {
-      setSavedAssessment(saved);
-      
-      // Auto-show results if assessment was completed
-      if (saved.completedAt) {
+      // Only show "View Previous Results" if assessment was fully completed
+      if (saved.completedAt && Object.keys(saved.answers || {}).length === questions.length) {
+        setSavedAssessment(saved);
         setAnswers(saved.answers);
         setReflections(saved.reflections || {});
         setShowResults(true);
         setHasStarted(true);
+      } else if (saved.answers && Object.keys(saved.answers).length > 0) {
+        // Restore in-progress data
+        setAnswers(saved.answers);
+        setReflections(saved.reflections || {});
+        if (saved.currentQuestion !== undefined) {
+          setCurrentQuestion(saved.currentQuestion);
+        }
       }
     }
   }, [user?.id]);
+
+  // Autosave on answer change
+  useEffect(() => {
+    if (!user?.id || Object.keys(answers).length === 0) return;
+    
+    const progressData = {
+      answers,
+      reflections,
+      currentQuestion,
+      savedAt: new Date().toISOString(),
+    };
+    setAssessmentData(ASSESSMENT_KEYS.LAUNCH, user.id, progressData);
+  }, [answers, reflections, currentQuestion, user?.id]);
 
   const totalScore = Object.values(answers).reduce((sum, points) => sum + points, 0);
   const progress = (Object.keys(answers).length / questions.length) * 100;
@@ -305,6 +325,9 @@ const Assessment = () => {
   const handleAnswer = (questionId: number, points: number) => {
     setAnswers((prev) => ({ ...prev, [questionId]: points }));
   };
+
+  // Check if we have a truly completed assessment
+  const hasCompletedAssessment = savedAssessment && savedAssessment.completedAt && Object.keys(savedAssessment.answers || {}).length === questions.length;
 
   const handleQuestionClick = (questionIndex: number) => {
     setCurrentQuestion(questionIndex);
@@ -458,10 +481,10 @@ const Assessment = () => {
 
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button onClick={() => setHasStarted(true)} className="flex-1">
-                    Start Assessment
+                    {Object.keys(answers).length > 0 ? 'Continue Assessment' : 'Start Assessment'}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
-                  {savedAssessment && (
+                  {hasCompletedAssessment && (
                     <Button variant="outline" onClick={handleViewSaved} className="flex-1">
                       <CheckCircle2 className="w-4 h-4 mr-2" />
                       View Previous Results
@@ -469,9 +492,15 @@ const Assessment = () => {
                   )}
                 </div>
 
-                {savedAssessment && (
+                {hasCompletedAssessment && savedAssessment?.completedAt && (
                   <p className="text-xs text-muted-foreground text-center">
                     Last completed: {new Date(savedAssessment.completedAt).toLocaleDateString()}
+                  </p>
+                )}
+                
+                {Object.keys(answers).length > 0 && !hasCompletedAssessment && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    You have {Object.keys(answers).length} of {questions.length} questions answered
                   </p>
                 )}
               </CardContent>

@@ -319,7 +319,7 @@ const commitmentFields = [
   { id: "accountability", label: "My accountability for this commitment is:" },
 ];
 
-const STORAGE_KEY = "coach_hub_coach_assessment";
+// Local storage key is deprecated - now using user-scoped keys from assessmentStorage
 
 const CoachAssessment = () => {
   const { toast } = useToast();
@@ -338,44 +338,55 @@ const CoachAssessment = () => {
   const [showResults, setShowResults] = useState(false);
   const [isSendingReminder, setIsSendingReminder] = useState(false);
 
+  // Load saved data on mount
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!user?.id) return;
+    
+    const saved = getAssessmentData<SavedCoachAssessment & { currentStep?: number; checkedStatements?: Record<string, boolean> }>(ASSESSMENT_KEYS.COACH, user.id);
     if (saved) {
-      const parsed = JSON.parse(saved);
-      setSavedAssessment(parsed);
-      
-      // Auto-show results if assessment was completed
-      if (parsed.completedAt) {
-        if (parsed.checkedStatements) setCheckedStatements(parsed.checkedStatements);
-        if (parsed.setAnswers) setSetAnswers(parsed.setAnswers);
-        if (parsed.reflections) setReflections(parsed.reflections);
-        if (parsed.barriers) setBarriers(parsed.barriers);
-        if (parsed.barrierOther) setBarrierOther(parsed.barrierOther);
-        if (parsed.barrierExpansion) setBarrierExpansion(parsed.barrierExpansion);
-        if (parsed.commitment) setCommitment(parsed.commitment);
+      // Only set as completed assessment if fully completed
+      if (saved.completedAt && saved.primaryApproach) {
+        setSavedAssessment(saved);
+        if (saved.checkedStatements) setCheckedStatements(saved.checkedStatements);
+        if (saved.setAnswers) setSetAnswers(saved.setAnswers);
+        if (saved.reflections) setReflections(saved.reflections);
+        if (saved.barriers) setBarriers(saved.barriers);
+        if (saved.barrierExpansion) setBarrierExpansion(saved.barrierExpansion);
+        if (saved.commitment) setCommitment(saved.commitment);
         setShowResults(true);
         setHasStarted(true);
-        return;
+      } else {
+        // Restore in-progress data
+        if (saved.checkedStatements) setCheckedStatements(saved.checkedStatements);
+        if (saved.setAnswers) setSetAnswers(saved.setAnswers);
+        if (saved.reflections) setReflections(saved.reflections);
+        if (saved.barriers) setBarriers(saved.barriers);
+        if (saved.barrierExpansion) setBarrierExpansion(saved.barrierExpansion);
+        if (saved.commitment) setCommitment(saved.commitment);
+        if (saved.currentStep !== undefined) setCurrentStep(saved.currentStep);
       }
     }
-    // Also check for in-progress data
-    const progressData = localStorage.getItem(STORAGE_KEY + "_progress");
-    if (progressData) {
-      try {
-        const parsed = JSON.parse(progressData);
-        if (parsed.checkedStatements) setCheckedStatements(parsed.checkedStatements);
-        if (parsed.setAnswers) setSetAnswers(parsed.setAnswers);
-        if (parsed.reflections) setReflections(parsed.reflections);
-        if (parsed.barriers) setBarriers(parsed.barriers);
-        if (parsed.barrierOther) setBarrierOther(parsed.barrierOther);
-        if (parsed.barrierExpansion) setBarrierExpansion(parsed.barrierExpansion);
-        if (parsed.commitment) setCommitment(parsed.commitment);
-        if (parsed.currentStep !== undefined) setCurrentStep(parsed.currentStep);
-      } catch (e) {
-        console.error("Failed to load saved progress", e);
-      }
-    }
-  }, []);
+  }, [user?.id]);
+
+  // Autosave on any change
+  useEffect(() => {
+    if (!user?.id) return;
+    const hasAnyData = Object.keys(checkedStatements).length > 0 || Object.keys(setAnswers).length > 0;
+    if (!hasAnyData) return;
+    
+    const progressData = {
+      checkedStatements,
+      setAnswers,
+      reflections,
+      barriers,
+      barrierOther,
+      barrierExpansion,
+      commitment,
+      currentStep,
+      savedAt: new Date().toISOString(),
+    };
+    setAssessmentData(ASSESSMENT_KEYS.COACH, user.id, progressData);
+  }, [checkedStatements, setAnswers, reflections, barriers, barrierOther, barrierExpansion, commitment, currentStep, user?.id]);
 
   // Calculate which coach type has most checks for each set
   const calculateSetWinner = (partIndex: number): CoachType | null => {
@@ -427,6 +438,7 @@ const CoachAssessment = () => {
   };
 
   const handleSaveProgress = () => {
+    if (!user?.id) return;
     const progressData = {
       checkedStatements,
       setAnswers,
@@ -438,7 +450,7 @@ const CoachAssessment = () => {
       currentStep,
       savedAt: new Date().toISOString(),
     };
-    localStorage.setItem(STORAGE_KEY + "_progress", JSON.stringify(progressData));
+    setAssessmentData(ASSESSMENT_KEYS.COACH, user.id, progressData);
     toast({
       title: "Progress Saved",
       description: "Your progress has been saved. You can continue later.",
@@ -457,8 +469,10 @@ const CoachAssessment = () => {
   };
 
   const handleSave = async () => {
+    if (!user?.id) return;
     const primaryApproach = calculatePrimaryApproach();
-    const assessment: SavedCoachAssessment = {
+    const assessment: SavedCoachAssessment & { checkedStatements: Record<string, boolean> } = {
+      checkedStatements,
       setAnswers,
       reflections,
       barriers: [...barriers, ...(barrierOther ? [barrierOther] : [])],
@@ -467,7 +481,7 @@ const CoachAssessment = () => {
       primaryApproach,
       completedAt: new Date().toISOString(),
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(assessment));
+    setAssessmentData(ASSESSMENT_KEYS.COACH, user.id, assessment);
     setSavedAssessment(assessment);
     
     // Track assessment completion
@@ -504,7 +518,7 @@ const CoachAssessment = () => {
       if (error) throw error;
 
       const updated = { ...savedAssessment!, reminderScheduled: true };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      setAssessmentData(ASSESSMENT_KEYS.COACH, user.id, updated);
       setSavedAssessment(updated);
 
       toast({
@@ -524,6 +538,10 @@ const CoachAssessment = () => {
   };
 
   const handleRetake = () => {
+    if (user?.id) {
+      // Clear saved data when retaking
+      setAssessmentData(ASSESSMENT_KEYS.COACH, user.id, {});
+    }
     setCheckedStatements({});
     setSetAnswers({});
     setReflections({});
@@ -533,8 +551,13 @@ const CoachAssessment = () => {
     setCommitment({});
     setCurrentStep(0);
     setShowResults(false);
+    setSavedAssessment(null);
     setHasStarted(true);
   };
+
+  // Check if we have a truly completed assessment
+  const hasCompletedAssessment = savedAssessment && savedAssessment.completedAt && savedAssessment.primaryApproach;
+  const hasInProgressData = Object.keys(checkedStatements).length > 0 || Object.keys(setAnswers).length > 0;
 
   const handleViewSaved = () => {
     if (savedAssessment) {
@@ -621,10 +644,10 @@ const CoachAssessment = () => {
 
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button onClick={() => setHasStarted(true)} className="flex-1">
-                    Start Assessment
+                    {hasInProgressData ? 'Continue Assessment' : 'Start Assessment'}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
-                  {savedAssessment && (
+                  {hasCompletedAssessment && (
                     <Button variant="outline" onClick={handleViewSaved} className="flex-1">
                       <CheckCircle2 className="w-4 h-4 mr-2" />
                       View Previous Results
@@ -632,9 +655,15 @@ const CoachAssessment = () => {
                   )}
                 </div>
 
-                {savedAssessment && (
+                {hasCompletedAssessment && savedAssessment?.completedAt && (
                   <p className="text-xs text-muted-foreground text-center">
                     Last completed: {new Date(savedAssessment.completedAt).toLocaleDateString()}
+                  </p>
+                )}
+                
+                {hasInProgressData && !hasCompletedAssessment && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    You have progress saved. Continue where you left off.
                   </p>
                 )}
               </CardContent>
