@@ -37,6 +37,7 @@ interface Resource {
   cover_image_url: string | null;
   resource_type: string;
   resource_url: string;
+  preview_url: string | null;
   tags: string[];
   subcategory_id: string;
 }
@@ -393,6 +394,7 @@ const ContentVaultCategory = () => {
                   description={resource.description}
                   coverImageUrl={resource.cover_image_url}
                   resourceUrl={resource.resource_url}
+                  previewUrl={resource.preview_url}
                   resourceType={resource.resource_type}
                   tags={resource.tags}
                   onClick={() => handleResourceClick(resource, index)}

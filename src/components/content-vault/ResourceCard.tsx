@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ExternalLink, Download, Image as ImageIcon, Loader2, Check, Pencil } from "lucide-react";
+import { ExternalLink, Download, Image as ImageIcon, Loader2, Check, Pencil, Eye } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ interface ResourceCardProps {
   description: string | null;
   coverImageUrl: string | null;
   resourceUrl: string;
+  previewUrl?: string | null;
   resourceType: string;
   tags: string[];
   onClick: () => void;
@@ -27,6 +28,7 @@ export const ResourceCard = ({
   description, 
   coverImageUrl, 
   resourceUrl,
+  previewUrl,
   resourceType, 
   tags,
   onClick,
@@ -156,6 +158,20 @@ export const ResourceCard = ({
             className="absolute bottom-3 left-3 h-10 w-10 rounded-full bg-black/70 text-white hover:bg-black/90 shadow-lg backdrop-blur-sm border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
           >
             <Pencil className="w-5 h-5" />
+          </Button>
+        )}
+
+        {/* Preview Button for Canva resources with preview URL */}
+        {isCanvaLink && previewUrl && (
+          <Button 
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(previewUrl, '_blank');
+            }}
+            className="absolute bottom-3 right-3 h-10 w-10 rounded-full bg-black/70 text-white hover:bg-black/90 shadow-lg backdrop-blur-sm border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
+          >
+            <Eye className="w-5 h-5" />
           </Button>
         )}
 
