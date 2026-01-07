@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Upload, X, Image as ImageIcon } from "lucide-react";
+import { Loader2, Upload, X, Image as ImageIcon, Clipboard } from "lucide-react";
 
 interface Resource {
   id: string;
@@ -96,9 +96,9 @@ export const ResourceEditDialog = ({
     },
   });
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !resource) return;
+  // Shared function to process and upload an image file
+  const processAndUploadImage = useCallback(async (file: File) => {
+    if (!resource) return;
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -115,8 +115,15 @@ export const ResourceEditDialog = ({
     setIsUploading(true);
 
     try {
-      // Create unique filename
-      const fileExt = file.name.split('.').pop();
+      // Determine file extension from mime type
+      const mimeToExt: Record<string, string> = {
+        'image/png': 'png',
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/gif': 'gif',
+        'image/webp': 'webp',
+      };
+      const fileExt = mimeToExt[file.type] || file.name.split('.').pop() || 'png';
       const fileName = `resource-covers/${resource.id}-${Date.now()}.${fileExt}`;
 
       // Upload to storage
@@ -139,7 +146,29 @@ export const ResourceEditDialog = ({
     } finally {
       setIsUploading(false);
     }
+  }, [resource]);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processAndUploadImage(file);
   };
+
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          await processAndUploadImage(file);
+        }
+        break;
+      }
+    }
+  }, [processAndUploadImage]);
 
   const handleRemoveCover = () => {
     setFormData(prev => ({ ...prev, cover_image_url: "" }));
@@ -172,7 +201,12 @@ export const ResourceEditDialog = ({
           {/* Cover Image Upload */}
           <div className="space-y-2">
             <Label>Cover Image</Label>
-            <div className="aspect-video bg-muted rounded-lg overflow-hidden relative">
+            <div 
+              className="aspect-video bg-muted rounded-lg overflow-hidden relative cursor-pointer border-2 border-dashed border-transparent hover:border-primary/50 transition-colors focus:outline-none focus:border-primary"
+              tabIndex={0}
+              onPaste={handlePaste}
+              onClick={() => !formData.cover_image_url && fileInputRef.current?.click()}
+            >
               {formData.cover_image_url ? (
                 <>
                   <img 
@@ -185,15 +219,28 @@ export const ResourceEditDialog = ({
                     variant="destructive"
                     size="icon"
                     className="absolute top-2 right-2 h-8 w-8"
-                    onClick={handleRemoveCover}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveCover();
+                    }}
                     disabled={isUploading}
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </>
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <ImageIcon className="w-12 h-12 text-muted-foreground/50" />
+                <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                  {isUploading ? (
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <ImageIcon className="w-8 h-8" />
+                        <Clipboard className="w-6 h-6" />
+                      </div>
+                      <p className="text-sm">Click to upload or paste an image</p>
+                    </>
+                  )}
                 </div>
               )}
             </div>
