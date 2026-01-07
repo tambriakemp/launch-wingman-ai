@@ -6,10 +6,46 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to extract thumbnail from Canva URL
+async function extractCanvaThumbnail(url: string): Promise<string | null> {
+  try {
+    if (!url || !url.includes('canva.com')) {
+      return null;
+    }
+
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; VaultBot/1.0)',
+      },
+    });
+
+    if (!response.ok) {
+      console.log(`Failed to fetch Canva URL: ${response.status}`);
+      return null;
+    }
+
+    const html = await response.text();
+    const ogImageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
+                         html.match(/<meta\s+content=["']([^"']+)["']\s+property=["']og:image["']/i);
+
+    if (ogImageMatch && ogImageMatch[1]) {
+      console.log(`Extracted thumbnail from Canva: ${ogImageMatch[1].substring(0, 50)}...`);
+      return ogImageMatch[1];
+    }
+
+    console.log('No og:image found in Canva page');
+    return null;
+  } catch (error) {
+    console.error('Error extracting Canva thumbnail:', error);
+    return null;
+  }
+}
+
 interface CsvResource {
   title: string;
   resource_url: string;
   cover_image_url?: string;
+  preview_url?: string;
   category: string;
   subcategory: string;
   description?: string;
@@ -21,6 +57,7 @@ interface ProcessResult {
   added: number;
   skipped: number;
   failed: number;
+  thumbnailsFetched: number;
   errors: { row: number; title: string; error: string }[];
   addedTitles: string[];
   skippedTitles: string[];
@@ -156,6 +193,7 @@ serve(async (req) => {
       added: 0,
       skipped: 0,
       failed: 0,
+      thumbnailsFetched: 0,
       errors: [],
       addedTitles: [],
       skippedTitles: []
@@ -221,6 +259,21 @@ serve(async (req) => {
         tags = resource.tags.split(',').map(t => t.trim()).filter(Boolean);
       }
 
+      // Auto-fetch thumbnail if no cover_image_url but has Canva preview_url or resource_url
+      let coverImageUrl = resource.cover_image_url?.trim() || null;
+      if (!coverImageUrl) {
+        // Try preview_url first, then resource_url
+        const canvaUrl = resource.preview_url?.trim() || resource.resource_url?.trim();
+        if (canvaUrl && canvaUrl.includes('canva.com')) {
+          console.log(`Attempting to fetch thumbnail for: ${resource.title}`);
+          const extractedThumbnail = await extractCanvaThumbnail(canvaUrl);
+          if (extractedThumbnail) {
+            coverImageUrl = extractedThumbnail;
+            result.thumbnailsFetched++;
+          }
+        }
+      }
+
       // Get next position
       const currentMax = maxPositions.get(subcategoryInfo.id) || 0;
       const nextPosition = currentMax + 1;
@@ -232,7 +285,8 @@ serve(async (req) => {
         .insert({
           title: resource.title.trim(),
           resource_url: resource.resource_url.trim(),
-          cover_image_url: resource.cover_image_url?.trim() || null,
+          cover_image_url: coverImageUrl,
+          preview_url: resource.preview_url?.trim() || null,
           subcategory_id: subcategoryInfo.id,
           description: resource.description?.trim() || null,
           resource_type: resource.resource_type?.trim() || 'canva_link',
@@ -251,7 +305,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Processing complete: ${result.added} added, ${result.skipped} skipped, ${result.failed} failed`);
+    console.log(`Processing complete: ${result.added} added, ${result.skipped} skipped, ${result.failed} failed, ${result.thumbnailsFetched} thumbnails fetched`);
 
     return new Response(
       JSON.stringify(result),

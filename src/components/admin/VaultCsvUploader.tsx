@@ -12,6 +12,7 @@ interface CsvResource {
   title: string;
   resource_url: string;
   cover_image_url?: string;
+  preview_url?: string;
   category: string;
   subcategory: string;
   description?: string;
@@ -68,6 +69,7 @@ export const VaultCsvUploader = () => {
         title: row.title || '',
         resource_url: row.resource_url || '',
         cover_image_url: row.cover_image_url || undefined,
+        preview_url: row.preview_url || undefined,
         category: row.category || '',
         subcategory: row.subcategory || '',
         description: row.description || undefined,
@@ -168,9 +170,9 @@ export const VaultCsvUploader = () => {
   };
 
   const downloadSampleCsv = () => {
-    const sample = `title,resource_url,cover_image_url,category,subcategory,description,resource_type,tags
-"Instagram Story Template","https://canva.com/example1","https://example.com/cover1.jpg","Social Media Posts","Stories","Beautiful story template for launches","canva_link","launch,story,modern"
-"Lead Magnet Ebook","https://canva.com/example2","https://example.com/cover2.jpg","Ebooks","Lead Magnets","Conversion-focused ebook template","canva_link","ebook,lead-magnet"`;
+    const sample = `title,resource_url,cover_image_url,preview_url,category,subcategory,description,resource_type,tags
+"Instagram Story Template","https://canva.com/example1","","https://www.canva.com/design/DAGfeRGzQ4Y/watch","Social Media Posts","Stories","Beautiful story template for launches","canva_link","launch,story,modern"
+"Lead Magnet Ebook","https://canva.com/example2","https://example.com/cover2.jpg","","Ebooks","Lead Magnets","Conversion-focused ebook template","canva_link","ebook,lead-magnet"`;
     
     const blob = new Blob([sample], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -232,7 +234,10 @@ export const VaultCsvUploader = () => {
             <p className="font-medium mb-1">Required columns:</p>
             <p>title, resource_url, category, subcategory</p>
             <p className="mt-1 font-medium">Optional columns:</p>
-            <p>cover_image_url, description, resource_type, tags</p>
+            <p>cover_image_url, preview_url, description, resource_type, tags</p>
+            <p className="mt-1 text-muted-foreground/70">
+              💡 If preview_url is a Canva link and no cover_image_url is provided, thumbnail will be auto-fetched
+            </p>
           </div>
         </CardContent>
       </Card>
