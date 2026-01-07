@@ -22,9 +22,13 @@ const proFeatures = [
   "Unlimited AI content ideas",
   "Unlimited saved drafts", 
   "Full sales copy builder",
+  "Multiple offers per sales page",
   "Relaunch mode",
   "Insights & analytics",
   "Export phase snapshot",
+  "Content Vault access",
+  "Social media scheduling",
+  "Cross-project content visibility",
   "Priority support",
 ];
 
