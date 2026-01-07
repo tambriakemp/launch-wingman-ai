@@ -14,6 +14,7 @@ import {
   MessageSquareText,
   Lightbulb,
   Package,
+  Settings,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
 import { Separator } from "@/components/ui/separator";
@@ -102,7 +103,7 @@ const SidebarContent = ({
   };
 
   return (
-    <>
+    <div className="h-full flex flex-col">
       {/* Logo */}
       <div className="px-4 py-3 border-b border-sidebar-border">
         <Link to="/app" className="flex items-center gap-2" onClick={onNavigate}>
@@ -227,7 +228,23 @@ const SidebarContent = ({
           </div>
         ))}
       </nav>
-    </>
+
+      {/* Sticky Settings at bottom */}
+      <div className="mt-auto px-3 py-3 border-t border-sidebar-border">
+        <button
+          onClick={() => handleNavClick("/settings")}
+          className={cn(
+            "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
+            isActiveRoute("/settings")
+              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+              : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+          )}
+        >
+          <Settings className={cn("w-4 h-4", isActiveRoute("/settings") && "text-sidebar-primary")} />
+          <span>Settings</span>
+        </button>
+      </div>
+    </div>
   );
 };
 
@@ -351,9 +368,7 @@ export const ProjectSidebar = () => {
             side="left" 
             className="w-[280px] p-0 bg-sidebar border-r border-sidebar-border"
           >
-            <div className="h-full flex flex-col">
-              <SidebarContent {...sidebarContentProps} onNavigate={close} />
-            </div>
+            <SidebarContent {...sidebarContentProps} onNavigate={close} />
           </SheetContent>
         </Sheet>
         <UpgradeDialog 
@@ -371,7 +386,7 @@ export const ProjectSidebar = () => {
       <motion.aside
         initial={{ x: -20, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
-        className="fixed left-0 top-0 h-screen w-56 bg-sidebar border-r border-sidebar-border flex-col z-50 hidden md:flex"
+        className="fixed left-0 top-0 h-screen w-56 bg-sidebar border-r border-sidebar-border z-50 hidden md:flex"
       >
         <SidebarContent {...sidebarContentProps} />
       </motion.aside>
