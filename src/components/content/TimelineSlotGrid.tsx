@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronRight, MoreHorizontal, Trash2, CalendarClock, Clock, CheckCircle2, Crown, Plus, Sparkles, Loader2, Eye } from "lucide-react";
+import { ChevronDown, ChevronRight, MoreHorizontal, Trash2, CalendarClock, Clock, CheckCircle2, Crown, Plus, Sparkles, Loader2, Eye, Lock, ClipboardList, MessageSquare, ArrowRight } from "lucide-react";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,8 @@ import { PostEditorSheet } from "./PostEditorSheet";
 import { SuggestionViewDialog } from "./SuggestionViewDialog";
 import { getDayTemplates, TimelineTemplate } from "@/data/timelineTemplates";
 import { trackTimelineSuggestion, trackContentGeneration } from "@/lib/analytics";
+import { getPlanningTasks, getMessagingTasks } from "@/data/taskTemplates";
+import { Link } from "react-router-dom";
 
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
@@ -131,6 +133,31 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
     dayNumber: number;
     timeOfDay: string;
   } | null>(null);
+
+  // Fetch project task completion status for phase gate
+  const { data: projectTasks = [] } = useQuery({
+    queryKey: ["project-tasks-status", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_tasks")
+        .select("task_id, status")
+        .eq("project_id", projectId);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Check if planning and messaging phases are complete
+  const planningTaskIds = getPlanningTasks().map(t => t.taskId);
+  const messagingTaskIds = getMessagingTasks().map(t => t.taskId);
+  
+  const completedTaskIds = new Set(
+    projectTasks.filter(t => t.status === 'completed').map(t => t.task_id)
+  );
+  
+  const planningComplete = planningTaskIds.every(id => completedTaskIds.has(id));
+  const messagingComplete = messagingTaskIds.every(id => completedTaskIds.has(id));
+  const phasesComplete = planningComplete && messagingComplete;
 
   // Fetch existing content planner items
   const { data: plannerItems = [], isLoading } = useQuery({
@@ -507,6 +534,89 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
     return (
       <div className="py-12 text-center">
         <p className="text-sm text-muted-foreground">Loading your timeline...</p>
+      </div>
+    );
+  }
+
+  // Phase gate: require planning and messaging to be complete
+  if (!phasesComplete) {
+    const planningProgress = planningTaskIds.filter(id => completedTaskIds.has(id)).length;
+    const messagingProgress = messagingTaskIds.filter(id => completedTaskIds.has(id)).length;
+
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold text-foreground">Launch Content Timeline</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            AI-suggested content slots for your launch. Generate ideas or add your own.
+          </p>
+        </div>
+
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-4">
+              <Lock className="w-7 h-7 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Complete Planning & Messaging First
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-md mb-6">
+              Your launch content will be personalized based on your audience, messaging, and offer. 
+              Complete these phases to unlock your timeline.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
+              <div className="flex-1 p-4 rounded-lg border bg-card">
+                <div className="flex items-center gap-2 mb-2">
+                  <ClipboardList className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Planning</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className={cn(
+                        "h-full transition-all",
+                        planningComplete ? "bg-green-500" : "bg-primary"
+                      )}
+                      style={{ width: `${(planningProgress / planningTaskIds.length) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {planningProgress}/{planningTaskIds.length}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex-1 p-4 rounded-lg border bg-card">
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Messaging</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className={cn(
+                        "h-full transition-all",
+                        messagingComplete ? "bg-green-500" : "bg-primary"
+                      )}
+                      style={{ width: `${(messagingProgress / messagingTaskIds.length) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {messagingProgress}/{messagingTaskIds.length}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <Button asChild className="mt-6">
+              <Link to={`/projects/${projectId}/tasks`}>
+                Go to Tasks
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
