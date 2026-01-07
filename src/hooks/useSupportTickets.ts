@@ -52,6 +52,7 @@ export function useUserTickets() {
 export function useAllTickets(filters?: {
   status?: string;
   priority?: string;
+  category?: string;
   search?: string;
 }) {
   return useQuery({
@@ -67,6 +68,9 @@ export function useAllTickets(filters?: {
       }
       if (filters?.priority && filters.priority !== "all") {
         query = query.eq("priority", filters.priority);
+      }
+      if (filters?.category && filters.category !== "all") {
+        query = query.eq("subject", filters.category);
       }
       if (filters?.search) {
         query = query.or(`subject.ilike.%${filters.search}%,user_email.ilike.%${filters.search}%`);
