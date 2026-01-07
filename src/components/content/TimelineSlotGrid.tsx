@@ -831,7 +831,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                             });
                                             setViewDialogOpen(true);
                                           }}
-                                          className="h-8 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                          className="h-8 px-2"
                                           title="View full details"
                                         >
                                           <Eye className="w-3.5 h-3.5" />
@@ -841,7 +841,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                             <Button
                                               variant="ghost"
                                               size="icon"
-                                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                              className="h-8 w-8"
                                             >
                                               <MoreHorizontal className="w-4 h-4" />
                                             </Button>
