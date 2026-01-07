@@ -10,6 +10,7 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useAdmin } from "@/hooks/useAdmin";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getVaultThumbnail } from "@/data/vaultThumbnails";
 
 interface Category {
   id: string;
@@ -101,7 +102,7 @@ const ContentVault = () => {
                   key={category.id}
                   name={category.name}
                   description={category.description}
-                  coverImageUrl={category.cover_image_url}
+                  coverImageUrl={category.cover_image_url || getVaultThumbnail(category.slug)}
                   onClick={() => handleCategoryClick(category.slug)}
                   showEditButton={hasAdminAccess}
                   onEditClick={() => setEditingCategory(category)}
