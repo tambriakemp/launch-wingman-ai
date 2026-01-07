@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Image as ImageIcon, Upload, Loader2, X } from "lucide-react";
+import { Image as ImageIcon, Loader2, X, Clipboard } from "lucide-react";
 
 interface CategoryEditDialogProps {
   open: boolean;
@@ -47,10 +47,8 @@ export const CategoryEditDialog = ({ open, onOpenChange, category }: CategoryEdi
     },
   });
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  // Shared function to process and upload an image file
+  const processAndUploadImage = useCallback(async (file: File) => {
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
@@ -66,8 +64,15 @@ export const CategoryEditDialog = ({ open, onOpenChange, category }: CategoryEdi
     setIsUploading(true);
 
     try {
-      // Create unique filename
-      const fileExt = file.name.split('.').pop();
+      // Determine file extension from mime type
+      const mimeToExt: Record<string, string> = {
+        'image/png': 'png',
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/gif': 'gif',
+        'image/webp': 'webp',
+      };
+      const fileExt = mimeToExt[file.type] || file.name.split('.').pop() || 'png';
       const fileName = `category-covers/${category.id}-${Date.now()}.${fileExt}`;
 
       // Upload to storage
@@ -90,7 +95,29 @@ export const CategoryEditDialog = ({ open, onOpenChange, category }: CategoryEdi
     } finally {
       setIsUploading(false);
     }
+  }, [category.id, updateMutation]);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processAndUploadImage(file);
   };
+
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          await processAndUploadImage(file);
+        }
+        break;
+      }
+    }
+  }, [processAndUploadImage]);
 
   const handleRemoveCover = async () => {
     setPreviewUrl(null);
@@ -110,7 +137,12 @@ export const CategoryEditDialog = ({ open, onOpenChange, category }: CategoryEdi
           </p>
 
           {/* Preview */}
-          <div className="aspect-[4/3] bg-muted rounded-lg overflow-hidden relative">
+          <div 
+            className="aspect-[4/3] bg-muted rounded-lg overflow-hidden relative cursor-pointer border-2 border-dashed border-transparent hover:border-primary/50 transition-colors focus:outline-none focus:border-primary"
+            tabIndex={0}
+            onPaste={handlePaste}
+            onClick={() => !previewUrl && fileInputRef.current?.click()}
+          >
             {previewUrl ? (
               <>
                 <img 
@@ -122,15 +154,28 @@ export const CategoryEditDialog = ({ open, onOpenChange, category }: CategoryEdi
                   variant="destructive"
                   size="icon"
                   className="absolute top-2 right-2 h-8 w-8"
-                  onClick={handleRemoveCover}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveCover();
+                  }}
                   disabled={isUploading || updateMutation.isPending}
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </>
             ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <ImageIcon className="w-16 h-16 text-muted-foreground/50" />
+              <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                {isUploading ? (
+                  <Loader2 className="w-8 h-8 animate-spin" />
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="w-8 h-8" />
+                      <Clipboard className="w-6 h-6" />
+                    </div>
+                    <p className="text-sm">Click to upload or paste an image</p>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -144,24 +189,23 @@ export const CategoryEditDialog = ({ open, onOpenChange, category }: CategoryEdi
             className="hidden"
           />
           
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading || updateMutation.isPending}
-          >
-            {isUploading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload New Cover
-              </>
-            )}
-          </Button>
+          {previewUrl && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading || updateMutation.isPending}
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                "Change Cover"
+              )}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
