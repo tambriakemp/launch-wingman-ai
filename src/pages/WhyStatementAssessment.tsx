@@ -210,11 +210,28 @@ const WhyStatementAssessment = () => {
         if (saved.data) setData(saved.data);
         if (saved.currentPart !== undefined) setCurrentPart(saved.currentPart);
         if (saved.visitedParts) setVisitedParts(saved.visitedParts);
+        if (saved.completedAt) setIsCompleted(true);
       } catch (e) {
         console.error("Failed to load saved progress", e);
       }
     }
   }, [user?.id]);
+
+  // Autosave on any change
+  useEffect(() => {
+    if (!user?.id) return;
+    // Only save if there's actual data
+    const hasData = data.currentFrustration || data.selectedFeelings.length > 0 || visitedParts.length > 1;
+    if (!hasData) return;
+    
+    const progressData = {
+      data,
+      currentPart,
+      visitedParts,
+      savedAt: new Date().toISOString(),
+    };
+    setAssessmentData(ASSESSMENT_KEYS.WHY_STATEMENT, user.id, progressData);
+  }, [data, currentPart, visitedParts, user?.id]);
 
   const updateData = <K extends keyof AssessmentData>(key: K, value: AssessmentData[K]) => {
     setData((prev) => ({ ...prev, [key]: value }));
