@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TicketDetailSheet } from "./TicketDetailSheet";
+import { TICKET_CATEGORIES } from "@/pages/HelpSupport";
 import { 
   Search, 
   Loader2, 
@@ -49,12 +50,14 @@ function getUserTierBadge(tier: string) {
 export function SupportTicketsTab() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   const { data: tickets, isLoading } = useAllTickets({
     status: statusFilter,
     priority: priorityFilter,
+    category: categoryFilter !== "all" ? TICKET_CATEGORIES.find(c => c.value === categoryFilter)?.label : undefined,
     search: search || undefined,
   });
 
@@ -165,6 +168,19 @@ export function SupportTicketsTab() {
                 <SelectItem value="high">High</SelectItem>
                 <SelectItem value="normal">Normal</SelectItem>
                 <SelectItem value="low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {TICKET_CATEGORIES.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
