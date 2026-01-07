@@ -11,6 +11,7 @@ export interface SupportTicket {
   subject: string;
   status: 'open' | 'in_progress' | 'awaiting_user' | 'awaiting_agent' | 'resolved';
   priority: 'low' | 'normal' | 'high';
+  user_tier: 'free' | 'pro';
   assigned_to: string | null;
   created_at: string;
   updated_at: string;
@@ -117,7 +118,7 @@ export function useTicketMessages(ticketId: string | undefined) {
 // Create a new ticket
 export function useCreateTicket() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, isSubscribed } = useAuth();
 
   return useMutation({
     mutationFn: async (data: { subject: string; message: string; priority?: string }) => {
@@ -132,6 +133,8 @@ export function useCreateTicket() {
         ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim()
         : null;
 
+      const userTier = isSubscribed ? "pro" : "free";
+
       // Create ticket
       const { data: ticket, error: ticketError } = await supabase
         .from("support_tickets")
@@ -141,6 +144,7 @@ export function useCreateTicket() {
           user_name: userName,
           subject: data.subject,
           priority: data.priority || "normal",
+          user_tier: userTier,
         })
         .select()
         .single();
@@ -159,6 +163,23 @@ export function useCreateTicket() {
         });
 
       if (messageError) throw messageError;
+
+      // Send notification to support team
+      try {
+        await supabase.functions.invoke("send-ticket-notification", {
+          body: {
+            type: "new_ticket",
+            ticketId: ticket.id,
+            userEmail: user?.email,
+            userName: userName || "User",
+            subject: data.subject,
+            message: data.message,
+            userTier,
+          },
+        });
+      } catch (e) {
+        console.error("Failed to send new ticket notification:", e);
+      }
 
       return ticket as SupportTicket;
     },
