@@ -15,6 +15,7 @@ import {
   Lightbulb,
   Package,
   Settings,
+  HelpCircle,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
 import { Separator } from "@/components/ui/separator";
@@ -229,14 +230,24 @@ const SidebarContent = ({
         ))}
       </nav>
 
-      {/* Sticky Settings at bottom */}
-      <div className="mt-auto px-3 py-3 border-t border-sidebar-border">
+      {/* Sticky footer links */}
+      <div className="mt-auto px-3 py-3 border-t border-sidebar-border space-y-0.5">
+        <a
+          href="https://docs.lovable.dev/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+          onClick={onNavigate}
+        >
+          <HelpCircle className="w-4 h-4" />
+          <span>Help & Support</span>
+        </a>
         <button
           onClick={() => handleNavClick("/settings")}
           className={cn(
             "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
             isActiveRoute("/settings")
-              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+              ? "text-sidebar-accent-foreground font-medium"
               : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
           )}
         >
