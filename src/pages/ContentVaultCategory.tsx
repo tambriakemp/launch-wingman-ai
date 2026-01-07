@@ -399,6 +399,8 @@ const ContentVaultCategory = () => {
                   isSelectable={isSelectionMode}
                   isSelected={selectedIds.has(resource.id)}
                   onSelectionChange={() => toggleSelection(resource.id)}
+                  isAdmin={isAdmin}
+                  onEdit={() => setEditingResource(resource)}
                 />
               ))}
             </div>

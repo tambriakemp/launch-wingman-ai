@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ExternalLink, Download, Image as ImageIcon, Loader2, Check } from "lucide-react";
+import { ExternalLink, Download, Image as ImageIcon, Loader2, Check, Pencil } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ interface ResourceCardProps {
   isSelectable?: boolean;
   isSelected?: boolean;
   onSelectionChange?: (selected: boolean) => void;
+  isAdmin?: boolean;
+  onEdit?: () => void;
 }
 
 export const ResourceCard = ({ 
@@ -31,6 +33,8 @@ export const ResourceCard = ({
   isSelectable = false,
   isSelected = false,
   onSelectionChange,
+  isAdmin = false,
+  onEdit,
 }: ResourceCardProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const isCanvaLink = resourceType === 'canva_link';
@@ -140,6 +144,20 @@ export const ResourceCard = ({
               Canva
             </Badge>
           </div>
+        )}
+
+        {/* Admin Edit Button */}
+        {isAdmin && onEdit && (
+          <Button 
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            className="absolute bottom-3 left-3 h-10 w-10 rounded-full bg-black/70 text-white hover:bg-black/90 shadow-lg backdrop-blur-sm border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
+          >
+            <Pencil className="w-5 h-5" />
+          </Button>
         )}
 
         {/* Persistent Download Button - Always visible on mobile, hover on desktop */}
