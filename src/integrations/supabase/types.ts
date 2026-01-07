@@ -1677,6 +1677,7 @@ export type Database = {
           user_email: string
           user_id: string
           user_name: string | null
+          user_tier: string
         }
         Insert: {
           assigned_to?: string | null
@@ -1690,6 +1691,7 @@ export type Database = {
           user_email: string
           user_id: string
           user_name?: string | null
+          user_tier?: string
         }
         Update: {
           assigned_to?: string | null
@@ -1703,6 +1705,7 @@ export type Database = {
           user_email?: string
           user_id?: string
           user_name?: string | null
+          user_tier?: string
         }
         Relationships: []
       }

@@ -39,6 +39,13 @@ function getPriorityBadge(priority: string) {
   return <Badge variant="outline" className={className}>{label}</Badge>;
 }
 
+function getUserTierBadge(tier: string) {
+  if (tier === "pro") {
+    return <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">Pro</Badge>;
+  }
+  return <Badge variant="outline" className="text-muted-foreground">Free</Badge>;
+}
+
 export function SupportTicketsTab() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
@@ -179,6 +186,7 @@ export function SupportTicketsTab() {
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       {getStatusBadge(ticket.status)}
                       {getPriorityBadge(ticket.priority)}
+                      {getUserTierBadge(ticket.user_tier)}
                     </div>
                     <p className="font-medium truncate">{ticket.subject}</p>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-1">
