@@ -475,6 +475,7 @@ export type Database = {
           description: string | null
           id: string
           position: number
+          preview_url: string | null
           resource_type: string
           resource_url: string
           subcategory_id: string
@@ -487,6 +488,7 @@ export type Database = {
           description?: string | null
           id?: string
           position?: number
+          preview_url?: string | null
           resource_type?: string
           resource_url: string
           subcategory_id: string
@@ -499,6 +501,7 @@ export type Database = {
           description?: string | null
           id?: string
           position?: number
+          preview_url?: string | null
           resource_type?: string
           resource_url?: string
           subcategory_id?: string

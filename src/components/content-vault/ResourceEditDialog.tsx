@@ -22,6 +22,7 @@ interface Resource {
   cover_image_url: string | null;
   resource_type: string;
   resource_url: string;
+  preview_url: string | null;
   tags: string[];
   subcategory_id: string;
 }
@@ -44,6 +45,7 @@ export const ResourceEditDialog = ({
     title: resource?.title || "",
     description: resource?.description || "",
     resource_url: resource?.resource_url || "",
+    preview_url: resource?.preview_url || "",
     cover_image_url: resource?.cover_image_url || "",
     resource_type: resource?.resource_type || "canva_link",
     tags: resource?.tags?.join(", ") || "",
@@ -56,6 +58,7 @@ export const ResourceEditDialog = ({
         title: resource.title,
         description: resource.description || "",
         resource_url: resource.resource_url,
+        preview_url: resource.preview_url || "",
         cover_image_url: resource.cover_image_url || "",
         resource_type: resource.resource_type,
         tags: resource.tags?.join(", ") || "",
@@ -78,6 +81,7 @@ export const ResourceEditDialog = ({
           title: data.title,
           description: data.description || null,
           resource_url: data.resource_url,
+          preview_url: data.preview_url || null,
           cover_image_url: data.cover_image_url || null,
           resource_type: data.resource_type,
           tags,
@@ -185,6 +189,7 @@ export const ResourceEditDialog = ({
       title: resource.title,
       description: resource.description || "",
       resource_url: resource.resource_url,
+      preview_url: resource.preview_url || "",
       cover_image_url: resource.cover_image_url || "",
       resource_type: resource.resource_type,
       tags: resource.tags?.join(", ") || "",
@@ -310,6 +315,22 @@ export const ResourceEditDialog = ({
               }
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="preview_url">Preview URL (optional)</Label>
+            <Input
+              id="preview_url"
+              type="url"
+              value={formData.preview_url}
+              onChange={(e) =>
+                setFormData({ ...formData, preview_url: e.target.value })
+              }
+              placeholder="Canva watch/preview link"
+            />
+            <p className="text-xs text-muted-foreground">
+              Paste a Canva preview link (e.g., /watch?...) to show a preview button
+            </p>
           </div>
 
           <div className="space-y-2">
