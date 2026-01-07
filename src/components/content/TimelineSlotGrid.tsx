@@ -802,44 +802,79 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                           )}
                                         </div>
                                       </div>
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                                          >
-                                            <MoreHorizontal className="w-4 h-4" />
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="min-w-[160px]">
-                                          <DropdownMenuItem
-                                            onClick={() => {
-                                              if (item.status === "completed") {
-                                                handleOpenEditor(item);
-                                              } else if (isSubscribed) {
-                                                handleOpenEditor(item);
-                                              } else {
-                                                setShowUpgradeDialog(true);
+                                      <div className="flex gap-1">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => {
+                                            // Create a synthetic suggestion from the item to view
+                                            const itemKey = `item-${item.id}`;
+                                            setLocalSuggestions(prev => ({
+                                              ...prev,
+                                              [itemKey]: {
+                                                id: item.id,
+                                                title: item.title,
+                                                description: item.description || '',
+                                                template_type: 'general',
+                                                content_type: item.content_type,
                                               }
-                                            }}
-                                          >
-                                            <CalendarClock className="w-4 h-4 mr-2" />
-                                            {item.status === "completed" ? "View Posted" : "Schedule / Edit"}
-                                            {item.status !== "completed" && !hasFullAccess && (
-                                              <Crown className="w-3.5 h-3.5 ml-auto text-yellow-500" />
-                                            )}
-                                          </DropdownMenuItem>
-                                          <DropdownMenuSeparator />
-                                          <DropdownMenuItem
-                                            className="text-destructive"
-                                            onClick={() => handleDeleteClick(item.id)}
-                                          >
-                                            <Trash2 className="w-4 h-4 mr-2" />
-                                            Remove
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
+                                            }));
+                                            setSelectedSuggestionKey(itemKey);
+                                            setSelectedTemplate({
+                                              phase: item.phase,
+                                              day_number: item.day_number,
+                                              time_of_day: item.time_of_day as "morning" | "evening",
+                                              template_type: 'general',
+                                              content_type: item.content_type,
+                                              title_template: item.title,
+                                              description_template: item.description || '',
+                                            });
+                                            setViewDialogOpen(true);
+                                          }}
+                                          className="h-8 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                          title="View full details"
+                                        >
+                                          <Eye className="w-3.5 h-3.5" />
+                                        </Button>
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                              <MoreHorizontal className="w-4 h-4" />
+                                            </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end" className="min-w-[160px]">
+                                            <DropdownMenuItem
+                                              onClick={() => {
+                                                if (item.status === "completed") {
+                                                  handleOpenEditor(item);
+                                                } else if (isSubscribed) {
+                                                  handleOpenEditor(item);
+                                                } else {
+                                                  setShowUpgradeDialog(true);
+                                                }
+                                              }}
+                                            >
+                                              <CalendarClock className="w-4 h-4 mr-2" />
+                                              {item.status === "completed" ? "View Posted" : "Schedule / Edit"}
+                                              {item.status !== "completed" && !hasFullAccess && (
+                                                <Crown className="w-3.5 h-3.5 ml-auto text-yellow-500" />
+                                              )}
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                              className="text-destructive"
+                                              onClick={() => handleDeleteClick(item.id)}
+                                            >
+                                              <Trash2 className="w-4 h-4 mr-2" />
+                                              Remove
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
