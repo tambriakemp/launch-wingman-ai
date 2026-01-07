@@ -87,6 +87,12 @@ interface PostEditorSheetProps {
   isCreateMode?: boolean;
   // Mode 4: Editing an existing saved draft (from content_drafts table)
   existingDraftId?: string | null;
+  // Slot context - when creating from a specific timeline slot
+  slotContext?: {
+    phase: string;
+    dayNumber: number;
+    timeOfDay: string;
+  } | null;
   // Context data
   currentPhase?: string;
   funnelType?: string | null;
@@ -137,6 +143,7 @@ export function PostEditorSheet({
   existingItem,
   isCreateMode = false,
   existingDraftId,
+  slotContext,
   currentPhase = "planning",
   funnelType,
   audienceData,
@@ -305,8 +312,6 @@ export function PostEditorSheet({
       setContent("");
       setContentType("general");
       setCurrentDraftId(null);
-      setIsAssignedToTimeline(false);
-      setTimelineItemId(null);
       setTimelineOpen(false);
       setScheduleMode("now");
       setScheduledDate(null);
@@ -318,8 +323,19 @@ export function PostEditorSheet({
         link_url: "",
         instagram_post_type: "feed",
       });
+      
+      // If slot context is provided, pre-assign to that slot
+      if (slotContext) {
+        setSelectedPhase(slotContext.phase);
+        setSelectedDay(slotContext.dayNumber);
+        setIsAssignedToTimeline(true);
+        setTimelineItemId(null); // Will be created on save
+      } else {
+        setIsAssignedToTimeline(false);
+        setTimelineItemId(null);
+      }
     }
-  }, [open, existingItem, talkingPoint, isCreateMode]);
+  }, [open, existingItem, talkingPoint, isCreateMode, slotContext]);
 
   const generateDraft = async () => {
     if (!talkingPoint) return;
@@ -485,6 +501,29 @@ export function PostEditorSheet({
 
         if (error) throw error;
         toast.success("Draft updated");
+      } else if (slotContext && !timelineItemId) {
+        // Creating from slot context - auto-save to that slot
+        const { data, error } = await supabase
+          .from("content_planner")
+          .insert({
+            project_id: projectId,
+            user_id: user.id,
+            phase: slotContext.phase,
+            day_number: slotContext.dayNumber,
+            time_of_day: slotContext.timeOfDay,
+            title: title || "Untitled post",
+            description: "",
+            content_type: contentType,
+            content: content || null,
+            status: "draft",
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setTimelineItemId(data.id);
+        const phaseLabel = PHASES.find((p) => p.value === slotContext.phase)?.label || slotContext.phase;
+        toast.success(`Draft saved to ${phaseLabel}, Day ${slotContext.dayNumber}`);
       } else if (currentDraftId) {
         // Update existing saved draft
         const { error } = await supabase
@@ -1127,8 +1166,8 @@ export function PostEditorSheet({
                   />
                 )}
 
-                {/* Add to Launch Timeline Section - hidden for posted content */}
-                {!isPostedContent && (
+                {/* Add to Launch Timeline Section - hidden for posted content and when slot context is provided */}
+                {!isPostedContent && !slotContext && (
                 <Collapsible open={timelineOpen} onOpenChange={setTimelineOpen}>
                   <CollapsibleTrigger asChild>
                     <Button
@@ -1212,6 +1251,16 @@ export function PostEditorSheet({
                     )}
                   </CollapsibleContent>
                 </Collapsible>
+                )}
+
+                {/* Show slot assignment info when creating from slot */}
+                {!isPostedContent && slotContext && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 rounded-lg bg-muted/50 border">
+                    <CalendarPlus className="w-4 h-4 text-primary" />
+                    <span>
+                      Will be saved to {PHASES.find(p => p.value === slotContext.phase)?.label}, Day {slotContext.dayNumber}
+                    </span>
+                  </div>
                 )}
               </>
             )}

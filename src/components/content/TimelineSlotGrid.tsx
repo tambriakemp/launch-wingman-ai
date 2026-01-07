@@ -124,6 +124,13 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
   // State for clear all confirmation dialog
   const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
   const [isClearingAll, setIsClearingAll] = useState(false);
+  
+  // State for creating post from specific slot
+  const [createSlotContext, setCreateSlotContext] = useState<{
+    phase: string;
+    dayNumber: number;
+    timeOfDay: string;
+  } | null>(null);
 
   // Fetch existing content planner items
   const { data: plannerItems = [], isLoading } = useQuery({
@@ -468,6 +475,29 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
     }
 
     // Open the editor in create mode - no DB record created until save/schedule
+    setSelectedItem(null);
+    setIsCreateMode(true);
+    setCreateSlotContext(null);
+    setPostEditorOpen(true);
+  };
+
+  // Create post from a specific slot (auto-assigns to that slot)
+  const handleCreatePostFromSlot = (template: TimelineTemplate) => {
+    if (!user) {
+      toast.error("You must be logged in");
+      return;
+    }
+
+    if (!hasFullAccess) {
+      setShowUpgradeDialog(true);
+      return;
+    }
+
+    setCreateSlotContext({
+      phase: template.phase,
+      dayNumber: template.day_number,
+      timeOfDay: template.time_of_day,
+    });
     setSelectedItem(null);
     setIsCreateMode(true);
     setPostEditorOpen(true);
@@ -827,7 +857,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                                     </Button>
                                                   </DropdownMenuTrigger>
                                                   <DropdownMenuContent align="end" className="min-w-[160px]">
-                                                    <DropdownMenuItem onClick={handleCreateNewPost}>
+                                                    <DropdownMenuItem onClick={() => handleCreatePostFromSlot(template)}>
                                                       <Plus className="w-4 h-4 mr-2" />
                                                       Create Post
                                                       {!hasFullAccess && (
@@ -873,7 +903,7 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                                     </Button>
                                                   </DropdownMenuTrigger>
                                                   <DropdownMenuContent align="end" className="min-w-[160px]">
-                                                    <DropdownMenuItem onClick={handleCreateNewPost}>
+                                                    <DropdownMenuItem onClick={() => handleCreatePostFromSlot(template)}>
                                                       <Plus className="w-4 h-4 mr-2" />
                                                       Create Post
                                                       {!hasFullAccess && (
@@ -918,10 +948,14 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
       {/* Post Editor Sheet */}
       <PostEditorSheet
         open={postEditorOpen}
-        onOpenChange={setPostEditorOpen}
+        onOpenChange={(open) => {
+          setPostEditorOpen(open);
+          if (!open) setCreateSlotContext(null);
+        }}
         projectId={projectId}
         existingItem={selectedItem}
         isCreateMode={isCreateMode}
+        slotContext={createSlotContext}
         onSaved={handleEditorSaved}
       />
 
