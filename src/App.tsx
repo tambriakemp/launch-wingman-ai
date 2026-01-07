@@ -61,6 +61,8 @@ import ProjectContent from "./pages/project/ProjectContent";
 import Insights from "./pages/project/Insights";
 import ContentVault from "./pages/ContentVault";
 import ContentVaultCategory from "./pages/ContentVaultCategory";
+import HelpSupport from "./pages/HelpSupport";
+import HelpSupportTicket from "./pages/HelpSupportTicket";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -266,6 +268,24 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ContentVaultCategory />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Help & Support routes */}
+            <Route
+              path="/help"
+              element={
+                <ProtectedRoute>
+                  <HelpSupport />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/help/ticket/:id"
+              element={
+                <ProtectedRoute>
+                  <HelpSupportTicket />
                 </ProtectedRoute>
               }
             />
