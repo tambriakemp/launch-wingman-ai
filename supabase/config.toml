@@ -137,3 +137,6 @@ verify_jwt = false
 
 [functions.marketing-webhook]
 verify_jwt = false
+
+[functions.extract-canva-thumbnail]
+verify_jwt = false

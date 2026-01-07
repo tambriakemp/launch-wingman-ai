@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Upload, X, Image as ImageIcon, Clipboard } from "lucide-react";
+import { Loader2, Upload, X, Image as ImageIcon, Clipboard, Wand2 } from "lucide-react";
 
 interface Resource {
   id: string;
@@ -41,6 +41,7 @@ export const ResourceEditDialog = ({
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isFetchingThumbnail, setIsFetchingThumbnail] = useState(false);
   const [formData, setFormData] = useState({
     title: resource?.title || "",
     description: resource?.description || "",
@@ -152,6 +153,37 @@ export const ResourceEditDialog = ({
     }
   }, [resource]);
 
+  // Fetch thumbnail from Canva preview URL
+  const fetchCanvaThumbnail = useCallback(async () => {
+    const previewUrl = formData.preview_url;
+    if (!previewUrl || !previewUrl.includes('canva.com')) {
+      toast.error('Please enter a valid Canva preview URL first');
+      return;
+    }
+
+    setIsFetchingThumbnail(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('extract-canva-thumbnail', {
+        body: { url: previewUrl },
+      });
+
+      if (error) throw error;
+
+      if (data?.thumbnailUrl) {
+        setFormData(prev => ({ ...prev, cover_image_url: data.thumbnailUrl }));
+        toast.success('Thumbnail extracted from Canva');
+      } else if (data?.error) {
+        toast.error(data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching Canva thumbnail:', error);
+      toast.error('Failed to fetch thumbnail from Canva');
+    } finally {
+      setIsFetchingThumbnail(false);
+    }
+  }, [formData.preview_url]);
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -196,6 +228,8 @@ export const ResourceEditDialog = ({
     });
   }
 
+  const isCanvaPreviewUrl = formData.preview_url?.includes('canva.com');
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
@@ -228,15 +262,18 @@ export const ResourceEditDialog = ({
                       e.stopPropagation();
                       handleRemoveCover();
                     }}
-                    disabled={isUploading}
+                    disabled={isUploading || isFetchingThumbnail}
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </>
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                  {isUploading ? (
-                    <Loader2 className="w-8 h-8 animate-spin" />
+                  {isUploading || isFetchingThumbnail ? (
+                    <>
+                      <Loader2 className="w-8 h-8 animate-spin" />
+                      <p className="text-sm">{isFetchingThumbnail ? 'Fetching from Canva...' : 'Uploading...'}</p>
+                    </>
                   ) : (
                     <>
                       <div className="flex items-center gap-2">
@@ -264,7 +301,7 @@ export const ResourceEditDialog = ({
               size="sm"
               className="w-full"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
+              disabled={isUploading || isFetchingThumbnail}
             >
               {isUploading ? (
                 <>
@@ -319,17 +356,34 @@ export const ResourceEditDialog = ({
 
           <div className="space-y-2">
             <Label htmlFor="preview_url">Preview URL (optional)</Label>
-            <Input
-              id="preview_url"
-              type="url"
-              value={formData.preview_url}
-              onChange={(e) =>
-                setFormData({ ...formData, preview_url: e.target.value })
-              }
-              placeholder="Canva watch/preview link"
-            />
+            <div className="flex gap-2">
+              <Input
+                id="preview_url"
+                type="url"
+                value={formData.preview_url}
+                onChange={(e) =>
+                  setFormData({ ...formData, preview_url: e.target.value })
+                }
+                placeholder="Canva watch/preview link"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={fetchCanvaThumbnail}
+                disabled={!isCanvaPreviewUrl || isFetchingThumbnail || isUploading}
+                title="Fetch thumbnail from Canva"
+              >
+                {isFetchingThumbnail ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Wand2 className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
             <p className="text-xs text-muted-foreground">
-              Paste a Canva preview link (e.g., /watch?...) to show a preview button
+              Paste a Canva preview link and click the wand to auto-fetch the thumbnail
             </p>
           </div>
 
@@ -365,7 +419,7 @@ export const ResourceEditDialog = ({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={updateMutation.isPending || isUploading}>
+            <Button type="submit" disabled={updateMutation.isPending || isUploading || isFetchingThumbnail}>
               {updateMutation.isPending && (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               )}
