@@ -147,7 +147,7 @@ export const ResourceCard = ({
           </div>
         )}
 
-        {/* Admin Edit Button */}
+        {/* Admin Edit Button - Always visible */}
         {isAdmin && onEdit && (
           <Button 
             size="icon"
@@ -155,13 +155,13 @@ export const ResourceCard = ({
               e.stopPropagation();
               onEdit();
             }}
-            className="absolute bottom-3 left-3 h-10 w-10 rounded-full bg-black/70 text-white hover:bg-black/90 shadow-lg backdrop-blur-sm border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
+            className="absolute bottom-3 left-3 h-10 w-10 rounded-full bg-black/70 text-white hover:bg-black/90 shadow-lg backdrop-blur-sm border border-white/20"
           >
             <Pencil className="w-5 h-5" />
           </Button>
         )}
 
-        {/* Preview Button for Canva resources with preview URL */}
+        {/* Preview Button for Canva resources with preview URL - Always visible */}
         {isCanvaLink && previewUrl && (
           <Button 
             size="icon"
@@ -169,7 +169,7 @@ export const ResourceCard = ({
               e.stopPropagation();
               window.open(previewUrl, '_blank');
             }}
-            className="absolute bottom-3 right-3 h-10 w-10 rounded-full bg-black/70 text-white hover:bg-black/90 shadow-lg backdrop-blur-sm border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
+            className="absolute bottom-3 right-3 h-10 w-10 rounded-full bg-black/70 text-white hover:bg-black/90 shadow-lg backdrop-blur-sm border border-white/20"
           >
             <Eye className="w-5 h-5" />
           </Button>
