@@ -28,6 +28,7 @@ interface Subcategory {
   name: string;
   slug: string;
   category_id: string;
+  resource_count?: number;
 }
 
 interface Resource {
@@ -79,18 +80,40 @@ const ContentVaultCategory = () => {
     enabled: canAccessVault && !!categorySlug,
   });
 
-  // Fetch subcategories
+  // Fetch subcategories with resource counts
   const { data: subcategories } = useQuery({
-    queryKey: ['content-vault-subcategories', category?.id],
+    queryKey: ['content-vault-subcategories-with-counts', category?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: subs, error: subsError } = await supabase
         .from('content_vault_subcategories')
         .select('*')
         .eq('category_id', category!.id)
         .order('position', { ascending: true });
       
-      if (error) throw error;
-      return data as Subcategory[];
+      if (subsError) throw subsError;
+      if (!subs || subs.length === 0) return [];
+
+      // Get subcategory IDs
+      const subIds = subs.map(s => s.id);
+
+      // Fetch resource counts per subcategory
+      const { data: resourceCounts, error: rcError } = await supabase
+        .from('content_vault_resources')
+        .select('subcategory_id')
+        .in('subcategory_id', subIds);
+      
+      if (rcError) throw rcError;
+
+      // Count resources per subcategory
+      const countMap = new Map<string, number>();
+      resourceCounts?.forEach(r => {
+        countMap.set(r.subcategory_id, (countMap.get(r.subcategory_id) || 0) + 1);
+      });
+
+      return subs.map(sub => ({
+        ...sub,
+        resource_count: countMap.get(sub.id) || 0,
+      })) as Subcategory[];
     },
     enabled: canAccessVault && !!category?.id,
   });
