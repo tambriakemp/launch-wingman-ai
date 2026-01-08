@@ -143,3 +143,6 @@ verify_jwt = false
 
 [functions.extract-canva-thumbnail]
 verify_jwt = false
+
+[functions.bulk-import-canva]
+verify_jwt = false

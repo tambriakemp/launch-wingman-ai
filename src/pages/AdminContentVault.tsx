@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { VaultCsvUploader } from "@/components/admin/VaultCsvUploader";
 import { R2SyncCard } from "@/components/admin/R2SyncCard";
 import { RefetchThumbnailsCard } from "@/components/admin/RefetchThumbnailsCard";
+import { CanvaBulkImportCard } from "@/components/admin/CanvaBulkImportCard";
 
 const AdminContentVault = () => {
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ const AdminContentVault = () => {
         </div>
 
         <div className="space-y-6">
+          <CanvaBulkImportCard />
           <R2SyncCard />
           <RefetchThumbnailsCard />
           <VaultCsvUploader />
