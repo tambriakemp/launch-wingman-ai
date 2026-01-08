@@ -1,15 +1,15 @@
 /**
  * Extracts a thumbnail frame from a video URL using the browser's Canvas API.
  * @param videoUrl - The URL of the video to extract a frame from
- * @param seekTime - Time in seconds to seek to for the frame (default: 1)
+ * @param seekTime - Time in seconds to seek to for the frame (default: 1). Use 'middle' for middle of video.
  * @param maxWidth - Maximum width of the thumbnail (default: 400)
- * @returns A Blob of the thumbnail image (JPEG format)
+ * @returns An object containing the Blob and the video duration
  */
 export async function extractVideoThumbnail(
   videoUrl: string,
-  seekTime: number = 1,
+  seekTime: number | 'middle' = 1,
   maxWidth: number = 400
-): Promise<Blob> {
+): Promise<{ blob: Blob; duration: number }> {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
     video.crossOrigin = 'anonymous';
@@ -36,8 +36,14 @@ export async function extractVideoThumbnail(
     };
 
     const onMetadata = () => {
-      // Seek to the specified time, or 10% of duration if video is shorter
-      const targetTime = Math.min(seekTime, video.duration * 0.1);
+      // Calculate target time based on seekTime parameter
+      let targetTime: number;
+      if (seekTime === 'middle') {
+        targetTime = video.duration / 2;
+      } else {
+        // Ensure we don't seek past the video duration
+        targetTime = Math.min(seekTime, video.duration * 0.9);
+      }
       video.currentTime = Math.max(0.1, targetTime);
     };
 
@@ -62,11 +68,13 @@ export async function extractVideoThumbnail(
 
         ctx.drawImage(video, 0, 0, width, height);
 
+        const duration = video.duration;
+
         canvas.toBlob(
           (blob) => {
             cleanup();
             if (blob) {
-              resolve(blob);
+              resolve({ blob, duration });
             } else {
               reject(new Error('Failed to create thumbnail blob'));
             }

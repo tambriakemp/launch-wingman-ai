@@ -6,6 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { extractVideoThumbnail, generateThumbnailFilename } from "@/lib/videoThumbnail";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface SyncResult {
   added: number;
@@ -21,11 +24,28 @@ interface ThumbnailProgress {
   failed: number;
 }
 
+type FramePosition = 'beginning' | 'middle' | 'custom';
+
 export const R2SyncCard = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isGeneratingThumbnails, setIsGeneratingThumbnails] = useState(false);
   const [lastResult, setLastResult] = useState<SyncResult | null>(null);
   const [thumbnailProgress, setThumbnailProgress] = useState<ThumbnailProgress | null>(null);
+  const [framePosition, setFramePosition] = useState<FramePosition>('beginning');
+  const [customTimestamp, setCustomTimestamp] = useState<number>(1);
+
+  const getSeekTime = (videoDuration?: number): number => {
+    switch (framePosition) {
+      case 'beginning':
+        return 0.5; // Half second in
+      case 'middle':
+        return videoDuration ? videoDuration / 2 : 10; // Middle of video, fallback to 10s
+      case 'custom':
+        return customTimestamp;
+      default:
+        return 1;
+    }
+  };
 
   const generateVideoThumbnails = async () => {
     setIsGeneratingThumbnails(true);
@@ -58,8 +78,9 @@ export const R2SyncCard = () => {
         setThumbnailProgress(prev => prev ? { ...prev, current: i + 1 } : null);
 
         try {
-          // Extract thumbnail from video
-          const thumbnailBlob = await extractVideoThumbnail(video.resource_url);
+          // Extract thumbnail from video with selected frame position
+          const seekTime = framePosition === 'middle' ? 'middle' : getSeekTime();
+          const { blob: thumbnailBlob } = await extractVideoThumbnail(video.resource_url, seekTime);
           
           // Upload to storage
           const filename = generateThumbnailFilename(video.resource_url);
@@ -190,6 +211,35 @@ export const R2SyncCard = () => {
             Files are organized by folder structure. Folder names become subcategories.
             Video thumbnails are auto-generated for MP4 files.
           </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Thumbnail Frame Position</Label>
+          <div className="flex gap-2">
+            <Select value={framePosition} onValueChange={(v) => setFramePosition(v as FramePosition)}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="beginning">Beginning</SelectItem>
+                <SelectItem value="middle">Middle</SelectItem>
+                <SelectItem value="custom">Custom</SelectItem>
+              </SelectContent>
+            </Select>
+            {framePosition === 'custom' && (
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={customTimestamp}
+                  onChange={(e) => setCustomTimestamp(Math.max(0, parseFloat(e.target.value) || 0))}
+                  className="w-20"
+                />
+                <span className="text-sm text-muted-foreground">seconds</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-2">
