@@ -106,8 +106,8 @@ serve(async (req) => {
     // Query videos with thumbnails
     const { data: videos, error: queryError } = await supabase
       .from('content_vault_resources')
-      .select('id, title, cover_image_url, file_type')
-      .eq('file_type', 'video')
+      .select('id, title, cover_image_url, resource_type')
+      .eq('resource_type', 'video')
       .not('cover_image_url', 'is', null)
       .limit(batchSize);
 
