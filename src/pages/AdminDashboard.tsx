@@ -34,6 +34,7 @@ import { AiUsageTable, MrrStatsCard } from '@/components/admin/AiUsageSection';
 import { AdminRoleToggle } from '@/components/admin/AdminRoleToggle';
 import { RevenueChurnChart } from '@/components/admin/RevenueChurnChart';
 import { ProjectStatsCard, ContentStatsCard, EngagementStatsCard, OfferStatsCard, OnboardingFunnelCard } from '@/components/admin/PlatformStatsSection';
+import { RelaunchStatsCard } from '@/components/admin/RelaunchStatsCard';
 import { FeatureUsageHeatmap } from '@/components/admin/FeatureUsageHeatmap';
 import { useAdminPlatformStats } from '@/hooks/useAdminPlatformStats';
 import { UserStatusToggle } from '@/components/admin/UserStatusToggle';
@@ -681,6 +682,9 @@ const AdminDashboard = () => {
 
             {/* Onboarding Funnel */}
             <OnboardingFunnelCard />
+
+            {/* Relaunch Analytics */}
+            <RelaunchStatsCard />
           </TabsContent>
 
           {/* Users Tab */}

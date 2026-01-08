@@ -1,19 +1,34 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RefreshCw, Sparkles, Target, GitBranch } from "lucide-react";
+import { useAdminPlatformStats } from "@/hooks/useAdminPlatformStats";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface RelaunchStats {
-  totalRelaunches: number;
-  freshStarts: number;
-  avgKeptSections: number;
-  avgRevisitSections: number;
-  relaunchRate: number;
-}
+export function RelaunchStatsCard() {
+  const { data: platformStats, isLoading } = useAdminPlatformStats();
+  const stats = platformStats?.relaunchStats;
 
-interface RelaunchStatsCardProps {
-  stats: RelaunchStats;
-}
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <RefreshCw className="w-4 h-4 text-primary" />
+            Relaunch Analytics
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
-export function RelaunchStatsCard({ stats }: RelaunchStatsCardProps) {
+  if (!stats) return null;
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -51,7 +66,7 @@ export function RelaunchStatsCard({ stats }: RelaunchStatsCardProps) {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <RefreshCw className="w-4 h-4 text-muted-foreground" />
-              <span className="text-2xl font-bold">{stats.relaunchRate}%</span>
+              <span className="text-2xl font-bold">{stats.relaunchConversionRate}%</span>
             </div>
             <p className="text-xs text-muted-foreground">Relaunch rate</p>
           </div>

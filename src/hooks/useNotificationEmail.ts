@@ -8,6 +8,7 @@ export type NotificationEmailType =
   | "launch_completed"
   | "project_completed"
   | "relaunch_invitation"
+  | "relaunch_created"
   | "check_in_reminder"
   | "playbook_ready"
   | "paused_project_reminder"

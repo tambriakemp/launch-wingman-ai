@@ -72,6 +72,17 @@ export interface FeatureUsage {
   offers: number;
 }
 
+export interface RelaunchStats {
+  totalRelaunches: number;
+  freshStarts: number;
+  memoryBased: number;
+  avgKeptSections: number;
+  avgRevisitSections: number;
+  mostKeptSections: Record<string, number>;
+  mostRevisitedSections: Record<string, number>;
+  relaunchConversionRate: number;
+}
+
 export interface AdminPlatformStats {
   projectStats: ProjectStats;
   contentStats: ContentStats;
@@ -79,6 +90,7 @@ export interface AdminPlatformStats {
   offerStats: OfferStats;
   onboardingFunnel: OnboardingFunnel;
   featureUsage: FeatureUsage;
+  relaunchStats: RelaunchStats;
   generatedAt: string;
 }
 

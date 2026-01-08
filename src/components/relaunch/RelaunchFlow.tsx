@@ -4,6 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotificationEmail } from "@/hooks/useNotificationEmail";
 import { RelaunchIntentScreen } from "./RelaunchIntentScreen";
 import { RelaunchSelectionScreen, RelaunchSection } from "./RelaunchSelectionScreen";
 import { RelaunchSummaryScreen } from "./RelaunchSummaryScreen";
@@ -74,6 +75,7 @@ function getAdaptiveMemoryKeysForRevisit(revisitSections: RelaunchSection[]): Ad
 export function RelaunchFlow({ projectId, projectName, onCancel }: RelaunchFlowProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { sendEmail } = useNotificationEmail();
   const [step, setStep] = useState<RelaunchStep>("intent");
   const [keptSections, setKeptSections] = useState<RelaunchSection[]>([]);
   const [revisitSections, setRevisitSections] = useState<RelaunchSection[]>([]);
@@ -135,6 +137,18 @@ export function RelaunchFlow({ projectId, projectName, onCancel }: RelaunchFlowP
         // Track analytics
         trackRelaunchComplete(projectId, 0, 0, true);
         trackRelaunchActivity(projectId, newProject.id, [], [], true);
+        
+        // Send notification email
+        sendEmail({
+          emailType: 'relaunch_created',
+          data: {
+            projectId: newProject.id,
+            newProjectName: newProject.name,
+            parentProjectName: projectName,
+            skipMemory: true,
+            revisitCount: 0,
+          },
+        });
         
         toast.success("Fresh project created!");
         navigate(`/projects/${newProject.id}`);
@@ -357,6 +371,18 @@ export function RelaunchFlow({ projectId, projectName, onCancel }: RelaunchFlowP
       // Track analytics
       trackRelaunchComplete(projectId, keptSections.length, revisitSections.length, false);
       trackRelaunchActivity(projectId, newProject.id, keptSections, revisitSections, false);
+
+      // Send notification email
+      sendEmail({
+        emailType: 'relaunch_created',
+        data: {
+          projectId: newProject.id,
+          newProjectName: newProject.name,
+          parentProjectName: projectName,
+          skipMemory: false,
+          revisitCount: revisitSections.length,
+        },
+      });
 
       toast.success("Relaunch project created!");
       navigate(`/projects/${newProject.id}`);
