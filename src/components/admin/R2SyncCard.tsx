@@ -5,11 +5,12 @@ import { Cloud, RefreshCw, CheckCircle, AlertCircle, FileImage, FileVideo, Image
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
-import { extractVideoThumbnail, generateThumbnailFilename } from "@/lib/videoThumbnail";
+import { extractVideoThumbnail, generateThumbnailFilename, testVideoCORS } from "@/lib/videoThumbnail";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface SyncResult {
   added: number;
@@ -38,6 +39,7 @@ export const R2SyncCard = () => {
   const [customTimestamp, setCustomTimestamp] = useState<number>(1);
   const [mediaType, setMediaType] = useState<MediaType>('all');
   const [cleanupOrphans, setCleanupOrphans] = useState(false);
+  const [corsError, setCorsError] = useState<string | null>(null);
 
   const getSeekTime = (videoDuration?: number): number => {
     switch (framePosition) {
@@ -55,6 +57,7 @@ export const R2SyncCard = () => {
   const generateVideoThumbnails = async () => {
     setIsGeneratingThumbnails(true);
     setThumbnailProgress({ current: 0, total: 0, generated: 0, failed: 0 });
+    setCorsError(null);
 
     try {
       // Find video resources without cover images
@@ -68,6 +71,18 @@ export const R2SyncCard = () => {
 
       if (!videos || videos.length === 0) {
         toast.info("No videos need thumbnails");
+        setIsGeneratingThumbnails(false);
+        setThumbnailProgress(null);
+        return;
+      }
+
+      // Pre-flight CORS check on first video
+      toast.info("Checking CORS configuration...");
+      const corsTest = await testVideoCORS(videos[0].resource_url);
+      
+      if (!corsTest.success) {
+        setCorsError(corsTest.error || 'CORS not configured');
+        toast.error("CORS not configured on R2 bucket");
         setIsGeneratingThumbnails(false);
         setThumbnailProgress(null);
         return;
@@ -339,6 +354,27 @@ export const R2SyncCard = () => {
             </Button>
           )}
         </div>
+
+        {corsError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>CORS Configuration Required</AlertTitle>
+            <AlertDescription className="space-y-2">
+              <p>{corsError}</p>
+              <p className="text-xs">
+                To fix this, add a CORS policy in your Cloudflare R2 bucket settings:
+              </p>
+              <pre className="text-xs bg-background/50 p-2 rounded mt-2 overflow-x-auto">
+{`[{
+  "AllowedOrigins": ["*"],
+  "AllowedMethods": ["GET", "HEAD"],
+  "AllowedHeaders": ["*"],
+  "MaxAgeSeconds": 86400
+}]`}
+              </pre>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {isGeneratingThumbnails && thumbnailProgress && (
           <div className="space-y-2">

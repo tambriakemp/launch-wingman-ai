@@ -1,4 +1,49 @@
 /**
+ * Tests if a video URL can be loaded with CORS enabled.
+ * @param videoUrl - The URL to test
+ * @returns Promise<boolean> - true if CORS is configured, false otherwise
+ */
+export async function testVideoCORS(videoUrl: string): Promise<{ success: boolean; error?: string }> {
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.muted = true;
+    video.preload = 'metadata';
+
+    const timeout = setTimeout(() => {
+      cleanup();
+      resolve({ success: false, error: 'Video load timeout - check CORS configuration' });
+    }, 10000);
+
+    const cleanup = () => {
+      clearTimeout(timeout);
+      video.removeEventListener('loadedmetadata', onSuccess);
+      video.removeEventListener('error', onError);
+      video.src = '';
+      video.load();
+    };
+
+    const onSuccess = () => {
+      cleanup();
+      resolve({ success: true });
+    };
+
+    const onError = () => {
+      cleanup();
+      resolve({ 
+        success: false, 
+        error: 'CORS not configured on R2 bucket. Videos cannot be loaded cross-origin.' 
+      });
+    };
+
+    video.addEventListener('loadedmetadata', onSuccess);
+    video.addEventListener('error', onError);
+    video.src = videoUrl;
+    video.load();
+  });
+}
+
+/**
  * Extracts a thumbnail frame from a video URL using the browser's Canvas API.
  * @param videoUrl - The URL of the video to extract a frame from
  * @param seekTime - Time in seconds to seek to for the frame (default: 1). Use 'middle' for middle of video.
@@ -18,7 +63,7 @@ export async function extractVideoThumbnail(
 
     const timeout = setTimeout(() => {
       cleanup();
-      reject(new Error('Video load timeout'));
+      reject(new Error('Video load timeout - the R2 bucket may not have CORS configured'));
     }, 30000);
 
     const cleanup = () => {
@@ -32,7 +77,7 @@ export async function extractVideoThumbnail(
 
     const onError = () => {
       cleanup();
-      reject(new Error('Failed to load video'));
+      reject(new Error('Failed to load video - CORS may not be configured on R2 bucket. Add CORS policy in Cloudflare dashboard.'));
     };
 
     const onMetadata = () => {
