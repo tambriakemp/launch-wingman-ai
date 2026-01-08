@@ -146,19 +146,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [session, user, notifyAdminOfSubscriptionChange]);
 
+  // Refs to prevent unnecessary re-renders on token refresh
+  const isInitialized = useRef(false);
+  const currentUserId = useRef<string | null>(null);
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+      (event, newSession) => {
+        const newUserId = newSession?.user?.id ?? null;
+        
+        // Token refresh - don't trigger re-renders if same user
+        if (event === 'TOKEN_REFRESHED') {
+          if (currentUserId.current === newUserId && isInitialized.current) {
+            // Same user, just token refresh - skip state update to prevent re-renders
+            return;
+          }
+        }
+        
+        // Only update state if user ID changed or this is initial load
+        if (currentUserId.current !== newUserId || !isInitialized.current) {
+          currentUserId.current = newUserId;
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
+        }
+        
+        // Mark as initialized after first auth event
+        if (!isInitialized.current) {
+          isInitialized.current = true;
+          setLoading(false);
+        }
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      if (!isInitialized.current) {
+        currentUserId.current = initialSession?.user?.id ?? null;
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
+        isInitialized.current = true;
+        setLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
