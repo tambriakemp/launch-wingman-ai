@@ -99,23 +99,19 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { previewOnly = false, batchSize = 20, excludeIds = [] } = await req.json();
+    const { previewOnly = false, batchSize = 20, offset = 0 } = await req.json();
 
-    console.log(`Starting AI rename: previewOnly=${previewOnly}, batchSize=${batchSize}, excludeIds=${excludeIds.length}`);
+    console.log(`Starting AI rename: previewOnly=${previewOnly}, batchSize=${batchSize}, offset=${offset}`);
 
-    // Query videos with thumbnails, excluding already processed ones
-    let query = supabase
+    // Query videos with thumbnails using offset pagination with stable ordering
+    const { data: videos, error: queryError } = await supabase
       .from('content_vault_resources')
       .select('id, title, cover_image_url, resource_type')
       .eq('resource_type', 'video')
-      .not('cover_image_url', 'is', null);
-
-    // Exclude already processed IDs
-    if (excludeIds.length > 0) {
-      query = query.not('id', 'in', `(${excludeIds.join(',')})`);
-    }
-
-    const { data: videos, error: queryError } = await query.limit(batchSize);
+      .not('cover_image_url', 'is', null)
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(offset, offset + batchSize - 1);
 
     if (queryError) {
       console.error("Query error:", queryError);
@@ -178,9 +174,16 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Rename complete: ${JSON.stringify(results)}`);
+    const scanned = videos?.length || 0;
+    const response = {
+      ...results,
+      scanned,
+      nextOffset: offset + scanned,
+    };
 
-    return new Response(JSON.stringify(results), {
+    console.log(`Rename complete: scanned=${scanned}, renamed=${results.renamed}, skipped=${results.skipped}, nextOffset=${offset + scanned}`);
+
+    return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
