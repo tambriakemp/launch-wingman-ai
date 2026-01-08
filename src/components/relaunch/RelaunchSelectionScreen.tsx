@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { ArrowRight, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, ArrowLeft, Eye, EyeOff, CheckSquare, Square } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -19,7 +19,8 @@ export type RelaunchSection =
   | "messaging"
   | "funnel_path"
   | "content_direction"
-  | "launch_window";
+  | "launch_window"
+  | "branding";
 
 interface RelaunchSelectionScreenProps {
   onContinue: (keptSections: RelaunchSection[], revisitSections: RelaunchSection[], skipMemory: boolean) => void;
@@ -32,6 +33,7 @@ const KEEP_SECTIONS: { id: RelaunchSection; label: string; description: string }
   { id: "core_problem", label: "Core problem", description: "The main struggle you solve" },
   { id: "dream_outcome", label: "Dream outcome", description: "What success looks like for them" },
   { id: "offer_format", label: "Offer format", description: "Course, service, program, etc." },
+  { id: "branding", label: "Brand assets", description: "Colors, fonts, photos, logos" },
 ];
 
 // Adaptive sections - often evolve, surfaced for review
@@ -68,9 +70,36 @@ export function RelaunchSelectionScreen({
     );
   };
 
-  const handleContinue = () => {
+  const handleContinue = useCallback(() => {
     onContinue(keptSections, revisitSections, skipMemory);
-  };
+  }, [keptSections, revisitSections, skipMemory, onContinue]);
+
+  // Quick action handlers
+  const keepAll = () => setKeptSections(KEEP_SECTIONS.map((s) => s.id));
+  const clearKeep = () => setKeptSections([]);
+  const revisitAll = () => setRevisitSections(REVISIT_SECTIONS.map((s) => s.id));
+  const clearRevisit = () => setRevisitSections([]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't handle if typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleContinue();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        onBack();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleContinue, onBack]);
 
   return (
     <motion.div
@@ -92,12 +121,36 @@ export function RelaunchSelectionScreen({
       {/* Keep by default section (Foundational Memory) */}
       <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-medium">
-            We'll keep these by default
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            These usually don't change much between launches.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base font-medium">
+                We'll keep these by default
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                These usually don't change much between launches.
+              </p>
+            </div>
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={keepAll}
+                className="h-7 px-2 text-xs"
+              >
+                <CheckSquare className="w-3 h-3 mr-1" />
+                All
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearKeep}
+                className="h-7 px-2 text-xs"
+              >
+                <Square className="w-3 h-3 mr-1" />
+                None
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           {KEEP_SECTIONS.map((section) => (
@@ -124,12 +177,36 @@ export function RelaunchSelectionScreen({
       {/* Revisit section (Adaptive Memory) */}
       <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-medium">
-            We'll gently revisit these
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Check the ones you'd like to look at again.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base font-medium">
+                We'll gently revisit these
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Check the ones you'd like to look at again.
+              </p>
+            </div>
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={revisitAll}
+                className="h-7 px-2 text-xs"
+              >
+                <CheckSquare className="w-3 h-3 mr-1" />
+                All
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearRevisit}
+                className="h-7 px-2 text-xs"
+              >
+                <Square className="w-3 h-3 mr-1" />
+                None
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           {REVISIT_SECTIONS.map((section) => (

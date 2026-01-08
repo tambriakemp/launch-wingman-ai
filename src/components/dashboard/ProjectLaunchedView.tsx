@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { EndingSnapshotDialog } from "@/components/insights/EndingSnapshotDialog";
+import { useChildProjects } from "@/hooks/useChildProjects";
+import { ChildProjectsCard } from "./ChildProjectsCard";
 
 interface ProjectLaunchedViewProps {
   projectName?: string;
@@ -34,6 +36,9 @@ export function ProjectLaunchedView({
   const { id } = useParams();
   const [snapshotDialogOpen, setSnapshotDialogOpen] = useState(false);
   const [hasShownDialog, setHasShownDialog] = useState(false);
+
+  // Fetch child projects (relaunches from this project)
+  const { data: childProjects = [] } = useChildProjects(id);
 
   // Check if ending snapshot already exists
   const { data: existingSnapshot, isLoading: snapshotLoading } = useQuery({
@@ -201,6 +206,11 @@ export function ProjectLaunchedView({
             </AlertDialog>
           </CardContent>
         </Card>
+      )}
+
+      {/* Child Projects (Relaunches from this project) */}
+      {childProjects.length > 0 && (
+        <ChildProjectsCard childProjects={childProjects} />
       )}
 
       {/* Relaunch option */}

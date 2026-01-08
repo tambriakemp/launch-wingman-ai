@@ -59,6 +59,7 @@ function getAdaptiveMemoryKeysForRevisit(revisitSections: RelaunchSection[]): Ad
     core_problem: null,
     dream_outcome: null,
     offer_format: null,
+    branding: null, // Foundational, not adaptive
     messaging: 'messaging',
     funnel_path: 'funnel_type',
     content_direction: 'content_themes',
@@ -277,7 +278,81 @@ export function RelaunchFlow({ projectId, projectName, onCancel }: RelaunchFlowP
         }
       }
 
-      // NOTE: Ephemeral Memory (tasks, drafts, dates, metrics) is NEVER copied
+      // 10. Copy branding assets if keeping branding (Foundational Memory)
+      if (keptSections.includes("branding")) {
+        // Copy brand colors
+        const { data: colors } = await supabase
+          .from("brand_colors")
+          .select("hex_color, name, position")
+          .eq("project_id", projectId);
+        
+        if (colors?.length) {
+          await supabase.from("brand_colors").insert(
+            colors.map(c => ({
+              hex_color: c.hex_color,
+              name: c.name,
+              position: c.position,
+              project_id: newProject.id,
+              user_id: user.id,
+            }))
+          );
+        }
+
+        // Copy brand fonts
+        const { data: fonts } = await supabase
+          .from("brand_fonts")
+          .select("font_category, font_family, font_source, custom_font_path")
+          .eq("project_id", projectId);
+        
+        if (fonts?.length) {
+          await supabase.from("brand_fonts").insert(
+            fonts.map(f => ({
+              font_category: f.font_category,
+              font_family: f.font_family,
+              font_source: f.font_source,
+              custom_font_path: f.custom_font_path,
+              project_id: newProject.id,
+              user_id: user.id,
+            }))
+          );
+        }
+
+        // Copy brand photos (file references)
+        const { data: photos } = await supabase
+          .from("brand_photos")
+          .select("file_name, file_path, file_size")
+          .eq("project_id", projectId);
+        
+        if (photos?.length) {
+          await supabase.from("brand_photos").insert(
+            photos.map(p => ({
+              file_name: p.file_name,
+              file_path: p.file_path,
+              file_size: p.file_size,
+              project_id: newProject.id,
+              user_id: user.id,
+            }))
+          );
+        }
+
+        // Copy brand logos (file references)
+        const { data: logos } = await supabase
+          .from("brand_logos")
+          .select("file_name, file_path, file_size")
+          .eq("project_id", projectId);
+        
+        if (logos?.length) {
+          await supabase.from("brand_logos").insert(
+            logos.map(l => ({
+              file_name: l.file_name,
+              file_path: l.file_path,
+              file_size: l.file_size,
+              project_id: newProject.id,
+              user_id: user.id,
+            }))
+          );
+        }
+      }
 
       // Track analytics
       trackRelaunchComplete(projectId, keptSections.length, revisitSections.length, false);
