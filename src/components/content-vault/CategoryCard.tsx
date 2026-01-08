@@ -6,6 +6,7 @@ interface CategoryCardProps {
   name: string;
   description: string | null;
   coverImageUrl: string | null;
+  resourceCount?: number;
   onClick: () => void;
   showEditButton?: boolean;
   onEditClick?: () => void;
@@ -14,7 +15,8 @@ interface CategoryCardProps {
 export const CategoryCard = ({ 
   name, 
   description, 
-  coverImageUrl, 
+  coverImageUrl,
+  resourceCount,
   onClick,
   showEditButton,
   onEditClick,
@@ -60,7 +62,14 @@ export const CategoryCard = ({
 
       {/* Content */}
       <CardContent className="p-5">
-        <h3 className="font-semibold text-lg text-foreground mb-1">{name}</h3>
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <h3 className="font-semibold text-lg text-foreground">{name}</h3>
+          {typeof resourceCount === 'number' && (
+            <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+              {resourceCount}
+            </span>
+          )}
+        </div>
         <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
           {description || "Resource Library"}
         </p>

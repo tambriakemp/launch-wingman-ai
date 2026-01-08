@@ -14,6 +14,7 @@ interface Subcategory {
   id: string;
   name: string;
   slug: string;
+  resource_count?: number;
 }
 
 interface VaultFiltersProps {
@@ -64,10 +65,12 @@ export const VaultFilters = ({
               <SelectValue placeholder="All Types" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="all">
+                All Types ({subcategories.reduce((sum, s) => sum + (s.resource_count || 0), 0)})
+              </SelectItem>
               {subcategories.map((sub) => (
                 <SelectItem key={sub.id} value={sub.id}>
-                  {sub.name}
+                  {sub.name} ({sub.resource_count || 0})
                 </SelectItem>
               ))}
             </SelectContent>

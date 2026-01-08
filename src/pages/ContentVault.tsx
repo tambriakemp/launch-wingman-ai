@@ -19,6 +19,7 @@ interface Category {
   description: string | null;
   cover_image_url: string | null;
   position: number;
+  resource_count?: number;
 }
 
 const ContentVault = () => {
@@ -30,15 +31,48 @@ const ContentVault = () => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
   const { data: categories, isLoading } = useQuery({
-    queryKey: ['content-vault-categories'],
+    queryKey: ['content-vault-categories-with-counts'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch categories
+      const { data: cats, error: catsError } = await supabase
         .from('content_vault_categories')
         .select('*')
         .order('position', { ascending: true });
       
-      if (error) throw error;
-      return data as Category[];
+      if (catsError) throw catsError;
+      if (!cats || cats.length === 0) return [];
+
+      // Fetch subcategories for all categories
+      const { data: subs, error: subsError } = await supabase
+        .from('content_vault_subcategories')
+        .select('id, category_id');
+      
+      if (subsError) throw subsError;
+
+      // Fetch resource counts per subcategory
+      const { data: resourceCounts, error: rcError } = await supabase
+        .from('content_vault_resources')
+        .select('subcategory_id');
+      
+      if (rcError) throw rcError;
+
+      // Build subcategory to category mapping
+      const subToCat = new Map<string, string>();
+      subs?.forEach(s => subToCat.set(s.id, s.category_id));
+
+      // Count resources per category
+      const countMap = new Map<string, number>();
+      resourceCounts?.forEach(r => {
+        const catId = subToCat.get(r.subcategory_id);
+        if (catId) {
+          countMap.set(catId, (countMap.get(catId) || 0) + 1);
+        }
+      });
+
+      return cats.map(cat => ({
+        ...cat,
+        resource_count: countMap.get(cat.id) || 0,
+      })) as Category[];
     },
     enabled: canAccessVault,
   });
@@ -103,6 +137,7 @@ const ContentVault = () => {
                   name={category.name}
                   description={category.description}
                   coverImageUrl={category.cover_image_url || getVaultThumbnail(category.slug)}
+                  resourceCount={category.resource_count}
                   onClick={() => handleCategoryClick(category.slug)}
                   showEditButton={hasAdminAccess}
                   onEditClick={() => setEditingCategory(category)}
