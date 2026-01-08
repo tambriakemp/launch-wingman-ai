@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Cloud, RefreshCw, CheckCircle, AlertCircle, FileImage, FileVideo, Image, Trash2 } from "lucide-react";
+import { Cloud, RefreshCw, CheckCircle, AlertCircle, FileImage, FileVideo, Image, Trash2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
@@ -27,19 +27,30 @@ interface ThumbnailProgress {
   failed: number;
 }
 
+interface RenameResult {
+  renamed: number;
+  skipped: number;
+  failed: number;
+  previews: { id: string; oldTitle: string; newTitle: string }[];
+  errors: string[];
+}
+
 type FramePosition = 'beginning' | 'middle' | 'custom';
 type MediaType = 'all' | 'photos' | 'videos';
 
 export const R2SyncCard = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isGeneratingThumbnails, setIsGeneratingThumbnails] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
   const [lastResult, setLastResult] = useState<SyncResult | null>(null);
+  const [renameResult, setRenameResult] = useState<RenameResult | null>(null);
   const [thumbnailProgress, setThumbnailProgress] = useState<ThumbnailProgress | null>(null);
   const [framePosition, setFramePosition] = useState<FramePosition>('beginning');
   const [customTimestamp, setCustomTimestamp] = useState<number>(1);
   const [mediaType, setMediaType] = useState<MediaType>('all');
   const [cleanupOrphans, setCleanupOrphans] = useState(false);
   const [corsError, setCorsError] = useState<string | null>(null);
+  const [previewOnly, setPreviewOnly] = useState(true);
 
   const getSeekTime = (videoDuration?: number): number => {
     switch (framePosition) {
@@ -149,6 +160,52 @@ export const R2SyncCard = () => {
     }
   };
 
+  const handleAIRename = async () => {
+    setIsRenaming(true);
+    setRenameResult(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Not authenticated");
+        return;
+      }
+
+      const response = await supabase.functions.invoke('rename-vault-videos', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: {
+          previewOnly,
+          batchSize: 20,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const result = response.data as RenameResult;
+      setRenameResult(result);
+
+      if (previewOnly) {
+        toast.info(`Preview: ${result.renamed} videos would be renamed`);
+      } else {
+        if (result.renamed > 0) {
+          toast.success(`Renamed ${result.renamed} videos with AI`);
+        }
+        if (result.failed > 0) {
+          toast.warning(`${result.failed} videos failed to rename`);
+        }
+      }
+    } catch (error: any) {
+      console.error("AI rename error:", error);
+      toast.error(error.message || "Failed to rename videos");
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
   const handleSync = async () => {
     setIsSyncing(true);
     setLastResult(null);
@@ -209,7 +266,7 @@ export const R2SyncCard = () => {
     }
   };
 
-  const isProcessing = isSyncing || isGeneratingThumbnails;
+  const isProcessing = isSyncing || isGeneratingThumbnails || isRenaming;
 
   return (
     <Card>
@@ -463,6 +520,94 @@ export const R2SyncCard = () => {
                   ))}
                 </ul>
               </details>
+            )}
+          </div>
+        )}
+
+        {/* AI Rename Section */}
+        {mediaType !== 'photos' && (
+          <div className="mt-4 p-4 border border-dashed border-primary/30 rounded-lg space-y-3 bg-primary/5">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <h4 className="font-medium text-sm">AI Video Renaming</h4>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Use AI to generate descriptive titles for videos based on their thumbnails.
+            </p>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-medium">Preview only</Label>
+                <p className="text-xs text-muted-foreground">
+                  See suggested names before applying
+                </p>
+              </div>
+              <Switch
+                checked={previewOnly}
+                onCheckedChange={setPreviewOnly}
+              />
+            </div>
+
+            <Button
+              onClick={handleAIRename}
+              disabled={isProcessing}
+              variant="outline"
+              className="w-full"
+            >
+              {isRenaming ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  {previewOnly ? 'Generating previews...' : 'Renaming...'}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  {previewOnly ? 'Preview AI Rename' : 'Rename Videos with AI'}
+                </>
+              )}
+            </Button>
+
+            {renameResult && (
+              <div className="space-y-2 p-3 bg-background rounded-lg">
+                <div className="flex gap-4 text-sm">
+                  <span className="text-green-500">
+                    ✓ {renameResult.renamed} {previewOnly ? 'would be renamed' : 'renamed'}
+                  </span>
+                  <span className="text-muted-foreground">
+                    ⏭ {renameResult.skipped} skipped
+                  </span>
+                  {renameResult.failed > 0 && (
+                    <span className="text-red-500">
+                      ✗ {renameResult.failed} failed
+                    </span>
+                  )}
+                </div>
+
+                {renameResult.previews.length > 0 && (
+                  <details open className="text-xs">
+                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                      {previewOnly ? 'Preview changes' : 'Changed titles'} ({renameResult.previews.length})
+                    </summary>
+                    <ul className="mt-2 max-h-40 overflow-y-auto space-y-1">
+                      {renameResult.previews.map((p, idx) => (
+                        <li key={idx} className="flex items-center gap-2">
+                          <span className="text-muted-foreground truncate max-w-[120px]">{p.oldTitle}</span>
+                          <span className="text-muted-foreground">→</span>
+                          <span className="text-primary font-medium truncate">{p.newTitle}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+
+                {renameResult.errors.length > 0 && (
+                  <div className="text-xs text-red-500">
+                    {renameResult.errors.slice(0, 3).map((err, idx) => (
+                      <p key={idx} className="truncate">• {err}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}

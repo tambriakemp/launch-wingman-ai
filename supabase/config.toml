@@ -1,5 +1,8 @@
 project_id = "ydhagqgurqhlguxkkppb"
 
+[functions.rename-vault-videos]
+verify_jwt = false
+
 [functions.vault-download]
 verify_jwt = false
 
