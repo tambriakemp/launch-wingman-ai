@@ -99,17 +99,23 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { previewOnly = false, batchSize = 20 } = await req.json();
+    const { previewOnly = false, batchSize = 20, excludeIds = [] } = await req.json();
 
-    console.log(`Starting AI rename: previewOnly=${previewOnly}, batchSize=${batchSize}`);
+    console.log(`Starting AI rename: previewOnly=${previewOnly}, batchSize=${batchSize}, excludeIds=${excludeIds.length}`);
 
-    // Query videos with thumbnails
-    const { data: videos, error: queryError } = await supabase
+    // Query videos with thumbnails, excluding already processed ones
+    let query = supabase
       .from('content_vault_resources')
       .select('id, title, cover_image_url, resource_type')
       .eq('resource_type', 'video')
-      .not('cover_image_url', 'is', null)
-      .limit(batchSize);
+      .not('cover_image_url', 'is', null);
+
+    // Exclude already processed IDs
+    if (excludeIds.length > 0) {
+      query = query.not('id', 'in', `(${excludeIds.join(',')})`);
+    }
+
+    const { data: videos, error: queryError } = await query.limit(batchSize);
 
     if (queryError) {
       console.error("Query error:", queryError);
