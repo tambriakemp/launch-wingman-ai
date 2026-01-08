@@ -19,6 +19,7 @@ import {
   ProjectLaunchedView,
 } from "@/components/dashboard";
 import { CheckInBanner, CheckInFlow } from "@/components/check-in";
+import { MemoryReviewBanner } from "@/components/relaunch";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
 import { useProjectLifecycle } from "@/hooks/useProjectLifecycle";
 import { PHASE_LABELS, PHASES, Phase } from "@/types/tasks";
@@ -231,6 +232,9 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 py-6 px-4">
+      {/* Memory Review Banner - for relaunch projects with items to review */}
+      <MemoryReviewBanner projectId={projectId} />
+
       {/* Check-in banner - soft, dismissible */}
       <CheckInBanner onStartCheckIn={() => setCheckInOpen(true)} />
 

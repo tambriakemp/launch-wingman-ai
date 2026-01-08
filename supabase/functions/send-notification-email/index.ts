@@ -16,6 +16,7 @@ type EmailType =
   | "launch_completed"
   | "project_completed"
   | "relaunch_invitation"
+  | "relaunch_created"
   | "check_in_reminder"
   | "playbook_ready"
   | "paused_project_reminder"
@@ -254,6 +255,53 @@ const getEmailContent = (
             
             <p style="font-size: 16px; line-height: 1.6; color: #666;">
               Whenever you're ready is the right time.
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">
+              —<br/>
+              Launchely
+            </p>
+          </div>
+        `,
+      };
+
+    case "relaunch_created":
+      return {
+        subject: "Your relaunch is ready",
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333;">
+            <p style="font-size: 16px; line-height: 1.6;">Hi ${firstName},</p>
+            
+            <p style="font-size: 16px; line-height: 1.6;">
+              Your new project "${data?.newProjectName || "project"}" has been created.
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6;">
+              ${data?.skipMemory 
+                ? "You've chosen a fresh start — a blank slate to build something new."
+                : `It carries forward the foundations you built in "${data?.parentProjectName || "your previous project"}" — the things that worked.`}
+            </p>
+            
+            ${!data?.skipMemory && data?.revisitCount && data.revisitCount > 0 ? `
+              <p style="font-size: 16px; line-height: 1.6;">
+                There are ${data?.revisitCount} section(s) marked for review — things you wanted to revisit this time around.
+              </p>
+            ` : ''}
+            
+            <p style="font-size: 16px; line-height: 1.6;">
+              When you're ready, you can pick up where your new journey begins:
+            </p>
+            
+            <p style="margin: 30px 0;">
+              <a href="${appUrl}/projects/${data?.projectId || ""}/dashboard" 
+                 style="display: inline-block; background: #333; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">
+                👉 Go to your new project
+              </a>
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6; color: #666;">
+              Take your time.<br/>
+              Relaunching is a sign of progress, not starting over.
             </p>
             
             <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">

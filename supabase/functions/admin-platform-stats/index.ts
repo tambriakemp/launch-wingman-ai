@@ -284,6 +284,66 @@ serve(async (req) => {
     };
     logStep("Feature usage stats calculated");
 
+    // Fetch relaunch stats
+    const { data: relaunchProjects } = await supabaseClient
+      .from('projects')
+      .select('id, skip_memory, relaunch_kept_sections, relaunch_revisit_sections')
+      .eq('is_relaunch', true);
+
+    const relaunchStats = {
+      totalRelaunches: relaunchProjects?.length || 0,
+      freshStarts: relaunchProjects?.filter(p => p.skip_memory === true).length || 0,
+      memoryBased: relaunchProjects?.filter(p => p.skip_memory !== true).length || 0,
+      avgKeptSections: 0,
+      avgRevisitSections: 0,
+      mostKeptSections: {} as Record<string, number>,
+      mostRevisitedSections: {} as Record<string, number>,
+    };
+
+    // Calculate section usage stats
+    if (relaunchProjects && relaunchProjects.length > 0) {
+      const keptSectionCounts: Record<string, number> = {};
+      const revisitSectionCounts: Record<string, number> = {};
+      let totalKept = 0;
+      let totalRevisit = 0;
+      let projectsWithKept = 0;
+      let projectsWithRevisit = 0;
+
+      relaunchProjects.forEach(p => {
+        const kept = p.relaunch_kept_sections as string[] | null;
+        const revisit = p.relaunch_revisit_sections as string[] | null;
+        
+        if (kept && kept.length > 0) {
+          totalKept += kept.length;
+          projectsWithKept++;
+          kept.forEach(s => {
+            keptSectionCounts[s] = (keptSectionCounts[s] || 0) + 1;
+          });
+        }
+        
+        if (revisit && revisit.length > 0) {
+          totalRevisit += revisit.length;
+          projectsWithRevisit++;
+          revisit.forEach(s => {
+            revisitSectionCounts[s] = (revisitSectionCounts[s] || 0) + 1;
+          });
+        }
+      });
+
+      relaunchStats.avgKeptSections = projectsWithKept > 0 ? Math.round((totalKept / projectsWithKept) * 10) / 10 : 0;
+      relaunchStats.avgRevisitSections = projectsWithRevisit > 0 ? Math.round((totalRevisit / projectsWithRevisit) * 10) / 10 : 0;
+      relaunchStats.mostKeptSections = keptSectionCounts;
+      relaunchStats.mostRevisitedSections = revisitSectionCounts;
+    }
+
+    // Calculate relaunch conversion rate (relaunches / completed projects)
+    const completedProjectsCount = projects?.filter(p => p.lifecycle_state === 'completed' || p.lifecycle_state === 'launched').length || 0;
+    const relaunchConversionRate = completedProjectsCount > 0 
+      ? Math.round((relaunchStats.totalRelaunches / completedProjectsCount) * 100) 
+      : 0;
+
+    logStep("Relaunch stats calculated", { totalRelaunches: relaunchStats.totalRelaunches });
+
     const response = {
       projectStats,
       contentStats,
@@ -291,6 +351,10 @@ serve(async (req) => {
       offerStats,
       onboardingFunnel,
       featureUsage,
+      relaunchStats: {
+        ...relaunchStats,
+        relaunchConversionRate,
+      },
       generatedAt: new Date().toISOString(),
     };
 
