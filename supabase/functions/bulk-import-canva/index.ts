@@ -50,11 +50,14 @@ function parseCanvaUrl(url: string): CanvaLink | null {
 
     const [, designId, shareToken, action] = pathMatch;
     
+    // Check for mode=preview query parameter (Canva preview links sometimes use /view with mode=preview)
+    const hasPreviewMode = urlObj.searchParams.get('mode') === 'preview';
+    
     let linkType: 'template' | 'preview' | 'edit';
-    if (action === 'view') {
-      linkType = 'template';
-    } else if (action === 'watch') {
+    if (action === 'watch' || hasPreviewMode) {
       linkType = 'preview';
+    } else if (action === 'view') {
+      linkType = 'template';
     } else {
       linkType = 'edit';
     }
