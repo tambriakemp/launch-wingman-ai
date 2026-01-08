@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Rocket, ArrowRight, RefreshCw, FolderPlus } from "lucide-react";
 import { motion } from "framer-motion";
+import { useChildProjects } from "@/hooks/useChildProjects";
+import { ChildProjectsCard } from "./ChildProjectsCard";
 
 interface ProjectCompletedViewProps {
   projectName?: string;
@@ -19,6 +21,9 @@ export function ProjectCompletedView({
 }: ProjectCompletedViewProps) {
   const navigate = useNavigate();
   const { id } = useParams();
+
+  // Fetch child projects (relaunches from this project)
+  const { data: childProjects = [] } = useChildProjects(id);
 
   const handleRelaunch = () => {
     if (onRelaunch) {
@@ -108,6 +113,11 @@ export function ProjectCompletedView({
           </Button>
         </CardContent>
       </Card>
+
+      {/* Child Projects (Relaunches from this project) */}
+      {childProjects.length > 0 && (
+        <ChildProjectsCard childProjects={childProjects} />
+      )}
 
       {/* Encouragement */}
       <p className="text-center text-sm text-muted-foreground">

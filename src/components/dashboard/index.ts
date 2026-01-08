@@ -9,5 +9,6 @@ export { PhaseCelebrationCard } from "./PhaseCelebrationCard";
 export { ProjectCompletedView } from "./ProjectCompletedView";
 export { ProjectPausedView } from "./ProjectPausedView";
 export { ProjectLaunchedView } from "./ProjectLaunchedView";
+export { ChildProjectsCard } from "./ChildProjectsCard";
 export { ProjectMenu } from "./ProjectMenu";
 export { RelaunchNudgeBanner } from "./RelaunchNudgeBanner";

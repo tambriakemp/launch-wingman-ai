@@ -19,6 +19,7 @@ const SECTION_LABELS: Record<RelaunchSection, string> = {
   core_problem: "Core problem",
   dream_outcome: "Dream outcome",
   offer_format: "Offer format",
+  branding: "Brand assets",
   messaging: "Messaging",
   funnel_path: "Funnel path",
   content_direction: "Content direction",
