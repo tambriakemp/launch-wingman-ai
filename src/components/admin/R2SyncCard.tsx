@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Cloud, RefreshCw, CheckCircle, AlertCircle, FileImage, FileVideo, Image } from "lucide-react";
+import { Cloud, RefreshCw, CheckCircle, AlertCircle, FileImage, FileVideo, Image, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
@@ -9,10 +9,12 @@ import { extractVideoThumbnail, generateThumbnailFilename } from "@/lib/videoThu
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 interface SyncResult {
   added: number;
   skipped: number;
+  removed: number;
   errors: string[];
   files: { path: string; action: string }[];
 }
@@ -25,6 +27,7 @@ interface ThumbnailProgress {
 }
 
 type FramePosition = 'beginning' | 'middle' | 'custom';
+type MediaType = 'all' | 'photos' | 'videos';
 
 export const R2SyncCard = () => {
   const [isSyncing, setIsSyncing] = useState(false);
@@ -33,6 +36,8 @@ export const R2SyncCard = () => {
   const [thumbnailProgress, setThumbnailProgress] = useState<ThumbnailProgress | null>(null);
   const [framePosition, setFramePosition] = useState<FramePosition>('beginning');
   const [customTimestamp, setCustomTimestamp] = useState<number>(1);
+  const [mediaType, setMediaType] = useState<MediaType>('all');
+  const [cleanupOrphans, setCleanupOrphans] = useState(false);
 
   const getSeekTime = (videoDuration?: number): number => {
     switch (framePosition) {
@@ -145,6 +150,10 @@ export const R2SyncCard = () => {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
+        body: {
+          mediaType,
+          cleanupOrphans,
+        },
       });
 
       if (response.error) {
@@ -154,10 +163,15 @@ export const R2SyncCard = () => {
       const result = response.data as SyncResult;
       setLastResult(result);
 
-      if (result.added > 0) {
-        toast.success(`Synced ${result.added} new files from R2`);
+      // Build toast message
+      const messages: string[] = [];
+      if (result.added > 0) messages.push(`${result.added} added`);
+      if (result.removed > 0) messages.push(`${result.removed} removed`);
+      
+      if (messages.length > 0) {
+        toast.success(`Synced: ${messages.join(', ')}`);
       } else if (result.skipped > 0) {
-        toast.info(`All ${result.skipped} files already exist in vault`);
+        toast.info(`All ${result.skipped} files already in sync`);
       } else {
         toast.info("No media files found in R2 bucket");
       }
@@ -168,7 +182,7 @@ export const R2SyncCard = () => {
 
       // Check if any videos were added and auto-generate thumbnails
       const addedVideos = result.files.filter(f => f.action === 'added' && f.path.endsWith('.mp4'));
-      if (addedVideos.length > 0) {
+      if (addedVideos.length > 0 && mediaType !== 'photos') {
         setIsSyncing(false);
         await generateVideoThumbnails();
       }
@@ -209,38 +223,83 @@ export const R2SyncCard = () => {
           </p>
           <p className="text-xs mt-2">
             Files are organized by folder structure. Folder names become subcategories.
-            Video thumbnails are auto-generated for MP4 files.
           </p>
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Thumbnail Frame Position</Label>
-          <div className="flex gap-2">
-            <Select value={framePosition} onValueChange={(v) => setFramePosition(v as FramePosition)}>
-              <SelectTrigger className="w-36">
+        <div className="space-y-3 p-3 bg-muted/30 rounded-lg">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Media Type</Label>
+            <Select value={mediaType} onValueChange={(v) => setMediaType(v as MediaType)}>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="beginning">Beginning</SelectItem>
-                <SelectItem value="middle">Middle</SelectItem>
-                <SelectItem value="custom">Custom</SelectItem>
+                <SelectItem value="all">
+                  <span className="flex items-center gap-2">
+                    All Media
+                  </span>
+                </SelectItem>
+                <SelectItem value="photos">
+                  <span className="flex items-center gap-2">
+                    <FileImage className="w-4 h-4" /> Photos Only
+                  </span>
+                </SelectItem>
+                <SelectItem value="videos">
+                  <span className="flex items-center gap-2">
+                    <FileVideo className="w-4 h-4" /> Videos Only
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
-            {framePosition === 'custom' && (
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.5}
-                  value={customTimestamp}
-                  onChange={(e) => setCustomTimestamp(Math.max(0, parseFloat(e.target.value) || 0))}
-                  className="w-20"
-                />
-                <span className="text-sm text-muted-foreground">seconds</span>
-              </div>
-            )}
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Trash2 className="w-4 h-4" />
+                Remove deleted items
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Remove vault items that no longer exist in R2
+              </p>
+            </div>
+            <Switch
+              checked={cleanupOrphans}
+              onCheckedChange={setCleanupOrphans}
+            />
           </div>
         </div>
+
+        {mediaType !== 'photos' && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Thumbnail Frame Position</Label>
+            <div className="flex gap-2">
+              <Select value={framePosition} onValueChange={(v) => setFramePosition(v as FramePosition)}>
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="beginning">Beginning</SelectItem>
+                  <SelectItem value="middle">Middle</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+              {framePosition === 'custom' && (
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    value={customTimestamp}
+                    onChange={(e) => setCustomTimestamp(Math.max(0, parseFloat(e.target.value) || 0))}
+                    className="w-20"
+                  />
+                  <span className="text-sm text-muted-foreground">seconds</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-2">
           <Button 
@@ -260,23 +319,25 @@ export const R2SyncCard = () => {
               </>
             )}
           </Button>
-          <Button 
-            onClick={generateVideoThumbnails} 
-            disabled={isProcessing}
-            variant="outline"
-          >
-            {isGeneratingThumbnails ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Image className="w-4 h-4 mr-2" />
-                Gen Thumbnails
-              </>
-            )}
-          </Button>
+          {mediaType !== 'photos' && (
+            <Button 
+              onClick={generateVideoThumbnails} 
+              disabled={isProcessing}
+              variant="outline"
+            >
+              {isGeneratingThumbnails ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Image className="w-4 h-4 mr-2" />
+                  Gen Thumbnails
+                </>
+              )}
+            </Button>
+          )}
         </div>
 
         {isGeneratingThumbnails && thumbnailProgress && (
@@ -305,8 +366,14 @@ export const R2SyncCard = () => {
                 <span>{lastResult.added} added</span>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
-                <span>{lastResult.skipped} skipped (duplicates)</span>
+                <span>{lastResult.skipped} skipped</span>
               </div>
+              {lastResult.removed > 0 && (
+                <div className="flex items-center gap-2 text-orange-500">
+                  <Trash2 className="w-4 h-4" />
+                  <span>{lastResult.removed} removed</span>
+                </div>
+              )}
             </div>
 
             {thumbnailProgress && !isGeneratingThumbnails && (
@@ -346,7 +413,13 @@ export const R2SyncCard = () => {
                 <ul className="mt-2 max-h-32 overflow-y-auto space-y-1 text-muted-foreground">
                   {lastResult.files.map((file, idx) => (
                     <li key={idx} className="truncate">
-                      <span className={file.action === 'added' ? 'text-green-500' : ''}>
+                      <span className={
+                        file.action === 'added' 
+                          ? 'text-green-500' 
+                          : file.action.includes('removed') 
+                            ? 'text-orange-500' 
+                            : ''
+                      }>
                         [{file.action}]
                       </span>{' '}
                       {file.path}

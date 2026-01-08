@@ -224,9 +224,15 @@ async function listAllR2Objects(
   return allKeys;
 }
 
+interface SyncOptions {
+  mediaType?: 'photos' | 'videos' | 'all';
+  cleanupOrphans?: boolean;
+}
+
 interface SyncResult {
   added: number;
   skipped: number;
+  removed: number;
   errors: string[];
   files: { path: string; action: string }[];
 }
@@ -238,6 +244,17 @@ Deno.serve(async (req) => {
 
   try {
     console.log("[SYNC-R2] Function started");
+
+    // Parse request body for options
+    let options: SyncOptions = { mediaType: 'all', cleanupOrphans: false };
+    try {
+      const body = await req.json();
+      options = { ...options, ...body };
+    } catch {
+      // No body or invalid JSON, use defaults
+    }
+
+    console.log(`[SYNC-R2] Options: mediaType=${options.mediaType}, cleanupOrphans=${options.cleanupOrphans}`);
 
     // Get R2 credentials from environment
     const r2AccountId = Deno.env.get("R2_ACCOUNT_ID");
@@ -296,8 +313,15 @@ Deno.serve(async (req) => {
 
     console.log("[SYNC-R2] Admin verified, listing R2 objects...");
 
-    // Define allowed folder prefixes (only sync from these folders)
-    const ALLOWED_PREFIXES = ["Photos/", "Videos/", "photos/", "videos/"];
+    // Define allowed folder prefixes based on mediaType
+    let ALLOWED_PREFIXES: string[];
+    if (options.mediaType === 'photos') {
+      ALLOWED_PREFIXES = ["Photos/", "photos/"];
+    } else if (options.mediaType === 'videos') {
+      ALLOWED_PREFIXES = ["Videos/", "videos/"];
+    } else {
+      ALLOWED_PREFIXES = ["Photos/", "Videos/", "photos/", "videos/"];
+    }
 
     // List all objects from R2
     const allKeys = await listAllR2Objects(r2AccountId, r2BucketName, r2AccessKeyId, r2SecretAccessKey);
@@ -310,10 +334,20 @@ Deno.serve(async (req) => {
       if (!isInAllowedFolder) {
         return false;
       }
-      // Check if it's a media file
+      // Check if it's a media file based on mediaType filter
+      if (options.mediaType === 'photos') {
+        return isImageFile(key);
+      } else if (options.mediaType === 'videos') {
+        return isVideoFile(key);
+      }
       return isImageFile(key) || isVideoFile(key);
     });
     console.log(`[SYNC-R2] Media files in allowed folders: ${mediaKeys.length}`);
+
+    // Build set of current R2 URLs for orphan detection
+    const r2MediaUrls = new Set(
+      mediaKeys.map((key) => `${r2PublicUrl.replace(/\/$/, "")}/${key}`)
+    );
 
     // Get existing categories
     const { data: categories } = await supabase
@@ -335,14 +369,14 @@ Deno.serve(async (req) => {
       .from("content_vault_subcategories")
       .select("id, slug, category_id");
 
-    // Get existing resources to avoid duplicates
+    // Get existing resources to avoid duplicates and for orphan detection
     const { data: existingResources } = await supabase
       .from("content_vault_resources")
-      .select("resource_url");
+      .select("id, resource_url, resource_type, subcategory_id, cover_image_url");
 
     const existingUrls = new Set(existingResources?.map((r) => r.resource_url) || []);
 
-    const result: SyncResult = { added: 0, skipped: 0, errors: [], files: [] };
+    const result: SyncResult = { added: 0, skipped: 0, removed: 0, errors: [], files: [] };
     const subcategoryCache = new Map<string, string>();
 
     // Pre-populate cache with existing subcategories
@@ -351,6 +385,102 @@ Deno.serve(async (req) => {
       subcategoryCache.set(key, sub.id);
     });
 
+    // ============ ORPHAN CLEANUP ============
+    if (options.cleanupOrphans && existingResources) {
+      console.log("[SYNC-R2] Starting orphan cleanup...");
+      
+      // Determine which category IDs to check based on mediaType
+      const categoryIdsToCheck: string[] = [];
+      if (options.mediaType === 'photos' || options.mediaType === 'all') {
+        categoryIdsToCheck.push(photosCategory.id);
+      }
+      if (options.mediaType === 'videos' || options.mediaType === 'all') {
+        categoryIdsToCheck.push(videosCategory.id);
+      }
+
+      // Get subcategory IDs for the categories we're checking
+      const relevantSubcategoryIds = new Set(
+        existingSubcategories
+          ?.filter((sub) => categoryIdsToCheck.includes(sub.category_id))
+          .map((sub) => sub.id) || []
+      );
+
+      // Find orphaned resources (in DB but not in R2)
+      const orphanedResources = existingResources.filter((resource) => {
+        // Only check resources in relevant subcategories
+        if (!relevantSubcategoryIds.has(resource.subcategory_id)) {
+          return false;
+        }
+        // Check if resource type matches mediaType filter
+        if (options.mediaType === 'photos' && resource.resource_type !== 'image') {
+          return false;
+        }
+        if (options.mediaType === 'videos' && resource.resource_type !== 'video') {
+          return false;
+        }
+        // Check if URL still exists in R2
+        return !r2MediaUrls.has(resource.resource_url);
+      });
+
+      console.log(`[SYNC-R2] Found ${orphanedResources.length} orphaned resources`);
+
+      // Delete orphaned resources
+      for (const orphan of orphanedResources) {
+        try {
+          // Delete associated thumbnail from storage if exists
+          if (orphan.cover_image_url) {
+            const thumbnailPath = orphan.cover_image_url.split('/content-media/')[1];
+            if (thumbnailPath) {
+              await supabase.storage
+                .from('content-media')
+                .remove([thumbnailPath]);
+              console.log(`[SYNC-R2] Deleted thumbnail: ${thumbnailPath}`);
+            }
+          }
+
+          // Delete the resource
+          const { error: deleteError } = await supabase
+            .from("content_vault_resources")
+            .delete()
+            .eq("id", orphan.id);
+
+          if (deleteError) {
+            result.errors.push(`Failed to delete orphan ${orphan.resource_url}: ${deleteError.message}`);
+          } else {
+            result.removed++;
+            result.files.push({ path: orphan.resource_url, action: "removed (deleted from R2)" });
+          }
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          result.errors.push(`Error deleting orphan: ${errorMessage}`);
+        }
+      }
+
+      // Clean up empty subcategories
+      if (result.removed > 0) {
+        const { data: subcatsWithCounts } = await supabase
+          .from("content_vault_subcategories")
+          .select("id, category_id, content_vault_resources(count)")
+          .in("category_id", categoryIdsToCheck);
+
+        const emptySubcats = subcatsWithCounts?.filter(
+          (sub) => (sub.content_vault_resources as any)?.[0]?.count === 0
+        ) || [];
+
+        for (const emptySub of emptySubcats) {
+          const { error: deleteSubError } = await supabase
+            .from("content_vault_subcategories")
+            .delete()
+            .eq("id", emptySub.id);
+
+          if (!deleteSubError) {
+            console.log(`[SYNC-R2] Deleted empty subcategory: ${emptySub.id}`);
+          }
+        }
+      }
+    }
+
+    // ============ ADD NEW FILES ============
     for (const key of mediaKeys) {
       try {
         const resourceUrl = `${r2PublicUrl.replace(/\/$/, "")}/${key}`;
@@ -440,7 +570,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`[SYNC-R2] Sync complete: added=${result.added}, skipped=${result.skipped}, errors=${result.errors.length}`);
+    console.log(`[SYNC-R2] Sync complete: added=${result.added}, skipped=${result.skipped}, removed=${result.removed}, errors=${result.errors.length}`);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
