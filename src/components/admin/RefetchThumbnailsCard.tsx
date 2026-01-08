@@ -1,26 +1,38 @@
 import { useState } from "react";
-import { RefreshCw, Image as ImageIcon } from "lucide-react";
+import { RefreshCw, Image as ImageIcon, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+interface FailedResource {
+  id: string;
+  title: string;
+  url: string;
+  reason: string;
+}
 
 export const RefetchThumbnailsCard = () => {
   const [isRefetching, setIsRefetching] = useState(false);
   const [progress, setProgress] = useState(0);
   const [stats, setStats] = useState<{ total: number; updated: number; failed: number } | null>(null);
+  const [failedResources, setFailedResources] = useState<FailedResource[]>([]);
+  const [showFailed, setShowFailed] = useState(false);
 
   const handleRefetchAll = async () => {
     setIsRefetching(true);
     setProgress(0);
     setStats(null);
+    setFailedResources([]);
 
     try {
       // Get all resources with preview_url (Canva links)
       const { data: resources, error: fetchError } = await supabase
         .from('content_vault_resources')
-        .select('id, preview_url, resource_url, cover_image_url')
+        .select('id, title, preview_url, resource_url, cover_image_url')
         .or('preview_url.neq.null,resource_url.ilike.%canva.com%');
 
       if (fetchError) throw fetchError;
@@ -45,6 +57,7 @@ export const RefetchThumbnailsCard = () => {
 
       let updated = 0;
       let failed = 0;
+      const failures: FailedResource[] = [];
 
       for (let i = 0; i < canvaResources.length; i++) {
         const resource = canvaResources[i];
@@ -56,7 +69,9 @@ export const RefetchThumbnailsCard = () => {
             body: { url: urlToFetch }
           });
 
-          if (error) throw error;
+          if (error) {
+            throw new Error(error.message || 'Edge function error');
+          }
 
           if (data?.thumbnailUrl) {
             // Update the resource with the new thumbnail
@@ -65,13 +80,29 @@ export const RefetchThumbnailsCard = () => {
               .update({ cover_image_url: data.thumbnailUrl })
               .eq('id', resource.id);
 
-            if (updateError) throw updateError;
+            if (updateError) {
+              throw new Error(`Database update failed: ${updateError.message}`);
+            }
             updated++;
           } else {
+            const reason = data?.error || 'No thumbnail found in page';
+            failures.push({
+              id: resource.id,
+              title: resource.title,
+              url: urlToFetch || 'No URL',
+              reason,
+            });
             failed++;
           }
         } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : 'Unknown error';
           console.error(`Failed to fetch thumbnail for resource ${resource.id}:`, err);
+          failures.push({
+            id: resource.id,
+            title: resource.title,
+            url: urlToFetch || 'No URL',
+            reason: errorMessage,
+          });
           failed++;
         }
 
@@ -83,6 +114,7 @@ export const RefetchThumbnailsCard = () => {
       }
 
       setStats({ total: canvaResources.length, updated, failed });
+      setFailedResources(failures);
       
       if (updated > 0) {
         toast.success(`Updated ${updated} thumbnail${updated !== 1 ? 's' : ''}`);
@@ -127,13 +159,40 @@ export const RefetchThumbnailsCard = () => {
         )}
 
         {stats && !isRefetching && (
-          <div className="p-3 bg-muted/50 rounded-lg text-sm">
+          <div className="p-3 bg-muted/50 rounded-lg text-sm space-y-1">
             <p>Processed: <strong>{stats.total}</strong> resources</p>
             <p className="text-green-600 dark:text-green-400">Updated: <strong>{stats.updated}</strong></p>
             {stats.failed > 0 && (
               <p className="text-amber-600 dark:text-amber-400">Failed: <strong>{stats.failed}</strong></p>
             )}
           </div>
+        )}
+
+        {failedResources.length > 0 && !isRefetching && (
+          <Collapsible open={showFailed} onOpenChange={setShowFailed}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="w-full justify-between text-amber-600 dark:text-amber-400 hover:text-amber-700">
+                <span className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  View {failedResources.length} failed resource{failedResources.length !== 1 ? 's' : ''}
+                </span>
+                {showFailed ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <ScrollArea className="h-48 mt-2 rounded-md border">
+                <div className="p-2 space-y-2">
+                  {failedResources.map((resource) => (
+                    <div key={resource.id} className="p-2 bg-muted/30 rounded text-xs space-y-1">
+                      <p className="font-medium truncate">{resource.title}</p>
+                      <p className="text-muted-foreground truncate">{resource.url}</p>
+                      <p className="text-destructive">{resource.reason}</p>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CollapsibleContent>
+          </Collapsible>
         )}
 
         <Button 
