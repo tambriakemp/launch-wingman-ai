@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FileText } from "lucide-react";
+import { FileText, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ProjectMenu } from "./ProjectMenu";
 import { ProjectState, PROJECT_STATE_LABELS } from "@/types/projectLifecycle";
@@ -9,6 +9,9 @@ interface GreetingHeaderProps {
   projectName?: string;
   projectId?: string;
   projectState?: ProjectState;
+  isRelaunch?: boolean;
+  parentProjectId?: string | null;
+  parentProjectName?: string | null;
   onPause?: () => Promise<boolean>;
   onResume?: () => Promise<boolean>;
   onArchive?: () => Promise<boolean>;
@@ -27,6 +30,9 @@ export const GreetingHeader = ({
   projectName,
   projectId,
   projectState,
+  isRelaunch,
+  parentProjectId,
+  parentProjectName,
   onPause,
   onResume,
   onArchive,
@@ -63,15 +69,26 @@ export const GreetingHeader = ({
               </Badge>
             )}
           </div>
-          {projectId && (
-            <Link
-              to={`/projects/${projectId}/summary`}
-              className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              View Project Summary
-            </Link>
-          )}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            {projectId && (
+              <Link
+                to={`/projects/${projectId}/summary`}
+                className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                View Project Summary
+              </Link>
+            )}
+            {isRelaunch && parentProjectId && parentProjectName && (
+              <Link
+                to={`/projects/${parentProjectId}`}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Relaunched from: {parentProjectName}
+              </Link>
+            )}
+          </div>
         </div>
       )}
     </div>

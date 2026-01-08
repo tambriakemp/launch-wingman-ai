@@ -92,3 +92,23 @@ export const trackSocialPostSchedule = (platform: string) => {
 export const trackSocialPostScheduleCancel = (platform: string) => {
   trackEvent('Social', 'schedule_cancel', platform);
 };
+
+// Relaunch events
+export const trackRelaunchStart = (projectId: string) => {
+  trackEvent('Relaunch', 'start', projectId);
+};
+
+export const trackRelaunchComplete = (
+  projectId: string, 
+  keptCount: number, 
+  revisitCount: number,
+  skipMemory: boolean
+) => {
+  trackEvent('Relaunch', 'complete', projectId, skipMemory ? 1 : 0);
+  trackEvent('Relaunch', 'sections_kept', projectId, keptCount);
+  trackEvent('Relaunch', 'sections_revisit', projectId, revisitCount);
+};
+
+export const trackRelaunchCancel = (projectId: string, step: string) => {
+  trackEvent('Relaunch', 'cancel', `${projectId}_${step}`);
+};

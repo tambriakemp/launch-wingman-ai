@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 interface TrackActivityOptions {
-  eventType: 'login' | 'signup' | 'task_complete' | 'assessment_complete';
+  eventType: 'login' | 'signup' | 'task_complete' | 'assessment_complete' | 'relaunch_complete';
   metadata?: Record<string, unknown>;
   isNewSignup?: boolean;
 }
@@ -54,6 +54,28 @@ export const trackAssessmentComplete = async (assessmentId: string, assessmentNa
       assessment_id: assessmentId,
       assessment_name: assessmentName,
       score,
+    },
+  });
+};
+
+/**
+ * Track relaunch completion
+ */
+export const trackRelaunchComplete = async (
+  originalProjectId: string,
+  newProjectId: string,
+  keptSections: string[],
+  revisitSections: string[],
+  skipMemory: boolean
+): Promise<void> => {
+  await trackUserActivity({
+    eventType: 'relaunch_complete',
+    metadata: {
+      original_project_id: originalProjectId,
+      new_project_id: newProjectId,
+      kept_sections: keptSections,
+      revisit_sections: revisitSections,
+      skip_memory: skipMemory,
     },
   });
 };
