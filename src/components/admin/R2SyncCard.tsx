@@ -171,31 +171,65 @@ export const R2SyncCard = () => {
         return;
       }
 
-      const response = await supabase.functions.invoke('rename-vault-videos', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: {
-          previewOnly,
-          batchSize: 20,
-        },
-      });
+      // Accumulate results across all batches
+      const cumulativeResult: RenameResult = {
+        renamed: 0,
+        skipped: 0,
+        failed: 0,
+        previews: [],
+        errors: [],
+      };
 
-      if (response.error) {
-        throw new Error(response.error.message);
+      let hasMore = true;
+      const batchSize = 20;
+
+      while (hasMore) {
+        const response = await supabase.functions.invoke('rename-vault-videos', {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: {
+            previewOnly,
+            batchSize,
+          },
+        });
+
+        if (response.error) {
+          throw new Error(response.error.message);
+        }
+
+        const result = response.data as RenameResult;
+        
+        // Accumulate results
+        cumulativeResult.renamed += result.renamed;
+        cumulativeResult.skipped += result.skipped;
+        cumulativeResult.failed += result.failed;
+        cumulativeResult.previews.push(...result.previews);
+        cumulativeResult.errors.push(...result.errors);
+
+        // Update UI with progress
+        setRenameResult({ ...cumulativeResult });
+
+        // If this batch processed no videos or only skipped, we're done
+        if (result.renamed === 0 && result.previews.length === 0) {
+          hasMore = false;
+        }
+
+        // Small delay between batches to avoid rate limiting
+        if (hasMore) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
       }
 
-      const result = response.data as RenameResult;
-      setRenameResult(result);
-
+      // Final toast
       if (previewOnly) {
-        toast.info(`Preview: ${result.renamed} videos would be renamed`);
+        toast.info(`Preview: ${cumulativeResult.previews.length} videos would be renamed`);
       } else {
-        if (result.renamed > 0) {
-          toast.success(`Renamed ${result.renamed} videos with AI`);
+        if (cumulativeResult.renamed > 0) {
+          toast.success(`Renamed ${cumulativeResult.renamed} videos with AI`);
         }
-        if (result.failed > 0) {
-          toast.warning(`${result.failed} videos failed to rename`);
+        if (cumulativeResult.failed > 0) {
+          toast.warning(`${cumulativeResult.failed} videos failed to rename`);
         }
       }
     } catch (error: any) {
