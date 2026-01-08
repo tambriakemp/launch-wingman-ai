@@ -182,9 +182,13 @@ export const R2SyncCard = () => {
 
       let hasMore = true;
       const batchSize = 20;
-      let processedIds: string[] = [];
+      let offset = 0;
+      let iterations = 0;
+      const maxIterations = 500; // Safety guard
 
-      while (hasMore) {
+      while (hasMore && iterations < maxIterations) {
+        iterations++;
+        
         const response = await supabase.functions.invoke('rename-vault-videos', {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -192,7 +196,7 @@ export const R2SyncCard = () => {
           body: {
             previewOnly,
             batchSize,
-            excludeIds: processedIds,
+            offset,
           },
         });
 
@@ -200,11 +204,7 @@ export const R2SyncCard = () => {
           throw new Error(response.error.message);
         }
 
-        const result = response.data as RenameResult;
-        
-        // Track processed video IDs for exclusion in next batch
-        const batchIds = result.previews.map((p: { id: string }) => p.id);
-        processedIds.push(...batchIds);
+        const result = response.data as RenameResult & { scanned: number; nextOffset: number };
         
         // Accumulate results
         cumulativeResult.renamed += result.renamed;
@@ -216,15 +216,22 @@ export const R2SyncCard = () => {
         // Update UI with progress
         setRenameResult({ ...cumulativeResult });
 
-        // If this batch processed no videos or only skipped, we're done
-        if (result.renamed === 0 && result.previews.length === 0) {
+        // Move to next page
+        offset = result.nextOffset;
+
+        // Stop when no more rows to scan
+        if (result.scanned === 0 || result.scanned < batchSize) {
           hasMore = false;
         }
 
         // Small delay between batches to avoid rate limiting
         if (hasMore) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 300));
         }
+      }
+
+      if (iterations >= maxIterations) {
+        toast.warning("Safety limit reached - stopped after 500 batches");
       }
 
       // Final toast
