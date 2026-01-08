@@ -409,7 +409,7 @@ serve(async (req) => {
               resource_url: design.templateUrl,
               preview_url: design.previewUrl,
               cover_image_url: cachedThumbnailUrl,
-              resource_type: 'canva',
+              resource_type: 'canva_link',
               position: nextPosition++,
             });
 
