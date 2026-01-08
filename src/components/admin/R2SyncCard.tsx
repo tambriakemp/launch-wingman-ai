@@ -182,6 +182,7 @@ export const R2SyncCard = () => {
 
       let hasMore = true;
       const batchSize = 20;
+      let processedIds: string[] = [];
 
       while (hasMore) {
         const response = await supabase.functions.invoke('rename-vault-videos', {
@@ -191,6 +192,7 @@ export const R2SyncCard = () => {
           body: {
             previewOnly,
             batchSize,
+            excludeIds: processedIds,
           },
         });
 
@@ -199,6 +201,10 @@ export const R2SyncCard = () => {
         }
 
         const result = response.data as RenameResult;
+        
+        // Track processed video IDs for exclusion in next batch
+        const batchIds = result.previews.map((p: { id: string }) => p.id);
+        processedIds.push(...batchIds);
         
         // Accumulate results
         cumulativeResult.renamed += result.renamed;
