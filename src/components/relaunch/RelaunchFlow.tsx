@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -9,6 +9,12 @@ import { RelaunchSelectionScreen, RelaunchSection } from "./RelaunchSelectionScr
 import { RelaunchSummaryScreen } from "./RelaunchSummaryScreen";
 import { Phase } from "@/types/tasks";
 import { ADAPTIVE_MEMORY_KEYS, AdaptiveMemoryKey } from "@/types/projectMemory";
+import { 
+  trackRelaunchStart, 
+  trackRelaunchComplete, 
+  trackRelaunchCancel 
+} from "@/lib/analytics";
+import { trackRelaunchComplete as trackRelaunchActivity } from "@/lib/activityTracking";
 
 type RelaunchStep = "intent" | "selection" | "summary";
 
@@ -18,13 +24,32 @@ interface RelaunchFlowProps {
   onCancel: () => void;
 }
 
-// Determine starting phase based on revisited sections
-function determineStartingPhase(revisitSections: RelaunchSection[]): Phase {
+// Foundational sections that determine if we need to restart from planning
+const FOUNDATIONAL_SECTIONS: RelaunchSection[] = [
+  "target_audience", 
+  "core_problem", 
+  "dream_outcome", 
+  "offer_format"
+];
+
+// Determine starting phase based on kept and revisit sections
+function determineStartingPhase(
+  keptSections: RelaunchSection[], 
+  revisitSections: RelaunchSection[]
+): Phase {
+  // If any foundational section is NOT kept, start from planning
+  const hasRemovedFoundational = FOUNDATIONAL_SECTIONS.some(
+    section => !keptSections.includes(section)
+  );
+  if (hasRemovedFoundational) return "planning";
+  
+  // Otherwise, check revisit sections for adaptive memory
   if (revisitSections.includes("messaging")) return "messaging";
   if (revisitSections.includes("funnel_path")) return "build";
   if (revisitSections.includes("content_direction")) return "content";
   if (revisitSections.includes("launch_window")) return "launch";
-  return "launch"; // Default if nothing selected
+  
+  return "launch"; // Default if everything kept and nothing to revisit
 }
 
 // Map relaunch sections to adaptive memory keys
@@ -54,6 +79,11 @@ export function RelaunchFlow({ projectId, projectName, onCancel }: RelaunchFlowP
   const [skipMemory, setSkipMemory] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
+  // Track relaunch flow start
+  useEffect(() => {
+    trackRelaunchStart(projectId);
+  }, [projectId]);
+
   const handleIntentContinue = () => {
     setStep("selection");
   };
@@ -67,6 +97,11 @@ export function RelaunchFlow({ projectId, projectName, onCancel }: RelaunchFlowP
     setRevisitSections(revisit);
     setSkipMemory(skip);
     setStep("summary");
+  };
+
+  const handleCancel = () => {
+    trackRelaunchCancel(projectId, step);
+    onCancel();
   };
 
   const handleConfirmRelaunch = async () => {
@@ -95,6 +130,11 @@ export function RelaunchFlow({ projectId, projectName, onCancel }: RelaunchFlowP
           .single();
 
         if (createError) throw createError;
+        
+        // Track analytics
+        trackRelaunchComplete(projectId, 0, 0, true);
+        trackRelaunchActivity(projectId, newProject.id, [], [], true);
+        
         toast.success("Fresh project created!");
         navigate(`/projects/${newProject.id}`);
         return;
@@ -123,7 +163,7 @@ export function RelaunchFlow({ projectId, projectName, onCancel }: RelaunchFlowP
         .eq("project_id", projectId);
 
       // 4. Determine starting phase
-      const startingPhase = determineStartingPhase(revisitSections);
+      const startingPhase = determineStartingPhase(keptSections, revisitSections);
 
       // 5. Create phase statuses based on starting phase
       const phaseOrder: Phase[] = ["planning", "messaging", "build", "content", "launch", "post-launch"];
@@ -239,6 +279,10 @@ export function RelaunchFlow({ projectId, projectName, onCancel }: RelaunchFlowP
 
       // NOTE: Ephemeral Memory (tasks, drafts, dates, metrics) is NEVER copied
 
+      // Track analytics
+      trackRelaunchComplete(projectId, keptSections.length, revisitSections.length, false);
+      trackRelaunchActivity(projectId, newProject.id, keptSections, revisitSections, false);
+
       toast.success("Relaunch project created!");
       navigate(`/projects/${newProject.id}`);
     } catch (error) {
@@ -256,7 +300,7 @@ export function RelaunchFlow({ projectId, projectName, onCancel }: RelaunchFlowP
           key="intent"
           projectName={projectName}
           onContinue={handleIntentContinue}
-          onCancel={onCancel}
+          onCancel={handleCancel}
         />
       )}
       {step === "selection" && (

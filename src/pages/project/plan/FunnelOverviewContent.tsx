@@ -118,7 +118,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("*")
+        .select("*, parent_project:projects!projects_parent_project_id_fkey(id, name)")
         .eq("id", projectId)
         .single();
       if (error) throw error;
@@ -239,6 +239,9 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
         projectName={project?.name}
         projectId={projectId}
         projectState={projectState}
+        isRelaunch={project?.is_relaunch}
+        parentProjectId={Array.isArray(project?.parent_project) ? project.parent_project[0]?.id : (project?.parent_project as { id: string; name: string } | null)?.id}
+        parentProjectName={Array.isArray(project?.parent_project) ? project.parent_project[0]?.name : (project?.parent_project as { id: string; name: string } | null)?.name}
         onPause={pause}
         onResume={resume}
         onArchive={archive}
