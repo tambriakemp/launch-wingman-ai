@@ -22,6 +22,7 @@ import { PHASE_LABELS, TaskTemplate } from "@/types/tasks";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getLearnMoreArticleId } from "@/data/taskLearnMoreLinks";
+import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/contexts/AuthContext";
 import { MVLCallout, MVLLaunchIntro, MVLLaunchComplete } from "@/components/mvl";
 import { generateVoiceScript, hasVoiceSnippetSupport } from "@/lib/generateVoiceScript";
@@ -33,6 +34,7 @@ export default function TaskDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { isAdmin } = useAdmin();
   
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [selectedOption, setSelectedOption] = useState<string>("");
@@ -530,10 +532,8 @@ export default function TaskDetail() {
           </ol>
         </section>
 
-        {/* Video Instructions Section - only shown if task has videoInstructionsUrl */}
-        {taskTemplate.videoInstructionsUrl && (
-          <VideoInstructionsSection videoUrl={taskTemplate.videoInstructionsUrl} />
-        )}
+        {/* Video Instructions Section */}
+        <VideoInstructionsSection taskId={taskId || ''} isAdmin={isAdmin} />
 
         <div className="h-px bg-border mb-10" />
 
