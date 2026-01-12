@@ -554,14 +554,14 @@ export function BulkPhotoUploadCard() {
                   {!isProcessing && photo.status !== "done" && (
                     <div className="absolute bottom-0 left-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Select 
-                        value={photo.overrideCategory || ""} 
-                        onValueChange={(v) => updatePhotoCategory(photo.id, v)}
+                        value={photo.overrideCategory || "auto"} 
+                        onValueChange={(v) => updatePhotoCategory(photo.id, v === "auto" ? undefined : v)}
                       >
                         <SelectTrigger className="h-7 text-xs bg-background/90 border-0 rounded-none">
                           <SelectValue placeholder="Auto" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Auto (AI)</SelectItem>
+                          <SelectItem value="auto">Auto (AI)</SelectItem>
                           {SUBCATEGORIES.map(cat => (
                             <SelectItem key={cat.slug} value={cat.slug}>
                               {cat.name}
