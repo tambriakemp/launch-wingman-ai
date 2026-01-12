@@ -87,6 +87,21 @@ serve(async (req) => {
     
     console.log("Generated prompt:", prompt);
 
+    // Build the message content - include logo/icon image if available for visual reference
+    const messageContent: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
+      { type: "text", text: prompt }
+    ];
+
+    // Add the icon/logo image as visual reference if available
+    const referenceImageUrl = brandSettings.icon_url || brandSettings.logo_url;
+    if (referenceImageUrl) {
+      console.log("Including brand reference image:", referenceImageUrl);
+      messageContent.push({
+        type: "image_url",
+        image_url: { url: referenceImageUrl }
+      });
+    }
+
     // Call Lovable AI Gateway for image generation
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -99,7 +114,7 @@ serve(async (req) => {
         messages: [
           {
             role: "user",
-            content: prompt,
+            content: messageContent,
           },
         ],
         modalities: ["image", "text"],
@@ -199,19 +214,25 @@ serve(async (req) => {
 });
 
 function buildPrompt(asset: AssetDefinition, brandSettings: BrandSettings): string {
-  const { brand_name, tagline, subtext, primary_color, secondary_color, neutral_color, header_font, body_font } = brandSettings;
+  const { brand_name, tagline, subtext, primary_color, secondary_color, neutral_color, header_font, body_font, logo_url, icon_url } = brandSettings;
   
-  // Launchely brand identity description - used to guide AI generation
+  // Reference the attached image if available
+  const hasReferenceImage = icon_url || logo_url;
+  const referenceNote = hasReferenceImage 
+    ? `\nIMPORTANT: Use the attached brand logo/icon image as the EXACT logo to use in the generated asset. Match its style, shape, and colors precisely. Do NOT create a different icon.`
+    : '';
+  
+  // Brand identity description - used to guide AI generation
   const brandIdentity = `
 BRAND IDENTITY for "${brand_name}":
-- Logo/Icon: A growth/seedling icon - a stylized plant sprout with two leaves emerging from a stem. The icon represents growth, launching, and new beginnings.
-- The icon should be simple, geometric, and modern - NOT a letter, NOT text.
-- Primary Color: ${primary_color} (deep charcoal/near-black) - use for backgrounds and main elements
-- Secondary/Accent Color: ${secondary_color} (vibrant teal/mint) - use for the icon, highlights, and accents
-- Neutral Color: ${neutral_color} (warm gold/amber) - use sparingly for tertiary accents
+${hasReferenceImage ? '- Logo/Icon: USE THE ATTACHED IMAGE as the exact logo/icon. Reproduce it faithfully in the generated asset.' : '- Logo/Icon: A growth/seedling icon - a stylized plant sprout with two leaves emerging from a stem.'}
+- Primary Color: ${primary_color} (use for backgrounds and main elements)
+- Secondary/Accent Color: ${secondary_color} (use for the icon, highlights, and accents)  
+- Neutral Color: ${neutral_color} (use sparingly for tertiary accents)
 - Typography: ${header_font} for headers, ${body_font} for body - clean, modern sans-serif
 - Aesthetic: Calm, professional, minimal, SaaS-like. Clean lines, generous whitespace, sophisticated.
 - Mood: Supportive, growth-oriented, not aggressive or salesy.
+${referenceNote}
   `.trim();
 
   // Base style guidelines
@@ -220,7 +241,7 @@ STYLE GUIDELINES:
 - Modern, minimal design with clean lines
 - Generous whitespace, not cluttered
 - Professional and sophisticated
-- The seedling/growth icon is the brand mark - always use it, never just a letter
+${hasReferenceImage ? '- CRITICAL: Use the exact logo/icon from the attached reference image - do NOT create a new or different logo' : '- The seedling/growth icon is the brand mark - always use it, never just a letter'}
 - Avoid: Loud patterns, heavy gradients, excessive text, marketing urgency
   `.trim();
 
@@ -234,12 +255,12 @@ ${brandIdentity}
 
 SPECIFIC REQUIREMENTS for this icon:
 - Square format, will be displayed as circular on most platforms
-- Feature the seedling/growth icon (stylized plant sprout with two leaves) as the main element
-- Background: ${primary_color} (dark charcoal/black)
-- Icon: ${secondary_color} (teal/mint color)
-- The sprout icon should be centered with balanced padding
+${hasReferenceImage ? '- Use the EXACT logo/icon from the attached reference image as the main element' : '- Feature the seedling/growth icon (stylized plant sprout with two leaves) as the main element'}
+- Background: ${primary_color} (dark background)
+- Icon: ${secondary_color} (teal/accent color) for the logo/icon
+- The icon should be centered with balanced padding
 - Simple, clean, recognizable at small sizes
-- NO text, NO letters - just the plant/growth icon
+- NO text, NO letters - just the logo/icon mark
 - Modern, tech-forward, professional look
 
 ${styleGuidelines}
@@ -255,7 +276,7 @@ ${brandIdentity}
 
 SPECIFIC REQUIREMENTS for this banner:
 - Horizontal composition for ${asset.width}x${asset.height}
-- Left side: The seedling/growth icon (small, as brand mark)
+${hasReferenceImage ? '- Left side: Use the EXACT logo/icon from the attached reference image (small, as brand mark)' : '- Left side: The seedling/growth icon (small, as brand mark)'}
 - Brand name "${brand_name}" displayed prominently
 - Tagline: "${tagline}" as supporting text
 ${subtext ? `- Subtext: "${subtext}"` : ""}
@@ -302,7 +323,7 @@ SPECIFIC REQUIREMENTS for this carousel template:
 - Layout structure for educational content
 - Top: Title area with placeholder text "[Title Here]"
 - Middle: Content area for bullet points or key message
-- Bottom: Small seedling icon as brand mark
+${hasReferenceImage ? '- Bottom: Use the EXACT logo/icon from the attached reference image as brand mark' : '- Bottom: Small seedling icon as brand mark'}
 - Background: ${neutral_color} (light/cream) or white
 - Text: ${primary_color} (dark)
 - Accents: ${secondary_color} (teal) for highlights, lines, bullets
@@ -322,7 +343,7 @@ ${brandIdentity}
 SPECIFIC REQUIREMENTS for this video template:
 - Vertical video format
 - Central area for video preview/content
-- Small seedling brand icon watermark in corner
+${hasReferenceImage ? '- Use the EXACT logo/icon from the attached reference image as watermark in corner' : '- Small seedling brand icon watermark in corner'}
 - Optional title overlay area
 - Background: ${primary_color} (dark) or ${neutral_color} (light)
 - Accent elements: ${secondary_color} (teal)
@@ -343,7 +364,7 @@ SPECIFIC REQUIREMENTS for this Pinterest template:
 - Vertical Pinterest-optimized layout (2:3 ratio)
 - Large image/visual area at top (2/3 of height)
 - Title text area below
-- Small seedling brand icon at bottom
+${hasReferenceImage ? '- Use the EXACT logo/icon from the attached reference image at bottom' : '- Small seedling brand icon at bottom'}
 - Background: ${neutral_color} (light) for readability
 - Text: ${primary_color} (dark)
 - Accents: ${secondary_color} (teal)
@@ -364,7 +385,7 @@ Generate a ${asset.width}x${asset.height} pixel PNG brand asset for ${asset.plat
 ${brandIdentity}
 
 SPECIFIC REQUIREMENTS:
-- Professional brand asset featuring the seedling/growth icon
+${hasReferenceImage ? '- Use the EXACT logo/icon from the attached reference image' : '- Professional brand asset featuring the seedling/growth icon'}
 - Brand name: "${brand_name}"
 - Tagline: "${tagline}"
 - Use the brand colors and maintain the minimal, modern aesthetic

@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { 
   Save, 
@@ -16,8 +15,16 @@ import {
   Palette,
   Type,
   Image as ImageIcon,
-  Eye
+  Eye,
+  Download,
+  ChevronDown
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface BrandSettings {
   id: string;
@@ -227,6 +234,67 @@ export const BrandSourceSection = ({
     setFormData({ ...formData, highlight_labels: newLabels });
   };
 
+  // Logo download sizes
+  const logoSizes = [
+    { label: '32×32 (Favicon)', size: 32 },
+    { label: '64×64 (Small)', size: 64 },
+    { label: '128×128 (Medium)', size: 128 },
+    { label: '256×256 (Large)', size: 256 },
+    { label: '512×512 (Extra Large)', size: 512 },
+  ];
+
+  const downloadLogoAtSize = async (size: number) => {
+    const sourceUrl = logoPreview || brandSettings?.logo_url || '/favicon-512.svg';
+    
+    try {
+      // Create a canvas to resize the image
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+        img.src = sourceUrl;
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        toast.error('Failed to create canvas context');
+        return;
+      }
+
+      // Draw the image scaled to the target size
+      ctx.drawImage(img, 0, 0, size, size);
+      
+      // Convert to PNG blob
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error('Failed to generate PNG');
+          return;
+        }
+        
+        // Download the blob
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${formData.brand_name.toLowerCase().replace(/\s+/g, '-')}-logo-${size}x${size}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        toast.success(`Downloaded ${size}×${size} PNG`);
+      }, 'image/png');
+    } catch (error) {
+      console.error('Error downloading logo:', error);
+      toast.error('Failed to download logo. Try uploading a PNG or JPG image.');
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -426,16 +494,37 @@ export const BrandSourceSection = ({
                         alt="Logo preview" 
                         className="max-h-16 mx-auto object-contain"
                       />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setLogoFile(null);
-                          setLogoPreview(null);
-                        }}
-                      >
-                        Remove
-                      </Button>
+                      <div className="flex items-center justify-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setLogoFile(null);
+                            setLogoPreview(null);
+                          }}
+                        >
+                          Remove
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <Download className="h-3 w-3 mr-1" />
+                              Download
+                              <ChevronDown className="h-3 w-3 ml-1" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="center">
+                            {logoSizes.map((option) => (
+                              <DropdownMenuItem 
+                                key={option.size}
+                                onClick={() => downloadLogoAtSize(option.size)}
+                              >
+                                {option.label}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                   ) : (
                     <label className="cursor-pointer block">
