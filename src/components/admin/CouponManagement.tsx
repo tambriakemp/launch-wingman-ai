@@ -41,6 +41,8 @@ export function CouponManagement() {
     amountOff: "",
     duration: "once" as "forever" | "once" | "repeating",
     durationInMonths: "",
+    maxRedemptions: "",
+    expiresAt: "",
   });
 
   const fetchCoupons = useCallback(async () => {
@@ -94,6 +96,8 @@ export function CouponManagement() {
           currency: newCoupon.discountType === "amount" ? "usd" : undefined,
           duration: newCoupon.duration,
           duration_in_months: newCoupon.duration === "repeating" ? parseInt(newCoupon.durationInMonths) : undefined,
+          max_redemptions: newCoupon.maxRedemptions ? parseInt(newCoupon.maxRedemptions) : undefined,
+          redeem_by: newCoupon.expiresAt ? Math.floor(new Date(newCoupon.expiresAt).getTime() / 1000) : undefined,
         },
       });
 
@@ -109,6 +113,8 @@ export function CouponManagement() {
         amountOff: "",
         duration: "once",
         durationInMonths: "",
+        maxRedemptions: "",
+        expiresAt: "",
       });
       fetchCoupons();
     } catch (error) {
@@ -318,6 +324,34 @@ export function CouponManagement() {
                     />
                   </div>
                 )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="maxRedemptions">Max Redemptions (optional)</Label>
+                  <Input
+                    id="maxRedemptions"
+                    type="number"
+                    min="1"
+                    placeholder="Unlimited"
+                    value={newCoupon.maxRedemptions}
+                    onChange={(e) => setNewCoupon({ ...newCoupon, maxRedemptions: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Leave empty for unlimited use
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="expiresAt">Expiration Date (optional)</Label>
+                  <Input
+                    id="expiresAt"
+                    type="datetime-local"
+                    value={newCoupon.expiresAt}
+                    onChange={(e) => setNewCoupon({ ...newCoupon, expiresAt: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Leave empty for no expiration
+                  </p>
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
@@ -358,6 +392,7 @@ export function CouponManagement() {
                   <TableHead>Discount</TableHead>
                   <TableHead>Duration</TableHead>
                   <TableHead>Redemptions</TableHead>
+                  <TableHead>Expires</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -389,7 +424,12 @@ export function CouponManagement() {
                     <TableCell>{formatDuration(coupon)}</TableCell>
                     <TableCell>
                       {coupon.times_redeemed}
-                      {coupon.max_redemptions && ` / ${coupon.max_redemptions}`}
+                      {coupon.max_redemptions ? ` / ${coupon.max_redemptions}` : " / ∞"}
+                    </TableCell>
+                    <TableCell>
+                      {coupon.redeem_by
+                        ? new Date(coupon.redeem_by * 1000).toLocaleDateString()
+                        : "Never"}
                     </TableCell>
                     <TableCell>
                       <Badge variant={coupon.valid ? "default" : "destructive"}>
