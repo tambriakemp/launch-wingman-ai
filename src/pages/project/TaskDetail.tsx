@@ -264,29 +264,45 @@ export default function TaskDetail() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Check if all completion criteria are checked
+  const allCriteriaComplete = useMemo(() => {
+    if (!taskTemplate) return false;
+    return completedCriteria.length === taskTemplate.completionCriteria.length;
+  }, [taskTemplate, completedCriteria]);
+
   const isTaskComplete = useMemo(() => {
     if (!taskTemplate) return false;
     
+    // First check if input requirements are met
+    let inputComplete = false;
     switch (taskTemplate.inputType) {
       case 'selection':
-        return !!selectedOption;
+        inputComplete = !!selectedOption;
+        break;
       case 'checklist':
         const requiredCount = taskTemplate.inputSchema?.options?.length || 0;
-        return checklistItems.length >= requiredCount;
+        inputComplete = checklistItems.length >= requiredCount;
+        break;
       case 'form':
         const fields = taskTemplate.inputSchema?.fields || [];
         const requiredFields = fields.filter(f => f.required);
-        return requiredFields.every(f => formData[f.name]?.trim());
+        inputComplete = requiredFields.every(f => formData[f.name]?.trim());
+        break;
       case 'custom':
         // SimpleLaunchPageTask requires 3 checklist items
         if (taskTemplate.inputSchema?.customComponent === 'SimpleLaunchPageTask') {
-          return checklistItems.length >= 3;
+          inputComplete = checklistItems.length >= 3;
+        } else {
+          inputComplete = true;
         }
-        return true;
+        break;
       default:
-        return true;
+        inputComplete = true;
     }
-  }, [taskTemplate, selectedOption, checklistItems, formData]);
+    
+    // Task is only complete when both input is filled AND all criteria are checked
+    return inputComplete && allCriteriaComplete;
+  }, [taskTemplate, selectedOption, checklistItems, formData, allCriteriaComplete]);
 
   // Check if this is a custom component with its own completion UI
   const hasCustomCompletionUI = taskTemplate?.inputType === 'custom' && 
@@ -871,8 +887,15 @@ export default function TaskDetail() {
                   </div>
                 ))}
               </div>
+              
+              {/* Note about requirement */}
+              {!allCriteriaComplete && (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Check off all items above before saving and marking complete.
+                </p>
+              )}
 
-              {isTaskComplete && completedCriteria.length === taskTemplate.completionCriteria.length && (
+              {isTaskComplete && (
                 <div className="mt-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                   <p className="text-sm text-emerald-700 dark:text-emerald-400">
