@@ -176,3 +176,6 @@ verify_jwt = false
 
 [functions.generate-brand-asset]
 verify_jwt = false
+
+[functions.generate-social-post]
+verify_jwt = false
