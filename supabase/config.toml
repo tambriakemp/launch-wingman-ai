@@ -155,3 +155,12 @@ verify_jwt = false
 
 [functions.admin-manage-coupon]
 verify_jwt = false
+
+[functions.analyze-photo-category]
+verify_jwt = false
+
+[functions.upload-photo-to-r2]
+verify_jwt = false
+
+[functions.process-photo-batch]
+verify_jwt = false
