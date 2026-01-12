@@ -4,6 +4,7 @@ export const PHASES = [
   'messaging',
   'build',
   'content',
+  'pre-launch',
   'launch',
   'post-launch',
 ] as const;
@@ -15,6 +16,7 @@ export const PHASE_LABELS: Record<Phase, string> = {
   messaging: 'Messaging',
   build: 'Build',
   content: 'Content',
+  'pre-launch': 'Pre-Launch',
   launch: 'Launch',
   'post-launch': 'Post-Launch',
 };

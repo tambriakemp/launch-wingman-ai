@@ -39,8 +39,14 @@ const PHASE_CELEBRATIONS: Record<Phase, {
   content: {
     icon: PenTool,
     title: "Content Ready!",
-    message: "Your content is planned and ready to go. You're prepared to connect with your audience. Launch time!",
+    message: "Your content is planned and ready to go. You're prepared to connect with your audience. Time for pre-launch!",
     color: "text-emerald-500",
+  },
+  "pre-launch": {
+    icon: Sparkles,
+    title: "Signal Sent!",
+    message: "You've given context. That's the entire goal of pre-launch. Now you're ready to launch!",
+    color: "text-cyan-500",
   },
   launch: {
     icon: Rocket,

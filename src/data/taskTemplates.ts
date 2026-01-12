@@ -955,6 +955,45 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
     route: '/projects/:id/tasks/content_phase_review',
   },
 
+  // ==================== PRE-LAUNCH PHASE ====================
+  // Goal: "Give light context — not build momentum. One small signal is enough."
+  {
+    taskId: 'prelaunch_share_signal',
+    title: 'Share one small signal',
+    phase: 'pre-launch',
+    funnelTypes: ['all'],
+    order: 1,
+    priority: 1,
+    estimatedMinutesMin: 5,
+    estimatedMinutesMax: 15,
+    blocking: true,
+    dependencies: ['content_phase_review'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You\'ve shared one simple signal',
+      'You feel calmer, not more pressured',
+    ],
+    whyItMatters: 'Your goal here isn\'t attention or engagement. It\'s simply to signal that you\'re working on something — so when you do share later, it feels familiar instead of out of the blue.',
+    instructions: [
+      'Choose one simple way to signal what you\'re working on',
+      'Share a short post, story, quiet question, or waitlist link',
+      'Remember: one signal is enough',
+    ],
+    inputType: 'selection',
+    inputSchema: {
+      type: 'radio',
+      options: [
+        { value: 'short_post', label: 'A short post', description: 'Share a simple update about what you\'re building or thinking through.' },
+        { value: 'story_message', label: 'A story or quick message', description: 'Mention what you\'re working on without explaining everything.' },
+        { value: 'quiet_question', label: 'A quiet question', description: 'Ask something related to the problem your offer solves.' },
+        { value: 'waitlist_link', label: 'A waitlist or "coming soon" link', description: 'Only if you already have one. This is not required.' },
+      ],
+    },
+    aiAssistModes: ['examples', 'simplify'],
+    route: '/projects/:id/tasks/prelaunch_share_signal',
+  },
+
   // ==================== LAUNCH PHASE ====================
   // Goal: "Share your offer intentionally and complete your launch — without pressure, urgency, or burnout."
   {
@@ -967,7 +1006,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
     estimatedMinutesMin: 5,
     estimatedMinutesMax: 10,
     blocking: false,
-    dependencies: ['content_phase_review'],
+    dependencies: ['prelaunch_share_signal'],
     canSkip: true,
     skipReasonRequired: false,
     completionCriteria: [
@@ -994,7 +1033,7 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
     estimatedMinutesMin: 5,
     estimatedMinutesMax: 15,
     blocking: true,
-    dependencies: ['content_phase_review'],
+    dependencies: ['prelaunch_share_signal'],
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
@@ -1370,6 +1409,11 @@ export function getLaunchTasksForFunnel(funnelType: string | null): TaskTemplate
       (funnelType && task.funnelTypes.includes(funnelType as any))
     ))
     .sort((a, b) => a.order - b.order);
+}
+
+// Get pre-launch phase tasks specifically
+export function getPreLaunchTasks(): TaskTemplate[] {
+  return TASK_TEMPLATES.filter(task => task.phase === 'pre-launch' && task.funnelTypes.includes('all'));
 }
 
 // Get post-launch phase tasks specifically

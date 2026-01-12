@@ -60,6 +60,7 @@ const PHASE_COLORS: Record<Phase, string> = {
   messaging: "border-l-purple-500",
   build: "border-l-emerald-500",
   content: "border-l-amber-500",
+  "pre-launch": "border-l-cyan-500",
   launch: "border-l-rose-500",
   "post-launch": "border-l-teal-500",
 };
@@ -69,6 +70,7 @@ const PHASE_ICON_COLORS: Record<Phase, string> = {
   messaging: "text-purple-500",
   build: "text-emerald-500",
   content: "text-amber-500",
+  "pre-launch": "text-cyan-500",
   launch: "text-rose-500",
   "post-launch": "text-teal-500",
 };
@@ -78,6 +80,7 @@ const PHASE_DOT_COLORS: Record<Phase, string> = {
   messaging: "bg-purple-500",
   build: "bg-emerald-500",
   content: "bg-amber-500",
+  "pre-launch": "bg-cyan-500",
   launch: "bg-rose-500",
   "post-launch": "bg-teal-500",
 };
@@ -87,6 +90,7 @@ const PHASE_LINK_COLORS: Record<Phase, string> = {
   messaging: "text-purple-500 hover:text-purple-600",
   build: "text-emerald-500 hover:text-emerald-600",
   content: "text-amber-500 hover:text-amber-600",
+  "pre-launch": "text-cyan-500 hover:text-cyan-600",
   launch: "text-rose-500 hover:text-rose-600",
   "post-launch": "text-teal-500 hover:text-teal-600",
 };

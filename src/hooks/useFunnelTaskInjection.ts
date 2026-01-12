@@ -287,8 +287,9 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
         messaging: 1,
         build: 2,
         content: 3,
-        launch: 4,
-        'post-launch': 5,
+        'pre-launch': 4,
+        launch: 5,
+        'post-launch': 6,
       };
       const phaseDiff = phaseOrder[a.phase] - phaseOrder[b.phase];
       if (phaseDiff !== 0) return phaseDiff;

@@ -29,6 +29,7 @@ const PHASE_BUTTON_COLORS: Record<Phase, string> = {
   messaging: "bg-purple-500 hover:bg-purple-600",
   build: "bg-emerald-500 hover:bg-emerald-600",
   content: "bg-amber-500 hover:bg-amber-600",
+  "pre-launch": "bg-cyan-500 hover:bg-cyan-600",
   launch: "bg-rose-500 hover:bg-rose-600",
   "post-launch": "bg-teal-500 hover:bg-teal-600",
 };
@@ -38,6 +39,7 @@ const PHASE_BADGE_COLORS: Record<Phase, string> = {
   messaging: "bg-purple-500/15 text-purple-600 border-purple-500/30",
   build: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
   content: "bg-amber-500/15 text-amber-600 border-amber-500/30",
+  "pre-launch": "bg-cyan-500/15 text-cyan-600 border-cyan-500/30",
   launch: "bg-rose-500/15 text-rose-600 border-rose-500/30",
   "post-launch": "bg-teal-500/15 text-teal-600 border-teal-500/30",
 };
