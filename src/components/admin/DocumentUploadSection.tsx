@@ -249,6 +249,19 @@ export function DocumentUploadSection() {
   const processEntries = async (entries: FileSystemEntry[]) => {
     const files: File[] = [];
     
+    // readEntries only returns a batch at a time, must call repeatedly
+    async function readAllDirectoryEntries(reader: FileSystemDirectoryReader): Promise<FileSystemEntry[]> {
+      const allEntries: FileSystemEntry[] = [];
+      let batch: FileSystemEntry[];
+      do {
+        batch = await new Promise<FileSystemEntry[]>((resolve, reject) => {
+          reader.readEntries(resolve, reject);
+        });
+        allEntries.push(...batch);
+      } while (batch.length > 0);
+      return allEntries;
+    }
+    
     async function processEntry(entry: FileSystemEntry, path: string = ''): Promise<void> {
       if (entry.isFile) {
         const fileEntry = entry as FileSystemFileEntry;
@@ -262,18 +275,15 @@ export function DocumentUploadSection() {
       } else if (entry.isDirectory) {
         const dirEntry = entry as FileSystemDirectoryEntry;
         const reader = dirEntry.createReader();
-        const subEntries = await new Promise<FileSystemEntry[]>((resolve, reject) => {
-          reader.readEntries(resolve, reject);
-        });
+        const subEntries = await readAllDirectoryEntries(reader);
         for (const subEntry of subEntries) {
           await processEntry(subEntry, path + entry.name + '/');
         }
       }
     }
     
-    for (const entry of entries) {
-      await processEntry(entry, '');
-    }
+    // Process all dropped entries in parallel for speed
+    await Promise.all(entries.map(entry => processEntry(entry, '')));
     
     if (files.length > 0) {
       handleFiles(files);
