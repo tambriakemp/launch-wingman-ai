@@ -148,7 +148,7 @@ const ContentVault = () => {
                   key={category.id}
                   name={category.name}
                   description={category.description}
-                  coverImageUrl={category.first_resource_thumbnail || category.cover_image_url || getVaultThumbnail(category.slug)}
+                  coverImageUrl={category.cover_image_url || category.first_resource_thumbnail || getVaultThumbnail(category.slug)}
                   resourceCount={category.resource_count}
                   onClick={() => handleCategoryClick(category.slug)}
                   showEditButton={hasAdminAccess}
