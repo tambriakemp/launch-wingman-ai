@@ -117,8 +117,9 @@ async function uploadToR2(
     return { success: false, error: `R2 upload failed: ${response.status}` };
   }
 
-  // Return public URL
-  const publicUrl = `https://pub-5b05c60f86494f4aa2b3ba7cc0640332.r2.dev/${objectKey}`;
+  // Return public URL using environment variable
+  const R2_PUBLIC_URL = Deno.env.get("R2_PUBLIC_URL") || "";
+  const publicUrl = `${R2_PUBLIC_URL.replace(/\/$/, "")}/${objectKey}`;
   return { success: true, url: publicUrl };
 }
 
