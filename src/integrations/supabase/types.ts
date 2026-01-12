@@ -1712,6 +1712,33 @@ export type Database = {
         }
         Relationships: []
       }
+      task_video_instructions: {
+        Row: {
+          created_at: string | null
+          id: string
+          task_id: string
+          updated_at: string | null
+          updated_by: string | null
+          video_url: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          task_id: string
+          updated_at?: string | null
+          updated_by?: string | null
+          video_url: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          task_id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          video_url?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           column_id: string
