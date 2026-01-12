@@ -8,6 +8,7 @@ const corsHeaders = {
 // File extension helpers
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp"];
 const VIDEO_EXTENSIONS = [".mp4", ".mov", ".avi", ".webm", ".mkv", ".m4v"];
+const PRESET_EXTENSIONS = [".zip", ".dng", ".xmp", ".lrtemplate"];
 
 function getFileExtension(filename: string): string {
   const lastDot = filename.lastIndexOf(".");
@@ -20,6 +21,10 @@ function isImageFile(filename: string): boolean {
 
 function isVideoFile(filename: string): boolean {
   return VIDEO_EXTENSIONS.includes(getFileExtension(filename));
+}
+
+function isPresetFile(filename: string): boolean {
+  return PRESET_EXTENSIONS.includes(getFileExtension(filename));
 }
 
 function cleanFilename(filename: string): string {
@@ -225,7 +230,7 @@ async function listAllR2Objects(
 }
 
 interface SyncOptions {
-  mediaType?: 'photos' | 'videos' | 'all';
+  mediaType?: 'photos' | 'videos' | 'presets' | 'all';
   cleanupOrphans?: boolean;
 }
 
@@ -319,8 +324,10 @@ Deno.serve(async (req) => {
       ALLOWED_PREFIXES = ["Photos/", "photos/"];
     } else if (options.mediaType === 'videos') {
       ALLOWED_PREFIXES = ["Videos/", "videos/"];
+    } else if (options.mediaType === 'presets') {
+      ALLOWED_PREFIXES = ["lightroom-presets/", "Lightroom-Presets/", "presets/", "Presets/"];
     } else {
-      ALLOWED_PREFIXES = ["Photos/", "Videos/", "photos/", "videos/"];
+      ALLOWED_PREFIXES = ["Photos/", "Videos/", "photos/", "videos/", "lightroom-presets/", "Lightroom-Presets/", "presets/", "Presets/"];
     }
 
     // List all objects from R2
@@ -339,8 +346,10 @@ Deno.serve(async (req) => {
         return isImageFile(key);
       } else if (options.mediaType === 'videos') {
         return isVideoFile(key);
+      } else if (options.mediaType === 'presets') {
+        return isPresetFile(key);
       }
-      return isImageFile(key) || isVideoFile(key);
+      return isImageFile(key) || isVideoFile(key) || isPresetFile(key);
     });
     console.log(`[SYNC-R2] Media files in allowed folders: ${mediaKeys.length}`);
 
@@ -356,7 +365,9 @@ Deno.serve(async (req) => {
 
     const photosCategory = categories?.find((c) => c.slug === "photos");
     const videosCategory = categories?.find((c) => c.slug === "videos");
+    const presetsCategory = categories?.find((c) => c.slug === "lightroom-presets");
 
+    // Only require photos and videos categories; presets is optional
     if (!photosCategory || !videosCategory) {
       return new Response(
         JSON.stringify({ error: "Photos or Videos category not found in vault" }),
@@ -499,7 +510,27 @@ Deno.serve(async (req) => {
         }
 
         const isImage = isImageFile(parsed.filename);
-        const targetCategoryId = isImage ? photosCategory.id : videosCategory.id;
+        const isVideo = isVideoFile(parsed.filename);
+        const isPreset = isPresetFile(parsed.filename);
+        
+        let targetCategoryId: string;
+        let resourceType: string;
+        
+        if (isPreset && presetsCategory) {
+          targetCategoryId = presetsCategory.id;
+          resourceType = "file";
+        } else if (isImage) {
+          targetCategoryId = photosCategory.id;
+          resourceType = "image";
+        } else if (isVideo) {
+          targetCategoryId = videosCategory.id;
+          resourceType = "video";
+        } else {
+          result.skipped++;
+          result.files.push({ path: key, action: "skipped (unknown type)" });
+          continue;
+        }
+        
         const subcategorySlug = parsed.subcategory.replace(/\s+/g, "-").toLowerCase();
 
         // Get or create subcategory
@@ -552,7 +583,7 @@ Deno.serve(async (req) => {
           subcategory_id: subcategoryId,
           title: cleanFilename(parsed.filename),
           resource_url: resourceUrl,
-          resource_type: isImage ? "image" : "video",
+          resource_type: resourceType,
           position: resourcePosition,
         });
 
