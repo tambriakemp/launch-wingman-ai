@@ -15,7 +15,10 @@ import {
   XCircle,
   FileType,
   Folder,
-  FolderOpen
+  FolderOpen,
+  Square,
+  Copy,
+  SkipForward
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -26,10 +29,20 @@ interface PendingDocument {
   title: string;
   subcategory: string;
   subcategoryName: string;
-  status: 'pending' | 'uploading' | 'done' | 'error' | 'skipped';
+  status: 'pending' | 'uploading' | 'done' | 'error' | 'skipped' | 'duplicate';
   error?: string;
   resultUrl?: string;
   folderPath?: string;
+}
+
+interface UploadStats {
+  total: number;
+  pending: number;
+  uploading: number;
+  done: number;
+  error: number;
+  skipped: number;
+  duplicate: number;
 }
 
 interface SubcategoryOption {
@@ -116,11 +129,13 @@ export function DocumentUploadSection() {
   const [isOpen, setIsOpen] = useState(false);
   const [documents, setDocuments] = useState<PendingDocument[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isStopped, setIsStopped] = useState(false);
   const [overrideAll, setOverrideAll] = useState<string>("");
   const [isDragging, setIsDragging] = useState(false);
   const [subcategories, setSubcategories] = useState<SubcategoryOption[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const shouldStopRef = useRef(false);
 
   useEffect(() => {
     async function loadSubcategories() {
@@ -149,15 +164,18 @@ export function DocumentUploadSection() {
     loadSubcategories();
   }, []);
 
-  const stats = {
+  const stats: UploadStats = {
     total: documents.length,
     pending: documents.filter(d => d.status === "pending").length,
     uploading: documents.filter(d => d.status === "uploading").length,
     done: documents.filter(d => d.status === "done").length,
     error: documents.filter(d => d.status === "error").length,
+    skipped: documents.filter(d => d.status === "skipped").length,
+    duplicate: documents.filter(d => d.status === "duplicate").length,
   };
 
-  const uploadProgress = stats.total > 0 ? ((stats.done + stats.error) / stats.total) * 100 : 0;
+  const processedCount = stats.done + stats.error + stats.skipped + stats.duplicate;
+  const uploadProgress = stats.total > 0 ? (processedCount / stats.total) * 100 : 0;
 
   const allSubcategories = useCallback((): SubcategoryOption[] => {
     const docSubcats = documents
@@ -333,14 +351,28 @@ export function DocumentUploadSection() {
     toast.success(`Applied "${subcat?.name || overrideAll}" to all documents`);
   }, [overrideAll, allSubcategories]);
 
+  const stopUpload = useCallback(() => {
+    shouldStopRef.current = true;
+    setIsStopped(true);
+    toast.info("Stopping upload after current file...");
+  }, []);
+
   const startUpload = useCallback(async () => {
     if (documents.length === 0) return;
 
     setIsUploading(true);
+    setIsStopped(false);
+    shouldStopRef.current = false;
 
     const pendingDocs = documents.filter(d => d.status === 'pending');
 
     for (const doc of pendingDocs) {
+      // Check if stop was requested
+      if (shouldStopRef.current) {
+        toast.info("Upload stopped by user");
+        break;
+      }
+
       setDocuments(prev => prev.map(d => 
         d.id === doc.id ? { ...d, status: 'uploading' as const } : d
       ));
@@ -364,7 +396,7 @@ export function DocumentUploadSection() {
         if (data.skipped) {
           setDocuments(prev => prev.map(d => 
             d.id === doc.id 
-              ? { ...d, status: 'skipped' as const, error: `Duplicate: "${data.title}" already exists` } 
+              ? { ...d, status: 'duplicate' as const, error: `Duplicate: "${data.title}" already exists` } 
               : d
           ));
         } else {
@@ -385,17 +417,8 @@ export function DocumentUploadSection() {
     }
 
     setIsUploading(false);
-    
-    const updatedDocs = documents.filter(d => pendingDocs.some(p => p.id === d.id));
-    const successCount = updatedDocs.filter(d => d.status === 'done').length;
-    const skippedCount = updatedDocs.filter(d => d.status === 'skipped').length;
-    
-    if (successCount > 0 || skippedCount > 0) {
-      const messages = [];
-      if (successCount > 0) messages.push(`${successCount} uploaded`);
-      if (skippedCount > 0) messages.push(`${skippedCount} skipped (duplicates)`);
-      toast.success(`Documents: ${messages.join(', ')}`);
-    }
+    shouldStopRef.current = false;
+    setIsStopped(false);
   }, [documents]);
 
   const getFileIcon = (filename: string) => {
@@ -545,6 +568,10 @@ export function DocumentUploadSection() {
                     <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
                   ) : doc.status === 'error' ? (
                     <XCircle className="w-4 h-4 text-destructive shrink-0" />
+                  ) : doc.status === 'duplicate' ? (
+                    <Copy className="w-4 h-4 text-yellow-500 shrink-0" />
+                  ) : doc.status === 'skipped' ? (
+                    <SkipForward className="w-4 h-4 text-gray-400 shrink-0" />
                   ) : doc.status === 'uploading' ? (
                     <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                   ) : (
@@ -605,25 +632,86 @@ export function DocumentUploadSection() {
           </ScrollArea>
         )}
 
-        {/* Progress */}
+        {/* Progress with Stats */}
         {isUploading && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Uploading...</span>
-              <span>{stats.done + stats.error}/{stats.total}</span>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center text-sm">
+              <span className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {isStopped ? "Stopping..." : "Uploading..."}
+              </span>
+              <span className="text-muted-foreground">{processedCount}/{stats.total}</span>
             </div>
             <Progress value={uploadProgress} />
+            
+            {/* Live Stats */}
+            <div className="flex flex-wrap gap-2">
+              {stats.done > 0 && (
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                  {stats.done} uploaded
+                </Badge>
+              )}
+              {stats.error > 0 && (
+                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+                  <XCircle className="w-3 h-3 mr-1" />
+                  {stats.error} failed
+                </Badge>
+              )}
+              {stats.duplicate > 0 && (
+                <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800">
+                  <Copy className="w-3 h-3 mr-1" />
+                  {stats.duplicate} duplicates
+                </Badge>
+              )}
+              {stats.skipped > 0 && (
+                <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-700">
+                  <SkipForward className="w-3 h-3 mr-1" />
+                  {stats.skipped} skipped
+                </Badge>
+              )}
+            </div>
+
+            {/* Stop Button */}
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={stopUpload}
+              disabled={isStopped}
+              className="w-full"
+            >
+              <Square className="w-4 h-4 mr-2" />
+              {isStopped ? "Stopping..." : "Stop Upload"}
+            </Button>
           </div>
         )}
 
-        {/* Stats */}
-        {(stats.done > 0 || stats.error > 0) && !isUploading && (
-          <div className="flex gap-4 text-sm">
+        {/* Completed Stats */}
+        {!isUploading && (stats.done > 0 || stats.error > 0 || stats.duplicate > 0 || stats.skipped > 0) && (
+          <div className="flex flex-wrap gap-2">
             {stats.done > 0 && (
-              <span className="text-green-500">✓ {stats.done} uploaded</span>
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+                <CheckCircle2 className="w-3 h-3 mr-1" />
+                {stats.done} uploaded
+              </Badge>
             )}
             {stats.error > 0 && (
-              <span className="text-destructive">✗ {stats.error} failed</span>
+              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+                <XCircle className="w-3 h-3 mr-1" />
+                {stats.error} failed
+              </Badge>
+            )}
+            {stats.duplicate > 0 && (
+              <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800">
+                <Copy className="w-3 h-3 mr-1" />
+                {stats.duplicate} duplicates
+              </Badge>
+            )}
+            {stats.skipped > 0 && (
+              <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-700">
+                <SkipForward className="w-3 h-3 mr-1" />
+                {stats.skipped} skipped
+              </Badge>
             )}
           </div>
         )}
@@ -634,17 +722,8 @@ export function DocumentUploadSection() {
           disabled={isUploading || stats.pending === 0}
           className="w-full"
         >
-          {isUploading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Uploading...
-            </>
-          ) : (
-            <>
-              <Upload className="w-4 h-4 mr-2" />
-              Upload {stats.pending} Document(s)
-            </>
-          )}
+          <Upload className="w-4 h-4 mr-2" />
+          Upload {stats.pending} Document(s)
         </Button>
 
         {/* Info */}
