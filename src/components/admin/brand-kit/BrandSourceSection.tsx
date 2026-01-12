@@ -94,11 +94,13 @@ export const BrandSourceSection = ({
           ? brandSettings.highlight_labels 
           : DEFAULT_SETTINGS.highlight_labels,
       });
-      setLogoPreview(brandSettings.logo_url);
+      // Use website high-res logo as default if none set
+      setLogoPreview(brandSettings.logo_url || '/favicon-512.svg');
       // Use website favicon as default icon if none set
       setIconPreview(brandSettings.icon_url || '/favicon.svg');
     } else {
       // No settings yet - show website defaults
+      setLogoPreview('/favicon-512.svg');
       setIconPreview('/favicon.svg');
     }
   }, [brandSettings]);
@@ -106,8 +108,8 @@ export const BrandSourceSection = ({
   // Save mutation
   const saveMutation = useMutation({
     mutationFn: async () => {
-      let logoUrl = brandSettings?.logo_url || null;
-      // Use website favicon as default icon if none uploaded
+      // Use website defaults if none uploaded
+      let logoUrl = brandSettings?.logo_url || '/favicon-512.svg';
       let iconUrl = brandSettings?.icon_url || '/favicon.svg';
 
       // Upload logo if changed
@@ -192,7 +194,8 @@ export const BrandSourceSection = ({
     });
     setLogoFile(null);
     setIconFile(null);
-    setLogoPreview(null);
+    // Reset logo to website default high-res version
+    setLogoPreview('/favicon-512.svg');
     // Reset icon to website default favicon
     setIconPreview('/favicon.svg');
     toast.info('Reset to website defaults');

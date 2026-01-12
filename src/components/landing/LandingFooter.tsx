@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Rocket } from "lucide-react";
+import { LaunchelyLogo } from "@/components/ui/LaunchelyLogo";
 
 const footerLinks = {
   product: [
@@ -34,11 +34,8 @@ export const LandingFooter = () => {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-12">
           {/* Brand Column */}
           <div className="col-span-2 md:col-span-1">
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-                <Rocket className="w-5 h-5 text-accent-foreground" />
-              </div>
-              <span className="text-xl font-bold">Launchely</span>
+            <Link to="/" className="mb-4 inline-block">
+              <LaunchelyLogo />
             </Link>
             <p className="text-primary-foreground/60 text-sm">
               The AI-powered platform that replaces expensive launch courses.

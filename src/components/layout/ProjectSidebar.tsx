@@ -18,6 +18,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
+import { LaunchelyLogo } from "@/components/ui/LaunchelyLogo";
 import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -107,11 +108,8 @@ const SidebarContent = ({
     <div className="h-full flex flex-col">
       {/* Logo */}
       <div className="px-4 py-3 border-b border-sidebar-border">
-        <Link to="/app" className="flex items-center gap-2" onClick={onNavigate}>
-          <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-            <Rocket className="w-5 h-5 text-accent-foreground" />
-          </div>
-          <span className="text-base font-semibold text-sidebar-accent-foreground">Launchely</span>
+        <Link to="/app" onClick={onNavigate}>
+          <LaunchelyLogo size="md" textClassName="text-sidebar-accent-foreground text-base" />
         </Link>
       </div>
 
