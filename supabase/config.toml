@@ -173,3 +173,6 @@ verify_jwt = false
 
 [functions.upload-preset-to-r2]
 verify_jwt = false
+
+[functions.generate-brand-asset]
+verify_jwt = false
