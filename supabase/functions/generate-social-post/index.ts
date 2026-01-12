@@ -443,81 +443,42 @@ function buildImagePrompt(
   brandSettings: any,
   bgVariant: 'dark' | 'light' | 'gold' = 'dark'
 ): string {
-  const layout = TEMPLATE_LAYOUTS[slideType as keyof typeof TEMPLATE_LAYOUTS] || TEMPLATE_LAYOUTS.content;
   const primaryColor = brandSettings?.primary_color || '#f5c243';
-  const brandName = brandSettings?.brand_name || 'Launchely';
   
   // Determine colors based on background variant
   let backgroundColor: string;
-  let headlineColor: string;
+  let textColor: string;
   let accentColor: string;
-  let subtextColor: string;
   
   switch (bgVariant) {
     case 'light':
-      backgroundColor = '#FFFFFF';
-      headlineColor = '#1a1918';
-      accentColor = primaryColor;
-      subtextColor = '#6b7280';
+      backgroundColor = 'white';
+      textColor = 'dark charcoal (#1a1918)';
+      accentColor = `golden yellow (${primaryColor})`;
       break;
     case 'gold':
-      backgroundColor = primaryColor;
-      headlineColor = '#1a1918';
-      accentColor = '#1a1918';
-      subtextColor = 'rgba(26, 25, 24, 0.7)';
+      backgroundColor = `golden yellow (${primaryColor})`;
+      textColor = 'dark charcoal (#1a1918)';
+      accentColor = 'dark charcoal (#1a1918)';
       break;
     default: // dark
-      backgroundColor = '#1a1918';
-      headlineColor = '#FFFFFF';
-      accentColor = primaryColor;
-      subtextColor = '#9ca3af';
-  }
-  
-  // Build text content for the image
-  let textContent = `HEADLINE: "${content.headline}"`;
-  if (content.subheadline) {
-    textContent += `\nSUBHEADLINE: "${content.subheadline}"`;
-  }
-  if (content.bullets && content.bullets.length > 0) {
-    textContent += `\nBULLET POINTS: ${content.bullets.map(b => `"${b}"`).join(', ')}`;
-  }
-  if (content.cta) {
-    textContent += `\nCTA BUTTON TEXT: "${content.cta}"`;
+      backgroundColor = 'dark charcoal (#1a1918)';
+      textColor = 'white';
+      accentColor = `golden yellow (${primaryColor})`;
   }
 
-  return `Create a professional social media post image for ${platform}.
+  // Simple, direct prompt for image generation
+  return `Generate a minimalist social media post image.
 
-${layout}
+EXACT SPECIFICATIONS:
+- Size: 1080x1350 pixels (portrait 4:5 ratio)
+- Background: solid ${backgroundColor}
+- Main text: "${content.headline}" in large bold ${textColor} sans-serif font, centered
+${content.subheadline ? `- Subtitle: "${content.subheadline}" in smaller ${textColor} text below headline` : ''}
+- Small ${accentColor} asterisk (*) decoration in top-left corner
+- Circle outline in ${accentColor} around one word in the headline
+- "@launchely.com" in small gray text at bottom-right
+${content.cta ? `- Rounded pill button with text "${content.cta}" at bottom` : ''}
 
-TEXT CONTENT TO INCLUDE:
-${textContent}
-
-CRITICAL DESIGN REQUIREMENTS:
-- Exact dimensions: 1080x1350 pixels (4:5 aspect ratio for Instagram portrait)
-- Background color: ${backgroundColor}
-- Headline text: ${headlineColor}, bold weight, large size
-- Accent/highlight color: ${accentColor} for circles, highlights, decorative elements
-- Subtext/description: ${subtextColor}
-- Brand handle: @launchely.com in muted text at bottom
-- Typography: Clean modern sans-serif font (Plus Jakarta Sans style)
-
-DECORATIVE ELEMENTS:
-- Asterisk symbol (*) in ${accentColor} as decorative element in corner
-- Circle highlight around ONE key word in the headline using ${accentColor}
-- Rounded pill-shaped CTA button if CTA text provided
-- Small brand icon (simple seedling/sprout symbol) in bottom corner
-
-STYLE REQUIREMENTS:
-- Make the headline the DOMINANT visual element - big and bold
-- Use generous whitespace and clean spacing
-- Professional, calm, supportive aesthetic (not salesy or urgent)
-- The design should feel premium and editorial
-- NO gradients, patterns, or busy backgrounds
-- Text must be crisp and highly readable
-
-CRITICAL:
-- The generated image MUST be exactly 1080x1350 pixels
-- Keep text readable and properly sized
-- Maintain visual hierarchy: Headline > Subheadline > CTA
-- Include the @launchely.com handle visibly`;
+STYLE: Clean, professional, modern typography. Lots of whitespace. Premium feel. No gradients or patterns.`;
 }
