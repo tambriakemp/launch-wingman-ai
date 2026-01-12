@@ -68,11 +68,13 @@ export const VaultFilters = ({
               <SelectItem value="all">
                 All Types ({subcategories.reduce((sum, s) => sum + (s.resource_count || 0), 0)})
               </SelectItem>
-              {subcategories.map((sub) => (
-                <SelectItem key={sub.id} value={sub.id}>
-                  {sub.name} ({sub.resource_count || 0})
-                </SelectItem>
-              ))}
+              {[...subcategories]
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((sub) => (
+                  <SelectItem key={sub.id} value={sub.id}>
+                    {sub.name} ({sub.resource_count || 0})
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         )}
