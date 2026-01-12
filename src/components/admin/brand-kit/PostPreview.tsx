@@ -429,7 +429,7 @@ export const PostPreview = ({
 
   return (
     <div className={cn(
-      "aspect-square rounded-lg overflow-hidden shadow-2xl",
+      "aspect-[4/5] rounded-lg overflow-hidden shadow-2xl",
       className
     )}>
       {renderTemplate()}

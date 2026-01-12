@@ -138,7 +138,8 @@ export const PostGeneratorSection = ({
           platform,
           templateType,
           carouselSlides: carouselSlides > 1 ? carouselSlides : undefined,
-          customContent: previewContent
+          customContent: previewContent,
+          bgVariant
         }
       });
 
