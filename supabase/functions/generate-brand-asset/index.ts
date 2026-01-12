@@ -80,6 +80,7 @@ serve(async (req) => {
     };
 
     console.log(`Generating ${asset.name} for ${asset.platform} (${asset.width}x${asset.height})`);
+    console.log("Brand settings:", JSON.stringify(brandSettings, null, 2));
 
     // Build the prompt based on asset type
     let prompt = buildPrompt(asset, brandSettings);
@@ -198,136 +199,159 @@ serve(async (req) => {
 });
 
 function buildPrompt(asset: AssetDefinition, brandSettings: BrandSettings): string {
-  const { brand_name, tagline, subtext, primary_color, secondary_color, neutral_color } = brandSettings;
+  const { brand_name, tagline, subtext, primary_color, secondary_color, neutral_color, header_font, body_font } = brandSettings;
   
-  // Base style description
-  const styleDesc = `
-Design style: Modern, minimal, calm SaaS aesthetic. Clean lines, generous whitespace, sophisticated.
-Brand colors: Primary ${primary_color} (dark), Secondary ${secondary_color} (teal/mint accent), Neutral ${neutral_color} (light background).
-Typography: Clean sans-serif font like Inter or Plus Jakarta Sans.
-Avoid: Loud patterns, heavy gradients, excessive text, marketing urgency, cluttered layouts.
+  // Launchely brand identity description - used to guide AI generation
+  const brandIdentity = `
+BRAND IDENTITY for "${brand_name}":
+- Logo/Icon: A growth/seedling icon - a stylized plant sprout with two leaves emerging from a stem. The icon represents growth, launching, and new beginnings.
+- The icon should be simple, geometric, and modern - NOT a letter, NOT text.
+- Primary Color: ${primary_color} (deep charcoal/near-black) - use for backgrounds and main elements
+- Secondary/Accent Color: ${secondary_color} (vibrant teal/mint) - use for the icon, highlights, and accents
+- Neutral Color: ${neutral_color} (warm gold/amber) - use sparingly for tertiary accents
+- Typography: ${header_font} for headers, ${body_font} for body - clean, modern sans-serif
+- Aesthetic: Calm, professional, minimal, SaaS-like. Clean lines, generous whitespace, sophisticated.
+- Mood: Supportive, growth-oriented, not aggressive or salesy.
+  `.trim();
+
+  // Base style guidelines
+  const styleGuidelines = `
+STYLE GUIDELINES:
+- Modern, minimal design with clean lines
+- Generous whitespace, not cluttered
+- Professional and sophisticated
+- The seedling/growth icon is the brand mark - always use it, never just a letter
+- Avoid: Loud patterns, heavy gradients, excessive text, marketing urgency
   `.trim();
 
   // Asset-specific prompts
   switch (asset.type) {
     case "icon":
       return `
-Generate a ${asset.width}x${asset.height} PNG profile image/icon for ${asset.platform}.
+Generate a ${asset.width}x${asset.height} pixel PNG profile picture/icon for ${asset.platform}.
 
-Create a simple, memorable brand mark for "${brand_name}".
-- Use the letter "${brand_name.charAt(0)}" as the main element
-- Background: ${primary_color} (dark)
-- Letter/icon: white or ${secondary_color} accent
-- Centered, with balanced padding
-- Professional, tech-forward look
-- No text other than the single letter
+${brandIdentity}
 
-${styleDesc}
+SPECIFIC REQUIREMENTS for this icon:
+- Square format, will be displayed as circular on most platforms
+- Feature the seedling/growth icon (stylized plant sprout with two leaves) as the main element
+- Background: ${primary_color} (dark charcoal/black)
+- Icon: ${secondary_color} (teal/mint color)
+- The sprout icon should be centered with balanced padding
+- Simple, clean, recognizable at small sizes
+- NO text, NO letters - just the plant/growth icon
+- Modern, tech-forward, professional look
 
-Output: A clean, professional social media profile icon at ${asset.width}x${asset.height} pixels.
+${styleGuidelines}
+
+Output exactly ${asset.width}x${asset.height} pixels.
       `.trim();
 
     case "banner":
       return `
-Generate a ${asset.width}x${asset.height} PNG banner/header image for ${asset.platform}.
+Generate a ${asset.width}x${asset.height} pixel PNG banner/header image for ${asset.platform}.
 
-Brand: "${brand_name}"
-Tagline: "${tagline}"
-${subtext ? `Subtext: "${subtext}"` : ""}
+${brandIdentity}
 
-Design requirements:
-- Horizontal composition optimized for ${asset.width}x${asset.height}
-- Brand name prominently displayed on the left or center
-- Tagline as supporting text (smaller)
-- Background: subtle gradient from ${primary_color} to a slightly lighter shade, or use ${neutral_color}
-- Accent elements in ${secondary_color}
-- Minimalist decorative elements (subtle geometric shapes, soft lines)
-- Leave safe zones at edges for platform cropping
+SPECIFIC REQUIREMENTS for this banner:
+- Horizontal composition for ${asset.width}x${asset.height}
+- Left side: The seedling/growth icon (small, as brand mark)
+- Brand name "${brand_name}" displayed prominently
+- Tagline: "${tagline}" as supporting text
+${subtext ? `- Subtext: "${subtext}"` : ""}
+- Background: ${primary_color} (dark) with subtle gradient or texture
+- Text and icon in white or ${secondary_color} (teal)
+- Minimal decorative elements - maybe subtle geometric lines or shapes
+- Leave safe margins at edges for platform cropping
+- Clean, professional, SaaS aesthetic
 
-${styleDesc}
+${styleGuidelines}
 
-Output: A professional social media banner at ${asset.width}x${asset.height} pixels.
+Output exactly ${asset.width}x${asset.height} pixels.
       `.trim();
 
     case "highlight":
       return `
-Generate a ${asset.width}x${asset.height} PNG Instagram highlight cover.
+Generate a ${asset.width}x${asset.height} pixel PNG Instagram Story Highlight cover.
 
-Label: "${brandSettings.highlight_label}"
+${brandIdentity}
 
-Design requirements:
-- Simple icon representing the concept "${brandSettings.highlight_label}"
-- Centered icon with the label text below it
-- Background: ${neutral_color} or soft gradient
-- Icon color: ${secondary_color} or ${primary_color}
-- Text: Simple, clean, readable at small sizes
-- Circular-safe design (content centered for circular crop)
-- Minimal and elegant
+SPECIFIC REQUIREMENTS for this highlight cover:
+- Highlight Label: "${brandSettings.highlight_label}"
+- Create a simple, minimal icon that represents "${brandSettings.highlight_label}"
+- Background: ${primary_color} (dark charcoal) 
+- Icon: ${secondary_color} (teal/mint) - simple line icon style
+- The icon should be centered (circular-safe for Instagram's circular crop)
+- Text label "${brandSettings.highlight_label}" below the icon in white
+- Very minimal, clean, elegant
+- Should match the brand's seedling icon style (simple, geometric, modern)
 
-${styleDesc}
+${styleGuidelines}
 
-Output: An Instagram highlight cover at ${asset.width}x${asset.height} pixels.
+Output exactly ${asset.width}x${asset.height} pixels.
       `.trim();
 
     case "template":
       if (asset.id.includes("carousel")) {
         return `
-Generate a ${asset.width}x${asset.height} PNG carousel slide template for ${asset.platform}.
+Generate a ${asset.width}x${asset.height} pixel PNG carousel slide template for ${asset.platform}.
 
-Brand: "${brand_name}"
+${brandIdentity}
 
-Design requirements:
-- Template layout for educational/value content
-- Large title area at top
-- Content area in middle for bullet points or key message
-- Brand mark/logo space at bottom
-- Color scheme: ${neutral_color} background, ${primary_color} text, ${secondary_color} accents
-- Clear visual hierarchy
-- Placeholder style (show layout structure)
+SPECIFIC REQUIREMENTS for this carousel template:
+- Layout structure for educational content
+- Top: Title area with placeholder text "[Title Here]"
+- Middle: Content area for bullet points or key message
+- Bottom: Small seedling icon as brand mark
+- Background: ${neutral_color} (light/cream) or white
+- Text: ${primary_color} (dark)
+- Accents: ${secondary_color} (teal) for highlights, lines, bullets
+- Clean visual hierarchy
+- Template-style with placeholder areas
 
-${styleDesc}
+${styleGuidelines}
 
-Output: A carousel template at ${asset.width}x${asset.height} pixels.
+Output exactly ${asset.width}x${asset.height} pixels.
         `.trim();
       } else if (asset.id.includes("reel") || asset.id.includes("tiktok")) {
         return `
-Generate a ${asset.width}x${asset.height} PNG video cover/thumbnail template for ${asset.platform}.
+Generate a ${asset.width}x${asset.height} pixel PNG video cover/thumbnail template for ${asset.platform}.
 
-Brand: "${brand_name}"
-Tagline: "${tagline}"
+${brandIdentity}
 
-Design requirements:
-- Vertical format optimized for video content
-- Central focus area for video preview
-- Brand watermark/logo in corner
+SPECIFIC REQUIREMENTS for this video template:
+- Vertical video format
+- Central area for video preview/content
+- Small seedling brand icon watermark in corner
 - Optional title overlay area
-- Background: ${neutral_color} with subtle texture or ${primary_color} gradient
-- Accent: ${secondary_color}
-- Clean and uncluttered
+- Background: ${primary_color} (dark) or ${neutral_color} (light)
+- Accent elements: ${secondary_color} (teal)
+- Clean, minimal, uncluttered
+- Professional video thumbnail aesthetic
 
-${styleDesc}
+${styleGuidelines}
 
-Output: A video cover template at ${asset.width}x${asset.height} pixels.
+Output exactly ${asset.width}x${asset.height} pixels.
         `.trim();
       } else if (asset.id.includes("pin")) {
         return `
-Generate a ${asset.width}x${asset.height} PNG Pinterest pin template.
+Generate a ${asset.width}x${asset.height} pixel PNG Pinterest pin template.
 
-Brand: "${brand_name}"
-Tagline: "${tagline}"
+${brandIdentity}
 
-Design requirements:
-- Vertical Pinterest-optimized layout
-- Large image/visual area at top
-- Title text area
-- Brand logo at bottom
-- Color scheme: ${neutral_color} background, ${primary_color} text, ${secondary_color} accents
-- Eye-catching but not overwhelming
-- Save-worthy aesthetic
+SPECIFIC REQUIREMENTS for this Pinterest template:
+- Vertical Pinterest-optimized layout (2:3 ratio)
+- Large image/visual area at top (2/3 of height)
+- Title text area below
+- Small seedling brand icon at bottom
+- Background: ${neutral_color} (light) for readability
+- Text: ${primary_color} (dark)
+- Accents: ${secondary_color} (teal)
+- Eye-catching but elegant, save-worthy
 
-${styleDesc}
+${styleGuidelines}
 
-Output: A Pinterest pin template at ${asset.width}x${asset.height} pixels.
+Output exactly ${asset.width}x${asset.height} pixels.
         `.trim();
       }
       break;
@@ -335,13 +359,18 @@ Output: A Pinterest pin template at ${asset.width}x${asset.height} pixels.
 
   // Default fallback
   return `
-Generate a ${asset.width}x${asset.height} PNG brand asset for ${asset.platform}.
+Generate a ${asset.width}x${asset.height} pixel PNG brand asset for ${asset.platform}.
 
-Brand: "${brand_name}"
-Tagline: "${tagline}"
+${brandIdentity}
 
-${styleDesc}
+SPECIFIC REQUIREMENTS:
+- Professional brand asset featuring the seedling/growth icon
+- Brand name: "${brand_name}"
+- Tagline: "${tagline}"
+- Use the brand colors and maintain the minimal, modern aesthetic
 
-Output: A professional brand asset at ${asset.width}x${asset.height} pixels.
+${styleGuidelines}
+
+Output exactly ${asset.width}x${asset.height} pixels.
   `.trim();
 }
