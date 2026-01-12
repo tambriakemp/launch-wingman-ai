@@ -164,3 +164,6 @@ verify_jwt = false
 
 [functions.process-photo-batch]
 verify_jwt = false
+
+[functions.upload-preset-to-r2]
+verify_jwt = false
