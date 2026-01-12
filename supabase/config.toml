@@ -179,3 +179,6 @@ verify_jwt = false
 
 [functions.generate-social-post]
 verify_jwt = false
+
+[functions.upload-document-to-r2]
+verify_jwt = false
