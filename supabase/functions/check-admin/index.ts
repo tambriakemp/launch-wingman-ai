@@ -27,16 +27,14 @@ serve(async (req) => {
       });
     }
 
-    // Create a client with the user's auth token to verify the user
+    // Create a client for user validation
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
       auth: { persistSession: false },
-      global: {
-        headers: { Authorization: authHeader },
-      },
     });
 
-    // Get the authenticated user
-    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+    // Extract the JWT token from the auth header and pass it directly
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser(token);
     
     if (userError) {
       console.error("[check-admin] Auth error:", userError.message);
