@@ -13,6 +13,7 @@ import { StuckHelpDialog } from "@/components/dashboard/StuckHelpDialog";
 import { AIResponseRenderer } from "@/components/ui/ai-response-renderer";
 import { FunnelDiagram } from "@/components/funnel/FunnelDiagram";
 import { VoiceSnippetButton } from "@/components/ui/voice-snippet-button";
+import { SimpleLaunchPageTask } from "@/components/build/SimpleLaunchPageTask";
 import { LAUNCH_PATH_FUNNEL_STEPS } from "@/data/launchPathFunnels";
 import { toast } from "sonner";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
@@ -256,10 +257,20 @@ export default function TaskDetail() {
         const fields = taskTemplate.inputSchema?.fields || [];
         const requiredFields = fields.filter(f => f.required);
         return requiredFields.every(f => formData[f.name]?.trim());
+      case 'custom':
+        // SimpleLaunchPageTask requires 3 checklist items
+        if (taskTemplate.inputSchema?.customComponent === 'SimpleLaunchPageTask') {
+          return checklistItems.length >= 3;
+        }
+        return true;
       default:
         return true;
     }
   }, [taskTemplate, selectedOption, checklistItems, formData]);
+
+  // Check if this is a custom component with its own completion UI
+  const hasCustomCompletionUI = taskTemplate?.inputType === 'custom' && 
+    taskTemplate?.inputSchema?.customComponent === 'SimpleLaunchPageTask';
 
   const handleSaveAndComplete = async () => {
     if (!isTaskComplete || !taskId) {
@@ -703,6 +714,17 @@ export default function TaskDetail() {
               })}
             </div>
           )}
+
+          {/* Custom Component: SimpleLaunchPageTask */}
+          {taskTemplate.inputType === 'custom' && taskTemplate.inputSchema?.customComponent === 'SimpleLaunchPageTask' && (
+            <SimpleLaunchPageTask
+              formData={formData}
+              checklistItems={checklistItems}
+              onChecklistToggle={handleChecklistToggle}
+              onComplete={handleSaveAndComplete}
+              isCompleting={isSaving}
+            />
+          )}
         </section>
 
         {/* AI Assist Section */}
@@ -757,78 +779,82 @@ export default function TaskDetail() {
           </section>
         )}
 
-        <div className="h-px bg-border mb-10" />
+        {!hasCustomCompletionUI && (
+          <>
+            <div className="h-px bg-border mb-10" />
 
-        {/* What Done Looks Like Section */}
-        <section className="mb-10">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">
-            This step is complete when:
-          </h2>
-          
-          <div className="space-y-3">
-            {taskTemplate.completionCriteria.map((criteria, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-3 cursor-pointer group"
-                onClick={() => handleCriteriaToggle(criteria)}
-              >
-                <Checkbox
-                  id={`criteria-${index}`}
-                  checked={completedCriteria.includes(criteria)}
-                  onCheckedChange={() => handleCriteriaToggle(criteria)}
-                />
-                <Label
-                  htmlFor={`criteria-${index}`}
-                  className={`text-sm cursor-pointer transition-colors ${
-                    completedCriteria.includes(criteria)
-                      ? "text-muted-foreground line-through"
-                      : "text-foreground"
-                  }`}
-                >
-                  {criteria}
-                </Label>
+            {/* What Done Looks Like Section */}
+            <section className="mb-10">
+              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">
+                This step is complete when:
+              </h2>
+              
+              <div className="space-y-3">
+                {taskTemplate.completionCriteria.map((criteria, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 cursor-pointer group"
+                    onClick={() => handleCriteriaToggle(criteria)}
+                  >
+                    <Checkbox
+                      id={`criteria-${index}`}
+                      checked={completedCriteria.includes(criteria)}
+                      onCheckedChange={() => handleCriteriaToggle(criteria)}
+                    />
+                    <Label
+                      htmlFor={`criteria-${index}`}
+                      className={`text-sm cursor-pointer transition-colors ${
+                        completedCriteria.includes(criteria)
+                          ? "text-muted-foreground line-through"
+                          : "text-foreground"
+                      }`}
+                    >
+                      {criteria}
+                    </Label>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {isTaskComplete && completedCriteria.length === taskTemplate.completionCriteria.length && (
-            <div className="mt-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <p className="text-sm text-emerald-700 dark:text-emerald-400">
-                You're ready to save and continue!
-              </p>
-            </div>
-          )}
-          
-          {/* MVL: Planning Phase Review callout (placement #1) */}
-          {taskId === 'planning_phase_review' && isTaskComplete && (
-            <MVLCallout variant="planning" className="mt-6" />
-          )}
-          
-          {/* MVL: Transformation Statement inline confirmation (placement #2) */}
-          {taskId === 'messaging_transformation_statement' && mvlTransformationShown && (
-            <MVLCallout variant="transformation" className="mt-6" />
-          )}
-        </section>
+              {isTaskComplete && completedCriteria.length === taskTemplate.completionCriteria.length && (
+                <div className="mt-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                    You're ready to save and continue!
+                  </p>
+                </div>
+              )}
+              
+              {/* MVL: Planning Phase Review callout (placement #1) */}
+              {taskId === 'planning_phase_review' && isTaskComplete && (
+                <MVLCallout variant="planning" className="mt-6" />
+              )}
+              
+              {/* MVL: Transformation Statement inline confirmation (placement #2) */}
+              {taskId === 'messaging_transformation_statement' && mvlTransformationShown && (
+                <MVLCallout variant="transformation" className="mt-6" />
+              )}
+            </section>
 
-        {/* Completion Action */}
-        <section className="mb-12">
-          <Button
-            size="lg"
-            className="w-full sm:w-auto"
-            onClick={handleSaveAndComplete}
-            disabled={!isTaskComplete || isSaving}
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              "Save & mark complete →"
-            )}
-          </Button>
-        </section>
+            {/* Completion Action */}
+            <section className="mb-12">
+              <Button
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={handleSaveAndComplete}
+                disabled={!isTaskComplete || isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save & mark complete →"
+                )}
+              </Button>
+            </section>
+          </>
+        )}
 
         <div className="h-px bg-border mb-10" />
 
