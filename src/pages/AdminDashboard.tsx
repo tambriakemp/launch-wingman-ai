@@ -13,7 +13,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Package, Pencil, BookOpen, BarChart3, FileText, Sparkles, Bell, Headphones } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Package, Pencil, BookOpen, BarChart3, FileText, Sparkles, Bell, Headphones, Video } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -592,6 +592,12 @@ const AdminDashboard = () => {
             <Link to="/admin/docs">
               <BookOpen className="h-4 w-4 mr-2" />
               Training & Docs
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/video-instructions">
+              <Video className="h-4 w-4 mr-2" />
+              Video Instructions
             </Link>
           </Button>
         </div>
