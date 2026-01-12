@@ -125,11 +125,55 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { previewOnly = false, batchSize = 20, offset = 0 } = await req.json();
+    const { previewOnly = false, batchSize = 20, offset = 0, singleResourceId } = await req.json();
 
-    console.log(`Starting AI rename: previewOnly=${previewOnly}, batchSize=${batchSize}, offset=${offset}`);
+    console.log(`Starting AI rename: previewOnly=${previewOnly}, batchSize=${batchSize}, offset=${offset}, singleResourceId=${singleResourceId}`);
 
-    // Query videos with thumbnails using offset pagination with stable ordering
+    // Single resource mode - for on-demand renaming from edit dialog
+    if (singleResourceId) {
+      const { data: resource, error: queryError } = await supabase
+        .from('content_vault_resources')
+        .select('id, title, cover_image_url, resource_type')
+        .eq('id', singleResourceId)
+        .single();
+
+      if (queryError) {
+        console.error("Query error:", queryError);
+        throw queryError;
+      }
+
+      if (!resource?.cover_image_url) {
+        throw new Error('Resource has no cover image to analyze');
+      }
+
+      const newTitle = await generateTitleFromImage(resource.cover_image_url, lovableApiKey);
+      
+      console.log(`Generated title: "${newTitle}" for "${resource.title}"`);
+
+      if (!previewOnly) {
+        const { error: updateError } = await supabase
+          .from('content_vault_resources')
+          .update({ title: newTitle })
+          .eq('id', singleResourceId);
+
+        if (updateError) {
+          console.error(`Update error for ${singleResourceId}:`, updateError);
+          throw updateError;
+        }
+      }
+
+      return new Response(JSON.stringify({
+        renamed: 1,
+        skipped: 0,
+        failed: 0,
+        previews: [{ id: resource.id, oldTitle: resource.title || '(no title)', newTitle }],
+        errors: [],
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Batch mode - query videos with thumbnails using offset pagination with stable ordering
     const { data: videos, error: queryError } = await supabase
       .from('content_vault_resources')
       .select('id, title, cover_image_url, resource_type')
