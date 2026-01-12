@@ -175,10 +175,10 @@ Deno.serve(async (req) => {
         }
 
         // Get R2 credentials
-        const R2_ACCOUNT_ID = Deno.env.get("CLOUDFLARE_ACCOUNT_ID");
-        const R2_ACCESS_KEY_ID = Deno.env.get("CLOUDFLARE_R2_ACCESS_KEY_ID");
-        const R2_SECRET_ACCESS_KEY = Deno.env.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY");
-        const R2_BUCKET = "launchely-vault";
+        const R2_ACCOUNT_ID = Deno.env.get("R2_ACCOUNT_ID");
+        const R2_ACCESS_KEY_ID = Deno.env.get("R2_ACCESS_KEY_ID");
+        const R2_SECRET_ACCESS_KEY = Deno.env.get("R2_SECRET_ACCESS_KEY");
+        const R2_BUCKET = Deno.env.get("R2_BUCKET_NAME") || "launchely-vault";
 
         if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
           return new Response(
