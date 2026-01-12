@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Upload, X, Image as ImageIcon, Clipboard, Wand2, Film, Sparkles } from "lucide-react";
+import { Loader2, Upload, X, Image as ImageIcon, Clipboard, Wand2, Film, Sparkles, Star } from "lucide-react";
 
 interface Resource {
   id: string;
@@ -45,6 +45,7 @@ export const ResourceEditDialog = ({
   const [isFetchingThumbnail, setIsFetchingThumbnail] = useState(false);
   const [isGeneratingVideoThumbnail, setIsGeneratingVideoThumbnail] = useState(false);
   const [isRenamingWithAI, setIsRenamingWithAI] = useState(false);
+  const [isSettingCategoryThumbnail, setIsSettingCategoryThumbnail] = useState(false);
   const [formData, setFormData] = useState({
     title: resource?.title || "",
     description: resource?.description || "",
@@ -269,6 +270,46 @@ export const ResourceEditDialog = ({
     }
   }, [resource, formData.cover_image_url]);
 
+  // Set as category thumbnail
+  const setAsCategoryThumbnail = useCallback(async () => {
+    if (!resource) return;
+    
+    const coverUrl = formData.cover_image_url;
+    if (!coverUrl) {
+      toast.error('No cover image to use as category thumbnail');
+      return;
+    }
+
+    setIsSettingCategoryThumbnail(true);
+
+    try {
+      // First, get the category_id from the subcategory
+      const { data: subcategory, error: subError } = await supabase
+        .from('content_vault_subcategories')
+        .select('category_id')
+        .eq('id', resource.subcategory_id)
+        .single();
+
+      if (subError) throw subError;
+
+      // Update the category's cover_image_url
+      const { error: updateError } = await supabase
+        .from('content_vault_categories')
+        .update({ cover_image_url: coverUrl })
+        .eq('id', subcategory.category_id);
+
+      if (updateError) throw updateError;
+
+      queryClient.invalidateQueries({ queryKey: ['content-vault-categories-with-counts'] });
+      toast.success('Category thumbnail updated!');
+    } catch (error: any) {
+      console.error('Error setting category thumbnail:', error);
+      toast.error(error.message || 'Failed to set category thumbnail');
+    } finally {
+      setIsSettingCategoryThumbnail(false);
+    }
+  }, [resource, formData.cover_image_url, queryClient]);
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -315,7 +356,7 @@ export const ResourceEditDialog = ({
 
   const isCanvaPreviewUrl = formData.preview_url?.includes('canva.com');
   const isVideoResource = /\.(mp4|mov|webm|avi)$/i.test(formData.resource_url) || formData.resource_type === 'video';
-  const isProcessing = isUploading || isFetchingThumbnail || isGeneratingVideoThumbnail || isRenamingWithAI;
+  const isProcessing = isUploading || isFetchingThumbnail || isGeneratingVideoThumbnail || isRenamingWithAI || isSettingCategoryThumbnail;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -426,6 +467,30 @@ export const ResourceEditDialog = ({
                   <>
                     <Film className="h-4 w-4 mr-2" />
                     Generate Video Thumbnail
+                  </>
+                )}
+              </Button>
+            )}
+
+            {/* Use as category thumbnail button */}
+            {formData.cover_image_url && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={setAsCategoryThumbnail}
+                disabled={isProcessing}
+              >
+                {isSettingCategoryThumbnail ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Setting...
+                  </>
+                ) : (
+                  <>
+                    <Star className="h-4 w-4 mr-2" />
+                    Use as Category Thumbnail
                   </>
                 )}
               </Button>
