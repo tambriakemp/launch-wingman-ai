@@ -101,9 +101,13 @@ export const PostGeneratorSection = ({
   // Generate content preview (without image)
   const previewMutation = useMutation({
     mutationFn: async () => {
+      if (!session?.access_token) {
+        throw new Error('Not authenticated');
+      }
+      
       // Use generate-social-post edge function in preview mode
       const response = await supabase.functions.invoke('generate-social-post', {
-        headers: { Authorization: `Bearer ${session?.access_token}` },
+        headers: { Authorization: `Bearer ${session.access_token}` },
         body: {
           topic,
           platform,
@@ -113,7 +117,10 @@ export const PostGeneratorSection = ({
         }
       });
 
-      if (response.error) throw response.error;
+      if (response.error) {
+        console.error('Preview response error:', response.error);
+        throw new Error(response.error.message || 'Failed to generate preview');
+      }
       return response.data;
     },
     onSuccess: (data) => {
@@ -122,17 +129,21 @@ export const PostGeneratorSection = ({
     },
     onError: (error) => {
       console.error('Preview error:', error);
-      toast.error('Failed to generate content preview');
+      toast.error(error instanceof Error ? error.message : 'Failed to generate content preview');
     }
   });
 
   // Generate full post with image
   const generateMutation = useMutation({
     mutationFn: async () => {
+      if (!session?.access_token) {
+        throw new Error('Not authenticated');
+      }
+      
       setGenerationStep('generating');
       
       const { data, error } = await supabase.functions.invoke('generate-social-post', {
-        headers: { Authorization: `Bearer ${session?.access_token}` },
+        headers: { Authorization: `Bearer ${session.access_token}` },
         body: {
           topic,
           platform,
@@ -143,7 +154,10 @@ export const PostGeneratorSection = ({
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Generation response error:', error);
+        throw new Error(error.message || 'Failed to generate post');
+      }
       return data;
     },
     onSuccess: (data) => {
@@ -154,7 +168,7 @@ export const PostGeneratorSection = ({
     },
     onError: (error) => {
       console.error('Generation error:', error);
-      toast.error('Failed to generate post');
+      toast.error(error instanceof Error ? error.message : 'Failed to generate post');
       setGenerationStep('preview');
     }
   });
