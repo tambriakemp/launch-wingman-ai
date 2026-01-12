@@ -143,6 +143,110 @@ export type Database = {
         }
         Relationships: []
       }
+      brand_kit_assets: {
+        Row: {
+          asset_name: string
+          asset_type: string
+          brand_settings_version: string | null
+          created_at: string
+          created_by: string | null
+          file_path: string
+          file_url: string
+          height: number
+          id: string
+          platform: string
+          width: number
+        }
+        Insert: {
+          asset_name: string
+          asset_type: string
+          brand_settings_version?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_path: string
+          file_url: string
+          height: number
+          id?: string
+          platform: string
+          width: number
+        }
+        Update: {
+          asset_name?: string
+          asset_type?: string
+          brand_settings_version?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_path?: string
+          file_url?: string
+          height?: number
+          id?: string
+          platform?: string
+          width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_kit_assets_brand_settings_version_fkey"
+            columns: ["brand_settings_version"]
+            isOneToOne: false
+            referencedRelation: "brand_kit_settings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_kit_settings: {
+        Row: {
+          body_font: string
+          brand_name: string
+          created_at: string
+          header_font: string
+          highlight_labels: Json | null
+          icon_url: string | null
+          id: string
+          logo_url: string | null
+          neutral_color: string
+          primary_color: string
+          secondary_color: string
+          subtext: string | null
+          tagline: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body_font?: string
+          brand_name?: string
+          created_at?: string
+          header_font?: string
+          highlight_labels?: Json | null
+          icon_url?: string | null
+          id?: string
+          logo_url?: string | null
+          neutral_color?: string
+          primary_color?: string
+          secondary_color?: string
+          subtext?: string | null
+          tagline?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body_font?: string
+          brand_name?: string
+          created_at?: string
+          header_font?: string
+          highlight_labels?: Json | null
+          icon_url?: string | null
+          id?: string
+          logo_url?: string | null
+          neutral_color?: string
+          primary_color?: string
+          secondary_color?: string
+          subtext?: string | null
+          tagline?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       brand_logos: {
         Row: {
           created_at: string
