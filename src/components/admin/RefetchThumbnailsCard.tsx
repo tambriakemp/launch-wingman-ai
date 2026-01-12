@@ -138,7 +138,7 @@ export const RefetchThumbnailsCard = () => {
             <ImageIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
-            <CardTitle className="text-lg">Refetch Thumbnails</CardTitle>
+            <CardTitle className="text-lg">Refetch Canva Thumbnails</CardTitle>
             <CardDescription>
               Update all Canva thumbnails with latest designs
             </CardDescription>
@@ -202,7 +202,7 @@ export const RefetchThumbnailsCard = () => {
           variant="outline"
         >
           <RefreshCw className={`w-4 h-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
-          {isRefetching ? 'Refetching...' : 'Refetch All Thumbnails'}
+          {isRefetching ? 'Refetching...' : 'Refetch All Canva Thumbnails'}
         </Button>
       </CardContent>
     </Card>

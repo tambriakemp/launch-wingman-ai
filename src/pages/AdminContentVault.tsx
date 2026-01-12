@@ -35,9 +35,9 @@ const AdminContentVault = () => {
         </div>
 
         <div className="space-y-6">
+          <R2SyncCard />
           <BulkPhotoUploadCard />
           <CanvaBulkImportCard />
-          <R2SyncCard />
           <RefetchThumbnailsCard />
           <VaultCsvUploader />
         </div>

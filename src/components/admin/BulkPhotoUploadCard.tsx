@@ -374,7 +374,7 @@ export function BulkPhotoUploadCard() {
             <div>
               <CardTitle className="text-lg">Bulk Photo Upload</CardTitle>
               <CardDescription>
-                AI-powered categorization • Upload up to 500 photos
+                Syncs from app → R2 bucket → Content Vault • AI-powered categorization
               </CardDescription>
             </div>
           </div>
