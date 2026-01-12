@@ -60,19 +60,25 @@ export async function extractVideoThumbnail(
     video.crossOrigin = 'anonymous';
     video.muted = true;
     video.preload = 'metadata';
+    // Reduce memory usage
+    video.playsInline = true;
 
+    // Reduced timeout from 30s to 15s for faster failure on stuck videos
     const timeout = setTimeout(() => {
       cleanup();
       reject(new Error('Video load timeout - the R2 bucket may not have CORS configured'));
-    }, 30000);
+    }, 15000);
 
     const cleanup = () => {
       clearTimeout(timeout);
       video.removeEventListener('loadedmetadata', onMetadata);
       video.removeEventListener('seeked', onSeeked);
       video.removeEventListener('error', onError);
+      video.pause();
       video.src = '';
       video.load();
+      // Help garbage collection
+      video.remove();
     };
 
     const onError = () => {
