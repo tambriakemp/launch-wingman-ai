@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronDown, ClipboardCheck, Layout, Palette, MessageSquare, Rocket, LogOut, Package, BarChart3, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { LaunchelyLogo } from "@/components/ui/LaunchelyLogo";
 
 const featureLinks = [
   {
@@ -71,11 +72,8 @@ export const LandingHeader = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-              <Rocket className="w-5 h-5 text-accent-foreground" />
-            </div>
-            <span className="text-xl font-bold text-primary-foreground">Launchely</span>
+          <Link to="/">
+            <LaunchelyLogo textClassName="text-primary-foreground" />
           </Link>
 
           {/* Desktop Navigation */}
