@@ -23,6 +23,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminContentVault from "./pages/AdminContentVault";
 import AdminDocs from "./pages/AdminDocs";
 import AdminVideoInstructions from "./pages/AdminVideoInstructions";
+import AdminBrandKit from "./pages/AdminBrandKit";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
@@ -377,6 +378,14 @@ const App = () => (
               element={
                 <ProtectedAdminRoute>
                   <AdminVideoInstructions />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/brand-kit"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminBrandKit />
                 </ProtectedAdminRoute>
               }
             />
