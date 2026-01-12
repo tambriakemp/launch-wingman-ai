@@ -265,11 +265,42 @@ Deno.serve(async (req) => {
   }
 });
 
+function normalizeR2PublicUrl(inputUrl: string): string {
+  try {
+    const parsed = new URL(inputUrl);
+
+    const R2_PUBLIC_URL = Deno.env.get("R2_PUBLIC_URL") || "";
+    if (!R2_PUBLIC_URL) return inputUrl;
+
+    const r2Public = new URL(R2_PUBLIC_URL);
+
+    const isR2Dev = parsed.hostname.endsWith(".r2.dev");
+    const isR2S3Host = parsed.hostname.endsWith(".r2.cloudflarestorage.com");
+
+    // If the client has a stale/incorrect R2 public domain (or a private S3-style host),
+    // rewrite it to the configured public domain while keeping the path/query.
+    const shouldRewrite = (isR2Dev && parsed.hostname !== r2Public.hostname) || isR2S3Host;
+
+    if (!shouldRewrite) return inputUrl;
+
+    const rewritten = new URL(`${parsed.pathname}${parsed.search}${parsed.hash}`, r2Public.origin);
+    return rewritten.toString();
+  } catch {
+    return inputUrl;
+  }
+}
+
 async function fetchAndServe(url: string): Promise<Response> {
-  console.log(`[VAULT-PREVIEW] Fetching for preview: ${url}`);
+  const normalizedUrl = normalizeR2PublicUrl(url);
+
+  if (normalizedUrl !== url) {
+    console.log(`[VAULT-PREVIEW] Rewriting URL for preview: ${url} -> ${normalizedUrl}`);
+  }
+
+  console.log(`[VAULT-PREVIEW] Fetching for preview: ${normalizedUrl}`);
 
   // Fetch the document from R2/source
-  const response = await fetch(url);
+  const response = await fetch(normalizedUrl);
 
   if (!response.ok) {
     console.error(`[VAULT-PREVIEW] Failed to fetch: ${response.status}`);
@@ -280,11 +311,11 @@ async function fetchAndServe(url: string): Promise<Response> {
   }
 
   const contentType = response.headers.get("content-type") || "application/octet-stream";
-  const ext = getFileExtension(url);
-  
+  const ext = getFileExtension(normalizedUrl);
+
   // Use known MIME type for inline viewing if available
   const inlineMimeType = INLINE_MIME_TYPES[ext] || contentType;
-  
+
   // Get the file content
   const data = await response.arrayBuffer();
 
