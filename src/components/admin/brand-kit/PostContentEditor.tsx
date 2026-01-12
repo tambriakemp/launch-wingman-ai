@@ -1,3 +1,5 @@
+import { useRef, useCallback } from 'react';
+import { toPng } from 'html-to-image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -24,7 +26,7 @@ interface GeneratedContent {
 interface PostContentEditorProps {
   content: GeneratedContent;
   onChange: (content: GeneratedContent) => void;
-  onGenerate: () => void;
+  onGenerate: (imageBase64: string) => void;
   onBack: () => void;
   isGenerating: boolean;
   templateType: string;
@@ -52,6 +54,8 @@ export const PostContentEditor = ({
   bgVariant,
   onBgVariantChange
 }: PostContentEditorProps) => {
+  const fullSizeRef = useRef<HTMLDivElement>(null);
+
   const updateField = (field: keyof GeneratedContent, value: any) => {
     onChange({ ...content, [field]: value });
   };
@@ -70,6 +74,30 @@ export const PostContentEditor = ({
     const newBullets = (content.bullets || []).filter((_, i) => i !== index);
     onChange({ ...content, bullets: newBullets });
   };
+
+  const handleGenerate = useCallback(async () => {
+    if (!fullSizeRef.current) {
+      console.error('Full size ref not attached');
+      return;
+    }
+
+    try {
+      console.log('Capturing post image at 1080x1350...');
+      
+      const dataUrl = await toPng(fullSizeRef.current, {
+        width: 1080,
+        height: 1350,
+        pixelRatio: 1,
+        cacheBust: true,
+        skipAutoScale: true,
+      });
+
+      console.log('Image captured successfully, size:', dataUrl.length);
+      onGenerate(dataUrl);
+    } catch (error) {
+      console.error('Failed to capture post image:', error);
+    }
+  }, [onGenerate]);
 
   return (
     <div className="space-y-6">
@@ -228,7 +256,7 @@ export const PostContentEditor = ({
       <div className="flex justify-end gap-3">
         <Button
           size="lg"
-          onClick={onGenerate}
+          onClick={handleGenerate}
           disabled={isGenerating || !content.headline}
         >
           {isGenerating ? (
@@ -238,6 +266,35 @@ export const PostContentEditor = ({
           )}
           Generate {carouselSlides > 1 ? `${carouselSlides} Slides` : 'Post Image'}
         </Button>
+      </div>
+
+      {/* Hidden full-size renderer for capture (1080x1350) */}
+      <div
+        ref={fullSizeRef}
+        style={{
+          position: 'fixed',
+          left: '-9999px',
+          top: 0,
+          width: '1080px',
+          height: '1350px',
+          overflow: 'hidden',
+          zIndex: -1,
+          pointerEvents: 'none',
+        }}
+        aria-hidden="true"
+      >
+        <PostPreview
+          content={{
+            headline: content.headline || 'Your headline here',
+            subheadline: content.subheadline || '',
+            bullets: content.bullets || [],
+            cta: content.cta || ''
+          }}
+          templateType={templateType}
+          slideNumber={1}
+          bgVariant={bgVariant}
+          className="!w-[1080px] !h-[1350px] !rounded-none !aspect-auto"
+        />
       </div>
     </div>
   );
