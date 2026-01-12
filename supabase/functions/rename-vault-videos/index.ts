@@ -28,22 +28,26 @@ function needsRenaming(title: string): boolean {
   return false;
 }
 
-async function generateTitleFromImage(imageUrl: string, apiKey: string): Promise<string> {
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        {
-          role: "user",
-          content: [
+async function generateTitleFromImage(imageUrl: string, apiKey: string, maxRetries = 3): Promise<string> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
             {
-              type: "text",
-              text: `You are naming stock video clips. Based on this thumbnail image, provide a short, descriptive title (3-5 words) in Title Case. Focus on the main subject and action.
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: `You are naming stock video clips. Based on this thumbnail image, provide a short, descriptive title (3-5 words) in Title Case. Focus on the main subject and action.
 
 Examples:
 - "Coffee Pour Into Glass"
@@ -53,34 +57,56 @@ Examples:
 - "Fresh Salad Being Prepared"
 
 Respond with ONLY the title, no quotes, no punctuation at the end, no extra text.`
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: imageUrl
-              }
+                },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: imageUrl
+                  }
+                }
+              ]
             }
-          ]
-        }
-      ],
-    }),
-  });
+          ],
+        }),
+      });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("AI API error:", response.status, errorText);
-    throw new Error(`AI API error: ${response.status}`);
+      // Handle transient errors with retry
+      if (response.status === 503 || response.status === 429) {
+        const delay = Math.pow(2, attempt) * 500; // 1s, 2s, 4s
+        console.log(`Attempt ${attempt}/${maxRetries} failed with ${response.status}, retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("AI API error:", response.status, errorText);
+        throw new Error(`AI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+      
+      if (!content) {
+        throw new Error("No content in AI response");
+      }
+
+      // Clean up the response - remove quotes, extra whitespace, punctuation at end
+      return content.trim().replace(/^["']|["']$/g, '').replace(/[.!?]$/, '').trim();
+      
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error');
+      console.error(`Attempt ${attempt}/${maxRetries} error:`, lastError.message);
+      
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt) * 500;
+        console.log(`Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
   }
-
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content;
   
-  if (!content) {
-    throw new Error("No content in AI response");
-  }
-
-  // Clean up the response - remove quotes, extra whitespace, punctuation at end
-  return content.trim().replace(/^["']|["']$/g, '').replace(/[.!?]$/, '').trim();
+  throw lastError || new Error('Max retries exceeded');
 }
 
 serve(async (req) => {
@@ -133,9 +159,10 @@ serve(async (req) => {
       errors: [] as string[],
     };
 
-    for (const video of videosToRename) {
+    for (let index = 0; index < videosToRename.length; index++) {
+      const video = videosToRename[index];
       try {
-        console.log(`Processing: ${video.title} (${video.id})`);
+        console.log(`Processing ${index + 1}/${videosToRename.length}: ${video.title} (${video.id})`);
         
         const newTitle = await generateTitleFromImage(video.cover_image_url, lovableApiKey);
         
@@ -164,13 +191,16 @@ serve(async (req) => {
           results.renamed++;
         }
 
-        // Small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Delay to avoid rate limiting (500ms between requests)
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        console.log(`Progress: ${index + 1}/${videosToRename.length} - ${results.renamed} renamed, ${results.failed} failed`);
 
       } catch (error) {
         console.error(`Error processing ${video.id}:`, error);
         results.failed++;
         results.errors.push(`Failed to process ${video.title}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Continue to next video instead of stopping
       }
     }
 
