@@ -431,7 +431,11 @@ export const PostPreview = ({
     <div className={cn(
       "aspect-[4/5] rounded-lg overflow-hidden shadow-2xl",
       className
-    )}>
+    )}
+    style={{ 
+      // Ensure proper font rendering for capture
+      fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+    }}>
       {renderTemplate()}
     </div>
   );

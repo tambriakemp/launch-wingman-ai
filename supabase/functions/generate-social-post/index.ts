@@ -123,6 +123,7 @@ interface GenerateRequest {
     bullets?: string[];
     cta?: string;
   };
+  capturedImageBase64?: string; // Pre-rendered image from frontend
 }
 
 serve(async (req) => {
@@ -159,9 +160,9 @@ serve(async (req) => {
     
     console.log('Authenticated user:', user.id);
 
-    const { topic, platform, templateType, templateId, carouselSlides, previewOnly, customContent, bgVariant = 'dark' }: GenerateRequest = await req.json();
+    const { topic, platform, templateType, templateId, carouselSlides, previewOnly, customContent, bgVariant = 'dark', capturedImageBase64 }: GenerateRequest = await req.json();
 
-    console.log('Generating social post:', { topic, platform, templateType, carouselSlides, previewOnly, bgVariant });
+    console.log('Generating social post:', { topic, platform, templateType, carouselSlides, previewOnly, bgVariant, hasCapturedImage: !!capturedImageBase64 });
 
     // Fetch brand settings
     const { data: brandSettings, error: brandError } = await supabase
@@ -244,97 +245,19 @@ serve(async (req) => {
       );
     }
 
-    // Generate content and images for each slide
-    for (let slideNum = 1; slideNum <= slidesToGenerate; slideNum++) {
-      console.log(`Generating slide ${slideNum} of ${slidesToGenerate}`);
+    // If we have a pre-captured image from the frontend, use it directly
+    if (capturedImageBase64) {
+      console.log('Using pre-captured image from frontend (HTML-to-image)');
       
-      // Step 1: Generate text content using Lovable AI
-      let slideContent = customContent;
-      
-      if (!customContent || slideNum > 1) {
-        const slideType = slidesToGenerate === 1 ? templateType : 
-          slideNum === 1 ? 'cover' : 
-          slideNum === slidesToGenerate ? 'cta' : 'content';
-        
-        const contentPrompt = buildContentPrompt(topic, platform, slideType, slideNum, slidesToGenerate, brandSettings);
-        
-        console.log('Generating content with Lovable AI');
-        
-        const contentResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${lovableApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
-            messages: [
-              { role: 'system', content: 'You are a social media content writer for Launchely, a calm and supportive brand that helps creators launch digital products. Write concise, impactful content. Never be salesy or use urgency tactics. Be encouraging and helpful. Always respond with valid JSON only.' },
-              { role: 'user', content: contentPrompt }
-            ],
-            max_tokens: 500,
-          }),
-        });
-
-        if (!contentResponse.ok) {
-          const errorText = await contentResponse.text();
-          console.error('Content generation error:', errorText);
-          throw new Error('Failed to generate content');
-        }
-
-        const contentData = await contentResponse.json();
-        const contentText = contentData.choices?.[0]?.message?.content || '';
-        
-        // Parse JSON from response
-        const jsonMatch = contentText.match(/\{[\s\S]*\}/);
-        slideContent = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
-        console.log('Generated content:', slideContent);
-      }
-
-      // Step 2: Generate image using Gemini
-      const slideTypeForImage = slidesToGenerate === 1 ? templateType : 
-        slideNum === 1 ? 'cover' : 
-        slideNum === slidesToGenerate ? 'cta' : 'content';
-      
-      const contentForImage = { headline: slideContent?.headline || '', subheadline: slideContent?.subheadline, bullets: slideContent?.bullets, cta: slideContent?.cta };
-      const imagePrompt = buildImagePrompt(contentForImage, slideTypeForImage, platform, brandSettings, bgVariant);
-      
-      console.log('Generating image with Gemini');
-      
-      const imageResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${lovableApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash-image-preview',
-          messages: [{ role: 'user', content: imagePrompt }],
-          modalities: ['image', 'text']
-        }),
-      });
-
-      if (!imageResponse.ok) {
-        const errorText = await imageResponse.text();
-        console.error('Gemini image error:', errorText);
-        throw new Error('Failed to generate image');
-      }
-
-      const imageData = await imageResponse.json();
-      const imageBase64 = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-      
-      if (!imageBase64) {
-        console.error('No image in response:', imageData);
-        throw new Error('No image generated');
-      }
-
-      // Step 3: Upload to storage
-      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+      // Extract base64 data
+      const base64Data = capturedImageBase64.replace(/^data:image\/\w+;base64,/, '');
       const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
       
       const timestamp = Date.now();
-      const fileName = `post_${templateType}_${slideNum}_${timestamp}.png`;
+      const fileName = `post_${templateType}_1_${timestamp}.png`;
       const filePath = `social-posts/${user.id}/${fileName}`;
+
+      console.log('Uploading captured image to storage:', filePath);
 
       const { error: uploadError } = await supabase.storage
         .from('brand-assets')
@@ -353,11 +276,127 @@ serve(async (req) => {
         .getPublicUrl(filePath);
 
       generatedSlides.push({
-        slideNumber: slideNum,
-        content: slideContent!,
+        slideNumber: 1,
+        content: customContent || {},
         imageUrl: publicUrl,
         filePath
       });
+    } else {
+      // Fallback: Generate content and images for each slide using AI
+      for (let slideNum = 1; slideNum <= slidesToGenerate; slideNum++) {
+        console.log(`Generating slide ${slideNum} of ${slidesToGenerate}`);
+        
+        // Step 1: Generate text content using Lovable AI
+        let slideContent = customContent;
+        
+        if (!customContent || slideNum > 1) {
+          const slideType = slidesToGenerate === 1 ? templateType : 
+            slideNum === 1 ? 'cover' : 
+            slideNum === slidesToGenerate ? 'cta' : 'content';
+          
+          const contentPrompt = buildContentPrompt(topic, platform, slideType, slideNum, slidesToGenerate, brandSettings);
+          
+          console.log('Generating content with Lovable AI');
+          
+          const contentResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${lovableApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'google/gemini-2.5-flash',
+              messages: [
+                { role: 'system', content: 'You are a social media content writer for Launchely, a calm and supportive brand that helps creators launch digital products. Write concise, impactful content. Never be salesy or use urgency tactics. Be encouraging and helpful. Always respond with valid JSON only.' },
+                { role: 'user', content: contentPrompt }
+              ],
+              max_tokens: 500,
+            }),
+          });
+
+          if (!contentResponse.ok) {
+            const errorText = await contentResponse.text();
+            console.error('Content generation error:', errorText);
+            throw new Error('Failed to generate content');
+          }
+
+          const contentData = await contentResponse.json();
+          const contentText = contentData.choices?.[0]?.message?.content || '';
+          
+          // Parse JSON from response
+          const jsonMatch = contentText.match(/\{[\s\S]*\}/);
+          slideContent = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+          console.log('Generated content:', slideContent);
+        }
+
+        // Step 2: Generate image using Gemini (fallback when no captured image)
+        const slideTypeForImage = slidesToGenerate === 1 ? templateType : 
+          slideNum === 1 ? 'cover' : 
+          slideNum === slidesToGenerate ? 'cta' : 'content';
+        
+        const contentForImage = { headline: slideContent?.headline || '', subheadline: slideContent?.subheadline, bullets: slideContent?.bullets, cta: slideContent?.cta };
+        const imagePrompt = buildImagePrompt(contentForImage, slideTypeForImage, platform, brandSettings, bgVariant);
+        
+        console.log('Generating image with Gemini (fallback mode)');
+        
+        const imageResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${lovableApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash-image-preview',
+            messages: [{ role: 'user', content: imagePrompt }],
+            modalities: ['image', 'text']
+          }),
+        });
+
+        if (!imageResponse.ok) {
+          const errorText = await imageResponse.text();
+          console.error('Gemini image error:', errorText);
+          throw new Error('Failed to generate image');
+        }
+
+        const imageData = await imageResponse.json();
+        const imageBase64 = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        
+        if (!imageBase64) {
+          console.error('No image in response:', imageData);
+          throw new Error('No image generated');
+        }
+
+        // Step 3: Upload to storage
+        const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+        const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+        
+        const timestamp = Date.now();
+        const fileName = `post_${templateType}_${slideNum}_${timestamp}.png`;
+        const filePath = `social-posts/${user.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('brand-assets')
+          .upload(filePath, imageBuffer, {
+            contentType: 'image/png',
+            upsert: true
+          });
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          throw new Error('Failed to upload image');
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('brand-assets')
+          .getPublicUrl(filePath);
+
+        generatedSlides.push({
+          slideNumber: slideNum,
+          content: slideContent!,
+          imageUrl: publicUrl,
+          filePath
+        });
+      }
     }
 
     // Save to generated_posts table

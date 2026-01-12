@@ -133,14 +133,16 @@ export const PostGeneratorSection = ({
     }
   });
 
-  // Generate full post with image
+  // Generate full post with captured image
   const generateMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (imageBase64: string) => {
       if (!session?.access_token) {
         throw new Error('Not authenticated');
       }
       
       setGenerationStep('generating');
+      
+      console.log('Uploading captured image to storage...');
       
       const { data, error } = await supabase.functions.invoke('generate-social-post', {
         headers: { Authorization: `Bearer ${session.access_token}` },
@@ -150,7 +152,8 @@ export const PostGeneratorSection = ({
           templateType,
           carouselSlides: carouselSlides > 1 ? carouselSlides : undefined,
           customContent: previewContent,
-          bgVariant
+          bgVariant,
+          capturedImageBase64: imageBase64, // Send pre-rendered image
         }
       });
 
@@ -327,7 +330,7 @@ export const PostGeneratorSection = ({
         <PostContentEditor
           content={previewContent}
           onChange={setPreviewContent}
-          onGenerate={() => generateMutation.mutate()}
+          onGenerate={(imageBase64: string) => generateMutation.mutate(imageBase64)}
           onBack={() => setGenerationStep('input')}
           isGenerating={generateMutation.isPending}
           templateType={templateType}
