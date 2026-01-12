@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Download, X, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, X, Loader2, FileText, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 interface Resource {
   id: string;
@@ -18,6 +19,14 @@ interface ResourceLightboxProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+// Document type colors
+const DOCUMENT_COLORS: Record<string, { bg: string; text: string }> = {
+  'pdf': { bg: 'bg-red-500', text: 'PDF' },
+  'docx': { bg: 'bg-blue-500', text: 'DOCX' },
+  'doc': { bg: 'bg-blue-500', text: 'DOC' },
+  'rtf': { bg: 'bg-green-500', text: 'RTF' },
+};
 
 export const ResourceLightbox = ({
   resources,
@@ -107,7 +116,23 @@ export const ResourceLightbox = ({
     return /\.(mp4|webm|mov|avi)$/i.test(url);
   };
 
+  const isDocument = (url: string) => {
+    return /\.(pdf|docx|doc|rtf)$/i.test(url);
+  };
+
+  const isPdf = (url: string) => {
+    return /\.pdf$/i.test(url);
+  };
+
+  const getDocumentType = (url: string): string => {
+    const match = url.match(/\.(pdf|docx|doc|rtf)$/i);
+    return match ? match[1].toLowerCase() : 'pdf';
+  };
+
   if (!currentResource) return null;
+
+  const docType = getDocumentType(currentResource.resource_url);
+  const docColors = DOCUMENT_COLORS[docType] || DOCUMENT_COLORS['pdf'];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -162,6 +187,48 @@ export const ResourceLightbox = ({
               alt={currentResource.title}
               className="max-w-full max-h-full object-contain"
             />
+          ) : isPdf(currentResource.resource_url) ? (
+            // Embed PDF viewer for PDFs
+            <div className="w-full h-full max-w-4xl">
+              <iframe
+                src={currentResource.resource_url}
+                className="w-full h-full rounded-lg bg-white"
+                title={currentResource.title}
+              />
+            </div>
+          ) : isDocument(currentResource.resource_url) ? (
+            // Document preview card for non-PDF documents
+            <div className="bg-white rounded-xl p-8 max-w-md text-center shadow-2xl">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                <FileText className="w-10 h-10 text-slate-500" />
+              </div>
+              <Badge className={`${docColors.bg} text-white mb-4`}>
+                {docColors.text}
+              </Badge>
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">
+                {currentResource.title}
+              </h3>
+              <p className="text-slate-500 mb-6">
+                This document type cannot be previewed in browser.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Button onClick={handleDownload} disabled={isDownloading}>
+                  {isDownloading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4 mr-2" />
+                  )}
+                  Download
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => window.open(currentResource.resource_url, '_blank')}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Open in Browser
+                </Button>
+              </div>
+            </div>
           ) : (
             <div className="text-white text-center">
               <p className="mb-4">Preview not available for this file type</p>

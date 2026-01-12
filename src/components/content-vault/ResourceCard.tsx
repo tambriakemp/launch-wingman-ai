@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ExternalLink, Download, Image as ImageIcon, Loader2, Check, Pencil, Eye } from "lucide-react";
+import { ExternalLink, Download, Image as ImageIcon, Loader2, Check, Pencil, Eye, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,19 @@ interface ResourceCardProps {
   onEdit?: () => void;
 }
 
+// Document type badge colors
+const DOCUMENT_BADGE_COLORS: Record<string, string> = {
+  'pdf': 'bg-red-500 hover:bg-red-600',
+  'docx': 'bg-blue-500 hover:bg-blue-600',
+  'doc': 'bg-blue-500 hover:bg-blue-600',
+  'rtf': 'bg-green-500 hover:bg-green-600',
+};
+
+const getDocumentType = (url: string): string | null => {
+  const match = url.match(/\.(pdf|docx|doc|rtf)$/i);
+  return match ? match[1].toLowerCase() : null;
+};
+
 export const ResourceCard = ({ 
   title, 
   description, 
@@ -40,6 +53,8 @@ export const ResourceCard = ({
 }: ResourceCardProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const isCanvaLink = resourceType === 'canva_link';
+  const isDocument = resourceType === 'document' || /\.(pdf|docx|doc|rtf)$/i.test(resourceUrl);
+  const docType = getDocumentType(resourceUrl);
   
   // Use resource URL as cover image for images/videos if no cover image specified
   const isMediaResource = /\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|mov)$/i.test(resourceUrl);
@@ -110,6 +125,16 @@ export const ResourceCard = ({
             alt={title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
+        ) : isDocument ? (
+          // Document placeholder
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
+            <FileText className="w-16 h-16 text-slate-400 mb-2" />
+            {docType && (
+              <Badge className={`${DOCUMENT_BADGE_COLORS[docType] || 'bg-slate-500'} text-white text-xs font-bold`}>
+                {docType.toUpperCase()}
+              </Badge>
+            )}
+          </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <ImageIcon className="w-12 h-12 text-muted-foreground/30" />
@@ -135,7 +160,7 @@ export const ResourceCard = ({
           </div>
         )}
 
-        {/* Resource Type Badge - Only show for Canva links */}
+        {/* Resource Type Badge - For Canva links */}
         {isCanvaLink && (
           <div className="absolute top-3 right-3">
             <Badge 
@@ -143,6 +168,17 @@ export const ResourceCard = ({
             >
               <ExternalLink className="w-3 h-3 mr-1.5" />
               Canva
+            </Badge>
+          </div>
+        )}
+
+        {/* Document Type Badge - For documents with cover images */}
+        {isDocument && docType && displayImageUrl && (
+          <div className="absolute top-3 right-3">
+            <Badge 
+              className={`${DOCUMENT_BADGE_COLORS[docType] || 'bg-slate-500'} text-white text-xs font-bold shadow-lg border-0`}
+            >
+              {docType.toUpperCase()}
             </Badge>
           </div>
         )}
@@ -194,7 +230,7 @@ export const ResourceCard = ({
         {/* Hover Overlay for desktop */}
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
           <span className="text-white text-sm font-medium">
-            {isCanvaLink ? "Open in Canva" : "Click to preview"}
+            {isCanvaLink ? "Open in Canva" : isDocument ? "Preview document" : "Click to preview"}
           </span>
         </div>
       </div>

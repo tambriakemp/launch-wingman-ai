@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Cloud, RefreshCw, CheckCircle, AlertCircle, FileImage, FileVideo, Image, Trash2, Sparkles, Pause, Play, Info, Zap, Upload, Loader2, CheckCircle2, XCircle, X, RotateCcw, ChevronDown, FileArchive, Smartphone, Monitor } from "lucide-react";
+import { Cloud, RefreshCw, CheckCircle, AlertCircle, FileImage, FileVideo, Image, Trash2, Sparkles, Pause, Play, Info, Zap, Upload, Loader2, CheckCircle2, XCircle, X, RotateCcw, ChevronDown, FileArchive, Smartphone, Monitor, FileText } from "lucide-react";
+import { DocumentUploadSection } from "./DocumentUploadSection";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
@@ -1480,6 +1481,13 @@ export function R2ManagementCard() {
             </div>
           </CollapsibleContent>
         </Collapsible>
+
+        <div className="border-t" />
+
+        {/* ======================== */}
+        {/* SECTION 4: Document Upload */}
+        {/* ======================== */}
+        <DocumentUploadSection />
 
         <div className="border-t" />
 
