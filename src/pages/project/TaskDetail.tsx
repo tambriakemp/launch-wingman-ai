@@ -202,7 +202,7 @@ export default function TaskDetail() {
     }
 
     // Check if there's any data to save
-    const hasData = Object.keys(formData).some(k => formData[k]?.trim()) || 
+    const hasData = Object.keys(formData).some(k => typeof formData[k] === 'string' && formData[k]?.trim()) || 
                     selectedOption || 
                     checklistItems.length > 0;
 
@@ -510,10 +510,6 @@ export default function TaskDetail() {
           </p>
         </section>
 
-        {/* Video Instructions Section - only shown if task has videoInstructionsUrl */}
-        {taskTemplate.videoInstructionsUrl && (
-          <VideoInstructionsSection videoUrl={taskTemplate.videoInstructionsUrl} />
-        )}
 
         <div className="h-px bg-border mb-10" />
 
@@ -533,6 +529,11 @@ export default function TaskDetail() {
             ))}
           </ol>
         </section>
+
+        {/* Video Instructions Section - only shown if task has videoInstructionsUrl */}
+        {taskTemplate.videoInstructionsUrl && (
+          <VideoInstructionsSection videoUrl={taskTemplate.videoInstructionsUrl} />
+        )}
 
         <div className="h-px bg-border mb-10" />
 
