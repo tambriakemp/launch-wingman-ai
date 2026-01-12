@@ -933,17 +933,17 @@ export default function TaskDetail() {
                 {taskTemplate.completionCriteria.map((criteria, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-3 cursor-pointer group"
-                    onClick={() => handleCriteriaToggle(criteria)}
+                    className="flex items-center gap-3 group"
                   >
                     <Checkbox
                       id={`criteria-${index}`}
                       checked={completedCriteria.includes(criteria)}
                       onCheckedChange={() => handleCriteriaToggle(criteria)}
+                      className="cursor-pointer"
                     />
                     <Label
                       htmlFor={`criteria-${index}`}
-                      className={`text-sm cursor-pointer transition-colors ${
+                      className={`flex-1 text-sm cursor-pointer transition-colors ${
                         completedCriteria.includes(criteria)
                           ? "text-muted-foreground line-through"
                           : "text-foreground"
