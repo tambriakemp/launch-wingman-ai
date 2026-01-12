@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
     console.log("[UPLOAD-DOCUMENT] Function started");
 
     // Parse request
-    const { fileBase64, filename, subcategory, title } = await req.json();
+    const { fileBase64, filename, subcategory, subcategoryName, title } = await req.json();
 
     if (!fileBase64 || !filename || !subcategory) {
       return new Response(
@@ -382,25 +382,57 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Find the subcategory
-    const { data: subcategoryData } = await supabase
+    // Find or create the subcategory
+    let { data: subcategoryData } = await supabase
       .from("content_vault_subcategories")
       .select("id")
       .eq("category_id", category.id)
       .eq("slug", subcategory)
       .single();
 
+    // If subcategory doesn't exist, create it
     if (!subcategoryData) {
-      console.error(`[UPLOAD-DOCUMENT] Subcategory ${subcategory} not found`);
-      return new Response(
-        JSON.stringify({ 
-          url: publicUrl, 
-          key: objectKey,
-          thumbnailUrl,
-          warning: "Subcategory not found, file uploaded but not added to vault" 
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.log(`[UPLOAD-DOCUMENT] Creating new subcategory: ${subcategory} (${subcategoryName || subcategory})`);
+      
+      // Get max position for subcategories in this category
+      const { data: maxPosSubcat } = await supabase
+        .from("content_vault_subcategories")
+        .select("position")
+        .eq("category_id", category.id)
+        .order("position", { ascending: false })
+        .limit(1);
+      
+      const nextSubcatPosition = (maxPosSubcat?.[0]?.position ?? 0) + 1;
+      
+      // Create the subcategory
+      const displayName = subcategoryName || subcategory.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+      
+      const { data: newSubcat, error: subcatError } = await supabase
+        .from("content_vault_subcategories")
+        .insert({
+          category_id: category.id,
+          slug: subcategory,
+          name: displayName,
+          position: nextSubcatPosition,
+        })
+        .select("id")
+        .single();
+      
+      if (subcatError) {
+        console.error("[UPLOAD-DOCUMENT] Failed to create subcategory:", subcatError);
+        return new Response(
+          JSON.stringify({ 
+            url: publicUrl, 
+            key: objectKey,
+            thumbnailUrl,
+            warning: `File uploaded but failed to create subcategory: ${subcatError.message}` 
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      subcategoryData = newSubcat;
+      console.log(`[UPLOAD-DOCUMENT] Created subcategory: ${displayName} (id: ${newSubcat?.id})`);
     }
 
     // Get max position
