@@ -50,7 +50,7 @@ export const SALES_PAGE_SECTIONS: SalesCopySection[] = [
     ],
     questionPrompts: [
       'Who is the ideal customer for this offer?',
-      'What is a specific result your ICA will experience?',
+      'What is a specific result your customer will experience?',
       'How quickly can they experience transformation?',
     ],
   },
@@ -147,7 +147,7 @@ export const SALES_PAGE_SECTIONS: SalesCopySection[] = [
       { template: 'This [workshop/course/program] will teach you how to:', example: 'This course will teach you how to:' },
     ],
     questionPrompts: [
-      'What is a specific result your ICA will experience because of your offer?',
+      'What is a specific result your customer will experience because of your offer?',
     ],
   },
   {
@@ -411,7 +411,7 @@ export interface OfferSalesCopy {
 // 21 Questions for sales page prep
 export const TWENTY_ONE_QUESTIONS = [
   { number: 1, question: 'Who is the ideal customer for this offer?', category: 'audience' },
-  { number: 2, question: 'What is a specific result your ICA will experience because of your offer?', category: 'result' },
+  { number: 2, question: 'What is a specific result your customer will experience because of your offer?', category: 'result' },
   { number: 3, question: 'How quickly can they experience transformation?', category: 'timeline' },
   { number: 4, question: 'Why do they want to experience this transformation?', category: 'motivation' },
   { number: 5, question: 'What has stopped them from taking action towards their desired result in the past?', category: 'blockers' },
