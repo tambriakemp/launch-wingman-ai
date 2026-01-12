@@ -40,13 +40,17 @@ interface BrandSourceSectionProps {
   onSettingsSaved: () => void;
 }
 
+// Website brand colors from index.css
+// Primary: hsl(40 6% 10%) - Dark charcoal
+// Secondary: hsl(168 76% 42%) - Teal/mint
+// Accent: hsl(47 96% 53%) - Gold/yellow
 const DEFAULT_SETTINGS = {
   brand_name: 'Launchely',
   tagline: 'A calmer way to plan and launch digital products.',
   subtext: 'Calm guidance. Clear next steps.',
-  primary_color: '#1a1a1a',
-  secondary_color: '#14b8a6',
-  neutral_color: '#f5f5f5',
+  primary_color: '#1a1918', // hsl(40 6% 10%) - Dark charcoal from website
+  secondary_color: '#1ab8a3', // hsl(168 76% 42%) - Teal from website
+  neutral_color: '#f5c243', // hsl(47 96% 53%) - Gold accent from website
   header_font: 'Plus Jakarta Sans',
   body_font: 'Plus Jakarta Sans',
   highlight_labels: ['Start Here', 'How It Works', 'Launching', 'Tech Clarity', 'Templates', 'Wins'],
