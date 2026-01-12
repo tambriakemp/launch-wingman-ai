@@ -196,7 +196,15 @@ export function R2ManagementCard() {
   const [renameResult, setRenameResult] = useState<RenameResult | null>(null);
   const [previewOnly, setPreviewOnly] = useState(true);
 
-  const isProcessing = isSyncing || isGeneratingThumbnails || isRenaming || isUploading;
+  // ========================
+  // AI Photo Renaming State
+  // ========================
+  const [isRenamingPhotos, setIsRenamingPhotos] = useState(false);
+  const [photoRenameResult, setPhotoRenameResult] = useState<RenameResult | null>(null);
+  const [photoPreviewOnly, setPhotoPreviewOnly] = useState(true);
+  const [photoRenameOpen, setPhotoRenameOpen] = useState(false);
+
+  const isProcessing = isSyncing || isGeneratingThumbnails || isRenaming || isUploading || isRenamingPhotos;
 
   // ========================
   // Effects
@@ -719,7 +727,7 @@ export function R2ManagementCard() {
         
         const response = await supabase.functions.invoke('rename-vault-videos', {
           headers: { Authorization: `Bearer ${session.access_token}` },
-          body: { previewOnly, batchSize, offset },
+          body: { previewOnly, batchSize, offset, resourceType: 'video' },
         });
 
         if (response.error) throw new Error(response.error.message);
@@ -756,6 +764,72 @@ export function R2ManagementCard() {
       toast.error(error.message || "Failed to rename videos");
     } finally {
       setIsRenaming(false);
+    }
+  };
+
+  const handleAIPhotoRename = async () => {
+    setIsRenamingPhotos(true);
+    setPhotoRenameResult(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Not authenticated");
+        return;
+      }
+
+      const cumulativeResult: RenameResult = {
+        renamed: 0, skipped: 0, failed: 0, previews: [], errors: [],
+      };
+
+      let hasMore = true;
+      const batchSize = 20;
+      let offset = 0;
+      let iterations = 0;
+      const maxIterations = 500;
+
+      while (hasMore && iterations < maxIterations) {
+        iterations++;
+        
+        const response = await supabase.functions.invoke('rename-vault-videos', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          body: { previewOnly: photoPreviewOnly, batchSize, offset, resourceType: 'image' },
+        });
+
+        if (response.error) throw new Error(response.error.message);
+
+        const result = response.data as RenameResult & { scanned: number; nextOffset: number };
+        
+        cumulativeResult.renamed += result.renamed;
+        cumulativeResult.skipped += result.skipped;
+        cumulativeResult.failed += result.failed;
+        cumulativeResult.previews.push(...result.previews);
+        cumulativeResult.errors.push(...result.errors);
+
+        setPhotoRenameResult({ ...cumulativeResult });
+
+        offset = result.nextOffset;
+
+        if (result.scanned === 0 || result.scanned < batchSize) hasMore = false;
+
+        if (hasMore) await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      if (iterations >= maxIterations) {
+        toast.warning("Safety limit reached - stopped after 500 batches");
+      }
+
+      if (photoPreviewOnly) {
+        toast.info(`Preview: ${cumulativeResult.previews.length} photos would be renamed`);
+      } else {
+        if (cumulativeResult.renamed > 0) toast.success(`Renamed ${cumulativeResult.renamed} photos with AI`);
+        if (cumulativeResult.failed > 0) toast.warning(`${cumulativeResult.failed} photos failed to rename`);
+      }
+    } catch (error: any) {
+      console.error("AI photo rename error:", error);
+      toast.error(error.message || "Failed to rename photos");
+    } finally {
+      setIsRenamingPhotos(false);
     }
   };
 
@@ -1238,6 +1312,84 @@ export function R2ManagementCard() {
                     <ul className="mt-1 space-y-1 text-destructive">
                       {renameResult.errors.slice(0, 5).map((err, i) => <li key={i}>• {err}</li>)}
                       {renameResult.errors.length > 5 && <li>...and {renameResult.errors.length - 5} more</li>}
+                    </ul>
+                  </details>
+                )}
+              </div>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+
+        <div className="border-t" />
+
+        {/* ======================== */}
+        {/* SECTION 5: AI Photo Renaming */}
+        {/* ======================== */}
+        <Collapsible open={photoRenameOpen} onOpenChange={setPhotoRenameOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full justify-between p-3 h-auto">
+              <div className="flex items-center gap-2">
+                <FileImage className="w-4 h-4 text-pink-500" />
+                <span className="font-medium">AI Photo Renaming</span>
+                <span className="text-xs text-muted-foreground">Generate descriptive titles for photos</span>
+              </div>
+              <ChevronDown className={`w-4 h-4 transition-transform ${photoRenameOpen ? 'rotate-180' : ''}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="px-3 pb-4 space-y-4">
+            <p className="text-xs text-muted-foreground pt-2">
+              Use AI to generate descriptive titles for photos based on their content.
+            </p>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-medium">Preview only</Label>
+                <p className="text-xs text-muted-foreground">See suggested names before applying</p>
+              </div>
+              <Switch checked={photoPreviewOnly} onCheckedChange={setPhotoPreviewOnly} />
+            </div>
+
+            <Button onClick={handleAIPhotoRename} disabled={isProcessing} variant="outline" className="w-full">
+              {isRenamingPhotos ? (
+                <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />{photoPreviewOnly ? 'Generating previews...' : 'Renaming...'}</>
+              ) : (
+                <><FileImage className="w-4 h-4 mr-2" />{photoPreviewOnly ? 'Preview AI Rename' : 'Rename Photos with AI'}</>
+              )}
+            </Button>
+
+            {photoRenameResult && (
+              <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
+                <div className="flex gap-4 text-sm flex-wrap">
+                  <span className="text-green-500">✓ {photoRenameResult.renamed} {photoPreviewOnly ? 'would be renamed' : 'renamed'}</span>
+                  <span className="text-muted-foreground">⏭ {photoRenameResult.skipped} skipped</span>
+                  {photoRenameResult.failed > 0 && <span className="text-red-500">✗ {photoRenameResult.failed} failed</span>}
+                </div>
+
+                {photoRenameResult.previews.length > 0 && (
+                  <details open className="text-xs">
+                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                      {photoPreviewOnly ? 'Preview changes' : 'Changed titles'} ({photoRenameResult.previews.length})
+                    </summary>
+                    <ScrollArea className="h-32 mt-2">
+                      <ul className="space-y-1">
+                        {photoRenameResult.previews.map((p, idx) => (
+                          <li key={idx} className="flex items-center gap-2">
+                            <span className="text-muted-foreground line-through truncate max-w-[120px]">{p.oldTitle}</span>
+                            <span>→</span>
+                            <span className="text-green-600 dark:text-green-400 truncate max-w-[120px]">{p.newTitle}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </ScrollArea>
+                  </details>
+                )}
+
+                {photoRenameResult.errors.length > 0 && (
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-destructive">Errors ({photoRenameResult.errors.length})</summary>
+                    <ul className="mt-1 space-y-1 text-destructive">
+                      {photoRenameResult.errors.slice(0, 5).map((err, i) => <li key={i}>• {err}</li>)}
+                      {photoRenameResult.errors.length > 5 && <li>...and {photoRenameResult.errors.length - 5} more</li>}
                     </ul>
                   </details>
                 )}
