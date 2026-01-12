@@ -48,7 +48,7 @@ serve(async (req) => {
     logStep("Admin verified", { userId: userData.user.id });
 
     const body = await req.json();
-    const { action, coupon_id, name, percent_off, amount_off, currency, duration, duration_in_months } = body;
+    const { action, coupon_id, name, percent_off, amount_off, currency, duration, duration_in_months, max_redemptions, redeem_by } = body;
 
     if (!action) throw new Error("Action is required");
 
@@ -75,6 +75,14 @@ serve(async (req) => {
 
       if (duration === "repeating" && duration_in_months) {
         couponParams.duration_in_months = duration_in_months;
+      }
+
+      if (max_redemptions) {
+        couponParams.max_redemptions = max_redemptions;
+      }
+
+      if (redeem_by) {
+        couponParams.redeem_by = redeem_by;
       }
 
       logStep("Creating coupon", couponParams);
