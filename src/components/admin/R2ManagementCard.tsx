@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Cloud, RefreshCw, CheckCircle, AlertCircle, FileImage, FileVideo, Image, Trash2, Sparkles, Pause, Play, Info, Zap, Upload, Loader2, CheckCircle2, XCircle, X, RotateCcw, ChevronDown } from "lucide-react";
+import { Cloud, RefreshCw, CheckCircle, AlertCircle, FileImage, FileVideo, Image, Trash2, Sparkles, Pause, Play, Info, Zap, Upload, Loader2, CheckCircle2, XCircle, X, RotateCcw, ChevronDown, FileArchive, Smartphone, Monitor } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
@@ -64,6 +64,18 @@ interface PendingPhoto {
   error?: string;
 }
 
+type PresetType = 'mobile' | 'desktop';
+
+interface PendingPreset {
+  id: string;
+  file: File;
+  detectedType: PresetType;
+  overrideType?: PresetType;
+  status: 'pending' | 'uploading' | 'done' | 'error';
+  error?: string;
+  resultUrl?: string;
+}
+
 interface UploadSavedProgress {
   sessionId: string;
   completedIds: string[];
@@ -94,6 +106,40 @@ const SUBCATEGORIES = [
   { slug: "mockups", name: "Mockups" },
   { slug: "dark-aesthetic", name: "Dark Aesthetic" },
 ];
+
+// Preset upload constants
+const PRESET_MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB for presets
+const PRESET_ACCEPTED_EXTENSIONS = ['.zip', '.dng', '.xmp', '.lrtemplate'];
+
+function detectPresetType(filename: string): PresetType {
+  const lowerName = filename.toLowerCase();
+  const mobileKeywords = ['mobile', 'dng', 'iphone', 'ios', 'phone', 'android'];
+  if (mobileKeywords.some(kw => lowerName.includes(kw))) return 'mobile';
+  const desktopKeywords = ['desktop', 'xmp', 'lightroom classic', 'lr classic', 'lrtemplate'];
+  if (desktopKeywords.some(kw => lowerName.includes(kw))) return 'desktop';
+  const ext = filename.split('.').pop()?.toLowerCase();
+  if (ext === 'dng') return 'mobile';
+  if (ext === 'xmp' || ext === 'lrtemplate') return 'desktop';
+  return 'desktop';
+}
+
+function isValidPresetFile(filename: string): boolean {
+  const ext = '.' + filename.split('.').pop()?.toLowerCase();
+  return PRESET_ACCEPTED_EXTENSIONS.includes(ext);
+}
+
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 // ========================
 // Helper Functions
@@ -150,6 +196,7 @@ export function R2ManagementCard() {
   // Section open states
   const [syncOpen, setSyncOpen] = useState(true);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [presetUploadOpen, setPresetUploadOpen] = useState(false);
   const [thumbnailsOpen, setThumbnailsOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
 
@@ -204,7 +251,15 @@ export function R2ManagementCard() {
   const [photoPreviewOnly, setPhotoPreviewOnly] = useState(true);
   const [photoRenameOpen, setPhotoRenameOpen] = useState(false);
 
-  const isProcessing = isSyncing || isGeneratingThumbnails || isRenaming || isUploading || isRenamingPhotos;
+  // ========================
+  // Preset Upload State
+  // ========================
+  const [presets, setPresets] = useState<PendingPreset[]>([]);
+  const [isUploadingPresets, setIsUploadingPresets] = useState(false);
+  const [isPresetDragging, setIsPresetDragging] = useState(false);
+  const presetInputRef = useRef<HTMLInputElement>(null);
+
+  const isProcessing = isSyncing || isGeneratingThumbnails || isRenaming || isUploading || isRenamingPhotos || isUploadingPresets;
 
   // ========================
   // Effects
@@ -834,6 +889,136 @@ export function R2ManagementCard() {
   };
 
   // ========================
+  // Preset Upload Handlers
+  // ========================
+
+  const presetStats = {
+    total: presets.length,
+    pending: presets.filter(p => p.status === 'pending').length,
+    uploading: presets.filter(p => p.status === 'uploading').length,
+    done: presets.filter(p => p.status === 'done').length,
+    error: presets.filter(p => p.status === 'error').length,
+  };
+
+  const presetUploadProgress = presetStats.total > 0 
+    ? ((presetStats.done + presetStats.error) / presetStats.total) * 100 
+    : 0;
+
+  const handlePresetFiles = useCallback((files: FileList | File[]) => {
+    const fileArray = Array.from(files).filter(file => {
+      if (!isValidPresetFile(file.name)) {
+        toast.error(`${file.name} is not a supported preset file type`);
+        return false;
+      }
+      if (file.size > PRESET_MAX_FILE_SIZE) {
+        toast.error(`${file.name} is too large (max 50MB)`);
+        return false;
+      }
+      return true;
+    });
+
+    if (fileArray.length === 0) return;
+
+    const newPresets: PendingPreset[] = fileArray.map(file => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      file,
+      detectedType: detectPresetType(file.name),
+      status: 'pending' as const,
+    }));
+
+    setPresets(prev => [...prev, ...newPresets]);
+    toast.success(`Added ${fileArray.length} preset(s) to queue`);
+  }, []);
+
+  const handlePresetDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsPresetDragging(false);
+    handlePresetFiles(e.dataTransfer.files);
+  }, [handlePresetFiles]);
+
+  const removePreset = useCallback((id: string) => {
+    setPresets(prev => prev.filter(p => p.id !== id));
+  }, []);
+
+  const clearAllPresets = useCallback(() => {
+    setPresets([]);
+  }, []);
+
+  const updatePresetType = useCallback((id: string, type: PresetType) => {
+    setPresets(prev => prev.map(p => 
+      p.id === id ? { ...p, overrideType: type } : p
+    ));
+  }, []);
+
+  const startPresetUpload = useCallback(async () => {
+    const pendingPresets = presets.filter(p => p.status === 'pending');
+    if (pendingPresets.length === 0) return;
+
+    setIsUploadingPresets(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Not authenticated");
+        setIsUploadingPresets(false);
+        return;
+      }
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const preset of pendingPresets) {
+        setPresets(prev => prev.map(p => 
+          p.id === preset.id ? { ...p, status: 'uploading' as const } : p
+        ));
+
+        try {
+          const fileBase64 = await fileToBase64(preset.file);
+          const presetType = preset.overrideType || preset.detectedType;
+
+          const { data, error } = await supabase.functions.invoke('upload-preset-to-r2', {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+            body: {
+              fileBase64,
+              filename: preset.file.name,
+              presetType,
+            },
+          });
+
+          if (error) throw error;
+
+          setPresets(prev => prev.map(p => 
+            p.id === preset.id 
+              ? { ...p, status: 'done' as const, resultUrl: data.url } 
+              : p
+          ));
+          successCount++;
+        } catch (err: any) {
+          console.error(`Error uploading ${preset.file.name}:`, err);
+          setPresets(prev => prev.map(p => 
+            p.id === preset.id 
+              ? { ...p, status: 'error' as const, error: err.message || 'Upload failed' } 
+              : p
+          ));
+          failCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`Uploaded ${successCount} preset(s) successfully!`);
+      }
+      if (failCount > 0) {
+        toast.warning(`${failCount} preset(s) failed to upload`);
+      }
+    } catch (error: any) {
+      console.error("Preset upload error:", error);
+      toast.error(error.message || "Failed to upload presets");
+    } finally {
+      setIsUploadingPresets(false);
+    }
+  }, [presets]);
+
+  // ========================
   // Helper UI Functions
   // ========================
 
@@ -1107,7 +1292,199 @@ export function R2ManagementCard() {
         <div className="border-t" />
 
         {/* ======================== */}
-        {/* SECTION 3: Video Thumbnails */}
+        {/* SECTION 3: Upload Lightroom Presets */}
+        {/* ======================== */}
+        <Collapsible open={presetUploadOpen} onOpenChange={setPresetUploadOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full justify-between p-3 h-auto">
+              <div className="flex items-center gap-2">
+                <FileArchive className="w-4 h-4 text-orange-500" />
+                <span className="font-medium">Upload Lightroom Presets</span>
+                <span className="text-xs text-muted-foreground">ZIP, DNG, XMP files → Presets category</span>
+              </div>
+              <ChevronDown className={`w-4 h-4 transition-transform ${presetUploadOpen ? 'rotate-180' : ''}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="px-3 pb-4 space-y-4">
+            {/* Drop Zone */}
+            <div
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+                isPresetDragging 
+                  ? 'border-primary bg-primary/5' 
+                  : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+              }`}
+              onDragOver={(e) => { e.preventDefault(); setIsPresetDragging(true); }}
+              onDragLeave={() => setIsPresetDragging(false)}
+              onDrop={handlePresetDrop}
+              onClick={() => presetInputRef.current?.click()}
+            >
+              <input
+                ref={presetInputRef}
+                type="file"
+                className="hidden"
+                multiple
+                accept=".zip,.dng,.xmp,.lrtemplate"
+                onChange={(e) => e.target.files && handlePresetFiles(e.target.files)}
+              />
+              <Upload className={`w-8 h-8 mx-auto mb-2 ${isPresetDragging ? "text-primary" : "text-muted-foreground"}`} />
+              <p className="text-sm font-medium">Drop preset files here or click to browse</p>
+              <p className="text-xs text-muted-foreground mt-1">Supports .zip, .dng, .xmp, .lrtemplate (max 50MB each)</p>
+            </div>
+
+            {/* Queue */}
+            {presets.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    {presets.length} preset(s) in queue
+                  </span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearAllPresets}
+                    disabled={isUploadingPresets}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Clear All
+                  </Button>
+                </div>
+
+                <ScrollArea className="h-48 border rounded-lg">
+                  <div className="p-2 space-y-2">
+                    {presets.map((preset) => (
+                      <div 
+                        key={preset.id}
+                        className="flex items-center gap-2 p-2 bg-muted/50 rounded-md"
+                      >
+                        {/* Status Icon */}
+                        {preset.status === 'pending' && (
+                          <FileArchive className="w-4 h-4 text-muted-foreground shrink-0" />
+                        )}
+                        {preset.status === 'uploading' && (
+                          <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
+                        )}
+                        {preset.status === 'done' && (
+                          <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                        )}
+                        {preset.status === 'error' && (
+                          <XCircle className="w-4 h-4 text-destructive shrink-0" />
+                        )}
+
+                        {/* Filename */}
+                        <span className="text-sm truncate flex-1" title={preset.file.name}>
+                          {preset.file.name}
+                        </span>
+
+                        {/* Type Badge/Selector */}
+                        {preset.status === 'pending' ? (
+                          <Select
+                            value={preset.overrideType || preset.detectedType}
+                            onValueChange={(val) => updatePresetType(preset.id, val as PresetType)}
+                          >
+                            <SelectTrigger className="w-28 h-7 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="mobile">
+                                <span className="flex items-center gap-1">
+                                  <Smartphone className="w-3 h-3" /> Mobile
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="desktop">
+                                <span className="flex items-center gap-1">
+                                  <Monitor className="w-3 h-3" /> Desktop
+                                </span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
+                            {(preset.overrideType || preset.detectedType) === 'mobile' 
+                              ? <Smartphone className="w-3 h-3 mr-1" /> 
+                              : <Monitor className="w-3 h-3 mr-1" />
+                            }
+                            <span className="capitalize">
+                              {preset.overrideType || preset.detectedType}
+                            </span>
+                          </Badge>
+                        )}
+
+                        {/* Remove Button */}
+                        {preset.status === 'pending' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0"
+                            onClick={() => removePreset(preset.id)}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+
+                {/* Progress */}
+                {isUploadingPresets && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Uploading...</span>
+                      <span>{presetStats.done + presetStats.error}/{presetStats.total}</span>
+                    </div>
+                    <Progress value={presetUploadProgress} />
+                  </div>
+                )}
+
+                {/* Stats */}
+                {(presetStats.done > 0 || presetStats.error > 0) && !isUploadingPresets && (
+                  <div className="flex gap-4 text-sm">
+                    {presetStats.done > 0 && (
+                      <span className="text-green-500">✓ {presetStats.done} uploaded</span>
+                    )}
+                    {presetStats.error > 0 && (
+                      <span className="text-destructive">✗ {presetStats.error} failed</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Upload Button */}
+                <Button 
+                  onClick={startPresetUpload} 
+                  disabled={isUploadingPresets || presetStats.pending === 0}
+                  className="w-full"
+                >
+                  {isUploadingPresets ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload {presetStats.pending} Preset(s)
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {/* Info */}
+            <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+              <p><strong>Auto-detection rules:</strong></p>
+              <ul className="list-disc list-inside pl-2 space-y-0.5">
+                <li>Files with "mobile", "dng", "iphone" → Mobile Presets</li>
+                <li>Files with "desktop", "xmp", "lrtemplate" → Desktop Presets</li>
+                <li>You can override the detected type before uploading</li>
+              </ul>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        <div className="border-t" />
+
+        {/* ======================== */}
+        {/* SECTION 4: Video Thumbnails */}
         {/* ======================== */}
         <Collapsible open={thumbnailsOpen} onOpenChange={setThumbnailsOpen}>
           <CollapsibleTrigger asChild>
