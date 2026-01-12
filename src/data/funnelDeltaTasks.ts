@@ -129,12 +129,12 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
     title: 'Invite subscribers to your offer',
     phase: 'launch',
     funnelTypes: ['freebie_email_offer'],
-    order: 3.5, // After launch_share_offer
+    order: 1, // After launch_share_offer_once
     priority: 2,
     estimatedMinutesMin: 15,
     estimatedMinutesMax: 30,
     blocking: false,
-    dependencies: ['launch_share_offer'],
+    dependencies: ['launch_share_offer_once'],
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
