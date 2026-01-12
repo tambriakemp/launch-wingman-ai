@@ -21,6 +21,7 @@ const PHASE_BADGE_COLORS: Record<Phase, string> = {
   messaging: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
   build: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   content: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+  "pre-launch": "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400",
   launch: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
   "post-launch": "bg-teal-500/10 text-teal-600 dark:text-teal-400",
 };

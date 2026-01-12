@@ -47,6 +47,7 @@ const DEFAULT_PHASE_STATUSES: Record<Phase, PhaseStatus> = {
   messaging: 'locked',
   build: 'locked',
   content: 'locked',
+  'pre-launch': 'locked',
   launch: 'locked',
   'post-launch': 'locked',
 };

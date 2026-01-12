@@ -27,8 +27,8 @@ import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 import { getFunnelConfigKey } from "@/lib/funnelUtils";
 import { AssetChecklist } from "@/components/funnel/AssetChecklist";
 import { PhaseSection } from "@/components/PhaseSection";
-import { getPlanningTasks, getMessagingTasks, getBuildTasksForFunnel, getContentTasksForFunnel, getLaunchTasksForFunnel, getPostLaunchTasks } from "@/data/taskTemplates";
-import { ClipboardList, MessageSquare, Wrench, PenTool, Rocket, Flag } from "lucide-react";
+import { getPlanningTasks, getMessagingTasks, getBuildTasksForFunnel, getContentTasksForFunnel, getLaunchTasksForFunnel, getPostLaunchTasks, getPreLaunchTasks } from "@/data/taskTemplates";
+import { ClipboardList, MessageSquare, Wrench, PenTool, Rocket, Flag, Sparkles } from "lucide-react";
 
 const COLUMNS = [
   { id: "todo", label: "To Do" },
@@ -638,10 +638,19 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
 
         <PhaseSection
           projectId={projectId}
+          label="Pre-Launch"
+          icon={Sparkles}
+          tasks={getPreLaunchTasks()}
+          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType)]}
+          isProOnly
+        />
+
+        <PhaseSection
+          projectId={projectId}
           label="Launch"
           icon={Rocket}
           tasks={getLaunchTasksForFunnel(currentFunnelType)}
-          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType)]}
+          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType), ...getPreLaunchTasks()]}
           isProOnly
         />
 
@@ -650,7 +659,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
           label="Post-Launch"
           icon={Flag}
           tasks={getPostLaunchTasks()}
-          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType), ...getLaunchTasksForFunnel(currentFunnelType)]}
+          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType), ...getPreLaunchTasks(), ...getLaunchTasksForFunnel(currentFunnelType)]}
           isProOnly
         />
       </div>

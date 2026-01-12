@@ -25,6 +25,7 @@ import { getLearnMoreArticleId } from "@/data/taskLearnMoreLinks";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/contexts/AuthContext";
 import { MVLCallout, MVLLaunchIntro, MVLLaunchComplete } from "@/components/mvl";
+import { PreLaunchIntro, PreLaunchComplete } from "@/components/prelaunch";
 import { generateVoiceScript, hasVoiceSnippetSupport } from "@/lib/generateVoiceScript";
 import { trackTaskCompletion, trackTaskStart, trackAIAssist } from "@/lib/analytics";
 import { trackTaskComplete } from "@/lib/activityTracking";
@@ -49,6 +50,8 @@ export default function TaskDetail() {
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [showLaunchIntro, setShowLaunchIntro] = useState(false);
   const [showLaunchComplete, setShowLaunchComplete] = useState(false);
+  const [showPreLaunchIntro, setShowPreLaunchIntro] = useState(false);
+  const [showPreLaunchComplete, setShowPreLaunchComplete] = useState(false);
   const [mvlTransformationShown, setMvlTransformationShown] = useState(false);
   const isInitialized = useRef(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -117,18 +120,32 @@ export default function TaskDetail() {
     }
   }, [taskId, projectTask, engineLoading, startTask, taskTemplate]);
 
-  // Check if this is first launch phase task and show intro
+  // Check if this is first pre-launch or launch phase task and show intro
   useEffect(() => {
     if (!taskId || !taskTemplate || engineLoading) return;
     
-    // Only show launch intro for first launch task if user hasn't seen it for this project
+    // Show pre-launch intro for first pre-launch task
+    if (taskTemplate.phase === 'pre-launch') {
+      const preLaunchPhaseTasks = projectTasks.filter(pt => {
+        const template = getTaskTemplate(pt.taskId);
+        return template?.phase === 'pre-launch' && (pt.status === 'completed' || pt.status === 'in_progress');
+      });
+      
+      const preLaunchIntroKey = `prelaunch_intro_${projectId}`;
+      const hasSeenIntro = localStorage.getItem(preLaunchIntroKey);
+      
+      if (preLaunchPhaseTasks.length === 0 && !hasSeenIntro) {
+        setShowPreLaunchIntro(true);
+      }
+    }
+    
+    // Show launch intro for first launch task
     if (taskTemplate.phase === 'launch') {
       const launchPhaseTasks = projectTasks.filter(pt => {
         const template = getTaskTemplate(pt.taskId);
         return template?.phase === 'launch' && (pt.status === 'completed' || pt.status === 'in_progress');
       });
       
-      // If this is the first time entering launch phase (no launch tasks started/completed)
       const launchIntroKey = `mvl_launch_intro_${projectId}`;
       const hasSeenIntro = localStorage.getItem(launchIntroKey);
       
@@ -318,10 +335,18 @@ export default function TaskDetail() {
         return;
       }
       
+      // Pre-Launch: Show completion confirmation
+      if (taskId === 'prelaunch_share_signal') {
+        setShowPreLaunchComplete(true);
+        setTimeout(() => {
+          navigate(`/projects/${projectId}/dashboard`);
+        }, 3000);
+        return;
+      }
+      
       // MVL: Show launch complete confirmation (placement #4)
       if (taskId === 'launch_phase_review') {
         setShowLaunchComplete(true);
-        // Brief pause to show MVL message before navigating
         setTimeout(() => {
           navigate(`/projects/${projectId}/dashboard`);
         }, 3000);
@@ -343,6 +368,13 @@ export default function TaskDetail() {
     const launchIntroKey = `mvl_launch_intro_${projectId}`;
     localStorage.setItem(launchIntroKey, 'true');
     setShowLaunchIntro(false);
+  };
+
+  // Handle dismissing pre-launch intro
+  const handlePreLaunchIntroContinue = () => {
+    const preLaunchIntroKey = `prelaunch_intro_${projectId}`;
+    localStorage.setItem(preLaunchIntroKey, 'true');
+    setShowPreLaunchIntro(false);
   };
 
   // Get the primary input value for Help Me Choose mode detection
@@ -437,6 +469,24 @@ export default function TaskDetail() {
 
   const phaseLabel = PHASE_LABELS[taskTemplate.phase] || taskTemplate.phase;
   const timeRange = `${taskTemplate.estimatedMinutesMin}–${taskTemplate.estimatedMinutesMax} minutes`;
+  
+  // Pre-Launch: Show intro screen
+  if (showPreLaunchIntro) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PreLaunchIntro onContinue={handlePreLaunchIntroContinue} />
+      </div>
+    );
+  }
+
+  // Pre-Launch: Show completion screen
+  if (showPreLaunchComplete) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PreLaunchComplete />
+      </div>
+    );
+  }
   
   // MVL: Show launch intro screen (placement #3)
   if (showLaunchIntro) {
