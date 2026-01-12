@@ -140,16 +140,24 @@ serve(async (req) => {
     // Get auth user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('No authorization header provided');
       throw new Error('No authorization header');
     }
     
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
-    if (authError || !user) {
+    if (authError) {
+      console.error('Auth error:', authError.message);
       throw new Error('Unauthorized');
     }
+    
+    if (!user) {
+      console.error('No user found for token');
+      throw new Error('Unauthorized');
+    }
+    
+    console.log('Authenticated user:', user.id);
 
     const { topic, platform, templateType, templateId, carouselSlides, previewOnly, customContent, bgVariant = 'dark' }: GenerateRequest = await req.json();
 
