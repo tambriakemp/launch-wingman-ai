@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,14 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { 
   ArrowLeft, 
   Sparkles, 
   Edit3,
   Loader2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Monitor
 } from 'lucide-react';
 import { PostPreview, BackgroundVariant } from './PostPreview';
+import { MockupPostPreview } from './MockupPostPreview';
 import { cn } from '@/lib/utils';
 
 interface GeneratedContent {
@@ -55,6 +58,11 @@ export const PostContentEditor = ({
   onBgVariantChange
 }: PostContentEditorProps) => {
   const fullSizeRef = useRef<HTMLDivElement>(null);
+  const [useMockup, setUseMockup] = useState(false);
+  
+  // Dimensions change based on mockup mode
+  const captureWidth = useMockup ? 1320 : 1080;
+  const captureHeight = useMockup ? 1550 : 1350;
 
   const updateField = (field: keyof GeneratedContent, value: any) => {
     onChange({ ...content, [field]: value });
@@ -82,11 +90,11 @@ export const PostContentEditor = ({
     }
 
     try {
-      console.log('Capturing post image at 1080x1350...');
+      console.log(`Capturing post image at ${captureWidth}x${captureHeight}...`);
       
       const dataUrl = await toPng(fullSizeRef.current, {
-        width: 1080,
-        height: 1350,
+        width: captureWidth,
+        height: captureHeight,
         pixelRatio: 1,
         cacheBust: true,
         skipAutoScale: true,
@@ -97,7 +105,7 @@ export const PostContentEditor = ({
     } catch (error) {
       console.error('Failed to capture post image:', error);
     }
-  }, [onGenerate]);
+  }, [onGenerate, captureWidth, captureHeight]);
 
   return (
     <div className="space-y-6">
@@ -233,20 +241,51 @@ export const PostContentEditor = ({
               </div>
             </div>
 
-            <PostPreview
-              content={{
-                headline: content.headline || 'Your headline here',
-                subheadline: content.subheadline || '',
-                bullets: content.bullets || [],
-                cta: content.cta || ''
-              }}
-              templateType={templateType}
-              slideNumber={1}
-              bgVariant={bgVariant}
-              className="w-full max-w-md mx-auto"
-            />
+            {/* Mockup Toggle */}
+            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-2">
+                <Monitor className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="mockup-toggle" className="text-sm font-normal cursor-pointer">
+                  Add browser mockup frame
+                </Label>
+              </div>
+              <Switch
+                id="mockup-toggle"
+                checked={useMockup}
+                onCheckedChange={setUseMockup}
+              />
+            </div>
+
+            {/* Preview - conditionally render mockup or regular */}
+            {useMockup ? (
+              <MockupPostPreview
+                content={{
+                  headline: content.headline || 'Your headline here',
+                  subheadline: content.subheadline || '',
+                  bullets: content.bullets || [],
+                  cta: content.cta || ''
+                }}
+                templateType={templateType}
+                slideNumber={1}
+                bgVariant={bgVariant}
+                className="w-full max-w-md mx-auto rounded-lg overflow-hidden"
+              />
+            ) : (
+              <PostPreview
+                content={{
+                  headline: content.headline || 'Your headline here',
+                  subheadline: content.subheadline || '',
+                  bullets: content.bullets || [],
+                  cta: content.cta || ''
+                }}
+                templateType={templateType}
+                slideNumber={1}
+                bgVariant={bgVariant}
+                className="w-full max-w-md mx-auto"
+              />
+            )}
             <p className="text-xs text-muted-foreground text-center mt-3">
-              Preview updates as you type • 1080×1350px
+              Preview updates as you type • {useMockup ? '1320×1550px' : '1080×1350px'}
             </p>
           </CardContent>
         </Card>
@@ -268,33 +307,48 @@ export const PostContentEditor = ({
         </Button>
       </div>
 
-      {/* Hidden full-size renderer for capture (1080x1350) */}
+      {/* Hidden full-size renderer for capture */}
       <div
         ref={fullSizeRef}
         style={{
           position: 'fixed',
           left: '-9999px',
           top: 0,
-          width: '1080px',
-          height: '1350px',
+          width: `${captureWidth}px`,
+          height: `${captureHeight}px`,
           overflow: 'hidden',
           zIndex: -1,
           pointerEvents: 'none',
         }}
         aria-hidden="true"
       >
-        <PostPreview
-          content={{
-            headline: content.headline || 'Your headline here',
-            subheadline: content.subheadline || '',
-            bullets: content.bullets || [],
-            cta: content.cta || ''
-          }}
-          templateType={templateType}
-          slideNumber={1}
-          bgVariant={bgVariant}
-          className="!w-[1080px] !h-[1350px] !rounded-none !aspect-auto"
-        />
+        {useMockup ? (
+          <MockupPostPreview
+            content={{
+              headline: content.headline || 'Your headline here',
+              subheadline: content.subheadline || '',
+              bullets: content.bullets || [],
+              cta: content.cta || ''
+            }}
+            templateType={templateType}
+            slideNumber={1}
+            bgVariant={bgVariant}
+            fullSize
+          />
+        ) : (
+          <PostPreview
+            content={{
+              headline: content.headline || 'Your headline here',
+              subheadline: content.subheadline || '',
+              bullets: content.bullets || [],
+              cta: content.cta || ''
+            }}
+            templateType={templateType}
+            slideNumber={1}
+            bgVariant={bgVariant}
+            className="!w-[1080px] !h-[1350px] !rounded-none !aspect-auto"
+          />
+        )}
       </div>
     </div>
   );

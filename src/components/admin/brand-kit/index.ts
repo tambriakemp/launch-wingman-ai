@@ -5,5 +5,7 @@ export { PostGeneratorSection } from './PostGeneratorSection';
 export { PostTemplateCard } from './PostTemplateCard';
 export { PostContentEditor } from './PostContentEditor';
 export { GeneratedPostsLibrary } from './GeneratedPostsLibrary';
-export { PostPreview, type BackgroundVariant } from './PostPreview';
+export { PostPreview, type BackgroundVariant, type GeneratedContent } from './PostPreview';
+export { MockupPostPreview } from './MockupPostPreview';
+export { FullSizePostRenderer } from './FullSizePostRenderer';
 export * from './PostPreviewElements';

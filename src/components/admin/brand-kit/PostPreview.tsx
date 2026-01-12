@@ -13,7 +13,7 @@ import { Clock, Target, Zap, ArrowRight } from "lucide-react";
 
 export type BackgroundVariant = "dark" | "light" | "gold";
 
-interface GeneratedContent {
+export interface GeneratedContent {
   headline: string;
   subheadline: string;
   bullets: string[];
