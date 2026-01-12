@@ -564,26 +564,42 @@ Deno.serve(async (req) => {
       console.log(`[UPLOAD-DOCUMENT] Created subcategory: ${displayName} (id: ${newSubcat?.id})`);
     }
 
-    // Check for duplicate by title in same subcategory
-    const { data: existingResource } = await supabase
-      .from("content_vault_resources")
-      .select("id, title")
-      .eq("subcategory_id", subcategoryData.id)
-      .eq("title", docTitle)
-      .maybeSingle();
+      // Check for duplicate by title in same subcategory
+      const { data: existingResource } = await supabase
+        .from("content_vault_resources")
+        .select("id, title, resource_url, preview_url")
+        .eq("subcategory_id", subcategoryData.id)
+        .eq("title", docTitle)
+        .maybeSingle();
 
-    if (existingResource) {
-      console.log(`[UPLOAD-DOCUMENT] Duplicate found: "${docTitle}" already exists in subcategory`);
-      return new Response(
-        JSON.stringify({ 
-          skipped: true, 
-          reason: 'duplicate', 
-          title: docTitle,
-          existingId: existingResource.id 
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+      if (existingResource) {
+        // Only consider it a duplicate if BOTH the document AND preview exist
+        const hasDocument = !!existingResource.resource_url;
+        const hasPreview = !!existingResource.preview_url;
+        
+        if (hasDocument && hasPreview) {
+          console.log(`[UPLOAD-DOCUMENT] Complete duplicate found: "${docTitle}" has both document and preview`);
+          return new Response(
+            JSON.stringify({ 
+              skipped: true, 
+              reason: 'duplicate', 
+              title: docTitle,
+              existingId: existingResource.id 
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        } else {
+          // Incomplete upload - delete the old record and allow re-upload
+          console.log(`[UPLOAD-DOCUMENT] Incomplete record found for "${docTitle}" (hasDocument: ${hasDocument}, hasPreview: ${hasPreview}). Allowing re-upload.`);
+          
+          await supabase
+            .from("content_vault_resources")
+            .delete()
+            .eq("id", existingResource.id);
+          
+          console.log(`[UPLOAD-DOCUMENT] Deleted incomplete record ${existingResource.id}`);
+        }
+      }
 
     // Get max position
     const { data: maxPosData } = await supabase
