@@ -178,7 +178,9 @@ export function DocumentReprocessSection() {
         if (!convertData?.pdfBase64) throw new Error('No PDF returned from conversion');
 
         // Upload the PDF preview to R2
-        const previewKey = resource.resource_url
+        // Extract just the path portion from the full R2 URL
+        const urlPath = new URL(resource.resource_url).pathname.slice(1); // Remove leading /
+        const previewKey = urlPath
           .replace('business-documents/', 'business-documents/previews/')
           .replace(/\.[^.]+$/, '.pdf');
         
