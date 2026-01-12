@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,9 @@ import {
   Loader2, 
   CheckCircle2, 
   XCircle,
-  FileType
+  FileType,
+  Folder,
+  FolderOpen
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -23,17 +25,18 @@ interface PendingDocument {
   file: File;
   title: string;
   subcategory: string;
+  subcategoryName: string;
   status: 'pending' | 'uploading' | 'done' | 'error';
   error?: string;
   resultUrl?: string;
+  folderPath?: string;
 }
 
-const DOCUMENT_SUBCATEGORIES = [
-  { slug: "contracts", name: "Contracts & Agreements" },
-  { slug: "proposals", name: "Proposals & Briefs" },
-  { slug: "templates", name: "Business Templates" },
-  { slug: "guides", name: "Guides & Checklists" },
-];
+interface SubcategoryOption {
+  slug: string;
+  name: string;
+  isNew?: boolean;
+}
 
 const ACCEPTED_TYPES = [
   "application/pdf",
@@ -68,13 +71,67 @@ async function fileToBase64(file: File): Promise<string> {
   });
 }
 
+function folderNameToSlug(folderName: string): string {
+  return folderName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-_]/g, '')
+    .replace(/[\s_]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+function formatSubcategoryName(folderName: string): string {
+  return folderName
+    .replace(/[-_]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function extractFolderFromPath(path: string): string | null {
+  const parts = path.split('/');
+  if (parts.length > 1) {
+    return parts[0];
+  }
+  return null;
+}
+
 export function DocumentUploadSection() {
   const [isOpen, setIsOpen] = useState(false);
   const [documents, setDocuments] = useState<PendingDocument[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [overrideAll, setOverrideAll] = useState<string>("");
   const [isDragging, setIsDragging] = useState(false);
+  const [subcategories, setSubcategories] = useState<SubcategoryOption[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    async function loadSubcategories() {
+      try {
+        const { data: category } = await supabase
+          .from('content_vault_categories')
+          .select('id')
+          .eq('slug', 'business-documents')
+          .single();
+
+        if (category) {
+          const { data: subs } = await supabase
+            .from('content_vault_subcategories')
+            .select('slug, name')
+            .eq('category_id', category.id)
+            .order('name');
+
+          if (subs) {
+            setSubcategories(subs.map(s => ({ slug: s.slug, name: s.name })));
+          }
+        }
+      } catch (err) {
+        console.error('Error loading subcategories:', err);
+      }
+    }
+    loadSubcategories();
+  }, []);
 
   const stats = {
     total: documents.length,
@@ -85,6 +142,20 @@ export function DocumentUploadSection() {
   };
 
   const uploadProgress = stats.total > 0 ? ((stats.done + stats.error) / stats.total) * 100 : 0;
+
+  const allSubcategories = useCallback((): SubcategoryOption[] => {
+    const docSubcats = documents
+      .filter(d => d.subcategory && d.subcategoryName)
+      .map(d => ({ slug: d.subcategory, name: d.subcategoryName, isNew: true }));
+    
+    const merged = [...subcategories];
+    for (const sub of docSubcats) {
+      if (!merged.some(s => s.slug === sub.slug)) {
+        merged.push(sub);
+      }
+    }
+    return merged.sort((a, b) => a.name.localeCompare(b.name));
+  }, [subcategories, documents]);
 
   const handleFiles = useCallback((files: FileList | File[]) => {
     const fileArray = Array.from(files).filter(file => {
@@ -101,23 +172,95 @@ export function DocumentUploadSection() {
 
     if (fileArray.length === 0) return;
 
-    const newDocuments: PendingDocument[] = fileArray.map(file => ({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      file,
-      title: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-      subcategory: 'templates', // Default subcategory
-      status: 'pending' as const,
-    }));
+    const foldersDetected = new Set<string>();
+
+    const newDocuments: PendingDocument[] = fileArray.map(file => {
+      const webkitPath = (file as any).webkitRelativePath || '';
+      const folderName = extractFolderFromPath(webkitPath);
+      
+      let subcategorySlug = subcategories[0]?.slug || 'templates';
+      let subcategoryName = subcategories[0]?.name || 'Business Templates';
+      
+      if (folderName) {
+        foldersDetected.add(folderName);
+        subcategorySlug = folderNameToSlug(folderName);
+        subcategoryName = formatSubcategoryName(folderName);
+      }
+
+      return {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        file,
+        title: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        subcategory: subcategorySlug,
+        subcategoryName: subcategoryName,
+        status: 'pending' as const,
+        folderPath: webkitPath || undefined,
+      };
+    });
 
     setDocuments(prev => [...prev, ...newDocuments]);
-    toast.success(`Added ${fileArray.length} document(s) to queue`);
-  }, []);
+    
+    if (foldersDetected.size > 0) {
+      toast.success(`Added ${fileArray.length} document(s) from ${foldersDetected.size} folder(s): ${Array.from(foldersDetected).join(', ')}`);
+    } else {
+      toast.success(`Added ${fileArray.length} document(s) to queue`);
+    }
+  }, [subcategories]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
+    
+    const items = e.dataTransfer.items;
+    if (items) {
+      const entries: FileSystemEntry[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const entry = items[i].webkitGetAsEntry?.();
+        if (entry) entries.push(entry);
+      }
+      
+      if (entries.some(e => e.isDirectory)) {
+        processEntries(entries);
+        return;
+      }
+    }
+    
     handleFiles(e.dataTransfer.files);
   }, [handleFiles]);
+
+  const processEntries = async (entries: FileSystemEntry[]) => {
+    const files: File[] = [];
+    
+    async function processEntry(entry: FileSystemEntry, path: string = ''): Promise<void> {
+      if (entry.isFile) {
+        const fileEntry = entry as FileSystemFileEntry;
+        const file = await new Promise<File>((resolve, reject) => {
+          fileEntry.file(resolve, reject);
+        });
+        const fileWithPath = Object.assign(file, {
+          webkitRelativePath: path + file.name
+        });
+        files.push(fileWithPath);
+      } else if (entry.isDirectory) {
+        const dirEntry = entry as FileSystemDirectoryEntry;
+        const reader = dirEntry.createReader();
+        const subEntries = await new Promise<FileSystemEntry[]>((resolve, reject) => {
+          reader.readEntries(resolve, reject);
+        });
+        for (const subEntry of subEntries) {
+          await processEntry(subEntry, path + entry.name + '/');
+        }
+      }
+    }
+    
+    for (const entry of entries) {
+      await processEntry(entry, '');
+    }
+    
+    if (files.length > 0) {
+      handleFiles(files);
+    }
+  };
 
   const removeDocument = useCallback((id: string) => {
     setDocuments(prev => prev.filter(d => d.id !== id));
@@ -128,16 +271,22 @@ export function DocumentUploadSection() {
   }, []);
 
   const updateSubcategory = useCallback((id: string, subcategory: string) => {
+    const subcat = allSubcategories().find(s => s.slug === subcategory);
     setDocuments(prev => prev.map(d => 
-      d.id === id ? { ...d, subcategory } : d
+      d.id === id ? { ...d, subcategory, subcategoryName: subcat?.name || subcategory } : d
     ));
-  }, []);
+  }, [allSubcategories]);
 
   const applyOverrideAll = useCallback(() => {
     if (!overrideAll) return;
-    setDocuments(prev => prev.map(d => ({ ...d, subcategory: overrideAll })));
-    toast.success(`Applied "${DOCUMENT_SUBCATEGORIES.find(s => s.slug === overrideAll)?.name}" to all documents`);
-  }, [overrideAll]);
+    const subcat = allSubcategories().find(s => s.slug === overrideAll);
+    setDocuments(prev => prev.map(d => ({ 
+      ...d, 
+      subcategory: overrideAll,
+      subcategoryName: subcat?.name || overrideAll
+    })));
+    toast.success(`Applied "${subcat?.name || overrideAll}" to all documents`);
+  }, [overrideAll, allSubcategories]);
 
   const startUpload = useCallback(async () => {
     if (documents.length === 0) return;
@@ -159,6 +308,7 @@ export function DocumentUploadSection() {
             fileBase64,
             filename: doc.file.name,
             subcategory: doc.subcategory,
+            subcategoryName: doc.subcategoryName,
             title: doc.title,
           }
         });
@@ -182,11 +332,10 @@ export function DocumentUploadSection() {
 
     setIsUploading(false);
     
-    const successCount = documents.filter(d => d.status === 'done').length + pendingDocs.filter(d => 
-      documents.find(doc => doc.id === d.id)?.status === 'done'
-    ).length;
-    
-    toast.success(`Uploaded ${successCount} document(s) to Content Vault`);
+    const successCount = pendingDocs.length - documents.filter(d => d.status === 'error').length;
+    if (successCount > 0) {
+      toast.success(`Uploaded ${successCount} document(s) to Content Vault`);
+    }
   }, [documents]);
 
   const getFileIcon = (filename: string) => {
@@ -199,6 +348,8 @@ export function DocumentUploadSection() {
     };
     return colors[ext] || 'text-muted-foreground';
   };
+
+  const currentSubcategories = allSubcategories();
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -224,23 +375,60 @@ export function DocumentUploadSection() {
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
         >
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".pdf,.doc,.docx,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/rtf"
-            className="hidden"
-            onChange={(e) => e.target.files && handleFiles(e.target.files)}
-          />
           <FileType className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            Drop documents here or click to browse
+            Drop documents or folders here
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             PDF, DOCX, DOC, RTF • Max 50MB each
           </p>
+          
+          <div className="flex gap-2 justify-center mt-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <FileText className="w-4 h-4 mr-1" />
+              Select Files
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => folderInputRef.current?.click()}
+            >
+              <FolderOpen className="w-4 h-4 mr-1" />
+              Select Folder
+            </Button>
+          </div>
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".pdf,.doc,.docx,.rtf"
+            className="hidden"
+            onChange={(e) => e.target.files && handleFiles(e.target.files)}
+          />
+          <input
+            ref={folderInputRef}
+            type="file"
+            multiple
+            {...{ webkitdirectory: "", directory: "" } as any}
+            accept=".pdf,.doc,.docx,.rtf"
+            className="hidden"
+            onChange={(e) => e.target.files && handleFiles(e.target.files)}
+          />
+        </div>
+
+        {/* Folder Upload Tip */}
+        <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground">
+          <Folder className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+          <div>
+            <p className="font-medium text-foreground">Folder Upload</p>
+            <p>When uploading a folder, the folder name becomes the subcategory. New subcategories are created automatically.</p>
+          </div>
         </div>
 
         {/* Override All */}
@@ -251,8 +439,11 @@ export function DocumentUploadSection() {
                 <SelectValue placeholder="Override all subcategories..." />
               </SelectTrigger>
               <SelectContent>
-                {DOCUMENT_SUBCATEGORIES.map(sub => (
-                  <SelectItem key={sub.slug} value={sub.slug}>{sub.name}</SelectItem>
+                {currentSubcategories.map(sub => (
+                  <SelectItem key={sub.slug} value={sub.slug}>
+                    {sub.name}
+                    {sub.isNew && <Badge variant="secondary" className="ml-2 text-[10px] py-0">New</Badge>}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -277,7 +468,7 @@ export function DocumentUploadSection() {
 
         {/* Document Queue */}
         {documents.length > 0 && (
-          <ScrollArea className="h-48 border rounded-lg">
+          <ScrollArea className="h-64 border rounded-lg">
             <div className="p-2 space-y-2">
               {documents.map(doc => (
                 <div 
@@ -295,10 +486,18 @@ export function DocumentUploadSection() {
                     <FileText className={`w-4 h-4 shrink-0 ${getFileIcon(doc.file.name)}`} />
                   )}
 
-                  {/* Filename */}
-                  <span className="text-sm truncate flex-1 max-w-[150px]" title={doc.file.name}>
-                    {doc.file.name}
-                  </span>
+                  {/* Filename & Folder Path */}
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm truncate block max-w-[200px]" title={doc.file.name}>
+                      {doc.file.name}
+                    </span>
+                    {doc.folderPath && (
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <Folder className="w-3 h-3" />
+                        {doc.folderPath.split('/').slice(0, -1).join(' / ')}
+                      </span>
+                    )}
+                  </div>
 
                   {/* Subcategory Selector */}
                   {doc.status === 'pending' ? (
@@ -306,18 +505,21 @@ export function DocumentUploadSection() {
                       value={doc.subcategory} 
                       onValueChange={(v) => updateSubcategory(doc.id, v)}
                     >
-                      <SelectTrigger className="h-7 w-40">
+                      <SelectTrigger className="h-7 w-44">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {DOCUMENT_SUBCATEGORIES.map(sub => (
-                          <SelectItem key={sub.slug} value={sub.slug}>{sub.name}</SelectItem>
+                        {currentSubcategories.map(sub => (
+                          <SelectItem key={sub.slug} value={sub.slug}>
+                            {sub.name}
+                            {sub.isNew && <Badge variant="secondary" className="ml-1 text-[10px] py-0">New</Badge>}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   ) : (
                     <Badge variant="secondary" className="text-xs">
-                      {DOCUMENT_SUBCATEGORIES.find(s => s.slug === doc.subcategory)?.name || doc.subcategory}
+                      {doc.subcategoryName}
                     </Badge>
                   )}
 
