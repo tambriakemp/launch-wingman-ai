@@ -5,7 +5,7 @@ import { VaultCsvUploader } from "@/components/admin/VaultCsvUploader";
 import { R2SyncCard } from "@/components/admin/R2SyncCard";
 import { RefetchThumbnailsCard } from "@/components/admin/RefetchThumbnailsCard";
 import { CanvaBulkImportCard } from "@/components/admin/CanvaBulkImportCard";
-
+import { BulkPhotoUploadCard } from "@/components/admin/BulkPhotoUploadCard";
 const AdminContentVault = () => {
   const navigate = useNavigate();
 
@@ -35,6 +35,7 @@ const AdminContentVault = () => {
         </div>
 
         <div className="space-y-6">
+          <BulkPhotoUploadCard />
           <CanvaBulkImportCard />
           <R2SyncCard />
           <RefetchThumbnailsCard />
