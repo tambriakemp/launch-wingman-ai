@@ -259,6 +259,14 @@ export function R2ManagementCard() {
   const [isUploadingPresets, setIsUploadingPresets] = useState(false);
   const [isPresetDragging, setIsPresetDragging] = useState(false);
   const presetInputRef = useRef<HTMLInputElement>(null);
+  const shouldStopPresetsRef = useRef(false);
+
+  // ========================
+  // Stop Controls State
+  // ========================
+  const shouldStopUploadRef = useRef(false);
+  const [isUploadStopped, setIsUploadStopped] = useState(false);
+  const [isPresetStopped, setIsPresetStopped] = useState(false);
 
   const isProcessing = isSyncing || isGeneratingThumbnails || isRenaming || isUploading || isRenamingPhotos || isUploadingPresets;
 
@@ -450,12 +458,20 @@ export function R2ManagementCard() {
     toast.success(`Applied "${overrideAll}" to all photos`);
   }, [overrideAll]);
 
+  const stopUploading = useCallback(() => {
+    shouldStopUploadRef.current = true;
+    setIsUploadStopped(true);
+    toast.info("Stopping upload after current batch...");
+  }, []);
+
   const startUploading = useCallback(async () => {
     if (photos.length === 0) return;
 
     setIsUploading(true);
     setIsUploadPaused(false);
+    setIsUploadStopped(false);
     isUploadPausedRef.current = false;
+    shouldStopUploadRef.current = false;
 
     const sessionId = `session-${Date.now()}`;
     const completedIds: string[] = [];
@@ -475,9 +491,17 @@ export function R2ManagementCard() {
       }
 
       for (let batchIndex = 0; batchIndex < batches.length; batchIndex += CONCURRENT_BATCHES) {
-        while (isUploadPausedRef.current) {
+        // Check for stop
+        if (shouldStopUploadRef.current) {
+          toast.info("Upload stopped by user");
+          break;
+        }
+
+        while (isUploadPausedRef.current && !shouldStopUploadRef.current) {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
+
+        if (shouldStopUploadRef.current) break;
 
         const currentBatches = batches.slice(batchIndex, batchIndex + CONCURRENT_BATCHES);
         
@@ -537,17 +561,21 @@ export function R2ManagementCard() {
         localStorage.setItem(UPLOAD_STORAGE_KEY, JSON.stringify(progressData));
       }
 
-      if (failedIds.length === 0) {
-        toast.success(`Successfully uploaded ${completedIds.length} photos!`);
-        localStorage.removeItem(UPLOAD_STORAGE_KEY);
-      } else {
-        toast.warning(`Uploaded ${completedIds.length} photos, ${failedIds.length} failed`);
+      if (!shouldStopUploadRef.current) {
+        if (failedIds.length === 0) {
+          toast.success(`Successfully uploaded ${completedIds.length} photos!`);
+          localStorage.removeItem(UPLOAD_STORAGE_KEY);
+        } else {
+          toast.warning(`Uploaded ${completedIds.length} photos, ${failedIds.length} failed`);
+        }
       }
     } catch (err) {
       console.error("Processing error:", err);
       toast.error("An error occurred during processing");
     } finally {
       setIsUploading(false);
+      shouldStopUploadRef.current = false;
+      setIsUploadStopped(false);
     }
   }, [photos]);
 
@@ -951,11 +979,19 @@ export function R2ManagementCard() {
     ));
   }, []);
 
+  const stopPresetUpload = useCallback(() => {
+    shouldStopPresetsRef.current = true;
+    setIsPresetStopped(true);
+    toast.info("Stopping preset upload after current file...");
+  }, []);
+
   const startPresetUpload = useCallback(async () => {
     const pendingPresets = presets.filter(p => p.status === 'pending');
     if (pendingPresets.length === 0) return;
 
     setIsUploadingPresets(true);
+    setIsPresetStopped(false);
+    shouldStopPresetsRef.current = false;
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -969,6 +1005,12 @@ export function R2ManagementCard() {
       let failCount = 0;
 
       for (const preset of pendingPresets) {
+        // Check for stop
+        if (shouldStopPresetsRef.current) {
+          toast.info("Preset upload stopped by user");
+          break;
+        }
+
         setPresets(prev => prev.map(p => 
           p.id === preset.id ? { ...p, status: 'uploading' as const } : p
         ));
@@ -1005,17 +1047,21 @@ export function R2ManagementCard() {
         }
       }
 
-      if (successCount > 0) {
-        toast.success(`Uploaded ${successCount} preset(s) successfully!`);
-      }
-      if (failCount > 0) {
-        toast.warning(`${failCount} preset(s) failed to upload`);
+      if (!shouldStopPresetsRef.current) {
+        if (successCount > 0) {
+          toast.success(`Uploaded ${successCount} preset(s) successfully!`);
+        }
+        if (failCount > 0) {
+          toast.warning(`${failCount} preset(s) failed to upload`);
+        }
       }
     } catch (error: any) {
       console.error("Preset upload error:", error);
       toast.error(error.message || "Failed to upload presets");
     } finally {
       setIsUploadingPresets(false);
+      shouldStopPresetsRef.current = false;
+      setIsPresetStopped(false);
     }
   }, [presets]);
 
@@ -1273,9 +1319,14 @@ export function R2ManagementCard() {
                       )}
                     </>
                   ) : (
-                    <Button variant="outline" onClick={() => setIsUploadPaused(!isUploadPaused)} className="flex-1">
-                      {isUploadPaused ? <><Play className="w-4 h-4 mr-2" />Resume</> : <><Pause className="w-4 h-4 mr-2" />Pause</>}
-                    </Button>
+                    <div className="flex gap-2 w-full">
+                      <Button variant="outline" onClick={() => setIsUploadPaused(!isUploadPaused)} className="flex-1">
+                        {isUploadPaused ? <><Play className="w-4 h-4 mr-2" />Resume</> : <><Pause className="w-4 h-4 mr-2" />Pause</>}
+                      </Button>
+                      <Button variant="destructive" onClick={stopUploading} disabled={isUploadStopped}>
+                        <X className="w-4 h-4 mr-2" />{isUploadStopped ? "Stopping..." : "Stop"}
+                      </Button>
+                    </div>
                   )}
                 </div>
               </>
