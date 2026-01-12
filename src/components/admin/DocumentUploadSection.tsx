@@ -88,12 +88,28 @@ function formatSubcategoryName(folderName: string): string {
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
-function extractFolderFromPath(path: string): string | null {
+// Extract all folder parts from path (excluding filename)
+function extractFullFolderPath(path: string): string[] {
   const parts = path.split('/');
   if (parts.length > 1) {
-    return parts[0];
+    return parts.slice(0, -1); // All parts except filename
   }
-  return null;
+  return [];
+}
+
+// Create slug from full folder path: ["Sales", "Contracts"] -> "sales-contracts"
+function folderPathToSlug(folders: string[]): string {
+  return folders
+    .map(f => folderNameToSlug(f))
+    .filter(s => s.length > 0)
+    .join('-');
+}
+
+// Create display name with hierarchy: ["Sales", "Contracts"] -> "Sales > Contracts"
+function formatFolderPathName(folders: string[]): string {
+  return folders
+    .map(f => formatSubcategoryName(f))
+    .join(' > ');
 }
 
 export function DocumentUploadSection() {
@@ -176,15 +192,17 @@ export function DocumentUploadSection() {
 
     const newDocuments: PendingDocument[] = fileArray.map(file => {
       const webkitPath = (file as any).webkitRelativePath || '';
-      const folderName = extractFolderFromPath(webkitPath);
+      const folderParts = extractFullFolderPath(webkitPath);
       
       let subcategorySlug = subcategories[0]?.slug || 'templates';
       let subcategoryName = subcategories[0]?.name || 'Business Templates';
       
-      if (folderName) {
-        foldersDetected.add(folderName);
-        subcategorySlug = folderNameToSlug(folderName);
-        subcategoryName = formatSubcategoryName(folderName);
+      if (folderParts.length > 0) {
+        // Track root folder for toast message
+        foldersDetected.add(folderParts[0]);
+        // Use full path for subcategory
+        subcategorySlug = folderPathToSlug(folderParts);
+        subcategoryName = formatFolderPathName(folderParts);
       }
 
       return {
@@ -201,7 +219,7 @@ export function DocumentUploadSection() {
     setDocuments(prev => [...prev, ...newDocuments]);
     
     if (foldersDetected.size > 0) {
-      toast.success(`Added ${fileArray.length} document(s) from ${foldersDetected.size} folder(s): ${Array.from(foldersDetected).join(', ')}`);
+      toast.success(`Added ${fileArray.length} document(s) from ${foldersDetected.size} root folder(s)`);
     } else {
       toast.success(`Added ${fileArray.length} document(s) to queue`);
     }
@@ -426,8 +444,8 @@ export function DocumentUploadSection() {
         <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground">
           <Folder className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
           <div>
-            <p className="font-medium text-foreground">Folder Upload</p>
-            <p>When uploading a folder, the folder name becomes the subcategory. New subcategories are created automatically.</p>
+            <p className="font-medium text-foreground">Multi-Level Folder Support</p>
+            <p>Full folder paths become subcategory names. Example: <span className="font-mono text-[10px]">Sales/Contracts</span> → "Sales &gt; Contracts"</p>
           </div>
         </div>
 
