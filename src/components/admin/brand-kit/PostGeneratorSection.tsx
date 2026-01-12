@@ -99,41 +99,23 @@ export const PostGeneratorSection = ({
   // Generate content preview (without image)
   const previewMutation = useMutation({
     mutationFn: async () => {
-      // Use OpenAI to generate content preview
-      const response = await supabase.functions.invoke('task-ai-assist', {
+      // Use generate-social-post edge function in preview mode
+      const response = await supabase.functions.invoke('generate-social-post', {
         headers: { Authorization: `Bearer ${session?.access_token}` },
         body: {
-          prompt: `Generate social media post content for Launchely about: "${topic}"
-          
-Platform: ${platform}
-Post type: ${templateType}
-Brand voice: Calm, supportive, growth-oriented. Never salesy or urgent.
-
-Return ONLY valid JSON:
-{
-  "headline": "Bold 4-7 word headline",
-  "subheadline": "Supporting text 10-20 words",
-  "bullets": ["Point 1", "Point 2", "Point 3"],
-  "cta": "Call to action"
-}`,
-          context: 'social_post_content'
+          topic,
+          platform,
+          templateType,
+          carouselSlides: carouselSlides > 1 ? carouselSlides : undefined,
+          previewOnly: true // Only generate content, not images
         }
       });
 
       if (response.error) throw response.error;
-      
-      // Parse the response
-      const content = response.data?.response || response.data;
-      if (typeof content === 'string') {
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
-        }
-      }
-      return content;
+      return response.data;
     },
     onSuccess: (data) => {
-      setPreviewContent(data);
+      setPreviewContent(data.content || data);
       setGenerationStep('preview');
     },
     onError: (error) => {

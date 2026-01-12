@@ -115,6 +115,7 @@ interface GenerateRequest {
   templateType: string;
   templateId?: string;
   carouselSlides?: number;
+  previewOnly?: boolean;
   customContent?: {
     headline?: string;
     subheadline?: string;
@@ -149,9 +150,9 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { topic, platform, templateType, templateId, carouselSlides, customContent }: GenerateRequest = await req.json();
+    const { topic, platform, templateType, templateId, carouselSlides, previewOnly, customContent }: GenerateRequest = await req.json();
 
-    console.log('Generating social post:', { topic, platform, templateType, carouselSlides });
+    console.log('Generating social post:', { topic, platform, templateType, carouselSlides, previewOnly });
 
     // Fetch brand settings
     const { data: brandSettings, error: brandError } = await supabase
@@ -188,11 +189,57 @@ serve(async (req) => {
       filePath: string;
     }> = [];
 
+    // Preview-only mode: just generate content for all slides without images
+    if (previewOnly) {
+      const previewContent: { headline?: string; subheadline?: string; bullets?: string[]; cta?: string } = {};
+      
+      const slideType = templateType;
+      const contentPrompt = buildContentPrompt(topic, platform, slideType, 1, 1, brandSettings);
+      
+      console.log('Generating content preview with Lovable AI');
+      
+      const contentResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${lovableApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: 'You are a social media content writer for Launchely, a calm and supportive brand that helps creators launch digital products. Write concise, impactful content. Never be salesy or use urgency tactics. Be encouraging and helpful. Always respond with valid JSON only.' },
+            { role: 'user', content: contentPrompt }
+          ],
+          max_tokens: 500,
+        }),
+      });
+
+      if (!contentResponse.ok) {
+        const errorText = await contentResponse.text();
+        console.error('Content preview error:', errorText);
+        throw new Error('Failed to generate content preview');
+      }
+
+      const contentData = await contentResponse.json();
+      const contentText = contentData.choices?.[0]?.message?.content || '';
+      
+      // Parse JSON from response
+      const jsonMatch = contentText.match(/\{[\s\S]*\}/);
+      const parsedContent = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+      
+      console.log('Generated preview content:', parsedContent);
+      
+      return new Response(
+        JSON.stringify({ content: parsedContent }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Generate content and images for each slide
     for (let slideNum = 1; slideNum <= slidesToGenerate; slideNum++) {
       console.log(`Generating slide ${slideNum} of ${slidesToGenerate}`);
       
-      // Step 1: Generate text content using GPT
+      // Step 1: Generate text content using Lovable AI
       let slideContent = customContent;
       
       if (!customContent || slideNum > 1) {
@@ -202,33 +249,36 @@ serve(async (req) => {
         
         const contentPrompt = buildContentPrompt(topic, platform, slideType, slideNum, slidesToGenerate, brandSettings);
         
-        console.log('Generating content with prompt');
+        console.log('Generating content with Lovable AI');
         
-        const contentResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        const contentResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+            'Authorization': `Bearer ${lovableApiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: 'google/gemini-2.5-flash',
             messages: [
-              { role: 'system', content: 'You are a social media content writer for Launchely, a calm and supportive brand that helps creators launch digital products. Write concise, impactful content. Never be salesy or use urgency tactics. Be encouraging and helpful.' },
+              { role: 'system', content: 'You are a social media content writer for Launchely, a calm and supportive brand that helps creators launch digital products. Write concise, impactful content. Never be salesy or use urgency tactics. Be encouraging and helpful. Always respond with valid JSON only.' },
               { role: 'user', content: contentPrompt }
             ],
-            response_format: { type: 'json_object' },
             max_tokens: 500,
           }),
         });
 
         if (!contentResponse.ok) {
           const errorText = await contentResponse.text();
-          console.error('OpenAI content error:', errorText);
+          console.error('Content generation error:', errorText);
           throw new Error('Failed to generate content');
         }
 
         const contentData = await contentResponse.json();
-        slideContent = JSON.parse(contentData.choices[0].message.content);
+        const contentText = contentData.choices?.[0]?.message?.content || '';
+        
+        // Parse JSON from response
+        const jsonMatch = contentText.match(/\{[\s\S]*\}/);
+        slideContent = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
         console.log('Generated content:', slideContent);
       }
 
