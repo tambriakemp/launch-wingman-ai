@@ -185,3 +185,6 @@ verify_jwt = false
 
 [functions.vault-preview]
 verify_jwt = false
+
+[functions.convert-document-to-pdf]
+verify_jwt = false
