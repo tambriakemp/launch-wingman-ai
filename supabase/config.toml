@@ -146,3 +146,6 @@ verify_jwt = false
 
 [functions.bulk-import-canva]
 verify_jwt = false
+
+[functions.validate-coupon]
+verify_jwt = false
