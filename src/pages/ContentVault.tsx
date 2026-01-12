@@ -20,6 +20,7 @@ interface Category {
   cover_image_url: string | null;
   position: number;
   resource_count?: number;
+  first_resource_thumbnail?: string | null;
 }
 
 const ContentVault = () => {
@@ -49,10 +50,11 @@ const ContentVault = () => {
       
       if (subsError) throw subsError;
 
-      // Fetch resource counts per subcategory
-      const { data: resourceCounts, error: rcError } = await supabase
+      // Fetch resources with thumbnails (ordered by position to get first resource)
+      const { data: resources, error: rcError } = await supabase
         .from('content_vault_resources')
-        .select('subcategory_id');
+        .select('subcategory_id, cover_image_url, preview_url, position')
+        .order('position', { ascending: true });
       
       if (rcError) throw rcError;
 
@@ -60,18 +62,28 @@ const ContentVault = () => {
       const subToCat = new Map<string, string>();
       subs?.forEach(s => subToCat.set(s.id, s.category_id));
 
-      // Count resources per category
+      // Count resources per category and find first resource thumbnail
       const countMap = new Map<string, number>();
-      resourceCounts?.forEach(r => {
+      const firstThumbnailMap = new Map<string, string>();
+      
+      resources?.forEach(r => {
         const catId = subToCat.get(r.subcategory_id);
         if (catId) {
           countMap.set(catId, (countMap.get(catId) || 0) + 1);
+          // Set first thumbnail if not already set (resources are ordered by position)
+          if (!firstThumbnailMap.has(catId)) {
+            const thumbnail = r.cover_image_url || r.preview_url;
+            if (thumbnail) {
+              firstThumbnailMap.set(catId, thumbnail);
+            }
+          }
         }
       });
 
       return cats.map(cat => ({
         ...cat,
         resource_count: countMap.get(cat.id) || 0,
+        first_resource_thumbnail: firstThumbnailMap.get(cat.id) || null,
       })) as Category[];
     },
     enabled: canAccessVault,
@@ -136,7 +148,7 @@ const ContentVault = () => {
                   key={category.id}
                   name={category.name}
                   description={category.description}
-                  coverImageUrl={category.cover_image_url || getVaultThumbnail(category.slug)}
+                  coverImageUrl={category.first_resource_thumbnail || category.cover_image_url || getVaultThumbnail(category.slug)}
                   resourceCount={category.resource_count}
                   onClick={() => handleCategoryClick(category.slug)}
                   showEditButton={hasAdminAccess}
