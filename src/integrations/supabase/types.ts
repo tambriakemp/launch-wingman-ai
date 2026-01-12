@@ -902,6 +902,56 @@ export type Database = {
           },
         ]
       }
+      generated_posts: {
+        Row: {
+          carousel_slides: Json | null
+          created_at: string
+          created_by: string | null
+          file_path: string
+          file_url: string
+          generated_content: Json
+          id: string
+          platform: string
+          status: string
+          template_id: string | null
+          topic: string
+        }
+        Insert: {
+          carousel_slides?: Json | null
+          created_at?: string
+          created_by?: string | null
+          file_path: string
+          file_url: string
+          generated_content?: Json
+          id?: string
+          platform: string
+          status?: string
+          template_id?: string | null
+          topic: string
+        }
+        Update: {
+          carousel_slides?: Json | null
+          created_at?: string
+          created_by?: string | null
+          file_path?: string
+          file_url?: string
+          generated_content?: Json
+          id?: string
+          platform?: string
+          status?: string
+          template_id?: string | null
+          topic?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_posts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "post_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       impersonation_logs: {
         Row: {
           action: string
@@ -1291,6 +1341,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      post_templates: {
+        Row: {
+          created_at: string
+          dimensions: Json
+          id: string
+          layout_description: string
+          name: string
+          platform: string
+          style_elements: Json | null
+          template_type: string
+        }
+        Insert: {
+          created_at?: string
+          dimensions?: Json
+          id?: string
+          layout_description: string
+          name: string
+          platform: string
+          style_elements?: Json | null
+          template_type: string
+        }
+        Update: {
+          created_at?: string
+          dimensions?: Json
+          id?: string
+          layout_description?: string
+          name?: string
+          platform?: string
+          style_elements?: Json | null
+          template_type?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
