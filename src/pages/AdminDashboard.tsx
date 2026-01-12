@@ -13,7 +13,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Package, Pencil, BookOpen, BarChart3, FileText, Sparkles, Bell, Headphones, Video } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Package, Pencil, BookOpen, BarChart3, FileText, Sparkles, Bell, Headphones, Video, Tag } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -44,6 +44,7 @@ import { UserProjectsDialog } from '@/components/admin/UserProjectsDialog';
 import { ExportUserDataDialog } from '@/components/admin/ExportUserDataDialog';
 import { MonitoringTab } from '@/components/admin/MonitoringTab';
 import { SupportTicketsTab } from '@/components/admin/SupportTicketsTab';
+import { CouponManagement } from '@/components/admin/CouponManagement';
 
 interface User {
   id: string;
@@ -633,6 +634,10 @@ const AdminDashboard = () => {
               <Headphones className="h-4 w-4" />
               <span className="hidden sm:inline">Support</span>
             </TabsTrigger>
+            <TabsTrigger value="coupons" className="gap-2">
+              <Tag className="h-4 w-4" />
+              <span className="hidden sm:inline">Coupons</span>
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -1104,6 +1109,11 @@ const AdminDashboard = () => {
           {/* Support Tab */}
           <TabsContent value="support" className="space-y-4 md:space-y-8">
             <SupportTicketsTab />
+          </TabsContent>
+
+          {/* Coupons Tab */}
+          <TabsContent value="coupons" className="space-y-4 md:space-y-8">
+            <CouponManagement />
           </TabsContent>
         </Tabs>
       </main>

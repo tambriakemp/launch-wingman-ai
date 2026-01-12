@@ -149,3 +149,9 @@ verify_jwt = false
 
 [functions.validate-coupon]
 verify_jwt = false
+
+[functions.admin-list-coupons]
+verify_jwt = false
+
+[functions.admin-manage-coupon]
+verify_jwt = false
