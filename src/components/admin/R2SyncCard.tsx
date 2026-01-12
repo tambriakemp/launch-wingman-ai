@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Cloud, RefreshCw, CheckCircle, AlertCircle, FileImage, FileVideo, Image, Trash2, Sparkles } from "lucide-react";
+import { Cloud, RefreshCw, CheckCircle, AlertCircle, FileImage, FileVideo, Image, Trash2, Sparkles, Pause, Play, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
@@ -25,6 +25,8 @@ interface ThumbnailProgress {
   total: number;
   generated: number;
   failed: number;
+  currentVideoTitle?: string;
+  startTime?: number;
 }
 
 interface RenameResult {
@@ -35,8 +37,17 @@ interface RenameResult {
   errors: string[];
 }
 
+interface SavedProgress {
+  processedIds: string[];
+  timestamp: number;
+  framePosition: FramePosition;
+  customTimestamp: number;
+}
+
 type FramePosition = 'beginning' | 'middle' | 'custom';
 type MediaType = 'all' | 'photos' | 'videos';
+
+const STORAGE_KEY = 'r2-thumbnail-progress';
 
 export const R2SyncCard = () => {
   const [isSyncing, setIsSyncing] = useState(false);
@@ -51,13 +62,56 @@ export const R2SyncCard = () => {
   const [cleanupOrphans, setCleanupOrphans] = useState(false);
   const [corsError, setCorsError] = useState<string | null>(null);
   const [previewOnly, setPreviewOnly] = useState(true);
+  
+  // New state for pause/resume functionality
+  const [isPaused, setIsPaused] = useState(false);
+  const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(null);
+  const [showKeepActiveWarning, setShowKeepActiveWarning] = useState(true);
+  
+  // Refs for async loop control
+  const isPausedRef = useRef(false);
+  const shouldStopRef = useRef(false);
+  const processedIdsRef = useRef<Set<string>>(new Set());
+
+  // Load saved progress on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as SavedProgress;
+        // Only show resume option if less than 24 hours old
+        const hoursSinceSaved = (Date.now() - parsed.timestamp) / (1000 * 60 * 60);
+        if (hoursSinceSaved < 24 && parsed.processedIds.length > 0) {
+          setSavedProgress(parsed);
+        } else {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  }, []);
+
+  // Visibility change detection
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && isGeneratingThumbnails && !isPaused) {
+        isPausedRef.current = true;
+        setIsPaused(true);
+        toast.warning("Thumbnail generation paused - tab is in background");
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isGeneratingThumbnails, isPaused]);
 
   const getSeekTime = (videoDuration?: number): number => {
     switch (framePosition) {
       case 'beginning':
-        return 0.5; // Half second in
+        return 0.5;
       case 'middle':
-        return videoDuration ? videoDuration / 2 : 10; // Middle of video, fallback to 10s
+        return videoDuration ? videoDuration / 2 : 10;
       case 'custom':
         return customTimestamp;
       default:
@@ -65,10 +119,51 @@ export const R2SyncCard = () => {
     }
   };
 
-  const generateVideoThumbnails = async () => {
+  const saveProgress = useCallback((processedIds: string[]) => {
+    const progress: SavedProgress = {
+      processedIds,
+      timestamp: Date.now(),
+      framePosition,
+      customTimestamp,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  }, [framePosition, customTimestamp]);
+
+  const clearSavedProgress = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY);
+    setSavedProgress(null);
+    processedIdsRef.current.clear();
+  }, []);
+
+  const resumeGeneration = useCallback(() => {
+    isPausedRef.current = false;
+    setIsPaused(false);
+    toast.success("Resuming thumbnail generation...");
+  }, []);
+
+  const stopGeneration = useCallback(() => {
+    shouldStopRef.current = true;
+    isPausedRef.current = false;
+    setIsPaused(false);
+    setIsGeneratingThumbnails(false);
+    toast.info("Thumbnail generation stopped");
+  }, []);
+
+  const generateVideoThumbnails = async (resumeFromSaved = false) => {
     setIsGeneratingThumbnails(true);
-    setThumbnailProgress({ current: 0, total: 0, generated: 0, failed: 0 });
+    setIsPaused(false);
+    isPausedRef.current = false;
+    shouldStopRef.current = false;
     setCorsError(null);
+
+    // Load processed IDs if resuming
+    if (resumeFromSaved && savedProgress) {
+      processedIdsRef.current = new Set(savedProgress.processedIds);
+      setFramePosition(savedProgress.framePosition);
+      setCustomTimestamp(savedProgress.customTimestamp);
+    } else {
+      processedIdsRef.current.clear();
+    }
 
     try {
       // Find video resources without cover images
@@ -84,12 +179,25 @@ export const R2SyncCard = () => {
         toast.info("No videos need thumbnails");
         setIsGeneratingThumbnails(false);
         setThumbnailProgress(null);
+        clearSavedProgress();
+        return;
+      }
+
+      // Filter out already processed videos if resuming
+      const videosToProcess = resumeFromSaved 
+        ? videos.filter(v => !processedIdsRef.current.has(v.id))
+        : videos;
+
+      if (videosToProcess.length === 0) {
+        toast.success("All videos already processed!");
+        setIsGeneratingThumbnails(false);
+        clearSavedProgress();
         return;
       }
 
       // Pre-flight CORS check on first video
       toast.info("Checking CORS configuration...");
-      const corsTest = await testVideoCORS(videos[0].resource_url);
+      const corsTest = await testVideoCORS(videosToProcess[0].resource_url);
       
       if (!corsTest.success) {
         setCorsError(corsTest.error || 'CORS not configured');
@@ -99,14 +207,39 @@ export const R2SyncCard = () => {
         return;
       }
 
-      setThumbnailProgress({ current: 0, total: videos.length, generated: 0, failed: 0 });
+      const alreadyProcessed = resumeFromSaved ? processedIdsRef.current.size : 0;
+      setThumbnailProgress({ 
+        current: alreadyProcessed, 
+        total: videos.length, 
+        generated: alreadyProcessed, 
+        failed: 0,
+        startTime: Date.now()
+      });
 
-      let generated = 0;
+      let generated = alreadyProcessed;
       let failed = 0;
 
-      for (let i = 0; i < videos.length; i++) {
-        const video = videos[i];
-        setThumbnailProgress(prev => prev ? { ...prev, current: i + 1 } : null);
+      for (let i = 0; i < videosToProcess.length; i++) {
+        // Check if we should stop
+        if (shouldStopRef.current) {
+          break;
+        }
+
+        // Wait while paused
+        while (isPausedRef.current && !shouldStopRef.current) {
+          await new Promise(r => setTimeout(r, 500));
+        }
+
+        if (shouldStopRef.current) {
+          break;
+        }
+
+        const video = videosToProcess[i];
+        setThumbnailProgress(prev => prev ? { 
+          ...prev, 
+          current: alreadyProcessed + i + 1,
+          currentVideoTitle: video.title
+        } : null);
 
         try {
           // Extract thumbnail from video with selected frame position
@@ -138,16 +271,26 @@ export const R2SyncCard = () => {
           if (updateError) throw updateError;
 
           generated++;
+          processedIdsRef.current.add(video.id);
+          saveProgress(Array.from(processedIdsRef.current));
           setThumbnailProgress(prev => prev ? { ...prev, generated } : null);
         } catch (err) {
           console.error(`Failed to generate thumbnail for ${video.title}:`, err);
           failed++;
           setThumbnailProgress(prev => prev ? { ...prev, failed } : null);
         }
+
+        // Small delay between videos to prevent browser throttling
+        if (i < videosToProcess.length - 1 && !shouldStopRef.current) {
+          await new Promise(r => setTimeout(r, 150));
+        }
       }
 
-      if (generated > 0) {
-        toast.success(`Generated ${generated} video thumbnail${generated > 1 ? 's' : ''}`);
+      // Clear saved progress on completion
+      clearSavedProgress();
+
+      if (generated > alreadyProcessed) {
+        toast.success(`Generated ${generated - alreadyProcessed} video thumbnail${generated - alreadyProcessed > 1 ? 's' : ''}`);
       }
       if (failed > 0) {
         toast.warning(`Failed to generate ${failed} thumbnail${failed > 1 ? 's' : ''}`);
@@ -157,6 +300,9 @@ export const R2SyncCard = () => {
       toast.error(error.message || "Failed to generate thumbnails");
     } finally {
       setIsGeneratingThumbnails(false);
+      setIsPaused(false);
+      isPausedRef.current = false;
+      shouldStopRef.current = false;
     }
   };
 
@@ -315,6 +461,20 @@ export const R2SyncCard = () => {
 
   const isProcessing = isSyncing || isGeneratingThumbnails || isRenaming;
 
+  // Calculate estimated time remaining
+  const getEstimatedTimeRemaining = () => {
+    if (!thumbnailProgress || !thumbnailProgress.startTime || thumbnailProgress.current === 0) {
+      return null;
+    }
+    const elapsed = Date.now() - thumbnailProgress.startTime;
+    const avgTimePerVideo = elapsed / thumbnailProgress.generated;
+    const remaining = thumbnailProgress.total - thumbnailProgress.current;
+    const estimatedMs = remaining * avgTimePerVideo;
+    const minutes = Math.floor(estimatedMs / 60000);
+    const seconds = Math.floor((estimatedMs % 60000) / 1000);
+    return minutes > 0 ? `~${minutes}m ${seconds}s remaining` : `~${seconds}s remaining`;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -344,6 +504,57 @@ export const R2SyncCard = () => {
             Files are organized by folder structure. Folder names become subcategories.
           </p>
         </div>
+
+        {/* Resume Previous Session Banner */}
+        {savedProgress && !isGeneratingThumbnails && (
+          <Alert className="border-blue-500/50 bg-blue-500/10">
+            <Info className="h-4 w-4 text-blue-500" />
+            <AlertTitle className="text-blue-500">Resume Previous Session</AlertTitle>
+            <AlertDescription className="space-y-2">
+              <p className="text-sm">
+                You have {savedProgress.processedIds.length} videos already processed from a previous session.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => generateVideoThumbnails(true)}
+                  disabled={isProcessing}
+                >
+                  <Play className="w-3 h-3 mr-1" />
+                  Resume
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={clearSavedProgress}
+                >
+                  Start Fresh
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Keep Tab Active Warning */}
+        {showKeepActiveWarning && mediaType !== 'photos' && !isGeneratingThumbnails && (
+          <Alert className="border-amber-500/50 bg-amber-500/10">
+            <Info className="h-4 w-4 text-amber-500" />
+            <AlertTitle className="text-amber-600 dark:text-amber-400">Keep Tab Active</AlertTitle>
+            <AlertDescription className="text-sm">
+              Video thumbnail generation requires this browser tab to stay active. 
+              If you switch tabs, processing will pause automatically and resume when you return.
+              <Button
+                variant="link"
+                size="sm"
+                className="p-0 h-auto ml-2 text-muted-foreground"
+                onClick={() => setShowKeepActiveWarning(false)}
+              >
+                Dismiss
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="space-y-3 p-3 bg-muted/30 rounded-lg">
           <div className="space-y-2">
@@ -440,7 +651,7 @@ export const R2SyncCard = () => {
           </Button>
           {mediaType !== 'photos' && (
             <Button 
-              onClick={generateVideoThumbnails} 
+              onClick={() => generateVideoThumbnails(false)} 
               disabled={isProcessing}
               variant="outline"
             >
@@ -480,19 +691,65 @@ export const R2SyncCard = () => {
           </Alert>
         )}
 
-        {isGeneratingThumbnails && thumbnailProgress && (
+        {/* Paused Warning Banner */}
+        {isPaused && isGeneratingThumbnails && (
+          <Alert className="border-amber-500/50 bg-amber-500/10">
+            <Pause className="h-4 w-4 text-amber-500" />
+            <AlertTitle className="text-amber-600 dark:text-amber-400">Generation Paused</AlertTitle>
+            <AlertDescription className="space-y-2">
+              <p className="text-sm">
+                Thumbnail generation is paused because the tab was in the background.
+                Progress has been saved ({thumbnailProgress?.generated || 0} of {thumbnailProgress?.total || 0} completed).
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={resumeGeneration}
+                  className="bg-amber-500 hover:bg-amber-600 text-white"
+                >
+                  <Play className="w-3 h-3 mr-1" />
+                  Resume
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={stopGeneration}
+                >
+                  Stop
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {isGeneratingThumbnails && thumbnailProgress && !isPaused && (
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Generating thumbnails...</span>
+              <span className="truncate max-w-[200px]">
+                {thumbnailProgress.currentVideoTitle 
+                  ? `Processing: ${thumbnailProgress.currentVideoTitle}` 
+                  : 'Generating thumbnails...'}
+              </span>
               <span>{thumbnailProgress.current}/{thumbnailProgress.total}</span>
             </div>
             <Progress value={(thumbnailProgress.current / thumbnailProgress.total) * 100} />
-            <div className="flex gap-4 text-xs text-muted-foreground">
-              <span className="text-green-500">✓ {thumbnailProgress.generated} generated</span>
-              {thumbnailProgress.failed > 0 && (
-                <span className="text-red-500">✗ {thumbnailProgress.failed} failed</span>
-              )}
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <div className="flex gap-4">
+                <span className="text-green-500">✓ {thumbnailProgress.generated} generated</span>
+                {thumbnailProgress.failed > 0 && (
+                  <span className="text-red-500">✗ {thumbnailProgress.failed} failed</span>
+                )}
+              </div>
+              <span>{getEstimatedTimeRemaining()}</span>
             </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={stopGeneration}
+              className="w-full text-muted-foreground"
+            >
+              Stop Generation
+            </Button>
           </div>
         )}
 
