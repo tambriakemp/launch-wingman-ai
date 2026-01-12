@@ -188,10 +188,10 @@ export const ResourceLightbox = ({
               className="max-w-full max-h-full object-contain"
             />
           ) : isPdf(currentResource.resource_url) ? (
-            // Embed PDF viewer for PDFs
+            // Embed PDF viewer for PDFs using vault-preview for inline display
             <div className="w-full h-full max-w-4xl">
               <iframe
-                src={currentResource.resource_url}
+                src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vault-preview?url=${encodeURIComponent(currentResource.resource_url)}`}
                 className="w-full h-full rounded-lg bg-white"
                 title={currentResource.title}
               />

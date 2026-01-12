@@ -435,6 +435,27 @@ Deno.serve(async (req) => {
       console.log(`[UPLOAD-DOCUMENT] Created subcategory: ${displayName} (id: ${newSubcat?.id})`);
     }
 
+    // Check for duplicate by title in same subcategory
+    const { data: existingResource } = await supabase
+      .from("content_vault_resources")
+      .select("id, title")
+      .eq("subcategory_id", subcategoryData.id)
+      .eq("title", docTitle)
+      .maybeSingle();
+
+    if (existingResource) {
+      console.log(`[UPLOAD-DOCUMENT] Duplicate found: "${docTitle}" already exists in subcategory`);
+      return new Response(
+        JSON.stringify({ 
+          skipped: true, 
+          reason: 'duplicate', 
+          title: docTitle,
+          existingId: existingResource.id 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Get max position
     const { data: maxPosData } = await supabase
       .from("content_vault_resources")

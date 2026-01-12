@@ -224,10 +224,10 @@ const ContentVaultCategory = () => {
       return;
     }
     
-    // Check if it's a media file that can be shown in lightbox
-    const isMedia = /\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|mov)$/i.test(resource.resource_url);
+    // Check if it's a media file or document that can be shown in lightbox
+    const isMediaOrDocument = /\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|mov|pdf|docx|doc|rtf)$/i.test(resource.resource_url);
     
-    if (isMedia) {
+    if (isMediaOrDocument) {
       setLightboxIndex(index);
     } else {
       // For non-media files (like Canva links), open in new tab

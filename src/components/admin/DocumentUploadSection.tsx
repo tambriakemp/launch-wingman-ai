@@ -26,7 +26,7 @@ interface PendingDocument {
   title: string;
   subcategory: string;
   subcategoryName: string;
-  status: 'pending' | 'uploading' | 'done' | 'error';
+  status: 'pending' | 'uploading' | 'done' | 'error' | 'skipped';
   error?: string;
   resultUrl?: string;
   folderPath?: string;
@@ -333,11 +333,20 @@ export function DocumentUploadSection() {
 
         if (error) throw error;
 
-        setDocuments(prev => prev.map(d => 
-          d.id === doc.id 
-            ? { ...d, status: 'done' as const, resultUrl: data.url } 
-            : d
-        ));
+        // Handle skipped duplicates
+        if (data.skipped) {
+          setDocuments(prev => prev.map(d => 
+            d.id === doc.id 
+              ? { ...d, status: 'skipped' as const, error: `Duplicate: "${data.title}" already exists` } 
+              : d
+          ));
+        } else {
+          setDocuments(prev => prev.map(d => 
+            d.id === doc.id 
+              ? { ...d, status: 'done' as const, resultUrl: data.url } 
+              : d
+          ));
+        }
       } catch (err) {
         console.error(`Upload failed for ${doc.file.name}:`, err);
         setDocuments(prev => prev.map(d => 
@@ -350,9 +359,15 @@ export function DocumentUploadSection() {
 
     setIsUploading(false);
     
-    const successCount = pendingDocs.length - documents.filter(d => d.status === 'error').length;
-    if (successCount > 0) {
-      toast.success(`Uploaded ${successCount} document(s) to Content Vault`);
+    const updatedDocs = documents.filter(d => pendingDocs.some(p => p.id === d.id));
+    const successCount = updatedDocs.filter(d => d.status === 'done').length;
+    const skippedCount = updatedDocs.filter(d => d.status === 'skipped').length;
+    
+    if (successCount > 0 || skippedCount > 0) {
+      const messages = [];
+      if (successCount > 0) messages.push(`${successCount} uploaded`);
+      if (skippedCount > 0) messages.push(`${skippedCount} skipped (duplicates)`);
+      toast.success(`Documents: ${messages.join(', ')}`);
     }
   }, [documents]);
 
@@ -446,6 +461,7 @@ export function DocumentUploadSection() {
           <div>
             <p className="font-medium text-foreground">Multi-Level Folder Support</p>
             <p>Full folder paths become subcategory names. Example: <span className="font-mono text-[10px]">Sales/Contracts</span> → "Sales &gt; Contracts"</p>
+            <p className="mt-1 text-muted-foreground/80">💡 Drag & drop multiple folders at once. Duplicates are automatically skipped.</p>
           </div>
         </div>
 

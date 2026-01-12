@@ -182,3 +182,6 @@ verify_jwt = false
 
 [functions.upload-document-to-r2]
 verify_jwt = false
+
+[functions.vault-preview]
+verify_jwt = false
