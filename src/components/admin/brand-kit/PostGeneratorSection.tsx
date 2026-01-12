@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { PostTemplateCard } from './PostTemplateCard';
 import { PostContentEditor } from './PostContentEditor';
+import { BackgroundVariant } from './PostPreview';
 
 interface BrandSettings {
   id: string;
@@ -81,6 +82,7 @@ export const PostGeneratorSection = ({
   const [generationStep, setGenerationStep] = useState<'input' | 'preview' | 'generating' | 'complete'>('input');
   const [previewContent, setPreviewContent] = useState<GeneratedContent | null>(null);
   const [generatedSlides, setGeneratedSlides] = useState<any[]>([]);
+  const [bgVariant, setBgVariant] = useState<BackgroundVariant>('dark');
 
   // Fetch templates
   const { data: templates } = useQuery({
@@ -316,6 +318,8 @@ export const PostGeneratorSection = ({
           templateType={templateType}
           platform={platform}
           carouselSlides={carouselSlides}
+          bgVariant={bgVariant}
+          onBgVariantChange={setBgVariant}
         />
       )}
 
