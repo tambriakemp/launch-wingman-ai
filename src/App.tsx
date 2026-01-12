@@ -22,6 +22,7 @@ import WhyStatementAssessment from "./pages/WhyStatementAssessment";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminContentVault from "./pages/AdminContentVault";
 import AdminDocs from "./pages/AdminDocs";
+import AdminVideoInstructions from "./pages/AdminVideoInstructions";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
@@ -368,6 +369,14 @@ const App = () => (
               element={
                 <ProtectedAdminRoute>
                   <AdminDocs />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/video-instructions"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminVideoInstructions />
                 </ProtectedAdminRoute>
               }
             />
