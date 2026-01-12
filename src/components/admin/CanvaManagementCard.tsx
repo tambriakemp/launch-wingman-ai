@@ -190,7 +190,7 @@ export function CanvaManagementCard() {
       return;
     }
 
-    const designsToImport = parsedDesigns.filter(d => d.templateUrl && !d.isDuplicate);
+    const designsToImport = parsedDesigns.filter(d => (d.templateUrl || d.previewUrl || d.editUrl) && !d.isDuplicate);
     const designsToUpdate = parsedDesigns.filter(d => d.isDuplicate && d.previewUrl);
 
     if (designsToImport.length === 0 && designsToUpdate.length === 0) {
@@ -251,7 +251,7 @@ export function CanvaManagementCard() {
     );
   };
 
-  const newDesignsCount = parsedDesigns.filter(d => !d.isDuplicate && d.templateUrl).length;
+  const newDesignsCount = parsedDesigns.filter(d => !d.isDuplicate && (d.templateUrl || d.previewUrl || d.editUrl)).length;
   const duplicatesCount = parsedDesigns.filter(d => d.isDuplicate).length;
   const updatableCount = parsedDesigns.filter(d => d.isDuplicate && d.previewUrl).length;
 
@@ -501,8 +501,12 @@ export function CanvaManagementCard() {
                               <Badge variant="secondary" className="text-xs">Exists</Badge>
                             ) : design.templateUrl ? (
                               <Badge className="text-xs bg-green-600">New</Badge>
+                            ) : design.previewUrl ? (
+                              <Badge className="text-xs bg-blue-600">Preview</Badge>
+                            ) : design.editUrl ? (
+                              <Badge className="text-xs bg-yellow-600">Edit</Badge>
                             ) : (
-                              <Badge variant="destructive" className="text-xs">No template</Badge>
+                              <Badge variant="destructive" className="text-xs">No link</Badge>
                             )}
                           </TableCell>
                         </TableRow>
