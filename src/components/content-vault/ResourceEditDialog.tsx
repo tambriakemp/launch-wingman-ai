@@ -274,7 +274,8 @@ export const ResourceEditDialog = ({
   const setAsCategoryThumbnail = useCallback(async () => {
     if (!resource) return;
     
-    const coverUrl = formData.cover_image_url;
+    // Use cover_image_url, or fall back to preview_url
+    const coverUrl = formData.cover_image_url || formData.preview_url;
     if (!coverUrl) {
       toast.error('No cover image to use as category thumbnail');
       return;
@@ -308,7 +309,7 @@ export const ResourceEditDialog = ({
     } finally {
       setIsSettingCategoryThumbnail(false);
     }
-  }, [resource, formData.cover_image_url, queryClient]);
+  }, [resource, formData.cover_image_url, formData.preview_url, queryClient]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -472,8 +473,8 @@ export const ResourceEditDialog = ({
               </Button>
             )}
 
-            {/* Use as category thumbnail button */}
-            {formData.cover_image_url && (
+            {/* Use as category thumbnail button - show if there's a cover image or preview URL */}
+            {(formData.cover_image_url || formData.preview_url) && (
               <Button
                 type="button"
                 variant="outline"
