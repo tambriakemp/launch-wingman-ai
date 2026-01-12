@@ -1,7 +1,6 @@
-import { Search, X } from "lucide-react";
+import { Search, X, Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -28,6 +27,13 @@ interface VaultFiltersProps {
   onTagsChange: (tags: string[]) => void;
 }
 
+// Format tag: remove hyphens and capitalize first letter of each word
+const formatTagName = (tag: string): string => {
+  return tag
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
 export const VaultFilters = ({
   subcategories,
   selectedSubcategory,
@@ -38,12 +44,16 @@ export const VaultFilters = ({
   selectedTags,
   onTagsChange,
 }: VaultFiltersProps) => {
-  const toggleTag = (tag: string) => {
-    if (selectedTags.includes(tag)) {
-      onTagsChange(selectedTags.filter(t => t !== tag));
-    } else {
-      onTagsChange([...selectedTags, tag]);
+  const handleTagChange = (value: string) => {
+    if (value === "all") {
+      onTagsChange([]);
+    } else if (!selectedTags.includes(value)) {
+      onTagsChange([...selectedTags, value]);
     }
+  };
+
+  const removeTag = (tag: string) => {
+    onTagsChange(selectedTags.filter(t => t !== tag));
   };
 
   const clearFilters = () => {
@@ -79,6 +89,33 @@ export const VaultFilters = ({
           </Select>
         )}
 
+        {/* Tags Filter Dropdown */}
+        {allTags.length > 0 && (
+          <Select value="" onValueChange={handleTagChange}>
+            <SelectTrigger className="w-full sm:w-48">
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-muted-foreground" />
+                <span>{selectedTags.length > 0 ? `${selectedTags.length} tag(s)` : "Filter by Tag"}</span>
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Clear Tags</SelectItem>
+              {[...allTags]
+                .sort((a, b) => formatTagName(a).localeCompare(formatTagName(b)))
+                .map((tag) => (
+                  <SelectItem 
+                    key={tag} 
+                    value={tag}
+                    disabled={selectedTags.includes(tag)}
+                  >
+                    {formatTagName(tag)}
+                    {selectedTags.includes(tag) && " ✓"}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        )}
+
         {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -99,18 +136,20 @@ export const VaultFilters = ({
         )}
       </div>
 
-      {/* Tags */}
-      {allTags.length > 0 && (
+      {/* Selected Tags Display */}
+      {selectedTags.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {allTags.map((tag) => (
-            <Badge
+          {selectedTags.map((tag) => (
+            <Button
               key={tag}
-              variant={selectedTags.includes(tag) ? "default" : "outline"}
-              className="cursor-pointer transition-colors"
-              onClick={() => toggleTag(tag)}
+              variant="secondary"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => removeTag(tag)}
             >
-              {tag}
-            </Badge>
+              {formatTagName(tag)}
+              <X className="w-3 h-3 ml-1" />
+            </Button>
           ))}
         </div>
       )}
