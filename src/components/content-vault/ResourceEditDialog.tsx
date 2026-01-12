@@ -270,14 +270,19 @@ export const ResourceEditDialog = ({
     }
   }, [resource, formData.cover_image_url]);
 
-  // Set as category thumbnail
+  // Set as category thumbnail (controls the main Content Vault category card image)
   const setAsCategoryThumbnail = useCallback(async () => {
     if (!resource) return;
-    
-    // Use cover_image_url, or fall back to preview_url
-    const coverUrl = formData.cover_image_url || formData.preview_url;
-    if (!coverUrl) {
-      toast.error('No cover image to use as category thumbnail');
+
+    const candidateUrl =
+      formData.cover_image_url ||
+      formData.preview_url ||
+      ((formData.resource_type === "image" || formData.resource_type === "photo")
+        ? formData.resource_url
+        : "");
+
+    if (!candidateUrl) {
+      toast.error("Add a cover image (or preview URL) to set a category thumbnail");
       return;
     }
 
@@ -286,30 +291,32 @@ export const ResourceEditDialog = ({
     try {
       // First, get the category_id from the subcategory
       const { data: subcategory, error: subError } = await supabase
-        .from('content_vault_subcategories')
-        .select('category_id')
-        .eq('id', resource.subcategory_id)
+        .from("content_vault_subcategories")
+        .select("category_id")
+        .eq("id", resource.subcategory_id)
         .single();
 
       if (subError) throw subError;
 
       // Update the category's cover_image_url
       const { error: updateError } = await supabase
-        .from('content_vault_categories')
-        .update({ cover_image_url: coverUrl })
-        .eq('id', subcategory.category_id);
+        .from("content_vault_categories")
+        .update({ cover_image_url: candidateUrl })
+        .eq("id", subcategory.category_id);
 
       if (updateError) throw updateError;
 
-      queryClient.invalidateQueries({ queryKey: ['content-vault-categories-with-counts'] });
-      toast.success('Category thumbnail updated!');
+      queryClient.invalidateQueries({
+        queryKey: ["content-vault-categories-with-counts"],
+      });
+      toast.success("Category thumbnail updated!");
     } catch (error: any) {
-      console.error('Error setting category thumbnail:', error);
-      toast.error(error.message || 'Failed to set category thumbnail');
+      console.error("Error setting category thumbnail:", error);
+      toast.error(error.message || "Failed to set category thumbnail");
     } finally {
       setIsSettingCategoryThumbnail(false);
     }
-  }, [resource, formData.cover_image_url, formData.preview_url, queryClient]);
+  }, [resource, formData.cover_image_url, formData.preview_url, formData.resource_type, formData.resource_url, queryClient]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -357,6 +364,11 @@ export const ResourceEditDialog = ({
 
   const isCanvaPreviewUrl = formData.preview_url?.includes('canva.com');
   const isVideoResource = /\.(mp4|mov|webm|avi)$/i.test(formData.resource_url) || formData.resource_type === 'video';
+  const categoryThumbnailCandidateUrl =
+    formData.cover_image_url ||
+    formData.preview_url ||
+    ((formData.resource_type === 'image' || formData.resource_type === 'photo') ? formData.resource_url : '');
+  const canSetCategoryThumbnail = Boolean(categoryThumbnailCandidateUrl);
   const isProcessing = isUploading || isFetchingThumbnail || isGeneratingVideoThumbnail || isRenamingWithAI || isSettingCategoryThumbnail;
 
   return (
@@ -473,28 +485,36 @@ export const ResourceEditDialog = ({
               </Button>
             )}
 
-            {/* Use as category thumbnail button - show if there's a cover image or preview URL */}
-            {(formData.cover_image_url || formData.preview_url) && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={setAsCategoryThumbnail}
-                disabled={isProcessing}
-              >
-                {isSettingCategoryThumbnail ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Setting...
-                  </>
-                ) : (
-                  <>
-                    <Star className="h-4 w-4 mr-2" />
-                    Use as Category Thumbnail
-                  </>
-                )}
-              </Button>
+            {/* Use as category thumbnail button */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={setAsCategoryThumbnail}
+              disabled={isProcessing || !canSetCategoryThumbnail}
+              title={
+                canSetCategoryThumbnail
+                  ? "Use this resource as the main category thumbnail"
+                  : "Add a cover image (or ensure this is an image resource) to enable"
+              }
+            >
+              {isSettingCategoryThumbnail ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Setting...
+                </>
+              ) : (
+                <>
+                  <Star className="h-4 w-4 mr-2" />
+                  Use as Main Category Thumbnail
+                </>
+              )}
+            </Button>
+            {!canSetCategoryThumbnail && (
+              <p className="text-xs text-muted-foreground">
+                Tip: upload a cover image first (or set Resource Type to “image”).
+              </p>
             )}
           </div>
 
@@ -613,6 +633,20 @@ export const ResourceEditDialog = ({
           </div>
 
           <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={setAsCategoryThumbnail}
+              disabled={isProcessing || !canSetCategoryThumbnail}
+              title={
+                canSetCategoryThumbnail
+                  ? "Use this resource as the main category thumbnail"
+                  : "Add a cover image (or set Resource Type to image) to enable"
+              }
+            >
+              <Star className="w-4 h-4 mr-2" />
+              Set Category Thumbnail
+            </Button>
             <Button
               type="button"
               variant="outline"
