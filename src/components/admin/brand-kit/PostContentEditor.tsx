@@ -11,6 +11,7 @@ import {
   Loader2,
   Image as ImageIcon
 } from 'lucide-react';
+import { PostPreview } from './PostPreview';
 
 interface GeneratedContent {
   headline: string;
@@ -161,66 +162,26 @@ export const PostContentEditor = ({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ImageIcon className="h-5 w-5" />
-              Preview
+              Live Preview
             </CardTitle>
             <CardDescription>
-              How your content will appear on the post
+              Real-time preview of your post design
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Mock Preview */}
-            <div 
-              className="aspect-[4/5] rounded-lg p-6 flex flex-col justify-center text-center"
-              style={{ backgroundColor: '#1a1918' }}
-            >
-              <div className="space-y-4">
-                <p 
-                  className="text-2xl font-bold leading-tight"
-                  style={{ color: '#FFFFFF' }}
-                >
-                  {content.headline || 'Your headline here'}
-                </p>
-                {content.subheadline && (
-                  <p 
-                    className="text-sm"
-                    style={{ color: '#9ca3af' }}
-                  >
-                    {content.subheadline}
-                  </p>
-                )}
-                {content.bullets && content.bullets.length > 0 && (
-                  <div className="space-y-1 text-left max-w-xs mx-auto">
-                    {content.bullets.filter(b => b).map((bullet, index) => (
-                      <p 
-                        key={index}
-                        className="text-xs"
-                        style={{ color: '#9ca3af' }}
-                      >
-                        • {bullet}
-                      </p>
-                    ))}
-                  </div>
-                )}
-                {content.cta && (
-                  <div className="pt-2">
-                    <span 
-                      className="inline-block px-4 py-2 rounded-full text-sm font-medium"
-                      style={{ backgroundColor: '#FFFFFF', color: '#1a1918' }}
-                    >
-                      {content.cta}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <p 
-                className="mt-auto text-xs"
-                style={{ color: '#6b7280' }}
-              >
-                @launchely.co
-              </p>
-            </div>
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              This is a simplified preview. The final image will include full styling.
+            <PostPreview
+              content={{
+                headline: content.headline || 'Your headline here',
+                subheadline: content.subheadline || '',
+                bullets: content.bullets || [],
+                cta: content.cta || ''
+              }}
+              templateType={templateType}
+              slideNumber={1}
+              className="max-w-[280px] mx-auto"
+            />
+            <p className="text-xs text-muted-foreground text-center mt-3">
+              Preview updates as you type
             </p>
           </CardContent>
         </Card>
