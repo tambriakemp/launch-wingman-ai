@@ -97,17 +97,22 @@ export default function TaskDetail() {
   // Load existing input data if available
   useEffect(() => {
     if (projectTask?.inputData) {
-      const data = projectTask.inputData as Record<string, string>;
-      setFormData(data);
+      const data = projectTask.inputData as Record<string, unknown>;
+      setFormData(data as Record<string, string>);
       
       // Handle selection type
       if (taskTemplate?.inputType === 'selection' && data.selected) {
-        setSelectedOption(data.selected);
+        setSelectedOption(data.selected as string);
       }
       
       // Handle checklist type
       if (taskTemplate?.inputType === 'checklist' && data.checkedItems) {
         setChecklistItems(Array.isArray(data.checkedItems) ? data.checkedItems : []);
+      }
+      
+      // Load completed criteria if saved
+      if (data.completedCriteria && Array.isArray(data.completedCriteria)) {
+        setCompletedCriteria(data.completedCriteria as string[]);
       }
     }
     // Mark as initialized after loading data
@@ -246,13 +251,41 @@ export default function TaskDetail() {
     };
   }, [formData, selectedOption, checklistItems, projectId, taskId, user, saveInputData]);
 
-  const handleCriteriaToggle = (criteriaText: string) => {
-    setCompletedCriteria((prev) =>
-      prev.includes(criteriaText)
-        ? prev.filter((c) => c !== criteriaText)
-        : [...prev, criteriaText]
-    );
-  };
+  const handleCriteriaToggle = useCallback(async (criteriaText: string) => {
+    const newCriteria = completedCriteria.includes(criteriaText)
+      ? completedCriteria.filter((c) => c !== criteriaText)
+      : [...completedCriteria, criteriaText];
+    
+    setCompletedCriteria(newCriteria);
+    
+    // Persist to database immediately
+    if (user && projectId && taskId) {
+      try {
+        const existingTask = projectTasks.find(pt => pt.taskId === taskId);
+        const existingData = (existingTask?.inputData as Record<string, unknown>) || {};
+        const updatedData = { ...existingData, completedCriteria: newCriteria };
+        
+        if (existingTask) {
+          await supabase
+            .from('project_tasks')
+            .update({ input_data: updatedData })
+            .eq('id', existingTask.id)
+            .eq('user_id', user.id);
+        } else {
+          await supabase.from('project_tasks').insert({
+            project_id: projectId,
+            user_id: user.id,
+            task_id: taskId,
+            status: 'in_progress',
+            started_at: new Date().toISOString(),
+            input_data: updatedData,
+          });
+        }
+      } catch (error) {
+        console.error('Error saving completion criteria:', error);
+      }
+    }
+  }, [completedCriteria, user, projectId, taskId, projectTasks]);
 
   const handleChecklistToggle = (value: string) => {
     setChecklistItems((prev) =>
