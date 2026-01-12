@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { extractVideoThumbnail } from "@/lib/videoThumbnail";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Upload, X, Image as ImageIcon, Clipboard, Wand2 } from "lucide-react";
+import { Loader2, Upload, X, Image as ImageIcon, Clipboard, Wand2, Film, Sparkles } from "lucide-react";
 
 interface Resource {
   id: string;
@@ -42,6 +43,8 @@ export const ResourceEditDialog = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isFetchingThumbnail, setIsFetchingThumbnail] = useState(false);
+  const [isGeneratingVideoThumbnail, setIsGeneratingVideoThumbnail] = useState(false);
+  const [isRenamingWithAI, setIsRenamingWithAI] = useState(false);
   const [formData, setFormData] = useState({
     title: resource?.title || "",
     description: resource?.description || "",
@@ -184,6 +187,88 @@ export const ResourceEditDialog = ({
     }
   }, [formData.preview_url]);
 
+  // Generate thumbnail from video
+  const generateVideoThumbnail = useCallback(async () => {
+    if (!resource) return;
+    
+    const resourceUrl = formData.resource_url;
+    if (!resourceUrl) {
+      toast.error('No resource URL to generate thumbnail from');
+      return;
+    }
+
+    // Check if it's a video
+    const isVideo = /\.(mp4|mov|webm|avi)$/i.test(resourceUrl) || formData.resource_type === 'video';
+    if (!isVideo) {
+      toast.error('This resource is not a video');
+      return;
+    }
+
+    setIsGeneratingVideoThumbnail(true);
+
+    try {
+      const { blob } = await extractVideoThumbnail(resourceUrl, 'middle', 400);
+      
+      // Upload the thumbnail
+      const fileName = `resource-covers/${resource.id}-video-thumb-${Date.now()}.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from('content-media')
+        .upload(fileName, blob, { upsert: true, contentType: 'image/jpeg' });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('content-media')
+        .getPublicUrl(fileName);
+
+      setFormData(prev => ({ ...prev, cover_image_url: publicUrl }));
+      toast.success('Video thumbnail generated!');
+    } catch (error: any) {
+      console.error('Error generating video thumbnail:', error);
+      toast.error(error.message || 'Failed to generate video thumbnail');
+    } finally {
+      setIsGeneratingVideoThumbnail(false);
+    }
+  }, [resource, formData.resource_url, formData.resource_type]);
+
+  // AI rename for photos/images
+  const renameWithAI = useCallback(async () => {
+    if (!resource) return;
+    
+    const coverUrl = formData.cover_image_url;
+    if (!coverUrl) {
+      toast.error('No cover image to analyze');
+      return;
+    }
+
+    setIsRenamingWithAI(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('rename-vault-videos', {
+        body: { 
+          singleResourceId: resource.id,
+          previewOnly: false 
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.previews?.[0]?.newTitle) {
+        setFormData(prev => ({ ...prev, title: data.previews[0].newTitle }));
+        toast.success('Title generated with AI!');
+      } else if (data?.error) {
+        toast.error(data.error);
+      } else {
+        toast.info('No new title was generated');
+      }
+    } catch (error: any) {
+      console.error('Error renaming with AI:', error);
+      toast.error(error.message || 'Failed to generate title with AI');
+    } finally {
+      setIsRenamingWithAI(false);
+    }
+  }, [resource, formData.cover_image_url]);
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -229,6 +314,8 @@ export const ResourceEditDialog = ({
   }
 
   const isCanvaPreviewUrl = formData.preview_url?.includes('canva.com');
+  const isVideoResource = /\.(mp4|mov|webm|avi)$/i.test(formData.resource_url) || formData.resource_type === 'video';
+  const isProcessing = isUploading || isFetchingThumbnail || isGeneratingVideoThumbnail || isRenamingWithAI;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -262,17 +349,21 @@ export const ResourceEditDialog = ({
                       e.stopPropagation();
                       handleRemoveCover();
                     }}
-                    disabled={isUploading || isFetchingThumbnail}
+                    disabled={isProcessing}
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </>
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                  {isUploading || isFetchingThumbnail ? (
+                  {isProcessing ? (
                     <>
                       <Loader2 className="w-8 h-8 animate-spin" />
-                      <p className="text-sm">{isFetchingThumbnail ? 'Fetching from Canva...' : 'Uploading...'}</p>
+                      <p className="text-sm">
+                        {isFetchingThumbnail ? 'Fetching from Canva...' : 
+                         isGeneratingVideoThumbnail ? 'Generating video thumbnail...' :
+                         isRenamingWithAI ? 'AI analyzing...' : 'Uploading...'}
+                      </p>
                     </>
                   ) : (
                     <>
@@ -301,7 +392,7 @@ export const ResourceEditDialog = ({
               size="sm"
               className="w-full"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading || isFetchingThumbnail}
+              disabled={isProcessing}
             >
               {isUploading ? (
                 <>
@@ -315,18 +406,62 @@ export const ResourceEditDialog = ({
                 </>
               )}
             </Button>
+
+            {/* Video thumbnail generation button */}
+            {isVideoResource && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={generateVideoThumbnail}
+                disabled={isProcessing}
+              >
+                {isGeneratingVideoThumbnail ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Film className="h-4 w-4 mr-2" />
+                    Generate Video Thumbnail
+                  </>
+                )}
+              </Button>
+            )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
-              required
-            />
+            <div className="flex gap-2">
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
+                required
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={renameWithAI}
+                disabled={!formData.cover_image_url || isProcessing}
+                title="Generate title with AI"
+              >
+                {isRenamingWithAI ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Click the sparkle icon to generate a title from the cover image using AI
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -419,7 +554,7 @@ export const ResourceEditDialog = ({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={updateMutation.isPending || isUploading || isFetchingThumbnail}>
+            <Button type="submit" disabled={updateMutation.isPending || isProcessing}>
               {updateMutation.isPending && (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               )}
