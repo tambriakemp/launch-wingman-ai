@@ -78,7 +78,7 @@ export const BrandSourceSection = ({
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [iconPreview, setIconPreview] = useState<string | null>(null);
 
-  // Populate form when settings load
+  // Populate form when settings load, or use website defaults
   useEffect(() => {
     if (brandSettings) {
       setFormData({
@@ -95,7 +95,11 @@ export const BrandSourceSection = ({
           : DEFAULT_SETTINGS.highlight_labels,
       });
       setLogoPreview(brandSettings.logo_url);
-      setIconPreview(brandSettings.icon_url);
+      // Use website favicon as default icon if none set
+      setIconPreview(brandSettings.icon_url || '/favicon.svg');
+    } else {
+      // No settings yet - show website defaults
+      setIconPreview('/favicon.svg');
     }
   }, [brandSettings]);
 
@@ -103,7 +107,8 @@ export const BrandSourceSection = ({
   const saveMutation = useMutation({
     mutationFn: async () => {
       let logoUrl = brandSettings?.logo_url || null;
-      let iconUrl = brandSettings?.icon_url || null;
+      // Use website favicon as default icon if none uploaded
+      let iconUrl = brandSettings?.icon_url || '/favicon.svg';
 
       // Upload logo if changed
       if (logoFile) {
@@ -188,7 +193,8 @@ export const BrandSourceSection = ({
     setLogoFile(null);
     setIconFile(null);
     setLogoPreview(null);
-    setIconPreview(null);
+    // Reset icon to website default favicon
+    setIconPreview('/favicon.svg');
     toast.info('Reset to website defaults');
   };
 
