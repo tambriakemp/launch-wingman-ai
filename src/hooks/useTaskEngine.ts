@@ -446,9 +446,9 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
         }
       }
 
-      // 2. Launch phase review completes → In Progress → Launched
-      // This covers the final required launch task for all funnel types
-      if (taskId === 'launch_phase_review') {
+      // 2. One-Post Launch task completes → In Progress → Launched
+      // This covers the primary launch task for all funnel types
+      if (taskId === 'launch_share_offer_once') {
         await supabase
           .from('projects')
           .update({ status: 'launched' })

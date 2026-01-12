@@ -24,8 +24,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { getLearnMoreArticleId } from "@/data/taskLearnMoreLinks";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/contexts/AuthContext";
-import { MVLCallout, MVLLaunchIntro, MVLLaunchComplete } from "@/components/mvl";
+import { MVLCallout, MVLLaunchComplete } from "@/components/mvl";
 import { PreLaunchIntro, PreLaunchComplete } from "@/components/prelaunch";
+import { LaunchIntro, LaunchComplete } from "@/components/launch";
 import { generateVoiceScript, hasVoiceSnippetSupport } from "@/lib/generateVoiceScript";
 import { trackTaskCompletion, trackTaskStart, trackAIAssist } from "@/lib/analytics";
 import { trackTaskComplete } from "@/lib/activityTracking";
@@ -46,6 +47,7 @@ export default function TaskDetail() {
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [lastAiMode, setLastAiMode] = useState<string | null>(null);
   const [hasShownExamples, setHasShownExamples] = useState(false);
+  const [showExampleText, setShowExampleText] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [showLaunchIntro, setShowLaunchIntro] = useState(false);
@@ -360,8 +362,8 @@ export default function TaskDetail() {
         return;
       }
       
-      // MVL: Show launch complete confirmation (placement #4)
-      if (taskId === 'launch_phase_review') {
+      // Launch: Show completion confirmation for One-Post Launch task
+      if (taskId === 'launch_share_offer_once') {
         setShowLaunchComplete(true);
         setTimeout(() => {
           navigate(`/projects/${projectId}/dashboard`);
@@ -504,20 +506,20 @@ export default function TaskDetail() {
     );
   }
   
-  // MVL: Show launch intro screen (placement #3)
+  // Launch: Show intro screen
   if (showLaunchIntro) {
     return (
       <div className="min-h-screen bg-background">
-        <MVLLaunchIntro onContinue={handleLaunchIntroContinue} />
+        <LaunchIntro onContinue={handleLaunchIntroContinue} />
       </div>
     );
   }
   
-  // MVL: Show launch complete screen (placement #4)
+  // Launch: Show complete screen
   if (showLaunchComplete) {
     return (
       <div className="min-h-screen bg-background">
-        <MVLLaunchComplete />
+        <LaunchComplete />
       </div>
     );
   }
@@ -630,59 +632,75 @@ export default function TaskDetail() {
           
           {/* Selection Input */}
           {taskTemplate.inputType === 'selection' && taskTemplate.inputSchema?.options && (
-            <RadioGroup value={selectedOption} onValueChange={setSelectedOption} className="space-y-3">
-              {taskTemplate.inputSchema.options.map((option) => {
-                const funnelConfig = LAUNCH_PATH_FUNNEL_STEPS[option.value];
-                const isSelected = selectedOption === option.value;
-                
-                return (
-                  <div key={option.value}>
-                    <Label
-                      htmlFor={option.value}
-                      className={`flex flex-col p-4 rounded-lg border cursor-pointer transition-all ${
-                        isSelected
-                          ? "border-primary bg-primary/5 ring-1 ring-primary"
-                          : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
-                      }`}
-                    >
-                      <div className="flex items-start gap-4">
-                        <RadioGroupItem value={option.value} id={option.value} className="mt-0.5" />
-                        <div className="space-y-1 flex-1">
-                          <span className="font-medium text-foreground">{option.label}</span>
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            {option.description}
-                          </p>
+            <div className="space-y-4">
+              {/* Optional prompt text from schema */}
+              {taskTemplate.inputSchema.prompt && (
+                <p className="text-muted-foreground text-sm">
+                  {taskTemplate.inputSchema.prompt}
+                </p>
+              )}
+              
+              <RadioGroup value={selectedOption} onValueChange={setSelectedOption} className="space-y-3">
+                {taskTemplate.inputSchema.options.map((option) => {
+                  const funnelConfig = LAUNCH_PATH_FUNNEL_STEPS[option.value];
+                  const isSelected = selectedOption === option.value;
+                  
+                  return (
+                    <div key={option.value}>
+                      <Label
+                        htmlFor={option.value}
+                        className={`flex flex-col p-4 rounded-lg border cursor-pointer transition-all ${
+                          isSelected
+                            ? "border-primary bg-primary/5 ring-1 ring-primary"
+                            : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          <RadioGroupItem value={option.value} id={option.value} className="mt-0.5" />
+                          <div className="space-y-1 flex-1">
+                            <span className="font-medium text-foreground">{option.label}</span>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              {option.description}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      
-                      {/* Expandable Funnel Diagram */}
-                      <AnimatePresence>
-                        {isSelected && funnelConfig && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.2, ease: 'easeInOut' }}
-                            className="overflow-hidden"
-                          >
-                            <div className="mt-4 pt-4 border-t border-border/50">
-                              <FunnelDiagram
-                                steps={funnelConfig.steps}
-                                color={funnelConfig.color}
-                                bgColor={funnelConfig.bgColor}
-                              />
-                              <p className="text-xs text-muted-foreground text-center mt-3">
-                                Offer Slots: {funnelConfig.offerSlots}
-                              </p>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </Label>
-                  </div>
-                );
-              })}
-            </RadioGroup>
+                        
+                        {/* Expandable Funnel Diagram */}
+                        <AnimatePresence>
+                          {isSelected && funnelConfig && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2, ease: 'easeInOut' }}
+                              className="overflow-hidden"
+                            >
+                              <div className="mt-4 pt-4 border-t border-border/50">
+                                <FunnelDiagram
+                                  steps={funnelConfig.steps}
+                                  color={funnelConfig.color}
+                                  bgColor={funnelConfig.bgColor}
+                                />
+                                <p className="text-xs text-muted-foreground text-center mt-3">
+                                  Offer Slots: {funnelConfig.offerSlots}
+                                </p>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </Label>
+                    </div>
+                  );
+                })}
+              </RadioGroup>
+              
+              {/* Optional helper text from schema */}
+              {taskTemplate.inputSchema.helperText && (
+                <p className="text-muted-foreground/80 text-xs italic">
+                  {taskTemplate.inputSchema.helperText}
+                </p>
+              )}
+            </div>
           )}
 
           {/* Checklist Input */}
@@ -852,9 +870,58 @@ export default function TaskDetail() {
           </section>
         )}
 
+        {/* Collapsible Example Text (if available) */}
+        {taskTemplate.exampleText && (
+          <section className="mb-10">
+            <button
+              type="button"
+              onClick={() => setShowExampleText(!showExampleText)}
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>See an example</span>
+              {showExampleText ? (
+                <span className="text-xs">▲</span>
+              ) : (
+                <span className="text-xs">▼</span>
+              )}
+            </button>
+            
+            <AnimatePresence>
+              {showExampleText && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-3 p-4 rounded-lg bg-muted/50 border border-border">
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {taskTemplate.exampleText}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </section>
+        )}
+
         {!hasCustomCompletionUI && (
           <>
             <div className="h-px bg-border mb-10" />
+
+            {/* "This Is Enough" Reinforcement Callout for Launch task */}
+            {taskId === 'launch_share_offer_once' && (
+              <div className="mb-6 p-4 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-sm text-foreground font-medium mb-1">
+                  This counts as a launch.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  One clear share is enough for this step.
+                </p>
+              </div>
+            )}
 
             {/* What Done Looks Like Section */}
             <section className="mb-10">

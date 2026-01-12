@@ -96,6 +96,7 @@ export interface TaskTemplate {
   toolLinks?: ToolLink[];
   route: string;
   videoInstructionsUrl?: string; // Optional video URL for admin-configured task tutorials
+  exampleText?: string; // Optional collapsible example text
 }
 
 export interface InputSchema {
@@ -105,6 +106,8 @@ export interface InputSchema {
   placeholder?: string;
   maxLength?: number;
   customComponent?: string;
+  prompt?: string;
+  helperText?: string;
 }
 
 export interface InputOption {
