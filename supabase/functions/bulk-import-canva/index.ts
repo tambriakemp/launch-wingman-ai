@@ -360,8 +360,9 @@ serve(async (req) => {
 
     for (const design of designs) {
       try {
-        // Skip if no template URL (we need at least the template link)
-        if (!design.templateUrl) {
+        // Use template URL if available, otherwise fall back to preview or edit URL
+        const resourceUrl = design.templateUrl || design.previewUrl || design.editUrl;
+        if (!resourceUrl) {
           result.skipped++;
           continue;
         }
@@ -406,7 +407,7 @@ serve(async (req) => {
             .insert({
               subcategory_id: targetSubcategoryId,
               title,
-              resource_url: design.templateUrl,
+              resource_url: resourceUrl,
               preview_url: design.previewUrl,
               cover_image_url: cachedThumbnailUrl,
               resource_type: 'canva_link',
