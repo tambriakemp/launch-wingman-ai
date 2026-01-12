@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { ExternalLink, Download, Image as ImageIcon, Loader2, Check, Pencil, Eye, FileText } from "lucide-react";
+import { ExternalLink, Download, Image as ImageIcon, Loader2, Check, Pencil, Eye, FileText, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -36,6 +37,14 @@ const getDocumentType = (url: string): string | null => {
   return match ? match[1].toLowerCase() : null;
 };
 
+// Check if a non-PDF document is missing its preview
+const isMissingPreview = (resourceUrl: string, previewUrl: string | null | undefined): boolean => {
+  const docType = getDocumentType(resourceUrl);
+  // Only non-PDF documents need a preview_url
+  if (!docType || docType === 'pdf') return false;
+  return !previewUrl;
+};
+
 export const ResourceCard = ({ 
   title, 
   description, 
@@ -55,6 +64,7 @@ export const ResourceCard = ({
   const isCanvaLink = resourceType === 'canva_link';
   const isDocument = resourceType === 'document' || /\.(pdf|docx|doc|rtf)$/i.test(resourceUrl);
   const docType = getDocumentType(resourceUrl);
+  const hasMissingPreview = isMissingPreview(resourceUrl, previewUrl);
   
   // Use resource URL as cover image for images/videos if no cover image specified
   const isMediaResource = /\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|mov)$/i.test(resourceUrl);
@@ -181,6 +191,24 @@ export const ResourceCard = ({
               {docType.toUpperCase()}
             </Badge>
           </div>
+        )}
+
+        {/* Missing Preview Warning - Admin only */}
+        {isAdmin && hasMissingPreview && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="absolute top-3 left-3 z-10">
+                  <div className="h-7 w-7 rounded-full bg-orange-500 flex items-center justify-center shadow-lg">
+                    <AlertTriangle className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p className="text-xs">Missing PDF preview - needs reprocessing</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
 
         {/* Admin Edit Button - Always visible */}
