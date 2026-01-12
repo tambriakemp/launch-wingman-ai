@@ -14,6 +14,7 @@ import { AIResponseRenderer } from "@/components/ui/ai-response-renderer";
 import { FunnelDiagram } from "@/components/funnel/FunnelDiagram";
 import { VoiceSnippetButton } from "@/components/ui/voice-snippet-button";
 import { SimpleLaunchPageTask } from "@/components/build/SimpleLaunchPageTask";
+import { VideoInstructionsSection } from "@/components/build/VideoInstructionsSection";
 import { LAUNCH_PATH_FUNNEL_STEPS } from "@/data/launchPathFunnels";
 import { toast } from "sonner";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
@@ -508,6 +509,11 @@ export default function TaskDetail() {
             {taskTemplate.whyItMatters}
           </p>
         </section>
+
+        {/* Video Instructions Section - only shown if task has videoInstructionsUrl */}
+        {taskTemplate.videoInstructionsUrl && (
+          <VideoInstructionsSection videoUrl={taskTemplate.videoInstructionsUrl} />
+        )}
 
         <div className="h-px bg-border mb-10" />
 

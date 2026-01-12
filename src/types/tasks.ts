@@ -93,6 +93,7 @@ export interface TaskTemplate {
   aiAssistModes: AIAssistMode[];
   toolLinks?: ToolLink[];
   route: string;
+  videoInstructionsUrl?: string; // Optional video URL for admin-configured task tutorials
 }
 
 export interface InputSchema {
