@@ -15,7 +15,7 @@ export const useAdmin = () => {
   const hasAdminAccess = isAdmin || isManager;
 
   const checkAdmin = useCallback(async () => {
-    if (!session?.access_token) {
+    if (!session?.user) {
       setIsAdmin(false);
       setIsManager(false);
       setRole(null);
@@ -24,31 +24,45 @@ export const useAdmin = () => {
     }
 
     try {
+      // Get fresh session to ensure we have the latest token
+      const { data: sessionData } = await supabase.auth.getSession();
+      const freshToken = sessionData?.session?.access_token;
+      
+      if (!freshToken) {
+        console.warn('[useAdmin] No fresh token available');
+        setIsAdmin(false);
+        setIsManager(false);
+        setRole(null);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('check-admin', {
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${freshToken}`,
         },
       });
 
       if (error) {
-        console.error('Error checking admin status:', error);
+        console.error('[useAdmin] Error checking admin status:', error);
         setIsAdmin(false);
         setIsManager(false);
         setRole(null);
       } else {
+        console.log('[useAdmin] Admin check result:', data);
         setIsAdmin(data?.isAdmin || false);
         setIsManager(data?.isManager || false);
         setRole(data?.role || null);
       }
     } catch (error) {
-      console.error('Error checking admin status:', error);
+      console.error('[useAdmin] Error checking admin status:', error);
       setIsAdmin(false);
       setIsManager(false);
       setRole(null);
     } finally {
       setLoading(false);
     }
-  }, [session?.access_token]);
+  }, [session?.user]);
 
   useEffect(() => {
     // Don't check admin status until auth is done loading

@@ -1,5 +1,11 @@
 project_id = "ydhagqgurqhlguxkkppb"
 
+[functions.check-admin]
+verify_jwt = false
+
+[functions.check-subscription]
+verify_jwt = false
+
 [functions.rename-vault-videos]
 verify_jwt = false
 
