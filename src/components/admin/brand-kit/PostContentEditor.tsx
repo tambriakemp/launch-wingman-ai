@@ -215,10 +215,10 @@ export const PostContentEditor = ({
               templateType={templateType}
               slideNumber={1}
               bgVariant={bgVariant}
-              className="max-w-[280px] mx-auto"
+              className="w-full max-w-md mx-auto"
             />
             <p className="text-xs text-muted-foreground text-center mt-3">
-              Preview updates as you type
+              Preview updates as you type • 1080×1350px
             </p>
           </CardContent>
         </Card>

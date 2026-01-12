@@ -116,6 +116,7 @@ interface GenerateRequest {
   templateId?: string;
   carouselSlides?: number;
   previewOnly?: boolean;
+  bgVariant?: 'dark' | 'light' | 'gold';
   customContent?: {
     headline?: string;
     subheadline?: string;
@@ -150,9 +151,9 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { topic, platform, templateType, templateId, carouselSlides, previewOnly, customContent }: GenerateRequest = await req.json();
+    const { topic, platform, templateType, templateId, carouselSlides, previewOnly, customContent, bgVariant = 'dark' }: GenerateRequest = await req.json();
 
-    console.log('Generating social post:', { topic, platform, templateType, carouselSlides, previewOnly });
+    console.log('Generating social post:', { topic, platform, templateType, carouselSlides, previewOnly, bgVariant });
 
     // Fetch brand settings
     const { data: brandSettings, error: brandError } = await supabase
@@ -288,7 +289,7 @@ serve(async (req) => {
         slideNum === slidesToGenerate ? 'cta' : 'content';
       
       const contentForImage = { headline: slideContent?.headline || '', subheadline: slideContent?.subheadline, bullets: slideContent?.bullets, cta: slideContent?.cta };
-      const imagePrompt = buildImagePrompt(contentForImage, slideTypeForImage, platform, brandSettings);
+      const imagePrompt = buildImagePrompt(contentForImage, slideTypeForImage, platform, brandSettings, bgVariant);
       
       console.log('Generating image with Gemini');
       
@@ -439,11 +440,38 @@ function buildImagePrompt(
   content: { headline: string; subheadline?: string; bullets?: string[]; cta?: string },
   slideType: string,
   platform: string,
-  brandSettings: any
+  brandSettings: any,
+  bgVariant: 'dark' | 'light' | 'gold' = 'dark'
 ): string {
   const layout = TEMPLATE_LAYOUTS[slideType as keyof typeof TEMPLATE_LAYOUTS] || TEMPLATE_LAYOUTS.content;
   const primaryColor = brandSettings?.primary_color || '#f5c243';
   const brandName = brandSettings?.brand_name || 'Launchely';
+  
+  // Determine colors based on background variant
+  let backgroundColor: string;
+  let headlineColor: string;
+  let accentColor: string;
+  let subtextColor: string;
+  
+  switch (bgVariant) {
+    case 'light':
+      backgroundColor = '#FFFFFF';
+      headlineColor = '#1a1918';
+      accentColor = primaryColor;
+      subtextColor = '#6b7280';
+      break;
+    case 'gold':
+      backgroundColor = primaryColor;
+      headlineColor = '#1a1918';
+      accentColor = '#1a1918';
+      subtextColor = 'rgba(26, 25, 24, 0.7)';
+      break;
+    default: // dark
+      backgroundColor = '#1a1918';
+      headlineColor = '#FFFFFF';
+      accentColor = primaryColor;
+      subtextColor = '#9ca3af';
+  }
   
   // Build text content for the image
   let textContent = `HEADLINE: "${content.headline}"`;
@@ -464,24 +492,32 @@ ${layout}
 TEXT CONTENT TO INCLUDE:
 ${textContent}
 
-DESIGN REQUIREMENTS:
-- Exact dimensions: 1080x1350 pixels (4:5 aspect ratio for Instagram)
-- Background color: Dark charcoal #1a1918
-- Headline text: Pure white #FFFFFF, bold weight, large size
-- Accent color: Gold/amber ${primaryColor} for circles, highlights, buttons
-- Subtext: Muted gray #9ca3af
-- Brand handle: @launchely.co in small muted gray text
-- Typography: Clean sans-serif font similar to Plus Jakarta Sans
+CRITICAL DESIGN REQUIREMENTS:
+- Exact dimensions: 1080x1350 pixels (4:5 aspect ratio for Instagram portrait)
+- Background color: ${backgroundColor}
+- Headline text: ${headlineColor}, bold weight, large size
+- Accent/highlight color: ${accentColor} for circles, highlights, decorative elements
+- Subtext/description: ${subtextColor}
+- Brand handle: @launchely.com in muted text at bottom
+- Typography: Clean modern sans-serif font (Plus Jakarta Sans style)
 
-STYLE GUIDELINES:
-${JSON.stringify(STYLE_GUIDELINES, null, 2)}
+DECORATIVE ELEMENTS:
+- Asterisk symbol (*) in ${accentColor} as decorative element in corner
+- Circle highlight around ONE key word in the headline using ${accentColor}
+- Rounded pill-shaped CTA button if CTA text provided
+- Small brand icon (simple seedling/sprout symbol) in bottom corner
 
-IMPORTANT:
-- Make the headline the dominant visual element
+STYLE REQUIREMENTS:
+- Make the headline the DOMINANT visual element - big and bold
 - Use generous whitespace and clean spacing
-- Include the decorative asterisk element in gold
-- Add the brand seedling icon (simple growing plant symbol) in bottom corner
-- Keep design minimal, modern, and professional
+- Professional, calm, supportive aesthetic (not salesy or urgent)
+- The design should feel premium and editorial
 - NO gradients, patterns, or busy backgrounds
-- Text must be crisp and highly readable`;
+- Text must be crisp and highly readable
+
+CRITICAL:
+- The generated image MUST be exactly 1080x1350 pixels
+- Keep text readable and properly sized
+- Maintain visual hierarchy: Headline > Subheadline > CTA
+- Include the @launchely.com handle visibly`;
 }
