@@ -174,7 +174,77 @@ interface UploadResult {
   url: string;
   key: string;
   thumbnailUrl?: string;
+  previewUrl?: string;
   resourceId?: string;
+}
+
+// Helper function to upload a file to R2
+async function uploadToR2(
+  fileData: ArrayBuffer,
+  objectKey: string,
+  contentType: string,
+  r2AccountId: string,
+  r2AccessKeyId: string,
+  r2SecretAccessKey: string,
+  r2BucketName: string
+): Promise<boolean> {
+  const region = "auto";
+  const service = "s3";
+  const host = `${r2AccountId}.r2.cloudflarestorage.com`;
+  const endpoint = `https://${host}/${r2BucketName}/${objectKey}`;
+
+  const now = new Date();
+  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
+  const dateStamp = amzDate.slice(0, 8);
+
+  const method = "PUT";
+  const canonicalUri = `/${r2BucketName}/${objectKey}`;
+  const canonicalQueryString = "";
+  const payloadHash = await sha256(fileData);
+  const canonicalHeaders = `content-type:${contentType}\nhost:${host}\nx-amz-content-sha256:${payloadHash}\nx-amz-date:${amzDate}\n`;
+  const signedHeaders = "content-type;host;x-amz-content-sha256;x-amz-date";
+
+  const canonicalRequest = [
+    method,
+    canonicalUri,
+    canonicalQueryString,
+    canonicalHeaders,
+    signedHeaders,
+    payloadHash,
+  ].join("\n");
+
+  const algorithm = "AWS4-HMAC-SHA256";
+  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+  const stringToSign = [
+    algorithm,
+    amzDate,
+    credentialScope,
+    await sha256(canonicalRequest),
+  ].join("\n");
+
+  const signingKey = await getSignatureKey(r2SecretAccessKey, dateStamp, region, service);
+  const signatureBuffer = await hmacSha256(signingKey, stringToSign);
+  const signature = toHex(signatureBuffer);
+
+  const authorizationHeader = `${algorithm} Credential=${r2AccessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+  const uploadResponse = await fetch(endpoint, {
+    method: "PUT",
+    headers: {
+      "Host": host,
+      "Content-Type": contentType,
+      "x-amz-content-sha256": payloadHash,
+      "x-amz-date": amzDate,
+      "Authorization": authorizationHeader,
+    },
+    body: new Uint8Array(fileData),
+  });
+
+  return uploadResponse.ok;
+}
+
+function isPdf(filename: string): boolean {
+  return getFileExtension(filename) === 'pdf';
 }
 
 Deno.serve(async (req) => {
@@ -337,6 +407,65 @@ Deno.serve(async (req) => {
     const publicUrl = `${r2PublicUrl.replace(/\/$/, "")}/${objectKey}`;
     console.log(`[UPLOAD-DOCUMENT] Upload successful: ${publicUrl}`);
 
+    // For non-PDF documents, convert to PDF for preview
+    let previewUrl: string | undefined;
+    
+    if (!isPdf(filename)) {
+      console.log(`[UPLOAD-DOCUMENT] Converting ${fileExtension.toUpperCase()} to PDF for preview...`);
+      
+      try {
+        // Call the convert-document-to-pdf function
+        const convertResponse = await fetch(`${supabaseUrl}/functions/v1/convert-document-to-pdf`, {
+          method: 'POST',
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fileBase64,
+            filename,
+          }),
+        });
+
+        if (convertResponse.ok) {
+          const convertData = await convertResponse.json();
+          
+          if (convertData.success && convertData.pdfBase64) {
+            console.log(`[UPLOAD-DOCUMENT] Conversion successful, uploading PDF preview...`);
+            
+            // Upload the PDF preview to R2
+            const pdfPreviewKey = `business-documents/${subcategory}/previews/${timestamp}-${sanitizedFilename.replace(/\.[^/.]+$/, '')}.pdf`;
+            const pdfData = base64ToArrayBuffer(convertData.pdfBase64);
+            
+            const pdfUploadSuccess = await uploadToR2(
+              pdfData,
+              pdfPreviewKey,
+              'application/pdf',
+              r2AccountId,
+              r2AccessKeyId,
+              r2SecretAccessKey,
+              r2BucketName
+            );
+
+            if (pdfUploadSuccess) {
+              previewUrl = `${r2PublicUrl.replace(/\/$/, "")}/${pdfPreviewKey}`;
+              console.log(`[UPLOAD-DOCUMENT] PDF preview uploaded: ${previewUrl}`);
+            } else {
+              console.error(`[UPLOAD-DOCUMENT] Failed to upload PDF preview to R2`);
+            }
+          } else {
+            console.error(`[UPLOAD-DOCUMENT] Conversion failed:`, convertData.error);
+          }
+        } else {
+          const errorText = await convertResponse.text();
+          console.error(`[UPLOAD-DOCUMENT] Conversion request failed: ${convertResponse.status} - ${errorText}`);
+        }
+      } catch (convertError) {
+        console.error(`[UPLOAD-DOCUMENT] PDF conversion error:`, convertError);
+        // Continue without preview - not critical
+      }
+    }
+
     // Generate and upload thumbnail
     const docTitle = title || filename.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
     const thumbnailSVG = generateDocumentThumbnailSVG(docTitle, fileExtension);
@@ -466,13 +595,14 @@ Deno.serve(async (req) => {
 
     const nextPosition = (maxPosData?.[0]?.position ?? 0) + 1;
 
-    // Insert resource
+    // Insert resource with preview_url for converted documents
     const { data: resource, error: insertError } = await supabase
       .from("content_vault_resources")
       .insert({
         subcategory_id: subcategoryData.id,
         title: docTitle,
         resource_url: publicUrl,
+        preview_url: previewUrl || null,
         resource_type: "document",
         cover_image_url: thumbnailUrl,
         position: nextPosition,
@@ -488,6 +618,7 @@ Deno.serve(async (req) => {
           url: publicUrl, 
           key: objectKey,
           thumbnailUrl,
+          previewUrl,
           warning: `File uploaded but database insert failed: ${insertError.message}` 
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -498,10 +629,11 @@ Deno.serve(async (req) => {
       url: publicUrl,
       key: objectKey,
       thumbnailUrl,
+      previewUrl,
       resourceId: resource?.id
     };
 
-    console.log(`[UPLOAD-DOCUMENT] Complete: ${publicUrl}, resourceId: ${resource?.id}`);
+    console.log(`[UPLOAD-DOCUMENT] Complete: ${publicUrl}, previewUrl: ${previewUrl || 'N/A'}, resourceId: ${resource?.id}`);
 
     return new Response(
       JSON.stringify(result),

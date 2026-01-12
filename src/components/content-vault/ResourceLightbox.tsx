@@ -5,12 +5,14 @@ import { ChevronLeft, ChevronRight, Download, X, Loader2, FileText, ExternalLink
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { PdfViewer } from "./PdfViewer";
 
 interface Resource {
   id: string;
   title: string;
   resource_url: string;
   resource_type: string;
+  preview_url?: string | null;
 }
 
 interface ResourceLightboxProps {
@@ -129,10 +131,22 @@ export const ResourceLightbox = ({
     return match ? match[1].toLowerCase() : 'pdf';
   };
 
+  // Check if resource has a PDF preview available (either native PDF or converted)
+  const hasPdfPreview = (resource: Resource): boolean => {
+    return isPdf(resource.resource_url) || !!resource.preview_url;
+  };
+
+  // Get the URL to use for PDF preview
+  const getPreviewUrl = (resource: Resource): string => {
+    if (resource.preview_url) return resource.preview_url;
+    return resource.resource_url;
+  };
+
   if (!currentResource) return null;
 
   const docType = getDocumentType(currentResource.resource_url);
   const docColors = DOCUMENT_COLORS[docType] || DOCUMENT_COLORS['pdf'];
+  const canPreviewAsPdf = hasPdfPreview(currentResource);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -187,17 +201,16 @@ export const ResourceLightbox = ({
               alt={currentResource.title}
               className="max-w-full max-h-full object-contain"
             />
-          ) : isPdf(currentResource.resource_url) ? (
-            // Embed PDF viewer for PDFs using vault-preview for inline display
-            <div className="w-full h-full max-w-4xl">
-              <iframe
-                src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vault-preview?url=${encodeURIComponent(currentResource.resource_url)}`}
-                className="w-full h-full rounded-lg bg-white"
+          ) : canPreviewAsPdf ? (
+            // Use PDF.js viewer for PDFs and documents with PDF preview
+            <div className="w-full h-full max-w-5xl">
+              <PdfViewer 
+                url={getPreviewUrl(currentResource)} 
                 title={currentResource.title}
               />
             </div>
           ) : isDocument(currentResource.resource_url) ? (
-            // Document preview card for non-PDF documents
+            // Document preview card for non-PDF documents without preview
             <div className="bg-white rounded-xl p-8 max-w-md text-center shadow-2xl">
               <div className="w-20 h-20 mx-auto mb-4 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
                 <FileText className="w-10 h-10 text-slate-500" />
@@ -209,7 +222,7 @@ export const ResourceLightbox = ({
                 {currentResource.title}
               </h3>
               <p className="text-slate-500 mb-6">
-                This document type cannot be previewed in browser.
+                This document was uploaded before PDF preview was available.
               </p>
               <div className="flex gap-3 justify-center">
                 <Button onClick={handleDownload} disabled={isDownloading}>
