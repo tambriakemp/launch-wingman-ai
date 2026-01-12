@@ -125,9 +125,9 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { previewOnly = false, batchSize = 20, offset = 0, singleResourceId } = await req.json();
+    const { previewOnly = false, batchSize = 20, offset = 0, singleResourceId, resourceType = 'video' } = await req.json();
 
-    console.log(`Starting AI rename: previewOnly=${previewOnly}, batchSize=${batchSize}, offset=${offset}, singleResourceId=${singleResourceId}`);
+    console.log(`Starting AI rename: previewOnly=${previewOnly}, batchSize=${batchSize}, offset=${offset}, singleResourceId=${singleResourceId}, resourceType=${resourceType}`);
 
     // Single resource mode - for on-demand renaming from edit dialog
     if (singleResourceId) {
@@ -173,48 +173,64 @@ serve(async (req) => {
       });
     }
 
-    // Batch mode - query videos with thumbnails using offset pagination with stable ordering
-    const { data: videos, error: queryError } = await supabase
+    // Batch mode - query resources with images using offset pagination with stable ordering
+    let query = supabase
       .from('content_vault_resources')
-      .select('id, title, cover_image_url, resource_type')
-      .eq('resource_type', 'video')
-      .not('cover_image_url', 'is', null)
+      .select('id, title, cover_image_url, resource_url, resource_type')
       .order('created_at', { ascending: true })
       .order('id', { ascending: true })
       .range(offset, offset + batchSize - 1);
+
+    // For videos, use cover_image_url; for images, use resource_url directly
+    if (resourceType === 'video') {
+      query = query.eq('resource_type', 'video').not('cover_image_url', 'is', null);
+    } else if (resourceType === 'image') {
+      query = query.eq('resource_type', 'image');
+    }
+
+    const { data: resources, error: queryError } = await query;
 
     if (queryError) {
       console.error("Query error:", queryError);
       throw queryError;
     }
 
-    console.log(`Found ${videos?.length || 0} videos to check`);
+    console.log(`Found ${resources?.length || 0} ${resourceType}s to check`);
 
-    // Filter to only videos needing rename
-    const videosToRename = (videos || []).filter(v => needsRenaming(v.title || ''));
+    // Filter to only resources needing rename
+    const resourcesToRename = (resources || []).filter(r => needsRenaming(r.title || ''));
     
-    console.log(`${videosToRename.length} videos need renaming`);
+    console.log(`${resourcesToRename.length} ${resourceType}s need renaming`);
 
     const results = {
       renamed: 0,
-      skipped: (videos?.length || 0) - videosToRename.length,
+      skipped: (resources?.length || 0) - resourcesToRename.length,
       failed: 0,
       previews: [] as { id: string; oldTitle: string; newTitle: string }[],
       errors: [] as string[],
     };
 
-    for (let index = 0; index < videosToRename.length; index++) {
-      const video = videosToRename[index];
+    for (let index = 0; index < resourcesToRename.length; index++) {
+      const resource = resourcesToRename[index];
       try {
-        console.log(`Processing ${index + 1}/${videosToRename.length}: ${video.title} (${video.id})`);
+        console.log(`Processing ${index + 1}/${resourcesToRename.length}: ${resource.title} (${resource.id})`);
         
-        const newTitle = await generateTitleFromImage(video.cover_image_url, lovableApiKey);
+        // Use cover_image_url for videos, resource_url for images
+        const imageUrl = resourceType === 'video' ? resource.cover_image_url : resource.resource_url;
         
-        console.log(`Generated title: "${newTitle}" for "${video.title}"`);
+        if (!imageUrl) {
+          console.log(`Skipping ${resource.id} - no image URL`);
+          results.skipped++;
+          continue;
+        }
+        
+        const newTitle = await generateTitleFromImage(imageUrl, lovableApiKey);
+        
+        console.log(`Generated title: "${newTitle}" for "${resource.title}"`);
 
         results.previews.push({
-          id: video.id,
-          oldTitle: video.title || '(no title)',
+          id: resource.id,
+          oldTitle: resource.title || '(no title)',
           newTitle,
         });
 
@@ -222,12 +238,12 @@ serve(async (req) => {
           const { error: updateError } = await supabase
             .from('content_vault_resources')
             .update({ title: newTitle })
-            .eq('id', video.id);
+            .eq('id', resource.id);
 
           if (updateError) {
-            console.error(`Update error for ${video.id}:`, updateError);
+            console.error(`Update error for ${resource.id}:`, updateError);
             results.failed++;
-            results.errors.push(`Failed to update ${video.title}: ${updateError.message}`);
+            results.errors.push(`Failed to update ${resource.title}: ${updateError.message}`);
           } else {
             results.renamed++;
           }
@@ -238,17 +254,17 @@ serve(async (req) => {
         // Delay to avoid rate limiting (500ms between requests)
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        console.log(`Progress: ${index + 1}/${videosToRename.length} - ${results.renamed} renamed, ${results.failed} failed`);
+        console.log(`Progress: ${index + 1}/${resourcesToRename.length} - ${results.renamed} renamed, ${results.failed} failed`);
 
       } catch (error) {
-        console.error(`Error processing ${video.id}:`, error);
+        console.error(`Error processing ${resource.id}:`, error);
         results.failed++;
-        results.errors.push(`Failed to process ${video.title}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        // Continue to next video instead of stopping
+        results.errors.push(`Failed to process ${resource.title}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Continue to next resource instead of stopping
       }
     }
 
-    const scanned = videos?.length || 0;
+    const scanned = resources?.length || 0;
     const response = {
       ...results,
       scanned,
