@@ -173,8 +173,23 @@ export function DocumentUploadSection() {
     return merged.sort((a, b) => a.name.localeCompare(b.name));
   }, [subcategories, documents]);
 
-  const handleFiles = useCallback((files: FileList | File[]) => {
-    const fileArray = Array.from(files).filter(file => {
+  // Files with metadata - relativePath is passed separately for drag-drop folders
+  type FileWithPath = { file: File; relativePath?: string };
+
+  const handleFiles = useCallback((files: FileList | File[] | FileWithPath[]) => {
+    // Normalize to { file, relativePath } format
+    const normalizedFiles: FileWithPath[] = Array.from(files as any).map((item: File | FileWithPath) => {
+      if ('file' in item && item.file instanceof File) {
+        return item as FileWithPath;
+      }
+      const file = item as File;
+      return { 
+        file, 
+        relativePath: (file as any).webkitRelativePath || undefined 
+      };
+    });
+
+    const validFiles = normalizedFiles.filter(({ file }) => {
       if (!isValidDocumentFile(file)) {
         toast.error(`${file.name} is not a supported document type (PDF, DOCX, DOC, RTF)`);
         return false;
@@ -186,13 +201,12 @@ export function DocumentUploadSection() {
       return true;
     });
 
-    if (fileArray.length === 0) return;
+    if (validFiles.length === 0) return;
 
     const foldersDetected = new Set<string>();
 
-    const newDocuments: PendingDocument[] = fileArray.map(file => {
-      const webkitPath = (file as any).webkitRelativePath || '';
-      const folderParts = extractFullFolderPath(webkitPath);
+    const newDocuments: PendingDocument[] = validFiles.map(({ file, relativePath }) => {
+      const folderParts = extractFullFolderPath(relativePath || '');
       
       let subcategorySlug = subcategories[0]?.slug || 'templates';
       let subcategoryName = subcategories[0]?.name || 'Business Templates';
@@ -212,16 +226,16 @@ export function DocumentUploadSection() {
         subcategory: subcategorySlug,
         subcategoryName: subcategoryName,
         status: 'pending' as const,
-        folderPath: webkitPath || undefined,
+        folderPath: relativePath || undefined,
       };
     });
 
     setDocuments(prev => [...prev, ...newDocuments]);
     
     if (foldersDetected.size > 0) {
-      toast.success(`Added ${fileArray.length} document(s) from ${foldersDetected.size} root folder(s)`);
+      toast.success(`Added ${validFiles.length} document(s) from ${foldersDetected.size} root folder(s)`);
     } else {
-      toast.success(`Added ${fileArray.length} document(s) to queue`);
+      toast.success(`Added ${validFiles.length} document(s) to queue`);
     }
   }, [subcategories]);
 
@@ -247,7 +261,7 @@ export function DocumentUploadSection() {
   }, [handleFiles]);
 
   const processEntries = async (entries: FileSystemEntry[]) => {
-    const files: File[] = [];
+    const filesWithPaths: { file: File; relativePath: string }[] = [];
     
     // readEntries only returns a batch at a time, must call repeatedly
     async function readAllDirectoryEntries(reader: FileSystemDirectoryReader): Promise<FileSystemEntry[]> {
@@ -268,10 +282,8 @@ export function DocumentUploadSection() {
         const file = await new Promise<File>((resolve, reject) => {
           fileEntry.file(resolve, reject);
         });
-        const fileWithPath = Object.assign(file, {
-          webkitRelativePath: path + file.name
-        });
-        files.push(fileWithPath);
+        // Don't mutate File - carry relativePath as separate metadata
+        filesWithPaths.push({ file, relativePath: path + file.name });
       } else if (entry.isDirectory) {
         const dirEntry = entry as FileSystemDirectoryEntry;
         const reader = dirEntry.createReader();
@@ -282,11 +294,16 @@ export function DocumentUploadSection() {
       }
     }
     
-    // Process all dropped entries in parallel for speed
-    await Promise.all(entries.map(entry => processEntry(entry, '')));
-    
-    if (files.length > 0) {
-      handleFiles(files);
+    try {
+      // Process all dropped entries in parallel for speed
+      await Promise.all(entries.map(entry => processEntry(entry, '')));
+      
+      if (filesWithPaths.length > 0) {
+        handleFiles(filesWithPaths);
+      }
+    } catch (err) {
+      console.error('Folder drag-drop failed:', err);
+      toast.error('Folder drag & drop failed. Please try "Select Folder" instead.');
     }
   };
 
@@ -461,7 +478,11 @@ export function DocumentUploadSection() {
             {...{ webkitdirectory: "", directory: "" } as any}
             accept=".pdf,.doc,.docx,.rtf"
             className="hidden"
-            onChange={(e) => e.target.files && handleFiles(e.target.files)}
+            onChange={(e) => {
+              if (e.target.files) handleFiles(e.target.files);
+              // Reset so the same folder can be selected again
+              e.target.value = '';
+            }}
           />
         </div>
 
