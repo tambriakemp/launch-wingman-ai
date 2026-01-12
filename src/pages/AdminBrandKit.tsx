@@ -27,6 +27,9 @@ import {
 import { BrandSourceSection } from '@/components/admin/brand-kit/BrandSourceSection';
 import { AssetGeneratorSection } from '@/components/admin/brand-kit/AssetGeneratorSection';
 import { GeneratedAssetsLibrary } from '@/components/admin/brand-kit/GeneratedAssetsLibrary';
+import { PostGeneratorSection } from '@/components/admin/brand-kit/PostGeneratorSection';
+import { GeneratedPostsLibrary } from '@/components/admin/brand-kit/GeneratedPostsLibrary';
+import { FileText } from 'lucide-react';
 
 const AdminBrandKit = () => {
   const navigate = useNavigate();
@@ -98,7 +101,7 @@ const AdminBrandKit = () => {
       {/* Main Content */}
       <div className="container max-w-6xl mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-5">
             <TabsTrigger value="source" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
               <span className="hidden sm:inline">Brand Source</span>
@@ -112,6 +115,16 @@ const AdminBrandKit = () => {
             <TabsTrigger value="library" className="flex items-center gap-2">
               <Grid3X3 className="h-4 w-4" />
               <span className="hidden sm:inline">Assets Library</span>
+              <span className="sm:hidden">Assets</span>
+            </TabsTrigger>
+            <TabsTrigger value="posts" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Post Generator</span>
+              <span className="sm:hidden">Posts</span>
+            </TabsTrigger>
+            <TabsTrigger value="posts-library" className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Posts Library</span>
               <span className="sm:hidden">Library</span>
             </TabsTrigger>
           </TabsList>
@@ -144,6 +157,20 @@ const AdminBrandKit = () => {
                 queryClient.invalidateQueries({ queryKey: ['brand-kit-assets'] });
               }}
             />
+          </TabsContent>
+
+          <TabsContent value="posts">
+            <PostGeneratorSection 
+              brandSettings={brandSettings}
+              onPostGenerated={() => {
+                queryClient.invalidateQueries({ queryKey: ['generated-posts'] });
+                setActiveTab('posts-library');
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="posts-library">
+            <GeneratedPostsLibrary />
           </TabsContent>
         </Tabs>
       </div>
