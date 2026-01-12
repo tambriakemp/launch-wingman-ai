@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Cloud, RefreshCw, CheckCircle, AlertCircle, FileImage, FileVideo, Image, Trash2, Sparkles, Pause, Play, Info } from "lucide-react";
+import { Cloud, RefreshCw, CheckCircle, AlertCircle, FileImage, FileVideo, Image, Trash2, Sparkles, Pause, Play, Info, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { extractVideoThumbnail, generateThumbnailFilename, testVideoCORS } from "@/lib/videoThumbnail";
+import { extractThumbnailViaWorker, supportsWebCodecs, terminateWorker } from "@/lib/videoThumbnailWorker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,6 +68,7 @@ export const R2SyncCard = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(null);
   const [showKeepActiveWarning, setShowKeepActiveWarning] = useState(true);
+  const [useWebCodecs, setUseWebCodecs] = useState(supportsWebCodecs());
   
   // Refs for async loop control
   const isPausedRef = useRef(false);
@@ -92,8 +94,11 @@ export const R2SyncCard = () => {
     }
   }, []);
 
-  // Visibility change detection
+  // Visibility change detection - only for Canvas API fallback
   useEffect(() => {
+    // WebCodecs runs in a Web Worker and is resistant to tab throttling
+    if (useWebCodecs) return;
+
     const handleVisibilityChange = () => {
       if (document.hidden && isGeneratingThumbnails && !isPaused) {
         isPausedRef.current = true;
@@ -104,7 +109,7 @@ export const R2SyncCard = () => {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isGeneratingThumbnails, isPaused]);
+  }, [isGeneratingThumbnails, isPaused, useWebCodecs]);
 
   const getSeekTime = (videoDuration?: number): number => {
     switch (framePosition) {
@@ -225,9 +230,11 @@ export const R2SyncCard = () => {
           break;
         }
 
-        // Wait while paused
-        while (isPausedRef.current && !shouldStopRef.current) {
-          await new Promise(r => setTimeout(r, 500));
+        // Wait while paused (only for Canvas API fallback)
+        if (!useWebCodecs) {
+          while (isPausedRef.current && !shouldStopRef.current) {
+            await new Promise(r => setTimeout(r, 500));
+          }
         }
 
         if (shouldStopRef.current) {
@@ -244,7 +251,24 @@ export const R2SyncCard = () => {
         try {
           // Extract thumbnail from video with selected frame position
           const seekTime = framePosition === 'middle' ? 'middle' : getSeekTime();
-          const { blob: thumbnailBlob } = await extractVideoThumbnail(video.resource_url, seekTime);
+          
+          let thumbnailBlob: Blob;
+          
+          // Use WebCodecs if available (runs in background), fallback to Canvas API
+          if (useWebCodecs) {
+            try {
+              const result = await extractThumbnailViaWorker(video.resource_url, seekTime);
+              thumbnailBlob = result.blob;
+            } catch (workerError) {
+              // If WebCodecs fails, fall back to Canvas API
+              console.warn('WebCodecs failed, falling back to Canvas API:', workerError);
+              const { blob } = await extractVideoThumbnail(video.resource_url, seekTime);
+              thumbnailBlob = blob;
+            }
+          } else {
+            const { blob } = await extractVideoThumbnail(video.resource_url, seekTime);
+            thumbnailBlob = blob;
+          }
           
           // Upload to storage
           const filename = generateThumbnailFilename(video.resource_url);
@@ -303,6 +327,8 @@ export const R2SyncCard = () => {
       setIsPaused(false);
       isPausedRef.current = false;
       shouldStopRef.current = false;
+      // Clean up WebCodecs worker
+      terminateWorker();
     }
   };
 
@@ -536,24 +562,34 @@ export const R2SyncCard = () => {
           </Alert>
         )}
 
-        {/* Keep Tab Active Warning */}
-        {showKeepActiveWarning && mediaType !== 'photos' && !isGeneratingThumbnails && (
-          <Alert className="border-amber-500/50 bg-amber-500/10">
-            <Info className="h-4 w-4 text-amber-500" />
-            <AlertTitle className="text-amber-600 dark:text-amber-400">Keep Tab Active</AlertTitle>
-            <AlertDescription className="text-sm">
-              Video thumbnail generation requires this browser tab to stay active. 
-              If you switch tabs, processing will pause automatically and resume when you return.
-              <Button
-                variant="link"
-                size="sm"
-                className="p-0 h-auto ml-2 text-muted-foreground"
-                onClick={() => setShowKeepActiveWarning(false)}
-              >
-                Dismiss
-              </Button>
-            </AlertDescription>
-          </Alert>
+        {/* WebCodecs indicator / Keep Tab Active Warning */}
+        {mediaType !== 'photos' && !isGeneratingThumbnails && (
+          useWebCodecs ? (
+            <Alert className="border-green-500/50 bg-green-500/10">
+              <Zap className="h-4 w-4 text-green-500" />
+              <AlertTitle className="text-green-600 dark:text-green-400">Background Processing Enabled</AlertTitle>
+              <AlertDescription className="text-sm">
+                Using WebCodecs API - thumbnails will generate even if you switch tabs.
+              </AlertDescription>
+            </Alert>
+          ) : showKeepActiveWarning ? (
+            <Alert className="border-amber-500/50 bg-amber-500/10">
+              <Info className="h-4 w-4 text-amber-500" />
+              <AlertTitle className="text-amber-600 dark:text-amber-400">Keep Tab Active</AlertTitle>
+              <AlertDescription className="text-sm">
+                Video thumbnail generation requires this browser tab to stay active. 
+                If you switch tabs, processing will pause automatically and resume when you return.
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="p-0 h-auto ml-2 text-muted-foreground"
+                  onClick={() => setShowKeepActiveWarning(false)}
+                >
+                  Dismiss
+                </Button>
+              </AlertDescription>
+            </Alert>
+          ) : null
         )}
 
         <div className="space-y-3 p-3 bg-muted/30 rounded-lg">
@@ -691,8 +727,8 @@ export const R2SyncCard = () => {
           </Alert>
         )}
 
-        {/* Paused Warning Banner */}
-        {isPaused && isGeneratingThumbnails && (
+        {/* Paused Warning Banner - only for Canvas API fallback */}
+        {isPaused && isGeneratingThumbnails && !useWebCodecs && (
           <Alert className="border-amber-500/50 bg-amber-500/10">
             <Pause className="h-4 w-4 text-amber-500" />
             <AlertTitle className="text-amber-600 dark:text-amber-400">Generation Paused</AlertTitle>
