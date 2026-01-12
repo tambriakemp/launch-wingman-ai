@@ -18,10 +18,15 @@ import {
   FolderOpen,
   Square,
   Copy,
-  SkipForward
+  SkipForward,
+  RefreshCw,
+  AlertTriangle,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface PendingDocument {
   id: string;
@@ -49,6 +54,37 @@ interface SubcategoryOption {
   slug: string;
   name: string;
   isNew?: boolean;
+}
+
+interface MissingPreviewResource {
+  id: string;
+  title: string;
+  resource_url: string;
+  preview_url: string | null;
+  subcategory_name: string;
+  status: 'pending' | 'processing' | 'done' | 'error';
+  error?: string;
+}
+
+interface ReprocessStats {
+  total: number;
+  pending: number;
+  processing: number;
+  done: number;
+  error: number;
+}
+
+async function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
 
 const ACCEPTED_TYPES = [
@@ -136,6 +172,14 @@ export function DocumentUploadSection() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const shouldStopRef = useRef(false);
+  const queryClient = useQueryClient();
+
+  // Reprocess missing previews state
+  const [reprocessOpen, setReprocessOpen] = useState(false);
+  const [isReprocessing, setIsReprocessing] = useState(false);
+  const [reprocessStopped, setReprocessStopped] = useState(false);
+  const [reprocessResources, setReprocessResources] = useState<MissingPreviewResource[]>([]);
+  const shouldStopReprocessRef = useRef(false);
 
   useEffect(() => {
     async function loadSubcategories() {
@@ -163,6 +207,168 @@ export function DocumentUploadSection() {
     }
     loadSubcategories();
   }, []);
+
+  // Fetch documents missing PDF previews
+  const { data: missingPreviewsData, isLoading: missingPreviewsLoading, refetch: refetchMissingPreviews } = useQuery({
+    queryKey: ['missing-preview-documents'],
+    queryFn: async () => {
+      const { data: category } = await supabase
+        .from('content_vault_categories')
+        .select('id')
+        .eq('slug', 'business-documents')
+        .single();
+
+      if (!category) return { resources: [], count: 0 };
+
+      const { data: subcats } = await supabase
+        .from('content_vault_subcategories')
+        .select('id, name')
+        .eq('category_id', category.id);
+
+      if (!subcats || subcats.length === 0) return { resources: [], count: 0 };
+
+      const { data: allResources, error } = await supabase
+        .from('content_vault_resources')
+        .select('id, title, resource_url, preview_url, subcategory_id')
+        .in('subcategory_id', subcats.map(s => s.id));
+
+      if (error) throw error;
+
+      const missingPreviews = (allResources || []).filter(r => {
+        const isPdf = r.resource_url?.toLowerCase().endsWith('.pdf');
+        return !isPdf && !r.preview_url;
+      });
+
+      const subcatMap = new Map(subcats.map(s => [s.id, s.name]));
+      
+      return {
+        resources: missingPreviews.map(r => ({
+          ...r,
+          subcategory_name: subcatMap.get(r.subcategory_id) || 'Unknown'
+        })),
+        count: missingPreviews.length
+      };
+    },
+    enabled: reprocessOpen,
+  });
+
+  const reprocessStats: ReprocessStats = {
+    total: reprocessResources.length,
+    pending: reprocessResources.filter(r => r.status === 'pending').length,
+    processing: reprocessResources.filter(r => r.status === 'processing').length,
+    done: reprocessResources.filter(r => r.status === 'done').length,
+    error: reprocessResources.filter(r => r.status === 'error').length,
+  };
+
+  const reprocessedCount = reprocessStats.done + reprocessStats.error;
+  const reprocessProgress = reprocessStats.total > 0 ? (reprocessedCount / reprocessStats.total) * 100 : 0;
+
+  const loadMissingPreviews = useCallback(async () => {
+    await refetchMissingPreviews();
+    if (missingPreviewsData?.resources) {
+      setReprocessResources(missingPreviewsData.resources.map(r => ({
+        id: r.id,
+        title: r.title,
+        resource_url: r.resource_url,
+        preview_url: r.preview_url,
+        subcategory_name: r.subcategory_name,
+        status: 'pending' as const,
+      })));
+    }
+  }, [refetchMissingPreviews, missingPreviewsData]);
+
+  const stopReprocessing = useCallback(() => {
+    shouldStopReprocessRef.current = true;
+    setReprocessStopped(true);
+    toast.info("Stopping after current document...");
+  }, []);
+
+  const startReprocess = useCallback(async () => {
+    if (reprocessResources.length === 0) {
+      toast.error("No documents to reprocess");
+      return;
+    }
+
+    setIsReprocessing(true);
+    setReprocessStopped(false);
+    shouldStopReprocessRef.current = false;
+
+    const pendingResources = reprocessResources.filter(r => r.status === 'pending');
+
+    for (const resource of pendingResources) {
+      if (shouldStopReprocessRef.current) {
+        toast.info("Reprocessing stopped by user");
+        break;
+      }
+
+      setReprocessResources(prev => prev.map(r => 
+        r.id === resource.id ? { ...r, status: 'processing' as const } : r
+      ));
+
+      try {
+        const response = await fetch(resource.resource_url);
+        if (!response.ok) throw new Error('Failed to fetch original document');
+        
+        const blob = await response.blob();
+        const base64 = await blobToBase64(blob);
+        
+        const urlParts = resource.resource_url.split('/');
+        const filename = urlParts[urlParts.length - 1];
+
+        const { data: convertData, error: convertError } = await supabase.functions.invoke('convert-document-to-pdf', {
+          body: { fileBase64: base64, filename }
+        });
+
+        if (convertError) throw convertError;
+        if (!convertData?.pdfBase64) throw new Error('No PDF returned from conversion');
+
+        const urlPath = new URL(resource.resource_url).pathname.slice(1);
+        const previewKey = urlPath
+          .replace('business-documents/', 'business-documents/previews/')
+          .replace(/\.[^.]+$/, '.pdf');
+        
+        const { data: uploadData, error: uploadError } = await supabase.functions.invoke('vault-preview', {
+          body: {
+            action: 'upload-preview',
+            resourceId: resource.id,
+            pdfBase64: convertData.pdfBase64,
+            previewKey: previewKey,
+          }
+        });
+
+        if (uploadError) throw uploadError;
+
+        const previewUrl = uploadData?.previewUrl;
+        if (previewUrl) {
+          const { error: updateError } = await supabase
+            .from('content_vault_resources')
+            .update({ preview_url: previewUrl })
+            .eq('id', resource.id);
+
+          if (updateError) throw updateError;
+        }
+
+        setReprocessResources(prev => prev.map(r => 
+          r.id === resource.id ? { ...r, status: 'done' as const } : r
+        ));
+      } catch (err) {
+        console.error(`Reprocess failed for ${resource.title}:`, err);
+        setReprocessResources(prev => prev.map(r => 
+          r.id === resource.id 
+            ? { ...r, status: 'error' as const, error: err instanceof Error ? err.message : 'Reprocess failed' } 
+            : r
+        ));
+      }
+    }
+
+    setIsReprocessing(false);
+    shouldStopReprocessRef.current = false;
+    setReprocessStopped(false);
+    
+    queryClient.invalidateQueries({ queryKey: ['missing-preview-documents'] });
+  }, [reprocessResources, queryClient]);
+
+  const missingCount = missingPreviewsData?.count || 0;
 
   const stats: UploadStats = {
     total: documents.length,
@@ -735,6 +941,185 @@ export function DocumentUploadSection() {
             <li><span className="text-green-500">RTF</span> - Rich Text Format</li>
           </ul>
         </div>
+
+        {/* Reprocess Missing Previews - Nested Collapsible */}
+        <Collapsible open={reprocessOpen} onOpenChange={setReprocessOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full justify-between p-3 h-auto border border-dashed border-orange-300 dark:border-orange-700 rounded-lg">
+              <div className="flex items-center gap-2">
+                <RefreshCw className="w-4 h-4 text-orange-600" />
+                <span className="font-medium text-sm">Reprocess Missing Previews</span>
+                {missingCount > 0 && (
+                  <Badge variant="destructive" className="text-xs">
+                    {missingCount} missing
+                  </Badge>
+                )}
+              </div>
+              <ChevronDown className={`w-4 h-4 transition-transform ${reprocessOpen ? 'rotate-180' : ''}`} />
+            </Button>
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent className="pt-4 space-y-4">
+            {/* Info */}
+            <div className="flex items-start gap-2 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-xs">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-orange-600" />
+              <div>
+                <p className="font-medium text-orange-800 dark:text-orange-300">Batch PDF Preview Generator</p>
+                <p className="text-orange-700 dark:text-orange-400">
+                  This will re-download each document and generate PDF previews for DOCX/DOC/RTF files that are missing them.
+                </p>
+              </div>
+            </div>
+
+            {/* Loading State */}
+            {missingPreviewsLoading && (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Scanning for missing previews...</span>
+              </div>
+            )}
+
+            {/* Missing Previews Content */}
+            {!missingPreviewsLoading && missingPreviewsData && (
+              <>
+                {missingPreviewsData.count === 0 ? (
+                  <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+                    <CheckCircle2 className="w-5 h-5 mr-2 text-green-500" />
+                    All documents have PDF previews!
+                  </div>
+                ) : (
+                  <>
+                    {/* Summary */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">
+                        <span className="font-medium">{missingPreviewsData.count}</span> documents missing PDF previews
+                      </span>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={loadMissingPreviews}
+                        disabled={isReprocessing}
+                      >
+                        Load for Reprocessing
+                      </Button>
+                    </div>
+
+                    {/* Resource Queue */}
+                    {reprocessResources.length > 0 && (
+                      <ScrollArea className="h-48 border rounded-lg">
+                        <div className="p-2 space-y-1">
+                          {reprocessResources.map(resource => (
+                            <div 
+                              key={resource.id} 
+                              className="flex items-center gap-2 p-2 bg-muted/50 rounded-md text-sm"
+                            >
+                              {resource.status === 'done' ? (
+                                <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                              ) : resource.status === 'error' ? (
+                                <XCircle className="w-4 h-4 text-destructive shrink-0" />
+                              ) : resource.status === 'processing' ? (
+                                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                              ) : (
+                                <EyeOff className="w-4 h-4 text-orange-500 shrink-0" />
+                              )}
+
+                              <span className="flex-1 truncate" title={resource.title}>
+                                {resource.title}
+                              </span>
+
+                              <Badge variant="secondary" className="text-[10px] shrink-0">
+                                {resource.subcategory_name}
+                              </Badge>
+
+                              {resource.status === 'done' && (
+                                <Eye className="w-3 h-3 text-green-500" />
+                              )}
+                              {resource.status === 'error' && (
+                                <span className="text-[10px] text-destructive truncate max-w-[100px]" title={resource.error}>
+                                  {resource.error}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    )}
+
+                    {/* Progress */}
+                    {isReprocessing && (
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            {reprocessStopped ? "Stopping..." : "Reprocessing..."}
+                          </span>
+                          <span className="text-muted-foreground">{reprocessedCount}/{reprocessStats.total}</span>
+                        </div>
+                        <Progress value={reprocessProgress} />
+                        
+                        <div className="flex flex-wrap gap-2">
+                          {reprocessStats.done > 0 && (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              {reprocessStats.done} converted
+                            </Badge>
+                          )}
+                          {reprocessStats.error > 0 && (
+                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+                              <XCircle className="w-3 h-3 mr-1" />
+                              {reprocessStats.error} failed
+                            </Badge>
+                          )}
+                        </div>
+
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          onClick={stopReprocessing}
+                          disabled={reprocessStopped}
+                          className="w-full"
+                        >
+                          <Square className="w-4 h-4 mr-2" />
+                          {reprocessStopped ? "Stopping..." : "Stop Reprocessing"}
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Completed Stats */}
+                    {!isReprocessing && reprocessResources.length > 0 && (reprocessStats.done > 0 || reprocessStats.error > 0) && (
+                      <div className="flex flex-wrap gap-2">
+                        {reprocessStats.done > 0 && (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            {reprocessStats.done} converted
+                          </Badge>
+                        )}
+                        {reprocessStats.error > 0 && (
+                          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+                            <XCircle className="w-3 h-3 mr-1" />
+                            {reprocessStats.error} failed
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Start Button */}
+                    {reprocessResources.length > 0 && (
+                      <Button 
+                        onClick={startReprocess} 
+                        disabled={isReprocessing || reprocessStats.pending === 0}
+                        className="w-full"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Reprocess {reprocessStats.pending} Document(s)
+                      </Button>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
       </CollapsibleContent>
     </Collapsible>
   );
