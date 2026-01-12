@@ -11,7 +11,8 @@ import {
   Loader2,
   Image as ImageIcon
 } from 'lucide-react';
-import { PostPreview } from './PostPreview';
+import { PostPreview, BackgroundVariant } from './PostPreview';
+import { cn } from '@/lib/utils';
 
 interface GeneratedContent {
   headline: string;
@@ -29,7 +30,15 @@ interface PostContentEditorProps {
   templateType: string;
   platform: string;
   carouselSlides: number;
+  bgVariant: BackgroundVariant;
+  onBgVariantChange: (variant: BackgroundVariant) => void;
 }
+
+const BG_OPTIONS: { id: BackgroundVariant; label: string; color: string; textColor: string }[] = [
+  { id: 'dark', label: 'Dark', color: '#1a1918', textColor: 'white' },
+  { id: 'light', label: 'White', color: '#ffffff', textColor: '#1a1918' },
+  { id: 'gold', label: 'Gold', color: '#f5c243', textColor: '#1a1918' },
+];
 
 export const PostContentEditor = ({
   content,
@@ -39,7 +48,9 @@ export const PostContentEditor = ({
   isGenerating,
   templateType,
   platform,
-  carouselSlides
+  carouselSlides,
+  bgVariant,
+  onBgVariantChange
 }: PostContentEditorProps) => {
   const updateField = (field: keyof GeneratedContent, value: any) => {
     onChange({ ...content, [field]: value });
@@ -168,7 +179,32 @@ export const PostContentEditor = ({
               Real-time preview of your post design
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {/* Background Color Selector */}
+            <div className="space-y-2">
+              <Label>Background Color</Label>
+              <div className="flex gap-2">
+                {BG_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => onBgVariantChange(opt.id)}
+                    className={cn(
+                      "flex-1 h-10 rounded-lg border-2 transition-all flex items-center justify-center text-xs font-medium",
+                      bgVariant === opt.id 
+                        ? "border-primary ring-2 ring-primary/20" 
+                        : "border-border hover:border-primary/50"
+                    )}
+                    style={{ 
+                      backgroundColor: opt.color,
+                      color: opt.textColor
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <PostPreview
               content={{
                 headline: content.headline || 'Your headline here',
@@ -178,6 +214,7 @@ export const PostContentEditor = ({
               }}
               templateType={templateType}
               slideNumber={1}
+              bgVariant={bgVariant}
               className="max-w-[280px] mx-auto"
             />
             <p className="text-xs text-muted-foreground text-center mt-3">

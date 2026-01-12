@@ -1,10 +1,11 @@
 import { cn } from "@/lib/utils";
 
 // Gold asterisk decoration SVG
-export const GoldAsterisk = ({ className }: { className?: string }) => (
+export const GoldAsterisk = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
   <svg 
     viewBox="0 0 40 40" 
     className={cn("w-8 h-8 text-[#f5c243]", className)}
+    style={style}
     fill="currentColor"
   >
     <path d="M20 0L22.5 15L40 12.5L25 20L40 27.5L22.5 25L20 40L17.5 25L0 27.5L15 20L0 12.5L17.5 15L20 0Z" />
@@ -12,7 +13,15 @@ export const GoldAsterisk = ({ className }: { className?: string }) => (
 );
 
 // Circle emphasis around a word
-export const CircleEmphasis = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+export const CircleEmphasis = ({ 
+  children, 
+  className,
+  accentColor = "#f5c243"
+}: { 
+  children: React.ReactNode; 
+  className?: string;
+  accentColor?: string;
+}) => (
   <span className={cn("relative inline-block", className)}>
     <svg 
       className="absolute -inset-2 w-[calc(100%+16px)] h-[calc(100%+16px)]" 
@@ -25,7 +34,7 @@ export const CircleEmphasis = ({ children, className }: { children: React.ReactN
         rx="48" 
         ry="22" 
         fill="none" 
-        stroke="#f5c243" 
+        stroke={accentColor}
         strokeWidth="2"
         className="opacity-90"
       />
@@ -38,22 +47,41 @@ export const CircleEmphasis = ({ children, className }: { children: React.ReactN
 export const PillButton = ({ 
   children, 
   variant = "white",
+  bgVariant = "dark",
   className 
 }: { 
   children: React.ReactNode; 
-  variant?: "white" | "gold" | "dark";
+  variant?: "white" | "gold" | "dark" | "primary";
+  bgVariant?: "dark" | "light" | "gold";
   className?: string;
 }) => {
-  const variants = {
-    white: "bg-white text-[#1a1918]",
-    gold: "bg-[#f5c243] text-[#1a1918]",
-    dark: "bg-[#2a2928] text-white border border-white/20"
+  // Adjust variant based on background for contrast
+  const getVariantStyles = () => {
+    if (variant === "primary") {
+      return "bg-[#f5c243] text-[#1a1918]";
+    }
+    if (bgVariant === "light") {
+      return variant === "gold" 
+        ? "bg-[#f5c243] text-[#1a1918]" 
+        : "bg-[#1a1918] text-white";
+    }
+    if (bgVariant === "gold") {
+      return variant === "gold" 
+        ? "bg-[#1a1918] text-white" 
+        : "bg-white text-[#1a1918]";
+    }
+    // Dark background
+    return variant === "gold" 
+      ? "bg-[#f5c243] text-[#1a1918]" 
+      : variant === "dark"
+      ? "bg-[#2a2928] text-white border border-white/20"
+      : "bg-white text-[#1a1918]";
   };
   
   return (
     <div className={cn(
       "inline-flex items-center justify-center px-6 py-2.5 rounded-full font-semibold text-sm",
-      variants[variant],
+      getVariantStyles(),
       className
     )}>
       {children}
@@ -101,29 +129,39 @@ export const BrandMark = ({ className }: { className?: string }) => (
 
 // Slide indicator
 export const SlideIndicator = ({ 
-  current, 
+  current,
+  variant = "dark",
   className 
 }: { 
-  current: number | string; 
+  current: number | string;
+  variant?: "dark" | "light" | "gold";
   className?: string;
-}) => (
-  <span className={cn("text-white/60 text-sm font-medium", className)}>
-    {typeof current === 'number' ? String(current).padStart(2, '0') : current}
-  </span>
-);
+}) => {
+  const textColor = variant === "dark" ? "text-white/60" : variant === "light" ? "text-[#1a1918]/60" : "text-[#1a1918]/70";
+  return (
+    <span className={cn(textColor, "text-sm font-medium", className)}>
+      {typeof current === 'number' ? String(current).padStart(2, '0') : current}
+    </span>
+  );
+};
 
 // Social handle text
 export const SocialHandle = ({ 
-  handle = "@launchely.co",
+  handle = "@launchely.com",
+  variant = "dark",
   className 
 }: { 
   handle?: string;
+  variant?: "dark" | "light" | "gold";
   className?: string;
-}) => (
-  <span className={cn("text-white/50 text-xs font-medium", className)}>
-    {handle}
-  </span>
-);
+}) => {
+  const textColor = variant === "dark" ? "text-white/50" : variant === "light" ? "text-[#1a1918]/50" : "text-[#1a1918]/70";
+  return (
+    <span className={cn(textColor, "text-xs font-medium", className)}>
+      {handle}
+    </span>
+  );
+};
 
 // Find the most impactful word to emphasize
 export const findEmphasisWord = (text: string): { before: string; word: string; after: string } | null => {
