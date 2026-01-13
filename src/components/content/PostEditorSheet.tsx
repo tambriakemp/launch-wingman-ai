@@ -231,6 +231,21 @@ export function PostEditorSheet({
     enabled: !!user && open,
   });
 
+  const { data: facebookConnection } = useQuery({
+    queryKey: ["facebook-connection", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("social_connections")
+        .select("id, account_name, account_id, page_id")
+        .eq("user_id", user!.id)
+        .eq("platform", "facebook")
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!user && open,
+  });
+
   // Initialize form when opening
   useEffect(() => {
     if (!open) return;
@@ -700,6 +715,55 @@ export function PostEditorSheet({
     }
   };
 
+  const postToFacebook = async () => {
+    if (!facebookConnection) {
+      toast.error("Please connect your Facebook Page first");
+      return;
+    }
+
+    setIsPosting(true);
+    try {
+      const response = await supabase.functions.invoke("post-to-facebook", {
+        body: {
+          message: content,
+          imageUrl: formData.media_url || undefined,
+          videoUrl: formData.media_type === "video" ? formData.media_url : undefined,
+          link: formData.link_url || undefined,
+          postType: formData.media_type === "video" ? "video" : formData.media_url ? "photo" : "feed",
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Failed to post to Facebook");
+      }
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      if (timelineItemId) {
+        await supabase
+          .from("content_planner")
+          .update({
+            scheduled_platforms: formData.scheduled_platforms,
+            scheduled_at: new Date().toISOString(),
+            status: "completed",
+          })
+          .eq("id", timelineItemId);
+      }
+
+      toast.success("Posted to Facebook successfully!");
+      trackSocialPostPublish('facebook');
+      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+      onSaved?.();
+      onOpenChange(false);
+    } catch (error: any) {
+      console.error("Error posting to Facebook:", error);
+      toast.error(error.message || "Failed to post to Facebook");
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
   // Validate required fields before posting
   const validatePostRequirements = (platform: string): boolean => {
     const errors: string[] = [];
@@ -723,6 +787,10 @@ export function PostEditorSheet({
       }
       if (!instagramConnection) {
         errors.push("Please connect your Instagram account first");
+      }
+    } else if (platform === "facebook") {
+      if (!facebookConnection) {
+        errors.push("Please connect your Facebook Page first");
       }
     }
     
@@ -751,6 +819,8 @@ export function PostEditorSheet({
       await postToPinterest();
     } else if (selectedPlatform === "instagram") {
       await postToInstagram();
+    } else if (selectedPlatform === "facebook") {
+      await postToFacebook();
     } else {
       toast.error(`Posting to ${selectedPlatform} is not yet supported`);
     }

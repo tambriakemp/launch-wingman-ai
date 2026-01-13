@@ -93,6 +93,8 @@ const Settings = () => {
   const [isDisconnectingPinterest, setIsDisconnectingPinterest] = useState(false);
   const [isConnectingInstagram, setIsConnectingInstagram] = useState(false);
   const [isDisconnectingInstagram, setIsDisconnectingInstagram] = useState(false);
+  const [isConnectingFacebook, setIsConnectingFacebook] = useState(false);
+  const [isDisconnectingFacebook, setIsDisconnectingFacebook] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   // Annual Review state
@@ -132,6 +134,7 @@ const Settings = () => {
 
   const pinterestConnection = socialConnections.find(c => c.platform === 'pinterest');
   const instagramConnection = socialConnections.find(c => c.platform === 'instagram');
+  const facebookConnection = socialConnections.find(c => c.platform === 'facebook');
 
   // Delete project mutation
   const deleteProjectMutation = useMutation({
@@ -401,6 +404,52 @@ const Settings = () => {
       toast.error("Failed to disconnect Instagram");
     } finally {
       setIsDisconnectingInstagram(false);
+    }
+  };
+
+  const handleConnectFacebook = async () => {
+    if (!user) return;
+    
+    setIsConnectingFacebook(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('facebook-auth-start', {
+        body: { 
+          redirect_url: '/settings' 
+        }
+      });
+      
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+        toast.info("Facebook login opened in a new tab. Complete the authorization there.");
+        setIsConnectingFacebook(false);
+      }
+    } catch (error) {
+      console.error('Facebook connect error:', error);
+      toast.error("Failed to connect Facebook. Please try again.");
+      setIsConnectingFacebook(false);
+    }
+  };
+
+  const handleDisconnectFacebook = async () => {
+    if (!user || !facebookConnection) return;
+    
+    setIsDisconnectingFacebook(true);
+    try {
+      const { error } = await supabase
+        .from('social_connections')
+        .delete()
+        .eq('id', facebookConnection.id);
+      
+      if (error) throw error;
+      
+      toast.success("Facebook disconnected");
+      refetchConnections();
+    } catch (error) {
+      console.error('Facebook disconnect error:', error);
+      toast.error("Failed to disconnect Facebook");
+    } finally {
+      setIsDisconnectingFacebook(false);
     }
   };
 
@@ -952,9 +1001,73 @@ const Settings = () => {
                   )}
                 </div>
 
+                {/* Facebook Connection */}
+                <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#1877F2] flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="currentColor">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Facebook Page</p>
+                      {facebookConnection ? (
+                        <p className="text-sm text-muted-foreground">
+                          Connected: {facebookConnection.account_name || 'Your Page'}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Not connected</p>
+                      )}
+                    </div>
+                  </div>
+                  {facebookConnection ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDisconnectFacebook}
+                      disabled={isDisconnectingFacebook}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      {isDisconnectingFacebook ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Unlink className="w-4 h-4 mr-1" />
+                          Disconnect
+                        </>
+                      )}
+                    </Button>
+                  ) : isSubscribed ? (
+                    <Button
+                      size="sm"
+                      onClick={handleConnectFacebook}
+                      disabled={isConnectingFacebook}
+                    >
+                      {isConnectingFacebook ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Link2 className="w-4 h-4 mr-1" />
+                          Connect
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowUpgradeDialog(true)}
+                      className="gap-1.5"
+                    >
+                      <Crown className="w-3.5 h-3.5 text-primary" />
+                      Pro
+                    </Button>
+                  )}
+                </div>
+
                 {/* Future platforms placeholder */}
                 <p className="text-xs text-muted-foreground pt-2">
-                  More platforms coming soon: Twitter/X, Facebook
+                  More platforms coming soon: Twitter/X, TikTok
                 </p>
               </div>
             </CardContent>

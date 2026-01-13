@@ -35,7 +35,7 @@ export const PLATFORMS: PlatformConfig[] = [
     maxMedia: 10,
     supportsVideo: true,
     maxCaptionLength: 63206,
-    hidden: true,
+    hidden: false,
   },
   {
     id: "twitter",
