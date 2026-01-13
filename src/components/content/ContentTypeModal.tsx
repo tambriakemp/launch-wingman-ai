@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Palette, Check } from "lucide-react";
+import { Tag, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,8 @@ export const CONTENT_TYPES: ContentTypeOption[] = [
   { id: "stories", name: "Stories", color: "bg-amber-500", hex: "#f59e0b" },
   { id: "offer", name: "Offer", color: "bg-emerald-500", hex: "#10b981" },
   { id: "behind-the-scenes", name: "Behind the Scenes", color: "bg-cyan-500", hex: "#06b6d4" },
+  { id: "educational", name: "Educational", color: "bg-blue-500", hex: "#3b82f6" },
+  { id: "promotional", name: "Promotional", color: "bg-purple-500", hex: "#a855f7" },
 ];
 
 interface ContentTypeModalProps {
@@ -62,7 +64,7 @@ export function ContentTypeModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5" />
+            <Tag className="h-5 w-5" />
             Content Type
           </DialogTitle>
           <DialogDescription>
