@@ -328,6 +328,12 @@ const WeeklyPostCard = ({ item, onEdit, onDelete }: WeeklyPostCardProps) => {
       </p>
 
       {/* Status badge */}
+      {item.status === "draft" && (
+        <div className="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px]">
+          <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground" />
+          Draft
+        </div>
+      )}
       {item.status === "scheduled" && (
         <div className="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 text-[10px]">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
