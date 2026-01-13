@@ -741,17 +741,8 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                     "flex items-start gap-3 p-3 rounded-lg border border-border bg-card hover:bg-accent/30 transition-colors group",
                                     labelInfo && "border-l-4"
                                   )}
-                                  style={labelInfo ? { borderLeftColor: `var(--${labelInfo.color.replace('bg-', '')})` } : undefined}
+                                  style={labelInfo ? { borderLeftColor: labelInfo.hex } : undefined}
                                 >
-                                  {/* Label color indicator */}
-                                  {labelInfo && (
-                                    <div 
-                                      className={cn(
-                                        "w-1 self-stretch rounded-full -ml-3 -my-3 mr-2",
-                                        labelInfo.color
-                                      )}
-                                    />
-                                  )}
                                   <div 
                                     className={cn(
                                       "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
