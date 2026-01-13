@@ -139,11 +139,9 @@ serve(async (req) => {
     // Get the callback URL - using Supabase function URL
     const callbackUrl = `${supabaseUrl}/functions/v1/tiktok-auth-callback`;
 
-    // Build TikTok OAuth URL - use sandbox domain for sandbox environment
-    const authDomain = environment === "sandbox" 
-      ? "https://www.sandbox.tiktok.com/v2/auth/authorize/"
-      : "https://www.tiktok.com/v2/auth/authorize/";
-    const authUrl = new URL(authDomain);
+    // Build TikTok OAuth URL - both sandbox and production use the same domain
+    // The sandbox distinction is determined by the client_key used (sandbox vs production app)
+    const authUrl = new URL("https://www.tiktok.com/v2/auth/authorize/");
     authUrl.searchParams.set("client_key", clientKey);
     authUrl.searchParams.set("response_type", "code");
     authUrl.searchParams.set("scope", "user.info.basic,video.publish");
