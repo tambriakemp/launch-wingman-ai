@@ -15,17 +15,18 @@ interface LabelOption {
   id: string;
   name: string;
   color: string;
+  hex: string;
 }
 
 const DEFAULT_LABELS: LabelOption[] = [
-  { id: "educational", name: "Educational", color: "bg-blue-500" },
-  { id: "promotional", name: "Promotional", color: "bg-emerald-500" },
-  { id: "engagement", name: "Engagement", color: "bg-purple-500" },
-  { id: "testimonial", name: "Testimonial", color: "bg-amber-500" },
-  { id: "behind-the-scenes", name: "Behind the Scenes", color: "bg-cyan-500" },
-  { id: "announcement", name: "Announcement", color: "bg-rose-500" },
-  { id: "tips", name: "Tips & Tricks", color: "bg-indigo-500" },
-  { id: "story", name: "Story", color: "bg-orange-500" },
+  { id: "educational", name: "Educational", color: "bg-blue-500", hex: "#3b82f6" },
+  { id: "promotional", name: "Promotional", color: "bg-emerald-500", hex: "#10b981" },
+  { id: "engagement", name: "Engagement", color: "bg-purple-500", hex: "#a855f7" },
+  { id: "testimonial", name: "Testimonial", color: "bg-amber-500", hex: "#f59e0b" },
+  { id: "behind-the-scenes", name: "Behind the Scenes", color: "bg-cyan-500", hex: "#06b6d4" },
+  { id: "announcement", name: "Announcement", color: "bg-rose-500", hex: "#f43f5e" },
+  { id: "tips", name: "Tips & Tricks", color: "bg-indigo-500", hex: "#6366f1" },
+  { id: "story", name: "Story", color: "bg-orange-500", hex: "#f97316" },
 ];
 
 interface LabelsModalProps {
