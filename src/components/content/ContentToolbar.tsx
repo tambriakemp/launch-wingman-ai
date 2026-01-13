@@ -1,4 +1,4 @@
-import { Layers, ImagePlus } from "lucide-react";
+import { Layers, ImagePlus, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -24,6 +24,8 @@ interface ContentToolbarProps {
   showMultiplePlatforms: boolean;
   onSelectMedia: () => void;
   hasMedia?: boolean;
+  onLabelsClick: () => void;
+  hasLabels?: boolean;
 }
 
 export function ContentToolbar({
@@ -35,6 +37,8 @@ export function ContentToolbar({
   showMultiplePlatforms,
   onSelectMedia,
   hasMedia,
+  onLabelsClick,
+  hasLabels,
 }: ContentToolbarProps) {
   return (
     <TooltipProvider>
@@ -116,6 +120,27 @@ export function ContentToolbar({
           </TooltipTrigger>
           <TooltipContent side="bottom">
             <p className="text-xs">Select media</p>
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Labels icon */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onLabelsClick}
+              className={cn(
+                "h-8 w-8 p-0",
+                hasLabels && "bg-primary/10 text-primary"
+              )}
+            >
+              <Tag className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <p className="text-xs">Add labels</p>
           </TooltipContent>
         </Tooltip>
       </div>
