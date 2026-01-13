@@ -21,14 +21,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    
+    // Use anon key client for auth verification
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    
+    // Use service role for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Verify user from JWT
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
     
     if (authError || !user) {
       console.error('Auth error:', authError);
@@ -78,10 +84,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get the connection with encrypted token
+    // Get the connection with access token (using service role to bypass RLS)
     const { data: connection, error: fetchError } = await supabase
       .from('social_connections')
-      .select('id, encrypted_access_token')
+      .select('id, access_token')
       .eq('user_id', user.id)
       .eq('platform', platformName)
       .single();
@@ -94,14 +100,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Decrypt the access token
+    // Get the access token - try to decrypt if it's encrypted, otherwise use directly
     let accessToken = null;
-    if (connection.encrypted_access_token) {
+    if (connection.access_token) {
+      // Try to decrypt the token first
       const { data: decryptedToken, error: decryptError } = await supabase
-        .rpc('decrypt_token', { encrypted_token: connection.encrypted_access_token });
+        .rpc('decrypt_token', { encrypted_token: connection.access_token });
       
       if (decryptError) {
-        console.error('Decrypt error:', decryptError);
+        console.log('Token not encrypted or decrypt failed, using raw token');
+        accessToken = connection.access_token;
       } else {
         accessToken = decryptedToken;
       }
