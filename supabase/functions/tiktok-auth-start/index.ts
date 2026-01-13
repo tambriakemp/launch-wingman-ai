@@ -29,17 +29,8 @@ serve(async (req) => {
   }
 
   try {
-    const clientKey = Deno.env.get("TIKTOK_CLIENT_KEY");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!clientKey) {
-      console.error("Missing TIKTOK_CLIENT_KEY");
-      return new Response(
-        JSON.stringify({ error: "TikTok client key not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error("Missing Supabase configuration");
@@ -93,25 +84,40 @@ serve(async (req) => {
     // Use admin client for database operations
     const supabase = supabaseAdmin;
 
-    // Parse optional redirect URL from request body
+    // Parse request body for redirect URL and environment
     let redirectUrl = "";
+    let environment = "production";
     try {
       const body = await req.json();
       redirectUrl = body.redirect_url || "";
+      environment = body.environment || "production";
     } catch {
-      // No body or invalid JSON, use default
+      // No body or invalid JSON, use defaults
+    }
+
+    // Get client key based on environment
+    const clientKey = environment === "sandbox" 
+      ? Deno.env.get("TIKTOK_SANDBOX_CLIENT_KEY")
+      : Deno.env.get("TIKTOK_CLIENT_KEY");
+
+    if (!clientKey) {
+      console.error(`Missing TIKTOK_${environment === "sandbox" ? "SANDBOX_" : ""}CLIENT_KEY`);
+      return new Response(
+        JSON.stringify({ error: `TikTok ${environment} client key not configured` }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Generate PKCE values
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = await generateCodeChallenge(codeVerifier);
 
-    // Store code verifier in database
+    // Store code verifier in database with environment info
     const { error: storeError } = await supabase
       .from("oauth_state")
       .insert({
         user_id: user.id,
-        provider: "tiktok",
+        provider: environment === "sandbox" ? "tiktok_sandbox" : "tiktok",
         code_verifier: codeVerifier,
       });
 
@@ -123,10 +129,11 @@ serve(async (req) => {
       );
     }
 
-    // Build state parameter
+    // Build state parameter (include environment)
     const state = btoa(JSON.stringify({
       user_id: user.id,
       redirect_url: redirectUrl,
+      environment: environment,
     }));
 
     // Get the callback URL - using Supabase function URL
