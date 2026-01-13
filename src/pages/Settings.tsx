@@ -533,9 +533,8 @@ const Settings = () => {
       
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, '_blank');
-        toast.info(`TikTok ${tiktokEnvironment} login opened in a new tab. Complete the authorization there.`);
-        setIsConnectingTikTok(false);
+        // Open in same tab for seamless return to Settings
+        window.location.href = data.url;
       }
     } catch (error) {
       console.error('TikTok connect error:', error);
