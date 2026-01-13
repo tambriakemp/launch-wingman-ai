@@ -557,13 +557,17 @@ export function PostEditorSheet({
     setSaving(true);
     try {
       if (timelineItemId) {
-        // Update existing timeline item
+        // Update existing timeline item - include media and platforms
         const { error } = await supabase
           .from("content_planner")
           .update({
             title: title || "Untitled post",
             content: content,
+            content_type: contentType,
             status: "draft",
+            media_url: formData.media_url,
+            media_type: formData.media_type,
+            scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
           })
           .eq("id", timelineItemId);
 
@@ -584,6 +588,9 @@ export function PostEditorSheet({
             content_type: contentType,
             content: content || null,
             status: "draft",
+            media_url: formData.media_url,
+            media_type: formData.media_type,
+            scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
           })
           .select()
           .single();

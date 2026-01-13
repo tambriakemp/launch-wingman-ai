@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, FileText, List, Sparkles } from "lucide-react";
+import { CalendarDays, FileText, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-import { SavedIdeasLink } from "./SavedIdeasLink";
 import { SavedIdeasSheet } from "./SavedIdeasSheet";
 import { PostEditorSheet } from "./PostEditorSheet";
-import { TimelineSlotGrid } from "./TimelineSlotGrid";
 import { ContentCalendarView } from "./ContentCalendarView";
 import { SalesPageCopyTab } from "./sales-copy";
 import { GenerateLaunchContentModal } from "./GenerateLaunchContentModal";
@@ -20,7 +18,7 @@ import type { SavedItem } from "./SavedIdeasSection";
 
 export type ContentType = "general" | "stories" | "offer" | "behind-the-scenes";
 
-type ContentViewTab = "my-timeline" | "social-schedule" | "sales-copy";
+type ContentViewTab = "social-schedule" | "sales-copy";
 
 interface TalkingPoint {
   id: string;
@@ -39,7 +37,7 @@ interface ContentTabProps {
 }
 
 export const ContentTab = ({ projectId }: ContentTabProps) => {
-  const [activeTab, setActiveTab] = useState<ContentViewTab>("my-timeline");
+  const [activeTab, setActiveTab] = useState<ContentViewTab>("social-schedule");
   const [postEditorOpen, setPostEditorOpen] = useState(false);
   const [savedSheetOpen, setSavedSheetOpen] = useState(false);
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
@@ -111,28 +109,8 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
         tipText="These are starting points, not requirements. Use what feels right for you."
       />
 
-      {/* Saved Ideas Link - accessible from all tabs */}
-      <div className="flex justify-end">
-        <SavedIdeasLink 
-          projectId={projectId} 
-          onOpen={() => setSavedSheetOpen(true)} 
-        />
-      </div>
-
       {/* Tab Navigation */}
       <div className="flex items-center gap-1 border-b border-border">
-        <button
-          onClick={() => setActiveTab("my-timeline")}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
-            activeTab === "my-timeline"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <List className="w-4 h-4" />
-          Launch Content Timeline
-        </button>
         <button
           onClick={() => setActiveTab("social-schedule")}
           className={cn(
@@ -160,12 +138,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
       </div>
 
       {/* Tab Content */}
-      {activeTab === "my-timeline" ? (
-        <TimelineSlotGrid
-          projectId={projectId}
-          onWritePost={handleTimelineWritePost}
-        />
-      ) : activeTab === "social-schedule" ? (
+      {activeTab === "social-schedule" ? (
         hasAccess('social_calendar') ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
