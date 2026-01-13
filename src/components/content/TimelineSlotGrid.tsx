@@ -28,6 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { CONTENT_TYPE_COLORS, CONTENT_TYPE_LABELS } from "./contentTypeColors";
+import { DEFAULT_LABELS } from "./LabelsModal";
 
 interface TimelineSlotGridProps {
   projectId: string;
@@ -51,6 +52,7 @@ interface ContentPlannerItem {
   content: string | null;
   scheduled_at: string | null;
   scheduled_platforms: string[] | null;
+  labels?: string[] | null;
 }
 
 interface GeneratedSuggestion {
@@ -727,11 +729,29 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                               </div>
                               
                               {/* Existing items */}
-                              {dayItems.map((item) => (
+                              {dayItems.map((item) => {
+                                // Get the label color for left border
+                                const itemLabel = item.labels?.[0];
+                                const labelInfo = itemLabel ? DEFAULT_LABELS.find(l => l.id === itemLabel) : null;
+                                
+                                return (
                                 <div
                                   key={item.id}
-                                  className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card hover:bg-accent/30 transition-colors group"
+                                  className={cn(
+                                    "flex items-start gap-3 p-3 rounded-lg border border-border bg-card hover:bg-accent/30 transition-colors group",
+                                    labelInfo && "border-l-4"
+                                  )}
+                                  style={labelInfo ? { borderLeftColor: `var(--${labelInfo.color.replace('bg-', '')})` } : undefined}
                                 >
+                                  {/* Label color indicator */}
+                                  {labelInfo && (
+                                    <div 
+                                      className={cn(
+                                        "w-1 self-stretch rounded-full -ml-3 -my-3 mr-2",
+                                        labelInfo.color
+                                      )}
+                                    />
+                                  )}
                                   <div 
                                     className={cn(
                                       "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
@@ -878,7 +898,8 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                     </div>
                                   </div>
                                 </div>
-                              ))}
+                                );
+                              })}
                               
                               {/* Suggested slots (unfilled templates) */}
                               {dayTemplates

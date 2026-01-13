@@ -31,36 +31,33 @@ const DEFAULT_LABELS: LabelOption[] = [
 interface LabelsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedLabels: string[];
-  onLabelsChange: (labels: string[]) => void;
+  selectedLabel: string | null;
+  onLabelChange: (label: string | null) => void;
 }
 
 export function LabelsModal({
   open,
   onOpenChange,
-  selectedLabels,
-  onLabelsChange,
+  selectedLabel,
+  onLabelChange,
 }: LabelsModalProps) {
-  const [localLabels, setLocalLabels] = useState<string[]>(selectedLabels);
+  const [localLabel, setLocalLabel] = useState<string | null>(selectedLabel);
 
   // Sync local state when modal opens
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
-      setLocalLabels(selectedLabels);
+      setLocalLabel(selectedLabel);
     }
     onOpenChange(isOpen);
   };
 
-  const toggleLabel = (labelId: string) => {
-    setLocalLabels((prev) =>
-      prev.includes(labelId)
-        ? prev.filter((l) => l !== labelId)
-        : [...prev, labelId]
-    );
+  const selectLabel = (labelId: string) => {
+    // Toggle off if already selected, otherwise select
+    setLocalLabel((prev) => (prev === labelId ? null : labelId));
   };
 
   const handleSave = () => {
-    onLabelsChange(localLabels);
+    onLabelChange(localLabel);
     onOpenChange(false);
   };
 
@@ -79,12 +76,12 @@ export function LabelsModal({
 
         <div className="space-y-2 py-4">
           {DEFAULT_LABELS.map((label) => {
-            const isSelected = localLabels.includes(label.id);
+            const isSelected = localLabel === label.id;
             return (
               <button
                 key={label.id}
                 type="button"
-                onClick={() => toggleLabel(label.id)}
+                onClick={() => selectLabel(label.id)}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors text-left",
                   isSelected
