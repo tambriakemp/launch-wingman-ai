@@ -1240,6 +1240,33 @@ export type Database = {
           },
         ]
       }
+      oauth_state: {
+        Row: {
+          code_verifier: string
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          provider: string
+          user_id: string
+        }
+        Insert: {
+          code_verifier: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          provider: string
+          user_id: string
+        }
+        Update: {
+          code_verifier?: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          provider?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       offers: {
         Row: {
           community_platform: string | null

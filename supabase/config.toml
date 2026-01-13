@@ -188,3 +188,12 @@ verify_jwt = false
 
 [functions.convert-document-to-pdf]
 verify_jwt = false
+
+[functions.tiktok-auth-start]
+verify_jwt = false
+
+[functions.tiktok-auth-callback]
+verify_jwt = false
+
+[functions.post-to-tiktok]
+verify_jwt = false
