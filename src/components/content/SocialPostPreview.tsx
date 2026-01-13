@@ -160,11 +160,21 @@ function PinterestPreview({ content, mediaUrl, mediaType, linkUrl, title }: { co
 }
 
 function TikTokPreview({ content, mediaUrl, mediaType }: { content: string; mediaUrl: string | null; mediaType: string | null }) {
+  const [videoError, setVideoError] = useState(false);
+
   return (
-    <div className="flex flex-col h-full bg-black relative">
+    <div className="flex flex-col h-[380px] bg-black relative">
       {/* Video/Image */}
       {mediaUrl ? (
-        mediaType === "video" ? (
+        videoError ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <TikTokIcon className="w-12 h-12 text-white/50 mx-auto mb-2" />
+              <span className="text-xs text-white/50">Preview unavailable</span>
+              <span className="text-[10px] text-white/30 block mt-1">You can still post</span>
+            </div>
+          </div>
+        ) : mediaType === "video" ? (
           <video 
             src={mediaUrl} 
             className="w-full h-full object-cover absolute inset-0" 
@@ -172,9 +182,16 @@ function TikTokPreview({ content, mediaUrl, mediaType }: { content: string; medi
             loop 
             autoPlay 
             playsInline
+            preload="metadata"
+            onError={() => setVideoError(true)}
           />
         ) : (
-          <img src={mediaUrl} alt="" className="w-full h-full object-cover absolute inset-0" />
+          <img 
+            src={mediaUrl} 
+            alt="" 
+            className="w-full h-full object-cover absolute inset-0" 
+            onError={() => setVideoError(true)}
+          />
         )
       ) : (
         <div className="absolute inset-0 flex items-center justify-center">
@@ -186,7 +203,7 @@ function TikTokPreview({ content, mediaUrl, mediaType }: { content: string; medi
       )}
 
       {/* Overlay gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
 
       {/* Side actions */}
       <div className="absolute right-2 bottom-24 flex flex-col gap-3">

@@ -953,11 +953,19 @@ export function PostEditorSheet({
         },
       });
 
+      // Handle Supabase function invocation error
       if (response.error) {
-        throw new Error(response.error.message || "Failed to post to TikTok");
+        // Try to extract TikTok-specific error from response data
+        const tiktokError = response.data?.tiktok_error;
+        const errorMessage = tiktokError?.message || response.data?.error || response.error.message || "Failed to post to TikTok";
+        throw new Error(errorMessage);
       }
+      
+      // Handle error returned in response data
       if (response.data?.error) {
-        throw new Error(response.data.error);
+        const tiktokError = response.data?.tiktok_error;
+        const errorMessage = tiktokError?.message || response.data.error;
+        throw new Error(errorMessage);
       }
 
       if (timelineItemId) {

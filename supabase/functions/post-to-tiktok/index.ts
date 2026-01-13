@@ -122,6 +122,8 @@ serve(async (req) => {
       );
     }
 
+    console.log("Starting TikTok upload for video:", videoUrl);
+
     // Get TikTok connection (support both production and sandbox)
     const { data: connections, error: connectionError } = await supabase
       .from("social_connections")
@@ -166,7 +168,24 @@ serve(async (req) => {
       accessToken = decryptedToken;
     }
 
-    // Initialize video post
+    // Step 1: Download the video to get its size and bytes
+    console.log("Downloading video from URL...");
+    const videoResponse = await fetch(videoUrl);
+    if (!videoResponse.ok) {
+      console.error("Failed to download video:", videoResponse.status, videoResponse.statusText);
+      return new Response(
+        JSON.stringify({ error: "Failed to download video from storage" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const videoBytes = await videoResponse.arrayBuffer();
+    const videoSize = videoBytes.byteLength;
+    const contentType = videoResponse.headers.get("content-type") || "video/mp4";
+    console.log(`Video downloaded: ${videoSize} bytes, content-type: ${contentType}`);
+
+    // Step 2: Initialize video post with FILE_UPLOAD
+    console.log("Initializing TikTok upload with FILE_UPLOAD...");
     const initResponse = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
       method: "POST",
       headers: {
@@ -182,13 +201,16 @@ serve(async (req) => {
           disable_stitch: false,
         },
         source_info: {
-          source: "PULL_FROM_URL",
-          video_url: videoUrl,
+          source: "FILE_UPLOAD",
+          video_size: videoSize,
+          chunk_size: videoSize, // Single chunk upload
+          total_chunk_count: 1,
         },
       }),
     });
 
     const initData = await initResponse.json();
+    console.log("TikTok init response:", JSON.stringify(initData));
 
     if (initData.error?.code) {
       console.error("TikTok init error:", initData);
@@ -202,16 +224,47 @@ serve(async (req) => {
     }
 
     const publishId = initData.data?.publish_id;
+    const uploadUrl = initData.data?.upload_url;
 
-    if (!publishId) {
-      console.error("No publish_id in response:", initData);
+    if (!publishId || !uploadUrl) {
+      console.error("No publish_id or upload_url in response:", initData);
       return new Response(
-        JSON.stringify({ error: "Failed to get publish ID from TikTok" }),
+        JSON.stringify({ error: "Failed to get upload URL from TikTok" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Poll for publish status (TikTok processes videos async)
+    console.log(`Got publish_id: ${publishId}, uploading to: ${uploadUrl}`);
+
+    // Step 3: Upload the video bytes to TikTok
+    console.log("Uploading video bytes to TikTok...");
+    const uploadResponse = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": contentType,
+        "Content-Length": videoSize.toString(),
+        "Content-Range": `bytes 0-${videoSize - 1}/${videoSize}`,
+      },
+      body: videoBytes,
+    });
+
+    console.log("Upload response status:", uploadResponse.status);
+    
+    if (!uploadResponse.ok) {
+      const uploadError = await uploadResponse.text();
+      console.error("TikTok upload failed:", uploadResponse.status, uploadError);
+      return new Response(
+        JSON.stringify({ 
+          error: "Failed to upload video to TikTok",
+          details: uploadError
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("Video upload successful, polling for status...");
+
+    // Step 4: Poll for publish status (TikTok processes videos async)
     let attempts = 0;
     const maxAttempts = 30; // 30 seconds max
     let status = "PROCESSING";
@@ -234,6 +287,7 @@ serve(async (req) => {
 
       const statusData = await statusResponse.json();
       status = statusData.data?.status || "UNKNOWN";
+      console.log(`Poll attempt ${attempts}: status = ${status}`);
 
       if (status === "PUBLISH_COMPLETE") {
         console.log("TikTok video published successfully");
@@ -250,6 +304,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             error: statusData.data?.fail_reason || "Video publish failed",
+            tiktok_error: statusData.data
           }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
@@ -266,10 +321,11 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in post-to-tiktok:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ error: "Internal server error", details: errorMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
