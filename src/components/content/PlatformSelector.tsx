@@ -1,4 +1,4 @@
-import { Instagram, Facebook, Twitter, Linkedin } from "lucide-react";
+import { Instagram, Facebook, Linkedin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PLATFORMS } from "./platformConfigs";
 import {
@@ -40,8 +40,6 @@ const getIconComponent = (platformId: string) => {
       return Instagram;
     case "facebook":
       return Facebook;
-    case "twitter":
-      return Twitter;
     case "linkedin":
       return Linkedin;
     case "pinterest":

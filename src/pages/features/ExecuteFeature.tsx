@@ -13,7 +13,7 @@ const features = [
   {
     icon: Share2,
     title: "Social Media Hub",
-    description: "Plan, schedule, and post your launch content directly to Pinterest and Twitter from one dashboard.",
+    description: "Plan, schedule, and post your launch content directly to Pinterest, Instagram, and Facebook from one dashboard.",
   },
   {
     icon: Calendar,

@@ -1,4 +1,4 @@
-import { Calendar, Image, Send, Clock, Twitter, Instagram } from "lucide-react";
+import { Calendar, Image, Send, Clock, Instagram, Facebook } from "lucide-react";
 import { BrowserFrame } from "../BrowserFrame";
 
 const PinterestIcon = () => (
@@ -36,7 +36,7 @@ export const SocialHubMockup = () => {
             },
             { 
               title: "Behind the scenes story", 
-              platform: "twitter",
+              platform: "facebook",
               time: "Dec 18, 2:00 PM",
               image: false,
               status: "draft"
@@ -65,11 +65,11 @@ export const SocialHubMockup = () => {
                 <div className="flex items-center gap-2 mt-1">
                   <div className={`w-5 h-5 rounded flex items-center justify-center ${
                     post.platform === 'pinterest' ? 'bg-red-500/10 text-red-500' :
-                    post.platform === 'twitter' ? 'bg-blue-400/10 text-blue-400' :
+                    post.platform === 'facebook' ? 'bg-blue-500/10 text-blue-500' :
                     'bg-pink-500/10 text-pink-500'
                   }`}>
                     {post.platform === 'pinterest' && <PinterestIcon />}
-                    {post.platform === 'twitter' && <Twitter className="w-3 h-3" />}
+                    {post.platform === 'facebook' && <Facebook className="w-3 h-3" />}
                     {post.platform === 'instagram' && <Instagram className="w-3 h-3" />}
                   </div>
                   <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -102,7 +102,7 @@ export const SocialHubMockup = () => {
           <div className="flex gap-2">
             {[
               { icon: PinterestIcon, connected: true, color: "text-red-500" },
-              { icon: Twitter, connected: true, color: "text-blue-400" },
+              { icon: Facebook, connected: true, color: "text-blue-500" },
               { icon: Instagram, connected: false, color: "text-muted-foreground" },
             ].map((platform, i) => (
               <div 

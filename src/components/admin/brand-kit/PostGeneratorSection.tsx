@@ -54,7 +54,6 @@ interface GeneratedContent {
 const PLATFORMS = [
   { id: 'Instagram', name: 'Instagram' },
   { id: 'LinkedIn', name: 'LinkedIn' },
-  { id: 'X', name: 'X (Twitter)' },
   { id: 'Facebook', name: 'Facebook' },
   { id: 'TikTok', name: 'TikTok' },
   { id: 'Pinterest', name: 'Pinterest' },

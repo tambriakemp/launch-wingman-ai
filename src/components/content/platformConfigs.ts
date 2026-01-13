@@ -1,4 +1,4 @@
-import { Instagram, Facebook, Twitter, Linkedin } from "lucide-react";
+import { Instagram, Facebook, Linkedin } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
 export interface PlatformConfig {
@@ -35,17 +35,6 @@ export const PLATFORMS: PlatformConfig[] = [
     maxMedia: 10,
     supportsVideo: true,
     maxCaptionLength: 63206,
-    hidden: false,
-  },
-  {
-    id: "twitter",
-    name: "X (Twitter)",
-    icon: Twitter,
-    color: "#000000",
-    bgColor: "bg-black",
-    maxMedia: 4,
-    supportsVideo: true,
-    maxCaptionLength: 280,
     hidden: false,
   },
   {

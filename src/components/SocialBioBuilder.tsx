@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Users, MoreHorizontal, Pencil, Trash2, Instagram, Facebook, Twitter, Linkedin, AtSign, X, Lock, Sparkles, Check } from "lucide-react";
+import { Plus, Users, MoreHorizontal, Pencil, Trash2, Instagram, Facebook, Linkedin, AtSign, X, Lock, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,7 +40,6 @@ const platforms = [
   { id: "instagram", name: "Instagram", icon: Instagram, maxChars: 150 },
   { id: "facebook", name: "Facebook", icon: Facebook, maxChars: 101 },
   { id: "threads", name: "Threads", icon: AtSign, maxChars: 160 },
-  { id: "twitter", name: "X (Twitter)", icon: Twitter, maxChars: 160 },
   { id: "linkedin", name: "LinkedIn", icon: Linkedin, maxChars: 220 },
   { id: "tiktok", name: "TikTok", icon: Users, maxChars: 80 },
 ];

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Instagram, Facebook, Twitter, Linkedin, User } from "lucide-react";
+import { Instagram, Facebook, Linkedin, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPlatformById } from "./platformConfigs";
 
@@ -31,8 +31,6 @@ const getIconComponent = (platformId: string) => {
       return Instagram;
     case "facebook":
       return Facebook;
-    case "twitter":
-      return Twitter;
     case "linkedin":
       return Linkedin;
     case "pinterest":
@@ -113,40 +111,6 @@ function InstagramPreview({ content, mediaUrl, mediaType }: { content: string; m
   );
 }
 
-function TwitterPreview({ content, mediaUrl, mediaType }: { content: string; mediaUrl: string | null; mediaType: string | null }) {
-  return (
-    <div className="p-3">
-      {/* Header */}
-      <div className="flex gap-2">
-        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-          <User className="w-4 h-4 text-muted-foreground" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] font-bold">Your Name</span>
-            <span className="text-[9px] text-muted-foreground">@handle</span>
-          </div>
-          
-          {/* Content */}
-          <p className="text-[9px] mt-1 line-clamp-4">
-            {content || "What's happening?"}
-          </p>
-
-          {/* Media */}
-          {mediaUrl && (
-            <div className="mt-2 rounded-lg overflow-hidden">
-              {mediaType === "video" ? (
-                <video src={mediaUrl} className="w-full h-20 object-cover bg-black" muted />
-              ) : (
-                <img src={mediaUrl} alt="" className="w-full h-20 object-cover" />
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function PinterestPreview({ content, mediaUrl, mediaType, linkUrl, title }: { content: string; mediaUrl: string | null; mediaType: string | null; linkUrl?: string; title?: string }) {
   const getHostname = (url: string) => {
@@ -268,8 +232,6 @@ export function SocialPostPreview({
     switch (currentPlatform) {
       case "instagram":
         return <InstagramPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} />;
-      case "twitter":
-        return <TwitterPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} />;
       case "pinterest":
         return <PinterestPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} linkUrl={linkUrl} title={title} />;
       default:
