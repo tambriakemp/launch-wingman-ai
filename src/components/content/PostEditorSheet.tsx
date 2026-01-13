@@ -1211,7 +1211,7 @@ export function PostEditorSheet({
     <Sheet open={open} onOpenChange={handleClose}>
       <SheetContent
         side="right"
-        className="w-[90vw] max-w-[900px] p-0 flex flex-col"
+        className="w-[95vw] max-w-[1200px] p-0 flex flex-col"
       >
         <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <SheetTitle>
@@ -1228,7 +1228,7 @@ export function PostEditorSheet({
         {/* Two Column Layout */}
         <div className="flex-1 overflow-hidden flex">
           {/* Left Column - Content Editor & Scheduling */}
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
+          <div className="flex-1 min-w-[400px] overflow-y-auto px-6 py-4 space-y-5">
             {generating ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -1375,25 +1375,27 @@ export function PostEditorSheet({
                           {content.length} characters
                         </span>
                       </div>
-                      <div className="relative">
+                      <div className="relative flex flex-col">
                         <Textarea
                           value={content}
                           onChange={(e) => setContent(e.target.value)}
                           placeholder="Your content will appear here..."
-                          className="min-h-[200px] resize-none pr-24"
+                          className="min-h-[250px] resize-y"
                           disabled={isPostedContent}
                           readOnly={isPostedContent}
                         />
-                        {/* AI Assist Badge */}
+                        {/* AI Assist Badge - in its own row at bottom */}
                         {!isPostedContent && (
-                          <button
-                            type="button"
-                            onClick={() => setShowAIPanel(true)}
-                            className="absolute bottom-2 right-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-medium transition-colors"
-                          >
-                            <Sparkles className="w-3 h-3" />
-                            AI Assist
-                          </button>
+                          <div className="flex justify-end mt-2">
+                            <button
+                              type="button"
+                              onClick={() => setShowAIPanel(true)}
+                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-medium transition-colors"
+                            >
+                              <Sparkles className="w-3 h-3" />
+                              AI Assist
+                            </button>
+                          </div>
                         )}
                       </div>
                       
@@ -1414,6 +1416,20 @@ export function PostEditorSheet({
                   </>
                 )}
 
+                {/* Icon Toolbar - visible when customizePerNetwork is enabled */}
+                {customizePerNetwork && !isPostedContent && (
+                  <ContentToolbar
+                    customizePerNetwork={customizePerNetwork}
+                    onCustomizeToggle={() => setCustomizePerNetwork(!customizePerNetwork)}
+                    showPinterestOption={formData.scheduled_platforms.includes("pinterest")}
+                    onPinterestClick={() => setShowPinterestOptions(true)}
+                    pinterestHasWarning={!formData.pinterest_board_id}
+                    showMultiplePlatforms={formData.scheduled_platforms.length > 1}
+                    onSelectMedia={() => setShowMediaModal(true)}
+                    hasMedia={!!formData.media_url}
+                  />
+                )}
+
                 {/* Per-Network Content Customization */}
                 {!isPostedContent && formData.scheduled_platforms.length > 1 && (
                   <PerNetworkEditor
@@ -1425,6 +1441,7 @@ export function PostEditorSheet({
                     defaultTitle={title}
                     onOpenAIAssist={() => setShowAIPanel(true)}
                     onSelectMedia={() => setShowMediaModal(true)}
+                    onPinterestSettings={() => setShowPinterestOptions(true)}
                   />
                 )}
 
@@ -1483,17 +1500,6 @@ export function PostEditorSheet({
         {/* Footer */}
         <SheetFooter className="px-6 py-4 border-t shrink-0 flex justify-between">
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleClose}>
-              Close
-            </Button>
-            <Button variant="outline" onClick={handleCopy} disabled={!content}>
-              {copied ? (
-                <Check className="w-4 h-4 mr-2" />
-              ) : (
-                <Copy className="w-4 h-4 mr-2" />
-              )}
-              {copied ? "Copied" : "Copy"}
-            </Button>
             {!isPostedContent && (
               <>
                 <Button
@@ -1519,25 +1525,26 @@ export function PostEditorSheet({
                     )}
                   </Button>
                 )}
-                {isAlreadyScheduled && (
-                  <Button
-                    variant="destructive"
-                    onClick={handleCancelSchedule}
-                    disabled={isCancelling}
-                  >
-                    {isCancelling ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : (
-                      <X className="w-4 h-4 mr-2" />
-                    )}
-                    Cancel Schedule
-                  </Button>
-                )}
               </>
             )}
           </div>
           {!isPostedContent && (
             <div className="flex gap-2">
+              {isAlreadyScheduled && (
+                <Button
+                  variant="outline"
+                  onClick={handleCancelSchedule}
+                  disabled={isCancelling}
+                  className="text-destructive border-destructive hover:bg-destructive/10"
+                >
+                  {isCancelling ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <X className="w-4 h-4 mr-2" />
+                  )}
+                  Cancel Schedule
+                </Button>
+              )}
               <Button
                 onClick={handlePostNow}
                 disabled={isPosting || !formData.scheduled_platforms.length}

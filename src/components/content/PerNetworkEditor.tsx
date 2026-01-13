@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ChevronDown, ChevronUp, Instagram, Facebook, Sparkles, ImagePlus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronDown, ChevronUp, Instagram, Facebook, Sparkles, ImagePlus, Settings } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,6 +61,7 @@ interface PerNetworkEditorProps {
   enabled: boolean;
   onOpenAIAssist?: (platformId: string) => void;
   onSelectMedia?: (platformId: string) => void;
+  onPinterestSettings?: () => void;
 }
 
 export function PerNetworkEditor({
@@ -72,15 +73,24 @@ export function PerNetworkEditor({
   enabled,
   onOpenAIAssist,
   onSelectMedia,
+  onPinterestSettings,
 }: PerNetworkEditorProps) {
-  const [expandedPlatforms, setExpandedPlatforms] = useState<string[]>(selectedPlatforms);
+  // Only one platform can be expanded at a time
+  const [expandedPlatform, setExpandedPlatform] = useState<string | null>(
+    selectedPlatforms.length > 0 ? selectedPlatforms[0] : null
+  );
+
+  // Update expanded platform when platforms change
+  useEffect(() => {
+    if (selectedPlatforms.length > 0 && !selectedPlatforms.includes(expandedPlatform || "")) {
+      setExpandedPlatform(selectedPlatforms[0]);
+    }
+  }, [selectedPlatforms]);
 
   const toggleExpanded = (platformId: string) => {
-    setExpandedPlatforms((prev) =>
-      prev.includes(platformId)
-        ? prev.filter((id) => id !== platformId)
-        : [...prev, platformId]
-    );
+    // If clicking on the already expanded platform, collapse it
+    // Otherwise, expand the clicked platform (collapsing others)
+    setExpandedPlatform((prev) => (prev === platformId ? null : platformId));
   };
 
   const handleContentChange = (platformId: string, field: "title" | "content", value: string) => {
@@ -123,10 +133,11 @@ export function PerNetworkEditor({
         if (!platform) return null;
 
         const IconComponent = getIconComponent(platformId);
-        const isExpanded = expandedPlatforms.includes(platformId);
+        const isExpanded = expandedPlatform === platformId;
         const platformContent = getPlatformContent(platformId);
         const charLimit = getCharacterLimit(platformId);
         const showTitle = platformId === "pinterest";
+        const isPinterest = platformId === "pinterest";
 
         return (
           <div
@@ -162,7 +173,12 @@ export function PerNetworkEditor({
                 {/* Title (Pinterest only) */}
                 {showTitle && (
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Pin Title</Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Pin Title</Label>
+                      <span className="text-xs text-muted-foreground">
+                        {(platformContent.title || "").length} / 100
+                      </span>
+                    </div>
                     <Input
                       value={platformContent.title || ""}
                       onChange={(e) =>
@@ -171,9 +187,6 @@ export function PerNetworkEditor({
                       placeholder="Enter pin title..."
                       maxLength={100}
                     />
-                    <p className="text-xs text-muted-foreground text-right">
-                      {(platformContent.title || "").length} / 100
-                    </p>
                   </div>
                 )}
 
@@ -194,7 +207,7 @@ export function PerNetworkEditor({
                       {platformContent.content.length} / {charLimit}
                     </span>
                   </div>
-                  <div className="relative">
+                  <div className="relative flex flex-col">
                     <Textarea
                       value={platformContent.content}
                       onChange={(e) =>
@@ -203,19 +216,21 @@ export function PerNetworkEditor({
                       placeholder={`Write your ${platform.name} ${
                         platformId === "pinterest" ? "description" : "caption"
                       }...`}
-                      className="min-h-[120px] resize-none pr-24"
+                      className="min-h-[150px] resize-y"
                       maxLength={charLimit}
                     />
-                    {/* AI Assist Badge */}
+                    {/* AI Assist Badge - in its own row at bottom */}
                     {onOpenAIAssist && (
-                      <button
-                        type="button"
-                        onClick={() => onOpenAIAssist(platformId)}
-                        className="absolute bottom-2 right-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-medium transition-colors"
-                      >
-                        <Sparkles className="w-3 h-3" />
-                        AI Assist
-                      </button>
+                      <div className="flex justify-end mt-2">
+                        <button
+                          type="button"
+                          onClick={() => onOpenAIAssist(platformId)}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-medium transition-colors"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          AI Assist
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -235,6 +250,19 @@ export function PerNetworkEditor({
                       )}
                     >
                       <ImagePlus className="w-4 h-4" />
+                    </Button>
+                  )}
+                  
+                  {/* Pinterest Settings - only show on Pinterest card */}
+                  {isPinterest && onPinterestSettings && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={onPinterestSettings}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Settings className="w-4 h-4" />
                     </Button>
                   )}
                 </div>
