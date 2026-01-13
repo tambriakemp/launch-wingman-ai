@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, Instagram, Facebook, Sparkles, ImagePlus, Settings } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronDown, ChevronUp, Instagram, Facebook, Sparkles, ImagePlus } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -190,6 +190,13 @@ export function PerNetworkEditor({
                   </div>
                 )}
 
+                {/* Instagram auto-determine note */}
+                {platformId === "instagram" && (
+                  <p className="text-xs text-muted-foreground italic">
+                    Instagram post type will be auto-determined based on media (video = Reel, image = Feed)
+                  </p>
+                )}
+
                 {/* Content */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
@@ -210,14 +217,19 @@ export function PerNetworkEditor({
                   <div className="relative flex flex-col">
                     <Textarea
                       value={platformContent.content}
-                      onChange={(e) =>
-                        handleContentChange(platformId, "content", e.target.value)
-                      }
+                      onChange={(e) => {
+                        handleContentChange(platformId, "content", e.target.value);
+                        // Auto-resize
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = `${Math.max(150, target.scrollHeight)}px`;
+                      }}
                       placeholder={`Write your ${platform.name} ${
                         platformId === "pinterest" ? "description" : "caption"
                       }...`}
-                      className="min-h-[150px] resize-y"
+                      className="min-h-[150px] resize-none overflow-hidden"
                       maxLength={charLimit}
+                      style={{ height: 'auto' }}
                     />
                     {/* AI Assist Badge - in its own row at bottom */}
                     {onOpenAIAssist && (
@@ -253,16 +265,16 @@ export function PerNetworkEditor({
                     </Button>
                   )}
                   
-                  {/* Pinterest Settings - only show on Pinterest card */}
+                  {/* Pinterest Settings - only show on Pinterest card with Pinterest icon */}
                   {isPinterest && onPinterestSettings && (
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={onPinterestSettings}
-                      className="h-8 w-8 p-0"
+                      className="h-8 w-8 p-0 text-[#E60023]"
                     >
-                      <Settings className="w-4 h-4" />
+                      <PinterestIcon className="w-4 h-4" />
                     </Button>
                   )}
                 </div>
