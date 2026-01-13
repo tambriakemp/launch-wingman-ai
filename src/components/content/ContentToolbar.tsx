@@ -1,4 +1,4 @@
-import { Layers, ImagePlus, Palette } from "lucide-react";
+import { Layers, ImagePlus, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -136,7 +136,7 @@ export function ContentToolbar({
                 contentType && contentType !== "general" && "bg-primary/10 text-primary"
               )}
             >
-              <Palette className="w-4 h-4" />
+              <Tag className="w-4 h-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">

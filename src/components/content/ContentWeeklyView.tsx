@@ -89,7 +89,7 @@ export const ContentWeeklyView = ({
   onSchedulePost,
 }: ContentWeeklyViewProps) => {
   const [currentWeekStart, setCurrentWeekStart] = useState(() => 
-    startOfWeek(new Date(), { weekStartsOn: 1 }) // Start week on Monday
+    startOfWeek(new Date(), { weekStartsOn: 0 }) // Start week on Sunday
   );
   const queryClient = useQueryClient();
 
@@ -105,9 +105,9 @@ export const ContentWeeklyView = ({
     },
   });
 
-  // Get all days in the current week (Mon-Sun)
+  // Get all days in the current week (Sun-Sat)
   const weekDays = useMemo(() => {
-    const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 0 });
     return eachDayOfInterval({ start: currentWeekStart, end: weekEnd });
   }, [currentWeekStart]);
 
@@ -155,10 +155,10 @@ export const ContentWeeklyView = ({
   };
 
   const goToToday = () => {
-    setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+    setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 0 }));
   };
 
-  const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 0 });
   const weekRangeLabel = `${format(currentWeekStart, "MMM d")} - ${format(weekEnd, "MMM d")}`;
 
   return (
