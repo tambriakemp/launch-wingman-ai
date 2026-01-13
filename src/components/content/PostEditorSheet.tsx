@@ -46,6 +46,7 @@ import { TikTokPostOptions } from "./TikTokPostOptions";
 import { ContentToolbar } from "./ContentToolbar";
 import { AIAssistPanel } from "./AIAssistPanel";
 import { MediaSelectModal } from "./MediaSelectModal";
+import { LabelsModal } from "./LabelsModal";
 import { trackSocialPostPublish, trackSocialPostSchedule, trackSocialPostScheduleCancel } from "@/lib/analytics";
 
 // Types for the unified component
@@ -77,6 +78,7 @@ export interface ContentPlannerItem {
   scheduled_platforms: string[] | null;
   media_url?: string | null;
   media_type?: string | null;
+  labels?: string[] | null;
 }
 
 interface PostEditorSheetProps {
@@ -204,6 +206,10 @@ export function PostEditorSheet({
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [suggestions, setSuggestions] = useState<Array<{ id: string; title?: string; content: string }>>([]);
   const [showMediaModal, setShowMediaModal] = useState(false);
+  
+  // Labels state
+  const [showLabelsModal, setShowLabelsModal] = useState(false);
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
 
   // Social post state
   const [formData, setFormData] = useState({
@@ -349,6 +355,8 @@ export function PostEditorSheet({
       setCurrentDraftId(null);
       setCustomizePerNetwork(false);
       setPerPlatformContent({});
+      // Initialize labels from existing item
+      setSelectedLabels(existingItem.labels || []);
     } else if (talkingPoint) {
       // Check if this is from an existing draft (existingDraftId provided)
       if (existingDraftId) {
@@ -363,6 +371,7 @@ export function PostEditorSheet({
         setScheduledDate(null);
         setCustomizePerNetwork(false);
         setPerPlatformContent({});
+        setSelectedLabels([]);
         setFormData({
           media_url: null,
           media_type: null,
@@ -408,6 +417,7 @@ export function PostEditorSheet({
       setScheduledDate(null);
       setCustomizePerNetwork(false);
       setPerPlatformContent({});
+      setSelectedLabels([]);
       setFormData({
         media_url: null,
         media_type: null,
@@ -568,6 +578,7 @@ export function PostEditorSheet({
           content_type: contentType,
           content: content || null,
           status: content ? "draft" : "planned",
+          labels: selectedLabels.length > 0 ? selectedLabels : null,
         })
         .select()
         .single();
@@ -606,6 +617,7 @@ export function PostEditorSheet({
             media_url: formData.media_url,
             media_type: formData.media_type,
             scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
+            labels: selectedLabels.length > 0 ? selectedLabels : null,
           })
           .eq("id", timelineItemId);
 
@@ -629,6 +641,7 @@ export function PostEditorSheet({
             media_url: formData.media_url,
             media_type: formData.media_type,
             scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
+            labels: selectedLabels.length > 0 ? selectedLabels : null,
           })
           .select()
           .single();
@@ -1098,6 +1111,7 @@ export function PostEditorSheet({
           media_url: formData.media_url,
           media_type: formData.media_type,
           scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
+          labels: selectedLabels.length > 0 ? selectedLabels : null,
         })
         .select()
         .single();
@@ -1152,7 +1166,8 @@ export function PostEditorSheet({
           scheduled_at: scheduleDateTime.toISOString(),
           media_url: formData.media_url,
           media_type: formData.media_type,
-          status: "scheduled", // Change from draft to scheduled so it posts normally
+          status: "scheduled",
+          labels: selectedLabels.length > 0 ? selectedLabels : null,
         })
         .eq("id", itemId);
 
@@ -1486,26 +1501,7 @@ export function PostEditorSheet({
 
                       {/* Auto-determine info for Instagram when multi-platform - now shown in Instagram card */}
 
-                      {/* TikTok Post Options */}
-                      {(formData.scheduled_platforms.includes("tiktok") || 
-                        formData.scheduled_platforms.includes("tiktok_sandbox")) &&
-                        tiktokConnection && (
-                          <TikTokPostOptions
-                            privacyLevel={formData.tiktok_privacy_level}
-                            onPrivacyChange={(value) =>
-                              setFormData((prev) => ({ ...prev, tiktok_privacy_level: value }))
-                            }
-                            brandContentToggle={formData.tiktok_brand_content}
-                            onBrandContentChange={(checked) =>
-                              setFormData((prev) => ({ ...prev, tiktok_brand_content: checked }))
-                            }
-                            brandOrganicToggle={formData.tiktok_brand_organic}
-                            onBrandOrganicChange={(checked) =>
-                              setFormData((prev) => ({ ...prev, tiktok_brand_organic: checked }))
-                            }
-                            disabled={isPosting}
-                          />
-                        )}
+                      {/* TikTok Post Options - hidden for cleaner UI */}
                     </div>
                   )}
                 </div>
@@ -1599,6 +1595,8 @@ export function PostEditorSheet({
                     showMultiplePlatforms={formData.scheduled_platforms.length > 1}
                     onSelectMedia={() => setShowMediaModal(true)}
                     hasMedia={!!formData.media_url}
+                    onLabelsClick={() => setShowLabelsModal(true)}
+                    hasLabels={selectedLabels.length > 0}
                   />
                 )}
 
@@ -1791,6 +1789,14 @@ export function PostEditorSheet({
           isReschedule={!isDraftScheduleMode && isAlreadyScheduled}
           initialDate={scheduledDate}
           initialTime={scheduledTime}
+        />
+
+        {/* Labels Modal */}
+        <LabelsModal
+          open={showLabelsModal}
+          onOpenChange={setShowLabelsModal}
+          selectedLabels={selectedLabels}
+          onLabelsChange={setSelectedLabels}
         />
       </SheetContent>
     </Sheet>
