@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { CalendarDayPopover } from "./CalendarDayPopover";
 import { toast } from "sonner";
 import { CONTENT_TYPE_COLORS } from "./contentTypeColors";
+import { PHASE_CONFIG, getPhaseLabel } from "@/data/timelineTemplates";
 
 interface ContentPlannerItem {
   id: string;
@@ -204,18 +205,27 @@ export const ContentCalendarView = ({
                   {/* Content Indicators */}
                   {hasItems && (
                     <div className="mt-1 space-y-0.5">
-                      {dayItems.slice(0, 3).map((item) => (
-                        <div
-                          key={item.id}
-                          className={cn(
-                            "text-[10px] text-white px-1.5 py-0.5 rounded truncate",
-                            CONTENT_TYPE_COLORS[item.content_type] || "bg-slate-500"
-                          )}
-                          title={item.title}
-                        >
-                          {item.title}
-                        </div>
-                      ))}
+                      {dayItems.slice(0, 3).map((item) => {
+                        const phaseConfig = PHASE_CONFIG[item.phase as keyof typeof PHASE_CONFIG];
+                        const phaseLabel = getPhaseLabel(item.phase, item.day_number);
+                        
+                        return (
+                          <div
+                            key={item.id}
+                            className={cn(
+                              "text-[10px] text-white px-1.5 py-0.5 rounded truncate flex items-center gap-1",
+                              CONTENT_TYPE_COLORS[item.content_type] || "bg-slate-500",
+                              phaseConfig && `border-l-2 ${phaseConfig.borderColor}`
+                            )}
+                            title={`${phaseConfig?.fullLabel || ''} - ${item.title}`}
+                          >
+                            {phaseLabel && (
+                              <span className="font-semibold opacity-80">{phaseLabel}</span>
+                            )}
+                            <span className="truncate">{item.title}</span>
+                          </div>
+                        );
+                      })}
                       {dayItems.length > 3 && (
                         <div className="text-[10px] text-muted-foreground pl-1">
                           +{dayItems.length - 3} more
@@ -231,14 +241,25 @@ export const ContentCalendarView = ({
       </Card>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <span className="font-medium">Content Types:</span>
-        {Object.entries(CONTENT_TYPE_COLORS).map(([type, color]) => (
-          <div key={type} className="flex items-center gap-1.5">
-            <div className={cn("w-2.5 h-2.5 rounded", color)} />
-            <span className="capitalize">{type.replace("-", " ")}</span>
-          </div>
-        ))}
+      <div className="space-y-2">
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <span className="font-medium">Content Types:</span>
+          {Object.entries(CONTENT_TYPE_COLORS).map(([type, color]) => (
+            <div key={type} className="flex items-center gap-1.5">
+              <div className={cn("w-2.5 h-2.5 rounded", color)} />
+              <span className="capitalize">{type.replace("-", " ")}</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <span className="font-medium">Launch Phases:</span>
+          {Object.entries(PHASE_CONFIG).map(([phase, config]) => (
+            <div key={phase} className="flex items-center gap-1.5">
+              <div className={cn("w-2.5 h-2.5 rounded", config.color)} />
+              <span>{config.label}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { CONTENT_TYPE_COLORS } from "./contentTypeColors";
+import { PHASE_CONFIG, getPhaseLabel } from "@/data/timelineTemplates";
 
 interface ContentPlannerItem {
   id: string;
@@ -58,10 +59,17 @@ export const CalendarDayPopover = ({
         {items.length > 0 ? (
           <ScrollArea className="max-h-64">
             <div className="p-2 space-y-2">
-              {items.map((item) => (
+              {items.map((item) => {
+                const phaseConfig = PHASE_CONFIG[item.phase as keyof typeof PHASE_CONFIG];
+                const phaseLabel = getPhaseLabel(item.phase, item.day_number);
+                
+                return (
                 <div
                   key={item.id}
-                  className="p-2 rounded-lg border border-border bg-card hover:bg-accent/30 transition-colors group"
+                  className={cn(
+                    "p-2 rounded-lg border border-border bg-card hover:bg-accent/30 transition-colors group",
+                    phaseConfig && `border-l-4 ${phaseConfig.borderColor}`
+                  )}
                 >
                   <div className="flex items-start gap-2">
                     <div
@@ -78,7 +86,18 @@ export const CalendarDayPopover = ({
                       <h4 className="text-sm font-medium text-foreground line-clamp-1">
                         {item.title}
                       </h4>
-                      <div className="flex items-center gap-1.5 mt-1">
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        {phaseLabel && (
+                          <Badge 
+                            variant="secondary" 
+                            className={cn(
+                              "text-[10px] h-5 text-white",
+                              phaseConfig?.color
+                            )}
+                          >
+                            {phaseConfig?.fullLabel}
+                          </Badge>
+                        )}
                         {item.status === "completed" && item.scheduled_at && (
                           <Badge variant="secondary" className="text-[10px] h-5 gap-1">
                             <CheckCircle2 className="w-2.5 h-2.5" />
@@ -119,7 +138,8 @@ export const CalendarDayPopover = ({
                     </Button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
         ) : (
