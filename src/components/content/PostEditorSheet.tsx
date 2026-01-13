@@ -1141,7 +1141,7 @@ export function PostEditorSheet({
 
       if (error) throw error;
 
-      // Update the content_planner item with all fields
+      // Update the content_planner item with all fields and set status to "scheduled"
       await supabase
         .from("content_planner")
         .update({
@@ -1152,6 +1152,7 @@ export function PostEditorSheet({
           scheduled_at: scheduleDateTime.toISOString(),
           media_url: formData.media_url,
           media_type: formData.media_type,
+          status: "scheduled", // Change from draft to scheduled so it posts normally
         })
         .eq("id", itemId);
 
