@@ -1,9 +1,15 @@
 import { useState } from "react";
-import { X, Sparkles, Loader2, Copy, Check, Send, RefreshCw } from "lucide-react";
+import { X, Sparkles, Loader2, Copy, Check, RefreshCw, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -57,7 +63,6 @@ export function AIAssistPanel({
   onCopySuggestion,
 }: AIAssistPanelProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [customPrompt, setCustomPrompt] = useState("");
 
   const handleCopy = (suggestion: Suggestion) => {
     onCopySuggestion(suggestion.content, suggestion.title);
@@ -84,45 +89,6 @@ export function AIAssistPanel({
       {/* Content */}
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-5">
-          {/* Content Type Selector */}
-          <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground">Content Type</Label>
-            <div className="flex flex-wrap gap-2">
-              {CONTENT_TYPES.map((type) => (
-                <button
-                  key={type.value}
-                  type="button"
-                  onClick={() => onContentTypeChange(type.value)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
-                    contentType === type.value
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted hover:bg-muted/80 text-muted-foreground"
-                  )}
-                >
-                  {type.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Generate Button */}
-          <Button
-            onClick={onGenerate}
-            disabled={isGenerating}
-            className="w-full"
-            size="sm"
-          >
-            {isGenerating ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : suggestions.length > 0 ? (
-              <RefreshCw className="w-4 h-4 mr-2" />
-            ) : (
-              <Sparkles className="w-4 h-4 mr-2" />
-            )}
-            {suggestions.length > 0 ? "Regenerate" : "Generate Ideas"}
-          </Button>
-
           {/* Tone Adjustment */}
           {currentContent && (
             <div className="space-y-2">
@@ -218,36 +184,41 @@ export function AIAssistPanel({
         </div>
       </ScrollArea>
 
-      {/* Chat input (optional) */}
-      <div className="p-4 border-t shrink-0">
-        <div className="flex gap-2">
-          <Input
-            value={customPrompt}
-            onChange={(e) => setCustomPrompt(e.target.value)}
-            placeholder="Ask anything..."
-            className="text-sm"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && customPrompt.trim()) {
-                // TODO: Implement custom prompt handling
-                toast.info("Custom prompts coming soon!");
-                setCustomPrompt("");
-              }
-            }}
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 w-9 p-0 shrink-0"
-            onClick={() => {
-              if (customPrompt.trim()) {
-                toast.info("Custom prompts coming soon!");
-                setCustomPrompt("");
-              }
-            }}
-          >
-            <Send className="w-4 h-4" />
-          </Button>
+      {/* Bottom section - Content Type dropdown + Generate button */}
+      <div className="p-4 border-t shrink-0 space-y-3">
+        {/* Content Type Dropdown */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">Content Type</Label>
+          <Select value={contentType} onValueChange={onContentTypeChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select content type" />
+            </SelectTrigger>
+            <SelectContent>
+              {CONTENT_TYPES.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  {type.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+
+        {/* Generate Button */}
+        <Button
+          onClick={onGenerate}
+          disabled={isGenerating}
+          className="w-full"
+          size="sm"
+        >
+          {isGenerating ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : suggestions.length > 0 ? (
+            <RefreshCw className="w-4 h-4 mr-2" />
+          ) : (
+            <Sparkles className="w-4 h-4 mr-2" />
+          )}
+          {suggestions.length > 0 ? "Regenerate" : "Generate Ideas"}
+        </Button>
       </div>
     </div>
   );

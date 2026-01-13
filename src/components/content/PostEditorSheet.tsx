@@ -1314,13 +1314,7 @@ export function PostEditorSheet({
                           </div>
                         )}
 
-                      {/* Auto-determine info for Instagram when multi-platform */}
-                      {formData.scheduled_platforms.includes("instagram") &&
-                        formData.scheduled_platforms.length > 1 && (
-                          <p className="text-xs text-muted-foreground italic">
-                            Instagram post type will be auto-determined based on media (video = Reel, image = Feed)
-                          </p>
-                        )}
+                      {/* Auto-determine info for Instagram when multi-platform - now shown in Instagram card */}
 
                       {/* TikTok Post Options */}
                       {(formData.scheduled_platforms.includes("tiktok") || 
@@ -1378,11 +1372,18 @@ export function PostEditorSheet({
                       <div className="relative flex flex-col">
                         <Textarea
                           value={content}
-                          onChange={(e) => setContent(e.target.value)}
+                          onChange={(e) => {
+                            setContent(e.target.value);
+                            // Auto-resize
+                            const target = e.target as HTMLTextAreaElement;
+                            target.style.height = 'auto';
+                            target.style.height = `${Math.max(250, target.scrollHeight)}px`;
+                          }}
                           placeholder="Your content will appear here..."
-                          className="min-h-[250px] resize-y"
+                          className="min-h-[250px] resize-none overflow-hidden"
                           disabled={isPostedContent}
                           readOnly={isPostedContent}
+                          style={{ height: 'auto' }}
                         />
                         {/* AI Assist Badge - in its own row at bottom */}
                         {!isPostedContent && (
