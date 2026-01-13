@@ -550,14 +550,23 @@ const Settings = () => {
     
     setIsDisconnectingTikTok(true);
     try {
-      const { error } = await supabase
-        .from('social_connections')
-        .delete()
-        .eq('id', connection.id);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please sign in again");
+        return;
+      }
+
+      // Call the revoke endpoint to properly revoke token with TikTok
+      const { data, error } = await supabase.functions.invoke('tiktok-revoke-token', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: { platform }
+      });
       
       if (error) throw error;
       
-      toast.success(`TikTok ${tiktokEnvironment === "sandbox" ? "Sandbox" : ""} disconnected`);
+      toast.success(`TikTok ${tiktokEnvironment === "sandbox" ? "Sandbox " : ""}disconnected`);
       refetchConnections();
     } catch (error) {
       console.error('TikTok disconnect error:', error);
