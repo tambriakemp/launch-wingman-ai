@@ -1038,8 +1038,11 @@ export function PostEditorSheet({
     }
   };
 
-  const handleSchedule = async () => {
-    if (!scheduledDate) {
+  const handleSchedule = async (date?: Date, time?: string) => {
+    const scheduleDate = date || scheduledDate;
+    const scheduleTime = time || scheduledTime;
+    
+    if (!scheduleDate) {
       toast.error("Please select a date to schedule");
       return;
     }
@@ -1090,8 +1093,8 @@ export function PostEditorSheet({
 
     setIsScheduling(true);
     try {
-      const [hours, minutes] = scheduledTime.split(":").map(Number);
-      const scheduleDateTime = new Date(scheduledDate);
+      const [hours, minutes] = scheduleTime.split(":").map(Number);
+      const scheduleDateTime = new Date(scheduleDate);
       scheduleDateTime.setHours(hours, minutes, 0, 0);
 
       // Delete any existing pending scheduled_posts for this content item to avoid duplicates
@@ -1374,7 +1377,7 @@ export function PostEditorSheet({
                     readOnly={isPostedContent}
                   />
                   
-                  {/* Content Type + Generate Ideas Row */}
+                {/* Content Type + Generate Ideas Row */}
                   {!isPostedContent && (
                     <div className="flex items-center gap-3 mt-2">
                       <Select
@@ -1407,6 +1410,19 @@ export function PostEditorSheet({
                     </div>
                   )}
                 </div>
+
+                {/* Per-Network Content Customization */}
+                {!isPostedContent && formData.scheduled_platforms.length > 1 && (
+                  <PerNetworkEditor
+                    selectedPlatforms={formData.scheduled_platforms}
+                    enabled={customizePerNetwork}
+                    onEnabledChange={setCustomizePerNetwork}
+                    perPlatformContent={perPlatformContent}
+                    onPerPlatformContentChange={setPerPlatformContent}
+                    defaultContent={content}
+                    defaultTitle={title}
+                  />
+                )}
 
                 {/* Adjust Tone Section - hidden for posted content */}
                 {!isPostedContent && (
@@ -1599,6 +1615,36 @@ export function PostEditorSheet({
             </div>
           )}
         </SheetFooter>
+
+        {/* Pinterest Options Modal */}
+        <PinterestMediaOptionsModal
+          open={showPinterestOptions}
+          onOpenChange={setShowPinterestOptions}
+          boardId={formData.pinterest_board_id}
+          onBoardChange={(boardId) =>
+            setFormData((prev) => ({ ...prev, pinterest_board_id: boardId }))
+          }
+          linkUrl={formData.link_url}
+          onLinkUrlChange={(url) =>
+            setFormData((prev) => ({ ...prev, link_url: url }))
+          }
+        />
+
+        {/* Schedule Modal */}
+        <ScheduleModal
+          open={showScheduleModal}
+          onOpenChange={setShowScheduleModal}
+          onSchedule={async (date, time) => {
+            setScheduledDate(date);
+            setScheduledTime(time);
+            await handleSchedule(date, time);
+            setShowScheduleModal(false);
+          }}
+          isScheduling={isScheduling}
+          isReschedule={isAlreadyScheduled}
+          initialDate={scheduledDate}
+          initialTime={scheduledTime}
+        />
       </SheetContent>
     </Sheet>
   );
