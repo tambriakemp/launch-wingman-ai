@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, FileText, List } from "lucide-react";
+import { CalendarDays, FileText, List, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -10,6 +10,7 @@ import { PostEditorSheet } from "./PostEditorSheet";
 import { TimelineSlotGrid } from "./TimelineSlotGrid";
 import { ContentCalendarView } from "./ContentCalendarView";
 import { SalesPageCopyTab } from "./sales-copy";
+import { GenerateLaunchContentModal } from "./GenerateLaunchContentModal";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   const [activeTab, setActiveTab] = useState<ContentViewTab>("my-timeline");
   const [postEditorOpen, setPostEditorOpen] = useState(false);
   const [savedSheetOpen, setSavedSheetOpen] = useState(false);
+  const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [selectedTalkingPoint, setSelectedTalkingPoint] = useState<TalkingPoint | null>(null);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   
@@ -173,15 +175,25 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
                   View scheduled content on your calendar. Click any day to manage posts.
                 </p>
               </div>
-              <Button
-                onClick={() => {
-                  setSelectedTalkingPoint(null);
-                  setPostEditorOpen(true);
-                }}
-                size="sm"
-              >
-                Create Post
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setGenerateModalOpen(true)}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Generate Launch Content
+                </Button>
+                <Button
+                  onClick={() => {
+                    setSelectedTalkingPoint(null);
+                    setPostEditorOpen(true);
+                  }}
+                  size="sm"
+                >
+                  Create Post
+                </Button>
+              </div>
             </div>
             <ContentCalendarView
               projectId={projectId}
@@ -251,6 +263,13 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
         onSaved={() => {
           queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
         }}
+      />
+
+      {/* Generate Launch Content Modal */}
+      <GenerateLaunchContentModal
+        open={generateModalOpen}
+        onOpenChange={setGenerateModalOpen}
+        projectId={projectId}
       />
     </div>
   );

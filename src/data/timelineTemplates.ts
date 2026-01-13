@@ -1,3 +1,5 @@
+import { addDays } from "date-fns";
+
 export interface TimelineTemplate {
   phase: string;
   day_number: number;
@@ -6,6 +8,11 @@ export interface TimelineTemplate {
   content_type: string;
   title_template: string;
   description_template: string;
+}
+
+export interface TemplateWithDate {
+  template: TimelineTemplate;
+  date: Date;
 }
 
 // Pre-Launch content templates based on the Beginner Launch Content Planner
@@ -190,4 +197,86 @@ export const getTemplate = (
   return TIMELINE_TEMPLATES.find(
     t => t.phase === phase && t.day_number === dayNumber && t.time_of_day === timeOfDay
   );
+};
+
+// Phase configuration with labels and colors
+export const PHASE_CONFIG = {
+  'pre-launch-week-1': { 
+    label: 'Week 1', 
+    fullLabel: 'Pre-Launch: Week 1',
+    color: 'bg-blue-500',
+    borderColor: 'border-l-blue-500',
+  },
+  'pre-launch-week-2': { 
+    label: 'Week 2', 
+    fullLabel: 'Pre-Launch: Week 2',
+    color: 'bg-violet-500',
+    borderColor: 'border-l-violet-500',
+  },
+  'pre-launch-week-3': { 
+    label: 'Week 3', 
+    fullLabel: 'Pre-Launch: Week 3',
+    color: 'bg-purple-500',
+    borderColor: 'border-l-purple-500',
+  },
+  'pre-launch-week-4': { 
+    label: 'Week 4', 
+    fullLabel: 'Pre-Launch: Week 4',
+    color: 'bg-fuchsia-500',
+    borderColor: 'border-l-fuchsia-500',
+  },
+  'launch': { 
+    label: 'Launch', 
+    fullLabel: 'Launch Week',
+    color: 'bg-rose-500',
+    borderColor: 'border-l-rose-500',
+  },
+} as const;
+
+// Map templates to actual calendar dates starting from a given date
+export const mapTemplatesToDates = (startDate: Date): TemplateWithDate[] => {
+  const result: TemplateWithDate[] = [];
+  
+  TIMELINE_TEMPLATES.forEach(template => {
+    let dayOffset = 0;
+    
+    // Calculate day offset based on phase and day_number
+    switch (template.phase) {
+      case 'pre-launch-week-1':
+        dayOffset = template.day_number - 1; // Days 0-6
+        break;
+      case 'pre-launch-week-2':
+        dayOffset = 7 + template.day_number - 1; // Days 7-13
+        break;
+      case 'pre-launch-week-3':
+        dayOffset = 14 + template.day_number - 1; // Days 14-20
+        break;
+      case 'pre-launch-week-4':
+        dayOffset = 21 + template.day_number - 1; // Days 21-27
+        break;
+      case 'launch':
+        dayOffset = 28 + template.day_number - 1; // Days 28-31
+        break;
+    }
+    
+    result.push({
+      template,
+      date: addDays(startDate, dayOffset),
+    });
+  });
+  
+  return result;
+};
+
+// Get phase label from phase ID (short version for calendar)
+export const getPhaseLabel = (phase: string, dayNumber: number): string => {
+  const config = PHASE_CONFIG[phase as keyof typeof PHASE_CONFIG];
+  if (!config) return '';
+  
+  if (phase === 'launch') {
+    return `L${dayNumber}`;
+  }
+  
+  const weekNum = phase.replace('pre-launch-week-', '');
+  return `W${weekNum}D${dayNumber}`;
 };
