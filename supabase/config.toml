@@ -203,3 +203,6 @@ verify_jwt = false
 
 [functions.tiktok-creator-info]
 verify_jwt = false
+
+[functions.tiktok-revoke-token]
+verify_jwt = false
