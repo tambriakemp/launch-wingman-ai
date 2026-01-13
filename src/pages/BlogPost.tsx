@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Clock, Calendar, Share2, Linkedin } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Share2 } from "lucide-react";
 
 const BlogPost = () => {
   return (
@@ -135,16 +135,9 @@ const BlogPost = () => {
 
           {/* Share Section */}
           <div className="mt-12 pt-8 border-t">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold flex items-center gap-2">
-                <Share2 className="w-4 h-4" />
-                Share this article
-              </span>
-              <div className="flex gap-3">
-                <Button variant="outline" size="icon">
-                  <Linkedin className="w-4 h-4" />
-                </Button>
-              </div>
+            <div className="flex items-center gap-2">
+              <Share2 className="w-4 h-4" />
+              <span className="font-semibold">Share this article</span>
             </div>
           </div>
 

@@ -66,7 +66,7 @@ interface GeneratedPostsLibraryProps {
   onRefresh?: () => void;
 }
 
-const PLATFORMS = ['All', 'Instagram', 'LinkedIn', 'X', 'Facebook', 'TikTok', 'Pinterest'];
+const PLATFORMS = ['All', 'Instagram', 'X', 'Facebook', 'TikTok', 'Pinterest'];
 const STATUSES = ['All', 'draft', 'approved', 'published'];
 
 export const GeneratedPostsLibrary = ({ onRefresh }: GeneratedPostsLibraryProps) => {

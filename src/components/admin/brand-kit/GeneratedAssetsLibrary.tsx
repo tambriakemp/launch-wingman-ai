@@ -46,7 +46,7 @@ interface GeneratedAssetsLibraryProps {
   onAssetDeleted: () => void;
 }
 
-const PLATFORMS = ['All', 'Instagram', 'Facebook', 'LinkedIn', 'TikTok', 'YouTube', 'Pinterest'];
+const PLATFORMS = ['All', 'Instagram', 'Facebook', 'TikTok', 'YouTube', 'Pinterest'];
 const ASSET_TYPES = ['All', 'icon', 'banner', 'highlight', 'template'];
 
 export const GeneratedAssetsLibrary = ({
