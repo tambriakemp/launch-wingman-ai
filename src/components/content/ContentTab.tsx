@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 import { SavedIdeasSheet } from "./SavedIdeasSheet";
-import { PostEditorSheet } from "./PostEditorSheet";
+import { PostEditorSheet, ContentPlannerItem } from "./PostEditorSheet";
 import { ContentCalendarView } from "./ContentCalendarView";
 import { SalesPageCopyTab } from "./sales-copy";
 import { GenerateLaunchContentModal } from "./GenerateLaunchContentModal";
@@ -43,6 +43,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [selectedTalkingPoint, setSelectedTalkingPoint] = useState<TalkingPoint | null>(null);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [editingPlannerItem, setEditingPlannerItem] = useState<ContentPlannerItem | null>(null);
   
   const { user } = useAuth();
   const { hasAccess } = useFeatureAccess();
@@ -172,23 +173,22 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
               projectId={projectId}
               onCreatePost={() => {
                 setSelectedTalkingPoint(null);
+                setEditingPlannerItem(null);
                 setPostEditorOpen(true);
               }}
               onEditPost={(item) => {
-                handleTimelineWritePost({
-                  id: item.id,
-                  title: item.title,
-                  description: item.description,
-                  contentType: item.content_type,
-                });
+                // Pass the full planner item for editing
+                setSelectedTalkingPoint(null);
+                setEditingDraftId(null);
+                setEditingPlannerItem(item as ContentPlannerItem);
+                setPostEditorOpen(true);
               }}
               onSchedulePost={(item) => {
-                handleTimelineWritePost({
-                  id: item.id,
-                  title: item.title,
-                  description: item.description,
-                  contentType: item.content_type,
-                });
+                // Pass the full planner item for scheduling
+                setSelectedTalkingPoint(null);
+                setEditingDraftId(null);
+                setEditingPlannerItem(item as ContentPlannerItem);
+                setPostEditorOpen(true);
               }}
             />
           </div>
@@ -225,10 +225,12 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
           setPostEditorOpen(open);
           if (!open) {
             setEditingDraftId(null);
+            setEditingPlannerItem(null);
           }
         }}
         projectId={projectId}
         talkingPoint={selectedTalkingPoint}
+        existingItem={editingPlannerItem}
         existingDraftId={editingDraftId}
         currentPhase={currentPhase}
         funnelType={funnelType}
