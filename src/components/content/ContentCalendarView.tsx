@@ -20,12 +20,6 @@ import { cn } from "@/lib/utils";
 import { CalendarDayPopover } from "./CalendarDayPopover";
 import { toast } from "sonner";
 import { PHASE_CONFIG } from "@/data/timelineTemplates";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 // Custom platform icons
 const PinterestIcon = ({ className }: { className?: string }) => (
@@ -193,8 +187,7 @@ export const ContentCalendarView = ({
   };
 
   return (
-    <TooltipProvider delayDuration={300}>
-      <div className="space-y-4">
+    <div className="space-y-4">
         {/* Calendar Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -287,72 +280,40 @@ export const ContentCalendarView = ({
                           const cleanedTitle = cleanTitle(item.title);
                           
                           return (
-                            <Tooltip key={item.id}>
-                              <TooltipTrigger asChild>
-                                <div
-                                  className={cn(
-                                    "text-[10px] px-1.5 py-1 rounded-r truncate border-l-4 bg-muted/80 dark:bg-muted/60",
-                                    borderColor
-                                  )}
-                                >
-                                  {/* Platform icons row */}
-                                  {item.scheduled_platforms && item.scheduled_platforms.length > 0 && (
-                                    <div className="flex items-center gap-1 mb-0.5 text-muted-foreground">
-                                      {item.scheduled_platforms.map((platform) => (
-                                        <span key={platform}>{getPlatformIcon(platform)}</span>
-                                      ))}
-                                      {scheduledTime && (
-                                        <span className="ml-auto text-[9px]">{scheduledTime}</span>
-                                      )}
-                                    </div>
-                                  )}
-                                  
-                                  {/* Title */}
-                                  <span className="truncate block text-foreground font-medium">
-                                    {cleanedTitle}
-                                  </span>
-                                  
-                                  {/* Phase badge - only for launch content */}
-                                  {phaseConfig && (
-                                    <span className={cn(
-                                      "inline-block mt-0.5 px-1 py-0 rounded text-[8px] text-white",
-                                      phaseConfig.color
-                                    )}>
-                                      {phaseConfig.label}
-                                    </span>
+                            <div
+                              key={item.id}
+                              className={cn(
+                                "text-[10px] px-1.5 py-1 rounded-r truncate border-l-4 bg-muted/80 dark:bg-muted/60",
+                                borderColor
+                              )}
+                            >
+                              {/* Platform icons row */}
+                              {item.scheduled_platforms && item.scheduled_platforms.length > 0 && (
+                                <div className="flex items-center gap-1 mb-0.5 text-muted-foreground">
+                                  {item.scheduled_platforms.map((platform) => (
+                                    <span key={platform}>{getPlatformIcon(platform)}</span>
+                                  ))}
+                                  {scheduledTime && (
+                                    <span className="ml-auto text-[9px]">{scheduledTime}</span>
                                   )}
                                 </div>
-                              </TooltipTrigger>
-                              <TooltipContent 
-                                side="right" 
-                                className="max-w-xs p-3"
-                                sideOffset={8}
-                              >
-                                {/* Media preview */}
-                                {item.media_url && (
-                                  <div className="mb-2">
-                                    {item.media_type?.startsWith("video") ? (
-                                      <video 
-                                        src={item.media_url} 
-                                        className="w-full h-24 object-cover rounded"
-                                        muted
-                                      />
-                                    ) : (
-                                      <img 
-                                        src={item.media_url} 
-                                        alt=""
-                                        className="w-full h-24 object-cover rounded"
-                                      />
-                                    )}
-                                  </div>
-                                )}
-                                
-                                {/* Content excerpt */}
-                                <p className="text-xs text-popover-foreground">
-                                  {excerpt || "No content preview available"}
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
+                              )}
+                              
+                              {/* Title */}
+                              <span className="truncate block text-foreground font-medium">
+                                {cleanedTitle}
+                              </span>
+                              
+                              {/* Phase badge - only for launch content */}
+                              {phaseConfig && (
+                                <span className={cn(
+                                  "inline-block mt-0.5 px-1 py-0 rounded text-[8px] text-white",
+                                  phaseConfig.color
+                                )}>
+                                  {phaseConfig.label}
+                                </span>
+                              )}
+                            </div>
                           );
                         })}
                         {dayItems.length > 3 && (
@@ -390,7 +351,6 @@ export const ContentCalendarView = ({
             ))}
           </div>
         </div>
-      </div>
-    </TooltipProvider>
+    </div>
   );
 };
