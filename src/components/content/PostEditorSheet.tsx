@@ -44,6 +44,7 @@ import { MediaUploader } from "./MediaUploader";
 import { SocialPostPreview } from "./SocialPostPreview";
 import { PinterestBoardSelector } from "./PinterestBoardSelector";
 import { ScheduleDateTimePicker } from "./ScheduleDateTimePicker";
+import { TikTokPostOptions } from "./TikTokPostOptions";
 import { trackSocialPostPublish, trackSocialPostSchedule, trackSocialPostScheduleCancel } from "@/lib/analytics";
 
 // Types for the unified component
@@ -193,6 +194,9 @@ export function PostEditorSheet({
     pinterest_board_id: null as string | null,
     link_url: "",
     instagram_post_type: "feed" as "feed" | "reel" | "story",
+    tiktok_privacy_level: "PUBLIC_TO_EVERYONE",
+    tiktok_brand_content: false,
+    tiktok_brand_organic: false,
   });
 
   const isAlreadyScheduled = !!(existingItem?.scheduled_at);
@@ -340,6 +344,9 @@ export function PostEditorSheet({
           pinterest_board_id: null,
           link_url: "",
           instagram_post_type: "feed",
+          tiktok_privacy_level: "PUBLIC_TO_EVERYONE",
+          tiktok_brand_content: false,
+          tiktok_brand_organic: false,
         });
       } else {
         // Creating from talking point - generate draft
@@ -358,6 +365,9 @@ export function PostEditorSheet({
           pinterest_board_id: null,
           link_url: "",
           instagram_post_type: "feed",
+          tiktok_privacy_level: "PUBLIC_TO_EVERYONE",
+          tiktok_brand_content: false,
+          tiktok_brand_organic: false,
         });
         generateDraft();
       }
@@ -377,6 +387,9 @@ export function PostEditorSheet({
         pinterest_board_id: null,
         link_url: "",
         instagram_post_type: "feed",
+        tiktok_privacy_level: "PUBLIC_TO_EVERYONE",
+        tiktok_brand_content: false,
+        tiktok_brand_organic: false,
       });
       
       // If slot context is provided, pre-assign to that slot
@@ -946,7 +959,9 @@ export function PostEditorSheet({
         body: {
           videoUrl: formData.media_url,
           caption: content,
-          privacyLevel: "PUBLIC_TO_EVERYONE",
+          privacyLevel: formData.tiktok_privacy_level,
+          brandContentToggle: formData.tiktok_brand_content,
+          brandOrganicToggle: formData.tiktok_brand_organic,
         },
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -1136,6 +1151,9 @@ export function PostEditorSheet({
       pinterest_board_id: null,
       link_url: "",
       instagram_post_type: "feed",
+      tiktok_privacy_level: "PUBLIC_TO_EVERYONE",
+      tiktok_brand_content: false,
+      tiktok_brand_organic: false,
     });
     onOpenChange(false);
   };
@@ -1380,6 +1398,27 @@ export function PostEditorSheet({
                       />
                     </div>
                   )}
+
+                  {/* TikTok Post Options */}
+                  {(formData.scheduled_platforms.includes("tiktok") || 
+                    formData.scheduled_platforms.includes("tiktok_sandbox")) &&
+                    tiktokConnection && (
+                      <TikTokPostOptions
+                        privacyLevel={formData.tiktok_privacy_level}
+                        onPrivacyChange={(value) =>
+                          setFormData((prev) => ({ ...prev, tiktok_privacy_level: value }))
+                        }
+                        brandContentToggle={formData.tiktok_brand_content}
+                        onBrandContentChange={(checked) =>
+                          setFormData((prev) => ({ ...prev, tiktok_brand_content: checked }))
+                        }
+                        brandOrganicToggle={formData.tiktok_brand_organic}
+                        onBrandOrganicChange={(checked) =>
+                          setFormData((prev) => ({ ...prev, tiktok_brand_organic: checked }))
+                        }
+                        disabled={isPosting}
+                      />
+                    )}
                 </div>
                 )}
 

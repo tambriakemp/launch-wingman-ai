@@ -200,3 +200,6 @@ verify_jwt = false
 
 [functions.tiktok-webhook]
 verify_jwt = false
+
+[functions.tiktok-creator-info]
+verify_jwt = false
