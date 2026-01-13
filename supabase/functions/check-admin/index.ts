@@ -14,11 +14,10 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
     const authHeader = req.headers.get("Authorization");
     console.log("[check-admin] Auth header present:", !!authHeader);
-    
+
     if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
       console.log("[check-admin] No valid auth header - returning not admin");
       return new Response(JSON.stringify({ isAdmin: false, isManager: false, role: null }), {
@@ -39,22 +38,14 @@ serve(async (req) => {
 
     console.log("[check-admin] Token length:", token.length, "prefix:", token.substring(0, 10) + "...");
 
-    // Create service role client for database operations
+    // Create service role client for DB queries + validating the incoming access token.
     const supabaseService = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false },
     });
 
-    // Create a client with user's token to verify their identity
-    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    });
-
-    // Use getUser with the user's token for reliable verification
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    // Verify the token and get the user (pass the JWT explicitly; do NOT rely on session storage)
+    const { data: userData, error: userError } = await supabaseService.auth.getUser(token);
+    const user = userData?.user;
 
     if (userError || !user) {
       console.error("[check-admin] User verification error:", userError?.message || "No user");
