@@ -9,8 +9,6 @@ serve(async (req) => {
     const error = url.searchParams.get("error");
     const errorDescription = url.searchParams.get("error_description");
 
-    const clientKey = Deno.env.get("TIKTOK_CLIENT_KEY");
-    const clientSecret = Deno.env.get("TIKTOK_CLIENT_SECRET");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -27,48 +25,65 @@ serve(async (req) => {
       return Response.redirect(`${defaultRedirect}?error=missing_parameters`);
     }
 
-    if (!clientKey || !clientSecret || !supabaseUrl || !supabaseServiceKey) {
-      console.error("Missing environment variables");
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing Supabase configuration");
       return Response.redirect(`${defaultRedirect}?error=server_configuration_error`);
     }
 
     // Decode state
     let userId: string;
     let redirectUrl: string;
+    let environment: string;
     try {
       const stateData = JSON.parse(atob(state));
       userId = stateData.user_id;
       redirectUrl = stateData.redirect_url || defaultRedirect;
+      environment = stateData.environment || "production";
     } catch (e) {
       console.error("Failed to decode state:", e);
       return Response.redirect(`${defaultRedirect}?error=invalid_state`);
     }
 
+    // Get credentials based on environment
+    const clientKey = environment === "sandbox" 
+      ? Deno.env.get("TIKTOK_SANDBOX_CLIENT_KEY")
+      : Deno.env.get("TIKTOK_CLIENT_KEY");
+    const clientSecret = environment === "sandbox"
+      ? Deno.env.get("TIKTOK_SANDBOX_CLIENT_SECRET")
+      : Deno.env.get("TIKTOK_CLIENT_SECRET");
+
+    if (!clientKey || !clientSecret) {
+      console.error(`Missing TikTok ${environment} credentials`);
+      return Response.redirect(`${defaultRedirect}?error=missing_credentials`);
+    }
+
+    const providerName = environment === "sandbox" ? "tiktok_sandbox" : "tiktok";
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Retrieve code verifier from database
-    const { data: stateData, error: stateError } = await supabase
+    const { data: oauthStateData, error: stateError } = await supabase
       .from("oauth_state")
       .select("code_verifier")
       .eq("user_id", userId)
-      .eq("provider", "tiktok")
+      .eq("provider", providerName)
       .order("created_at", { ascending: false })
       .limit(1)
       .single();
 
-    if (stateError || !stateData) {
+    if (stateError || !oauthStateData) {
       console.error("Failed to retrieve code verifier:", stateError);
       return Response.redirect(`${redirectUrl}?error=oauth_state_not_found`);
     }
 
-    const codeVerifier = stateData.code_verifier;
+    const codeVerifier = oauthStateData.code_verifier;
 
     // Clean up used state
     await supabase
       .from("oauth_state")
       .delete()
       .eq("user_id", userId)
-      .eq("provider", "tiktok");
+      .eq("provider", providerName);
 
     // Exchange code for access token
     const callbackUrl = `${supabaseUrl}/functions/v1/tiktok-auth-callback`;
@@ -137,12 +152,14 @@ serve(async (req) => {
     // Calculate token expiry
     const tokenExpiry = new Date(Date.now() + expires_in * 1000).toISOString();
 
-    // Upsert social connection
+    // Upsert social connection (use platform name based on environment)
+    const platformName = environment === "sandbox" ? "tiktok_sandbox" : "tiktok";
+    
     const { error: upsertError } = await supabase
       .from("social_connections")
       .upsert({
         user_id: userId,
-        platform: "tiktok",
+        platform: platformName,
         account_id: open_id,
         account_name: username,
         access_token: encryptedAccessToken,
@@ -158,9 +175,9 @@ serve(async (req) => {
       return Response.redirect(`${redirectUrl}?error=save_failed`);
     }
 
-    console.log("TikTok connection saved for user:", userId);
+    console.log(`TikTok ${environment} connection saved for user:`, userId);
 
-    return Response.redirect(`${redirectUrl}?tiktok_connected=true`);
+    return Response.redirect(`${redirectUrl}?tiktok_connected=true&environment=${environment}`);
   } catch (error) {
     console.error("Error in tiktok-auth-callback:", error);
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
