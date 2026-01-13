@@ -11,6 +11,8 @@ import {
   Clock,
   AlertCircle,
   Sparkles,
+  ChevronUp,
+  Save,
 } from "lucide-react";
 import {
   Sheet,
@@ -24,6 +26,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -180,9 +188,13 @@ export function PostEditorSheet({
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
   const [scheduledTime, setScheduledTime] = useState("09:00");
+  const [isDraftScheduleMode, setIsDraftScheduleMode] = useState(false);
 
   // Pinterest options modal
   const [showPinterestOptions, setShowPinterestOptions] = useState(false);
+  
+  // Save dropdown state
+  const [showSaveDropdown, setShowSaveDropdown] = useState(false);
 
   // Per-network customization
   const [customizePerNetwork, setCustomizePerNetwork] = useState(false);
@@ -1186,6 +1198,161 @@ export function PostEditorSheet({
     }
   };
 
+  // Handler for the Draft button - opens schedule modal in draft mode
+  const handleDraftClick = () => {
+    setIsDraftScheduleMode(true);
+    setShowScheduleModal(true);
+  };
+
+  // Handler for scheduling as draft (saves to calendar with draft status)
+  const handleScheduleAsDraft = async (date: Date, time: string) => {
+    if (!user) return;
+
+    setSaving(true);
+    try {
+      const [hours, minutes] = time.split(":").map(Number);
+      const scheduleDateTime = new Date(date);
+      scheduleDateTime.setHours(hours, minutes, 0, 0);
+
+      if (timelineItemId) {
+        // Update existing timeline item with scheduled date but keep as draft
+        await supabase
+          .from("content_planner")
+          .update({
+            title: title || "Untitled post",
+            content: content,
+            content_type: contentType,
+            status: "draft",
+            scheduled_at: scheduleDateTime.toISOString(),
+            media_url: formData.media_url,
+            media_type: formData.media_type,
+            scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
+          })
+          .eq("id", timelineItemId);
+      } else {
+        // Create new content planner item as draft with scheduled date
+        const { data, error } = await supabase
+          .from("content_planner")
+          .insert({
+            project_id: projectId,
+            user_id: user.id,
+            phase: slotContext?.phase || selectedPhase,
+            day_number: slotContext?.dayNumber || selectedDay,
+            time_of_day: slotContext?.timeOfDay || "morning",
+            title: title || "Untitled post",
+            description: "",
+            content_type: contentType,
+            content: content || null,
+            status: "draft",
+            scheduled_at: scheduleDateTime.toISOString(),
+            media_url: formData.media_url,
+            media_type: formData.media_type,
+            scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setTimelineItemId(data.id);
+      }
+
+      toast.success("Draft saved to calendar");
+      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+      onSaved?.();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error saving draft to calendar:", error);
+      toast.error("Failed to save draft");
+    } finally {
+      setSaving(false);
+      setIsDraftScheduleMode(false);
+    }
+  };
+
+  // Handler for save button (saves without closing)
+  const handleSaveOnly = async () => {
+    if (!user || !content.trim()) return;
+
+    setSaving(true);
+    try {
+      if (timelineItemId) {
+        await supabase
+          .from("content_planner")
+          .update({
+            title: title || "Untitled post",
+            content: content,
+            content_type: contentType,
+            media_url: formData.media_url,
+            media_type: formData.media_type,
+            scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
+          })
+          .eq("id", timelineItemId);
+        toast.success("Saved");
+      } else if (slotContext) {
+        const { data, error } = await supabase
+          .from("content_planner")
+          .insert({
+            project_id: projectId,
+            user_id: user.id,
+            phase: slotContext.phase,
+            day_number: slotContext.dayNumber,
+            time_of_day: slotContext.timeOfDay,
+            title: title || "Untitled post",
+            description: "",
+            content_type: contentType,
+            content: content || null,
+            status: "draft",
+            media_url: formData.media_url,
+            media_type: formData.media_type,
+            scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setTimelineItemId(data.id);
+        toast.success("Saved");
+      } else if (currentDraftId) {
+        await supabase
+          .from("content_drafts")
+          .update({
+            title: title || "Untitled draft",
+            content: content,
+            content_type: contentType,
+          })
+          .eq("id", currentDraftId);
+        toast.success("Saved");
+      } else {
+        const { data, error } = await supabase
+          .from("content_drafts")
+          .insert({
+            project_id: projectId,
+            user_id: user.id,
+            title: title || "Untitled draft",
+            content: content,
+            content_type: contentType,
+            phase: currentPhase,
+            funnel_type: funnelType,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setCurrentDraftId(data.id);
+        toast.success("Saved");
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["content-drafts", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["saved-content-counts", projectId] });
+    } catch (error) {
+      console.error("Error saving:", error);
+      toast.error("Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleClose = () => {
     setTitle("");
     setContent("");
@@ -1489,14 +1656,7 @@ export function PostEditorSheet({
           <div className="flex gap-2">
             {!isPostedContent && (
               <>
-                <Button
-                  variant="outline"
-                  onClick={handleSaveDraft}
-                  disabled={!content.trim() || saving}
-                >
-                  {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Save draft
-                </Button>
+                {/* Trash - only for existing items */}
                 {isEditingExisting && (
                   <Button
                     variant="ghost"
@@ -1512,6 +1672,15 @@ export function PostEditorSheet({
                     )}
                   </Button>
                 )}
+                {/* Draft button */}
+                <Button
+                  variant="outline"
+                  onClick={handleDraftClick}
+                  disabled={!content.trim() || saving}
+                >
+                  {saving && isDraftScheduleMode && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Draft
+                </Button>
               </>
             )}
           </div>
@@ -1532,6 +1701,7 @@ export function PostEditorSheet({
                   Cancel Schedule
                 </Button>
               )}
+              {/* Post Now */}
               <Button
                 onClick={handlePostNow}
                 disabled={isPosting || !formData.scheduled_platforms.length}
@@ -1544,14 +1714,42 @@ export function PostEditorSheet({
                 )}
                 Post Now
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowScheduleModal(true)}
-                disabled={!formData.scheduled_platforms.length}
-              >
-                <Clock className="w-4 h-4 mr-2" />
-                {isAlreadyScheduled ? "Reschedule" : "Schedule"}
-              </Button>
+              {/* Schedule with dropdown */}
+              <div className="flex">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsDraftScheduleMode(false);
+                    setShowScheduleModal(true);
+                  }}
+                  disabled={!formData.scheduled_platforms.length}
+                  className="rounded-r-none border-r-0"
+                >
+                  <Clock className="w-4 h-4 mr-2" />
+                  {isAlreadyScheduled ? "Reschedule" : "Schedule"}
+                </Button>
+                <DropdownMenu open={showSaveDropdown} onOpenChange={setShowSaveDropdown}>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="rounded-l-none"
+                      disabled={!content.trim()}
+                    >
+                      <ChevronUp className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem 
+                      onClick={handleSaveOnly}
+                      disabled={saving}
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      Save
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           )}
         </SheetFooter>
@@ -1585,15 +1783,24 @@ export function PostEditorSheet({
         {/* Schedule Modal */}
         <ScheduleModal
           open={showScheduleModal}
-          onOpenChange={setShowScheduleModal}
+          onOpenChange={(open) => {
+            setShowScheduleModal(open);
+            if (!open) {
+              setIsDraftScheduleMode(false);
+            }
+          }}
           onSchedule={async (date, time) => {
-            setScheduledDate(date);
-            setScheduledTime(time);
-            await handleSchedule(date, time);
+            if (isDraftScheduleMode) {
+              await handleScheduleAsDraft(date, time);
+            } else {
+              setScheduledDate(date);
+              setScheduledTime(time);
+              await handleSchedule(date, time);
+            }
             setShowScheduleModal(false);
           }}
-          isScheduling={isScheduling}
-          isReschedule={isAlreadyScheduled}
+          isScheduling={isDraftScheduleMode ? saving : isScheduling}
+          isReschedule={!isDraftScheduleMode && isAlreadyScheduled}
           initialDate={scheduledDate}
           initialTime={scheduledTime}
         />
