@@ -105,23 +105,10 @@ export function TikTokPostOptions({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-medium truncate">{creatorInfo.creator_nickname}</span>
-            {isSandbox && (
-              <Badge variant="secondary" className="flex items-center gap-1 text-xs shrink-0">
-                <FlaskConical className="w-3 h-3" />
-                Sandbox
-              </Badge>
-            )}
           </div>
           <span className="text-sm text-muted-foreground">@{creatorInfo.creator_username}</span>
         </div>
       </div>
-
-      {/* Sandbox Notice */}
-      {isSandbox && creatorInfo.message && (
-        <div className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-sm">
-          {creatorInfo.message}
-        </div>
-      )}
 
       {/* Disabled Features Warning */}
       {(creatorInfo.comment_disabled || creatorInfo.duet_disabled || creatorInfo.stitch_disabled) && (
