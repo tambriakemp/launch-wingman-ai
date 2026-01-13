@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Video, FlaskConical, Zap } from "lucide-react";
+import { Video, FlaskConical, Zap, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function TikTokEnvironmentToggle() {
@@ -49,7 +49,7 @@ export function TikTokEnvironmentToggle() {
           </Badge>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
           <div className="flex items-center gap-2">
             <Zap className={`w-4 h-4 ${!isSandbox ? "text-primary" : "text-muted-foreground"}`} />
@@ -72,11 +72,36 @@ export function TikTokEnvironmentToggle() {
           </div>
         </div>
         
-        <p className="text-xs text-muted-foreground mt-3">
-          {isSandbox 
-            ? "Sandbox mode uses TikTok's testing environment. Posts won't go live."
-            : "Production mode posts directly to connected TikTok accounts."}
-        </p>
+        {/* Environment-specific messaging */}
+        {isSandbox ? (
+          <div className="space-y-2">
+            <div className="flex items-start gap-2 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div className="text-sm text-amber-700 dark:text-amber-300">
+                <p className="font-medium">Sandbox Mode Limitations:</p>
+                <ul className="mt-1 space-y-0.5 text-xs list-disc list-inside">
+                  <li>All posts are private (Only Me) until app is approved</li>
+                  <li>Use sandbox credentials from TikTok Developer Portal</li>
+                  <li>Videos will not appear publicly on TikTok</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex items-start gap-2 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+              <div className="text-sm text-emerald-700 dark:text-emerald-300">
+                <p className="font-medium">Production Mode Requirements:</p>
+                <ul className="mt-1 space-y-0.5 text-xs list-disc list-inside">
+                  <li>Your TikTok app must be approved by TikTok</li>
+                  <li>Direct Post must be enabled in Developer Console</li>
+                  <li>video.publish scope must be approved</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

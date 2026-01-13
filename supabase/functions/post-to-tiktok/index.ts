@@ -113,7 +113,13 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { videoUrl, caption, privacyLevel = "PUBLIC_TO_EVERYONE" } = await req.json();
+    const { 
+      videoUrl, 
+      caption, 
+      privacyLevel = "PUBLIC_TO_EVERYONE",
+      brandContentToggle = false,
+      brandOrganicToggle = false 
+    } = await req.json();
 
     if (!videoUrl) {
       return new Response(
@@ -205,11 +211,13 @@ serve(async (req) => {
           disable_duet: false,
           disable_comment: false,
           disable_stitch: false,
+          brand_content_toggle: brandContentToggle,
+          brand_organic_toggle: brandOrganicToggle,
         },
         source_info: {
           source: "FILE_UPLOAD",
           video_size: videoSize,
-          chunk_size: videoSize, // Single chunk upload
+          chunk_size: videoSize,
           total_chunk_count: 1,
         },
       }),
