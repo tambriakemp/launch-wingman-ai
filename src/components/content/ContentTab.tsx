@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, FileText, Sparkles, Calendar, CalendarRange } from "lucide-react";
+import { CalendarDays, FileText, Sparkles, Calendar, CalendarRange, ChevronDown, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 import { SavedIdeasSheet } from "./SavedIdeasSheet";
 import { PostEditorSheet, ContentPlannerItem } from "./PostEditorSheet";
@@ -13,6 +14,12 @@ import { GenerateLaunchContentModal } from "./GenerateLaunchContentModal";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
@@ -170,14 +177,61 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
                     Monthly
                   </ToggleGroupItem>
                 </ToggleGroup>
-                <Button
-                  onClick={() => setGenerateModalOpen(true)}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Generate Launch Content
-                </Button>
+                <div className="flex items-center">
+                  <Button
+                    onClick={() => setGenerateModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="rounded-r-none border-r-0"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate Launch Content
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-l-none px-2"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={async () => {
+                          try {
+                            // Delete all generated launch content (posts in launch phases that aren't posted/completed)
+                            const { error } = await supabase
+                              .from("content_planner")
+                              .delete()
+                              .eq("project_id", projectId)
+                              .in("phase", [
+                                "pre-launch-week-1",
+                                "pre-launch-week-2",
+                                "pre-launch-week-3",
+                                "pre-launch-week-4",
+                                "launch",
+                              ])
+                              .not("status", "in", '("posted","completed")');
+                            
+                            if (error) throw error;
+                            
+                            queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+                            toast.success("All generated launch content deleted");
+                          } catch (error) {
+                            console.error("Error deleting content:", error);
+                            toast.error("Failed to delete content");
+                          }
+                        }}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete All Generated Content
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
                 <Button
                   onClick={() => {
                     setSelectedTalkingPoint(null);

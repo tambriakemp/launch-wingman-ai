@@ -160,7 +160,7 @@ export const GenerateLaunchContentModal = ({
                   content_type: data.content_type,
                   title: data.title,
                   description: data.description,
-                  status: "planned",
+                  status: "draft",
                   scheduled_at: scheduledAt.toISOString(),
                 });
 
