@@ -1231,6 +1231,94 @@ export function PostEditorSheet({
                     }}
                     connections={allConnections}
                   />
+
+                  {/* Platform-specific options - directly below Post To */}
+                  {formData.scheduled_platforms.length > 0 && (
+                    <div className="space-y-3 pt-2">
+                      {/* Pinterest Board Selector */}
+                      {formData.scheduled_platforms.includes("pinterest") &&
+                        pinterestConnection && (
+                          <PinterestBoardSelector
+                            selectedBoard={formData.pinterest_board_id}
+                            onBoardChange={(boardId) =>
+                              setFormData((prev) => ({ ...prev, pinterest_board_id: boardId }))
+                            }
+                          />
+                        )}
+
+                      {/* Instagram Post Type Selector */}
+                      {formData.scheduled_platforms.includes("instagram") &&
+                        instagramConnection && (
+                          <div className="space-y-2">
+                            <Label className="text-xs">Instagram Post Type</Label>
+                            <div className="flex gap-2">
+                              {[
+                                { value: "feed", label: "Feed", icon: "📷" },
+                                { value: "reel", label: "Reel", icon: "🎬" },
+                                { value: "story", label: "Story", icon: "⏱️" },
+                              ].map((option) => (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  onClick={() =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      instagram_post_type: option.value as
+                                        | "feed"
+                                        | "reel"
+                                        | "story",
+                                    }))
+                                  }
+                                  className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md border text-xs transition-colors ${
+                                    formData.instagram_post_type === option.value
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "bg-background border-border hover:bg-muted"
+                                  }`}
+                                >
+                                  <span>{option.icon}</span>
+                                  <span>{option.label}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                      {/* Link URL for Pinterest */}
+                      {formData.scheduled_platforms.includes("pinterest") && (
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Link URL (optional)</Label>
+                          <Input
+                            value={formData.link_url}
+                            onChange={(e) =>
+                              setFormData((prev) => ({ ...prev, link_url: e.target.value }))
+                            }
+                            placeholder="https://..."
+                          />
+                        </div>
+                      )}
+
+                      {/* TikTok Post Options */}
+                      {(formData.scheduled_platforms.includes("tiktok") || 
+                        formData.scheduled_platforms.includes("tiktok_sandbox")) &&
+                        tiktokConnection && (
+                          <TikTokPostOptions
+                            privacyLevel={formData.tiktok_privacy_level}
+                            onPrivacyChange={(value) =>
+                              setFormData((prev) => ({ ...prev, tiktok_privacy_level: value }))
+                            }
+                            brandContentToggle={formData.tiktok_brand_content}
+                            onBrandContentChange={(checked) =>
+                              setFormData((prev) => ({ ...prev, tiktok_brand_content: checked }))
+                            }
+                            brandOrganicToggle={formData.tiktok_brand_organic}
+                            onBrandOrganicChange={(checked) =>
+                              setFormData((prev) => ({ ...prev, tiktok_brand_organic: checked }))
+                            }
+                            disabled={isPosting}
+                          />
+                        )}
+                    </div>
+                  )}
                 </div>
                 )}
 
@@ -1359,98 +1447,6 @@ export function PostEditorSheet({
                 </div>
                 )}
 
-                {/* Schedule / Post Section - platform-specific options */}
-                {!isPostedContent && formData.scheduled_platforms.length > 0 && (
-                <div className="space-y-4 pt-6 mt-4 border-t">
-                  <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
-                    <span>✨</span>
-                    <span>Platform Options</span>
-                  </h3>
-
-                  {/* Pinterest Board Selector */}
-                  {formData.scheduled_platforms.includes("pinterest") &&
-                    pinterestConnection && (
-                      <PinterestBoardSelector
-                        selectedBoard={formData.pinterest_board_id}
-                        onBoardChange={(boardId) =>
-                          setFormData((prev) => ({ ...prev, pinterest_board_id: boardId }))
-                        }
-                      />
-                    )}
-
-                  {/* Instagram Post Type Selector */}
-                  {formData.scheduled_platforms.includes("instagram") &&
-                    instagramConnection && (
-                      <div className="space-y-2">
-                        <Label className="text-xs">Instagram Post Type</Label>
-                        <div className="flex gap-2">
-                          {[
-                            { value: "feed", label: "Feed", icon: "📷" },
-                            { value: "reel", label: "Reel", icon: "🎬" },
-                            { value: "story", label: "Story", icon: "⏱️" },
-                          ].map((option) => (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  instagram_post_type: option.value as
-                                    | "feed"
-                                    | "reel"
-                                    | "story",
-                                }))
-                              }
-                              className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md border text-xs transition-colors ${
-                                formData.instagram_post_type === option.value
-                                  ? "bg-primary text-primary-foreground border-primary"
-                                  : "bg-background border-border hover:bg-muted"
-                              }`}
-                            >
-                              <span>{option.icon}</span>
-                              <span>{option.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                  {/* Link URL for Pinterest */}
-                  {formData.scheduled_platforms.includes("pinterest") && (
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Link URL (optional)</Label>
-                      <Input
-                        value={formData.link_url}
-                        onChange={(e) =>
-                          setFormData((prev) => ({ ...prev, link_url: e.target.value }))
-                        }
-                        placeholder="https://..."
-                      />
-                    </div>
-                  )}
-
-                  {/* TikTok Post Options */}
-                  {(formData.scheduled_platforms.includes("tiktok") || 
-                    formData.scheduled_platforms.includes("tiktok_sandbox")) &&
-                    tiktokConnection && (
-                      <TikTokPostOptions
-                        privacyLevel={formData.tiktok_privacy_level}
-                        onPrivacyChange={(value) =>
-                          setFormData((prev) => ({ ...prev, tiktok_privacy_level: value }))
-                        }
-                        brandContentToggle={formData.tiktok_brand_content}
-                        onBrandContentChange={(checked) =>
-                          setFormData((prev) => ({ ...prev, tiktok_brand_content: checked }))
-                        }
-                        brandOrganicToggle={formData.tiktok_brand_organic}
-                        onBrandOrganicChange={(checked) =>
-                          setFormData((prev) => ({ ...prev, tiktok_brand_organic: checked }))
-                        }
-                        disabled={isPosting}
-                      />
-                    )}
-                </div>
-                )}
 
                 {/* Media Upload - hidden for posted content */}
                 {!isPostedContent && (
