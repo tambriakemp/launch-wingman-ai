@@ -185,7 +185,7 @@ export const ContentCalendarView = ({
               >
                 <div
                   className={cn(
-                    "min-h-24 p-1.5 border-b border-r border-border cursor-pointer transition-colors hover:bg-accent/50",
+                    "min-h-32 p-2 border-b border-r border-border cursor-pointer transition-colors hover:bg-accent/50",
                     !isCurrentMonth && "bg-muted/30",
                     idx % 7 === 6 && "border-r-0"
                   )}
