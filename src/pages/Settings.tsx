@@ -526,7 +526,7 @@ const Settings = () => {
     try {
       const { data, error } = await supabase.functions.invoke('tiktok-auth-start', {
         body: { 
-          redirect_url: '/settings',
+          redirect_url: new URL('/settings', window.location.origin).toString(),
           environment: tiktokEnvironment
         }
       });
