@@ -44,17 +44,16 @@ Deno.serve(async (req) => {
 
       const { event, user, content } = body;
 
-      // Log the webhook event for debugging
-      try {
-        await supabase.from('webhook_logs').insert({
-          provider: 'tiktok',
-          event_type: event,
-          payload: body,
-          created_at: new Date().toISOString(),
-        });
-      } catch (logErr) {
-        // Table might not exist, just log
-        console.log('Could not log webhook event:', logErr);
+      // Log the webhook event for debugging and analytics
+      const { error: logError } = await supabase.from('webhook_logs').insert({
+        provider: 'tiktok',
+        event_type: event,
+        payload: body,
+        status: 'received',
+      });
+      
+      if (logError) {
+        console.error('Failed to log webhook event:', logError);
       }
 
       // Handle different event types
