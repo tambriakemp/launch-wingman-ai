@@ -1219,8 +1219,8 @@ export function PostEditorSheet({
               <>
                 {/* Platform Selector Section - moved to top */}
                 {!isPostedContent && (
-                <div className="space-y-2">
-                  <Label className="text-xs">Post To</Label>
+                <div className="space-y-3">
+                  <Label className="text-xs font-medium">Post To</Label>
                   <PlatformSelector
                     selected={formData.scheduled_platforms}
                     onChange={(platforms) => {
