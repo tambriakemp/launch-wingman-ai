@@ -1067,7 +1067,7 @@ const Settings = () => {
 
                 {/* Future platforms placeholder */}
                 <p className="text-xs text-muted-foreground pt-2">
-                  More platforms coming soon: Twitter/X, TikTok
+                  More platforms coming soon: TikTok, LinkedIn
                 </p>
               </div>
             </CardContent>
