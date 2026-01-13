@@ -41,12 +41,6 @@ export function TikTokPrivacySelector({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <Label>Who can view this video</Label>
-        {isSandbox && (
-          <Badge variant="secondary" className="flex items-center gap-1 text-xs">
-            <FlaskConical className="w-3 h-3" />
-            Sandbox Mode
-          </Badge>
-        )}
       </div>
       <Select
         value={effectiveValue}
@@ -64,11 +58,6 @@ export function TikTokPrivacySelector({
           ))}
         </SelectContent>
       </Select>
-      {isSandbox && (
-        <p className="text-xs text-muted-foreground">
-          Sandbox posts are always private until your TikTok app is approved.
-        </p>
-      )}
     </div>
   );
 }
