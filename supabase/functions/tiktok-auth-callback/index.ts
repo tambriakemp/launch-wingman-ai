@@ -37,7 +37,14 @@ serve(async (req) => {
     try {
       const stateData = JSON.parse(atob(state));
       userId = stateData.user_id;
-      redirectUrl = stateData.redirect_url || defaultRedirect;
+      // Ensure redirectUrl is always a full URL (not a relative path)
+      const rawRedirectUrl = stateData.redirect_url || defaultRedirect;
+      if (rawRedirectUrl.startsWith('/')) {
+        const baseUrl = supabaseUrl?.replace('.supabase.co', '.lovable.app');
+        redirectUrl = `${baseUrl}${rawRedirectUrl}`;
+      } else {
+        redirectUrl = rawRedirectUrl;
+      }
       environment = stateData.environment || "production";
     } catch (e) {
       console.error("Failed to decode state:", e);
@@ -138,7 +145,7 @@ serve(async (req) => {
 
     // Encrypt tokens
     const { data: encryptedAccessToken, error: encryptAccessError } = await supabase
-      .rpc("encrypt_token", { token: access_token });
+      .rpc("encrypt_token", { plain_token: access_token });
 
     if (encryptAccessError) {
       console.error("Failed to encrypt access token:", encryptAccessError);
@@ -146,7 +153,7 @@ serve(async (req) => {
     }
 
     const { data: encryptedRefreshToken, error: encryptRefreshError } = await supabase
-      .rpc("encrypt_token", { token: refresh_token });
+      .rpc("encrypt_token", { plain_token: refresh_token });
 
     if (encryptRefreshError) {
       console.error("Failed to encrypt refresh token:", encryptRefreshError);
