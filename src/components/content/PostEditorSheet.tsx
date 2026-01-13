@@ -261,6 +261,21 @@ export function PostEditorSheet({
     enabled: !!user && open,
   });
 
+  const { data: tiktokConnection } = useQuery({
+    queryKey: ["tiktok-connection", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("social_connections")
+        .select("id, account_name, account_id")
+        .eq("user_id", user!.id)
+        .eq("platform", "tiktok")
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!user && open,
+  });
+
   // Initialize form when opening
   useEffect(() => {
     if (!open) return;
@@ -860,6 +875,13 @@ export function PostEditorSheet({
       if (!threadsConnection) {
         errors.push("Please connect your Threads account first");
       }
+    } else if (platform === "tiktok") {
+      if (!tiktokConnection) {
+        errors.push("Please connect your TikTok account first");
+      }
+      if (!formData.media_url || formData.media_type !== "video") {
+        errors.push("TikTok only supports video posts");
+      }
     }
     
     if (errors.length > 0) {
@@ -891,8 +913,68 @@ export function PostEditorSheet({
       await postToFacebook();
     } else if (selectedPlatform === "threads") {
       await postToThreads();
+    } else if (selectedPlatform === "tiktok") {
+      await postToTikTok();
     } else {
       toast.error(`Posting to ${selectedPlatform} is not yet supported`);
+    }
+  };
+
+  const postToTikTok = async () => {
+    if (!user) return;
+
+    setIsPosting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please sign in again");
+        setIsPosting(false);
+        return;
+      }
+
+      const response = await supabase.functions.invoke("post-to-tiktok", {
+        body: {
+          videoUrl: formData.media_url,
+          caption: content,
+          privacyLevel: "PUBLIC_TO_EVERYONE",
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Failed to post to TikTok");
+      }
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      if (timelineItemId) {
+        await supabase
+          .from("content_planner")
+          .update({
+            scheduled_platforms: formData.scheduled_platforms,
+            scheduled_at: new Date().toISOString(),
+            status: "completed",
+          })
+          .eq("id", timelineItemId);
+      }
+
+      if (response.data?.status === "PROCESSING") {
+        toast.success("Video submitted to TikTok! It may take a few minutes to appear.");
+      } else {
+        toast.success("Posted to TikTok successfully!");
+      }
+      trackSocialPostPublish('tiktok');
+      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+      onSaved?.();
+      onOpenChange(false);
+    } catch (error: any) {
+      console.error("Error posting to TikTok:", error);
+      toast.error(error.message || "Failed to post to TikTok");
+    } finally {
+      setIsPosting(false);
     }
   };
 

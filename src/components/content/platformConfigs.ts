@@ -82,7 +82,7 @@ export const PLATFORMS: PlatformConfig[] = [
     maxMedia: 1,
     supportsVideo: true,
     maxCaptionLength: 2200,
-    hidden: true,
+    hidden: false,
   },
 ];
 

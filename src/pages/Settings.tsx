@@ -97,6 +97,8 @@ const Settings = () => {
   const [isDisconnectingFacebook, setIsDisconnectingFacebook] = useState(false);
   const [isConnectingThreads, setIsConnectingThreads] = useState(false);
   const [isDisconnectingThreads, setIsDisconnectingThreads] = useState(false);
+  const [isConnectingTikTok, setIsConnectingTikTok] = useState(false);
+  const [isDisconnectingTikTok, setIsDisconnectingTikTok] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   // Annual Review state
@@ -138,6 +140,7 @@ const Settings = () => {
   const instagramConnection = socialConnections.find(c => c.platform === 'instagram');
   const facebookConnection = socialConnections.find(c => c.platform === 'facebook');
   const threadsConnection = socialConnections.find(c => c.platform === 'threads');
+  const tiktokConnection = socialConnections.find(c => c.platform === 'tiktok');
 
   // Delete project mutation
   const deleteProjectMutation = useMutation({
@@ -215,6 +218,15 @@ const Settings = () => {
     } else if (searchParams.get('instagram_error')) {
       const error = searchParams.get('instagram_error');
       toast.error(`Failed to connect Instagram: ${error}`);
+    }
+    
+    // Handle TikTok OAuth callback
+    if (searchParams.get('tiktok_connected') === 'true') {
+      toast.success("TikTok connected successfully!");
+      refetchConnections();
+    } else if (searchParams.get('error') && searchParams.get('error')?.includes('tiktok')) {
+      const error = searchParams.get('error');
+      toast.error(`Failed to connect TikTok: ${error}`);
     }
   }, [searchParams, checkSubscription, refetchConnections]);
 
@@ -499,6 +511,52 @@ const Settings = () => {
       toast.error("Failed to disconnect Threads");
     } finally {
       setIsDisconnectingThreads(false);
+    }
+  };
+
+  const handleConnectTikTok = async () => {
+    if (!user) return;
+    
+    setIsConnectingTikTok(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('tiktok-auth-start', {
+        body: { 
+          redirect_url: '/settings' 
+        }
+      });
+      
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+        toast.info("TikTok login opened in a new tab. Complete the authorization there.");
+        setIsConnectingTikTok(false);
+      }
+    } catch (error) {
+      console.error('TikTok connect error:', error);
+      toast.error("Failed to connect TikTok. Please try again.");
+      setIsConnectingTikTok(false);
+    }
+  };
+
+  const handleDisconnectTikTok = async () => {
+    if (!user || !tiktokConnection) return;
+    
+    setIsDisconnectingTikTok(true);
+    try {
+      const { error } = await supabase
+        .from('social_connections')
+        .delete()
+        .eq('id', tiktokConnection.id);
+      
+      if (error) throw error;
+      
+      toast.success("TikTok disconnected");
+      refetchConnections();
+    } catch (error) {
+      console.error('TikTok disconnect error:', error);
+      toast.error("Failed to disconnect TikTok");
+    } finally {
+      setIsDisconnectingTikTok(false);
     }
   };
 
@@ -1178,9 +1236,73 @@ const Settings = () => {
                   )}
                 </div>
 
+                {/* TikTok Connection */}
+                <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="currentColor">
+                        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">TikTok</p>
+                      {tiktokConnection ? (
+                        <p className="text-sm text-muted-foreground">
+                          Connected: @{tiktokConnection.account_name || 'Your Account'}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Not connected (video only)</p>
+                      )}
+                    </div>
+                  </div>
+                  {tiktokConnection ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDisconnectTikTok}
+                      disabled={isDisconnectingTikTok}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      {isDisconnectingTikTok ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Unlink className="w-4 h-4 mr-1" />
+                          Disconnect
+                        </>
+                      )}
+                    </Button>
+                  ) : isSubscribed ? (
+                    <Button
+                      size="sm"
+                      onClick={handleConnectTikTok}
+                      disabled={isConnectingTikTok}
+                    >
+                      {isConnectingTikTok ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Link2 className="w-4 h-4 mr-1" />
+                          Connect
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowUpgradeDialog(true)}
+                      className="gap-1.5"
+                    >
+                      <Crown className="w-3.5 h-3.5 text-primary" />
+                      Pro
+                    </Button>
+                  )}
+                </div>
+
                 {/* Future platforms placeholder */}
                 <p className="text-xs text-muted-foreground pt-2">
-                  More platforms coming soon: TikTok, LinkedIn
+                  More platforms coming soon: LinkedIn
                 </p>
               </div>
             </CardContent>
