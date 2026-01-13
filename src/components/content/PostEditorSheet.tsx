@@ -1217,6 +1217,23 @@ export function PostEditorSheet({
               </div>
             ) : (
               <>
+                {/* Platform Selector Section - moved to top */}
+                {!isPostedContent && (
+                <div className="space-y-2">
+                  <Label className="text-xs">Post To</Label>
+                  <PlatformSelector
+                    selected={formData.scheduled_platforms}
+                    onChange={(platforms) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        scheduled_platforms: platforms,
+                      }));
+                    }}
+                    connections={allConnections}
+                  />
+                </div>
+                )}
+
                 {/* Title */}
                 <div className="space-y-1.5">
                   <Label className="text-xs">Title</Label>
@@ -1342,28 +1359,13 @@ export function PostEditorSheet({
                 </div>
                 )}
 
-                {/* Platform Selector Section - hidden for posted content */}
-                {!isPostedContent && (
+                {/* Schedule / Post Section - platform-specific options */}
+                {!isPostedContent && formData.scheduled_platforms.length > 0 && (
                 <div className="space-y-4 pt-6 mt-4 border-t">
                   <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                     <span>✨</span>
-                    <span>Schedule / Post</span>
+                    <span>Platform Options</span>
                   </h3>
-
-                  {/* Platform Selector */}
-                  <div className="space-y-2">
-                    <Label className="text-xs">Post To</Label>
-                    <PlatformSelector
-                      selected={formData.scheduled_platforms}
-                      onChange={(platforms) => {
-                        setFormData((prev) => ({
-                          ...prev,
-                          scheduled_platforms: platforms,
-                        }));
-                      }}
-                      connections={allConnections}
-                    />
-                  </div>
 
                   {/* Pinterest Board Selector */}
                   {formData.scheduled_platforms.includes("pinterest") &&
@@ -1452,14 +1454,17 @@ export function PostEditorSheet({
 
                 {/* Media Upload - hidden for posted content */}
                 {!isPostedContent && (
-                  <MediaUploader
-                    projectId={projectId}
-                    mediaUrl={formData.media_url}
-                    mediaType={formData.media_type}
-                    onMediaChange={(url, type) =>
-                      setFormData((prev) => ({ ...prev, media_url: url, media_type: type }))
-                    }
-                  />
+                  <div className="space-y-2">
+                    <Label className="text-xs">Select Media</Label>
+                    <MediaUploader
+                      projectId={projectId}
+                      mediaUrl={formData.media_url}
+                      mediaType={formData.media_type}
+                      onMediaChange={(url, type) =>
+                        setFormData((prev) => ({ ...prev, media_url: url, media_type: type }))
+                      }
+                    />
+                  </div>
                 )}
 
                 {/* Schedule Options - hidden for posted content */}
