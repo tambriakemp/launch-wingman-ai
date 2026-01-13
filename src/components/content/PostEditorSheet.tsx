@@ -222,6 +222,8 @@ export function PostEditorSheet({
   const isEditingExisting = !!existingItem;
   // Posted content = status is "completed" (successfully posted to social platform)
   const isPostedContent = existingItem?.status === "completed";
+  // Draft content = status is "draft" (scheduled but not yet set to post)
+  const isDraftContent = existingItem?.status === "draft";
 
   // Check social connections
   const { data: pinterestConnection } = useQuery({
@@ -1686,21 +1688,6 @@ export function PostEditorSheet({
           </div>
           {!isPostedContent && (
             <div className="flex gap-2">
-              {isAlreadyScheduled && (
-                <Button
-                  variant="outline"
-                  onClick={handleCancelSchedule}
-                  disabled={isCancelling}
-                  className="text-destructive border-destructive hover:bg-destructive/10"
-                >
-                  {isCancelling ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <X className="w-4 h-4 mr-2" />
-                  )}
-                  Cancel Schedule
-                </Button>
-              )}
               {/* Post Now */}
               <Button
                 onClick={handlePostNow}
@@ -1714,7 +1701,7 @@ export function PostEditorSheet({
                 )}
                 Post Now
               </Button>
-              {/* Schedule with dropdown */}
+              {/* Schedule with dropdown - show "Schedule" for drafts, "Reschedule" only for already scheduled non-draft posts */}
               <div className="flex">
                 <Button
                   variant="outline"
@@ -1726,7 +1713,7 @@ export function PostEditorSheet({
                   className="rounded-r-none border-r-0"
                 >
                   <Clock className="w-4 h-4 mr-2" />
-                  {isAlreadyScheduled ? "Reschedule" : "Schedule"}
+                  {isAlreadyScheduled && !isDraftContent ? "Reschedule" : "Schedule"}
                 </Button>
                 <DropdownMenu open={showSaveDropdown} onOpenChange={setShowSaveDropdown}>
                   <DropdownMenuTrigger asChild>
