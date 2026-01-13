@@ -24,10 +24,24 @@ export const useAdmin = () => {
     }
 
     try {
-      // Get fresh session to ensure we have the latest token
-      const { data: sessionData } = await supabase.auth.getSession();
-      const freshToken = sessionData?.session?.access_token;
-      
+      // Ensure we have a non-expired access token (auto-refresh may pause in inactive tabs)
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.warn('[useAdmin] Failed to get session:', sessionError);
+      }
+
+      let freshToken = sessionData?.session?.access_token;
+      const expiresAtMs = (sessionData?.session?.expires_at ?? 0) * 1000;
+      const isExpiringSoon = expiresAtMs > 0 && expiresAtMs < Date.now() + 60_000;
+
+      if (!freshToken || isExpiringSoon) {
+        const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          console.warn('[useAdmin] Failed to refresh session:', refreshError);
+        }
+        freshToken = refreshed?.session?.access_token ?? freshToken;
+      }
+
       if (!freshToken) {
         console.warn('[useAdmin] No fresh token available');
         setIsAdmin(false);
