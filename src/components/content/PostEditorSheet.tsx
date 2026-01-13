@@ -207,9 +207,9 @@ export function PostEditorSheet({
   const [suggestions, setSuggestions] = useState<Array<{ id: string; title?: string; content: string }>>([]);
   const [showMediaModal, setShowMediaModal] = useState(false);
   
-  // Labels state
+  // Labels state (single selection)
   const [showLabelsModal, setShowLabelsModal] = useState(false);
-  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
+  const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
 
   // Social post state
   const [formData, setFormData] = useState({
@@ -355,8 +355,8 @@ export function PostEditorSheet({
       setCurrentDraftId(null);
       setCustomizePerNetwork(false);
       setPerPlatformContent({});
-      // Initialize labels from existing item
-      setSelectedLabels(existingItem.labels || []);
+      // Initialize label from existing item (take first if array)
+      setSelectedLabel(existingItem.labels?.[0] || null);
     } else if (talkingPoint) {
       // Check if this is from an existing draft (existingDraftId provided)
       if (existingDraftId) {
@@ -371,7 +371,7 @@ export function PostEditorSheet({
         setScheduledDate(null);
         setCustomizePerNetwork(false);
         setPerPlatformContent({});
-        setSelectedLabels([]);
+        setSelectedLabel(null);
         setFormData({
           media_url: null,
           media_type: null,
@@ -417,7 +417,7 @@ export function PostEditorSheet({
       setScheduledDate(null);
       setCustomizePerNetwork(false);
       setPerPlatformContent({});
-      setSelectedLabels([]);
+      setSelectedLabel(null);
       setFormData({
         media_url: null,
         media_type: null,
@@ -578,7 +578,7 @@ export function PostEditorSheet({
           content_type: contentType,
           content: content || null,
           status: content ? "draft" : "planned",
-          labels: selectedLabels.length > 0 ? selectedLabels : null,
+          labels: selectedLabel ? [selectedLabel] : null,
         })
         .select()
         .single();
@@ -617,7 +617,7 @@ export function PostEditorSheet({
             media_url: formData.media_url,
             media_type: formData.media_type,
             scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
-            labels: selectedLabels.length > 0 ? selectedLabels : null,
+            labels: selectedLabel ? [selectedLabel] : null,
           })
           .eq("id", timelineItemId);
 
@@ -641,7 +641,7 @@ export function PostEditorSheet({
             media_url: formData.media_url,
             media_type: formData.media_type,
             scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
-            labels: selectedLabels.length > 0 ? selectedLabels : null,
+            labels: selectedLabel ? [selectedLabel] : null,
           })
           .select()
           .single();
@@ -1111,7 +1111,7 @@ export function PostEditorSheet({
           media_url: formData.media_url,
           media_type: formData.media_type,
           scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
-          labels: selectedLabels.length > 0 ? selectedLabels : null,
+          labels: selectedLabel ? [selectedLabel] : null,
         })
         .select()
         .single();
@@ -1167,7 +1167,7 @@ export function PostEditorSheet({
           media_url: formData.media_url,
           media_type: formData.media_type,
           status: "scheduled",
-          labels: selectedLabels.length > 0 ? selectedLabels : null,
+          labels: selectedLabel ? [selectedLabel] : null,
         })
         .eq("id", itemId);
 
@@ -1596,7 +1596,7 @@ export function PostEditorSheet({
                     onSelectMedia={() => setShowMediaModal(true)}
                     hasMedia={!!formData.media_url}
                     onLabelsClick={() => setShowLabelsModal(true)}
-                    hasLabels={selectedLabels.length > 0}
+                    hasLabels={!!selectedLabel}
                   />
                 )}
 
@@ -1795,8 +1795,8 @@ export function PostEditorSheet({
         <LabelsModal
           open={showLabelsModal}
           onOpenChange={setShowLabelsModal}
-          selectedLabels={selectedLabels}
-          onLabelsChange={setSelectedLabels}
+          selectedLabel={selectedLabel}
+          onLabelChange={setSelectedLabel}
         />
       </SheetContent>
     </Sheet>
