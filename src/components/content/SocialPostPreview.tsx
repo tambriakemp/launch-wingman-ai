@@ -165,7 +165,14 @@ function TikTokPreview({ content, mediaUrl, mediaType }: { content: string; medi
       {/* Video/Image */}
       {mediaUrl ? (
         mediaType === "video" ? (
-          <video src={mediaUrl} className="w-full h-full object-cover absolute inset-0" muted loop />
+          <video 
+            src={mediaUrl} 
+            className="w-full h-full object-cover absolute inset-0" 
+            muted 
+            loop 
+            autoPlay 
+            playsInline
+          />
         ) : (
           <img src={mediaUrl} alt="" className="w-full h-full object-cover absolute inset-0" />
         )

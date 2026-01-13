@@ -277,6 +277,15 @@ export function PostEditorSheet({
     enabled: !!user && open,
   });
 
+  // Combine all connections into a single array for the PlatformSelector
+  const allConnections = [
+    ...(pinterestConnection ? [{ id: pinterestConnection.id, platform: "pinterest", account_name: pinterestConnection.account_name }] : []),
+    ...(instagramConnection ? [{ id: instagramConnection.id, platform: "instagram", account_name: instagramConnection.account_name }] : []),
+    ...(facebookConnection ? [{ id: facebookConnection.id, platform: "facebook", account_name: facebookConnection.account_name }] : []),
+    ...(threadsConnection ? [{ id: threadsConnection.id, platform: "threads", account_name: threadsConnection.account_name }] : []),
+    ...(tiktokConnection ? [{ id: tiktokConnection.id, platform: tiktokConnection.platform, account_name: tiktokConnection.account_name }] : []),
+  ];
+
   // Initialize form when opening
   useEffect(() => {
     if (!open) return;
@@ -1298,6 +1307,7 @@ export function PostEditorSheet({
                           scheduled_platforms: platforms,
                         }));
                       }}
+                      connections={allConnections}
                     />
                   </div>
 

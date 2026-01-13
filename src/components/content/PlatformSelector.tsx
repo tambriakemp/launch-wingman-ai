@@ -1,6 +1,8 @@
-import { Instagram, Facebook, Linkedin } from "lucide-react";
+import { Instagram, Facebook, Linkedin, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { PLATFORMS } from "./platformConfigs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Tooltip,
   TooltipContent,
@@ -8,9 +10,16 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+interface Connection {
+  id: string;
+  platform: string;
+  account_name?: string | null;
+}
+
 interface PlatformSelectorProps {
   selected: string[];
   onChange: (platforms: string[]) => void;
+  connections?: Connection[];
 }
 
 // Custom icons for platforms not in Lucide
@@ -63,7 +72,18 @@ const getIconComponent = (platformId: string) => {
   }
 };
 
-export function PlatformSelector({ selected, onChange }: PlatformSelectorProps) {
+// Helper to check if a platform has a connection
+const isPlatformConnected = (platformId: string, connections: Connection[]): boolean => {
+  return connections.some(conn => {
+    // Handle TikTok which can be "tiktok" or "tiktok_sandbox"
+    if (platformId === "tiktok") {
+      return conn.platform === "tiktok" || conn.platform === "tiktok_sandbox";
+    }
+    return conn.platform === platformId;
+  });
+};
+
+export function PlatformSelector({ selected, onChange, connections = [] }: PlatformSelectorProps) {
   const togglePlatform = (platformId: string) => {
     if (selected.includes(platformId)) {
       onChange(selected.filter((id) => id !== platformId));
@@ -73,11 +93,34 @@ export function PlatformSelector({ selected, onChange }: PlatformSelectorProps) 
   };
 
   const visiblePlatforms = PLATFORMS.filter(p => !p.hidden);
+  
+  // Filter to only show connected platforms
+  const connectedPlatforms = visiblePlatforms.filter(p => isPlatformConnected(p.id, connections));
+  const hasNoConnections = connectedPlatforms.length === 0;
+
+  // If no connections, show callout
+  if (hasNoConnections) {
+    return (
+      <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+        <Settings className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+        <AlertDescription className="text-sm text-amber-800 dark:text-amber-200">
+          <span className="font-medium">No social accounts connected.</span>{" "}
+          <Link 
+            to="/settings" 
+            className="text-amber-700 dark:text-amber-300 underline hover:no-underline font-medium"
+          >
+            Connect your accounts in Settings
+          </Link>{" "}
+          to post directly to social media.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <TooltipProvider>
       <div className="flex flex-wrap gap-3">
-        {visiblePlatforms.map((platform) => {
+        {connectedPlatforms.map((platform) => {
           const isSelected = selected.includes(platform.id);
           const IconComponent = getIconComponent(platform.id);
 
