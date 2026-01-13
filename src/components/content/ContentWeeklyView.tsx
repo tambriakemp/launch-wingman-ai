@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CONTENT_TYPE_COLORS } from "./contentTypeColors";
 
 // Custom platform icons
 const PinterestIcon = ({ className }: { className?: string }) => (
@@ -278,11 +279,20 @@ const WeeklyPostCard = ({ item, onEdit, onDelete }: WeeklyPostCardProps) => {
     return text.substring(0, maxLength).trim() + "...";
   };
 
+  // Get border color for content type
+  const borderColor = CONTENT_TYPE_COLORS[item.content_type] || "bg-slate-500";
+
   return (
     <div
-      className="bg-card border border-border rounded-lg p-2 hover:border-primary/50 cursor-pointer transition-colors group"
+      className={cn(
+        "bg-card border border-border rounded-lg p-2 hover:border-primary/50 cursor-pointer transition-colors group relative overflow-hidden",
+        "border-l-4"
+      )}
+      style={{}}
       onClick={onEdit}
     >
+      {/* Left border color indicator */}
+      <div className={cn("absolute left-0 top-0 bottom-0 w-1", borderColor)} />
       {/* Platform icons + Time */}
       <div className="flex items-center gap-1 text-muted-foreground mb-1">
         {item.scheduled_platforms && item.scheduled_platforms.length > 0 && (
