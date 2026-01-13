@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Instagram, Facebook, User, Heart, MessageCircle, Send, Bookmark } from "lucide-react";
+import { Instagram, Facebook, User, Heart, MessageCircle, Send, Bookmark, Grid3X3, Film } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPlatformById } from "./platformConfigs";
 
@@ -11,6 +11,8 @@ interface SocialPostPreviewProps {
   linkUrl?: string;
   title?: string;
 }
+
+type InstagramPostType = "feed" | "reel";
 
 // Custom icons for platforms not in Lucide
 const PinterestIcon = ({ className }: { className?: string }) => (
@@ -39,15 +41,6 @@ const getIconComponent = (platformId: string) => {
       return null;
   }
 };
-
-// Determine if preview should use vertical (9:16) aspect ratio
-function shouldUseVerticalAspect(mediaType: string | null, platform: string): boolean {
-  // For reels/stories/tiktok/pinterest, use vertical aspect for videos
-  if (mediaType === "video") {
-    return ["instagram", "tiktok", "pinterest"].includes(platform);
-  }
-  return false;
-}
 
 function PhoneFrame({ children, platform, isVertical }: { children: React.ReactNode; platform: string; isVertical?: boolean }) {
   const platformConfig = getPlatformById(platform);
@@ -86,21 +79,59 @@ function PhoneFrame({ children, platform, isVertical }: { children: React.ReactN
   );
 }
 
-function InstagramPreview({ content, mediaUrl, mediaType }: { content: string; mediaUrl: string | null; mediaType: string | null }) {
-  const isVerticalVideo = mediaType === "video";
-  
+// Instagram Post Type Toggle
+function InstagramPostTypeToggle({ 
+  postType, 
+  onPostTypeChange 
+}: { 
+  postType: InstagramPostType; 
+  onPostTypeChange: (type: InstagramPostType) => void;
+}) {
   return (
-    <div className="flex flex-col h-full bg-black">
+    <div className="flex items-center justify-center gap-1 mb-2">
+      <button
+        type="button"
+        onClick={() => onPostTypeChange("feed")}
+        className={cn(
+          "flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all",
+          postType === "feed" 
+            ? "bg-primary text-primary-foreground" 
+            : "bg-muted text-muted-foreground hover:bg-muted/80"
+        )}
+      >
+        <Grid3X3 className="w-3 h-3" />
+        Feed
+      </button>
+      <button
+        type="button"
+        onClick={() => onPostTypeChange("reel")}
+        className={cn(
+          "flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all",
+          postType === "reel" 
+            ? "bg-primary text-primary-foreground" 
+            : "bg-muted text-muted-foreground hover:bg-muted/80"
+        )}
+      >
+        <Film className="w-3 h-3" />
+        Reel
+      </button>
+    </div>
+  );
+}
+
+function InstagramFeedPreview({ content, mediaUrl, mediaType }: { content: string; mediaUrl: string | null; mediaType: string | null }) {
+  return (
+    <div className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="flex items-center gap-2 p-2 border-b border-border/20 bg-black">
+      <div className="flex items-center gap-2 p-2 border-b border-gray-200">
         <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center">
           <User className="w-2.5 h-2.5 text-white" />
         </div>
-        <span className="text-[9px] font-medium text-white">your_account</span>
+        <span className="text-[9px] font-medium text-gray-900">your_account</span>
       </div>
 
-      {/* Media - use 9:16 aspect for videos */}
-      <div className="relative flex-1">
+      {/* Media - 1:1 aspect ratio for feed */}
+      <div className="relative aspect-square">
         {mediaUrl ? (
           mediaType === "video" ? (
             <video 
@@ -115,27 +146,89 @@ function InstagramPreview({ content, mediaUrl, mediaType }: { content: string; m
             <img src={mediaUrl} alt="" className="w-full h-full object-cover" />
           )
         ) : (
-          <div className="w-full h-full bg-muted flex items-center justify-center">
-            <span className="text-[9px] text-muted-foreground">No media</span>
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+            <span className="text-[9px] text-gray-400">No media</span>
           </div>
         )}
       </div>
 
       {/* Action icons bar */}
-      <div className="flex items-center justify-between px-2 py-1.5 bg-black">
+      <div className="flex items-center justify-between px-2 py-1.5 bg-white">
         <div className="flex items-center gap-2.5">
-          <Heart className="w-4 h-4 text-white" strokeWidth={1.5} />
-          <MessageCircle className="w-4 h-4 text-white" strokeWidth={1.5} />
-          <Send className="w-4 h-4 text-white" strokeWidth={1.5} />
+          <Heart className="w-4 h-4 text-gray-900" strokeWidth={1.5} />
+          <MessageCircle className="w-4 h-4 text-gray-900" strokeWidth={1.5} />
+          <Send className="w-4 h-4 text-gray-900" strokeWidth={1.5} />
         </div>
-        <Bookmark className="w-4 h-4 text-white" strokeWidth={1.5} />
+        <Bookmark className="w-4 h-4 text-gray-900" strokeWidth={1.5} />
       </div>
 
       {/* Likes and caption */}
-      <div className="px-2 pb-2 bg-black">
-        <p className="text-[8px] text-white font-medium mb-0.5">1,234 likes</p>
-        <p className="text-[7px] text-white/90 line-clamp-2">
+      <div className="px-2 pb-2 bg-white flex-1">
+        <p className="text-[8px] text-gray-900 font-medium mb-0.5">1,234 likes</p>
+        <p className="text-[7px] text-gray-900 line-clamp-2">
           <span className="font-medium">your_account</span>{" "}
+          {content || "Your caption here..."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function InstagramReelPreview({ content, mediaUrl, mediaType }: { content: string; mediaUrl: string | null; mediaType: string | null }) {
+  return (
+    <div className="flex flex-col h-full bg-black relative">
+      {/* Full-screen media for reels */}
+      <div className="absolute inset-0">
+        {mediaUrl ? (
+          mediaType === "video" ? (
+            <video 
+              src={mediaUrl} 
+              className="w-full h-full object-cover" 
+              muted 
+              loop
+              autoPlay
+              playsInline
+            />
+          ) : (
+            <img src={mediaUrl} alt="" className="w-full h-full object-cover" />
+          )
+        ) : (
+          <div className="w-full h-full bg-gray-900 flex items-center justify-center">
+            <span className="text-[9px] text-gray-500">No media</span>
+          </div>
+        )}
+      </div>
+
+      {/* Overlay gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+
+      {/* Side actions */}
+      <div className="absolute right-1.5 bottom-16 flex flex-col gap-2">
+        <div className="flex flex-col items-center">
+          <Heart className="w-5 h-5 text-white" strokeWidth={1.5} />
+          <span className="text-[7px] text-white mt-0.5">9.1K</span>
+        </div>
+        <div className="flex flex-col items-center">
+          <MessageCircle className="w-5 h-5 text-white" strokeWidth={1.5} />
+          <span className="text-[7px] text-white mt-0.5">176</span>
+        </div>
+        <div className="flex flex-col items-center">
+          <Send className="w-5 h-5 text-white" strokeWidth={1.5} />
+        </div>
+        <div className="flex flex-col items-center">
+          <Bookmark className="w-5 h-5 text-white" strokeWidth={1.5} />
+        </div>
+      </div>
+
+      {/* Caption */}
+      <div className="absolute bottom-2 left-2 right-10">
+        <div className="flex items-center gap-1.5 mb-1">
+          <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center">
+            <User className="w-2.5 h-2.5 text-white" />
+          </div>
+          <span className="text-[9px] font-medium text-white">your_account</span>
+        </div>
+        <p className="text-[8px] text-white line-clamp-2">
           {content || "Your caption here..."}
         </p>
       </div>
@@ -324,6 +417,7 @@ export function SocialPostPreview({
   title,
 }: SocialPostPreviewProps) {
   const [activePlatform, setActivePlatform] = useState<string>(platforms[0] || "");
+  const [instagramPostType, setInstagramPostType] = useState<InstagramPostType>("reel");
 
   // Reset active platform when platforms change
   useEffect(() => {
@@ -346,11 +440,18 @@ export function SocialPostPreview({
   }
 
   const currentPlatform = activePlatform || platforms[0];
+  
+  // Determine if vertical aspect ratio should be used
+  const isVertical = currentPlatform === "instagram" 
+    ? instagramPostType === "reel"
+    : currentPlatform === "tiktok" || (currentPlatform === "pinterest" && mediaType === "video");
 
   const renderPreviewContent = () => {
     switch (currentPlatform) {
       case "instagram":
-        return <InstagramPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} />;
+        return instagramPostType === "feed" 
+          ? <InstagramFeedPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} />
+          : <InstagramReelPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} />;
       case "pinterest":
         return <PinterestPreview content={content} mediaUrl={mediaUrl} mediaType={mediaType} linkUrl={linkUrl} title={title} />;
       case "tiktok":
@@ -361,7 +462,7 @@ export function SocialPostPreview({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
         <span>Preview for:</span>
         <div className="flex gap-1">
@@ -385,10 +486,18 @@ export function SocialPostPreview({
           })}
         </div>
       </div>
+
+      {/* Show Instagram post type toggle when Instagram is selected */}
+      {currentPlatform === "instagram" && (
+        <InstagramPostTypeToggle 
+          postType={instagramPostType} 
+          onPostTypeChange={setInstagramPostType} 
+        />
+      )}
       
       <PhoneFrame 
         platform={currentPlatform} 
-        isVertical={shouldUseVerticalAspect(mediaType, currentPlatform)}
+        isVertical={isVertical}
       >
         {renderPreviewContent()}
       </PhoneFrame>
