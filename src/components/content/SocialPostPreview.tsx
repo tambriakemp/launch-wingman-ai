@@ -65,10 +65,10 @@ function PhoneFrame({ children, platform, isVertical }: { children: React.ReactN
           </div>
         </div>
 
-        {/* Content area - much taller for realistic phone view */}
+        {/* Content area - explicit height for absolute-positioned children */}
         <div className={cn(
           "bg-card overflow-hidden",
-          isVertical ? "min-h-[560px] max-h-[560px]" : "min-h-[520px] max-h-[520px]"
+          isVertical ? "h-[560px]" : "h-[520px]"
         )}>
           {children}
         </div>
@@ -138,6 +138,7 @@ function InstagramFeedPreview({ content, mediaUrl, mediaType }: { content: strin
         {mediaUrl ? (
           mediaType === "video" ? (
             <video 
+              key={mediaUrl}
               src={mediaUrl} 
               className="w-full h-full object-cover" 
               muted 
@@ -185,6 +186,7 @@ function InstagramReelPreview({ content, mediaUrl, mediaType }: { content: strin
         {mediaUrl ? (
           mediaType === "video" ? (
             <video 
+              key={mediaUrl}
               src={mediaUrl} 
               className="w-full h-full object-cover" 
               muted 
@@ -270,6 +272,7 @@ function PinterestPreview({ content, mediaUrl, mediaType, linkUrl, title }: { co
         <div className={cn("relative", isVideo ? "flex-1" : "")}>
           {isVideo ? (
             <video 
+              key={mediaUrl}
               src={mediaUrl} 
               className="w-full h-full object-cover bg-black" 
               muted 
@@ -313,6 +316,11 @@ function PinterestPreview({ content, mediaUrl, mediaType, linkUrl, title }: { co
 function TikTokPreview({ content, mediaUrl, mediaType }: { content: string; mediaUrl: string | null; mediaType: string | null }) {
   const [videoError, setVideoError] = useState(false);
 
+  // Reset error state when media changes
+  useEffect(() => {
+    setVideoError(false);
+  }, [mediaUrl]);
+
   return (
     <div className="flex flex-col h-full bg-black relative">
       {/* Video/Image */}
@@ -327,6 +335,7 @@ function TikTokPreview({ content, mediaUrl, mediaType }: { content: string; medi
           </div>
         ) : mediaType === "video" ? (
           <video 
+            key={mediaUrl}
             src={mediaUrl} 
             className="w-full h-full object-cover absolute inset-0" 
             muted 
