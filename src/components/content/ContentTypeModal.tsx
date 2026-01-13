@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Tag, Check } from "lucide-react";
+import { Palette, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,54 +11,49 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-interface LabelOption {
+interface ContentTypeOption {
   id: string;
   name: string;
   color: string;
   hex: string;
 }
 
-const DEFAULT_LABELS: LabelOption[] = [
-  { id: "educational", name: "Educational", color: "bg-blue-500", hex: "#3b82f6" },
-  { id: "promotional", name: "Promotional", color: "bg-emerald-500", hex: "#10b981" },
-  { id: "engagement", name: "Engagement", color: "bg-purple-500", hex: "#a855f7" },
-  { id: "testimonial", name: "Testimonial", color: "bg-amber-500", hex: "#f59e0b" },
+export const CONTENT_TYPES: ContentTypeOption[] = [
+  { id: "general", name: "General", color: "bg-slate-500", hex: "#64748b" },
+  { id: "stories", name: "Stories", color: "bg-amber-500", hex: "#f59e0b" },
+  { id: "offer", name: "Offer", color: "bg-emerald-500", hex: "#10b981" },
   { id: "behind-the-scenes", name: "Behind the Scenes", color: "bg-cyan-500", hex: "#06b6d4" },
-  { id: "announcement", name: "Announcement", color: "bg-rose-500", hex: "#f43f5e" },
-  { id: "tips", name: "Tips & Tricks", color: "bg-indigo-500", hex: "#6366f1" },
-  { id: "story", name: "Story", color: "bg-orange-500", hex: "#f97316" },
 ];
 
-interface LabelsModalProps {
+interface ContentTypeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedLabel: string | null;
-  onLabelChange: (label: string | null) => void;
+  selectedContentType: string;
+  onContentTypeChange: (contentType: string) => void;
 }
 
-export function LabelsModal({
+export function ContentTypeModal({
   open,
   onOpenChange,
-  selectedLabel,
-  onLabelChange,
-}: LabelsModalProps) {
-  const [localLabel, setLocalLabel] = useState<string | null>(selectedLabel);
+  selectedContentType,
+  onContentTypeChange,
+}: ContentTypeModalProps) {
+  const [localContentType, setLocalContentType] = useState<string>(selectedContentType);
 
   // Sync local state when modal opens
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
-      setLocalLabel(selectedLabel);
+      setLocalContentType(selectedContentType);
     }
     onOpenChange(isOpen);
   };
 
-  const selectLabel = (labelId: string) => {
-    // Toggle off if already selected, otherwise select
-    setLocalLabel((prev) => (prev === labelId ? null : labelId));
+  const selectContentType = (typeId: string) => {
+    setLocalContentType(typeId);
   };
 
   const handleSave = () => {
-    onLabelChange(localLabel);
+    onContentTypeChange(localContentType);
     onOpenChange(false);
   };
 
@@ -67,22 +62,22 @@ export function LabelsModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Tag className="h-5 w-5" />
-            Add labels
+            <Palette className="h-5 w-5" />
+            Content Type
           </DialogTitle>
           <DialogDescription>
-            Add labels to categorize and organize your content.
+            Select a content type to categorize your post.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2 py-4">
-          {DEFAULT_LABELS.map((label) => {
-            const isSelected = localLabel === label.id;
+          {CONTENT_TYPES.map((type) => {
+            const isSelected = localContentType === type.id;
             return (
               <button
-                key={label.id}
+                key={type.id}
                 type="button"
-                onClick={() => selectLabel(label.id)}
+                onClick={() => selectContentType(type.id)}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors text-left",
                   isSelected
@@ -90,8 +85,8 @@ export function LabelsModal({
                     : "border-border hover:border-muted-foreground/30"
                 )}
               >
-                <div className={cn("w-3 h-3 rounded-full", label.color)} />
-                <span className="flex-1 text-sm">{label.name}</span>
+                <div className={cn("w-3 h-3 rounded-full", type.color)} />
+                <span className="flex-1 text-sm">{type.name}</span>
                 {isSelected && (
                   <Check className="w-4 h-4 text-primary" />
                 )}
@@ -111,5 +106,4 @@ export function LabelsModal({
   );
 }
 
-export { DEFAULT_LABELS };
-export type { LabelOption };
+export type { ContentTypeOption };

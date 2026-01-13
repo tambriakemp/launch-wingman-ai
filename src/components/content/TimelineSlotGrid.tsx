@@ -28,7 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { CONTENT_TYPE_COLORS, CONTENT_TYPE_LABELS } from "./contentTypeColors";
-import { DEFAULT_LABELS } from "./LabelsModal";
+import { CONTENT_TYPES } from "./ContentTypeModal";
 
 interface TimelineSlotGridProps {
   projectId: string;
@@ -730,18 +730,17 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                               
                               {/* Existing items */}
                               {dayItems.map((item) => {
-                                // Get the label color for left border
-                                const itemLabel = item.labels?.[0];
-                                const labelInfo = itemLabel ? DEFAULT_LABELS.find(l => l.id === itemLabel) : null;
+                                // Get content type color for left border
+                                const contentTypeInfo = CONTENT_TYPES.find(t => t.id === item.content_type);
                                 
                                 return (
                                 <div
                                   key={item.id}
                                   className={cn(
                                     "flex items-start gap-3 p-3 rounded-lg border border-border bg-card hover:bg-accent/30 transition-colors group",
-                                    labelInfo && "border-l-4"
+                                    contentTypeInfo && "border-l-4"
                                   )}
-                                  style={labelInfo ? { borderLeftColor: labelInfo.hex } : undefined}
+                                  style={contentTypeInfo ? { borderLeftColor: contentTypeInfo.hex } : undefined}
                                 >
                                   <div 
                                     className={cn(
