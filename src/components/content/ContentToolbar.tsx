@@ -1,4 +1,4 @@
-import { Layers } from "lucide-react";
+import { Layers, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -22,6 +22,8 @@ interface ContentToolbarProps {
   onPinterestClick: () => void;
   pinterestHasWarning?: boolean;
   showMultiplePlatforms: boolean;
+  onSelectMedia: () => void;
+  hasMedia?: boolean;
 }
 
 export function ContentToolbar({
@@ -31,62 +33,91 @@ export function ContentToolbar({
   onPinterestClick,
   pinterestHasWarning,
   showMultiplePlatforms,
+  onSelectMedia,
+  hasMedia,
 }: ContentToolbarProps) {
   return (
     <TooltipProvider>
       <div className="flex items-center gap-1 pt-2">
-        {/* Customize per network icon */}
-        {showMultiplePlatforms && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={onCustomizeToggle}
-                className={cn(
-                  "h-8 w-8 p-0",
-                  customizePerNetwork && "bg-primary/10 text-primary"
-                )}
-              >
-                <Layers className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p className="text-xs">
-                {customizePerNetwork
-                  ? "Disable per-network customization"
-                  : "Customize content per network"}
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        )}
+        {/* Customize per network icon - always visible */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onCustomizeToggle}
+              disabled={!showMultiplePlatforms}
+              className={cn(
+                "h-8 w-8 p-0",
+                customizePerNetwork && "bg-primary/10 text-primary",
+                !showMultiplePlatforms && "opacity-40"
+              )}
+            >
+              <Layers className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <p className="text-xs">
+              {!showMultiplePlatforms
+                ? "Select multiple platforms to customize"
+                : customizePerNetwork
+                ? "Disable per-network customization"
+                : "Customize content per network"}
+            </p>
+          </TooltipContent>
+        </Tooltip>
 
-        {/* Pinterest settings icon */}
-        {showPinterestOption && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={onPinterestClick}
-                className={cn(
-                  "h-8 w-8 p-0 relative",
-                  pinterestHasWarning && "text-amber-600"
-                )}
-              >
-                <PinterestIcon className="w-4 h-4" />
-                {pinterestHasWarning && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p className="text-xs">Pinterest board & link settings</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
+        {/* Pinterest settings icon - always visible */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onPinterestClick}
+              disabled={!showPinterestOption}
+              className={cn(
+                "h-8 w-8 p-0 relative",
+                showPinterestOption && pinterestHasWarning && "text-amber-600",
+                !showPinterestOption && "opacity-40"
+              )}
+            >
+              <PinterestIcon className="w-4 h-4" />
+              {showPinterestOption && pinterestHasWarning && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <p className="text-xs">
+              {showPinterestOption
+                ? "Pinterest board & link settings"
+                : "Select Pinterest to configure"}
+            </p>
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Select Media icon - always visible */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onSelectMedia}
+              className={cn(
+                "h-8 w-8 p-0",
+                hasMedia && "bg-primary/10 text-primary"
+              )}
+            >
+              <ImagePlus className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <p className="text-xs">Select media</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </TooltipProvider>
   );
