@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Instagram, Facebook, User } from "lucide-react";
+import { Instagram, Facebook, User, Heart, MessageCircle, Send, Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPlatformById } from "./platformConfigs";
 
@@ -40,34 +40,46 @@ const getIconComponent = (platformId: string) => {
   }
 };
 
-function PhoneFrame({ children, platform }: { children: React.ReactNode; platform: string }) {
+// Determine if preview should use vertical (9:16) aspect ratio
+function shouldUseVerticalAspect(mediaType: string | null, platform: string): boolean {
+  // For reels/stories/tiktok/pinterest, use vertical aspect for videos
+  if (mediaType === "video") {
+    return ["instagram", "tiktok", "pinterest"].includes(platform);
+  }
+  return false;
+}
+
+function PhoneFrame({ children, platform, isVertical }: { children: React.ReactNode; platform: string; isVertical?: boolean }) {
   const platformConfig = getPlatformById(platform);
   const IconComponent = getIconComponent(platform);
 
   return (
-    <div className="relative mx-auto w-[280px]">
+    <div className="relative mx-auto w-[200px]">
       {/* Phone frame */}
       <div className="relative bg-background border-4 border-foreground/20 rounded-[28px] overflow-hidden shadow-xl">
         {/* Status bar */}
         <div
-          className="h-7 flex items-center justify-between px-4 text-white text-[9px]"
+          className="h-6 flex items-center justify-between px-3 text-white text-[8px]"
           style={{ backgroundColor: platformConfig?.color || "#000" }}
         >
           <span>9:41</span>
-          <div className="flex items-center gap-1.5">
-            {IconComponent && <IconComponent className="w-3.5 h-3.5" />}
+          <div className="flex items-center gap-1">
+            {IconComponent && <IconComponent className="w-3 h-3" />}
             <span className="font-medium">{platformConfig?.name}</span>
           </div>
         </div>
 
-        {/* Content area */}
-        <div className="bg-card min-h-[380px] max-h-[380px] overflow-hidden">
+        {/* Content area - taller for vertical video */}
+        <div className={cn(
+          "bg-card overflow-hidden",
+          isVertical ? "min-h-[355px] max-h-[355px]" : "min-h-[280px] max-h-[280px]"
+        )}>
           {children}
         </div>
 
         {/* Home indicator */}
-        <div className="h-6 flex items-center justify-center bg-card">
-          <div className="w-28 h-1 bg-foreground/20 rounded-full" />
+        <div className="h-5 flex items-center justify-center bg-card">
+          <div className="w-20 h-1 bg-foreground/20 rounded-full" />
         </div>
       </div>
     </div>
@@ -75,32 +87,54 @@ function PhoneFrame({ children, platform }: { children: React.ReactNode; platfor
 }
 
 function InstagramPreview({ content, mediaUrl, mediaType }: { content: string; mediaUrl: string | null; mediaType: string | null }) {
+  const isVerticalVideo = mediaType === "video";
+  
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-black">
       {/* Header */}
-      <div className="flex items-center gap-2 p-2 border-b border-border">
-        <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center">
-          <User className="w-3 h-3 text-white" />
+      <div className="flex items-center gap-2 p-2 border-b border-border/20 bg-black">
+        <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center">
+          <User className="w-2.5 h-2.5 text-white" />
         </div>
-        <span className="text-[10px] font-medium">your_account</span>
+        <span className="text-[9px] font-medium text-white">your_account</span>
       </div>
 
-      {/* Media */}
-      {mediaUrl ? (
-        mediaType === "video" ? (
-          <video src={mediaUrl} className="w-full aspect-square object-cover bg-black" muted />
+      {/* Media - use 9:16 aspect for videos */}
+      <div className="relative flex-1">
+        {mediaUrl ? (
+          mediaType === "video" ? (
+            <video 
+              src={mediaUrl} 
+              className="w-full h-full object-cover" 
+              muted 
+              loop
+              autoPlay
+              playsInline
+            />
+          ) : (
+            <img src={mediaUrl} alt="" className="w-full h-full object-cover" />
+          )
         ) : (
-          <img src={mediaUrl} alt="" className="w-full aspect-square object-cover" />
-        )
-      ) : (
-        <div className="w-full aspect-square bg-muted flex items-center justify-center">
-          <span className="text-[10px] text-muted-foreground">No media</span>
-        </div>
-      )}
+          <div className="w-full h-full bg-muted flex items-center justify-center">
+            <span className="text-[9px] text-muted-foreground">No media</span>
+          </div>
+        )}
+      </div>
 
-      {/* Caption */}
-      <div className="p-2 flex-1 overflow-hidden">
-        <p className="text-[8px] line-clamp-3">
+      {/* Action icons bar */}
+      <div className="flex items-center justify-between px-2 py-1.5 bg-black">
+        <div className="flex items-center gap-2.5">
+          <Heart className="w-4 h-4 text-white" strokeWidth={1.5} />
+          <MessageCircle className="w-4 h-4 text-white" strokeWidth={1.5} />
+          <Send className="w-4 h-4 text-white" strokeWidth={1.5} />
+        </div>
+        <Bookmark className="w-4 h-4 text-white" strokeWidth={1.5} />
+      </div>
+
+      {/* Likes and caption */}
+      <div className="px-2 pb-2 bg-black">
+        <p className="text-[8px] text-white font-medium mb-0.5">1,234 likes</p>
+        <p className="text-[7px] text-white/90 line-clamp-2">
           <span className="font-medium">your_account</span>{" "}
           {content || "Your caption here..."}
         </p>
@@ -119,19 +153,28 @@ function PinterestPreview({ content, mediaUrl, mediaType, linkUrl, title }: { co
     }
   };
 
+  const isVideo = mediaType === "video";
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Pin Image */}
+    <div className="flex flex-col h-full bg-white">
+      {/* Pin Image/Video */}
       {mediaUrl ? (
-        <div className="relative">
-          {mediaType === "video" ? (
-            <video src={mediaUrl} className="w-full aspect-[3/4] object-cover bg-black" muted />
+        <div className={cn("relative", isVideo ? "flex-1" : "")}>
+          {isVideo ? (
+            <video 
+              src={mediaUrl} 
+              className="w-full h-full object-cover bg-black" 
+              muted 
+              loop
+              autoPlay
+              playsInline
+            />
           ) : (
             <img src={mediaUrl} alt="" className="w-full aspect-[3/4] object-cover" />
           )}
           {linkUrl && (
             <div className="absolute bottom-2 left-2 right-2">
-              <div className="bg-white/90 rounded-full px-2.5 py-1 text-[9px] text-gray-700 truncate flex items-center gap-1">
+              <div className="bg-white/90 rounded-full px-2 py-0.5 text-[8px] text-gray-700 truncate flex items-center gap-1">
                 <span>🔗</span>
                 <span>{getHostname(linkUrl)}</span>
               </div>
@@ -140,18 +183,18 @@ function PinterestPreview({ content, mediaUrl, mediaType, linkUrl, title }: { co
         </div>
       ) : (
         <div className="w-full aspect-[3/4] bg-muted flex items-center justify-center">
-          <span className="text-xs text-muted-foreground">Add image</span>
+          <span className="text-[10px] text-muted-foreground">Add image</span>
         </div>
       )}
 
       {/* Pin Title & Description */}
-      <div className="p-3 flex-1 overflow-hidden bg-white">
+      <div className={cn("p-2 overflow-hidden bg-white", !isVideo && "flex-1")}>
         {title && (
-          <h3 className="text-sm font-bold line-clamp-2 text-gray-900 mb-1">
+          <h3 className="text-[10px] font-bold line-clamp-1 text-gray-900 mb-0.5">
             {title}
           </h3>
         )}
-        <p className="text-[11px] text-gray-600 line-clamp-3">
+        <p className="text-[8px] text-gray-600 line-clamp-2">
           {content || "Pin description..."}
         </p>
       </div>
@@ -163,15 +206,15 @@ function TikTokPreview({ content, mediaUrl, mediaType }: { content: string; medi
   const [videoError, setVideoError] = useState(false);
 
   return (
-    <div className="flex flex-col h-[380px] bg-black relative">
+    <div className="flex flex-col h-full bg-black relative">
       {/* Video/Image */}
       {mediaUrl ? (
         videoError ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <TikTokIcon className="w-12 h-12 text-white/50 mx-auto mb-2" />
-              <span className="text-xs text-white/50">Preview unavailable</span>
-              <span className="text-[10px] text-white/30 block mt-1">You can still post</span>
+              <TikTokIcon className="w-10 h-10 text-white/50 mx-auto mb-2" />
+              <span className="text-[10px] text-white/50">Preview unavailable</span>
+              <span className="text-[8px] text-white/30 block mt-1">You can still post</span>
             </div>
           </div>
         ) : mediaType === "video" ? (
@@ -196,8 +239,8 @@ function TikTokPreview({ content, mediaUrl, mediaType }: { content: string; medi
       ) : (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <TikTokIcon className="w-12 h-12 text-white/50 mx-auto mb-2" />
-            <span className="text-xs text-white/50">Video required</span>
+            <TikTokIcon className="w-10 h-10 text-white/50 mx-auto mb-2" />
+            <span className="text-[10px] text-white/50">Video required</span>
           </div>
         </div>
       )}
@@ -206,33 +249,30 @@ function TikTokPreview({ content, mediaUrl, mediaType }: { content: string; medi
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
 
       {/* Side actions */}
-      <div className="absolute right-2 bottom-24 flex flex-col gap-3">
-        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-          <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-white">
-            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-          </svg>
+      <div className="absolute right-1.5 bottom-16 flex flex-col gap-2">
+        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+          <Heart className="w-3 h-3 text-white" />
         </div>
-        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-          <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-white">
-            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-          </svg>
+        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+          <MessageCircle className="w-3 h-3 text-white" />
         </div>
-        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-          <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-white">
-            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
-          </svg>
+        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+          <Bookmark className="w-3 h-3 text-white" />
+        </div>
+        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+          <Send className="w-3 h-3 text-white" />
         </div>
       </div>
 
       {/* Caption */}
-      <div className="absolute bottom-3 left-2 right-12">
-        <div className="flex items-center gap-2 mb-1.5">
-          <div className="w-6 h-6 rounded-full bg-white/30 flex items-center justify-center">
-            <User className="w-3 h-3 text-white" />
+      <div className="absolute bottom-2 left-2 right-10">
+        <div className="flex items-center gap-1.5 mb-1">
+          <div className="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center">
+            <User className="w-2.5 h-2.5 text-white" />
           </div>
-          <span className="text-[10px] font-medium text-white">@your_account</span>
+          <span className="text-[9px] font-medium text-white">@your_account</span>
         </div>
-        <p className="text-[9px] text-white line-clamp-2">
+        <p className="text-[8px] text-white line-clamp-2">
           {content || "Your caption here..."}
         </p>
       </div>
@@ -346,7 +386,10 @@ export function SocialPostPreview({
         </div>
       </div>
       
-      <PhoneFrame platform={currentPlatform}>
+      <PhoneFrame 
+        platform={currentPlatform} 
+        isVertical={shouldUseVerticalAspect(mediaType, currentPlatform)}
+      >
         {renderPreviewContent()}
       </PhoneFrame>
     </div>
