@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { TikTokEnvironmentProvider } from "@/contexts/TikTokEnvironmentContext";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import ScrollToTop from "@/components/ScrollToTop";
 import { initGA, trackPageView } from "@/lib/analytics";
@@ -96,6 +97,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <TikTokEnvironmentProvider>
           <PageViewTracker />
           <ScrollToTop />
           <ImpersonationBanner />
@@ -391,6 +393,7 @@ const App = () => (
             />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </TikTokEnvironmentProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
