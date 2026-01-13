@@ -18,6 +18,17 @@ export function MediaSelectModal({
   mediaType,
   onMediaChange,
 }: MediaSelectModalProps) {
+  const handleMediaChange = (url: string | null, type: string | null) => {
+    console.log("MediaSelectModal handleMediaChange:", { url, type });
+    onMediaChange(url, type);
+    // Auto-close modal after successful upload with a small delay to ensure state updates
+    if (url) {
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 100);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -29,7 +40,7 @@ export function MediaSelectModal({
             projectId={projectId}
             mediaUrl={mediaUrl}
             mediaType={mediaType}
-            onMediaChange={onMediaChange}
+            onMediaChange={handleMediaChange}
           />
         </div>
       </DialogContent>

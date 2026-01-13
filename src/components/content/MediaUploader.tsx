@@ -72,6 +72,7 @@ export function MediaUploader({
         .getPublicUrl(fileName);
 
       const type = ACCEPTED_IMAGE_TYPES.includes(file.type) ? "image" : "video";
+      console.log("Media uploaded:", { publicUrl, type });
       onMediaChange(publicUrl, type);
       toast.success("Media uploaded successfully");
     } catch (err) {
