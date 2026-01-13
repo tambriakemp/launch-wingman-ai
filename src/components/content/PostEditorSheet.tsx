@@ -264,14 +264,15 @@ export function PostEditorSheet({
   const { data: tiktokConnection } = useQuery({
     queryKey: ["tiktok-connection", user?.id],
     queryFn: async () => {
+      // Check for both production and sandbox TikTok connections
       const { data, error } = await supabase
         .from("social_connections")
-        .select("id, account_name, account_id")
+        .select("id, account_name, account_id, platform")
         .eq("user_id", user!.id)
-        .eq("platform", "tiktok")
-        .single();
-      if (error) return null;
-      return data;
+        .in("platform", ["tiktok", "tiktok_sandbox"])
+        .limit(1);
+      if (error || !data || data.length === 0) return null;
+      return data[0];
     },
     enabled: !!user && open,
   });
