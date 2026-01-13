@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTikTokEnvironment } from "@/contexts/TikTokEnvironmentContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -42,6 +43,8 @@ import {
   BookOpen,
   RefreshCw,
   AlertTriangle,
+  FlaskConical,
+  Zap,
 } from "lucide-react";
 
 interface Profile {
@@ -66,6 +69,7 @@ interface SocialConnection {
 
 const Settings = () => {
   const { user, isSubscribed, subscriptionEnd, checkSubscription } = useAuth();
+  const { environment: tiktokEnvironment } = useTikTokEnvironment();
   const { hasAdminAccess, tier } = useFeatureAccess();
   const hasFullAccess = isSubscribed || hasAdminAccess;
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -99,7 +103,6 @@ const Settings = () => {
   const [isDisconnectingThreads, setIsDisconnectingThreads] = useState(false);
   const [isConnectingTikTok, setIsConnectingTikTok] = useState(false);
   const [isDisconnectingTikTok, setIsDisconnectingTikTok] = useState(false);
-  const [tiktokEnvironment, setTiktokEnvironment] = useState<"production" | "sandbox">("production");
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   // Annual Review state
@@ -516,7 +519,7 @@ const Settings = () => {
     }
   };
 
-  const handleConnectTikTok = async (environment: "production" | "sandbox" = tiktokEnvironment) => {
+  const handleConnectTikTok = async () => {
     if (!user) return;
     
     setIsConnectingTikTok(true);
@@ -524,14 +527,14 @@ const Settings = () => {
       const { data, error } = await supabase.functions.invoke('tiktok-auth-start', {
         body: { 
           redirect_url: '/settings',
-          environment: environment
+          environment: tiktokEnvironment
         }
       });
       
       if (error) throw error;
       if (data?.url) {
         window.open(data.url, '_blank');
-        toast.info(`TikTok ${environment} login opened in a new tab. Complete the authorization there.`);
+        toast.info(`TikTok ${tiktokEnvironment} login opened in a new tab. Complete the authorization there.`);
         setIsConnectingTikTok(false);
       }
     } catch (error) {
@@ -541,8 +544,9 @@ const Settings = () => {
     }
   };
 
-  const handleDisconnectTikTok = async (platform: "tiktok" | "tiktok_sandbox") => {
-    const connection = platform === "tiktok_sandbox" ? tiktokSandboxConnection : tiktokConnection;
+  const handleDisconnectTikTok = async () => {
+    const platform = tiktokEnvironment === "sandbox" ? "tiktok_sandbox" : "tiktok";
+    const connection = tiktokEnvironment === "sandbox" ? tiktokSandboxConnection : tiktokConnection;
     if (!user || !connection) return;
     
     setIsDisconnectingTikTok(true);
@@ -554,7 +558,7 @@ const Settings = () => {
       
       if (error) throw error;
       
-      toast.success(`TikTok ${platform === "tiktok_sandbox" ? "Sandbox" : ""} disconnected`);
+      toast.success(`TikTok ${tiktokEnvironment === "sandbox" ? "Sandbox" : ""} disconnected`);
       refetchConnections();
     } catch (error) {
       console.error('TikTok disconnect error:', error);
@@ -1240,134 +1244,97 @@ const Settings = () => {
                   )}
                 </div>
 
-                {/* TikTok Connection - Production */}
-                <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center">
-                      <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="currentColor">
-                        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">TikTok <Badge variant="outline" className="ml-1 text-xs">Production</Badge></p>
-                      {tiktokConnection ? (
-                        <p className="text-sm text-muted-foreground">
-                          Connected: @{tiktokConnection.account_name || 'Your Account'}
-                        </p>
+                {/* TikTok Connection - Single unified connection based on active environment */}
+                {(() => {
+                  const isSandbox = tiktokEnvironment === "sandbox";
+                  const activeConnection = isSandbox ? tiktokSandboxConnection : tiktokConnection;
+                  
+                  return (
+                    <div className={`flex items-center justify-between p-4 rounded-lg border bg-card ${isSandbox ? 'border-dashed' : ''}`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-lg ${isSandbox ? 'bg-gray-700' : 'bg-black'} flex items-center justify-center`}>
+                          <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="currentColor">
+                            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-foreground">TikTok</p>
+                            <Badge 
+                              variant={isSandbox ? "secondary" : "default"} 
+                              className="text-xs flex items-center gap-1"
+                            >
+                              {isSandbox ? (
+                                <>
+                                  <FlaskConical className="w-3 h-3" />
+                                  Sandbox
+                                </>
+                              ) : (
+                                <>
+                                  <Zap className="w-3 h-3" />
+                                  Production
+                                </>
+                              )}
+                            </Badge>
+                          </div>
+                          {activeConnection ? (
+                            <p className="text-sm text-muted-foreground">
+                              Connected: @{activeConnection.account_name || (isSandbox ? 'Test Account' : 'Your Account')}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              {isSandbox ? 'For testing only' : 'Not connected (video only)'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {activeConnection ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleDisconnectTikTok}
+                          disabled={isDisconnectingTikTok}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          {isDisconnectingTikTok ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Unlink className="w-4 h-4 mr-1" />
+                              Disconnect
+                            </>
+                          )}
+                        </Button>
+                      ) : isSubscribed ? (
+                        <Button
+                          size="sm"
+                          variant={isSandbox ? "outline" : "default"}
+                          onClick={handleConnectTikTok}
+                          disabled={isConnectingTikTok}
+                        >
+                          {isConnectingTikTok ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Link2 className="w-4 h-4 mr-1" />
+                              Connect
+                            </>
+                          )}
+                        </Button>
                       ) : (
-                        <p className="text-sm text-muted-foreground">Not connected (video only)</p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowUpgradeDialog(true)}
+                          className="gap-1.5"
+                        >
+                          <Crown className="w-3.5 h-3.5 text-primary" />
+                          Pro
+                        </Button>
                       )}
                     </div>
-                  </div>
-                  {tiktokConnection ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDisconnectTikTok("tiktok")}
-                      disabled={isDisconnectingTikTok}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      {isDisconnectingTikTok ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Unlink className="w-4 h-4 mr-1" />
-                          Disconnect
-                        </>
-                      )}
-                    </Button>
-                  ) : isSubscribed ? (
-                    <Button
-                      size="sm"
-                      onClick={() => handleConnectTikTok("production")}
-                      disabled={isConnectingTikTok}
-                    >
-                      {isConnectingTikTok ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Link2 className="w-4 h-4 mr-1" />
-                          Connect
-                        </>
-                      )}
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowUpgradeDialog(true)}
-                      className="gap-1.5"
-                    >
-                      <Crown className="w-3.5 h-3.5 text-primary" />
-                      Pro
-                    </Button>
-                  )}
-                </div>
-
-                {/* TikTok Connection - Sandbox */}
-                <div className="flex items-center justify-between p-4 rounded-lg border bg-card border-dashed">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-gray-700 flex items-center justify-center">
-                      <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="currentColor">
-                        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">TikTok <Badge variant="secondary" className="ml-1 text-xs">Sandbox</Badge></p>
-                      {tiktokSandboxConnection ? (
-                        <p className="text-sm text-muted-foreground">
-                          Connected: @{tiktokSandboxConnection.account_name || 'Test Account'}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">For testing only</p>
-                      )}
-                    </div>
-                  </div>
-                  {tiktokSandboxConnection ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDisconnectTikTok("tiktok_sandbox")}
-                      disabled={isDisconnectingTikTok}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      {isDisconnectingTikTok ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Unlink className="w-4 h-4 mr-1" />
-                          Disconnect
-                        </>
-                      )}
-                    </Button>
-                  ) : isSubscribed ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleConnectTikTok("sandbox")}
-                      disabled={isConnectingTikTok}
-                    >
-                      {isConnectingTikTok ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Link2 className="w-4 h-4 mr-1" />
-                          Connect Sandbox
-                        </>
-                      )}
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowUpgradeDialog(true)}
-                      className="gap-1.5"
-                    >
-                      <Crown className="w-3.5 h-3.5 text-primary" />
-                      Pro
-                    </Button>
-                  )}
-                </div>
+                  );
+                })()}
 
                 {/* Future platforms placeholder */}
                 <p className="text-xs text-muted-foreground pt-2">
