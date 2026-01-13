@@ -283,7 +283,7 @@ export const ContentCalendarView = ({
                             <div
                               key={item.id}
                               className={cn(
-                                "text-[10px] px-1.5 py-1 rounded-r truncate border-l-4 bg-muted/80 dark:bg-muted/60",
+                                "text-xs px-1.5 py-1.5 rounded-r truncate border-l-4 bg-muted/80 dark:bg-muted/60",
                                 borderColor
                               )}
                             >
@@ -294,7 +294,7 @@ export const ContentCalendarView = ({
                                     <span key={platform}>{getPlatformIcon(platform)}</span>
                                   ))}
                                   {scheduledTime && (
-                                    <span className="ml-auto text-[9px]">{scheduledTime}</span>
+                                    <span className="ml-auto text-[10px]">{scheduledTime}</span>
                                   )}
                                 </div>
                               )}
@@ -307,7 +307,7 @@ export const ContentCalendarView = ({
                               {/* Phase badge - only for launch content */}
                               {phaseConfig && (
                                 <span className={cn(
-                                  "inline-block mt-0.5 px-1 py-0 rounded text-[8px] text-white",
+                                  "inline-block mt-0.5 px-1 py-0 rounded text-[9px] text-white",
                                   phaseConfig.color
                                 )}>
                                   {phaseConfig.label}
@@ -330,26 +330,15 @@ export const ContentCalendarView = ({
           </div>
         </Card>
 
-        {/* Legend */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-            <span className="font-medium">Content Types:</span>
-            {Object.entries(CONTENT_TYPE_BORDER_COLORS).map(([type, borderClass]) => (
-              <div key={type} className="flex items-center gap-1.5">
-                <div className={cn("w-1 h-4 rounded", borderClass.replace("border-l-", "bg-"))} />
-                <span className="capitalize">{type.replace("-", " ")}</span>
-              </div>
-            ))}
-          </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-            <span className="font-medium">Launch Phases:</span>
-            {Object.entries(PHASE_CONFIG).map(([phase, config]) => (
-              <div key={phase} className="flex items-center gap-1.5">
-                <div className={cn("w-2.5 h-2.5 rounded", config.color)} />
-                <span>{config.label}</span>
-              </div>
-            ))}
-          </div>
+        {/* Legend - Content Types only */}
+        <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+          <span className="font-medium">Content Types:</span>
+          {Object.entries(CONTENT_TYPE_BORDER_COLORS).map(([type, borderClass]) => (
+            <div key={type} className="flex items-center gap-1.5">
+              <div className={cn("w-1 h-4 rounded", borderClass.replace("border-l-", "bg-"))} />
+              <span className="capitalize">{type.replace("-", " ")}</span>
+            </div>
+          ))}
         </div>
     </div>
   );
