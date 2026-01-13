@@ -46,7 +46,7 @@ import { TikTokPostOptions } from "./TikTokPostOptions";
 import { ContentToolbar } from "./ContentToolbar";
 import { AIAssistPanel } from "./AIAssistPanel";
 import { MediaSelectModal } from "./MediaSelectModal";
-import { LabelsModal } from "./LabelsModal";
+import { ContentTypeModal } from "./ContentTypeModal";
 import { trackSocialPostPublish, trackSocialPostSchedule, trackSocialPostScheduleCancel } from "@/lib/analytics";
 
 // Types for the unified component
@@ -207,9 +207,8 @@ export function PostEditorSheet({
   const [suggestions, setSuggestions] = useState<Array<{ id: string; title?: string; content: string }>>([]);
   const [showMediaModal, setShowMediaModal] = useState(false);
   
-  // Labels state (single selection)
-  const [showLabelsModal, setShowLabelsModal] = useState(false);
-  const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
+  // Content Type modal state
+  const [showContentTypeModal, setShowContentTypeModal] = useState(false);
 
   // Social post state
   const [formData, setFormData] = useState({
@@ -355,8 +354,6 @@ export function PostEditorSheet({
       setCurrentDraftId(null);
       setCustomizePerNetwork(false);
       setPerPlatformContent({});
-      // Initialize label from existing item (take first if array)
-      setSelectedLabel(existingItem.labels?.[0] || null);
     } else if (talkingPoint) {
       // Check if this is from an existing draft (existingDraftId provided)
       if (existingDraftId) {
@@ -371,7 +368,6 @@ export function PostEditorSheet({
         setScheduledDate(null);
         setCustomizePerNetwork(false);
         setPerPlatformContent({});
-        setSelectedLabel(null);
         setFormData({
           media_url: null,
           media_type: null,
@@ -417,7 +413,6 @@ export function PostEditorSheet({
       setScheduledDate(null);
       setCustomizePerNetwork(false);
       setPerPlatformContent({});
-      setSelectedLabel(null);
       setFormData({
         media_url: null,
         media_type: null,
@@ -578,7 +573,6 @@ export function PostEditorSheet({
           content_type: contentType,
           content: content || null,
           status: content ? "draft" : "planned",
-          labels: selectedLabel ? [selectedLabel] : null,
         })
         .select()
         .single();
@@ -617,7 +611,6 @@ export function PostEditorSheet({
             media_url: formData.media_url,
             media_type: formData.media_type,
             scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
-            labels: selectedLabel ? [selectedLabel] : null,
           })
           .eq("id", timelineItemId);
 
@@ -641,7 +634,6 @@ export function PostEditorSheet({
             media_url: formData.media_url,
             media_type: formData.media_type,
             scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
-            labels: selectedLabel ? [selectedLabel] : null,
           })
           .select()
           .single();
@@ -1111,7 +1103,6 @@ export function PostEditorSheet({
           media_url: formData.media_url,
           media_type: formData.media_type,
           scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
-          labels: selectedLabel ? [selectedLabel] : null,
         })
         .select()
         .single();
@@ -1167,7 +1158,6 @@ export function PostEditorSheet({
           media_url: formData.media_url,
           media_type: formData.media_type,
           status: "scheduled",
-          labels: selectedLabel ? [selectedLabel] : null,
         })
         .eq("id", itemId);
 
@@ -1363,6 +1353,8 @@ export function PostEditorSheet({
       queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
       queryClient.invalidateQueries({ queryKey: ["content-drafts", projectId] });
       queryClient.invalidateQueries({ queryKey: ["saved-content-counts", projectId] });
+      onSaved?.();
+      onOpenChange(false);
     } catch (error) {
       console.error("Error saving:", error);
       toast.error("Failed to save");
@@ -1595,8 +1587,8 @@ export function PostEditorSheet({
                     showMultiplePlatforms={formData.scheduled_platforms.length > 1}
                     onSelectMedia={() => setShowMediaModal(true)}
                     hasMedia={!!formData.media_url}
-                    onLabelsClick={() => setShowLabelsModal(true)}
-                    hasLabels={!!selectedLabel}
+                    onContentTypeClick={() => setShowContentTypeModal(true)}
+                    contentType={contentType}
                   />
                 )}
 
@@ -1791,12 +1783,12 @@ export function PostEditorSheet({
           initialTime={scheduledTime}
         />
 
-        {/* Labels Modal */}
-        <LabelsModal
-          open={showLabelsModal}
-          onOpenChange={setShowLabelsModal}
-          selectedLabel={selectedLabel}
-          onLabelChange={setSelectedLabel}
+        {/* Content Type Modal */}
+        <ContentTypeModal
+          open={showContentTypeModal}
+          onOpenChange={setShowContentTypeModal}
+          selectedContentType={contentType}
+          onContentTypeChange={setContentType}
         />
       </SheetContent>
     </Sheet>
