@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, FileText, Sparkles } from "lucide-react";
+import { CalendarDays, FileText, Sparkles, Calendar, CalendarRange } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 import { SavedIdeasSheet } from "./SavedIdeasSheet";
 import { PostEditorSheet, ContentPlannerItem } from "./PostEditorSheet";
 import { ContentCalendarView } from "./ContentCalendarView";
+import { ContentWeeklyView } from "./ContentWeeklyView";
 import { SalesPageCopyTab } from "./sales-copy";
 import { GenerateLaunchContentModal } from "./GenerateLaunchContentModal";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { PlanPageHeader } from "@/components/PlanPageHeader";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -19,6 +21,7 @@ import type { SavedItem } from "./SavedIdeasSection";
 export type ContentType = "general" | "stories" | "offer" | "behind-the-scenes";
 
 type ContentViewTab = "social-schedule" | "sales-copy";
+type CalendarViewMode = "weekly" | "monthly";
 
 interface TalkingPoint {
   id: string;
@@ -38,6 +41,7 @@ interface ContentTabProps {
 
 export const ContentTab = ({ projectId }: ContentTabProps) => {
   const [activeTab, setActiveTab] = useState<ContentViewTab>("social-schedule");
+  const [calendarView, setCalendarView] = useState<CalendarViewMode>("weekly");
   const [postEditorOpen, setPostEditorOpen] = useState(false);
   const [savedSheetOpen, setSavedSheetOpen] = useState(false);
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
@@ -149,7 +153,23 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
                   View scheduled content on your calendar. Click any day to manage posts.
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                {/* View Toggle */}
+                <ToggleGroup 
+                  type="single" 
+                  value={calendarView} 
+                  onValueChange={(value) => value && setCalendarView(value as CalendarViewMode)}
+                  className="border border-border rounded-lg p-0.5"
+                >
+                  <ToggleGroupItem value="weekly" aria-label="Weekly view" className="h-8 px-3 text-xs">
+                    <CalendarRange className="w-4 h-4 mr-1.5" />
+                    Weekly
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="monthly" aria-label="Monthly view" className="h-8 px-3 text-xs">
+                    <Calendar className="w-4 h-4 mr-1.5" />
+                    Monthly
+                  </ToggleGroupItem>
+                </ToggleGroup>
                 <Button
                   onClick={() => setGenerateModalOpen(true)}
                   variant="outline"
@@ -169,28 +189,50 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
                 </Button>
               </div>
             </div>
-            <ContentCalendarView
-              projectId={projectId}
-              onCreatePost={() => {
-                setSelectedTalkingPoint(null);
-                setEditingPlannerItem(null);
-                setPostEditorOpen(true);
-              }}
-              onEditPost={(item) => {
-                // Pass the full planner item for editing
-                setSelectedTalkingPoint(null);
-                setEditingDraftId(null);
-                setEditingPlannerItem(item as ContentPlannerItem);
-                setPostEditorOpen(true);
-              }}
-              onSchedulePost={(item) => {
-                // Pass the full planner item for scheduling
-                setSelectedTalkingPoint(null);
-                setEditingDraftId(null);
-                setEditingPlannerItem(item as ContentPlannerItem);
-                setPostEditorOpen(true);
-              }}
-            />
+            
+            {calendarView === "weekly" ? (
+              <ContentWeeklyView
+                projectId={projectId}
+                onCreatePost={() => {
+                  setSelectedTalkingPoint(null);
+                  setEditingPlannerItem(null);
+                  setPostEditorOpen(true);
+                }}
+                onEditPost={(item) => {
+                  setSelectedTalkingPoint(null);
+                  setEditingDraftId(null);
+                  setEditingPlannerItem(item as ContentPlannerItem);
+                  setPostEditorOpen(true);
+                }}
+                onSchedulePost={(item) => {
+                  setSelectedTalkingPoint(null);
+                  setEditingDraftId(null);
+                  setEditingPlannerItem(item as ContentPlannerItem);
+                  setPostEditorOpen(true);
+                }}
+              />
+            ) : (
+              <ContentCalendarView
+                projectId={projectId}
+                onCreatePost={() => {
+                  setSelectedTalkingPoint(null);
+                  setEditingPlannerItem(null);
+                  setPostEditorOpen(true);
+                }}
+                onEditPost={(item) => {
+                  setSelectedTalkingPoint(null);
+                  setEditingDraftId(null);
+                  setEditingPlannerItem(item as ContentPlannerItem);
+                  setPostEditorOpen(true);
+                }}
+                onSchedulePost={(item) => {
+                  setSelectedTalkingPoint(null);
+                  setEditingDraftId(null);
+                  setEditingPlannerItem(item as ContentPlannerItem);
+                  setPostEditorOpen(true);
+                }}
+              />
+            )}
           </div>
         ) : (
           <UpgradePrompt feature="social_calendar" variant="card" />
