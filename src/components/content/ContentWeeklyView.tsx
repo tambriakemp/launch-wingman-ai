@@ -80,7 +80,7 @@ interface ContentWeeklyViewProps {
   onSchedulePost: (item: ContentPlannerItem) => void;
 }
 
-const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export const ContentWeeklyView = ({
   projectId,

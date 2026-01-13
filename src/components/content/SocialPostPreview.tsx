@@ -68,7 +68,7 @@ function PhoneFrame({ children, platform, isVertical }: { children: React.ReactN
         {/* Content area - much taller for realistic phone view */}
         <div className={cn(
           "bg-card overflow-hidden",
-          isVertical ? "min-h-[560px] max-h-[560px]" : "min-h-[440px] max-h-[440px]"
+          isVertical ? "min-h-[560px] max-h-[560px]" : "min-h-[520px] max-h-[520px]"
         )}>
           {children}
         </div>
