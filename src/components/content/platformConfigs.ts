@@ -38,6 +38,18 @@ export const PLATFORMS: PlatformConfig[] = [
     hidden: false,
   },
   {
+    id: "threads",
+    name: "Threads",
+    icon: null,
+    customIcon: "threads",
+    color: "#000000",
+    bgColor: "bg-black",
+    maxMedia: 1,
+    supportsVideo: true,
+    maxCaptionLength: 500,
+    hidden: false,
+  },
+  {
     id: "linkedin",
     name: "LinkedIn",
     icon: Linkedin,

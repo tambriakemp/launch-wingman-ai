@@ -95,6 +95,8 @@ const Settings = () => {
   const [isDisconnectingInstagram, setIsDisconnectingInstagram] = useState(false);
   const [isConnectingFacebook, setIsConnectingFacebook] = useState(false);
   const [isDisconnectingFacebook, setIsDisconnectingFacebook] = useState(false);
+  const [isConnectingThreads, setIsConnectingThreads] = useState(false);
+  const [isDisconnectingThreads, setIsDisconnectingThreads] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   // Annual Review state
@@ -135,6 +137,7 @@ const Settings = () => {
   const pinterestConnection = socialConnections.find(c => c.platform === 'pinterest');
   const instagramConnection = socialConnections.find(c => c.platform === 'instagram');
   const facebookConnection = socialConnections.find(c => c.platform === 'facebook');
+  const threadsConnection = socialConnections.find(c => c.platform === 'threads');
 
   // Delete project mutation
   const deleteProjectMutation = useMutation({
@@ -450,6 +453,52 @@ const Settings = () => {
       toast.error("Failed to disconnect Facebook");
     } finally {
       setIsDisconnectingFacebook(false);
+    }
+  };
+
+  const handleConnectThreads = async () => {
+    if (!user) return;
+    
+    setIsConnectingThreads(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('threads-auth-start', {
+        body: { 
+          redirect_url: '/settings' 
+        }
+      });
+      
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+        toast.info("Threads login opened in a new tab. Complete the authorization there.");
+        setIsConnectingThreads(false);
+      }
+    } catch (error) {
+      console.error('Threads connect error:', error);
+      toast.error("Failed to connect Threads. Please try again.");
+      setIsConnectingThreads(false);
+    }
+  };
+
+  const handleDisconnectThreads = async () => {
+    if (!user || !threadsConnection) return;
+    
+    setIsDisconnectingThreads(true);
+    try {
+      const { error } = await supabase
+        .from('social_connections')
+        .delete()
+        .eq('id', threadsConnection.id);
+      
+      if (error) throw error;
+      
+      toast.success("Threads disconnected");
+      refetchConnections();
+    } catch (error) {
+      console.error('Threads disconnect error:', error);
+      toast.error("Failed to disconnect Threads");
+    } finally {
+      setIsDisconnectingThreads(false);
     }
   };
 
@@ -1044,6 +1093,70 @@ const Settings = () => {
                       disabled={isConnectingFacebook}
                     >
                       {isConnectingFacebook ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Link2 className="w-4 h-4 mr-1" />
+                          Connect
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowUpgradeDialog(true)}
+                      className="gap-1.5"
+                    >
+                      <Crown className="w-3.5 h-3.5 text-primary" />
+                      Pro
+                    </Button>
+                  )}
+                </div>
+
+                {/* Threads Connection */}
+                <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="currentColor">
+                        <path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017C1.5 8.416 2.35 5.56 3.995 3.51 5.845 1.205 8.6.024 12.181 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.96-.065-1.182.408-2.256 1.334-3.023.863-.715 2.023-1.097 3.354-1.103l.123-.001c1.087 0 2.079.254 2.91.734-.012-.503-.064-.982-.153-1.423l2.027-.386c.192 1.011.244 2.218.108 3.58.744.463 1.4 1.045 1.934 1.742.818 1.067 1.237 2.396 1.212 3.842-.025 1.47-.495 2.876-1.36 4.064-1.04 1.426-2.593 2.512-4.616 3.227-1.264.447-2.654.68-4.132.691zm.698-10.2l-.123.001c-.856.008-1.57.236-2.065.66-.456.39-.666.86-.626 1.397.046.624.389 1.098.993 1.373.563.254 1.262.336 1.957.296 1.014-.056 1.766-.406 2.238-1.042.39-.527.615-1.224.68-2.097-.803-.374-1.85-.589-3.054-.589z"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Threads</p>
+                      {threadsConnection ? (
+                        <p className="text-sm text-muted-foreground">
+                          Connected: @{threadsConnection.account_name || 'Your Account'}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Not connected</p>
+                      )}
+                    </div>
+                  </div>
+                  {threadsConnection ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDisconnectThreads}
+                      disabled={isDisconnectingThreads}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      {isDisconnectingThreads ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Unlink className="w-4 h-4 mr-1" />
+                          Disconnect
+                        </>
+                      )}
+                    </Button>
+                  ) : isSubscribed ? (
+                    <Button
+                      size="sm"
+                      onClick={handleConnectThreads}
+                      disabled={isConnectingThreads}
+                    >
+                      {isConnectingThreads ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <>
