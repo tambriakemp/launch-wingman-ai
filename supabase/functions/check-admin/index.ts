@@ -14,6 +14,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
     const authHeader = req.headers.get("Authorization");
     console.log("[check-admin] Auth header present:", !!authHeader);
@@ -38,27 +39,36 @@ serve(async (req) => {
 
     console.log("[check-admin] Token length:", token.length, "prefix:", token.substring(0, 10) + "...");
 
-    // Create service role client for all operations
+    // Create service role client for database operations
     const supabaseService = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false },
     });
 
-    // Use getClaims for reliable server-side token validation
-    const { data: claimsData, error: claimsError } = await supabaseService.auth.getClaims(token);
+    // Create a client with user's token to verify their identity
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    });
 
-    if (claimsError || !claimsData?.claims) {
-      console.error("[check-admin] Claims error:", claimsError?.message || "No claims data");
+    // Use getUser with the user's token for reliable verification
+    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+
+    if (userError || !user) {
+      console.error("[check-admin] User verification error:", userError?.message || "No user");
       return new Response(JSON.stringify({ isAdmin: false, isManager: false, role: null }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
 
-    const userId = claimsData.claims.sub;
-    const email = claimsData.claims.email;
+    const userId = user.id;
+    const email = user.email;
 
     if (!userId) {
-      console.log("[check-admin] No user ID in claims");
+      console.log("[check-admin] No user ID");
       return new Response(JSON.stringify({ isAdmin: false, isManager: false, role: null }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
