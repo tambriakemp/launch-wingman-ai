@@ -4,7 +4,7 @@ import { BrowserFrame } from "../BrowserFrame";
 
 const platforms = [
   { name: "Instagram", chars: "150", active: true },
-  { name: "Twitter", chars: "160", active: false },
+  { name: "Facebook", chars: "101", active: false },
   { name: "LinkedIn", chars: "220", active: false },
 ];
 

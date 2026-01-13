@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Clock, Calendar, Share2, Twitter, Linkedin } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Share2, Linkedin } from "lucide-react";
 
 const BlogPost = () => {
   return (
@@ -141,9 +141,6 @@ const BlogPost = () => {
                 Share this article
               </span>
               <div className="flex gap-3">
-                <Button variant="outline" size="icon">
-                  <Twitter className="w-4 h-4" />
-                </Button>
                 <Button variant="outline" size="icon">
                   <Linkedin className="w-4 h-4" />
                 </Button>

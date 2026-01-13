@@ -13,7 +13,6 @@ import {
   Sparkles, 
   AlertTriangle,
   Instagram,
-  Twitter,
   Facebook,
   Linkedin,
   Youtube
@@ -31,10 +30,6 @@ const ASSET_DEFINITIONS = [
   { id: 'instagram_highlight_6', platform: 'Instagram', name: 'Highlight Cover 6', width: 1080, height: 1920, type: 'highlight' },
   { id: 'instagram_carousel', platform: 'Instagram', name: 'Carousel Template', width: 1080, height: 1350, type: 'template' },
   { id: 'instagram_reel', platform: 'Instagram', name: 'Reel Cover Template', width: 1080, height: 1920, type: 'template' },
-  
-  // X (Twitter)
-  { id: 'twitter_profile', platform: 'X (Twitter)', name: 'Profile Image', width: 400, height: 400, type: 'icon' },
-  { id: 'twitter_header', platform: 'X (Twitter)', name: 'Header Banner', width: 1500, height: 500, type: 'banner' },
   
   // Facebook
   { id: 'facebook_profile', platform: 'Facebook', name: 'Page Profile', width: 320, height: 320, type: 'icon' },
@@ -61,7 +56,6 @@ const ASSET_DEFINITIONS = [
 // Group assets by platform
 const PLATFORMS = [
   { id: 'instagram', name: 'Instagram', icon: Instagram },
-  { id: 'twitter', name: 'X (Twitter)', icon: Twitter },
   { id: 'facebook', name: 'Facebook', icon: Facebook },
   { id: 'linkedin', name: 'LinkedIn', icon: Linkedin },
   { id: 'tiktok', name: 'TikTok', icon: () => <span className="text-lg">📱</span> },
