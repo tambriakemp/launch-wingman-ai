@@ -1347,8 +1347,8 @@ export function PostEditorSheet({
                 </div>
                 )}
 
-                {/* Main Title & Content - hidden when customizePerNetwork is enabled */}
-                {!customizePerNetwork && (
+                {/* Main Title & Content - show when NOT customizing per network OR when 0-1 platforms selected */}
+                {(!customizePerNetwork || formData.scheduled_platforms.length <= 1) && (
                   <>
                     {/* Title */}
                     <div className="space-y-1.5">
@@ -1398,40 +1398,12 @@ export function PostEditorSheet({
                           </div>
                         )}
                       </div>
-                      
-                      {/* Icon Toolbar - always visible */}
-                      {!isPostedContent && (
-                        <ContentToolbar
-                          customizePerNetwork={customizePerNetwork}
-                          onCustomizeToggle={() => setCustomizePerNetwork(!customizePerNetwork)}
-                          showPinterestOption={formData.scheduled_platforms.includes("pinterest")}
-                          onPinterestClick={() => setShowPinterestOptions(true)}
-                          pinterestHasWarning={!formData.pinterest_board_id}
-                          showMultiplePlatforms={formData.scheduled_platforms.length > 1}
-                          onSelectMedia={() => setShowMediaModal(true)}
-                          hasMedia={!!formData.media_url}
-                        />
-                      )}
                     </div>
                   </>
                 )}
 
-                {/* Icon Toolbar - visible when customizePerNetwork is enabled */}
-                {customizePerNetwork && !isPostedContent && (
-                  <ContentToolbar
-                    customizePerNetwork={customizePerNetwork}
-                    onCustomizeToggle={() => setCustomizePerNetwork(!customizePerNetwork)}
-                    showPinterestOption={formData.scheduled_platforms.includes("pinterest")}
-                    onPinterestClick={() => setShowPinterestOptions(true)}
-                    pinterestHasWarning={!formData.pinterest_board_id}
-                    showMultiplePlatforms={formData.scheduled_platforms.length > 1}
-                    onSelectMedia={() => setShowMediaModal(true)}
-                    hasMedia={!!formData.media_url}
-                  />
-                )}
-
-                {/* Per-Network Content Customization */}
-                {!isPostedContent && formData.scheduled_platforms.length > 1 && (
+                {/* Per-Network Content Customization - only when 2+ platforms and customizing */}
+                {!isPostedContent && formData.scheduled_platforms.length > 1 && customizePerNetwork && (
                   <PerNetworkEditor
                     selectedPlatforms={formData.scheduled_platforms}
                     enabled={customizePerNetwork}
@@ -1442,6 +1414,20 @@ export function PostEditorSheet({
                     onOpenAIAssist={() => setShowAIPanel(true)}
                     onSelectMedia={() => setShowMediaModal(true)}
                     onPinterestSettings={() => setShowPinterestOptions(true)}
+                  />
+                )}
+
+                {/* Icon Toolbar - ALWAYS visible below content/per-network section */}
+                {!isPostedContent && (
+                  <ContentToolbar
+                    customizePerNetwork={customizePerNetwork}
+                    onCustomizeToggle={() => setCustomizePerNetwork(!customizePerNetwork)}
+                    showPinterestOption={formData.scheduled_platforms.includes("pinterest")}
+                    onPinterestClick={() => setShowPinterestOptions(true)}
+                    pinterestHasWarning={!formData.pinterest_board_id}
+                    showMultiplePlatforms={formData.scheduled_platforms.length > 1}
+                    onSelectMedia={() => setShowMediaModal(true)}
+                    hasMedia={!!formData.media_url}
                   />
                 )}
 
