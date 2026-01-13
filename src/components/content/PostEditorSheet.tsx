@@ -187,6 +187,10 @@ export function PostEditorSheet({
   const [customizePerNetwork, setCustomizePerNetwork] = useState(false);
   const [perPlatformContent, setPerPlatformContent] = useState<PerPlatformContent>({});
 
+  // AI Assist Panel state
+  const [showAIPanel, setShowAIPanel] = useState(false);
+  const [suggestions, setSuggestions] = useState<Array<{ id: string; title?: string; content: string }>>([]);
+
   // Social post state
   const [formData, setFormData] = useState({
     media_url: null as string | null,
@@ -469,13 +473,14 @@ export function PostEditorSheet({
       if (error) throw error;
 
       if (data?.draft) {
-        setContent(data.draft);
+        // Add to suggestions list for the AI panel
+        const newSuggestion = {
+          id: crypto.randomUUID(),
+          title: data.title || undefined,
+          content: data.draft,
+        };
+        setSuggestions((prev) => [newSuggestion, ...prev]);
         setHasGeneratedIdea(true);
-      }
-      
-      // Set the generated title if one was returned
-      if (data?.title && !hasTitle) {
-        setTitle(data.title);
       }
     } catch (error) {
       console.error("Error generating idea:", error);
@@ -483,6 +488,15 @@ export function PostEditorSheet({
     } finally {
       setGeneratingIdea(false);
     }
+  };
+
+  // Handler for copying suggestion to content area
+  const handleCopySuggestion = (suggestionContent: string, suggestionTitle?: string) => {
+    setContent(suggestionContent);
+    if (suggestionTitle) {
+      setTitle(suggestionTitle);
+    }
+    navigator.clipboard.writeText(suggestionContent);
   };
 
   const adjustTone = async (adjustment: ToneAdjustment) => {
@@ -1402,26 +1416,6 @@ export function PostEditorSheet({
                     defaultTitle={title}
                   />
                 )}
-                    >
-                      {adjusting === "calmer" && (
-                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                      )}
-                      Calmer
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => adjustTone("direct")}
-                      disabled={!!adjusting || !content}
-                    >
-                      {adjusting === "direct" && (
-                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                      )}
-                      More direct
-                    </Button>
-                  </div>
-                </div>
-                )}
 
 
                 {/* Media Upload - hidden for posted content */}
@@ -1474,6 +1468,21 @@ export function PostEditorSheet({
               linkUrl={formData.link_url}
             />
           </div>
+
+          {/* Third Column - AI Assist Panel */}
+          <AIAssistPanel
+            open={showAIPanel}
+            onClose={() => setShowAIPanel(false)}
+            contentType={contentType}
+            onContentTypeChange={setContentType}
+            onGenerate={handleGenerateIdea}
+            onToneAdjust={adjustTone}
+            suggestions={suggestions}
+            isGenerating={generatingIdea}
+            isAdjusting={adjusting}
+            currentContent={content}
+            onCopySuggestion={handleCopySuggestion}
+          />
         </div>
 
         {/* Footer */}
