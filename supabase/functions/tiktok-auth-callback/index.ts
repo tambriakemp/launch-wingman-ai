@@ -86,9 +86,13 @@ serve(async (req) => {
       .eq("provider", providerName);
 
     // Exchange code for access token
+    // Use sandbox API domain for sandbox environment
     const callbackUrl = `${supabaseUrl}/functions/v1/tiktok-auth-callback`;
+    const tokenApiUrl = environment === "sandbox"
+      ? "https://open.tiktokapis.com/v2/oauth/token/"  // Sandbox uses same token endpoint
+      : "https://open.tiktokapis.com/v2/oauth/token/";
     
-    const tokenResponse = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
+    const tokenResponse = await fetch(tokenApiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
