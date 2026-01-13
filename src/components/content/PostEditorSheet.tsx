@@ -246,6 +246,21 @@ export function PostEditorSheet({
     enabled: !!user && open,
   });
 
+  const { data: threadsConnection } = useQuery({
+    queryKey: ["threads-connection", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("social_connections")
+        .select("id, account_name, account_id")
+        .eq("user_id", user!.id)
+        .eq("platform", "threads")
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!user && open,
+  });
+
   // Initialize form when opening
   useEffect(() => {
     if (!open) return;
@@ -764,6 +779,55 @@ export function PostEditorSheet({
     }
   };
 
+  const postToThreads = async () => {
+    if (!threadsConnection) {
+      toast.error("Please connect your Threads account first");
+      return;
+    }
+
+    setIsPosting(true);
+    try {
+      const isVideo = formData.media_type === "video";
+      const response = await supabase.functions.invoke("post-to-threads", {
+        body: {
+          text: content,
+          mediaType: formData.media_url ? (isVideo ? "VIDEO" : "IMAGE") : "TEXT",
+          imageUrl: !isVideo ? formData.media_url : undefined,
+          videoUrl: isVideo ? formData.media_url : undefined,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Failed to post to Threads");
+      }
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      if (timelineItemId) {
+        await supabase
+          .from("content_planner")
+          .update({
+            scheduled_platforms: formData.scheduled_platforms,
+            scheduled_at: new Date().toISOString(),
+            status: "completed",
+          })
+          .eq("id", timelineItemId);
+      }
+
+      toast.success("Posted to Threads successfully!");
+      trackSocialPostPublish('threads');
+      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+      onSaved?.();
+      onOpenChange(false);
+    } catch (error: any) {
+      console.error("Error posting to Threads:", error);
+      toast.error(error.message || "Failed to post to Threads");
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
   // Validate required fields before posting
   const validatePostRequirements = (platform: string): boolean => {
     const errors: string[] = [];
@@ -791,6 +855,10 @@ export function PostEditorSheet({
     } else if (platform === "facebook") {
       if (!facebookConnection) {
         errors.push("Please connect your Facebook Page first");
+      }
+    } else if (platform === "threads") {
+      if (!threadsConnection) {
+        errors.push("Please connect your Threads account first");
       }
     }
     
@@ -821,6 +889,8 @@ export function PostEditorSheet({
       await postToInstagram();
     } else if (selectedPlatform === "facebook") {
       await postToFacebook();
+    } else if (selectedPlatform === "threads") {
+      await postToThreads();
     } else {
       toast.error(`Posting to ${selectedPlatform} is not yet supported`);
     }
