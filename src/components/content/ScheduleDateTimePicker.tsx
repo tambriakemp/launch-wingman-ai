@@ -133,7 +133,7 @@ export function ScheduleDateTimePicker({
                     }}
                     disabled={disablePastDates}
                     initialFocus
-                    className="pointer-events-auto"
+                    className="p-3 pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
