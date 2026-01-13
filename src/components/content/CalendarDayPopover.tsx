@@ -16,13 +16,23 @@ interface ContentPlannerItem {
   id: string;
   title: string;
   description: string | null;
+  content: string | null;
   content_type: string;
   phase: string;
   day_number: number;
   status: string;
   scheduled_at: string | null;
   scheduled_platforms: string[] | null;
+  media_url: string | null;
+  media_type: string | null;
 }
+
+// Helper to get excerpt from content or description
+const getExcerpt = (item: ContentPlannerItem, maxLength = 80): string => {
+  const text = item.content || item.description || "";
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength).trim() + "...";
+};
 
 interface CalendarDayPopoverProps {
   date: Date;
@@ -71,6 +81,25 @@ export const CalendarDayPopover = ({
                     phaseConfig && `border-l-4 ${phaseConfig.borderColor}`
                   )}
                 >
+                  {/* Media preview */}
+                  {item.media_url && (
+                    <div className="mb-2 rounded overflow-hidden">
+                      {item.media_type?.startsWith("video") ? (
+                        <video 
+                          src={item.media_url} 
+                          className="w-full h-20 object-cover"
+                          muted
+                        />
+                      ) : (
+                        <img 
+                          src={item.media_url} 
+                          alt=""
+                          className="w-full h-20 object-cover"
+                        />
+                      )}
+                    </div>
+                  )}
+                  
                   <div className="flex items-start gap-2">
                     <div
                       className={cn(
@@ -86,7 +115,15 @@ export const CalendarDayPopover = ({
                       <h4 className="text-sm font-medium text-foreground line-clamp-1">
                         {item.title}
                       </h4>
-                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      
+                      {/* Content excerpt */}
+                      {getExcerpt(item) && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                          {getExcerpt(item)}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                         {phaseLabel && (
                           <Badge 
                             variant="secondary" 
