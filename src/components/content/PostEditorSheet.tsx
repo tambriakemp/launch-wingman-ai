@@ -37,6 +37,7 @@ import { PerNetworkEditor, PerPlatformContent } from "./PerNetworkEditor";
 import { TikTokPostOptions } from "./TikTokPostOptions";
 import { ContentToolbar } from "./ContentToolbar";
 import { AIAssistPanel } from "./AIAssistPanel";
+import { MediaSelectModal } from "./MediaSelectModal";
 import { trackSocialPostPublish, trackSocialPostSchedule, trackSocialPostScheduleCancel } from "@/lib/analytics";
 
 // Types for the unified component
@@ -190,6 +191,7 @@ export function PostEditorSheet({
   // AI Assist Panel state
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [suggestions, setSuggestions] = useState<Array<{ id: string; title?: string; content: string }>>([]);
+  const [showMediaModal, setShowMediaModal] = useState(false);
 
   // Social post state
   const [formData, setFormData] = useState({
@@ -1345,65 +1347,72 @@ export function PostEditorSheet({
                 </div>
                 )}
 
-                {/* Title */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Title</Label>
-                  <Input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Enter post title..."
-                    disabled={isPostedContent}
-                    readOnly={isPostedContent}
-                  />
-                </div>
+                {/* Main Title & Content - hidden when customizePerNetwork is enabled */}
+                {!customizePerNetwork && (
+                  <>
+                    {/* Title */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Title</Label>
+                      <Input
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="Enter post title..."
+                        disabled={isPostedContent}
+                        readOnly={isPostedContent}
+                      />
+                    </div>
 
-                {/* Category guidance */}
-                <p className="text-sm text-muted-foreground italic">
-                  {CATEGORY_GUIDANCE[contentType] || CATEGORY_GUIDANCE.general}
-                </p>
+                    {/* Category guidance */}
+                    <p className="text-sm text-muted-foreground italic">
+                      {CATEGORY_GUIDANCE[contentType] || CATEGORY_GUIDANCE.general}
+                    </p>
 
-                {/* Content */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs">Content / Copy</Label>
-                    <span className="text-xs text-muted-foreground">
-                      {content.length} characters
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <Textarea
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      placeholder="Your content will appear here..."
-                      className="min-h-[150px] resize-none pr-24"
-                      disabled={isPostedContent}
-                      readOnly={isPostedContent}
-                    />
-                    {/* AI Assist Badge */}
-                    {!isPostedContent && (
-                      <button
-                        type="button"
-                        onClick={() => setShowAIPanel(true)}
-                        className="absolute bottom-2 right-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-medium transition-colors"
-                      >
-                        <Sparkles className="w-3 h-3" />
-                        AI Assist
-                      </button>
-                    )}
-                  </div>
-                  
-                  {/* Icon Toolbar */}
-                  {!isPostedContent && (
-                    <ContentToolbar
-                      customizePerNetwork={customizePerNetwork}
-                      onCustomizeToggle={() => setCustomizePerNetwork(!customizePerNetwork)}
-                      showPinterestOption={formData.scheduled_platforms.includes("pinterest")}
-                      onPinterestClick={() => setShowPinterestOptions(true)}
-                      pinterestHasWarning={!formData.pinterest_board_id}
-                      showMultiplePlatforms={formData.scheduled_platforms.length > 1}
-                    />
-                  )}
-                </div>
+                    {/* Content */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs">Content / Copy</Label>
+                        <span className="text-xs text-muted-foreground">
+                          {content.length} characters
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <Textarea
+                          value={content}
+                          onChange={(e) => setContent(e.target.value)}
+                          placeholder="Your content will appear here..."
+                          className="min-h-[200px] resize-none pr-24"
+                          disabled={isPostedContent}
+                          readOnly={isPostedContent}
+                        />
+                        {/* AI Assist Badge */}
+                        {!isPostedContent && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAIPanel(true)}
+                            className="absolute bottom-2 right-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-medium transition-colors"
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            AI Assist
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Icon Toolbar - always visible */}
+                      {!isPostedContent && (
+                        <ContentToolbar
+                          customizePerNetwork={customizePerNetwork}
+                          onCustomizeToggle={() => setCustomizePerNetwork(!customizePerNetwork)}
+                          showPinterestOption={formData.scheduled_platforms.includes("pinterest")}
+                          onPinterestClick={() => setShowPinterestOptions(true)}
+                          pinterestHasWarning={!formData.pinterest_board_id}
+                          showMultiplePlatforms={formData.scheduled_platforms.length > 1}
+                          onSelectMedia={() => setShowMediaModal(true)}
+                          hasMedia={!!formData.media_url}
+                        />
+                      )}
+                    </div>
+                  </>
+                )}
 
                 {/* Per-Network Content Customization */}
                 {!isPostedContent && formData.scheduled_platforms.length > 1 && (
@@ -1414,23 +1423,9 @@ export function PostEditorSheet({
                     onPerPlatformContentChange={setPerPlatformContent}
                     defaultContent={content}
                     defaultTitle={title}
+                    onOpenAIAssist={() => setShowAIPanel(true)}
+                    onSelectMedia={() => setShowMediaModal(true)}
                   />
-                )}
-
-
-                {/* Media Upload - hidden for posted content */}
-                {!isPostedContent && (
-                  <div className="space-y-2">
-                    <Label className="text-xs">Select Media</Label>
-                    <MediaUploader
-                      projectId={projectId}
-                      mediaUrl={formData.media_url}
-                      mediaType={formData.media_type}
-                      onMediaChange={(url, type) =>
-                        setFormData((prev) => ({ ...prev, media_url: url, media_type: type }))
-                      }
-                    />
-                  </div>
                 )}
 
                 {/* Scheduled indicator if already scheduled */}
@@ -1578,6 +1573,18 @@ export function PostEditorSheet({
           linkUrl={formData.link_url}
           onLinkUrlChange={(url) =>
             setFormData((prev) => ({ ...prev, link_url: url }))
+          }
+        />
+
+        {/* Media Select Modal */}
+        <MediaSelectModal
+          open={showMediaModal}
+          onOpenChange={setShowMediaModal}
+          projectId={projectId}
+          mediaUrl={formData.media_url}
+          mediaType={formData.media_type}
+          onMediaChange={(url, type) =>
+            setFormData((prev) => ({ ...prev, media_url: url, media_type: type }))
           }
         />
 

@@ -1,4 +1,4 @@
-import { Instagram, Facebook, Linkedin, Settings, AlertCircle } from "lucide-react";
+import { Instagram, Facebook, Linkedin, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { PLATFORMS } from "./platformConfigs";
@@ -9,7 +9,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
 
 interface Connection {
   id: string;
@@ -91,7 +90,6 @@ export function PlatformSelector({
   onChange, 
   connections = [],
   warnings = {},
-  onSettingsClick,
 }: PlatformSelectorProps) {
   const togglePlatform = (platformId: string) => {
     if (selected.includes(platformId)) {
@@ -160,29 +158,6 @@ export function PlatformSelector({
                   <p>{platform.name}</p>
                 </TooltipContent>
               </Tooltip>
-              
-              {/* Settings icon for Pinterest */}
-              {isSelected && platform.id === "pinterest" && onSettingsClick && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="w-6 h-6 text-muted-foreground hover:text-foreground"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSettingsClick(platform.id);
-                      }}
-                    >
-                      <Settings className="w-3.5 h-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Pinterest options</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
             </div>
           );
         })}
