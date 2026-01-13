@@ -218,7 +218,8 @@ serve(async (req) => {
     const initData = await initResponse.json();
     console.log("TikTok init response:", JSON.stringify(initData));
 
-    if (initData.error?.code) {
+    // TikTok returns error.code = "ok" for success, so only treat non-"ok" as errors
+    if (initData.error?.code && initData.error.code !== "ok") {
       console.error("TikTok init error:", initData);
       return new Response(
         JSON.stringify({ 
