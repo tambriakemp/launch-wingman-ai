@@ -3,7 +3,6 @@ import { ChevronDown, ChevronUp, Instagram, Facebook } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PLATFORMS, getPlatformById } from "./platformConfigs";
@@ -58,7 +57,6 @@ interface PerNetworkEditorProps {
   perPlatformContent: PerPlatformContent;
   onPerPlatformContentChange: (content: PerPlatformContent) => void;
   enabled: boolean;
-  onEnabledChange: (enabled: boolean) => void;
 }
 
 export function PerNetworkEditor({
@@ -68,7 +66,6 @@ export function PerNetworkEditor({
   perPlatformContent,
   onPerPlatformContentChange,
   enabled,
-  onEnabledChange,
 }: PerNetworkEditorProps) {
   const [expandedPlatforms, setExpandedPlatforms] = useState<string[]>(selectedPlatforms);
 
@@ -107,114 +104,104 @@ export function PerNetworkEditor({
     return platform?.maxCaptionLength || 2200;
   };
 
+  // Don't render anything if not enabled
+  if (!enabled || selectedPlatforms.length === 0) {
+    return null;
+  }
+
   return (
-    <div className="space-y-4">
-      {/* Toggle */}
-      <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-        <div className="space-y-0.5">
-          <Label className="text-sm font-medium">Customize per network</Label>
-          <p className="text-xs text-muted-foreground">
-            Write different content for each platform
-          </p>
-        </div>
-        <Switch checked={enabled} onCheckedChange={onEnabledChange} />
-      </div>
+    <div className="space-y-3">
+      <Label className="text-xs font-medium text-muted-foreground">Per-Network Content</Label>
+      {selectedPlatforms.map((platformId) => {
+        const platform = getPlatformById(platformId);
+        if (!platform) return null;
 
-      {/* Per-platform editors */}
-      {enabled && selectedPlatforms.length > 0 && (
-        <div className="space-y-3">
-          {selectedPlatforms.map((platformId) => {
-            const platform = getPlatformById(platformId);
-            if (!platform) return null;
+        const IconComponent = getIconComponent(platformId);
+        const isExpanded = expandedPlatforms.includes(platformId);
+        const platformContent = getPlatformContent(platformId);
+        const charLimit = getCharacterLimit(platformId);
+        const showTitle = platformId === "pinterest";
 
-            const IconComponent = getIconComponent(platformId);
-            const isExpanded = expandedPlatforms.includes(platformId);
-            const platformContent = getPlatformContent(platformId);
-            const charLimit = getCharacterLimit(platformId);
-            const showTitle = platformId === "pinterest";
-
-            return (
-              <div
-                key={platformId}
-                className="border rounded-lg overflow-hidden"
-              >
-                {/* Platform Header */}
-                <button
-                  type="button"
-                  onClick={() => toggleExpanded(platformId)}
-                  className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted transition-colors"
+        return (
+          <div
+            key={platformId}
+            className="border rounded-lg overflow-hidden"
+          >
+            {/* Platform Header */}
+            <button
+              type="button"
+              onClick={() => toggleExpanded(platformId)}
+              className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                  style={{ backgroundColor: platform.color }}
                 >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-white"
-                      style={{ backgroundColor: platform.color }}
-                    >
-                      {IconComponent && <IconComponent className="w-4 h-4" />}
-                    </div>
-                    <span className="font-medium text-sm">{platform.name}</span>
-                  </div>
-                  {isExpanded ? (
-                    <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                  )}
-                </button>
+                  {IconComponent && <IconComponent className="w-4 h-4" />}
+                </div>
+                <span className="font-medium text-sm">{platform.name}</span>
+              </div>
+              {isExpanded ? (
+                <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              )}
+            </button>
 
-                {/* Platform Editor */}
-                {isExpanded && (
-                  <div className="p-4 space-y-3">
-                    {/* Title (Pinterest only) */}
-                    {showTitle && (
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Pin Title</Label>
-                        <Input
-                          value={platformContent.title || ""}
-                          onChange={(e) =>
-                            handleContentChange(platformId, "title", e.target.value)
-                          }
-                          placeholder="Enter pin title..."
-                          maxLength={100}
-                        />
-                        <p className="text-xs text-muted-foreground text-right">
-                          {(platformContent.title || "").length} / 100
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Content */}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">
-                        {platformId === "pinterest" ? "Description" : "Caption"}
-                      </Label>
-                      <Textarea
-                        value={platformContent.content}
-                        onChange={(e) =>
-                          handleContentChange(platformId, "content", e.target.value)
-                        }
-                        placeholder={`Write your ${platform.name} ${
-                          platformId === "pinterest" ? "description" : "caption"
-                        }...`}
-                        className="min-h-[100px] resize-none"
-                        maxLength={charLimit}
-                      />
-                      <p
-                        className={cn(
-                          "text-xs text-right",
-                          platformContent.content.length > charLimit * 0.9
-                            ? "text-amber-600"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        {platformContent.content.length} / {charLimit}
-                      </p>
-                    </div>
+            {/* Platform Editor */}
+            {isExpanded && (
+              <div className="p-4 space-y-3">
+                {/* Title (Pinterest only) */}
+                {showTitle && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Pin Title</Label>
+                    <Input
+                      value={platformContent.title || ""}
+                      onChange={(e) =>
+                        handleContentChange(platformId, "title", e.target.value)
+                      }
+                      placeholder="Enter pin title..."
+                      maxLength={100}
+                    />
+                    <p className="text-xs text-muted-foreground text-right">
+                      {(platformContent.title || "").length} / 100
+                    </p>
                   </div>
                 )}
+
+                {/* Content */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">
+                    {platformId === "pinterest" ? "Description" : "Caption"}
+                  </Label>
+                  <Textarea
+                    value={platformContent.content}
+                    onChange={(e) =>
+                      handleContentChange(platformId, "content", e.target.value)
+                    }
+                    placeholder={`Write your ${platform.name} ${
+                      platformId === "pinterest" ? "description" : "caption"
+                    }...`}
+                    className="min-h-[100px] resize-none"
+                    maxLength={charLimit}
+                  />
+                  <p
+                    className={cn(
+                      "text-xs text-right",
+                      platformContent.content.length > charLimit * 0.9
+                        ? "text-amber-600"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {platformContent.content.length} / {charLimit}
+                  </p>
+                </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

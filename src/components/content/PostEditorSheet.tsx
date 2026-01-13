@@ -2,16 +2,15 @@ import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Loader2,
-  Wand2,
   Copy,
   Check,
   Trash2,
   CalendarPlus,
-  ChevronDown,
   Send,
   X,
   Clock,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
 import {
   Sheet,
@@ -23,20 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -49,6 +35,8 @@ import { PinterestMediaOptionsModal } from "./PinterestMediaOptionsModal";
 import { ScheduleModal } from "./ScheduleModal";
 import { PerNetworkEditor, PerPlatformContent } from "./PerNetworkEditor";
 import { TikTokPostOptions } from "./TikTokPostOptions";
+import { ContentToolbar } from "./ContentToolbar";
+import { AIAssistPanel } from "./AIAssistPanel";
 import { trackSocialPostPublish, trackSocialPostSchedule, trackSocialPostScheduleCancel } from "@/lib/analytics";
 
 // Types for the unified component
@@ -1368,46 +1356,38 @@ export function PostEditorSheet({
                       {content.length} characters
                     </span>
                   </div>
-                  <Textarea
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Your content will appear here..."
-                    className="min-h-[150px] resize-none"
-                    disabled={isPostedContent}
-                    readOnly={isPostedContent}
-                  />
+                  <div className="relative">
+                    <Textarea
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      placeholder="Your content will appear here..."
+                      className="min-h-[150px] resize-none pr-24"
+                      disabled={isPostedContent}
+                      readOnly={isPostedContent}
+                    />
+                    {/* AI Assist Badge */}
+                    {!isPostedContent && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAIPanel(true)}
+                        className="absolute bottom-2 right-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-medium transition-colors"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        AI Assist
+                      </button>
+                    )}
+                  </div>
                   
-                {/* Content Type + Generate Ideas Row */}
+                  {/* Icon Toolbar */}
                   {!isPostedContent && (
-                    <div className="flex items-center gap-3 mt-2">
-                      <Select
-                        value={contentType}
-                        onValueChange={setContentType}
-                      >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Content type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="general">General posts</SelectItem>
-                          <SelectItem value="stories">Stories / prompts</SelectItem>
-                          <SelectItem value="offer">Offer explanation</SelectItem>
-                          <SelectItem value="behind-the-scenes">Behind-the-scenes</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleGenerateIdea}
-                        disabled={generatingIdea}
-                      >
-                        {generatingIdea ? (
-                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                        ) : (
-                          <Wand2 className="w-3.5 h-3.5 mr-1.5" />
-                        )}
-                        {hasGeneratedIdea ? "Regenerate" : "Generate Ideas"}
-                      </Button>
-                    </div>
+                    <ContentToolbar
+                      customizePerNetwork={customizePerNetwork}
+                      onCustomizeToggle={() => setCustomizePerNetwork(!customizePerNetwork)}
+                      showPinterestOption={formData.scheduled_platforms.includes("pinterest")}
+                      onPinterestClick={() => setShowPinterestOptions(true)}
+                      pinterestHasWarning={!formData.pinterest_board_id}
+                      showMultiplePlatforms={formData.scheduled_platforms.length > 1}
+                    />
                   )}
                 </div>
 
@@ -1416,50 +1396,12 @@ export function PostEditorSheet({
                   <PerNetworkEditor
                     selectedPlatforms={formData.scheduled_platforms}
                     enabled={customizePerNetwork}
-                    onEnabledChange={setCustomizePerNetwork}
                     perPlatformContent={perPlatformContent}
                     onPerPlatformContentChange={setPerPlatformContent}
                     defaultContent={content}
                     defaultTitle={title}
                   />
                 )}
-
-                {/* Adjust Tone Section - hidden for posted content */}
-                {!isPostedContent && (
-                <div className="space-y-3">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Adjust tone
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => adjustTone("simplify")}
-                      disabled={!!adjusting || !content}
-                    >
-                      {adjusting === "simplify" ? (
-                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                      ) : (
-                        <Wand2 className="w-3.5 h-3.5 mr-1.5" />
-                      )}
-                      Simplify
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => adjustTone("shorter")}
-                      disabled={!!adjusting || !content}
-                    >
-                      {adjusting === "shorter" && (
-                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                      )}
-                      Make it shorter
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => adjustTone("calmer")}
-                      disabled={!!adjusting || !content}
                     >
                       {adjusting === "calmer" && (
                         <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
