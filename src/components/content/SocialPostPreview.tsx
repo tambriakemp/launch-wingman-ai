@@ -47,32 +47,35 @@ function PhoneFrame({ children, platform, isVertical }: { children: React.ReactN
   const IconComponent = getIconComponent(platform);
 
   return (
-    <div className="relative mx-auto w-[200px]">
-      {/* Phone frame */}
-      <div className="relative bg-background border-4 border-foreground/20 rounded-[28px] overflow-hidden shadow-xl">
+    <div className="relative mx-auto w-[320px]">
+      {/* Phone frame - realistic device look */}
+      <div className="relative bg-black border-[8px] border-foreground/30 rounded-[40px] overflow-hidden shadow-2xl">
+        {/* Notch / Dynamic Island */}
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-full z-20" />
+        
         {/* Status bar */}
         <div
-          className="h-6 flex items-center justify-between px-3 text-white text-[8px]"
+          className="h-10 flex items-end justify-between px-6 pb-1 text-white text-xs relative z-10"
           style={{ backgroundColor: platformConfig?.color || "#000" }}
         >
-          <span>9:41</span>
-          <div className="flex items-center gap-1">
-            {IconComponent && <IconComponent className="w-3 h-3" />}
-            <span className="font-medium">{platformConfig?.name}</span>
+          <span className="font-medium">9:41</span>
+          <div className="flex items-center gap-1.5">
+            {IconComponent && <IconComponent className="w-4 h-4" />}
+            <span className="font-semibold">{platformConfig?.name}</span>
           </div>
         </div>
 
-        {/* Content area - taller for vertical video */}
+        {/* Content area - much taller for realistic phone view */}
         <div className={cn(
           "bg-card overflow-hidden",
-          isVertical ? "min-h-[355px] max-h-[355px]" : "min-h-[280px] max-h-[280px]"
+          isVertical ? "min-h-[560px] max-h-[560px]" : "min-h-[440px] max-h-[440px]"
         )}>
           {children}
         </div>
 
         {/* Home indicator */}
-        <div className="h-5 flex items-center justify-center bg-card">
-          <div className="w-20 h-1 bg-foreground/20 rounded-full" />
+        <div className="h-8 flex items-center justify-center bg-card">
+          <div className="w-28 h-1.5 bg-foreground/30 rounded-full" />
         </div>
       </div>
     </div>
@@ -88,31 +91,31 @@ function InstagramPostTypeToggle({
   onPostTypeChange: (type: InstagramPostType) => void;
 }) {
   return (
-    <div className="flex items-center justify-center gap-1 mb-2">
+    <div className="flex items-center justify-center gap-2 mb-3">
       <button
         type="button"
         onClick={() => onPostTypeChange("feed")}
         className={cn(
-          "flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all",
+          "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
           postType === "feed" 
             ? "bg-primary text-primary-foreground" 
             : "bg-muted text-muted-foreground hover:bg-muted/80"
         )}
       >
-        <Grid3X3 className="w-3 h-3" />
+        <Grid3X3 className="w-4 h-4" />
         Feed
       </button>
       <button
         type="button"
         onClick={() => onPostTypeChange("reel")}
         className={cn(
-          "flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all",
+          "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
           postType === "reel" 
             ? "bg-primary text-primary-foreground" 
             : "bg-muted text-muted-foreground hover:bg-muted/80"
         )}
       >
-        <Film className="w-3 h-3" />
+        <Film className="w-4 h-4" />
         Reel
       </button>
     </div>
@@ -123,11 +126,11 @@ function InstagramFeedPreview({ content, mediaUrl, mediaType }: { content: strin
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="flex items-center gap-2 p-2 border-b border-gray-200">
-        <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center">
-          <User className="w-2.5 h-2.5 text-white" />
+      <div className="flex items-center gap-2.5 p-3 border-b border-gray-200">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center">
+          <User className="w-4 h-4 text-white" />
         </div>
-        <span className="text-[9px] font-medium text-gray-900">your_account</span>
+        <span className="text-sm font-semibold text-gray-900">your_account</span>
       </div>
 
       {/* Media - 1:1 aspect ratio for feed */}
@@ -147,26 +150,26 @@ function InstagramFeedPreview({ content, mediaUrl, mediaType }: { content: strin
           )
         ) : (
           <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-            <span className="text-[9px] text-gray-400">No media</span>
+            <span className="text-sm text-gray-400">No media</span>
           </div>
         )}
       </div>
 
       {/* Action icons bar */}
-      <div className="flex items-center justify-between px-2 py-1.5 bg-white">
-        <div className="flex items-center gap-2.5">
-          <Heart className="w-4 h-4 text-gray-900" strokeWidth={1.5} />
-          <MessageCircle className="w-4 h-4 text-gray-900" strokeWidth={1.5} />
-          <Send className="w-4 h-4 text-gray-900" strokeWidth={1.5} />
+      <div className="flex items-center justify-between px-3 py-2.5 bg-white">
+        <div className="flex items-center gap-4">
+          <Heart className="w-6 h-6 text-gray-900" strokeWidth={1.5} />
+          <MessageCircle className="w-6 h-6 text-gray-900" strokeWidth={1.5} />
+          <Send className="w-6 h-6 text-gray-900" strokeWidth={1.5} />
         </div>
-        <Bookmark className="w-4 h-4 text-gray-900" strokeWidth={1.5} />
+        <Bookmark className="w-6 h-6 text-gray-900" strokeWidth={1.5} />
       </div>
 
       {/* Likes and caption */}
-      <div className="px-2 pb-2 bg-white flex-1">
-        <p className="text-[8px] text-gray-900 font-medium mb-0.5">1,234 likes</p>
-        <p className="text-[7px] text-gray-900 line-clamp-2">
-          <span className="font-medium">your_account</span>{" "}
+      <div className="px-3 pb-3 bg-white flex-1">
+        <p className="text-sm text-gray-900 font-semibold mb-1">1,234 likes</p>
+        <p className="text-sm text-gray-900 line-clamp-3">
+          <span className="font-semibold">your_account</span>{" "}
           {content || "Your caption here..."}
         </p>
       </div>
@@ -194,7 +197,7 @@ function InstagramReelPreview({ content, mediaUrl, mediaType }: { content: strin
           )
         ) : (
           <div className="w-full h-full bg-gray-900 flex items-center justify-center">
-            <span className="text-[9px] text-gray-500">No media</span>
+            <span className="text-sm text-gray-500">No media</span>
           </div>
         )}
       </div>
@@ -203,34 +206,46 @@ function InstagramReelPreview({ content, mediaUrl, mediaType }: { content: strin
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
 
       {/* Side actions */}
-      <div className="absolute right-1.5 bottom-16 flex flex-col gap-2">
+      <div className="absolute right-3 bottom-24 flex flex-col gap-4">
         <div className="flex flex-col items-center">
-          <Heart className="w-5 h-5 text-white" strokeWidth={1.5} />
-          <span className="text-[7px] text-white mt-0.5">9.1K</span>
+          <Heart className="w-7 h-7 text-white" strokeWidth={1.5} />
+          <span className="text-xs text-white mt-1">17.3K</span>
         </div>
         <div className="flex flex-col items-center">
-          <MessageCircle className="w-5 h-5 text-white" strokeWidth={1.5} />
-          <span className="text-[7px] text-white mt-0.5">176</span>
+          <MessageCircle className="w-7 h-7 text-white" strokeWidth={1.5} />
+          <span className="text-xs text-white mt-1">1126</span>
         </div>
         <div className="flex flex-col items-center">
-          <Send className="w-5 h-5 text-white" strokeWidth={1.5} />
+          <Send className="w-7 h-7 text-white" strokeWidth={1.5} />
+          <span className="text-xs text-white mt-1">568</span>
         </div>
         <div className="flex flex-col items-center">
-          <Bookmark className="w-5 h-5 text-white" strokeWidth={1.5} />
+          <Bookmark className="w-7 h-7 text-white" strokeWidth={1.5} />
+        </div>
+        {/* Spinning record */}
+        <div className="w-8 h-8 rounded-lg border-2 border-white/50 overflow-hidden mt-2">
+          <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500" />
         </div>
       </div>
 
       {/* Caption */}
-      <div className="absolute bottom-2 left-2 right-10">
-        <div className="flex items-center gap-1.5 mb-1">
-          <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center">
-            <User className="w-2.5 h-2.5 text-white" />
+      <div className="absolute bottom-4 left-3 right-16">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center">
+            <User className="w-4 h-4 text-white" />
           </div>
-          <span className="text-[9px] font-medium text-white">your_account</span>
+          <span className="text-sm font-semibold text-white">your_account</span>
+          <button className="px-3 py-1 border border-white/70 rounded text-xs text-white font-medium">
+            Follow
+          </button>
         </div>
-        <p className="text-[8px] text-white line-clamp-2">
+        <p className="text-sm text-white line-clamp-2">
           {content || "Your caption here..."}
         </p>
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-xs text-white/70">♫</span>
+          <span className="text-xs text-white">Original audio</span>
+        </div>
       </div>
     </div>
   );
@@ -266,8 +281,8 @@ function PinterestPreview({ content, mediaUrl, mediaType, linkUrl, title }: { co
             <img src={mediaUrl} alt="" className="w-full aspect-[3/4] object-cover" />
           )}
           {linkUrl && (
-            <div className="absolute bottom-2 left-2 right-2">
-              <div className="bg-white/90 rounded-full px-2 py-0.5 text-[8px] text-gray-700 truncate flex items-center gap-1">
+            <div className="absolute bottom-3 left-3 right-3">
+              <div className="bg-white/90 rounded-full px-3 py-1.5 text-sm text-gray-700 truncate flex items-center gap-2">
                 <span>🔗</span>
                 <span>{getHostname(linkUrl)}</span>
               </div>
@@ -276,18 +291,18 @@ function PinterestPreview({ content, mediaUrl, mediaType, linkUrl, title }: { co
         </div>
       ) : (
         <div className="w-full aspect-[3/4] bg-muted flex items-center justify-center">
-          <span className="text-[10px] text-muted-foreground">Add image</span>
+          <span className="text-sm text-muted-foreground">Add image</span>
         </div>
       )}
 
       {/* Pin Title & Description */}
-      <div className={cn("p-2 overflow-hidden bg-white", !isVideo && "flex-1")}>
+      <div className={cn("p-3 overflow-hidden bg-white", !isVideo && "flex-1")}>
         {title && (
-          <h3 className="text-[10px] font-bold line-clamp-1 text-gray-900 mb-0.5">
+          <h3 className="text-base font-bold line-clamp-1 text-gray-900 mb-1">
             {title}
           </h3>
         )}
-        <p className="text-[8px] text-gray-600 line-clamp-2">
+        <p className="text-sm text-gray-600 line-clamp-2">
           {content || "Pin description..."}
         </p>
       </div>
@@ -305,9 +320,9 @@ function TikTokPreview({ content, mediaUrl, mediaType }: { content: string; medi
         videoError ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <TikTokIcon className="w-10 h-10 text-white/50 mx-auto mb-2" />
-              <span className="text-[10px] text-white/50">Preview unavailable</span>
-              <span className="text-[8px] text-white/30 block mt-1">You can still post</span>
+              <TikTokIcon className="w-16 h-16 text-white/50 mx-auto mb-3" />
+              <span className="text-sm text-white/50">Preview unavailable</span>
+              <span className="text-xs text-white/30 block mt-1">You can still post</span>
             </div>
           </div>
         ) : mediaType === "video" ? (
@@ -332,8 +347,8 @@ function TikTokPreview({ content, mediaUrl, mediaType }: { content: string; medi
       ) : (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <TikTokIcon className="w-10 h-10 text-white/50 mx-auto mb-2" />
-            <span className="text-[10px] text-white/50">Video required</span>
+            <TikTokIcon className="w-16 h-16 text-white/50 mx-auto mb-3" />
+            <span className="text-sm text-white/50">Video required</span>
           </div>
         </div>
       )}
@@ -342,32 +357,57 @@ function TikTokPreview({ content, mediaUrl, mediaType }: { content: string; medi
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
 
       {/* Side actions */}
-      <div className="absolute right-1.5 bottom-16 flex flex-col gap-2">
-        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-          <Heart className="w-3 h-3 text-white" />
+      <div className="absolute right-3 bottom-24 flex flex-col gap-4">
+        <div className="flex flex-col items-center">
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+            <Heart className="w-6 h-6 text-white" />
+          </div>
+          <span className="text-xs text-white mt-1">17.3K</span>
         </div>
-        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-          <MessageCircle className="w-3 h-3 text-white" />
+        <div className="flex flex-col items-center">
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+            <MessageCircle className="w-6 h-6 text-white" />
+          </div>
+          <span className="text-xs text-white mt-1">1126</span>
         </div>
-        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-          <Bookmark className="w-3 h-3 text-white" />
+        <div className="flex flex-col items-center">
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+            <Bookmark className="w-6 h-6 text-white" />
+          </div>
+          <span className="text-xs text-white mt-1">2.4K</span>
         </div>
-        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-          <Send className="w-3 h-3 text-white" />
+        <div className="flex flex-col items-center">
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+            <Send className="w-6 h-6 text-white" />
+          </div>
+          <span className="text-xs text-white mt-1">568</span>
+        </div>
+        {/* Spinning record */}
+        <div className="w-10 h-10 rounded-full border-2 border-white/30 overflow-hidden animate-spin" style={{ animationDuration: '3s' }}>
+          <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+            <div className="w-4 h-4 bg-white/80 rounded-full" />
+          </div>
         </div>
       </div>
 
       {/* Caption */}
-      <div className="absolute bottom-2 left-2 right-10">
-        <div className="flex items-center gap-1.5 mb-1">
-          <div className="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center">
-            <User className="w-2.5 h-2.5 text-white" />
+      <div className="absolute bottom-4 left-3 right-16">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center">
+            <User className="w-5 h-5 text-white" />
           </div>
-          <span className="text-[9px] font-medium text-white">@your_account</span>
+          <span className="text-sm font-semibold text-white">@your_account</span>
+          <button className="ml-2 px-4 py-1 border border-pink-500 rounded text-xs text-pink-500 font-medium bg-transparent">
+            Follow
+          </button>
         </div>
-        <p className="text-[8px] text-white line-clamp-2">
+        <p className="text-sm text-white line-clamp-2">
           {content || "Your caption here..."}
         </p>
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-sm text-white/70">♫</span>
+          <span className="text-sm text-white">Original sound - your_account</span>
+        </div>
       </div>
     </div>
   );
@@ -377,30 +417,30 @@ function GenericPreview({ content, mediaUrl, mediaType, platform }: { content: s
   const platformConfig = getPlatformById(platform);
 
   return (
-    <div className="p-3">
+    <div className="p-4 h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-          <User className="w-4 h-4 text-muted-foreground" />
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+          <User className="w-6 h-6 text-muted-foreground" />
         </div>
         <div>
-          <p className="text-[10px] font-medium">Your Name</p>
-          <p className="text-[8px] text-muted-foreground">{platformConfig?.name}</p>
+          <p className="text-sm font-semibold">Your Name</p>
+          <p className="text-xs text-muted-foreground">{platformConfig?.name}</p>
         </div>
       </div>
 
       {/* Content */}
-      <p className="text-[9px] line-clamp-3 mb-2">
+      <p className="text-sm line-clamp-4 mb-3">
         {content || "Your content here..."}
       </p>
 
       {/* Media */}
       {mediaUrl && (
-        <div className="rounded-lg overflow-hidden">
+        <div className="rounded-lg overflow-hidden flex-1">
           {mediaType === "video" ? (
-            <video src={mediaUrl} className="w-full h-24 object-cover bg-black" muted />
+            <video src={mediaUrl} className="w-full h-full min-h-[200px] object-cover bg-black" muted autoPlay loop playsInline />
           ) : (
-            <img src={mediaUrl} alt="" className="w-full h-24 object-cover" />
+            <img src={mediaUrl} alt="" className="w-full h-full min-h-[200px] object-cover" />
           )}
         </div>
       )}
@@ -462,10 +502,10 @@ export function SocialPostPreview({
   };
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+    <div className="space-y-3">
+      <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
         <span>Preview for:</span>
-        <div className="flex gap-1">
+        <div className="flex gap-2">
           {platforms.map((p) => {
             const IconComponent = getIconComponent(p);
             const config = getPlatformById(p);
@@ -475,12 +515,12 @@ export function SocialPostPreview({
                 type="button"
                 onClick={() => setActivePlatform(p)}
                 className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center text-white cursor-pointer transition-all",
+                  "w-8 h-8 rounded-full flex items-center justify-center text-white cursor-pointer transition-all",
                   p === currentPlatform ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "opacity-50 hover:opacity-75"
                 )}
                 style={{ backgroundColor: config?.color }}
               >
-                {IconComponent && <IconComponent className="w-3 h-3" />}
+                {IconComponent && <IconComponent className="w-4 h-4" />}
               </button>
             );
           })}
