@@ -140,6 +140,12 @@ serve(async (req) => {
     }
 
     const connection = connections[0];
+    const isSandbox = connection.platform === "tiktok_sandbox";
+    
+    // For sandbox/unaudited apps, TikTok requires SELF_ONLY privacy
+    const effectivePrivacyLevel = isSandbox ? "SELF_ONLY" : privacyLevel;
+    console.log(`Platform: ${connection.platform}, using privacy_level: ${effectivePrivacyLevel}`);
+    
     let accessToken: string;
 
     // Check if token is expired
@@ -195,7 +201,7 @@ serve(async (req) => {
       body: JSON.stringify({
         post_info: {
           title: caption || "",
-          privacy_level: privacyLevel,
+          privacy_level: effectivePrivacyLevel,
           disable_duet: false,
           disable_comment: false,
           disable_stitch: false,
