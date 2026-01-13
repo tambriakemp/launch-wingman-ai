@@ -5,8 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AlertsWidget } from './AlertsWidget';
 import { SystemHealthCard } from './SystemHealthCard';
 import { ChurnRiskCard } from './ChurnRiskCard';
-import { TikTokAnalyticsDashboard } from './TikTokAnalyticsDashboard';
-import { TikTokEnvironmentToggle } from './TikTokEnvironmentToggle';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -375,12 +373,6 @@ export function MonitoringTab({ users = [] }: MonitoringTabProps) {
           )}
         </CardContent>
       </Card>
-
-      {/* TikTok Environment Toggle */}
-      <TikTokEnvironmentToggle />
-
-      {/* TikTok Analytics */}
-      <TikTokAnalyticsDashboard />
 
       {/* System Health */}
       <SystemHealthCard
