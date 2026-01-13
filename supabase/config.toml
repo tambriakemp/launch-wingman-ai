@@ -197,3 +197,6 @@ verify_jwt = false
 
 [functions.post-to-tiktok]
 verify_jwt = false
+
+[functions.tiktok-webhook]
+verify_jwt = false
