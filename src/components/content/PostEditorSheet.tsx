@@ -1388,7 +1388,7 @@ export function PostEditorSheet({
     <Sheet open={open} onOpenChange={handleClose}>
       <SheetContent
         side="right"
-        className="w-[95vw] max-w-[1200px] p-0 flex flex-col"
+        className="w-[98vw] max-w-[1600px] p-0 flex flex-col"
       >
         <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <SheetTitle>
@@ -1614,7 +1614,7 @@ export function PostEditorSheet({
           </div>
 
           {/* Right Column - Preview Only */}
-          <div className="w-[320px] border-l bg-muted/30 p-6 overflow-y-auto flex flex-col">
+          <div className="w-[420px] border-l bg-muted/30 p-6 overflow-y-auto flex flex-col">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">
               Preview
             </p>
