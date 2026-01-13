@@ -62,7 +62,7 @@ interface AudienceData {
   niche?: string | null;
 }
 
-interface ContentPlannerItem {
+export interface ContentPlannerItem {
   id: string;
   title: string;
   description: string | null;
@@ -74,6 +74,8 @@ interface ContentPlannerItem {
   content: string | null;
   scheduled_at: string | null;
   scheduled_platforms: string[] | null;
+  media_url?: string | null;
+  media_type?: string | null;
 }
 
 interface PostEditorSheetProps {
@@ -298,7 +300,7 @@ export function PostEditorSheet({
     setHasGeneratedIdea(false);
 
     if (existingItem) {
-      // Editing existing item
+      // Editing existing item - hydrate all fields including media and platforms
       setTitle(existingItem.title || "");
       setContent(existingItem.content || existingItem.description || "");
       setContentType(existingItem.content_type || "general");
@@ -306,9 +308,13 @@ export function PostEditorSheet({
       setSelectedDay(existingItem.day_number || 1);
       setIsAssignedToTimeline(true);
       setTimelineItemId(existingItem.id);
+      
+      // Hydrate form data including media and platforms
       setFormData((prev) => ({
         ...prev,
         scheduled_platforms: existingItem.scheduled_platforms || [],
+        media_url: existingItem.media_url || null,
+        media_type: existingItem.media_type || null,
       }));
 
       if (existingItem.scheduled_at) {
@@ -1036,10 +1042,11 @@ export function PostEditorSheet({
     
     if (!user) return;
 
-    // Ensure we have a timeline item first
-    let itemId = timelineItemId;
+    // Use existing item ID if editing, otherwise use timelineItemId
+    let itemId = existingItem?.id || timelineItemId;
+    
     if (!itemId) {
-      // Create the content planner item first
+      // Create the content planner item first (only if truly new)
       const { data, error } = await supabase
         .from("content_planner")
         .insert({
@@ -1053,6 +1060,9 @@ export function PostEditorSheet({
           content_type: contentType,
           content: content || null,
           status: "draft",
+          media_url: formData.media_url,
+          media_type: formData.media_type,
+          scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
         })
         .select()
         .single();
@@ -1069,6 +1079,13 @@ export function PostEditorSheet({
       const [hours, minutes] = scheduledTime.split(":").map(Number);
       const scheduleDateTime = new Date(scheduledDate);
       scheduleDateTime.setHours(hours, minutes, 0, 0);
+
+      // Delete any existing pending scheduled_posts for this content item to avoid duplicates
+      await supabase
+        .from("scheduled_posts")
+        .delete()
+        .eq("content_item_id", itemId)
+        .eq("status", "pending");
 
       // Save to scheduled_posts table
       const { error } = await supabase.from("scheduled_posts").insert({
@@ -1089,13 +1106,17 @@ export function PostEditorSheet({
 
       if (error) throw error;
 
-      // Update the content_planner item
+      // Update the content_planner item with all fields
       await supabase
         .from("content_planner")
         .update({
+          title: title || "Untitled post",
           content: content,
+          content_type: contentType,
           scheduled_platforms: formData.scheduled_platforms,
           scheduled_at: scheduleDateTime.toISOString(),
+          media_url: formData.media_url,
+          media_type: formData.media_type,
         })
         .eq("id", itemId);
 
