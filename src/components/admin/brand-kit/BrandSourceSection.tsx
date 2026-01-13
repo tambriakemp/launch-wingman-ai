@@ -241,6 +241,7 @@ export const BrandSourceSection = ({
     { label: '128×128 (Medium)', size: 128 },
     { label: '256×256 (Large)', size: 256 },
     { label: '512×512 (Extra Large)', size: 512 },
+    { label: '1024×1024 (HD)', size: 1024 },
   ];
 
   const downloadLogoAtSize = async (size: number) => {
