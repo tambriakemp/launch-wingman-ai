@@ -52,7 +52,11 @@ export function MediaUploader({
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!user) {
+        toast.error("Please log in to upload media");
+        setIsUploading(false);
+        return;
+      }
 
       const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/${projectId}/${Date.now()}.${fileExt}`;
