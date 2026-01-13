@@ -5,7 +5,7 @@ import { BrowserFrame } from "../BrowserFrame";
 const platforms = [
   { name: "Instagram", chars: "150", active: true },
   { name: "Facebook", chars: "101", active: false },
-  { name: "LinkedIn", chars: "220", active: false },
+  { name: "TikTok", chars: "80", active: false },
 ];
 
 export const MessagingMockup = () => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Instagram, Facebook, Linkedin, User } from "lucide-react";
+import { Instagram, Facebook, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPlatformById } from "./platformConfigs";
 
@@ -31,8 +31,6 @@ const getIconComponent = (platformId: string) => {
       return Instagram;
     case "facebook":
       return Facebook;
-    case "linkedin":
-      return Linkedin;
     case "pinterest":
       return PinterestIcon;
     case "tiktok":

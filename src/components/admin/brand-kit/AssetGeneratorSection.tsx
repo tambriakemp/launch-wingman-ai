@@ -14,7 +14,6 @@ import {
   AlertTriangle,
   Instagram,
   Facebook,
-  Linkedin,
   Youtube
 } from 'lucide-react';
 
@@ -35,9 +34,6 @@ const ASSET_DEFINITIONS = [
   { id: 'facebook_profile', platform: 'Facebook', name: 'Page Profile', width: 320, height: 320, type: 'icon' },
   { id: 'facebook_cover', platform: 'Facebook', name: 'Page Cover', width: 1640, height: 856, type: 'banner' },
   
-  // LinkedIn
-  { id: 'linkedin_logo', platform: 'LinkedIn', name: 'Company Logo', width: 400, height: 400, type: 'icon' },
-  { id: 'linkedin_banner', platform: 'LinkedIn', name: 'Company Banner', width: 1128, height: 191, type: 'banner' },
   
   // TikTok
   { id: 'tiktok_profile', platform: 'TikTok', name: 'Profile Image', width: 320, height: 320, type: 'icon' },
@@ -57,7 +53,6 @@ const ASSET_DEFINITIONS = [
 const PLATFORMS = [
   { id: 'instagram', name: 'Instagram', icon: Instagram },
   { id: 'facebook', name: 'Facebook', icon: Facebook },
-  { id: 'linkedin', name: 'LinkedIn', icon: Linkedin },
   { id: 'tiktok', name: 'TikTok', icon: () => <span className="text-lg">📱</span> },
   { id: 'youtube', name: 'YouTube', icon: Youtube },
   { id: 'pinterest', name: 'Pinterest', icon: () => <span className="text-lg">📌</span> },

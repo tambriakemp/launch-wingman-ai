@@ -11,7 +11,7 @@ const features = [
   {
     icon: AtSign,
     title: "Social Bio Builder",
-    description: "Create platform-optimized bios for Instagram, LinkedIn, Pinterest and more using proven formulas.",
+    description: "Create platform-optimized bios for Instagram, TikTok, Pinterest and more using proven formulas.",
   },
   {
     icon: Mail,

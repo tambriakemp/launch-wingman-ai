@@ -1336,10 +1336,6 @@ const Settings = () => {
                   );
                 })()}
 
-                {/* Future platforms placeholder */}
-                <p className="text-xs text-muted-foreground pt-2">
-                  More platforms coming soon: LinkedIn
-                </p>
               </div>
             </CardContent>
           </Card>
