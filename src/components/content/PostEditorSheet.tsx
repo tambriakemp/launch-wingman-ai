@@ -10,6 +10,8 @@ import {
   ChevronDown,
   Send,
   X,
+  Clock,
+  AlertCircle,
 } from "lucide-react";
 import {
   Sheet,
@@ -35,6 +37,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -42,8 +45,9 @@ import { cn } from "@/lib/utils";
 import { PlatformSelector } from "./PlatformSelector";
 import { MediaUploader } from "./MediaUploader";
 import { SocialPostPreview } from "./SocialPostPreview";
-import { PinterestBoardSelector } from "./PinterestBoardSelector";
-import { ScheduleDateTimePicker } from "./ScheduleDateTimePicker";
+import { PinterestMediaOptionsModal } from "./PinterestMediaOptionsModal";
+import { ScheduleModal } from "./ScheduleModal";
+import { PerNetworkEditor, PerPlatformContent } from "./PerNetworkEditor";
 import { TikTokPostOptions } from "./TikTokPostOptions";
 import { trackSocialPostPublish, trackSocialPostSchedule, trackSocialPostScheduleCancel } from "@/lib/analytics";
 
@@ -184,9 +188,16 @@ export function PostEditorSheet({
   const [timelineItemId, setTimelineItemId] = useState<string | null>(null);
 
   // Scheduling state
-  const [scheduleMode, setScheduleMode] = useState<"now" | "schedule">("now");
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
   const [scheduledTime, setScheduledTime] = useState("09:00");
+
+  // Pinterest options modal
+  const [showPinterestOptions, setShowPinterestOptions] = useState(false);
+
+  // Per-network customization
+  const [customizePerNetwork, setCustomizePerNetwork] = useState(false);
+  const [perPlatformContent, setPerPlatformContent] = useState<PerPlatformContent>({});
 
   // Social post state
   const [formData, setFormData] = useState({
@@ -323,13 +334,13 @@ export function PostEditorSheet({
         const hours = scheduledDateTime.getHours().toString().padStart(2, "0");
         const minutes = scheduledDateTime.getMinutes().toString().padStart(2, "0");
         setScheduledTime(`${hours}:${minutes}`);
-        setScheduleMode("schedule");
       } else {
-        setScheduleMode("now");
         setScheduledDate(null);
         setScheduledTime("09:00");
       }
       setCurrentDraftId(null);
+      setCustomizePerNetwork(false);
+      setPerPlatformContent({});
     } else if (talkingPoint) {
       // Check if this is from an existing draft (existingDraftId provided)
       if (existingDraftId) {
@@ -341,8 +352,9 @@ export function PostEditorSheet({
         setIsAssignedToTimeline(false);
         setTimelineItemId(null);
         setTimelineOpen(false);
-        setScheduleMode("now");
         setScheduledDate(null);
+        setCustomizePerNetwork(false);
+        setPerPlatformContent({});
         setFormData({
           media_url: null,
           media_type: null,
@@ -362,8 +374,9 @@ export function PostEditorSheet({
         setIsAssignedToTimeline(false);
         setTimelineItemId(null);
         setTimelineOpen(false);
-        setScheduleMode("now");
         setScheduledDate(null);
+        setCustomizePerNetwork(false);
+        setPerPlatformContent({});
         setFormData({
           media_url: null,
           media_type: null,
@@ -384,8 +397,9 @@ export function PostEditorSheet({
       setContentType("general");
       setCurrentDraftId(null);
       setTimelineOpen(false);
-      setScheduleMode("now");
       setScheduledDate(null);
+      setCustomizePerNetwork(false);
+      setPerPlatformContent({});
       setFormData({
         media_url: null,
         media_type: null,
@@ -1230,24 +1244,34 @@ export function PostEditorSheet({
                       }));
                     }}
                     connections={allConnections}
+                    warnings={
+                      formData.scheduled_platforms.includes("pinterest") && !formData.pinterest_board_id
+                        ? { pinterest: "Board required" }
+                        : {}
+                    }
+                    onSettingsClick={(platformId) => {
+                      if (platformId === "pinterest") {
+                        setShowPinterestOptions(true);
+                      }
+                    }}
                   />
+
+                  {/* Pinterest warning message */}
+                  {formData.scheduled_platforms.includes("pinterest") && !formData.pinterest_board_id && (
+                    <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 py-2">
+                      <AlertCircle className="h-4 w-4 text-amber-600" />
+                      <AlertDescription className="text-xs text-amber-800 dark:text-amber-200">
+                        Click the settings icon on Pinterest to select a board before scheduling.
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
                   {/* Platform-specific options - directly below Post To */}
                   {formData.scheduled_platforms.length > 0 && (
                     <div className="space-y-3 pt-2">
-                      {/* Pinterest Board Selector */}
-                      {formData.scheduled_platforms.includes("pinterest") &&
-                        pinterestConnection && (
-                          <PinterestBoardSelector
-                            selectedBoard={formData.pinterest_board_id}
-                            onBoardChange={(boardId) =>
-                              setFormData((prev) => ({ ...prev, pinterest_board_id: boardId }))
-                            }
-                          />
-                        )}
-
-                      {/* Instagram Post Type Selector */}
+                      {/* Instagram Post Type Selector - only when Instagram is the ONLY platform */}
                       {formData.scheduled_platforms.includes("instagram") &&
+                        formData.scheduled_platforms.length === 1 &&
                         instagramConnection && (
                           <div className="space-y-2">
                             <Label className="text-xs">Instagram Post Type</Label>
@@ -1283,19 +1307,13 @@ export function PostEditorSheet({
                           </div>
                         )}
 
-                      {/* Link URL for Pinterest */}
-                      {formData.scheduled_platforms.includes("pinterest") && (
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">Link URL (optional)</Label>
-                          <Input
-                            value={formData.link_url}
-                            onChange={(e) =>
-                              setFormData((prev) => ({ ...prev, link_url: e.target.value }))
-                            }
-                            placeholder="https://..."
-                          />
-                        </div>
-                      )}
+                      {/* Auto-determine info for Instagram when multi-platform */}
+                      {formData.scheduled_platforms.includes("instagram") &&
+                        formData.scheduled_platforms.length > 1 && (
+                          <p className="text-xs text-muted-foreground italic">
+                            Instagram post type will be auto-determined based on media (video = Reel, image = Feed)
+                          </p>
+                        )}
 
                       {/* TikTok Post Options */}
                       {(formData.scheduled_platforms.includes("tiktok") || 
@@ -1463,16 +1481,12 @@ export function PostEditorSheet({
                   </div>
                 )}
 
-                {/* Schedule Options - hidden for posted content */}
-                {!isPostedContent && (
-                  <ScheduleDateTimePicker
-                    mode={scheduleMode}
-                    onModeChange={setScheduleMode}
-                    date={scheduledDate}
-                    onDateChange={setScheduledDate}
-                    time={scheduledTime}
-                    onTimeChange={setScheduledTime}
-                  />
+                {/* Scheduled indicator if already scheduled */}
+                {isAlreadyScheduled && scheduledDate && (
+                  <div className="flex items-center gap-2 text-sm p-3 rounded-lg bg-primary/10 border border-primary/20">
+                    <Clock className="w-4 h-4 text-primary" />
+                    <span>Scheduled for {scheduledDate.toLocaleDateString()} at {scheduledTime}</span>
+                  </div>
                 )}
 
                 {/* Show slot assignment info when creating from slot */}
@@ -1562,34 +1576,26 @@ export function PostEditorSheet({
           </div>
           {!isPostedContent && (
             <div className="flex gap-2">
-              {scheduleMode === "now" ? (
-                <Button
-                  onClick={handlePostNow}
-                  disabled={isPosting || !formData.scheduled_platforms.length}
-                  className="bg-rose-500 hover:bg-rose-600"
-                >
-                  {isPosting ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <Send className="w-4 h-4 mr-2" />
-                  )}
-                  Post Now
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleSchedule}
-                  disabled={
-                    isScheduling || !scheduledDate || !formData.scheduled_platforms.length
-                  }
-                >
-                  {isScheduling ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <Send className="w-4 h-4 mr-2" />
-                  )}
-                  {isAlreadyScheduled ? "Reschedule" : "Schedule"}
-                </Button>
-              )}
+              <Button
+                onClick={handlePostNow}
+                disabled={isPosting || !formData.scheduled_platforms.length}
+                className="bg-rose-500 hover:bg-rose-600"
+              >
+                {isPosting ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Send className="w-4 h-4 mr-2" />
+                )}
+                Post Now
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowScheduleModal(true)}
+                disabled={!formData.scheduled_platforms.length}
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                {isAlreadyScheduled ? "Reschedule" : "Schedule"}
+              </Button>
             </div>
           )}
         </SheetFooter>

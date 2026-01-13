@@ -1,4 +1,4 @@
-import { Instagram, Facebook, Linkedin, Settings } from "lucide-react";
+import { Instagram, Facebook, Linkedin, Settings, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { PLATFORMS } from "./platformConfigs";
@@ -9,6 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 
 interface Connection {
   id: string;
@@ -20,6 +21,8 @@ interface PlatformSelectorProps {
   selected: string[];
   onChange: (platforms: string[]) => void;
   connections?: Connection[];
+  warnings?: Record<string, string>;
+  onSettingsClick?: (platformId: string) => void;
 }
 
 // Custom icons for platforms not in Lucide
@@ -83,7 +86,13 @@ const isPlatformConnected = (platformId: string, connections: Connection[]): boo
   });
 };
 
-export function PlatformSelector({ selected, onChange, connections = [] }: PlatformSelectorProps) {
+export function PlatformSelector({ 
+  selected, 
+  onChange, 
+  connections = [],
+  warnings = {},
+  onSettingsClick,
+}: PlatformSelectorProps) {
   const togglePlatform = (platformId: string) => {
     if (selected.includes(platformId)) {
       onChange(selected.filter((id) => id !== platformId));
@@ -119,32 +128,62 @@ export function PlatformSelector({ selected, onChange, connections = [] }: Platf
 
   return (
     <TooltipProvider>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 items-center">
         {connectedPlatforms.map((platform) => {
           const isSelected = selected.includes(platform.id);
           const IconComponent = getIconComponent(platform.id);
+          const hasWarning = isSelected && warnings[platform.id];
 
           return (
-            <Tooltip key={platform.id}>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => togglePlatform(platform.id)}
-                  className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 border-2",
-                    isSelected
-                      ? "text-white border-transparent shadow-lg scale-110"
-                      : "bg-muted text-muted-foreground border-transparent hover:border-border hover:bg-accent"
-                  )}
-                  style={isSelected ? { backgroundColor: platform.color } : {}}
-                >
-                  {IconComponent && <IconComponent className="w-5 h-5" />}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{platform.name}</p>
-              </TooltipContent>
-            </Tooltip>
+            <div key={platform.id} className="relative flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => togglePlatform(platform.id)}
+                    className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 border-2 relative",
+                      isSelected
+                        ? "text-white border-transparent shadow-lg scale-110"
+                        : "bg-muted text-muted-foreground border-transparent hover:border-border hover:bg-accent"
+                    )}
+                    style={isSelected ? { backgroundColor: platform.color } : {}}
+                  >
+                    {IconComponent && <IconComponent className="w-5 h-5" />}
+                    {/* Warning indicator */}
+                    {hasWarning && (
+                      <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-amber-500 rounded-full border-2 border-background" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{platform.name}</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              {/* Settings icon for Pinterest */}
+              {isSelected && platform.id === "pinterest" && onSettingsClick && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="w-6 h-6 text-muted-foreground hover:text-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSettingsClick(platform.id);
+                      }}
+                    >
+                      <Settings className="w-3.5 h-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Pinterest options</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
           );
         })}
       </div>
