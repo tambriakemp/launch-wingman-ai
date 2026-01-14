@@ -23,6 +23,7 @@ import { EmailPreferencesSettings } from "@/components/settings/EmailPreferences
 import { AiUsageCard } from "@/components/settings/AiUsageCard";
 import { ExportMyDataDialog } from "@/components/settings/ExportMyDataDialog";
 import { DeleteMyAccountDialog } from "@/components/settings/DeleteMyAccountDialog";
+import { FacebookPageSelector } from "@/components/settings/FacebookPageSelector";
 import { useAnnualReview } from "@/hooks/useAnnualReview";
 import {
   User,
@@ -613,24 +614,31 @@ const Settings = () => {
     }
   };
 
-  // Helper to check Instagram token status
-  const getInstagramTokenStatus = () => {
-    if (!instagramConnection?.token_expires_at) return null;
+  // Generic helper to check token status for any connection
+  const getTokenStatus = (connection: SocialConnection | undefined) => {
+    if (!connection?.token_expires_at) return null;
     
-    const expiresAt = new Date(instagramConnection.token_expires_at);
+    const expiresAt = new Date(connection.token_expires_at);
     const now = new Date();
     const daysUntilExpiry = Math.floor((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     
     if (daysUntilExpiry < 0) {
-      return { status: 'expired', message: 'Expired', daysUntilExpiry };
+      return { status: 'expired' as const, message: 'Expired', daysUntilExpiry };
     } else if (daysUntilExpiry <= 7) {
-      return { status: 'expiring_soon', message: `Expires in ${daysUntilExpiry} days`, daysUntilExpiry };
+      return { status: 'expiring_soon' as const, message: `Expires in ${daysUntilExpiry} days`, daysUntilExpiry };
+    } else if (daysUntilExpiry <= 30) {
+      return { status: 'valid' as const, message: `Expires in ${daysUntilExpiry} days`, daysUntilExpiry };
     } else {
-      return { status: 'valid', message: `Expires in ${daysUntilExpiry} days`, daysUntilExpiry };
+      return { status: 'valid' as const, message: null, daysUntilExpiry }; // Don't show if > 30 days
     }
   };
 
-  const instagramTokenStatus = getInstagramTokenStatus();
+  const instagramTokenStatus = getTokenStatus(instagramConnection);
+  const pinterestTokenStatus = getTokenStatus(pinterestConnection);
+  const facebookTokenStatus = getTokenStatus(facebookConnection);
+  const threadsTokenStatus = getTokenStatus(threadsConnection);
+  const tiktokTokenStatus = getTokenStatus(tiktokConnection);
+  const tiktokSandboxTokenStatus = getTokenStatus(tiktokSandboxConnection);
 
   const hasProfileChanges = firstName !== (profile.first_name || "") || lastName !== (profile.last_name || "");
 
@@ -972,9 +980,25 @@ const Settings = () => {
                     <div>
                       <p className="font-medium text-foreground">Pinterest</p>
                       {pinterestConnection ? (
-                        <p className="text-sm text-muted-foreground">
-                          Connected as @{pinterestConnection.account_name || 'Pinterest User'}
-                        </p>
+                        <div className="flex flex-col gap-0.5">
+                          <p className="text-sm text-muted-foreground">
+                            Connected as @{pinterestConnection.account_name || 'Pinterest User'}
+                          </p>
+                          {pinterestTokenStatus?.message && (
+                            <p className={`text-xs flex items-center gap-1 ${
+                              pinterestTokenStatus.status === 'expired' 
+                                ? 'text-destructive' 
+                                : pinterestTokenStatus.status === 'expiring_soon'
+                                ? 'text-yellow-600 dark:text-yellow-500'
+                                : 'text-muted-foreground'
+                            }`}>
+                              {pinterestTokenStatus.status === 'expired' && (
+                                <AlertTriangle className="w-3 h-3" />
+                              )}
+                              {pinterestTokenStatus.message}
+                            </p>
+                          )}
+                        </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">Not connected</p>
                       )}
@@ -1179,31 +1203,72 @@ const Settings = () => {
                     <div>
                       <p className="font-medium text-foreground">Facebook Page</p>
                       {facebookConnection ? (
-                        <p className="text-sm text-muted-foreground">
-                          Connected: {facebookConnection.account_name || 'Your Page'}
-                        </p>
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm text-muted-foreground">
+                              {facebookConnection.account_name || 'Your Page'}
+                            </p>
+                            <FacebookPageSelector 
+                              currentPageName={facebookConnection.account_name}
+                              currentPageId={facebookConnection.id}
+                              onPageChange={refetchConnections}
+                            />
+                          </div>
+                          {facebookTokenStatus?.message && (
+                            <p className={`text-xs flex items-center gap-1 ${
+                              facebookTokenStatus.status === 'expired' 
+                                ? 'text-destructive' 
+                                : facebookTokenStatus.status === 'expiring_soon'
+                                ? 'text-yellow-600 dark:text-yellow-500'
+                                : 'text-muted-foreground'
+                            }`}>
+                              {facebookTokenStatus.status === 'expired' && (
+                                <AlertTriangle className="w-3 h-3" />
+                              )}
+                              {facebookTokenStatus.message}
+                            </p>
+                          )}
+                        </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">Not connected</p>
                       )}
                     </div>
                   </div>
                   {facebookConnection ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDisconnectFacebook}
-                      disabled={isDisconnectingFacebook}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      {isDisconnectingFacebook ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Unlink className="w-4 h-4 mr-1" />
-                          Disconnect
-                        </>
+                    <div className="flex items-center gap-2">
+                      {facebookTokenStatus?.status === 'expired' && (
+                        <Button
+                          size="sm"
+                          onClick={handleConnectFacebook}
+                          disabled={isConnectingFacebook}
+                        >
+                          {isConnectingFacebook ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Link2 className="w-4 h-4 mr-1" />
+                              Reconnect
+                            </>
+                          )}
+                        </Button>
                       )}
-                    </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDisconnectFacebook}
+                        disabled={isDisconnectingFacebook}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        {isDisconnectingFacebook ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Unlink className="w-4 h-4 mr-1" />
+                            Disconnect
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   ) : isSubscribed ? (
                     <Button
                       size="sm"
@@ -1243,9 +1308,25 @@ const Settings = () => {
                     <div>
                       <p className="font-medium text-foreground">Threads</p>
                       {threadsConnection ? (
-                        <p className="text-sm text-muted-foreground">
-                          Connected: @{threadsConnection.account_name || 'Your Account'}
-                        </p>
+                        <div className="flex flex-col gap-0.5">
+                          <p className="text-sm text-muted-foreground">
+                            Connected: @{threadsConnection.account_name || 'Your Account'}
+                          </p>
+                          {threadsTokenStatus?.message && (
+                            <p className={`text-xs flex items-center gap-1 ${
+                              threadsTokenStatus.status === 'expired' 
+                                ? 'text-destructive' 
+                                : threadsTokenStatus.status === 'expiring_soon'
+                                ? 'text-yellow-600 dark:text-yellow-500'
+                                : 'text-muted-foreground'
+                            }`}>
+                              {threadsTokenStatus.status === 'expired' && (
+                                <AlertTriangle className="w-3 h-3" />
+                              )}
+                              {threadsTokenStatus.message}
+                            </p>
+                          )}
+                        </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">Not connected</p>
                       )}
@@ -1344,9 +1425,28 @@ const Settings = () => {
                             </Badge>
                           </div>
                           {activeConnection ? (
-                            <p className="text-sm text-muted-foreground">
-                              Connected: @{activeConnection.account_name || (isSandbox ? 'Test Account' : 'Your Account')}
-                            </p>
+                            <div className="flex flex-col gap-0.5">
+                              <p className="text-sm text-muted-foreground">
+                                Connected: @{activeConnection.account_name || (isSandbox ? 'Test Account' : 'Your Account')}
+                              </p>
+                              {(() => {
+                                const tokenStatus = isSandbox ? tiktokSandboxTokenStatus : tiktokTokenStatus;
+                                return tokenStatus?.message ? (
+                                  <p className={`text-xs flex items-center gap-1 ${
+                                    tokenStatus.status === 'expired' 
+                                      ? 'text-destructive' 
+                                      : tokenStatus.status === 'expiring_soon'
+                                      ? 'text-yellow-600 dark:text-yellow-500'
+                                      : 'text-muted-foreground'
+                                  }`}>
+                                    {tokenStatus.status === 'expired' && (
+                                      <AlertTriangle className="w-3 h-3" />
+                                    )}
+                                    {tokenStatus.message}
+                                  </p>
+                                ) : null;
+                              })()}
+                            </div>
                           ) : (
                             <p className="text-sm text-muted-foreground">
                               {isSandbox ? 'For testing only' : 'Not connected (video only)'}
