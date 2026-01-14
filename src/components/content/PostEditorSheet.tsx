@@ -14,6 +14,7 @@ import {
   ChevronUp,
   Save,
 } from "lucide-react";
+import { usePinterestEnvironment } from "@/contexts/PinterestEnvironmentContext";
 import {
   Sheet,
   SheetContent,
@@ -230,15 +231,19 @@ export function PostEditorSheet({
   // Draft content = status is "draft" (scheduled but not yet set to post)
   const isDraftContent = existingItem?.status === "draft";
 
-  // Check social connections
+  // Get Pinterest environment setting
+  const { environment: pinterestEnvironment } = usePinterestEnvironment();
+  
+  // Check social connections - check for both pinterest and pinterest_sandbox
   const { data: pinterestConnection } = useQuery({
-    queryKey: ["pinterest-connection", user?.id],
+    queryKey: ["pinterest-connection", user?.id, pinterestEnvironment],
     queryFn: async () => {
+      const expectedPlatform = pinterestEnvironment === 'sandbox' ? 'pinterest_sandbox' : 'pinterest';
       const { data, error } = await supabase
         .from("social_connections")
-        .select("id, account_name")
+        .select("id, account_name, platform")
         .eq("user_id", user!.id)
-        .eq("platform", "pinterest")
+        .eq("platform", expectedPlatform)
         .single();
       if (error) return null;
       return data;
@@ -932,6 +937,11 @@ export function PostEditorSheet({
       }
       if (!formData.pinterest_board_id) {
         errors.push("Please select a Pinterest board");
+      }
+      // Check if Pinterest connection matches the environment setting
+      if (!pinterestConnection) {
+        const expectedMode = pinterestEnvironment === 'sandbox' ? 'Sandbox' : 'Production';
+        errors.push(`Pinterest is set to ${expectedMode} mode but no ${expectedMode.toLowerCase()} account is connected. Please reconnect Pinterest in Settings.`);
       }
     } else if (platform === "instagram") {
       if (!formData.media_url) {
