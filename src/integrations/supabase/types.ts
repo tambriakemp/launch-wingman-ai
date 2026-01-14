@@ -1926,6 +1926,39 @@ export type Database = {
         }
         Relationships: []
       }
+      surecontact_webhook_logs: {
+        Row: {
+          created_at: string
+          email: string
+          error_message: string | null
+          event_type: string
+          id: string
+          response_status: number | null
+          subscription_status: string | null
+          success: boolean
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          response_status?: number | null
+          subscription_status?: string | null
+          success?: boolean
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          response_status?: number | null
+          subscription_status?: string | null
+          success?: boolean
+        }
+        Relationships: []
+      }
       task_video_instructions: {
         Row: {
           created_at: string | null
