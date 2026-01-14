@@ -1,16 +1,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { FlaskConical, AlertTriangle } from "lucide-react";
+import { FlaskConical, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { usePinterestEnvironment } from "@/contexts/PinterestEnvironmentContext";
+import { usePinterestEnvironmentSetting, PinterestEnvironment } from "@/hooks/usePinterestEnvironmentSetting";
 
 export function PinterestEnvironmentToggle() {
-  const { environment, setEnvironment } = usePinterestEnvironment();
+  const { environment, setEnvironment, isLoading, isSaving } = usePinterestEnvironmentSetting();
   const isSandbox = environment === "sandbox";
 
   const handleToggle = (checked: boolean) => {
-    const newEnv = checked ? "sandbox" : "production";
+    const newEnv: PinterestEnvironment = checked ? "sandbox" : "production";
     setEnvironment(newEnv);
     toast.success(`Pinterest environment switched to ${newEnv}`, {
       description: checked
@@ -18,6 +18,27 @@ export function PinterestEnvironmentToggle() {
         : "You'll now use Pinterest's production API",
     });
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FlaskConical className="h-5 w-5" />
+                Pinterest Environment
+              </CardTitle>
+              <CardDescription>
+                Switch between production and sandbox Pinterest API
+              </CardDescription>
+            </div>
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -39,6 +60,7 @@ export function PinterestEnvironmentToggle() {
             <Switch
               checked={isSandbox}
               onCheckedChange={handleToggle}
+              disabled={isSaving}
             />
           </div>
         </div>

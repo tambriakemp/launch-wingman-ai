@@ -16,6 +16,16 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
+    // Pinterest uses SAME credentials for both production and sandbox
+    // The environment difference is which API endpoint you call, not the credentials
+    const PINTEREST_APP_ID = Deno.env.get('PINTEREST_APP_ID');
+    const PINTEREST_APP_SECRET = Deno.env.get('PINTEREST_APP_SECRET');
+    
+    if (!PINTEREST_APP_ID || !PINTEREST_APP_SECRET) {
+      console.error('[PINTEREST-AUTH-START] Missing Pinterest credentials');
+      throw new Error('Pinterest App ID or Secret not configured');
+    }
+    
     // SECURITY: Validate the user's JWT token instead of accepting user_id from client
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -51,26 +61,13 @@ serve(async (req) => {
 
     console.log('[PINTEREST-AUTH-START] Starting OAuth for user:', user.id, 'environment:', environment);
 
-    // Get appropriate credentials based on environment
-    const PINTEREST_APP_ID = environment === 'sandbox' 
-      ? Deno.env.get('PINTEREST_SANDBOX_APP_ID') 
-      : Deno.env.get('PINTEREST_APP_ID');
-    const PINTEREST_APP_SECRET = environment === 'sandbox'
-      ? Deno.env.get('PINTEREST_SANDBOX_APP_SECRET')
-      : Deno.env.get('PINTEREST_APP_SECRET');
-    
-    if (!PINTEREST_APP_ID) {
-      console.error('[PINTEREST-AUTH-START] Missing Pinterest credentials for environment:', environment);
-      throw new Error(`Pinterest ${environment} App ID not configured`);
-    }
-
     // Build state parameter with authenticated user info and environment
     const state = btoa(JSON.stringify({ user_id: user.id, redirect_url, environment }));
     
     // Pinterest OAuth scopes - need boards:write to create pins on boards, user_accounts:read for profile info
     const scopes = 'boards:read,boards:write,pins:read,pins:write,user_accounts:read';
     
-    // Pinterest OAuth URL (same for both production and sandbox - environment is determined by credentials)
+    // Pinterest OAuth URL (same for both production and sandbox - environment is determined by API calls later)
     const redirectUri = `${SUPABASE_URL}/functions/v1/pinterest-auth-callback`;
     const authUrl = new URL('https://www.pinterest.com/oauth/');
     authUrl.searchParams.set('client_id', PINTEREST_APP_ID);

@@ -14,7 +14,7 @@ import {
   ChevronUp,
   Save,
 } from "lucide-react";
-import { usePinterestEnvironment } from "@/contexts/PinterestEnvironmentContext";
+import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
 import {
   Sheet,
   SheetContent,
@@ -232,7 +232,7 @@ export function PostEditorSheet({
   const isDraftContent = existingItem?.status === "draft";
 
   // Get Pinterest environment setting
-  const { environment: pinterestEnvironment } = usePinterestEnvironment();
+  const { environment: pinterestEnvironment } = usePinterestEnvironmentSetting();
   
   // Check social connections - check for both pinterest and pinterest_sandbox (show if ANY exists)
   const { data: pinterestConnection } = useQuery({

@@ -38,17 +38,13 @@ serve(async (req) => {
     
     console.log('[PINTEREST-AUTH-CALLBACK] Processing for user:', user_id, 'environment:', environment);
 
-    // Exchange code for tokens - use sandbox credentials if in sandbox mode
-    const PINTEREST_APP_ID = isSandbox 
-      ? Deno.env.get('PINTEREST_SANDBOX_APP_ID')
-      : Deno.env.get('PINTEREST_APP_ID');
-    const PINTEREST_APP_SECRET = isSandbox
-      ? Deno.env.get('PINTEREST_SANDBOX_APP_SECRET')
-      : Deno.env.get('PINTEREST_APP_SECRET');
+    // Pinterest uses SAME credentials for both production and sandbox
+    const PINTEREST_APP_ID = Deno.env.get('PINTEREST_APP_ID');
+    const PINTEREST_APP_SECRET = Deno.env.get('PINTEREST_APP_SECRET');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 
     if (!PINTEREST_APP_ID || !PINTEREST_APP_SECRET) {
-      console.error('[PINTEREST-AUTH-CALLBACK] Missing Pinterest credentials for environment:', environment);
+      console.error('[PINTEREST-AUTH-CALLBACK] Missing Pinterest credentials');
       return Response.redirect(`${APP_URL}/settings?pinterest_error=config_error`);
     }
 
@@ -57,8 +53,10 @@ serve(async (req) => {
     // Create Basic auth header
     const credentials = btoa(`${PINTEREST_APP_ID}:${PINTEREST_APP_SECRET}`);
     
-    // Token exchange ALWAYS uses production API (even for sandbox apps)
-    // Pinterest's OAuth tokens are issued from production - sandbox API is only for subsequent calls
+    // Token exchange ALWAYS uses production API endpoint
+    // Pinterest's OAuth tokens are issued from production - sandbox API is only for subsequent API calls
+    console.log('[PINTEREST-AUTH-CALLBACK] Exchanging code at production token endpoint');
+    
     const tokenResponse = await fetch(`https://api.pinterest.com/v5/oauth/token`, {
       method: 'POST',
       headers: {
@@ -74,7 +72,7 @@ serve(async (req) => {
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error('[PINTEREST-AUTH-CALLBACK] Token exchange failed:', errorText);
+      console.error('[PINTEREST-AUTH-CALLBACK] Token exchange failed:', tokenResponse.status, errorText);
       return Response.redirect(`${APP_URL}/settings?pinterest_error=token_exchange_failed`);
     }
 
@@ -83,6 +81,8 @@ serve(async (req) => {
 
     // Use sandbox API for user info and subsequent API calls if in sandbox mode
     const apiBase = isSandbox ? 'https://api-sandbox.pinterest.com' : 'https://api.pinterest.com';
+    
+    console.log('[PINTEREST-AUTH-CALLBACK] Fetching user info from:', apiBase);
     
     const userResponse = await fetch(`${apiBase}/v5/user_account`, {
       headers: {
