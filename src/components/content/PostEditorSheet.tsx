@@ -724,8 +724,8 @@ export function PostEditorSheet({
         body: {
           title: title,
           description: content,
-          imageUrl: formData.media_url,
-          boardId: formData.pinterest_board_id,
+          media_url: formData.media_url,
+          board_id: formData.pinterest_board_id,
           link: formData.link_url || undefined,
         },
       });

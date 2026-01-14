@@ -201,8 +201,8 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('[POST-TO-PINTEREST] Error occurred');
     const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[POST-TO-PINTEREST] Error:', message);
     return new Response(
       JSON.stringify({ error: message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
