@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTikTokEnvironment } from "@/contexts/TikTokEnvironmentContext";
-import { usePinterestEnvironment } from "@/contexts/PinterestEnvironmentContext";
+import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -73,7 +73,7 @@ interface SocialConnection {
 const Settings = () => {
   const { user, isSubscribed, subscriptionEnd, checkSubscription } = useAuth();
   const { environment: tiktokEnvironment } = useTikTokEnvironment();
-  const { environment: pinterestEnvironment } = usePinterestEnvironment();
+  const { environment: pinterestEnvironment } = usePinterestEnvironmentSetting();
   const { hasAdminAccess, tier } = useFeatureAccess();
   const hasFullAccess = isSubscribed || hasAdminAccess;
   const [isCheckingOut, setIsCheckingOut] = useState(false);
