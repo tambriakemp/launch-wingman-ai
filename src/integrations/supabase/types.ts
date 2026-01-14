@@ -2299,35 +2299,12 @@ export type Database = {
           account_name: string | null
           created_at: string | null
           id: string | null
+          page_id: string | null
           platform: string | null
           refresh_token: string | null
           token_expires_at: string | null
           updated_at: string | null
           user_id: string | null
-        }
-        Insert: {
-          access_token?: never
-          account_id?: string | null
-          account_name?: string | null
-          created_at?: string | null
-          id?: string | null
-          platform?: string | null
-          refresh_token?: never
-          token_expires_at?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          access_token?: never
-          account_id?: string | null
-          account_name?: string | null
-          created_at?: string | null
-          id?: string | null
-          platform?: string | null
-          refresh_token?: never
-          token_expires_at?: string | null
-          updated_at?: string | null
-          user_id?: string | null
         }
         Relationships: []
       }
@@ -2335,6 +2312,22 @@ export type Database = {
     Functions: {
       decrypt_token: { Args: { encrypted_token: string }; Returns: string }
       encrypt_token: { Args: { plain_token: string }; Returns: string }
+      get_user_social_connections: {
+        Args: never
+        Returns: {
+          access_token: string
+          account_id: string
+          account_name: string
+          created_at: string
+          id: string
+          page_id: string
+          platform: string
+          refresh_token: string
+          token_expires_at: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
