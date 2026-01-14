@@ -56,8 +56,8 @@ serve(async (req) => {
     // Build state parameter with authenticated user info
     const state = btoa(JSON.stringify({ user_id: user.id, redirect_url }));
     
-    // Pinterest OAuth scopes - need boards:write to create pins on boards
-    const scopes = 'boards:read,boards:write,pins:read,pins:write';
+    // Pinterest OAuth scopes - need boards:write to create pins on boards, user_accounts:read for profile info
+    const scopes = 'boards:read,boards:write,pins:read,pins:write,user_accounts:read';
     
     // Pinterest OAuth URL
     const redirectUri = `${SUPABASE_URL}/functions/v1/pinterest-auth-callback`;

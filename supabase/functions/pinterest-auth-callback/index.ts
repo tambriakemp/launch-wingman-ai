@@ -85,10 +85,14 @@ serve(async (req) => {
     
     if (userResponse.ok) {
       const userData = await userResponse.json();
+      console.log('[PINTEREST-AUTH-CALLBACK] User data received:', JSON.stringify(userData));
       accountName = userData.username || userData.business_name || 'Pinterest User';
       accountId = userData.id || '';
       avatarUrl = userData.profile_image || null;
       console.log('[PINTEREST-AUTH-CALLBACK] Got user info:', accountName, avatarUrl ? 'with avatar' : 'no avatar');
+    } else {
+      const errorText = await userResponse.text();
+      console.error('[PINTEREST-AUTH-CALLBACK] Failed to get user info:', userResponse.status, errorText);
     }
 
     // Store tokens in database with encryption
