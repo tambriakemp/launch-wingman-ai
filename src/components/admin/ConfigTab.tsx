@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Send, Loader2, Users, FlaskConical, RefreshCw, UserCheck, Settings, Tag, List, FileText } from 'lucide-react';
+import { Loader2, Users, FlaskConical, RefreshCw, UserCheck, Settings, Tag, List, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { TikTokEnvironmentToggle } from './TikTokEnvironmentToggle';
@@ -18,20 +18,10 @@ interface SureContactConfigItem {
 
 export function ConfigTab() {
   const { user } = useAuth();
-  const [syncLoading, setSyncLoading] = useState(false);
-  const [testLoading, setTestLoading] = useState(false);
   const [sureContactSyncLoading, setSureContactSyncLoading] = useState(false);
   const [sureContactTestLoading, setSureContactTestLoading] = useState(false);
   const [sureContactConfigLoading, setSureContactConfigLoading] = useState(false);
   const [sureContactConfig, setSureContactConfig] = useState<SureContactConfigItem[]>([]);
-  const [lastSyncResult, setLastSyncResult] = useState<{
-    contacts_synced: number;
-    success_count: number;
-  } | null>(null);
-  const [lastTestResult, setLastTestResult] = useState<{
-    success: boolean;
-    message: string;
-  } | null>(null);
   const [sureContactSyncResult, setSureContactSyncResult] = useState<{
     total: number;
     success_count: number;
@@ -74,72 +64,6 @@ export function ConfigTab() {
       toast.error('Failed to fetch SureContact configuration');
     } finally {
       setSureContactConfigLoading(false);
-    }
-  };
-
-  const handleSyncToMarketing = async () => {
-    setSyncLoading(true);
-    setLastSyncResult(null);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('marketing-webhook', {
-        body: { action: 'sync_all', event_type: 'manual_sync' },
-      });
-
-      if (error) throw error;
-
-      const successCount = data.results?.filter((r: { success: boolean }) => r.success).length || 0;
-      setLastSyncResult({
-        contacts_synced: data.contacts_synced,
-        success_count: successCount,
-      });
-
-      if (successCount === data.contacts_synced) {
-        toast.success(`Successfully synced ${data.contacts_synced} contacts to marketing platform`);
-      } else {
-        toast.warning(`Synced ${successCount} of ${data.contacts_synced} contacts. Some failed.`);
-      }
-    } catch (error) {
-      console.error('Marketing sync error:', error);
-      toast.error('Failed to sync contacts to marketing platform');
-    } finally {
-      setSyncLoading(false);
-    }
-  };
-
-  const handleTestWebhook = async () => {
-    if (!user?.id) {
-      toast.error('No user session found');
-      return;
-    }
-
-    setTestLoading(true);
-    setLastTestResult(null);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('marketing-webhook', {
-        body: { action: 'sync_user', user_id: user.id, event_type: 'test_webhook' },
-      });
-
-      if (error) throw error;
-
-      const result = data.results?.[0];
-      if (result?.success) {
-        setLastTestResult({ success: true, message: 'Test webhook sent successfully!' });
-        toast.success('Test webhook sent successfully!');
-      } else {
-        setLastTestResult({ 
-          success: false, 
-          message: result?.error || `HTTP ${result?.status}: ${result?.response || 'Unknown error'}` 
-        });
-        toast.error('Test webhook failed - check configuration');
-      }
-    } catch (error) {
-      console.error('Test webhook error:', error);
-      setLastTestResult({ success: false, message: 'Failed to send test webhook' });
-      toast.error('Failed to send test webhook');
-    } finally {
-      setTestLoading(false);
     }
   };
 
@@ -215,76 +139,6 @@ export function ConfigTab() {
     <div className="space-y-6">
       {/* TikTok Environment Toggle */}
       <TikTokEnvironmentToggle />
-
-      {/* Marketing Sync Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Send className="h-5 w-5" />
-            Marketing Platform Sync
-          </CardTitle>
-          <CardDescription>
-            Send contact data (name, email, membership, dates) to your email marketing platform
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 bg-muted/50 rounded-lg">
-            <Button
-              variant="outline"
-              onClick={handleTestWebhook}
-              disabled={testLoading}
-              className="gap-2"
-            >
-              {testLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Testing...
-                </>
-              ) : (
-                <>
-                  <FlaskConical className="h-4 w-4" />
-                  Test Webhook
-                </>
-              )}
-            </Button>
-            {lastTestResult && (
-              <p className={`text-sm ${lastTestResult.success ? 'text-green-600' : 'text-destructive'}`}>
-                {lastTestResult.message}
-              </p>
-            )}
-            {!lastTestResult && (
-              <p className="text-sm text-muted-foreground">
-                Sends your admin account as a test contact
-              </p>
-            )}
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <Button
-              onClick={handleSyncToMarketing}
-              disabled={syncLoading}
-              className="gap-2"
-            >
-              {syncLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <Users className="h-4 w-4" />
-                  Sync All Contacts
-                </>
-              )}
-            </Button>
-            {lastSyncResult && (
-              <p className="text-sm text-muted-foreground">
-                Last sync: {lastSyncResult.success_count}/{lastSyncResult.contacts_synced} contacts synced successfully
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* SureContact Configuration Card */}
       <Card>

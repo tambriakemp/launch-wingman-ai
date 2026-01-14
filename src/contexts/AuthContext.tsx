@@ -74,21 +74,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       console.log(`[AuthContext] Admin notified of ${type} for ${userEmail}`);
 
-      // Trigger marketing webhook for subscription changes
-      if (userId) {
-        const eventType = type === 'pro_signup' ? 'subscription_started' : 'subscription_cancelled';
-        supabase.functions.invoke('marketing-webhook', {
-          body: {
-            action: 'sync_user',
-            user_id: userId,
-            event_type: eventType,
-          },
-        }).then(() => {
-          console.log(`[AuthContext] Marketing webhook triggered: ${eventType}`);
-        }).catch((err) => {
-          console.error('[AuthContext] Marketing webhook failed:', err);
-        });
-      }
     } catch (error) {
       console.error('[AuthContext] Failed to notify admin:', error);
     }
@@ -244,16 +229,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       }).catch((err) => console.error("Failed to send welcome email:", err));
 
-      // Trigger marketing webhook for new signup (fire and forget)
-      supabase.functions.invoke("marketing-webhook", {
-        body: {
-          action: "sync_user",
-          user_id: signUpData.user.id,
-          event_type: "user_signup",
-        },
-      }).then(() => {
-        console.log("[AuthContext] Marketing webhook triggered: user_signup");
-      }).catch((err) => console.error("Failed to trigger marketing webhook:", err));
       
       // Only navigate if not explicitly skipped (e.g., for Pro checkout flow)
       if (!skipNavigation) {

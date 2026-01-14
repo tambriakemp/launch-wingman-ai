@@ -42,30 +42,6 @@ async function triggerSureContactSync(email: string, eventType: string) {
   }
 }
 
-// Trigger Marketing webhook sync in background  
-async function triggerMarketingSync(userId: string, eventType: string) {
-  const baseUrl = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  
-  try {
-    const response = await fetch(`${baseUrl}/functions/v1/marketing-webhook`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${serviceKey}`,
-      },
-      body: JSON.stringify({
-        action: "sync_user",
-        user_id: userId,
-        event_type: eventType,
-      }),
-    });
-    
-    logStep("Marketing sync triggered", { userId, eventType, status: response.status });
-  } catch (error) {
-    logStep("Marketing sync error", { userId, eventType, error: String(error) });
-  }
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -123,7 +99,6 @@ serve(async (req) => {
     });
 
     let customerEmail: string | null = null;
-    let userId: string | null = null;
     let eventType: string | null = null;
 
     switch (event.type) {
@@ -206,22 +181,12 @@ serve(async (req) => {
         logStep("Unhandled event type", { type: event.type });
     }
 
-    // If we have an email and event type, trigger syncs in background
+    // If we have an email and event type, trigger SureContact sync in background
     if (customerEmail && eventType) {
-      // Find user by email to get user_id for marketing webhook
-      const { data: authUsers } = await supabaseClient.auth.admin.listUsers();
-      const user = authUsers?.users?.find(u => u.email === customerEmail);
-      userId = user?.id || null;
-
-      // Use background tasks for the sync operations
-      EdgeRuntime.waitUntil(
-        Promise.all([
-          triggerSureContactSync(customerEmail, eventType),
-          userId ? triggerMarketingSync(userId, eventType) : Promise.resolve(),
-        ])
-      );
+      // Use background tasks for the sync operation
+      EdgeRuntime.waitUntil(triggerSureContactSync(customerEmail, eventType));
       
-      logStep("Background syncs queued", { customerEmail, userId, eventType });
+      logStep("Background sync queued", { customerEmail, eventType });
     }
 
     // Update webhook log status

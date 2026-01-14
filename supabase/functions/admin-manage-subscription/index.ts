@@ -81,20 +81,6 @@ serve(async (req) => {
           const baseUrl = Deno.env.get("SUPABASE_URL");
           const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
           
-          // Trigger marketing webhook
-          await fetch(`${baseUrl}/functions/v1/marketing-webhook`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${serviceKey}`,
-            },
-            body: JSON.stringify({
-              action: "sync_user",
-              user_id: targetUser.id,
-              event_type: "subscription_cancelled",
-            }),
-          });
-          logStep("Marketing webhook triggered for subscription_cancelled", { userId: targetUser.id });
 
           // Trigger SureContact webhook
           await fetch(`${baseUrl}/functions/v1/surecontact-webhook`, {
@@ -191,20 +177,6 @@ serve(async (req) => {
         const baseUrl = Deno.env.get("SUPABASE_URL");
         const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
         
-        // Trigger marketing webhook
-        await fetch(`${baseUrl}/functions/v1/marketing-webhook`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${serviceKey}`,
-          },
-          body: JSON.stringify({
-            action: "sync_user",
-            user_id: targetUser.id,
-            event_type: "subscription_started",
-          }),
-        });
-        logStep("Marketing webhook triggered for subscription_started", { userId: targetUser.id });
 
         // Trigger SureContact webhook
         await fetch(`${baseUrl}/functions/v1/surecontact-webhook`, {
