@@ -15,18 +15,17 @@ async function refreshPinterestToken(
   currentRefreshToken: string, 
   isSandbox: boolean
 ) {
-  const PINTEREST_APP_ID = isSandbox 
-    ? Deno.env.get('PINTEREST_SANDBOX_APP_ID')
-    : Deno.env.get('PINTEREST_APP_ID');
-  const PINTEREST_APP_SECRET = isSandbox
-    ? Deno.env.get('PINTEREST_SANDBOX_APP_SECRET')
-    : Deno.env.get('PINTEREST_APP_SECRET');
+  // Pinterest uses SAME credentials for both production and sandbox
+  const PINTEREST_APP_ID = Deno.env.get('PINTEREST_APP_ID');
+  const PINTEREST_APP_SECRET = Deno.env.get('PINTEREST_APP_SECRET');
 
   const credentials = btoa(`${PINTEREST_APP_ID}:${PINTEREST_APP_SECRET}`);
-  const apiBase = isSandbox ? 'https://api-sandbox.pinterest.com' : 'https://api.pinterest.com';
   const platform = isSandbox ? 'pinterest_sandbox' : 'pinterest';
   
-  const response = await fetch(`${apiBase}/v5/oauth/token`, {
+  // Token refresh ALWAYS uses production endpoint
+  console.log('[POST-TO-PINTEREST] Refreshing token at production endpoint');
+  
+  const response = await fetch(`https://api.pinterest.com/v5/oauth/token`, {
     method: 'POST',
     headers: {
       'Authorization': `Basic ${credentials}`,
@@ -39,10 +38,13 @@ async function refreshPinterestToken(
   });
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('[POST-TO-PINTEREST] Token refresh failed:', response.status, errorText);
     return null;
   }
 
   const tokenData = await response.json();
+  console.log('[POST-TO-PINTEREST] Token refreshed successfully');
   
   const expiresAt = tokenData.expires_in 
     ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
@@ -96,7 +98,8 @@ serve(async (req) => {
       throw new Error('Invalid token');
     }
 
-    const { board_id, title, description, media_url, link } = await req.json();
+    // Parse request body with environment parameter
+    const { board_id, title, description, media_url, link, environment = 'production' } = await req.json();
 
     if (!board_id) {
       throw new Error('Board ID is required');
@@ -106,26 +109,26 @@ serve(async (req) => {
       throw new Error('Media URL is required for Pinterest pins');
     }
 
-    console.log('[POST-TO-PINTEREST] Creating pin for user:', sanitizeId(user.id));
+    const isSandbox = environment === 'sandbox';
+    const platform = isSandbox ? 'pinterest_sandbox' : 'pinterest';
+    const apiBase = isSandbox ? 'https://api-sandbox.pinterest.com' : 'https://api.pinterest.com';
 
-    // Get Pinterest connection from social_connections table (check both production and sandbox)
-    const { data: connections, error: connError } = await supabase
+    console.log('[POST-TO-PINTEREST] Creating pin for user:', sanitizeId(user.id), 'environment:', environment);
+
+    // Get Pinterest connection for the specified environment
+    const { data: connection, error: connError } = await supabase
       .from('social_connections')
       .select('platform, access_token, refresh_token, token_expires_at')
       .eq('user_id', user.id)
-      .in('platform', ['pinterest', 'pinterest_sandbox']);
+      .eq('platform', platform)
+      .single();
 
-    if (connError || !connections || connections.length === 0) {
-      console.error('[POST-TO-PINTEREST] Connection error:', connError);
-      throw new Error('Pinterest not connected');
+    if (connError || !connection) {
+      console.error('[POST-TO-PINTEREST] Connection not found for platform:', platform);
+      throw new Error(`Pinterest (${environment}) not connected. Go to Settings and connect Pinterest in ${environment} mode.`);
     }
 
-    // Prefer sandbox if available, otherwise use production
-    const connection = connections.find(c => c.platform === 'pinterest_sandbox') || connections[0];
-    const isSandbox = connection.platform === 'pinterest_sandbox';
-    const apiBase = isSandbox ? 'https://api-sandbox.pinterest.com' : 'https://api.pinterest.com';
-
-    console.log('[POST-TO-PINTEREST] Using', isSandbox ? 'sandbox' : 'production', 'API');
+    console.log('[POST-TO-PINTEREST] Using', environment, 'API at', apiBase);
 
     // Decrypt the access token
     const { data: decryptedAccessToken, error: decryptError } = await supabase.rpc('decrypt_token', { 
