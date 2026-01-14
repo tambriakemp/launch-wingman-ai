@@ -234,9 +234,25 @@ export function PostEditorSheet({
   // Get Pinterest environment setting
   const { environment: pinterestEnvironment } = usePinterestEnvironment();
   
-  // Check social connections - check for both pinterest and pinterest_sandbox
+  // Check social connections - check for both pinterest and pinterest_sandbox (show if ANY exists)
   const { data: pinterestConnection } = useQuery({
-    queryKey: ["pinterest-connection", user?.id, pinterestEnvironment],
+    queryKey: ["pinterest-connection", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("social_connections")
+        .select("id, account_name, platform")
+        .eq("user_id", user!.id)
+        .in("platform", ["pinterest", "pinterest_sandbox"])
+        .limit(1);
+      if (error || !data || data.length === 0) return null;
+      return data[0];
+    },
+    enabled: !!user && open,
+  });
+
+  // Check for environment-specific Pinterest connection (for validation)
+  const { data: pinterestEnvConnection } = useQuery({
+    queryKey: ["pinterest-env-connection", user?.id, pinterestEnvironment],
     queryFn: async () => {
       const expectedPlatform = pinterestEnvironment === 'sandbox' ? 'pinterest_sandbox' : 'pinterest';
       const { data, error } = await supabase
@@ -939,9 +955,10 @@ export function PostEditorSheet({
         errors.push("Please select a Pinterest board");
       }
       // Check if Pinterest connection matches the environment setting
-      if (!pinterestConnection) {
+      if (!pinterestEnvConnection) {
         const expectedMode = pinterestEnvironment === 'sandbox' ? 'Sandbox' : 'Production';
-        errors.push(`Pinterest is set to ${expectedMode} mode but no ${expectedMode.toLowerCase()} account is connected. Please reconnect Pinterest in Settings.`);
+        const currentMode = pinterestConnection?.platform === 'pinterest_sandbox' ? 'sandbox' : 'production';
+        errors.push(`Pinterest is set to ${expectedMode} mode but you're connected with a ${currentMode} account. Please reconnect Pinterest in Settings.`);
       }
     } else if (platform === "instagram") {
       if (!formData.media_url) {

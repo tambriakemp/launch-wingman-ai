@@ -81,6 +81,10 @@ const isPlatformConnected = (platformId: string, connections: Connection[]): boo
     if (platformId === "tiktok") {
       return conn.platform === "tiktok" || conn.platform === "tiktok_sandbox";
     }
+    // Handle Pinterest which can be "pinterest" or "pinterest_sandbox"
+    if (platformId === "pinterest") {
+      return conn.platform === "pinterest" || conn.platform === "pinterest_sandbox";
+    }
     return conn.platform === platformId;
   });
 };
