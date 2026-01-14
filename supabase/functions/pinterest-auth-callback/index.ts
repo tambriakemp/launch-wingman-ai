@@ -57,10 +57,9 @@ serve(async (req) => {
     // Create Basic auth header
     const credentials = btoa(`${PINTEREST_APP_ID}:${PINTEREST_APP_SECRET}`);
     
-    // Use sandbox API for token exchange if in sandbox mode
-    const tokenApiBase = isSandbox ? 'https://api-sandbox.pinterest.com' : 'https://api.pinterest.com';
-    
-    const tokenResponse = await fetch(`${tokenApiBase}/v5/oauth/token`, {
+    // Token exchange ALWAYS uses production API (even for sandbox apps)
+    // Pinterest's OAuth tokens are issued from production - sandbox API is only for subsequent calls
+    const tokenResponse = await fetch(`https://api.pinterest.com/v5/oauth/token`, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${credentials}`,
@@ -82,8 +81,10 @@ serve(async (req) => {
     const tokenData = await tokenResponse.json();
     console.log('[PINTEREST-AUTH-CALLBACK] Token exchange successful');
 
-    // Get Pinterest user info using appropriate API
-    const userResponse = await fetch(`${tokenApiBase}/v5/user_account`, {
+    // Use sandbox API for user info and subsequent API calls if in sandbox mode
+    const apiBase = isSandbox ? 'https://api-sandbox.pinterest.com' : 'https://api.pinterest.com';
+    
+    const userResponse = await fetch(`${apiBase}/v5/user_account`, {
       headers: {
         'Authorization': `Bearer ${tokenData.access_token}`,
       },
