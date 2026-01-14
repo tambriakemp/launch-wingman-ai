@@ -9,13 +9,24 @@ const corsHeaders = {
 // Sanitize ID for logging (show only first 8 chars)
 const sanitizeId = (id: string) => id ? `${id.substring(0, 8)}...` : 'unknown';
 
-async function refreshPinterestToken(supabase: any, userId: string, currentRefreshToken: string) {
-  const PINTEREST_APP_ID = Deno.env.get('PINTEREST_APP_ID');
-  const PINTEREST_APP_SECRET = Deno.env.get('PINTEREST_APP_SECRET');
+async function refreshPinterestToken(
+  supabase: any, 
+  userId: string, 
+  currentRefreshToken: string, 
+  isSandbox: boolean
+) {
+  const PINTEREST_APP_ID = isSandbox 
+    ? Deno.env.get('PINTEREST_SANDBOX_APP_ID')
+    : Deno.env.get('PINTEREST_APP_ID');
+  const PINTEREST_APP_SECRET = isSandbox
+    ? Deno.env.get('PINTEREST_SANDBOX_APP_SECRET')
+    : Deno.env.get('PINTEREST_APP_SECRET');
 
   const credentials = btoa(`${PINTEREST_APP_ID}:${PINTEREST_APP_SECRET}`);
+  const apiBase = isSandbox ? 'https://api-sandbox.pinterest.com' : 'https://api.pinterest.com';
+  const platform = isSandbox ? 'pinterest_sandbox' : 'pinterest';
   
-  const response = await fetch('https://api.pinterest.com/v5/oauth/token', {
+  const response = await fetch(`${apiBase}/v5/oauth/token`, {
     method: 'POST',
     headers: {
       'Authorization': `Basic ${credentials}`,
@@ -55,7 +66,7 @@ async function refreshPinterestToken(supabase: any, userId: string, currentRefre
       updated_at: new Date().toISOString(),
     })
     .eq('user_id', userId)
-    .eq('platform', 'pinterest');
+    .eq('platform', platform);
 
   return tokenData.access_token;
 }
@@ -97,18 +108,24 @@ serve(async (req) => {
 
     console.log('[POST-TO-PINTEREST] Creating pin for user:', sanitizeId(user.id));
 
-    // Get Pinterest connection from social_connections table (encrypted)
-    const { data: connection, error: connError } = await supabase
+    // Get Pinterest connection from social_connections table (check both production and sandbox)
+    const { data: connections, error: connError } = await supabase
       .from('social_connections')
-      .select('access_token, refresh_token, token_expires_at')
+      .select('platform, access_token, refresh_token, token_expires_at')
       .eq('user_id', user.id)
-      .eq('platform', 'pinterest')
-      .single();
+      .in('platform', ['pinterest', 'pinterest_sandbox']);
 
-    if (connError || !connection) {
+    if (connError || !connections || connections.length === 0) {
       console.error('[POST-TO-PINTEREST] Connection error:', connError);
       throw new Error('Pinterest not connected');
     }
+
+    // Prefer sandbox if available, otherwise use production
+    const connection = connections.find(c => c.platform === 'pinterest_sandbox') || connections[0];
+    const isSandbox = connection.platform === 'pinterest_sandbox';
+    const apiBase = isSandbox ? 'https://api-sandbox.pinterest.com' : 'https://api.pinterest.com';
+
+    console.log('[POST-TO-PINTEREST] Using', isSandbox ? 'sandbox' : 'production', 'API');
 
     // Decrypt the access token
     const { data: decryptedAccessToken, error: decryptError } = await supabase.rpc('decrypt_token', { 
@@ -135,7 +152,7 @@ serve(async (req) => {
       });
       
       if (decryptedRefreshToken) {
-        const newToken = await refreshPinterestToken(supabase, user.id, decryptedRefreshToken);
+        const newToken = await refreshPinterestToken(supabase, user.id, decryptedRefreshToken, isSandbox);
         if (newToken) {
           accessToken = newToken;
         } else {
@@ -165,9 +182,9 @@ serve(async (req) => {
       pinData.link = link;
     }
 
-    console.log('[POST-TO-PINTEREST] Creating pin');
+    console.log('[POST-TO-PINTEREST] Creating pin via', apiBase);
 
-    const pinResponse = await fetch('https://api.pinterest.com/v5/pins', {
+    const pinResponse = await fetch(`${apiBase}/v5/pins`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -178,7 +195,7 @@ serve(async (req) => {
 
     if (!pinResponse.ok) {
       const errorText = await pinResponse.text();
-      console.error('[POST-TO-PINTEREST] API error:', pinResponse.status);
+      console.error('[POST-TO-PINTEREST] API error:', pinResponse.status, errorText);
       
       // Check if it's an auth error that might need reconnection
       if (pinResponse.status === 401) {

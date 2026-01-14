@@ -32,16 +32,23 @@ serve(async (req) => {
       return Response.redirect(`${APP_URL}/settings?pinterest_error=invalid_state`);
     }
 
-    const { user_id, redirect_url } = stateData;
-    console.log('[PINTEREST-AUTH-CALLBACK] Processing for user:', user_id);
+    const { user_id, redirect_url, environment = 'production' } = stateData;
+    const isSandbox = environment === 'sandbox';
+    const platform = isSandbox ? 'pinterest_sandbox' : 'pinterest';
+    
+    console.log('[PINTEREST-AUTH-CALLBACK] Processing for user:', user_id, 'environment:', environment);
 
-    // Exchange code for tokens
-    const PINTEREST_APP_ID = Deno.env.get('PINTEREST_APP_ID');
-    const PINTEREST_APP_SECRET = Deno.env.get('PINTEREST_APP_SECRET');
+    // Exchange code for tokens - use sandbox credentials if in sandbox mode
+    const PINTEREST_APP_ID = isSandbox 
+      ? Deno.env.get('PINTEREST_SANDBOX_APP_ID')
+      : Deno.env.get('PINTEREST_APP_ID');
+    const PINTEREST_APP_SECRET = isSandbox
+      ? Deno.env.get('PINTEREST_SANDBOX_APP_SECRET')
+      : Deno.env.get('PINTEREST_APP_SECRET');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 
     if (!PINTEREST_APP_ID || !PINTEREST_APP_SECRET) {
-      console.error('[PINTEREST-AUTH-CALLBACK] Missing Pinterest credentials');
+      console.error('[PINTEREST-AUTH-CALLBACK] Missing Pinterest credentials for environment:', environment);
       return Response.redirect(`${APP_URL}/settings?pinterest_error=config_error`);
     }
 
@@ -50,7 +57,10 @@ serve(async (req) => {
     // Create Basic auth header
     const credentials = btoa(`${PINTEREST_APP_ID}:${PINTEREST_APP_SECRET}`);
     
-    const tokenResponse = await fetch('https://api.pinterest.com/v5/oauth/token', {
+    // Use sandbox API for token exchange if in sandbox mode
+    const tokenApiBase = isSandbox ? 'https://api-sandbox.pinterest.com' : 'https://api.pinterest.com';
+    
+    const tokenResponse = await fetch(`${tokenApiBase}/v5/oauth/token`, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${credentials}`,
@@ -72,8 +82,8 @@ serve(async (req) => {
     const tokenData = await tokenResponse.json();
     console.log('[PINTEREST-AUTH-CALLBACK] Token exchange successful');
 
-    // Get Pinterest user info
-    const userResponse = await fetch('https://api.pinterest.com/v5/user_account', {
+    // Get Pinterest user info using appropriate API
+    const userResponse = await fetch(`${tokenApiBase}/v5/user_account`, {
       headers: {
         'Authorization': `Bearer ${tokenData.access_token}`,
       },
@@ -129,11 +139,12 @@ serve(async (req) => {
     console.log('[PINTEREST-AUTH-CALLBACK] Tokens encrypted successfully');
 
     // Upsert the connection with encrypted tokens and avatar
+    // Use the appropriate platform based on environment
     const { error: dbError } = await supabase
       .from('social_connections')
       .upsert({
         user_id,
-        platform: 'pinterest',
+        platform,
         access_token: encryptedAccessToken,
         refresh_token: encryptedRefreshToken,
         token_expires_at: expiresAt,
@@ -150,7 +161,7 @@ serve(async (req) => {
       return Response.redirect(`${APP_URL}/settings?pinterest_error=db_error`);
     }
 
-    console.log('[PINTEREST-AUTH-CALLBACK] Connection saved successfully');
+    console.log('[PINTEREST-AUTH-CALLBACK] Connection saved successfully for platform:', platform);
     
     // Redirect back to app with success
     const finalRedirect = redirect_url || '/settings';
