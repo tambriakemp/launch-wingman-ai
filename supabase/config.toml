@@ -212,3 +212,6 @@ verify_jwt = false
 
 [functions.surecontact-init]
 verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
