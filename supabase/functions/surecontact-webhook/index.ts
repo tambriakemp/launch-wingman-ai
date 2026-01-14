@@ -109,36 +109,48 @@ async function findOrCreateContact(
   payload: ContactPayload,
   config: Map<string, SureContactConfig>
 ): Promise<{ uuid: string; isNew: boolean; error?: string }> {
-  // Search for existing contact
+  // Search for existing contact by email
+  console.log(`Searching for contact with email: ${payload.email}`);
   const searchResult = await sureContactRequest(
     `/contacts?email=${encodeURIComponent(payload.email)}`,
     'GET',
     apiKey
   );
 
+  console.log(`Search result for ${payload.email}:`, JSON.stringify(searchResult.data?.data?.map((c: { uuid: string; email: string }) => ({ uuid: c.uuid, email: c.email })) || []));
+
   if (searchResult.success && searchResult.data?.data?.length > 0) {
-    const existingContact = searchResult.data.data[0];
-    console.log(`Found existing contact: ${existingContact.uuid}`);
-    
-    // Update existing contact with latest data
-    const updateResult = await sureContactRequest(
-      `/contacts/${existingContact.uuid}`,
-      'PUT',
-      apiKey,
-      {
-        primary_fields: {
-          first_name: payload.first_name || existingContact.first_name,
-          last_name: payload.last_name || existingContact.last_name,
-        },
-        custom_fields: buildCustomFields(payload, config),
-      }
+    // Find the contact that matches the exact email
+    const matchingContact = searchResult.data.data.find(
+      (c: { email: string }) => c.email.toLowerCase() === payload.email.toLowerCase()
     );
+    
+    if (matchingContact) {
+      console.log(`Found exact matching contact: ${matchingContact.uuid} for ${matchingContact.email}`);
+      
+      // Update existing contact with latest data
+      const updateResult = await sureContactRequest(
+        `/contacts/${matchingContact.uuid}`,
+        'PUT',
+        apiKey,
+        {
+          primary_fields: {
+            first_name: payload.first_name || matchingContact.first_name,
+            last_name: payload.last_name || matchingContact.last_name,
+          },
+          custom_fields: buildCustomFields(payload, config),
+        }
+      );
 
-    if (!updateResult.success) {
-      console.error('Failed to update contact:', updateResult.error);
+      if (!updateResult.success) {
+        console.error('Failed to update contact:', updateResult.error);
+      }
+
+      return { uuid: matchingContact.uuid, isNew: false };
     }
-
-    return { uuid: existingContact.uuid, isNew: false };
+    
+    // No exact match found, will create new contact below
+    console.log(`No exact email match found for ${payload.email}, creating new contact`);
   }
 
   // Create new contact
@@ -220,7 +232,7 @@ async function manageTags(
       `/contacts/${contactUuid}/tags/detach`,
       'POST',
       apiKey,
-      { tags: [oppositeTagConfig.surecontact_uuid] }
+      { tag_uuids: [oppositeTagConfig.surecontact_uuid] }
     );
     if (detachResult.success) {
       tagsRemoved.push(oppositeTag);
@@ -233,7 +245,7 @@ async function manageTags(
       `/contacts/${contactUuid}/tags/attach`,
       'POST',
       apiKey,
-      { tags: [subscriptionTagConfig.surecontact_uuid] }
+      { tag_uuids: [subscriptionTagConfig.surecontact_uuid] }
     );
     if (attachResult.success) {
       tagsAdded.push(subscriptionTag);
@@ -256,7 +268,7 @@ async function manageTags(
         `/contacts/${contactUuid}/tags/attach`,
         'POST',
         apiKey,
-        { tags: [eventTagConfig.surecontact_uuid] }
+        { tag_uuids: [eventTagConfig.surecontact_uuid] }
       );
       if (attachResult.success) {
         tagsAdded.push(eventTag);
@@ -282,7 +294,7 @@ async function addToMasterList(
       `/contacts/${contactUuid}/lists/attach`,
       'POST',
       apiKey,
-      { lists: [launchelyList.surecontact_uuid] }
+      { list_uuids: [launchelyList.surecontact_uuid] }
     );
     return result.success;
   }
@@ -297,7 +309,7 @@ async function addToMasterList(
         `/contacts/${contactUuid}/lists/attach`,
         'POST',
         apiKey,
-        { lists: [value.surecontact_uuid] }
+        { list_uuids: [value.surecontact_uuid] }
       );
       return result.success;
     }
