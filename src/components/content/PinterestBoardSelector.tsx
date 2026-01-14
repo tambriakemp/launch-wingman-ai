@@ -10,7 +10,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
 
 interface PinterestBoard {
   id: string;
@@ -26,16 +25,15 @@ interface PinterestBoardSelectorProps {
 
 export function PinterestBoardSelector({ selectedBoard, onBoardChange }: PinterestBoardSelectorProps) {
   const { user } = useAuth();
-  const { environment } = usePinterestEnvironmentSetting();
 
   const { data: boardsData, isLoading, error } = useQuery({
-    queryKey: ["pinterest-boards", user?.id, environment],
+    queryKey: ["pinterest-boards", user?.id],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
       const { data, error } = await supabase.functions.invoke('pinterest-get-boards', {
-        body: { environment },
+        body: { environment: "production" },
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },

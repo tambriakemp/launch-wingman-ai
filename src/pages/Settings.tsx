@@ -9,7 +9,6 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTikTokEnvironment } from "@/contexts/TikTokEnvironmentContext";
-import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -73,7 +72,6 @@ interface SocialConnection {
 const Settings = () => {
   const { user, isSubscribed, subscriptionEnd, checkSubscription } = useAuth();
   const { environment: tiktokEnvironment } = useTikTokEnvironment();
-  const { environment: pinterestEnvironment } = usePinterestEnvironmentSetting();
   const { hasAdminAccess, tier } = useFeatureAccess();
   const hasFullAccess = isSubscribed || hasAdminAccess;
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -346,7 +344,7 @@ const Settings = () => {
       const { data, error } = await supabase.functions.invoke('pinterest-auth-start', {
         body: { 
           redirect_url: '/settings',
-          environment: pinterestEnvironment
+          environment: "production"
         }
       });
       
@@ -365,20 +363,18 @@ const Settings = () => {
   };
 
   const handleDisconnectPinterest = async () => {
-    const platform = pinterestEnvironment === "sandbox" ? "pinterest_sandbox" : "pinterest";
-    const connection = pinterestEnvironment === "sandbox" ? pinterestSandboxConnection : pinterestConnection;
-    if (!user || !connection) return;
+    if (!user || !pinterestConnection) return;
     
     setIsDisconnectingPinterest(true);
     try {
       const { error } = await supabase
         .from('social_connections')
         .delete()
-        .eq('id', connection.id);
+        .eq('id', pinterestConnection.id);
       
       if (error) throw error;
       
-      toast.success(`Pinterest ${pinterestEnvironment === "sandbox" ? "Sandbox " : ""}disconnected`);
+      toast.success("Pinterest disconnected");
       refetchConnections();
     } catch (error) {
       console.error('Pinterest disconnect error:', error);
@@ -640,7 +636,7 @@ const Settings = () => {
   };
 
   const instagramTokenStatus = getTokenStatus(instagramConnection);
-  const pinterestTokenStatus = getTokenStatus(pinterestEnvironment === "sandbox" ? pinterestSandboxConnection : pinterestConnection);
+  const pinterestTokenStatus = getTokenStatus(pinterestConnection);
   const facebookTokenStatus = getTokenStatus(facebookConnection);
   const threadsTokenStatus = getTokenStatus(threadsConnection);
   const tiktokTokenStatus = getTokenStatus(tiktokConnection);
@@ -961,127 +957,99 @@ const Settings = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {/* Pinterest Connection - Environment-aware */}
-                {(() => {
-                  const isSandbox = pinterestEnvironment === "sandbox";
-                  const activeConnection = isSandbox ? pinterestSandboxConnection : pinterestConnection;
-                  const activeTokenStatus = isSandbox ? pinterestSandboxTokenStatus : pinterestTokenStatus;
-                  
-                  return (
-                    <div className={`flex items-center justify-between p-4 rounded-lg border bg-card ${isSandbox ? 'border-dashed' : ''}`}>
-                      <div className="flex items-center gap-3">
-                        {activeConnection?.avatar_url ? (
-                          <div className={`w-10 h-10 rounded-lg overflow-hidden ring-2 ${isSandbox ? 'ring-muted-foreground/20' : 'ring-[#E60023]/20'}`}>
-                            <img 
-                              src={activeConnection.avatar_url} 
-                              alt={activeConnection.account_name || 'Pinterest User'} 
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                e.currentTarget.parentElement?.classList.add(isSandbox ? 'bg-muted' : 'bg-[#E60023]/10', 'flex', 'items-center', 'justify-center');
-                              }}
-                            />
-                          </div>
-                        ) : (
-                          <div className={`w-10 h-10 rounded-lg ${isSandbox ? 'bg-muted' : 'bg-[#E60023]/10'} flex items-center justify-center`}>
-                            <svg viewBox="0 0 24 24" className={`w-5 h-5 ${isSandbox ? 'text-muted-foreground' : 'text-[#E60023]'}`} fill="currentColor">
-                              <path d="M12 0a12 12 0 0 0-4.37 23.17c-.1-.94-.2-2.38.04-3.4l1.43-6.05s-.36-.73-.36-1.8c0-1.69.98-2.95 2.2-2.95 1.04 0 1.54.78 1.54 1.71 0 1.04-.66 2.6-1 4.05-.29 1.2.6 2.19 1.79 2.19 2.14 0 3.79-2.26 3.79-5.52 0-2.89-2.08-4.91-5.04-4.91-3.43 0-5.45 2.57-5.45 5.23 0 1.04.4 2.15.9 2.75a.36.36 0 0 1 .08.35l-.33 1.36c-.05.22-.18.27-.4.16-1.5-.7-2.44-2.88-2.44-4.64 0-3.78 2.74-7.24 7.91-7.24 4.15 0 7.38 2.96 7.38 6.92 0 4.13-2.6 7.45-6.22 7.45-1.21 0-2.36-.63-2.75-1.38l-.75 2.85c-.27 1.04-1 2.35-1.49 3.15A12 12 0 1 0 12 0z"/>
-                            </svg>
-                          </div>
-                        )}
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-foreground">Pinterest</p>
-                            <Badge 
-                              variant={isSandbox ? "secondary" : "default"} 
-                              className="text-xs flex items-center gap-1"
-                            >
-                              {isSandbox ? (
-                                <>
-                                  <FlaskConical className="w-3 h-3" />
-                                  Sandbox
-                                </>
-                              ) : (
-                                <>
-                                  <Zap className="w-3 h-3" />
-                                  Production
-                                </>
+                {/* Pinterest Connection - Always Production */}
+                <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                  <div className="flex items-center gap-3">
+                    {pinterestConnection?.avatar_url ? (
+                      <div className="w-10 h-10 rounded-lg overflow-hidden ring-2 ring-[#E60023]/20">
+                        <img 
+                          src={pinterestConnection.avatar_url} 
+                          alt={pinterestConnection.account_name || 'Pinterest User'} 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement?.classList.add('bg-[#E60023]/10', 'flex', 'items-center', 'justify-center');
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-[#E60023]/10 flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#E60023]" fill="currentColor">
+                          <path d="M12 0a12 12 0 0 0-4.37 23.17c-.1-.94-.2-2.38.04-3.4l1.43-6.05s-.36-.73-.36-1.8c0-1.69.98-2.95 2.2-2.95 1.04 0 1.54.78 1.54 1.71 0 1.04-.66 2.6-1 4.05-.29 1.2.6 2.19 1.79 2.19 2.14 0 3.79-2.26 3.79-5.52 0-2.89-2.08-4.91-5.04-4.91-3.43 0-5.45 2.57-5.45 5.23 0 1.04.4 2.15.9 2.75a.36.36 0 0 1 .08.35l-.33 1.36c-.05.22-.18.27-.4.16-1.5-.7-2.44-2.88-2.44-4.64 0-3.78 2.74-7.24 7.91-7.24 4.15 0 7.38 2.96 7.38 6.92 0 4.13-2.6 7.45-6.22 7.45-1.21 0-2.36-.63-2.75-1.38l-.75 2.85c-.27 1.04-1 2.35-1.49 3.15A12 12 0 1 0 12 0z"/>
+                        </svg>
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium text-foreground">Pinterest</p>
+                      {pinterestConnection ? (
+                        <div className="flex flex-col gap-0.5">
+                          <p className="text-sm text-muted-foreground">
+                            Connected as @{pinterestConnection.account_name || 'Pinterest User'}
+                          </p>
+                          {pinterestTokenStatus?.message && (
+                            <p className={`text-xs flex items-center gap-1 ${
+                              pinterestTokenStatus.status === 'expired' 
+                                ? 'text-destructive' 
+                                : pinterestTokenStatus.status === 'expiring_soon'
+                                ? 'text-yellow-600 dark:text-yellow-500'
+                                : 'text-muted-foreground'
+                            }`}>
+                              {pinterestTokenStatus.status === 'expired' && (
+                                <AlertTriangle className="w-3 h-3" />
                               )}
-                            </Badge>
-                          </div>
-                          {activeConnection ? (
-                            <div className="flex flex-col gap-0.5">
-                              <p className="text-sm text-muted-foreground">
-                                Connected as @{activeConnection.account_name || 'Pinterest User'}
-                              </p>
-                              {activeTokenStatus?.message && (
-                                <p className={`text-xs flex items-center gap-1 ${
-                                  activeTokenStatus.status === 'expired' 
-                                    ? 'text-destructive' 
-                                    : activeTokenStatus.status === 'expiring_soon'
-                                    ? 'text-yellow-600 dark:text-yellow-500'
-                                    : 'text-muted-foreground'
-                                }`}>
-                                  {activeTokenStatus.status === 'expired' && (
-                                    <AlertTriangle className="w-3 h-3" />
-                                  )}
-                                  {activeTokenStatus.message}
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <p className="text-sm text-muted-foreground">
-                              {isSandbox ? 'For testing only' : 'Not connected'}
+                              {pinterestTokenStatus.message}
                             </p>
                           )}
                         </div>
-                      </div>
-                      {activeConnection ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleDisconnectPinterest}
-                          disabled={isDisconnectingPinterest}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          {isDisconnectingPinterest ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <>
-                              <Unlink className="w-4 h-4 mr-1" />
-                              Disconnect
-                            </>
-                          )}
-                        </Button>
-                      ) : isSubscribed ? (
-                        <Button
-                          size="sm"
-                          onClick={handleConnectPinterest}
-                          disabled={isConnectingPinterest}
-                        >
-                          {isConnectingPinterest ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <>
-                              <Link2 className="w-4 h-4 mr-1" />
-                              Connect
-                            </>
-                          )}
-                        </Button>
                       ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setShowUpgradeDialog(true)}
-                          className="gap-1.5"
-                        >
-                          <Crown className="w-3.5 h-3.5 text-primary" />
-                          Pro
-                        </Button>
+                        <p className="text-sm text-muted-foreground">Not connected</p>
                       )}
                     </div>
-                  );
-                })()}
+                  </div>
+                  {pinterestConnection ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDisconnectPinterest}
+                      disabled={isDisconnectingPinterest}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      {isDisconnectingPinterest ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Unlink className="w-4 h-4 mr-1" />
+                          Disconnect
+                        </>
+                      )}
+                    </Button>
+                  ) : isSubscribed ? (
+                    <Button
+                      size="sm"
+                      onClick={handleConnectPinterest}
+                      disabled={isConnectingPinterest}
+                    >
+                      {isConnectingPinterest ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Link2 className="w-4 h-4 mr-1" />
+                          Connect
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowUpgradeDialog(true)}
+                      className="gap-1.5"
+                    >
+                      <Crown className="w-3.5 h-3.5 text-primary" />
+                      Pro
+                    </Button>
+                  )}
+                </div>
 
                 {/* Instagram Connection */}
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-card">

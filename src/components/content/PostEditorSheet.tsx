@@ -14,7 +14,6 @@ import {
   ChevronUp,
   Save,
 } from "lucide-react";
-import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
 import {
   Sheet,
   SheetContent,
@@ -230,11 +229,8 @@ export function PostEditorSheet({
   const isPostedContent = existingItem?.status === "completed";
   // Draft content = status is "draft" (scheduled but not yet set to post)
   const isDraftContent = existingItem?.status === "draft";
-
-  // Get Pinterest environment setting
-  const { environment: pinterestEnvironment } = usePinterestEnvironmentSetting();
   
-  // Check social connections - check for both pinterest and pinterest_sandbox (show if ANY exists)
+  // Check social connections - always use production Pinterest
   const { data: pinterestConnection } = useQuery({
     queryKey: ["pinterest-connection", user?.id],
     queryFn: async () => {
@@ -242,24 +238,7 @@ export function PostEditorSheet({
         .from("social_connections")
         .select("id, account_name, platform")
         .eq("user_id", user!.id)
-        .in("platform", ["pinterest", "pinterest_sandbox"])
-        .limit(1);
-      if (error || !data || data.length === 0) return null;
-      return data[0];
-    },
-    enabled: !!user && open,
-  });
-
-  // Check for environment-specific Pinterest connection (for validation)
-  const { data: pinterestEnvConnection } = useQuery({
-    queryKey: ["pinterest-env-connection", user?.id, pinterestEnvironment],
-    queryFn: async () => {
-      const expectedPlatform = pinterestEnvironment === 'sandbox' ? 'pinterest_sandbox' : 'pinterest';
-      const { data, error } = await supabase
-        .from("social_connections")
-        .select("id, account_name, platform")
-        .eq("user_id", user!.id)
-        .eq("platform", expectedPlatform)
+        .eq("platform", "pinterest")
         .single();
       if (error) return null;
       return data;
@@ -954,11 +933,9 @@ export function PostEditorSheet({
       if (!formData.pinterest_board_id) {
         errors.push("Please select a Pinterest board");
       }
-      // Check if Pinterest connection matches the environment setting
-      if (!pinterestEnvConnection) {
-        const expectedMode = pinterestEnvironment === 'sandbox' ? 'Sandbox' : 'Production';
-        const currentMode = pinterestConnection?.platform === 'pinterest_sandbox' ? 'sandbox' : 'production';
-        errors.push(`Pinterest is set to ${expectedMode} mode but you're connected with a ${currentMode} account. Please reconnect Pinterest in Settings.`);
+      // Check if Pinterest connection exists
+      if (!pinterestConnection) {
+        errors.push("Please connect your Pinterest account in Settings first.");
       }
     } else if (platform === "instagram") {
       if (!formData.media_url) {

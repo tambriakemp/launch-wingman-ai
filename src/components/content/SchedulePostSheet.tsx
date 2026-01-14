@@ -22,7 +22,6 @@ import { SocialPostPreview } from "./SocialPostPreview";
 import { PinterestBoardSelector } from "./PinterestBoardSelector";
 import { ScheduleDateTimePicker } from "./ScheduleDateTimePicker";
 import { trackSocialPostPublish, trackSocialPostSchedule, trackSocialPostScheduleCancel } from "@/lib/analytics";
-import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
 
 interface SchedulePostSheetProps {
   open: boolean;
@@ -134,8 +133,6 @@ export function SchedulePostSheet({
     enabled: !!user,
   });
 
-  const { environment: pinterestEnvironment } = usePinterestEnvironmentSetting();
-
   const postToPinterest = async () => {
     if (!formData.pinterest_board_id) {
       toast.error("Please select a Pinterest board");
@@ -156,7 +153,7 @@ export function SchedulePostSheet({
           media_url: formData.media_url,
           board_id: formData.pinterest_board_id,
           link: formData.link_url || undefined,
-          environment: pinterestEnvironment,
+          environment: "production",
         },
       });
 
@@ -298,7 +295,7 @@ export function SchedulePostSheet({
           media_url: formData.media_url,
           board_id: formData.pinterest_board_id,
           link: formData.link_url,
-          environment: pinterestEnvironment,
+          environment: "production",
         },
         status: "pending",
       });

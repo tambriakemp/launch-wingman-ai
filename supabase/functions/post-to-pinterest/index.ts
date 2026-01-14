@@ -12,18 +12,14 @@ const sanitizeId = (id: string) => id ? `${id.substring(0, 8)}...` : 'unknown';
 async function refreshPinterestToken(
   supabase: any, 
   userId: string, 
-  currentRefreshToken: string, 
-  isSandbox: boolean
+  currentRefreshToken: string
 ) {
-  // Pinterest uses SAME credentials for both production and sandbox
   const PINTEREST_APP_ID = Deno.env.get('PINTEREST_APP_ID');
   const PINTEREST_APP_SECRET = Deno.env.get('PINTEREST_APP_SECRET');
 
   const credentials = btoa(`${PINTEREST_APP_ID}:${PINTEREST_APP_SECRET}`);
-  const platform = isSandbox ? 'pinterest_sandbox' : 'pinterest';
   
-  // Token refresh ALWAYS uses production endpoint
-  console.log('[POST-TO-PINTEREST] Refreshing token at production endpoint');
+  console.log('[POST-TO-PINTEREST] Refreshing token');
   
   const response = await fetch(`https://api.pinterest.com/v5/oauth/token`, {
     method: 'POST',
@@ -68,7 +64,7 @@ async function refreshPinterestToken(
       updated_at: new Date().toISOString(),
     })
     .eq('user_id', userId)
-    .eq('platform', platform);
+    .eq('platform', 'pinterest');
 
   return tokenData.access_token;
 }
@@ -98,8 +94,8 @@ serve(async (req) => {
       throw new Error('Invalid token');
     }
 
-    // Parse request body with environment parameter
-    const { board_id, title, description, media_url, link, environment = 'production' } = await req.json();
+    // Parse request body
+    const { board_id, title, description, media_url, link } = await req.json();
 
     if (!board_id) {
       throw new Error('Board ID is required');
@@ -109,26 +105,22 @@ serve(async (req) => {
       throw new Error('Media URL is required for Pinterest pins');
     }
 
-    const isSandbox = environment === 'sandbox';
-    const platform = isSandbox ? 'pinterest_sandbox' : 'pinterest';
-    const apiBase = isSandbox ? 'https://api-sandbox.pinterest.com' : 'https://api.pinterest.com';
+    console.log('[POST-TO-PINTEREST] Creating pin for user:', sanitizeId(user.id));
 
-    console.log('[POST-TO-PINTEREST] Creating pin for user:', sanitizeId(user.id), 'environment:', environment);
-
-    // Get Pinterest connection for the specified environment
+    // Get Pinterest connection (always production)
     const { data: connection, error: connError } = await supabase
       .from('social_connections')
       .select('platform, access_token, refresh_token, token_expires_at')
       .eq('user_id', user.id)
-      .eq('platform', platform)
+      .eq('platform', 'pinterest')
       .single();
 
     if (connError || !connection) {
-      console.error('[POST-TO-PINTEREST] Connection not found for platform:', platform);
-      throw new Error(`Pinterest (${environment}) not connected. Go to Settings and connect Pinterest in ${environment} mode.`);
+      console.error('[POST-TO-PINTEREST] Connection not found');
+      throw new Error('Pinterest not connected. Go to Settings and connect Pinterest.');
     }
 
-    console.log('[POST-TO-PINTEREST] Using', environment, 'API at', apiBase);
+    console.log('[POST-TO-PINTEREST] Using production API');
 
     // Decrypt the access token
     const { data: decryptedAccessToken, error: decryptError } = await supabase.rpc('decrypt_token', { 
@@ -155,7 +147,7 @@ serve(async (req) => {
       });
       
       if (decryptedRefreshToken) {
-        const newToken = await refreshPinterestToken(supabase, user.id, decryptedRefreshToken, isSandbox);
+        const newToken = await refreshPinterestToken(supabase, user.id, decryptedRefreshToken);
         if (newToken) {
           accessToken = newToken;
         } else {
@@ -185,9 +177,9 @@ serve(async (req) => {
       pinData.link = link;
     }
 
-    console.log('[POST-TO-PINTEREST] Creating pin via', apiBase);
+    console.log('[POST-TO-PINTEREST] Creating pin via production API');
 
-    const pinResponse = await fetch(`${apiBase}/v5/pins`, {
+    const pinResponse = await fetch('https://api.pinterest.com/v5/pins', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
