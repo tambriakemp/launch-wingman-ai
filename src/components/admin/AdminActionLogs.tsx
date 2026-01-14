@@ -79,7 +79,7 @@ const ACTION_CATEGORIES: Record<string, string> = {
   data_management: 'Data Management',
 };
 
-const LOGS_PER_PAGE = 15;
+const LOGS_PER_PAGE = 10;
 
 export function AdminActionLogs() {
   const [logs, setLogs] = useState<ActionLog[]>([]);
