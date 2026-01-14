@@ -1926,6 +1926,36 @@ export type Database = {
         }
         Relationships: []
       }
+      surecontact_config: {
+        Row: {
+          config_type: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          name: string
+          surecontact_uuid: string
+          updated_at: string
+        }
+        Insert: {
+          config_type: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          name: string
+          surecontact_uuid: string
+          updated_at?: string
+        }
+        Update: {
+          config_type?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          name?: string
+          surecontact_uuid?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       surecontact_webhook_logs: {
         Row: {
           created_at: string
