@@ -13,7 +13,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Package, Pencil, BookOpen, BarChart3, FileText, Sparkles, Bell, Headphones, Video, Tag, Palette, Share2 } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Package, Pencil, BookOpen, BarChart3, FileText, Bell, Headphones, Video, Tag, Palette, Settings } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -30,7 +30,7 @@ import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UserActivityDialog } from '@/components/UserActivityDialog';
 import { EditUserDialog } from '@/components/admin/EditUserDialog';
-import { AiUsageTable, MrrStatsCard } from '@/components/admin/AiUsageSection';
+import { MrrStatsCard } from '@/components/admin/AiUsageSection';
 import { AdminRoleToggle } from '@/components/admin/AdminRoleToggle';
 import { RevenueChurnChart } from '@/components/admin/RevenueChurnChart';
 import { ProjectStatsCard, ContentStatsCard, EngagementStatsCard, OfferStatsCard, OnboardingFunnelCard } from '@/components/admin/PlatformStatsSection';
@@ -43,7 +43,7 @@ import { AdminActionLogs } from '@/components/admin/AdminActionLogs';
 import { UserProjectsDialog } from '@/components/admin/UserProjectsDialog';
 import { ExportUserDataDialog } from '@/components/admin/ExportUserDataDialog';
 import { MonitoringTab } from '@/components/admin/MonitoringTab';
-import { SocialMonitoringTab } from '@/components/admin/SocialMonitoringTab';
+import { ConfigTab } from '@/components/admin/ConfigTab';
 import { SupportTicketsTab } from '@/components/admin/SupportTicketsTab';
 import { CouponManagement } from '@/components/admin/CouponManagement';
 
@@ -625,10 +625,6 @@ const AdminDashboard = () => {
               <Activity className="h-4 w-4" />
               <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
-            <TabsTrigger value="ai-usage" className="gap-2">
-              <Sparkles className="h-4 w-4" />
-              <span className="hidden sm:inline">AI Usage</span>
-            </TabsTrigger>
             <TabsTrigger value="activity" className="gap-2">
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Activity Logs</span>
@@ -637,9 +633,9 @@ const AdminDashboard = () => {
               <Bell className="h-4 w-4" />
               <span className="hidden sm:inline">Monitoring</span>
             </TabsTrigger>
-            <TabsTrigger value="social-monitoring" className="gap-2">
-              <Share2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Social Monitoring</span>
+            <TabsTrigger value="config" className="gap-2">
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Config</span>
             </TabsTrigger>
             <TabsTrigger value="support" className="gap-2">
               <Headphones className="h-4 w-4" />
@@ -1102,11 +1098,6 @@ const AdminDashboard = () => {
             <FeatureUsageHeatmapWrapper />
           </TabsContent>
 
-          {/* AI Usage Tab */}
-          <TabsContent value="ai-usage" className="space-y-4 md:space-y-8">
-            <AiUsageTable />
-          </TabsContent>
-
           {/* Activity Logs Tab */}
           <TabsContent value="activity" className="space-y-4 md:space-y-8">
             <AdminActionLogs />
@@ -1117,9 +1108,9 @@ const AdminDashboard = () => {
             <MonitoringTab users={users} />
           </TabsContent>
 
-          {/* Social Monitoring Tab */}
-          <TabsContent value="social-monitoring" className="space-y-4 md:space-y-8">
-            <SocialMonitoringTab />
+          {/* Config Tab */}
+          <TabsContent value="config" className="space-y-4 md:space-y-8">
+            <ConfigTab />
           </TabsContent>
 
           {/* Support Tab */}
