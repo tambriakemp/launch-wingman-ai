@@ -125,6 +125,7 @@ serve(async (req) => {
 
     // Fetch user info
     let username = open_id;
+    let avatarUrl: string | null = null;
     try {
       const userResponse = await fetch(
         "https://open.tiktokapis.com/v2/user/info/?fields=display_name,username,avatar_url",
@@ -135,8 +136,11 @@ serve(async (req) => {
         }
       );
       const userData = await userResponse.json();
+      console.log('[TIKTOK-AUTH-CALLBACK] User data received:', JSON.stringify(userData));
       if (userData.data?.user) {
         username = userData.data.user.display_name || userData.data.user.username || open_id;
+        avatarUrl = userData.data.user.avatar_url || null;
+        console.log(`[TIKTOK-AUTH-CALLBACK] Got user info: ${username}, avatar: ${avatarUrl ? 'yes' : 'no'}`);
       }
     } catch (e) {
       console.error("Failed to fetch user info:", e);
@@ -173,6 +177,7 @@ serve(async (req) => {
         platform: platformName,
         account_id: open_id,
         account_name: username,
+        avatar_url: avatarUrl,
         access_token: encryptedAccessToken,
         refresh_token: encryptedRefreshToken,
         token_expires_at: tokenExpiry,

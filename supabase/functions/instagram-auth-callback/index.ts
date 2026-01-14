@@ -183,6 +183,7 @@ serve(async (req) => {
     // For each page, check for Instagram Business Account
     let instagramAccountId: string | null = null;
     let instagramUsername: string | null = null;
+    let instagramAvatarUrl: string | null = null;
     let pageId: string | null = null;
     let pageAccessToken: string | null = null;
 
@@ -200,16 +201,17 @@ serve(async (req) => {
           pageId = page.id;
           pageAccessToken = page.access_token;
           
-          // Get Instagram username
+          // Get Instagram username and profile picture
           const usernameResponse = await fetch(
-            `https://graph.facebook.com/v21.0/${instagramAccountId}?fields=username&access_token=${page.access_token}`
+            `https://graph.facebook.com/v21.0/${instagramAccountId}?fields=username,profile_picture_url&access_token=${page.access_token}`
           );
           if (usernameResponse.ok) {
             const usernameData = await usernameResponse.json();
             instagramUsername = usernameData.username;
+            instagramAvatarUrl = usernameData.profile_picture_url || null;
           }
           
-          console.log(`Found Instagram account: ${instagramUsername} (${instagramAccountId})`);
+          console.log(`Found Instagram account: ${instagramUsername} (${instagramAccountId}), avatar: ${instagramAvatarUrl ? 'yes' : 'no'}`);
           break;
         } else {
           console.log(`Page "${page.name}" has no Instagram Business Account`);
@@ -251,6 +253,7 @@ serve(async (req) => {
           platform: "instagram",
           account_id: instagramAccountId,
           account_name: instagramUsername,
+          avatar_url: instagramAvatarUrl,
           page_id: pageId,
           access_token: encryptedAccessToken,
           token_expires_at: expiresAt.toISOString(),

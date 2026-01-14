@@ -94,7 +94,7 @@ serve(async (req) => {
     // Get user's Facebook Pages
     console.log("Fetching user's Facebook pages...");
     const pagesResponse = await fetch(
-      `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token&limit=200&access_token=${userAccessToken}`
+      `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,picture&limit=200&access_token=${userAccessToken}`
     );
 
     if (!pagesResponse.ok) {
@@ -117,8 +117,9 @@ serve(async (req) => {
     const pageId = selectedPage.id;
     const pageName = selectedPage.name;
     const pageAccessToken = selectedPage.access_token;
+    const pageAvatarUrl = selectedPage.picture?.data?.url || null;
 
-    console.log(`Using page: ${pageName} (${pageId})`);
+    console.log(`Using page: ${pageName} (${pageId}), avatar: ${pageAvatarUrl ? 'yes' : 'no'}`);
 
     // Create Supabase client
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
@@ -147,6 +148,7 @@ serve(async (req) => {
           platform: "facebook",
           account_id: pageId,
           account_name: pageName,
+          avatar_url: pageAvatarUrl,
           page_id: pageId,
           access_token: encryptedAccessToken,
           token_expires_at: expiresAt.toISOString(),
