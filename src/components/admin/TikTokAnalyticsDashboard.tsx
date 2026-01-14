@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { RefreshCw, Video, AlertCircle, CheckCircle } from "lucide-react";
+import { RefreshCw, Video, AlertCircle, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 
 interface WebhookLog {
@@ -18,7 +19,11 @@ interface WebhookLog {
   created_at: string;
 }
 
+const LOGS_PER_PAGE = 10;
+
 export function TikTokAnalyticsDashboard() {
+  const [currentPage, setCurrentPage] = useState(1);
+
   const { data: webhookLogs, isLoading, refetch } = useQuery({
     queryKey: ["tiktok-webhook-logs"],
     queryFn: async () => {
@@ -55,6 +60,12 @@ export function TikTokAnalyticsDashboard() {
     return <AlertCircle className="h-4 w-4 text-yellow-500" />;
   };
 
+  const totalPages = Math.ceil((webhookLogs?.length || 0) / LOGS_PER_PAGE);
+  const paginatedLogs = webhookLogs?.slice(
+    (currentPage - 1) * LOGS_PER_PAGE,
+    currentPage * LOGS_PER_PAGE
+  );
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -90,14 +101,14 @@ export function TikTokAnalyticsDashboard() {
                     Loading...
                   </TableCell>
                 </TableRow>
-              ) : webhookLogs?.length === 0 ? (
+              ) : paginatedLogs?.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                     No events recorded yet
                   </TableCell>
                 </TableRow>
               ) : (
-                webhookLogs?.map((log) => (
+                paginatedLogs?.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell>{getStatusIcon(log.status)}</TableCell>
                     <TableCell>
@@ -119,6 +130,29 @@ export function TikTokAnalyticsDashboard() {
             </TableBody>
           </Table>
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              {currentPage} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
