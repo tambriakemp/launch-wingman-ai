@@ -81,12 +81,14 @@ serve(async (req) => {
 
     let accountName = 'Pinterest User';
     let accountId = '';
+    let avatarUrl: string | null = null;
     
     if (userResponse.ok) {
       const userData = await userResponse.json();
       accountName = userData.username || userData.business_name || 'Pinterest User';
       accountId = userData.id || '';
-      console.log('[PINTEREST-AUTH-CALLBACK] Got user info:', accountName);
+      avatarUrl = userData.profile_image || null;
+      console.log('[PINTEREST-AUTH-CALLBACK] Got user info:', accountName, avatarUrl ? 'with avatar' : 'no avatar');
     }
 
     // Store tokens in database with encryption
@@ -122,7 +124,7 @@ serve(async (req) => {
 
     console.log('[PINTEREST-AUTH-CALLBACK] Tokens encrypted successfully');
 
-    // Upsert the connection with encrypted tokens
+    // Upsert the connection with encrypted tokens and avatar
     const { error: dbError } = await supabase
       .from('social_connections')
       .upsert({
@@ -133,6 +135,7 @@ serve(async (req) => {
         token_expires_at: expiresAt,
         account_name: accountName,
         account_id: accountId,
+        avatar_url: avatarUrl,
         updated_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id,platform',

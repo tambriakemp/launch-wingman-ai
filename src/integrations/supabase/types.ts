@@ -1726,6 +1726,7 @@ export type Database = {
           access_token: string
           account_id: string | null
           account_name: string | null
+          avatar_url: string | null
           created_at: string
           id: string
           page_id: string | null
@@ -1739,6 +1740,7 @@ export type Database = {
           access_token: string
           account_id?: string | null
           account_name?: string | null
+          avatar_url?: string | null
           created_at?: string
           id?: string
           page_id?: string | null
@@ -1752,6 +1754,7 @@ export type Database = {
           access_token?: string
           account_id?: string | null
           account_name?: string | null
+          avatar_url?: string | null
           created_at?: string
           id?: string
           page_id?: string | null
