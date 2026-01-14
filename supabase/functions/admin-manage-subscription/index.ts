@@ -73,17 +73,20 @@ serve(async (req) => {
         action_details: { stripe_subscription_id }
       });
 
-      // Trigger marketing webhook to update tags
+      // Trigger marketing and surecontact webhooks to update tags
       if (user_email) {
         const { data: authUsers } = await supabaseClient.auth.admin.listUsers();
         const targetUser = authUsers?.users?.find(u => u.email === user_email);
         if (targetUser) {
-          const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/marketing-webhook`;
-          await fetch(webhookUrl, {
+          const baseUrl = Deno.env.get("SUPABASE_URL");
+          const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+          
+          // Trigger marketing webhook
+          await fetch(`${baseUrl}/functions/v1/marketing-webhook`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              "Authorization": `Bearer ${serviceKey}`,
             },
             body: JSON.stringify({
               action: "sync_user",
@@ -92,6 +95,21 @@ serve(async (req) => {
             }),
           });
           logStep("Marketing webhook triggered for subscription_cancelled", { userId: targetUser.id });
+
+          // Trigger SureContact webhook
+          await fetch(`${baseUrl}/functions/v1/surecontact-webhook`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${serviceKey}`,
+            },
+            body: JSON.stringify({
+              action: "sync_user",
+              email: user_email,
+              event_type: "subscription_cancelled",
+            }),
+          });
+          logStep("SureContact webhook triggered for subscription_cancelled", { email: user_email });
         }
       }
       
@@ -166,16 +184,19 @@ serve(async (req) => {
         action_details: { subscription_id: subscription.id, customer_id: customerId }
       });
 
-      // Trigger marketing webhook to update tags
+      // Trigger marketing and surecontact webhooks to update tags
       const { data: authUsers } = await supabaseClient.auth.admin.listUsers();
       const targetUser = authUsers?.users?.find(u => u.email === user_email);
       if (targetUser) {
-        const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/marketing-webhook`;
-        await fetch(webhookUrl, {
+        const baseUrl = Deno.env.get("SUPABASE_URL");
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        
+        // Trigger marketing webhook
+        await fetch(`${baseUrl}/functions/v1/marketing-webhook`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            "Authorization": `Bearer ${serviceKey}`,
           },
           body: JSON.stringify({
             action: "sync_user",
@@ -184,6 +205,21 @@ serve(async (req) => {
           }),
         });
         logStep("Marketing webhook triggered for subscription_started", { userId: targetUser.id });
+
+        // Trigger SureContact webhook
+        await fetch(`${baseUrl}/functions/v1/surecontact-webhook`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${serviceKey}`,
+          },
+          body: JSON.stringify({
+            action: "sync_user",
+            email: user_email,
+            event_type: "subscription_started",
+          }),
+        });
+        logStep("SureContact webhook triggered for subscription_started", { email: user_email });
       }
       
       return new Response(JSON.stringify({ 
