@@ -45,6 +45,7 @@ import { ExportUserDataDialog } from '@/components/admin/ExportUserDataDialog';
 import { MonitoringTab } from '@/components/admin/MonitoringTab';
 import { ConfigTab } from '@/components/admin/ConfigTab';
 import { SupportTicketsTab } from '@/components/admin/SupportTicketsTab';
+import { ActivityLogsTab } from '@/components/admin/ActivityLogsTab';
 import { CouponManagement } from '@/components/admin/CouponManagement';
 
 interface User {
@@ -1100,7 +1101,7 @@ const AdminDashboard = () => {
 
           {/* Activity Logs Tab */}
           <TabsContent value="activity" className="space-y-4 md:space-y-8">
-            <AdminActionLogs />
+            <ActivityLogsTab />
           </TabsContent>
 
           {/* Monitoring Tab */}
