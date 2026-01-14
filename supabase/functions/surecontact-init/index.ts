@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SURECONTACT_API_BASE = 'https://api.surecontact.io/api/v1/public';
+const SURECONTACT_API_BASE = 'https://api.surecontact.com/api/v1/public';
 
 interface SureContactTag {
   uuid: string;
