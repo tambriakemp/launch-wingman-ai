@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Send, Loader2, Users, FlaskConical, History, CheckCircle2, XCircle, RefreshCw, UserCheck } from 'lucide-react';
+import { Send, Loader2, Users, FlaskConical, History, CheckCircle2, XCircle, RefreshCw, UserCheck, Settings, Tag, List, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 
@@ -46,6 +46,13 @@ interface SureContactLog {
   created_at: string;
 }
 
+interface SureContactConfigItem {
+  config_type: string;
+  name: string;
+  surecontact_uuid: string;
+  updated_at: string;
+}
+
 export function MonitoringTab({ users = [] }: MonitoringTabProps) {
   const { user } = useAuth();
   const [syncLoading, setSyncLoading] = useState(false);
@@ -53,9 +60,11 @@ export function MonitoringTab({ users = [] }: MonitoringTabProps) {
   const [logsLoading, setLogsLoading] = useState(false);
   const [sureContactSyncLoading, setSureContactSyncLoading] = useState(false);
   const [sureContactTestLoading, setSureContactTestLoading] = useState(false);
+  const [sureContactConfigLoading, setSureContactConfigLoading] = useState(false);
   const [webhookLogs, setWebhookLogs] = useState<WebhookLog[]>([]);
   const [sureContactLogs, setSureContactLogs] = useState<SureContactLog[]>([]);
   const [sureContactLogsLoading, setSureContactLogsLoading] = useState(false);
+  const [sureContactConfig, setSureContactConfig] = useState<SureContactConfigItem[]>([]);
   const [lastSyncResult, setLastSyncResult] = useState<{
     contacts_synced: number;
     success_count: number;
@@ -126,7 +135,42 @@ export function MonitoringTab({ users = [] }: MonitoringTabProps) {
   useEffect(() => {
     fetchWebhookLogs();
     fetchSureContactLogs();
+    fetchSureContactConfig();
   }, []);
+
+  // Fetch SureContact config from database
+  const fetchSureContactConfig = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('surecontact_config')
+        .select('config_type, name, surecontact_uuid, updated_at')
+        .order('config_type', { ascending: true });
+
+      if (error) throw error;
+      setSureContactConfig(data || []);
+    } catch (error) {
+      console.error('Error fetching SureContact config:', error);
+    }
+  };
+
+  // Fetch SureContact config from API and store in database
+  const handleFetchSureContactConfig = async () => {
+    setSureContactConfigLoading(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('surecontact-init');
+
+      if (error) throw error;
+
+      toast.success(`Fetched ${data.total_items} config items from SureContact`);
+      fetchSureContactConfig(); // Refresh the config display
+    } catch (error) {
+      console.error('SureContact config fetch error:', error);
+      toast.error('Failed to fetch SureContact configuration');
+    } finally {
+      setSureContactConfigLoading(false);
+    }
+  };
 
   // Calculate disabled users count from users prop
   const disabledUsersCount = users.filter(
@@ -401,6 +445,116 @@ export function MonitoringTab({ users = [] }: MonitoringTabProps) {
         </CardContent>
       </Card>
 
+      {/* SureContact Configuration Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Settings className="h-5 w-5" />
+                SureContact Configuration
+              </CardTitle>
+              <CardDescription>
+                Tags, lists, and custom fields synced from SureContact
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              onClick={handleFetchSureContactConfig}
+              disabled={sureContactConfigLoading}
+              className="gap-2"
+            >
+              {sureContactConfigLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Fetching...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4" />
+                  Fetch Config
+                </>
+              )}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {sureContactConfig.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No SureContact configuration found.</p>
+              <p className="text-sm mt-1">Click "Fetch Config" to sync tags, lists, and custom fields from your SureContact account.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Tags */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 font-medium text-sm">
+                  <Tag className="h-4 w-4" />
+                  Tags ({sureContactConfig.filter(c => c.config_type === 'tag').length})
+                </div>
+                <div className="space-y-1">
+                  {sureContactConfig
+                    .filter(c => c.config_type === 'tag')
+                    .map(tag => (
+                      <div key={tag.surecontact_uuid} className="text-sm p-2 bg-muted/50 rounded flex justify-between items-center">
+                        <span>{tag.name}</span>
+                        <Badge variant="outline" className="text-xs font-mono">
+                          {tag.surecontact_uuid.substring(0, 8)}...
+                        </Badge>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* Lists */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 font-medium text-sm">
+                  <List className="h-4 w-4" />
+                  Lists ({sureContactConfig.filter(c => c.config_type === 'list').length})
+                </div>
+                <div className="space-y-1">
+                  {sureContactConfig
+                    .filter(c => c.config_type === 'list')
+                    .map(list => (
+                      <div key={list.surecontact_uuid} className="text-sm p-2 bg-muted/50 rounded flex justify-between items-center">
+                        <span>{list.name}</span>
+                        <Badge variant="outline" className="text-xs font-mono">
+                          {list.surecontact_uuid.substring(0, 8)}...
+                        </Badge>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* Custom Fields */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 font-medium text-sm">
+                  <FileText className="h-4 w-4" />
+                  Custom Fields ({sureContactConfig.filter(c => c.config_type === 'custom_field').length})
+                </div>
+                <div className="space-y-1">
+                  {sureContactConfig
+                    .filter(c => c.config_type === 'custom_field')
+                    .map(field => (
+                      <div key={field.surecontact_uuid} className="text-sm p-2 bg-muted/50 rounded flex justify-between items-center">
+                        <span>{field.name}</span>
+                        <Badge variant="outline" className="text-xs font-mono">
+                          {field.surecontact_uuid.substring(0, 8)}...
+                        </Badge>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          )}
+          {sureContactConfig.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-4">
+              Last updated: {sureContactConfig[0]?.updated_at ? format(new Date(sureContactConfig[0].updated_at), 'MMM d, yyyy h:mm a') : 'Unknown'}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* SureContact Sync Card */}
       <Card>
         <CardHeader className="pb-3">
@@ -409,16 +563,22 @@ export function MonitoringTab({ users = [] }: MonitoringTabProps) {
             SureContact Sync
           </CardTitle>
           <CardDescription>
-            Send contact data (name, email, subscription status) to SureContact
+            Send contact data (name, email, subscription status) to SureContact via REST API
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {sureContactConfig.length === 0 && (
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-sm text-amber-800 dark:text-amber-200">
+              ⚠️ Please fetch SureContact configuration first before syncing contacts.
+            </div>
+          )}
+          
           {/* Test SureContact */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 bg-muted/50 rounded-lg">
             <Button
               variant="outline"
               onClick={handleSureContactTest}
-              disabled={sureContactTestLoading}
+              disabled={sureContactTestLoading || sureContactConfig.length === 0}
               className="gap-2"
             >
               {sureContactTestLoading ? (
@@ -449,7 +609,7 @@ export function MonitoringTab({ users = [] }: MonitoringTabProps) {
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <Button
               onClick={handleSureContactSync}
-              disabled={sureContactSyncLoading}
+              disabled={sureContactSyncLoading || sureContactConfig.length === 0}
               className="gap-2"
             >
               {sureContactSyncLoading ? (

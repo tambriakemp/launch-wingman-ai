@@ -6,12 +6,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface SureContactPayload {
+const SURECONTACT_API_BASE = 'https://api.surecontact.io/api/v1/public';
+
+interface SureContactConfig {
+  config_type: string;
+  name: string;
+  surecontact_uuid: string;
+}
+
+interface ContactPayload {
   email: string;
   first_name: string;
   last_name: string;
   subscription_status: 'free' | 'pro';
-  event_type: 'signup' | 'subscription_started' | 'subscription_cancelled' | 'manual_sync';
+  event_type: string;
+  stripe_customer_id?: string;
+  signup_date?: string;
+  subscription_plan?: string;
 }
 
 interface LogData {
@@ -21,61 +32,315 @@ interface LogData {
   success: boolean;
   response_status?: number;
   error_message?: string;
+  tags_added?: string[];
+  tags_removed?: string[];
+}
+
+// Helper to make SureContact API calls
+async function sureContactRequest(
+  endpoint: string,
+  method: string,
+  apiKey: string,
+  body?: unknown
+): Promise<{ success: boolean; data?: any; status: number; error?: string }> {
+  try {
+    console.log(`SureContact API: ${method} ${endpoint}`);
+    
+    const response = await fetch(`${SURECONTACT_API_BASE}${endpoint}`, {
+      method,
+      headers: {
+        'X-API-Key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    const responseText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      data = responseText;
+    }
+
+    console.log(`SureContact response (${response.status}):`, JSON.stringify(data).substring(0, 500));
+
+    return {
+      success: response.ok,
+      data,
+      status: response.status,
+      error: response.ok ? undefined : (typeof data === 'string' ? data : JSON.stringify(data)),
+    };
+  } catch (error) {
+    console.error('SureContact API error:', error);
+    return {
+      success: false,
+      status: 0,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+// Get config UUIDs from database
+async function getConfig(supabase: any): Promise<Map<string, SureContactConfig>> {
+  const { data, error } = await supabase
+    .from('surecontact_config')
+    .select('config_type, name, surecontact_uuid');
+
+  if (error) {
+    console.error('Error fetching SureContact config:', error);
+    throw new Error('SureContact configuration not found. Please run "Fetch Config" first.');
+  }
+
+  const configMap = new Map<string, SureContactConfig>();
+  for (const item of data || []) {
+    // Key format: "type:name" e.g., "tag:free-user" or "list:master-list"
+    configMap.set(`${item.config_type}:${item.name}`, item);
+  }
+
+  console.log(`Loaded ${configMap.size} config items`);
+  return configMap;
+}
+
+// Find or create contact by email
+async function findOrCreateContact(
+  apiKey: string,
+  payload: ContactPayload,
+  config: Map<string, SureContactConfig>
+): Promise<{ uuid: string; isNew: boolean; error?: string }> {
+  // Search for existing contact
+  const searchResult = await sureContactRequest(
+    `/contacts?email=${encodeURIComponent(payload.email)}`,
+    'GET',
+    apiKey
+  );
+
+  if (searchResult.success && searchResult.data?.data?.length > 0) {
+    const existingContact = searchResult.data.data[0];
+    console.log(`Found existing contact: ${existingContact.uuid}`);
+    
+    // Update existing contact with latest data
+    const updateResult = await sureContactRequest(
+      `/contacts/${existingContact.uuid}`,
+      'PUT',
+      apiKey,
+      {
+        primary_fields: {
+          first_name: payload.first_name || existingContact.first_name,
+          last_name: payload.last_name || existingContact.last_name,
+        },
+        custom_fields: buildCustomFields(payload, config),
+      }
+    );
+
+    if (!updateResult.success) {
+      console.error('Failed to update contact:', updateResult.error);
+    }
+
+    return { uuid: existingContact.uuid, isNew: false };
+  }
+
+  // Create new contact
+  console.log(`Creating new contact for: ${payload.email}`);
+  
+  const createResult = await sureContactRequest(
+    '/contacts',
+    'POST',
+    apiKey,
+    {
+      primary_fields: {
+        email: payload.email,
+        first_name: payload.first_name || '',
+        last_name: payload.last_name || '',
+        source: 'api',
+      },
+      custom_fields: buildCustomFields(payload, config),
+    }
+  );
+
+  if (!createResult.success) {
+    return { uuid: '', isNew: true, error: createResult.error };
+  }
+
+  const newUuid = createResult.data?.data?.uuid || createResult.data?.uuid;
+  console.log(`Created new contact: ${newUuid}`);
+  return { uuid: newUuid, isNew: true };
+}
+
+// Build custom fields object
+function buildCustomFields(
+  payload: ContactPayload,
+  config: Map<string, SureContactConfig>
+): Record<string, string> {
+  const customFields: Record<string, string> = {};
+
+  // Map our fields to SureContact custom field UUIDs
+  const fieldMappings: Record<string, string> = {
+    subscription_status: payload.subscription_status,
+    signup_date: payload.signup_date || new Date().toISOString().split('T')[0],
+    stripe_customer_id: payload.stripe_customer_id || '',
+    subscription_plan: payload.subscription_plan || '',
+  };
+
+  for (const [fieldName, value] of Object.entries(fieldMappings)) {
+    const configItem = config.get(`custom_field:${fieldName}`);
+    if (configItem && value) {
+      customFields[configItem.surecontact_uuid] = value;
+    }
+  }
+
+  return customFields;
+}
+
+// Manage tags for a contact
+async function manageTags(
+  apiKey: string,
+  contactUuid: string,
+  payload: ContactPayload,
+  config: Map<string, SureContactConfig>
+): Promise<{ added: string[]; removed: string[] }> {
+  const tagsAdded: string[] = [];
+  const tagsRemoved: string[] = [];
+
+  // Determine which subscription tag to use
+  const subscriptionTag = payload.subscription_status === 'pro' ? 'pro-subscriber' : 'free-user';
+  const oppositeTag = payload.subscription_status === 'pro' ? 'free-user' : 'pro-subscriber';
+
+  // Get tag UUIDs
+  const subscriptionTagConfig = config.get(`tag:${subscriptionTag}`);
+  const oppositeTagConfig = config.get(`tag:${oppositeTag}`);
+
+  // Remove opposite subscription tag first
+  if (oppositeTagConfig) {
+    const detachResult = await sureContactRequest(
+      `/contacts/${contactUuid}/tags/detach`,
+      'POST',
+      apiKey,
+      { tags: [oppositeTagConfig.surecontact_uuid] }
+    );
+    if (detachResult.success) {
+      tagsRemoved.push(oppositeTag);
+    }
+  }
+
+  // Add correct subscription tag
+  if (subscriptionTagConfig) {
+    const attachResult = await sureContactRequest(
+      `/contacts/${contactUuid}/tags/attach`,
+      'POST',
+      apiKey,
+      { tags: [subscriptionTagConfig.surecontact_uuid] }
+    );
+    if (attachResult.success) {
+      tagsAdded.push(subscriptionTag);
+    }
+  }
+
+  // Add event tag based on event type
+  const eventTagMap: Record<string, string> = {
+    signup: 'new-signup',
+    subscription_started: 'upgraded',
+    subscription_cancelled: 'churned',
+    reactivated: 'reactivated',
+  };
+
+  const eventTag = eventTagMap[payload.event_type];
+  if (eventTag) {
+    const eventTagConfig = config.get(`tag:${eventTag}`);
+    if (eventTagConfig) {
+      const attachResult = await sureContactRequest(
+        `/contacts/${contactUuid}/tags/attach`,
+        'POST',
+        apiKey,
+        { tags: [eventTagConfig.surecontact_uuid] }
+      );
+      if (attachResult.success) {
+        tagsAdded.push(eventTag);
+      }
+    }
+  }
+
+  return { added: tagsAdded, removed: tagsRemoved };
+}
+
+// Add contact to master list
+async function addToMasterList(
+  apiKey: string,
+  contactUuid: string,
+  config: Map<string, SureContactConfig>
+): Promise<boolean> {
+  // Find the first list (assumes one master list)
+  for (const [key, value] of config.entries()) {
+    if (key.startsWith('list:')) {
+      const result = await sureContactRequest(
+        `/contacts/${contactUuid}/lists/attach`,
+        'POST',
+        apiKey,
+        { lists: [value.surecontact_uuid] }
+      );
+      return result.success;
+    }
+  }
+  return false;
 }
 
 async function getSubscriptionStatus(
   stripe: Stripe | null,
   email: string
-): Promise<'free' | 'pro'> {
-  if (!stripe) return 'free';
+): Promise<{ status: 'free' | 'pro'; customerId?: string; plan?: string }> {
+  if (!stripe) return { status: 'free' };
 
   try {
     const customers = await stripe.customers.list({ email, limit: 1 });
-    if (customers.data.length === 0) return 'free';
+    if (customers.data.length === 0) return { status: 'free' };
 
+    const customer = customers.data[0];
     const subscriptions = await stripe.subscriptions.list({
-      customer: customers.data[0].id,
+      customer: customer.id,
       status: 'active',
       limit: 1,
     });
 
-    return subscriptions.data.length > 0 ? 'pro' : 'free';
+    if (subscriptions.data.length > 0) {
+      const sub = subscriptions.data[0];
+      const plan = sub.items.data[0]?.price?.nickname || 
+                   sub.items.data[0]?.price?.id || 
+                   'pro';
+      return { status: 'pro', customerId: customer.id, plan };
+    }
+
+    return { status: 'free', customerId: customer.id };
   } catch (error) {
     console.error('Error checking Stripe subscription:', error);
-    return 'free';
+    return { status: 'free' };
   }
 }
 
-async function sendToSureContact(
-  webhookUrl: string,
-  payload: SureContactPayload
-): Promise<{ success: boolean; status?: number; error?: string }> {
-  try {
-    console.log('Sending to SureContact:', JSON.stringify(payload));
-    
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const responseText = await response.text();
-    console.log('SureContact response:', response.status, responseText);
-
-    return {
-      success: response.ok,
-      status: response.status,
-      error: response.ok ? undefined : responseText,
-    };
-  } catch (error) {
-    console.error('Error sending to SureContact:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
+async function syncContact(
+  apiKey: string,
+  payload: ContactPayload,
+  config: Map<string, SureContactConfig>
+): Promise<{ success: boolean; error?: string; tagsAdded?: string[]; tagsRemoved?: string[] }> {
+  // Find or create contact
+  const contactResult = await findOrCreateContact(apiKey, payload, config);
+  
+  if (!contactResult.uuid) {
+    return { success: false, error: contactResult.error || 'Failed to create contact' };
   }
+
+  // Manage tags
+  const tagResult = await manageTags(apiKey, contactResult.uuid, payload, config);
+
+  // Add to master list (only for new contacts)
+  if (contactResult.isNew) {
+    await addToMasterList(apiKey, contactResult.uuid, config);
+  }
+
+  return {
+    success: true,
+    tagsAdded: tagResult.added,
+    tagsRemoved: tagResult.removed,
+  };
 }
 
 async function logWebhookResult(
@@ -105,13 +370,13 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const sureContactWebhookUrl = Deno.env.get('SURECONTACT_WEBHOOK_URL');
+    const sureContactApiKey = Deno.env.get('SURECONTACT_API_KEY');
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
 
-    if (!sureContactWebhookUrl) {
-      console.error('SURECONTACT_WEBHOOK_URL not configured');
+    if (!sureContactApiKey) {
+      console.error('SURECONTACT_API_KEY not configured');
       return new Response(
-        JSON.stringify({ error: 'SureContact webhook URL not configured' }),
+        JSON.stringify({ error: 'SureContact API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -119,9 +384,20 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' }) : null;
 
+    // Load SureContact config
+    let config: Map<string, SureContactConfig>;
+    try {
+      config = await getConfig(supabase);
+    } catch (error) {
+      return new Response(
+        JSON.stringify({ error: error instanceof Error ? error.message : 'Config error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Parse request body
     const { action, user_id, email, first_name, last_name, event_type } = await req.json();
-    console.log('SureContact webhook called with action:', action);
+    console.log('SureContact sync called with action:', action);
 
     // Verify admin access for sync_all and sync_user actions
     if (action === 'sync_all' || action === 'sync_user') {
@@ -159,10 +435,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    const results: { email: string; success: boolean; error?: string }[] = [];
+    const results: { email: string; success: boolean; error?: string; tagsAdded?: string[]; tagsRemoved?: string[] }[] = [];
 
     if (action === 'sync_new_signup') {
-      // Lightweight sync for new signups - no Stripe check needed (always free)
+      // Lightweight sync for new signups
       if (!email) {
         return new Response(
           JSON.stringify({ error: 'Email required for sync_new_signup' }),
@@ -170,25 +446,28 @@ Deno.serve(async (req) => {
         );
       }
 
-      const payload: SureContactPayload = {
+      const payload: ContactPayload = {
         email,
         first_name: first_name || '',
         last_name: last_name || '',
         subscription_status: 'free',
         event_type: 'signup',
+        signup_date: new Date().toISOString().split('T')[0],
       };
 
-      const result = await sendToSureContact(sureContactWebhookUrl, payload);
+      const result = await syncContact(sureContactApiKey, payload, config);
       await logWebhookResult(supabase, {
         email,
         event_type: 'signup',
         subscription_status: 'free',
         success: result.success,
-        response_status: result.status,
+        response_status: result.success ? 200 : 500,
         error_message: result.error,
+        tags_added: result.tagsAdded,
+        tags_removed: result.tagsRemoved,
       });
 
-      results.push({ email, success: result.success, error: result.error });
+      results.push({ email, ...result });
 
     } else if (action === 'sync_user') {
       // Sync single user by ID
@@ -199,14 +478,13 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Get user data from auth.users via profiles
+      // Get user data
       const { data: profile } = await supabase
         .from('profiles')
-        .select('first_name, last_name, user_id')
+        .select('first_name, last_name, user_id, created_at')
         .eq('user_id', user_id)
         .single();
 
-      // Get email from auth
       const { data: authData } = await supabase.auth.admin.getUserById(user_id);
       
       if (!authData?.user?.email) {
@@ -217,34 +495,39 @@ Deno.serve(async (req) => {
       }
 
       const userEmail = authData.user.email;
-      const subscriptionStatus = await getSubscriptionStatus(stripe, userEmail);
+      const stripeInfo = await getSubscriptionStatus(stripe, userEmail);
       const eventTypeToUse = event_type || 'manual_sync';
 
-      const payload: SureContactPayload = {
+      const payload: ContactPayload = {
         email: userEmail,
         first_name: profile?.first_name || '',
         last_name: profile?.last_name || '',
-        subscription_status: subscriptionStatus,
-        event_type: eventTypeToUse as SureContactPayload['event_type'],
+        subscription_status: stripeInfo.status,
+        event_type: eventTypeToUse,
+        stripe_customer_id: stripeInfo.customerId,
+        subscription_plan: stripeInfo.plan,
+        signup_date: profile?.created_at?.split('T')[0],
       };
 
-      const result = await sendToSureContact(sureContactWebhookUrl, payload);
+      const result = await syncContact(sureContactApiKey, payload, config);
       await logWebhookResult(supabase, {
         email: userEmail,
         event_type: eventTypeToUse,
-        subscription_status: subscriptionStatus,
+        subscription_status: stripeInfo.status,
         success: result.success,
-        response_status: result.status,
+        response_status: result.success ? 200 : 500,
         error_message: result.error,
+        tags_added: result.tagsAdded,
+        tags_removed: result.tagsRemoved,
       });
 
-      results.push({ email: userEmail, success: result.success, error: result.error });
+      results.push({ email: userEmail, ...result });
 
     } else if (action === 'sync_all') {
-      // Sync all users - admin only
+      // Sync all users
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('user_id, first_name, last_name');
+        .select('user_id, first_name, last_name, created_at');
 
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError);
@@ -266,30 +549,35 @@ Deno.serve(async (req) => {
           }
 
           const userEmail = authData.user.email;
-          const subscriptionStatus = await getSubscriptionStatus(stripe, userEmail);
+          const stripeInfo = await getSubscriptionStatus(stripe, userEmail);
 
-          const payload: SureContactPayload = {
+          const payload: ContactPayload = {
             email: userEmail,
             first_name: profile.first_name || '',
             last_name: profile.last_name || '',
-            subscription_status: subscriptionStatus,
+            subscription_status: stripeInfo.status,
             event_type: 'manual_sync',
+            stripe_customer_id: stripeInfo.customerId,
+            subscription_plan: stripeInfo.plan,
+            signup_date: profile.created_at?.split('T')[0],
           };
 
-          const result = await sendToSureContact(sureContactWebhookUrl, payload);
+          const result = await syncContact(sureContactApiKey, payload, config);
           await logWebhookResult(supabase, {
             email: userEmail,
             event_type: 'manual_sync',
-            subscription_status: subscriptionStatus,
+            subscription_status: stripeInfo.status,
             success: result.success,
-            response_status: result.status,
+            response_status: result.success ? 200 : 500,
             error_message: result.error,
+            tags_added: result.tagsAdded,
+            tags_removed: result.tagsRemoved,
           });
 
-          results.push({ email: userEmail, success: result.success, error: result.error });
+          results.push({ email: userEmail, ...result });
 
-          // Small delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Rate limiting
+          await new Promise(resolve => setTimeout(resolve, 200));
         } catch (error) {
           console.error(`Error syncing user ${profile.user_id}:`, error);
           results.push({ 
@@ -319,7 +607,7 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('SureContact webhook error:', error);
+    console.error('SureContact sync error:', error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

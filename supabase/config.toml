@@ -209,3 +209,6 @@ verify_jwt = false
 
 [functions.surecontact-webhook]
 verify_jwt = false
+
+[functions.surecontact-init]
+verify_jwt = false
