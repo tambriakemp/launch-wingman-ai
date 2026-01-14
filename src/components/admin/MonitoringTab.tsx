@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Send, Loader2, Users, FlaskConical, History, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
+import { Send, Loader2, Users, FlaskConical, History, CheckCircle2, XCircle, RefreshCw, UserCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 
@@ -40,12 +40,22 @@ export function MonitoringTab({ users = [] }: MonitoringTabProps) {
   const [syncLoading, setSyncLoading] = useState(false);
   const [testLoading, setTestLoading] = useState(false);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [sureContactSyncLoading, setSureContactSyncLoading] = useState(false);
+  const [sureContactTestLoading, setSureContactTestLoading] = useState(false);
   const [webhookLogs, setWebhookLogs] = useState<WebhookLog[]>([]);
   const [lastSyncResult, setLastSyncResult] = useState<{
     contacts_synced: number;
     success_count: number;
   } | null>(null);
   const [lastTestResult, setLastTestResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
+  const [sureContactSyncResult, setSureContactSyncResult] = useState<{
+    total: number;
+    success_count: number;
+  } | null>(null);
+  const [sureContactTestResult, setSureContactTestResult] = useState<{
     success: boolean;
     message: string;
   } | null>(null);
@@ -198,6 +208,74 @@ export function MonitoringTab({ users = [] }: MonitoringTabProps) {
     }
   };
 
+  const handleSureContactSync = async () => {
+    setSureContactSyncLoading(true);
+    setSureContactSyncResult(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('surecontact-webhook', {
+        body: { action: 'sync_all' },
+      });
+
+      if (error) throw error;
+
+      const successCount = data.results?.filter((r: { success: boolean }) => r.success).length || 0;
+      const total = data.results?.length || 0;
+      
+      setSureContactSyncResult({
+        total,
+        success_count: successCount,
+      });
+
+      if (successCount === total) {
+        toast.success(`Successfully synced ${total} contacts to SureContact`);
+      } else {
+        toast.warning(`Synced ${successCount} of ${total} contacts to SureContact. Some failed.`);
+      }
+    } catch (error) {
+      console.error('SureContact sync error:', error);
+      toast.error('Failed to sync contacts to SureContact');
+    } finally {
+      setSureContactSyncLoading(false);
+    }
+  };
+
+  const handleSureContactTest = async () => {
+    if (!user?.id) {
+      toast.error('No user session found');
+      return;
+    }
+
+    setSureContactTestLoading(true);
+    setSureContactTestResult(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('surecontact-webhook', {
+        body: { action: 'sync_user', user_id: user.id, event_type: 'test_webhook' },
+      });
+
+      if (error) throw error;
+
+      const result = data.results?.[0];
+      if (result?.success) {
+        setSureContactTestResult({ success: true, message: 'Test sent successfully!' });
+        toast.success('Test webhook sent to SureContact!');
+      } else {
+        setSureContactTestResult({ 
+          success: false, 
+          message: result?.error || 'Unknown error' 
+        });
+        toast.error('SureContact test failed - check configuration');
+      }
+    } catch (error) {
+      console.error('SureContact test error:', error);
+      setSureContactTestResult({ success: false, message: 'Failed to send test' });
+      toast.error('Failed to send test to SureContact');
+    } finally {
+      setSureContactTestLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Alerts Widget */}
@@ -277,6 +355,78 @@ export function MonitoringTab({ users = [] }: MonitoringTabProps) {
             {lastSyncResult && (
               <p className="text-sm text-muted-foreground">
                 Last sync: {lastSyncResult.success_count}/{lastSyncResult.contacts_synced} contacts synced successfully
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SureContact Sync Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <UserCheck className="h-5 w-5" />
+            SureContact Sync
+          </CardTitle>
+          <CardDescription>
+            Send contact data (name, email, subscription status) to SureContact
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Test SureContact */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 bg-muted/50 rounded-lg">
+            <Button
+              variant="outline"
+              onClick={handleSureContactTest}
+              disabled={sureContactTestLoading}
+              className="gap-2"
+            >
+              {sureContactTestLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Testing...
+                </>
+              ) : (
+                <>
+                  <FlaskConical className="h-4 w-4" />
+                  Test SureContact
+                </>
+              )}
+            </Button>
+            {sureContactTestResult && (
+              <p className={`text-sm ${sureContactTestResult.success ? 'text-green-600' : 'text-destructive'}`}>
+                {sureContactTestResult.message}
+              </p>
+            )}
+            {!sureContactTestResult && (
+              <p className="text-sm text-muted-foreground">
+                Sends your admin account as a test contact
+              </p>
+            )}
+          </div>
+
+          {/* Sync All to SureContact */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <Button
+              onClick={handleSureContactSync}
+              disabled={sureContactSyncLoading}
+              className="gap-2"
+            >
+              {sureContactSyncLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <Users className="h-4 w-4" />
+                  Sync All to SureContact
+                </>
+              )}
+            </Button>
+            {sureContactSyncResult && (
+              <p className="text-sm text-muted-foreground">
+                Last sync: {sureContactSyncResult.success_count}/{sureContactSyncResult.total} contacts synced successfully
               </p>
             )}
           </div>
