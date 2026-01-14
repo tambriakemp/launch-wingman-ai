@@ -183,10 +183,13 @@ async function refreshPinterestToken(
   supabase: any,
   connection: any,
   PINTEREST_APP_ID: string,
-  PINTEREST_APP_SECRET: string
+  PINTEREST_APP_SECRET: string,
+  PINTEREST_SANDBOX_APP_ID?: string,
+  PINTEREST_SANDBOX_APP_SECRET?: string
 ): Promise<RefreshResult> {
+  const isSandbox = connection.platform === 'pinterest_sandbox';
   const result: RefreshResult = {
-    platform: 'pinterest',
+    platform: connection.platform,
     userId: connection.user_id.substring(0, 8),
     success: false,
   };
@@ -197,9 +200,19 @@ async function refreshPinterestToken(
       return result;
     }
 
-    const credentials = btoa(`${PINTEREST_APP_ID}:${PINTEREST_APP_SECRET}`);
+    // Use sandbox credentials if it's a sandbox connection
+    const appId = isSandbox ? PINTEREST_SANDBOX_APP_ID : PINTEREST_APP_ID;
+    const appSecret = isSandbox ? PINTEREST_SANDBOX_APP_SECRET : PINTEREST_APP_SECRET;
+    const apiBase = isSandbox ? 'https://api-sandbox.pinterest.com' : 'https://api.pinterest.com';
 
-    const response = await fetch('https://api.pinterest.com/v5/oauth/token', {
+    if (!appId || !appSecret) {
+      result.error = `Missing Pinterest ${isSandbox ? 'sandbox ' : ''}credentials`;
+      return result;
+    }
+
+    const credentials = btoa(`${appId}:${appSecret}`);
+
+    const response = await fetch(`${apiBase}/v5/oauth/token`, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${credentials}`,
@@ -258,8 +271,11 @@ async function refreshTikTokToken(
   supabase: any,
   connection: any,
   TIKTOK_CLIENT_KEY: string,
-  TIKTOK_CLIENT_SECRET: string
+  TIKTOK_CLIENT_SECRET: string,
+  TIKTOK_SANDBOX_CLIENT_KEY?: string,
+  TIKTOK_SANDBOX_CLIENT_SECRET?: string
 ): Promise<RefreshResult> {
+  const isSandbox = connection.platform === 'tiktok_sandbox';
   const platform = connection.platform;
   const result: RefreshResult = {
     platform,
@@ -273,14 +289,18 @@ async function refreshTikTokToken(
       return result;
     }
 
+    // Use sandbox credentials if it's a sandbox connection
+    const clientKey = isSandbox ? (TIKTOK_SANDBOX_CLIENT_KEY || TIKTOK_CLIENT_KEY) : TIKTOK_CLIENT_KEY;
+    const clientSecret = isSandbox ? (TIKTOK_SANDBOX_CLIENT_SECRET || TIKTOK_CLIENT_SECRET) : TIKTOK_CLIENT_SECRET;
+
     const response = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
-        client_key: TIKTOK_CLIENT_KEY,
-        client_secret: TIKTOK_CLIENT_SECRET,
+        client_key: clientKey,
+        client_secret: clientSecret,
         grant_type: "refresh_token",
         refresh_token: connection.refresh_token,
       }),
@@ -338,8 +358,12 @@ serve(async (req) => {
     const FACEBOOK_APP_SECRET = Deno.env.get('FACEBOOK_APP_SECRET');
     const PINTEREST_APP_ID = Deno.env.get('PINTEREST_APP_ID');
     const PINTEREST_APP_SECRET = Deno.env.get('PINTEREST_APP_SECRET');
+    const PINTEREST_SANDBOX_APP_ID = Deno.env.get('PINTEREST_SANDBOX_APP_ID');
+    const PINTEREST_SANDBOX_APP_SECRET = Deno.env.get('PINTEREST_SANDBOX_APP_SECRET');
     const TIKTOK_CLIENT_KEY = Deno.env.get('TIKTOK_CLIENT_KEY');
     const TIKTOK_CLIENT_SECRET = Deno.env.get('TIKTOK_CLIENT_SECRET');
+    const TIKTOK_SANDBOX_CLIENT_KEY = Deno.env.get('TIKTOK_SANDBOX_CLIENT_KEY');
+    const TIKTOK_SANDBOX_CLIENT_SECRET = Deno.env.get('TIKTOK_SANDBOX_CLIENT_SECRET');
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -390,17 +414,32 @@ serve(async (req) => {
             break;
 
           case 'pinterest':
+          case 'pinterest_sandbox':
             if (PINTEREST_APP_ID && PINTEREST_APP_SECRET) {
-              result = await refreshPinterestToken(supabase, connection, PINTEREST_APP_ID, PINTEREST_APP_SECRET);
+              result = await refreshPinterestToken(
+                supabase, 
+                connection, 
+                PINTEREST_APP_ID, 
+                PINTEREST_APP_SECRET,
+                PINTEREST_SANDBOX_APP_ID,
+                PINTEREST_SANDBOX_APP_SECRET
+              );
             } else {
-              result = { platform: 'pinterest', userId: connection.user_id.substring(0, 8), success: false, error: 'Missing Pinterest credentials' };
+              result = { platform: connection.platform, userId: connection.user_id.substring(0, 8), success: false, error: 'Missing Pinterest credentials' };
             }
             break;
 
           case 'tiktok':
           case 'tiktok_sandbox':
             if (TIKTOK_CLIENT_KEY && TIKTOK_CLIENT_SECRET) {
-              result = await refreshTikTokToken(supabase, connection, TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET);
+              result = await refreshTikTokToken(
+                supabase, 
+                connection, 
+                TIKTOK_CLIENT_KEY, 
+                TIKTOK_CLIENT_SECRET,
+                TIKTOK_SANDBOX_CLIENT_KEY,
+                TIKTOK_SANDBOX_CLIENT_SECRET
+              );
             } else {
               result = { platform: connection.platform, userId: connection.user_id.substring(0, 8), success: false, error: 'Missing TikTok credentials' };
             }

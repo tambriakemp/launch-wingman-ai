@@ -13,15 +13,9 @@ serve(async (req) => {
   }
 
   try {
-    const PINTEREST_APP_ID = Deno.env.get('PINTEREST_APP_ID');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
-    if (!PINTEREST_APP_ID) {
-      console.error('[PINTEREST-AUTH-START] Missing PINTEREST_APP_ID');
-      throw new Error('Pinterest App ID not configured');
-    }
-
     // SECURITY: Validate the user's JWT token instead of accepting user_id from client
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -40,26 +34,43 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // Get optional redirect_url from request body (but NOT user_id - we use the authenticated user)
+    // Get optional redirect_url and environment from request body
     let redirect_url = '/settings';
+    let environment = 'production';
     try {
       const body = await req.json();
       if (body.redirect_url) {
         redirect_url = body.redirect_url;
       }
+      if (body.environment === 'sandbox') {
+        environment = 'sandbox';
+      }
     } catch {
       // No body or invalid JSON is fine, use defaults
     }
 
-    console.log('[PINTEREST-AUTH-START] Starting OAuth for authenticated user:', user.id);
+    console.log('[PINTEREST-AUTH-START] Starting OAuth for user:', user.id, 'environment:', environment);
 
-    // Build state parameter with authenticated user info
-    const state = btoa(JSON.stringify({ user_id: user.id, redirect_url }));
+    // Get appropriate credentials based on environment
+    const PINTEREST_APP_ID = environment === 'sandbox' 
+      ? Deno.env.get('PINTEREST_SANDBOX_APP_ID') 
+      : Deno.env.get('PINTEREST_APP_ID');
+    const PINTEREST_APP_SECRET = environment === 'sandbox'
+      ? Deno.env.get('PINTEREST_SANDBOX_APP_SECRET')
+      : Deno.env.get('PINTEREST_APP_SECRET');
+    
+    if (!PINTEREST_APP_ID) {
+      console.error('[PINTEREST-AUTH-START] Missing Pinterest credentials for environment:', environment);
+      throw new Error(`Pinterest ${environment} App ID not configured`);
+    }
+
+    // Build state parameter with authenticated user info and environment
+    const state = btoa(JSON.stringify({ user_id: user.id, redirect_url, environment }));
     
     // Pinterest OAuth scopes - need boards:write to create pins on boards, user_accounts:read for profile info
     const scopes = 'boards:read,boards:write,pins:read,pins:write,user_accounts:read';
     
-    // Pinterest OAuth URL
+    // Pinterest OAuth URL (same for both production and sandbox - environment is determined by credentials)
     const redirectUri = `${SUPABASE_URL}/functions/v1/pinterest-auth-callback`;
     const authUrl = new URL('https://www.pinterest.com/oauth/');
     authUrl.searchParams.set('client_id', PINTEREST_APP_ID);
@@ -68,7 +79,7 @@ serve(async (req) => {
     authUrl.searchParams.set('scope', scopes);
     authUrl.searchParams.set('state', state);
 
-    console.log('[PINTEREST-AUTH-START] Generated auth URL, redirecting...');
+    console.log('[PINTEREST-AUTH-START] Generated auth URL for', environment, 'redirecting...');
 
     return new Response(
       JSON.stringify({ url: authUrl.toString() }),

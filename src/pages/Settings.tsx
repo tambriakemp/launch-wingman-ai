@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTikTokEnvironment } from "@/contexts/TikTokEnvironmentContext";
+import { usePinterestEnvironment } from "@/contexts/PinterestEnvironmentContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -72,6 +73,7 @@ interface SocialConnection {
 const Settings = () => {
   const { user, isSubscribed, subscriptionEnd, checkSubscription } = useAuth();
   const { environment: tiktokEnvironment } = useTikTokEnvironment();
+  const { environment: pinterestEnvironment } = usePinterestEnvironment();
   const { hasAdminAccess, tier } = useFeatureAccess();
   const hasFullAccess = isSubscribed || hasAdminAccess;
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -143,6 +145,7 @@ const Settings = () => {
   const [isRefreshingInstagram, setIsRefreshingInstagram] = useState(false);
 
   const pinterestConnection = socialConnections.find(c => c.platform === 'pinterest');
+  const pinterestSandboxConnection = socialConnections.find(c => c.platform === 'pinterest_sandbox');
   const instagramConnection = socialConnections.find(c => c.platform === 'instagram');
   const facebookConnection = socialConnections.find(c => c.platform === 'facebook');
   const threadsConnection = socialConnections.find(c => c.platform === 'threads');
@@ -342,7 +345,8 @@ const Settings = () => {
     try {
       const { data, error } = await supabase.functions.invoke('pinterest-auth-start', {
         body: { 
-          redirect_url: '/settings' 
+          redirect_url: '/settings',
+          environment: pinterestEnvironment
         }
       });
       
@@ -361,18 +365,20 @@ const Settings = () => {
   };
 
   const handleDisconnectPinterest = async () => {
-    if (!user || !pinterestConnection) return;
+    const platform = pinterestEnvironment === "sandbox" ? "pinterest_sandbox" : "pinterest";
+    const connection = pinterestEnvironment === "sandbox" ? pinterestSandboxConnection : pinterestConnection;
+    if (!user || !connection) return;
     
     setIsDisconnectingPinterest(true);
     try {
       const { error } = await supabase
         .from('social_connections')
         .delete()
-        .eq('id', pinterestConnection.id);
+        .eq('id', connection.id);
       
       if (error) throw error;
       
-      toast.success("Pinterest disconnected");
+      toast.success(`Pinterest ${pinterestEnvironment === "sandbox" ? "Sandbox " : ""}disconnected`);
       refetchConnections();
     } catch (error) {
       console.error('Pinterest disconnect error:', error);
@@ -634,11 +640,12 @@ const Settings = () => {
   };
 
   const instagramTokenStatus = getTokenStatus(instagramConnection);
-  const pinterestTokenStatus = getTokenStatus(pinterestConnection);
+  const pinterestTokenStatus = getTokenStatus(pinterestEnvironment === "sandbox" ? pinterestSandboxConnection : pinterestConnection);
   const facebookTokenStatus = getTokenStatus(facebookConnection);
   const threadsTokenStatus = getTokenStatus(threadsConnection);
   const tiktokTokenStatus = getTokenStatus(tiktokConnection);
   const tiktokSandboxTokenStatus = getTokenStatus(tiktokSandboxConnection);
+  const pinterestSandboxTokenStatus = getTokenStatus(pinterestSandboxConnection);
 
   const hasProfileChanges = firstName !== (profile.first_name || "") || lastName !== (profile.last_name || "");
 
