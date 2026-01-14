@@ -23,6 +23,7 @@ interface ContactPayload {
   stripe_customer_id?: string;
   signup_date?: string;
   subscription_plan?: string;
+  subscription_start_date?: string;
 }
 
 interface LogData {
@@ -167,19 +168,22 @@ async function findOrCreateContact(
   return { uuid: newUuid, isNew: true };
 }
 
-// Build custom fields object
+// Build custom fields object - maps all 7 custom fields
 function buildCustomFields(
   payload: ContactPayload,
   config: Map<string, SureContactConfig>
 ): Record<string, string> {
   const customFields: Record<string, string> = {};
 
-  // Map our fields to SureContact custom field UUIDs
+  // Map all custom fields to SureContact UUIDs
   const fieldMappings: Record<string, string> = {
     subscription_status: payload.subscription_status,
     signup_date: payload.signup_date || new Date().toISOString().split('T')[0],
     stripe_customer_id: payload.stripe_customer_id || '',
     subscription_plan: payload.subscription_plan || '',
+    app_source: 'launchely',
+    last_sync_date: new Date().toISOString().split('T')[0],
+    subscription_start_date: payload.subscription_start_date || '',
   };
 
   for (const [fieldName, value] of Object.entries(fieldMappings)) {
@@ -236,10 +240,10 @@ async function manageTags(
     }
   }
 
-  // Add event tag based on event type
+  // Add event tag based on event type - using correct SureContact tag names
   const eventTagMap: Record<string, string> = {
     signup: 'new-signup',
-    subscription_started: 'upgraded',
+    subscription_started: 'upgraded-to-pro',
     subscription_cancelled: 'churned',
     reactivated: 'reactivated',
   };
@@ -263,15 +267,32 @@ async function manageTags(
   return { added: tagsAdded, removed: tagsRemoved };
 }
 
-// Add contact to master list
+// Add contact to Launchely list specifically
 async function addToMasterList(
   apiKey: string,
   contactUuid: string,
   config: Map<string, SureContactConfig>
 ): Promise<boolean> {
-  // Find the first list (assumes one master list)
+  // Specifically look for the Launchely list
+  const launchelyList = config.get('list:Launchely');
+  
+  if (launchelyList) {
+    console.log(`Adding contact to Launchely list: ${launchelyList.surecontact_uuid}`);
+    const result = await sureContactRequest(
+      `/contacts/${contactUuid}/lists/attach`,
+      'POST',
+      apiKey,
+      { lists: [launchelyList.surecontact_uuid] }
+    );
+    return result.success;
+  }
+  
+  console.warn('Launchely list not found in config - checking for any list');
+  
+  // Fallback: try first available list
   for (const [key, value] of config.entries()) {
     if (key.startsWith('list:')) {
+      console.log(`Using fallback list: ${key}`);
       const result = await sureContactRequest(
         `/contacts/${contactUuid}/lists/attach`,
         'POST',
@@ -281,13 +302,15 @@ async function addToMasterList(
       return result.success;
     }
   }
+  
+  console.error('No lists found in config');
   return false;
 }
 
 async function getSubscriptionStatus(
   stripe: Stripe | null,
   email: string
-): Promise<{ status: 'free' | 'pro'; customerId?: string; plan?: string }> {
+): Promise<{ status: 'free' | 'pro'; customerId?: string; plan?: string; startDate?: string }> {
   if (!stripe) return { status: 'free' };
 
   try {
@@ -306,7 +329,9 @@ async function getSubscriptionStatus(
       const plan = sub.items.data[0]?.price?.nickname || 
                    sub.items.data[0]?.price?.id || 
                    'pro';
-      return { status: 'pro', customerId: customer.id, plan };
+      // Get subscription start date from Stripe
+      const startDate = new Date(sub.start_date * 1000).toISOString().split('T')[0];
+      return { status: 'pro', customerId: customer.id, plan, startDate };
     }
 
     return { status: 'free', customerId: customer.id };
@@ -507,6 +532,7 @@ Deno.serve(async (req) => {
         stripe_customer_id: stripeInfo.customerId,
         subscription_plan: stripeInfo.plan,
         signup_date: profile?.created_at?.split('T')[0],
+        subscription_start_date: stripeInfo.startDate,
       };
 
       const result = await syncContact(sureContactApiKey, payload, config);
@@ -560,6 +586,7 @@ Deno.serve(async (req) => {
             stripe_customer_id: stripeInfo.customerId,
             subscription_plan: stripeInfo.plan,
             signup_date: profile.created_at?.split('T')[0],
+            subscription_start_date: stripeInfo.startDate,
           };
 
           const result = await syncContact(sureContactApiKey, payload, config);
