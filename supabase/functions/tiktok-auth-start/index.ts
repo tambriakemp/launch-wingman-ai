@@ -144,8 +144,8 @@ serve(async (req) => {
     const authUrl = new URL("https://www.tiktok.com/v2/auth/authorize/");
     authUrl.searchParams.set("client_key", clientKey);
     authUrl.searchParams.set("response_type", "code");
-    // Request user.info.profile for username access (in addition to user.info.basic for display_name)
-    authUrl.searchParams.set("scope", "user.info.basic,user.info.profile,video.publish");
+    // Only request scopes available in your TikTok app (user.info.profile requires approval)
+    authUrl.searchParams.set("scope", "user.info.basic,video.publish");
     authUrl.searchParams.set("redirect_uri", callbackUrl);
     authUrl.searchParams.set("state", state);
     authUrl.searchParams.set("code_challenge", codeChallenge);

@@ -123,12 +123,10 @@ serve(async (req) => {
 
     const { access_token, refresh_token, expires_in, open_id } = tokenData;
 
-    // Fetch user info - first try display_name only (works with user.info.basic)
-    // Then try username if user.info.profile scope is available
+    // Fetch user info using user.info.basic scope only (user.info.profile requires approval)
     let username = open_id;
     let avatarUrl: string | null = null;
     try {
-      // First call: only request fields that work with user.info.basic scope
       const userResponse = await fetch(
         "https://open.tiktokapis.com/v2/user/info/?fields=display_name,avatar_url",
         {
@@ -138,34 +136,12 @@ serve(async (req) => {
         }
       );
       const userData = await userResponse.json();
-      console.log('[TIKTOK-AUTH-CALLBACK] User data (basic) received:', JSON.stringify(userData));
+      console.log('[TIKTOK-AUTH-CALLBACK] User data received:', JSON.stringify(userData));
       
       if (userData.data?.user) {
         username = userData.data.user.display_name || open_id;
         avatarUrl = userData.data.user.avatar_url || null;
         console.log(`[TIKTOK-AUTH-CALLBACK] Got display_name: ${username}, avatar: ${avatarUrl ? 'yes' : 'no'}`);
-        
-        // Second call: try to get username (requires user.info.profile scope)
-        try {
-          const profileResponse = await fetch(
-            "https://open.tiktokapis.com/v2/user/info/?fields=username",
-            {
-              headers: {
-                Authorization: `Bearer ${access_token}`,
-              },
-            }
-          );
-          const profileData = await profileResponse.json();
-          console.log('[TIKTOK-AUTH-CALLBACK] Profile data received:', JSON.stringify(profileData));
-          
-          if (profileData.data?.user?.username) {
-            username = profileData.data.user.username;
-            console.log(`[TIKTOK-AUTH-CALLBACK] Got username from profile: ${username}`);
-          }
-        } catch (profileErr) {
-          console.log('[TIKTOK-AUTH-CALLBACK] Could not fetch username (profile scope may not be available):', profileErr);
-          // Keep using display_name, which is fine
-        }
       }
     } catch (e) {
       console.error("Failed to fetch user info:", e);
