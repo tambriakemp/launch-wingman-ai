@@ -627,12 +627,18 @@ const Settings = () => {
     
     const expiresAt = new Date(connection.token_expires_at);
     const now = new Date();
-    const daysUntilExpiry = Math.floor((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const msUntilExpiry = expiresAt.getTime() - now.getTime();
+    const hoursUntilExpiry = msUntilExpiry / (1000 * 60 * 60);
+    const daysUntilExpiry = Math.floor(hoursUntilExpiry / 24);
     
-    if (daysUntilExpiry < 0) {
+    if (msUntilExpiry < 0) {
       return { status: 'expired' as const, message: 'Expired', daysUntilExpiry };
+    } else if (hoursUntilExpiry < 24) {
+      // Less than 24 hours - show hours instead of "0 days"
+      const hours = Math.ceil(hoursUntilExpiry);
+      return { status: 'expiring_soon' as const, message: `Expires in ${hours}h`, daysUntilExpiry: 0 };
     } else if (daysUntilExpiry <= 7) {
-      return { status: 'expiring_soon' as const, message: `Expires in ${daysUntilExpiry} days`, daysUntilExpiry };
+      return { status: 'expiring_soon' as const, message: `Expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}`, daysUntilExpiry };
     } else if (daysUntilExpiry <= 30) {
       return { status: 'valid' as const, message: `Expires in ${daysUntilExpiry} days`, daysUntilExpiry };
     } else {

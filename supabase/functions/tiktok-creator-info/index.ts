@@ -213,20 +213,39 @@ serve(async (req) => {
     if (looksLikeOpenId) {
       console.log("Stored account_name looks like open_id, attempting to fetch real username...");
       try {
+        // First try display_name and avatar_url (works with user.info.basic scope)
         const userResponse = await fetch(
-          "https://open.tiktokapis.com/v2/user/info/?fields=display_name,username,avatar_url",
+          "https://open.tiktokapis.com/v2/user/info/?fields=display_name,avatar_url",
           { 
             method: "GET",
             headers: { Authorization: `Bearer ${accessToken}` } 
           }
         );
         const userData = await userResponse.json();
-        console.log("User info response:", JSON.stringify(userData));
+        console.log("User info (basic) response:", JSON.stringify(userData));
         
-        if (userData.data?.user?.display_name || userData.data?.user?.username) {
-          const newUsername = userData.data.user.username || userData.data.user.display_name;
-          const newNickname = userData.data.user.display_name || userData.data.user.username;
+        if (userData.data?.user?.display_name) {
+          let newUsername = userData.data.user.display_name;
           const newAvatar = userData.data.user.avatar_url;
+          
+          // Try to get the actual @username if user.info.profile scope is available
+          try {
+            const profileResponse = await fetch(
+              "https://open.tiktokapis.com/v2/user/info/?fields=username",
+              { 
+                method: "GET",
+                headers: { Authorization: `Bearer ${accessToken}` } 
+              }
+            );
+            const profileData = await profileResponse.json();
+            console.log("User info (profile) response:", JSON.stringify(profileData));
+            
+            if (profileData.data?.user?.username) {
+              newUsername = profileData.data.user.username;
+            }
+          } catch (profileErr) {
+            console.log("Could not fetch username (profile scope may not be available):", profileErr);
+          }
           
           console.log("Found real username, updating database:", newUsername);
           
@@ -242,7 +261,7 @@ serve(async (req) => {
           
           // Use the new values in response
           displayUsername = newUsername;
-          displayNickname = newNickname;
+          displayNickname = userData.data.user.display_name;
           displayAvatar = newAvatar || displayAvatar;
         }
       } catch (e) {
