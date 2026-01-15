@@ -110,12 +110,19 @@ serve(async (req) => {
 
     let accessToken: string;
 
-    // In sandbox mode with a manual sandbox token, use that directly
-    if (environment === "sandbox" && sandboxToken) {
+    // In sandbox mode, require a manual sandbox token
+    if (environment === "sandbox") {
+      if (!sandboxToken) {
+        console.log('[PINTEREST-GET-BOARDS] Sandbox mode requires a sandbox token');
+        return new Response(
+          JSON.stringify({ boards: [], message: 'Sandbox mode requires a sandbox token. Please enter one in Settings.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       console.log('[PINTEREST-GET-BOARDS] Using manual sandbox token');
       accessToken = sandboxToken;
     } else {
-      // Get Pinterest connection (always production)
+      // Production mode - Get Pinterest connection
       const { data: connection, error: connError } = await supabase
         .from('social_connections')
         .select('platform, access_token, refresh_token, token_expires_at')
@@ -128,7 +135,7 @@ serve(async (req) => {
         throw new Error('Pinterest not connected. Go to Settings and connect Pinterest.');
       }
 
-      console.log('[PINTEREST-GET-BOARDS] Using', environment, 'API at', apiBase);
+      console.log('[PINTEREST-GET-BOARDS] Using production API');
 
       // Decrypt the access token
       const { data: decryptedAccessToken, error: decryptError } = await supabase.rpc('decrypt_token', { 
