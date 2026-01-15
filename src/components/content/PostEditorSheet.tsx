@@ -42,6 +42,7 @@ import { SocialPostPreview } from "./SocialPostPreview";
 import { PinterestMediaOptionsModal } from "./PinterestMediaOptionsModal";
 import { ScheduleModal } from "./ScheduleModal";
 import { PerNetworkEditor, PerPlatformContent } from "./PerNetworkEditor";
+import { ThreadChainEditor, ThreadPost } from "./ThreadChainEditor";
 import { TikTokPostOptions } from "./TikTokPostOptions";
 import { ContentToolbar } from "./ContentToolbar";
 import { AIAssistPanel } from "./AIAssistPanel";
@@ -205,6 +206,9 @@ export function PostEditorSheet({
   // Per-network customization
   const [customizePerNetwork, setCustomizePerNetwork] = useState(false);
   const [perPlatformContent, setPerPlatformContent] = useState<PerPlatformContent>({});
+  
+  // Thread chain state (for Threads platform when NOT using per-network customization)
+  const [threadPosts, setThreadPosts] = useState<ThreadPost[]>([]);
 
   // AI Assist Panel state
   const [showAIPanel, setShowAIPanel] = useState(false);
@@ -1516,8 +1520,8 @@ export function PostEditorSheet({
                 </div>
                 )}
 
-                {/* Main Title & Content - hide when ONLY Threads is selected */}
-                {(!customizePerNetwork || formData.scheduled_platforms.length <= 1) && 
+                {/* Main Title & Content - hide when customizePerNetwork is enabled with 2+ platforms, OR when ONLY Threads is selected */}
+                {!customizePerNetwork && 
                   !(formData.scheduled_platforms.length === 1 && formData.scheduled_platforms[0] === "threads") && (
                   <>
                     {/* Title */}
@@ -1579,16 +1583,13 @@ export function PostEditorSheet({
                   </>
                 )}
 
-                {/* Per-Network Content Customization - when 2+ platforms and customizing, OR when Threads is selected (for thread chains) */}
-                {!isPostedContent && (
-                  (formData.scheduled_platforms.length > 1 && customizePerNetwork) ||
-                  formData.scheduled_platforms.includes("threads")
-                ) && (
+                {/* Per-Network Content Customization - ONLY when customizePerNetwork is enabled AND 2+ platforms */}
+                {!isPostedContent && 
+                  formData.scheduled_platforms.length > 1 && 
+                  customizePerNetwork && (
                   <PerNetworkEditor
-                    selectedPlatforms={formData.scheduled_platforms.includes("threads") && formData.scheduled_platforms.length === 1 
-                      ? ["threads"] 
-                      : formData.scheduled_platforms}
-                    enabled={customizePerNetwork || formData.scheduled_platforms.includes("threads")}
+                    selectedPlatforms={formData.scheduled_platforms}
+                    enabled={true}
                     perPlatformContent={perPlatformContent}
                     onPerPlatformContentChange={setPerPlatformContent}
                     defaultContent={content}
@@ -1599,10 +1600,20 @@ export function PostEditorSheet({
                   />
                 )}
 
+                {/* Thread Chain Editor - when Threads is selected AND customizePerNetwork is NOT enabled */}
+                {!isPostedContent &&
+                  formData.scheduled_platforms.includes("threads") &&
+                  !customizePerNetwork && (
+                  <ThreadChainEditor
+                    threadPosts={threadPosts}
+                    onThreadPostsChange={setThreadPosts}
+                  />
+                )}
+
                 {/* Icon Toolbar - ALWAYS visible below content/per-network section */}
                 {!isPostedContent && (
                   <ContentToolbar
-                    customizePerNetwork={customizePerNetwork || formData.scheduled_platforms.includes("threads")}
+                    customizePerNetwork={customizePerNetwork}
                     onCustomizeToggle={() => setCustomizePerNetwork(!customizePerNetwork)}
                     showPinterestOption={formData.scheduled_platforms.includes("pinterest")}
                     onPinterestClick={() => setShowPinterestOptions(true)}
