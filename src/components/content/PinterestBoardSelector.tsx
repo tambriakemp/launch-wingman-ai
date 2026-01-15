@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
+import { usePinterestSandboxToken } from "@/hooks/usePinterestSandboxToken";
 
 interface PinterestBoard {
   id: string;
@@ -27,15 +28,16 @@ interface PinterestBoardSelectorProps {
 export function PinterestBoardSelector({ selectedBoard, onBoardChange }: PinterestBoardSelectorProps) {
   const { user } = useAuth();
   const { environment } = usePinterestEnvironmentSetting();
+  const { token: sandboxToken } = usePinterestSandboxToken();
 
   const { data: boardsData, isLoading, error } = useQuery({
-    queryKey: ["pinterest-boards", user?.id, environment],
+    queryKey: ["pinterest-boards", user?.id, environment, sandboxToken],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
       const { data, error } = await supabase.functions.invoke('pinterest-get-boards', {
-        body: { environment },
+        body: { environment, sandboxToken: environment === "sandbox" ? sandboxToken : undefined },
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },

@@ -23,6 +23,7 @@ import { PinterestBoardSelector } from "./PinterestBoardSelector";
 import { ScheduleDateTimePicker } from "./ScheduleDateTimePicker";
 import { trackSocialPostPublish, trackSocialPostSchedule, trackSocialPostScheduleCancel } from "@/lib/analytics";
 import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
+import { usePinterestSandboxToken } from "@/hooks/usePinterestSandboxToken";
 
 interface SchedulePostSheetProps {
   open: boolean;
@@ -49,6 +50,7 @@ export function SchedulePostSheet({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { environment: pinterestEnvironment } = usePinterestEnvironmentSetting();
+  const { token: pinterestSandboxToken } = usePinterestSandboxToken();
   const [isPosting, setIsPosting] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -156,6 +158,7 @@ export function SchedulePostSheet({
           board_id: formData.pinterest_board_id,
           link: formData.link_url || undefined,
           environment: pinterestEnvironment,
+          sandboxToken: pinterestEnvironment === "sandbox" ? pinterestSandboxToken : undefined,
         },
       });
 

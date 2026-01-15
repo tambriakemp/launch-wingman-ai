@@ -95,7 +95,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { board_id, title, description, media_url, link, environment = "production" } = await req.json();
+    const { board_id, title, description, media_url, link, environment = "production", sandboxToken = "" } = await req.json();
 
     if (!board_id) {
       throw new Error('Board ID is required');
@@ -111,51 +111,59 @@ serve(async (req) => {
 
     console.log('[POST-TO-PINTEREST] Creating pin for user:', sanitizeId(user.id), 'environment:', environment);
 
-    // Get Pinterest connection (always production)
-    const { data: connection, error: connError } = await supabase
-      .from('social_connections')
-      .select('platform, access_token, refresh_token, token_expires_at')
-      .eq('user_id', user.id)
-      .eq('platform', 'pinterest')
-      .single();
+    let accessToken: string;
 
-    if (connError || !connection) {
-      console.error('[POST-TO-PINTEREST] Connection not found');
-      throw new Error('Pinterest not connected. Go to Settings and connect Pinterest.');
-    }
+    // In sandbox mode with a manual sandbox token, use that directly
+    if (environment === "sandbox" && sandboxToken) {
+      console.log('[POST-TO-PINTEREST] Using manual sandbox token');
+      accessToken = sandboxToken;
+    } else {
+      // Get Pinterest connection (always production)
+      const { data: connection, error: connError } = await supabase
+        .from('social_connections')
+        .select('platform, access_token, refresh_token, token_expires_at')
+        .eq('user_id', user.id)
+        .eq('platform', 'pinterest')
+        .single();
 
-    console.log('[POST-TO-PINTEREST] Using', environment, 'API at', apiBase);
+      if (connError || !connection) {
+        console.error('[POST-TO-PINTEREST] Connection not found');
+        throw new Error('Pinterest not connected. Go to Settings and connect Pinterest.');
+      }
 
-    // Decrypt the access token
-    const { data: decryptedAccessToken, error: decryptError } = await supabase.rpc('decrypt_token', { 
-      encrypted_token: connection.access_token 
-    });
+      console.log('[POST-TO-PINTEREST] Using', environment, 'API at', apiBase);
 
-    if (decryptError || !decryptedAccessToken) {
-      console.error('[POST-TO-PINTEREST] Decrypt error:', decryptError);
-      throw new Error('Failed to decrypt token');
-    }
-
-    let accessToken = decryptedAccessToken;
-
-    // Check if token is expired
-    const expiresAt = connection.token_expires_at ? new Date(connection.token_expires_at) : null;
-    const isExpired = expiresAt && expiresAt.getTime() < Date.now() + 5 * 60 * 1000;
-
-    if (isExpired && connection.refresh_token) {
-      console.log('[POST-TO-PINTEREST] Token expired, refreshing...');
-      
-      // Decrypt the refresh token
-      const { data: decryptedRefreshToken } = await supabase.rpc('decrypt_token', { 
-        encrypted_token: connection.refresh_token 
+      // Decrypt the access token
+      const { data: decryptedAccessToken, error: decryptError } = await supabase.rpc('decrypt_token', { 
+        encrypted_token: connection.access_token 
       });
-      
-      if (decryptedRefreshToken) {
-        const newToken = await refreshPinterestToken(supabase, user.id, decryptedRefreshToken);
-        if (newToken) {
-          accessToken = newToken;
-        } else {
-          throw new Error('Failed to refresh token. Please reconnect Pinterest.');
+
+      if (decryptError || !decryptedAccessToken) {
+        console.error('[POST-TO-PINTEREST] Decrypt error:', decryptError);
+        throw new Error('Failed to decrypt token');
+      }
+
+      accessToken = decryptedAccessToken;
+
+      // Check if token is expired
+      const expiresAt = connection.token_expires_at ? new Date(connection.token_expires_at) : null;
+      const isExpired = expiresAt && expiresAt.getTime() < Date.now() + 5 * 60 * 1000;
+
+      if (isExpired && connection.refresh_token) {
+        console.log('[POST-TO-PINTEREST] Token expired, refreshing...');
+        
+        // Decrypt the refresh token
+        const { data: decryptedRefreshToken } = await supabase.rpc('decrypt_token', { 
+          encrypted_token: connection.refresh_token 
+        });
+        
+        if (decryptedRefreshToken) {
+          const newToken = await refreshPinterestToken(supabase, user.id, decryptedRefreshToken);
+          if (newToken) {
+            accessToken = newToken;
+          } else {
+            throw new Error('Failed to refresh token. Please reconnect Pinterest.');
+          }
         }
       }
     }
