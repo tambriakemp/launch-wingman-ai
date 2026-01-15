@@ -13,14 +13,14 @@ serve(async (req) => {
   }
 
   try {
-    const FACEBOOK_APP_ID = Deno.env.get("FACEBOOK_APP_ID");
+    const THREADS_APP_ID = Deno.env.get("THREADS_APP_ID");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!FACEBOOK_APP_ID) {
-      console.error("Missing FACEBOOK_APP_ID");
+    if (!THREADS_APP_ID) {
+      console.error("Missing THREADS_APP_ID");
       return new Response(
-        JSON.stringify({ error: "Facebook App ID not configured" }),
+        JSON.stringify({ error: "Threads App ID not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -79,7 +79,7 @@ serve(async (req) => {
 
     // Build Threads OAuth URL
     const authUrl = new URL("https://threads.net/oauth/authorize");
-    authUrl.searchParams.set("client_id", FACEBOOK_APP_ID);
+    authUrl.searchParams.set("client_id", THREADS_APP_ID);
     authUrl.searchParams.set("redirect_uri", callbackUrl);
     authUrl.searchParams.set("scope", scopes);
     authUrl.searchParams.set("response_type", "code");

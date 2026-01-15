@@ -41,13 +41,13 @@ serve(async (req) => {
       return Response.redirect(`${APP_URL}/settings?threads_error=invalid_state`);
     }
 
-    const FACEBOOK_APP_ID = Deno.env.get("FACEBOOK_APP_ID");
-    const FACEBOOK_APP_SECRET = Deno.env.get("FACEBOOK_APP_SECRET");
+    const THREADS_APP_ID = Deno.env.get("THREADS_APP_ID");
+    const THREADS_APP_SECRET = Deno.env.get("THREADS_APP_SECRET");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET) {
-      console.error("Missing Facebook/Threads credentials");
+    if (!THREADS_APP_ID || !THREADS_APP_SECRET) {
+      console.error("Missing Threads credentials (THREADS_APP_ID or THREADS_APP_SECRET)");
       return Response.redirect(`${APP_URL}/settings?threads_error=config_error`);
     }
 
@@ -61,8 +61,8 @@ serve(async (req) => {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
-          client_id: FACEBOOK_APP_ID,
-          client_secret: FACEBOOK_APP_SECRET,
+          client_id: THREADS_APP_ID,
+          client_secret: THREADS_APP_SECRET,
           grant_type: "authorization_code",
           redirect_uri: callbackUrl,
           code: code,
@@ -87,7 +87,7 @@ serve(async (req) => {
     const longLivedResponse = await fetch(
       `https://graph.threads.net/access_token?` +
       `grant_type=th_exchange_token` +
-      `&client_secret=${FACEBOOK_APP_SECRET}` +
+      `&client_secret=${THREADS_APP_SECRET}` +
       `&access_token=${shortLivedToken}`
     );
 
