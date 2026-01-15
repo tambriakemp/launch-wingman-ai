@@ -26,6 +26,7 @@ import { DeleteMyAccountDialog } from "@/components/settings/DeleteMyAccountDial
 import { FacebookPageSelector } from "@/components/settings/FacebookPageSelector";
 import { useAnnualReview } from "@/hooks/useAnnualReview";
 import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
+import { usePinterestSandboxToken } from "@/hooks/usePinterestSandboxToken";
 import {
   User,
   CreditCard,
@@ -74,6 +75,8 @@ const Settings = () => {
   const { user, isSubscribed, subscriptionEnd, checkSubscription } = useAuth();
   const { environment: tiktokEnvironment } = useTikTokEnvironment();
   const { environment: pinterestEnvironment } = usePinterestEnvironmentSetting();
+  const { token: pinterestSandboxToken, saveToken: savePinterestSandboxToken, isSaving: isSavingPinterestToken } = usePinterestSandboxToken();
+  const [sandboxTokenInput, setSandboxTokenInput] = useState("");
   const { hasAdminAccess, tier } = useFeatureAccess();
   const hasFullAccess = isSubscribed || hasAdminAccess;
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -1057,6 +1060,54 @@ const Settings = () => {
                     </Button>
                   )}
                 </div>
+
+                {/* Pinterest Sandbox Token Input - Only show when in sandbox mode */}
+                {pinterestEnvironment === "sandbox" && (
+                  <div className="p-4 rounded-lg border bg-muted/30 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <FlaskConical className="w-4 h-4 text-muted-foreground" />
+                      <Label className="text-sm font-medium">Pinterest Sandbox Token</Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      In sandbox mode, you need a token from the{" "}
+                      <a 
+                        href="https://developers.pinterest.com/apps/" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary underline hover:no-underline"
+                      >
+                        Pinterest Developer Portal
+                      </a>
+                      . Go to your app → Generate Token.
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        type="password"
+                        placeholder="Enter your sandbox token"
+                        value={sandboxTokenInput || pinterestSandboxToken}
+                        onChange={(e) => setSandboxTokenInput(e.target.value)}
+                        className="flex-1 font-mono text-sm"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() => savePinterestSandboxToken(sandboxTokenInput || pinterestSandboxToken)}
+                        disabled={isSavingPinterestToken || (!sandboxTokenInput && !pinterestSandboxToken)}
+                      >
+                        {isSavingPinterestToken ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          "Save"
+                        )}
+                      </Button>
+                    </div>
+                    {pinterestSandboxToken && (
+                      <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                        <Check className="w-3 h-3" />
+                        Sandbox token saved
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Instagram Connection */}
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-card">

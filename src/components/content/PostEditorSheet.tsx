@@ -49,6 +49,7 @@ import { MediaSelectModal } from "./MediaSelectModal";
 import { ContentTypeModal } from "./ContentTypeModal";
 import { trackSocialPostPublish, trackSocialPostSchedule, trackSocialPostScheduleCancel } from "@/lib/analytics";
 import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
+import { usePinterestSandboxToken } from "@/hooks/usePinterestSandboxToken";
 
 // Types for the unified component
 interface TalkingPoint {
@@ -159,6 +160,7 @@ export function PostEditorSheet({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { environment: pinterestEnvironment } = usePinterestEnvironmentSetting();
+  const { token: pinterestSandboxToken } = usePinterestSandboxToken();
 
   // Track the current draft ID (from content_drafts table)
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
@@ -730,6 +732,7 @@ export function PostEditorSheet({
           board_id: formData.pinterest_board_id,
           link: formData.link_url || undefined,
           environment: pinterestEnvironment,
+          sandboxToken: pinterestEnvironment === "sandbox" ? pinterestSandboxToken : undefined,
         },
       });
 
