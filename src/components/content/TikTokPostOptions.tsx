@@ -31,6 +31,9 @@ interface TikTokCreatorInfo {
 }
 
 interface TikTokPostOptionsProps {
+  // Connection status - must be passed from parent
+  hasConnection: boolean;
+  
   // Content type
   mediaType: "video" | "photo";
   
@@ -66,6 +69,7 @@ interface TikTokPostOptionsProps {
 }
 
 export function TikTokPostOptions({
+  hasConnection,
   mediaType,
   title,
   onTitleChange,
@@ -108,8 +112,10 @@ export function TikTokPostOptions({
 
       return response.data;
     },
-    enabled: !!user,
+    // Only fetch when user exists AND connection exists
+    enabled: !!user && hasConnection,
     staleTime: 5 * 60 * 1000,
+    retry: 1, // Don't retry too many times on auth errors
   });
 
   // Update privacy to SELF_ONLY if sandbox and current value isn't valid
@@ -137,6 +143,16 @@ export function TikTokPostOptions({
 
   const labelFeedback = getLabelFeedback();
 
+  // Show "not connected" state if no connection
+  if (!hasConnection) {
+    return (
+      <div className="flex items-center gap-2 p-4 rounded-lg border bg-muted/30">
+        <AlertCircle className="w-4 h-4 text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Please connect your TikTok account in Settings to post.</span>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 p-4 rounded-lg border bg-muted/30">
@@ -150,7 +166,7 @@ export function TikTokPostOptions({
     return (
       <div className="flex items-center gap-2 p-4 rounded-lg border bg-destructive/10 text-destructive">
         <AlertCircle className="w-4 h-4" />
-        <span className="text-sm">Failed to load TikTok account info</span>
+        <span className="text-sm">Failed to load TikTok account info. Please try reconnecting in Settings.</span>
       </div>
     );
   }
