@@ -1647,7 +1647,32 @@ export function PostEditorSheet({
 
                       {/* Auto-determine info for Instagram when multi-platform - now shown in Instagram card */}
 
-                      {/* TikTok Post Options - hidden for cleaner UI */}
+                      {/* TikTok Post Options */}
+                      {formData.scheduled_platforms.includes("tiktok") &&
+                        formData.scheduled_platforms.length === 1 && (
+                          <TikTokPostOptions
+                            mediaType={formData.media_type === "image" ? "photo" : "video"}
+                            title={formData.tiktok_title}
+                            onTitleChange={(value) => setFormData(prev => ({ ...prev, tiktok_title: value }))}
+                            privacyLevel={formData.tiktok_privacy_level}
+                            onPrivacyChange={(value) => setFormData(prev => ({ ...prev, tiktok_privacy_level: value }))}
+                            allowComment={formData.tiktok_allow_comment}
+                            onAllowCommentChange={(checked) => setFormData(prev => ({ ...prev, tiktok_allow_comment: checked }))}
+                            allowDuet={formData.tiktok_allow_duet}
+                            onAllowDuetChange={(checked) => setFormData(prev => ({ ...prev, tiktok_allow_duet: checked }))}
+                            allowStitch={formData.tiktok_allow_stitch}
+                            onAllowStitchChange={(checked) => setFormData(prev => ({ ...prev, tiktok_allow_stitch: checked }))}
+                            discloseContent={formData.tiktok_disclose_content}
+                            onDiscloseContentChange={(checked) => setFormData(prev => ({ ...prev, tiktok_disclose_content: checked }))}
+                            isBrandOrganic={formData.tiktok_brand_organic}
+                            onBrandOrganicChange={(checked) => setFormData(prev => ({ ...prev, tiktok_brand_organic: checked }))}
+                            isBrandedContent={formData.tiktok_brand_content}
+                            onBrandedContentChange={(checked) => setFormData(prev => ({ ...prev, tiktok_brand_content: checked }))}
+                            autoAddMusic={formData.tiktok_auto_add_music}
+                            onAutoAddMusicChange={(checked) => setFormData(prev => ({ ...prev, tiktok_auto_add_music: checked }))}
+                            disabled={isPostedContent}
+                          />
+                        )}
                     </div>
                   )}
                 </div>
