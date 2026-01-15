@@ -196,10 +196,6 @@ export function PerNetworkEditor({
 
   return (
     <div className="space-y-3">
-      {/* Only show "Per-Network Content" label when multiple platforms are selected */}
-      {selectedPlatforms.length > 1 && (
-        <Label className="text-xs font-medium text-muted-foreground">Per-Network Content</Label>
-      )}
       {selectedPlatforms.map((platformId) => {
         const platform = getPlatformById(platformId);
         if (!platform) return null;
