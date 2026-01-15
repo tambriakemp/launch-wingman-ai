@@ -22,6 +22,7 @@ import { SocialPostPreview } from "./SocialPostPreview";
 import { PinterestBoardSelector } from "./PinterestBoardSelector";
 import { ScheduleDateTimePicker } from "./ScheduleDateTimePicker";
 import { trackSocialPostPublish, trackSocialPostSchedule, trackSocialPostScheduleCancel } from "@/lib/analytics";
+import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
 
 interface SchedulePostSheetProps {
   open: boolean;
@@ -47,6 +48,7 @@ export function SchedulePostSheet({
 }: SchedulePostSheetProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { environment: pinterestEnvironment } = usePinterestEnvironmentSetting();
   const [isPosting, setIsPosting] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -153,7 +155,7 @@ export function SchedulePostSheet({
           media_url: formData.media_url,
           board_id: formData.pinterest_board_id,
           link: formData.link_url || undefined,
-          environment: "production",
+          environment: pinterestEnvironment,
         },
       });
 
@@ -295,7 +297,7 @@ export function SchedulePostSheet({
           media_url: formData.media_url,
           board_id: formData.pinterest_board_id,
           link: formData.link_url,
-          environment: "production",
+          environment: pinterestEnvironment,
         },
         status: "pending",
       });

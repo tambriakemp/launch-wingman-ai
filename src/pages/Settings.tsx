@@ -25,6 +25,7 @@ import { ExportMyDataDialog } from "@/components/settings/ExportMyDataDialog";
 import { DeleteMyAccountDialog } from "@/components/settings/DeleteMyAccountDialog";
 import { FacebookPageSelector } from "@/components/settings/FacebookPageSelector";
 import { useAnnualReview } from "@/hooks/useAnnualReview";
+import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
 import {
   User,
   CreditCard,
@@ -72,6 +73,7 @@ interface SocialConnection {
 const Settings = () => {
   const { user, isSubscribed, subscriptionEnd, checkSubscription } = useAuth();
   const { environment: tiktokEnvironment } = useTikTokEnvironment();
+  const { environment: pinterestEnvironment } = usePinterestEnvironmentSetting();
   const { hasAdminAccess, tier } = useFeatureAccess();
   const hasFullAccess = isSubscribed || hasAdminAccess;
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -980,7 +982,12 @@ const Settings = () => {
                       </div>
                     )}
                     <div>
-                      <p className="font-medium text-foreground">Pinterest</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-foreground">Pinterest</p>
+                        <Badge variant={pinterestEnvironment === "sandbox" ? "default" : "secondary"} className="text-xs">
+                          {pinterestEnvironment === "sandbox" ? "Sandbox" : "Production"}
+                        </Badge>
+                      </div>
                       {pinterestConnection ? (
                         <div className="flex flex-col gap-0.5">
                           <p className="text-sm text-muted-foreground">

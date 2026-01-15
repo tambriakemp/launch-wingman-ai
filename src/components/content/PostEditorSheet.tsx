@@ -48,6 +48,7 @@ import { AIAssistPanel } from "./AIAssistPanel";
 import { MediaSelectModal } from "./MediaSelectModal";
 import { ContentTypeModal } from "./ContentTypeModal";
 import { trackSocialPostPublish, trackSocialPostSchedule, trackSocialPostScheduleCancel } from "@/lib/analytics";
+import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
 
 // Types for the unified component
 interface TalkingPoint {
@@ -157,6 +158,7 @@ export function PostEditorSheet({
 }: PostEditorSheetProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { environment: pinterestEnvironment } = usePinterestEnvironmentSetting();
 
   // Track the current draft ID (from content_drafts table)
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
@@ -727,6 +729,7 @@ export function PostEditorSheet({
           media_url: formData.media_url,
           board_id: formData.pinterest_board_id,
           link: formData.link_url || undefined,
+          environment: pinterestEnvironment,
         },
       });
 
