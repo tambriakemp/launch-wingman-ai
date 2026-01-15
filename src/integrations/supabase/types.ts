@@ -487,6 +487,7 @@ export type Database = {
           scheduled_at: string | null
           scheduled_platforms: string[] | null
           status: string
+          thread_posts: Json | null
           time_of_day: string
           title: string
           updated_at: string
@@ -507,6 +508,7 @@ export type Database = {
           scheduled_at?: string | null
           scheduled_platforms?: string[] | null
           status?: string
+          thread_posts?: Json | null
           time_of_day?: string
           title: string
           updated_at?: string
@@ -527,6 +529,7 @@ export type Database = {
           scheduled_at?: string | null
           scheduled_platforms?: string[] | null
           status?: string
+          thread_posts?: Json | null
           time_of_day?: string
           title?: string
           updated_at?: string

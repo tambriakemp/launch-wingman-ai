@@ -49,6 +49,7 @@ import { AIAssistPanel } from "./AIAssistPanel";
 import { MediaSelectModal } from "./MediaSelectModal";
 import { ContentTypeModal } from "./ContentTypeModal";
 import { trackSocialPostPublish, trackSocialPostSchedule, trackSocialPostScheduleCancel } from "@/lib/analytics";
+import { CharacterCounter } from "./CharacterCounter";
 import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
 import { usePinterestSandboxToken } from "@/hooks/usePinterestSandboxToken";
 
@@ -82,7 +83,17 @@ export interface ContentPlannerItem {
   media_url?: string | null;
   media_type?: string | null;
   labels?: string[] | null;
+  thread_posts?: Array<{ id: string; text: string; mediaUrl?: string | null; mediaType?: string | null }> | null;
 }
+
+// Character limits per platform
+const PLATFORM_CHAR_LIMITS: Record<string, number> = {
+  threads: 500,
+  instagram: 2200,
+  facebook: 63206,
+  tiktok: 2200,
+  pinterest: 500,
+};
 
 interface PostEditorSheetProps {
   open: boolean;
@@ -359,6 +370,13 @@ export function PostEditorSheet({
         media_type: existingItem.media_type || null,
       }));
 
+      // Hydrate thread posts if available
+      if (existingItem.thread_posts && Array.isArray(existingItem.thread_posts)) {
+        setThreadPosts(existingItem.thread_posts);
+      } else {
+        setThreadPosts([]);
+      }
+
       if (existingItem.scheduled_at) {
         const scheduledDateTime = new Date(existingItem.scheduled_at);
         setScheduledDate(scheduledDateTime);
@@ -386,6 +404,7 @@ export function PostEditorSheet({
         setScheduledDate(null);
         setCustomizePerNetwork(false);
         setPerPlatformContent({});
+        setThreadPosts([]);
         setFormData({
           media_url: null,
           media_type: null,
@@ -408,6 +427,7 @@ export function PostEditorSheet({
         setScheduledDate(null);
         setCustomizePerNetwork(false);
         setPerPlatformContent({});
+        setThreadPosts([]);
         setFormData({
           media_url: null,
           media_type: null,
@@ -431,6 +451,7 @@ export function PostEditorSheet({
       setScheduledDate(null);
       setCustomizePerNetwork(false);
       setPerPlatformContent({});
+      setThreadPosts([]);
       setFormData({
         media_url: null,
         media_type: null,
@@ -1324,6 +1345,7 @@ export function PostEditorSheet({
             media_url: formData.media_url,
             media_type: formData.media_type,
             scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
+            thread_posts: threadPosts.length > 0 ? JSON.parse(JSON.stringify(threadPosts)) : null,
           })
           .eq("id", timelineItemId);
         toast.success("Saved");
@@ -1344,6 +1366,7 @@ export function PostEditorSheet({
             media_url: formData.media_url,
             media_type: formData.media_type,
             scheduled_platforms: formData.scheduled_platforms.length > 0 ? formData.scheduled_platforms : null,
+            thread_posts: threadPosts.length > 0 ? JSON.parse(JSON.stringify(threadPosts)) : null,
           })
           .select()
           .single();
@@ -1412,6 +1435,7 @@ export function PostEditorSheet({
       tiktok_brand_content: false,
       tiktok_brand_organic: false,
     });
+    setThreadPosts([]);
     onOpenChange(false);
   };
 
@@ -1556,9 +1580,10 @@ export function PostEditorSheet({
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <Label className="text-xs">Content / Copy</Label>
-                        <span className="text-xs text-muted-foreground">
-                          {content.length} characters
-                        </span>
+                        <CharacterCounter 
+                          content={content} 
+                          platforms={formData.scheduled_platforms} 
+                        />
                       </div>
                       <div className="relative flex flex-col">
                         <Textarea
@@ -1673,6 +1698,13 @@ export function PostEditorSheet({
               mediaType={formData.media_type}
               title={title}
               linkUrl={formData.link_url}
+              accountNames={{
+                instagram: instagramConnection?.account_name || undefined,
+                facebook: facebookConnection?.account_name || undefined,
+                tiktok: tiktokConnection?.account_name || undefined,
+                threads: threadsConnection?.account_name || undefined,
+                pinterest: pinterestConnection?.account_name || undefined,
+              }}
             />
           </div>
 
