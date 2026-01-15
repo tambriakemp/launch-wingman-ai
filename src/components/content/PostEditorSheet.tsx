@@ -1578,11 +1578,16 @@ export function PostEditorSheet({
                   </>
                 )}
 
-                {/* Per-Network Content Customization - only when 2+ platforms and customizing */}
-                {!isPostedContent && formData.scheduled_platforms.length > 1 && customizePerNetwork && (
+                {/* Per-Network Content Customization - when 2+ platforms and customizing, OR when Threads is selected (for thread chains) */}
+                {!isPostedContent && (
+                  (formData.scheduled_platforms.length > 1 && customizePerNetwork) ||
+                  formData.scheduled_platforms.includes("threads")
+                ) && (
                   <PerNetworkEditor
-                    selectedPlatforms={formData.scheduled_platforms}
-                    enabled={customizePerNetwork}
+                    selectedPlatforms={formData.scheduled_platforms.includes("threads") && formData.scheduled_platforms.length === 1 
+                      ? ["threads"] 
+                      : formData.scheduled_platforms}
+                    enabled={customizePerNetwork || formData.scheduled_platforms.includes("threads")}
                     perPlatformContent={perPlatformContent}
                     onPerPlatformContentChange={setPerPlatformContent}
                     defaultContent={content}
@@ -1596,7 +1601,7 @@ export function PostEditorSheet({
                 {/* Icon Toolbar - ALWAYS visible below content/per-network section */}
                 {!isPostedContent && (
                   <ContentToolbar
-                    customizePerNetwork={customizePerNetwork}
+                    customizePerNetwork={customizePerNetwork || formData.scheduled_platforms.includes("threads")}
                     onCustomizeToggle={() => setCustomizePerNetwork(!customizePerNetwork)}
                     showPinterestOption={formData.scheduled_platforms.includes("pinterest")}
                     onPinterestClick={() => setShowPinterestOptions(true)}
