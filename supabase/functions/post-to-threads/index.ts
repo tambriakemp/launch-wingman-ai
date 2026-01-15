@@ -77,13 +77,14 @@ serve(async (req) => {
       videoUrl,
       mediaType = "TEXT", // TEXT, IMAGE, VIDEO
       replyToId, // Optional: for reply threads
+      threadPosts = [], // Additional thread posts for thread chains
     } = body;
 
-    console.log(`Post to Threads request from user ${user.id.substring(0, 8)}... type: ${mediaType}`);
+    console.log(`Post to Threads request from user ${user.id.substring(0, 8)}... type: ${mediaType}, thread posts: ${threadPosts.length}`);
 
-    // Get Threads connection
+    // Get Threads connection - query table directly then decrypt token
     const { data: connection, error: connError } = await supabase
-      .from("social_connections_decrypted")
+      .from("social_connections")
       .select("*")
       .eq("user_id", user.id)
       .eq("platform", "threads")
@@ -97,7 +98,20 @@ serve(async (req) => {
       );
     }
 
-    const accessToken = connection.access_token;
+    // Decrypt the access token using RPC
+    const { data: decryptedToken, error: decryptError } = await supabase.rpc("decrypt_token", {
+      encrypted_token: connection.access_token
+    });
+
+    if (decryptError || !decryptedToken) {
+      console.error("Failed to decrypt token:", decryptError);
+      return new Response(
+        JSON.stringify({ error: "Failed to decrypt access token" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const accessToken = decryptedToken;
     const threadsUserId = connection.account_id;
 
     if (!accessToken || !threadsUserId) {
@@ -206,13 +220,74 @@ serve(async (req) => {
       postUrl = permalinkData.permalink;
     }
 
-    console.log(`Posted to Threads successfully! ID: ${postId}, URL: ${postUrl}`);
+    console.log(`Posted main thread to Threads! ID: ${postId}, URL: ${postUrl}`);
+
+    // Post additional thread posts as replies
+    const allPostIds = [postId];
+    let lastReplyId = postId;
+
+    for (let i = 0; i < threadPosts.length; i++) {
+      const threadPost = threadPosts[i];
+      if (!threadPost.text?.trim()) continue;
+
+      console.log(`Posting thread ${i + 2}...`);
+
+      const replyContainerBody: Record<string, string> = {
+        media_type: "TEXT",
+        text: threadPost.text,
+        access_token: accessToken,
+        reply_to_id: lastReplyId,
+      };
+
+      const replyContainerResponse = await fetch(
+        `https://graph.threads.net/v1.0/${threadsUserId}/threads`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(replyContainerBody),
+        }
+      );
+
+      if (!replyContainerResponse.ok) {
+        console.error(`Failed to create thread ${i + 2} container:`, await replyContainerResponse.text());
+        continue; // Continue with other posts
+      }
+
+      const replyContainerData = await replyContainerResponse.json();
+      const replyContainerId = replyContainerData.id;
+
+      // Publish the reply
+      const replyPublishResponse = await fetch(
+        `https://graph.threads.net/v1.0/${threadsUserId}/threads_publish`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            creation_id: replyContainerId,
+            access_token: accessToken,
+          }),
+        }
+      );
+
+      if (replyPublishResponse.ok) {
+        const replyPublishData = await replyPublishResponse.json();
+        lastReplyId = replyPublishData.id;
+        allPostIds.push(lastReplyId);
+        console.log(`Thread ${i + 2} posted successfully: ${lastReplyId}`);
+      } else {
+        console.error(`Failed to publish thread ${i + 2}:`, await replyPublishResponse.text());
+      }
+    }
+
+    console.log(`Posted thread chain to Threads! Total posts: ${allPostIds.length}, Main URL: ${postUrl}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         postId, 
-        postUrl 
+        postUrl,
+        allPostIds,
+        totalPosts: allPostIds.length,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

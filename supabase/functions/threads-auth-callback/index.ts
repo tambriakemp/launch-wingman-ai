@@ -105,17 +105,45 @@ serve(async (req) => {
 
     // Get Threads profile info
     console.log("Fetching Threads profile...");
-    const profileResponse = await fetch(
-      `https://graph.threads.net/v1.0/me?fields=id,username,name,threads_profile_picture_url&access_token=${accessToken}`
-    );
-
     let username = null;
-    if (profileResponse.ok) {
-      const profileData = await profileResponse.json();
-      username = profileData.username;
-      console.log("Got Threads profile:", profileData.username);
-    } else {
-      console.warn("Failed to get profile:", await profileResponse.text());
+    let avatarUrl = null;
+    
+    try {
+      const profileResponse = await fetch(
+        `https://graph.threads.net/v1.0/me?fields=id,username,name,threads_profile_picture_url&access_token=${accessToken}`
+      );
+
+      console.log("Profile response status:", profileResponse.status);
+      const profileText = await profileResponse.text();
+      console.log("Profile response body:", profileText);
+
+      if (profileResponse.ok) {
+        try {
+          const profileData = JSON.parse(profileText);
+          username = profileData.username || profileData.name || null;
+          avatarUrl = profileData.threads_profile_picture_url || null;
+          console.log("Got Threads profile - username:", username, "avatar:", avatarUrl);
+        } catch (parseError) {
+          console.warn("Failed to parse profile response:", parseError);
+        }
+      } else {
+        console.warn("Profile fetch failed with status:", profileResponse.status, "body:", profileText);
+        // Try alternative endpoint to get user info
+        console.log("Trying alternative profile fetch with threadsUserId:", threadsUserId);
+        const altProfileResponse = await fetch(
+          `https://graph.threads.net/v1.0/${threadsUserId}?fields=id,username,name,threads_profile_picture_url&access_token=${accessToken}`
+        );
+        if (altProfileResponse.ok) {
+          const altProfileData = await altProfileResponse.json();
+          username = altProfileData.username || altProfileData.name || null;
+          avatarUrl = altProfileData.threads_profile_picture_url || null;
+          console.log("Got Threads profile (alt) - username:", username);
+        } else {
+          console.warn("Alt profile fetch also failed:", await altProfileResponse.text());
+        }
+      }
+    } catch (profileError) {
+      console.error("Error fetching profile:", profileError);
     }
 
     // Create Supabase client
@@ -145,6 +173,7 @@ serve(async (req) => {
           platform: "threads",
           account_id: threadsUserId,
           account_name: username,
+          avatar_url: avatarUrl,
           access_token: encryptedAccessToken,
           token_expires_at: expiresAt.toISOString(),
           updated_at: new Date().toISOString(),
