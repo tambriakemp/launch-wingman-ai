@@ -7,9 +7,8 @@ const corsHeaders = {
 };
 
 async function refreshTikTokToken(supabase: any, userId: string, refreshToken: string, platform: string): Promise<string | null> {
-  // Use sandbox credentials for sandbox connections
   const isSandbox = platform === "tiktok_sandbox";
-  console.log(`[POST-TO-TIKTOK] refreshTikTokToken called - platform: ${platform}, isSandbox: ${isSandbox}`);
+  console.log(`[POST-TO-TIKTOK-PHOTO] refreshTikTokToken called - platform: ${platform}, isSandbox: ${isSandbox}`);
   
   const clientKey = isSandbox 
     ? Deno.env.get("TIKTOK_SANDBOX_CLIENT_KEY") 
@@ -18,16 +17,11 @@ async function refreshTikTokToken(supabase: any, userId: string, refreshToken: s
     ? Deno.env.get("TIKTOK_SANDBOX_CLIENT_SECRET") 
     : Deno.env.get("TIKTOK_CLIENT_SECRET");
 
-  console.log(`[POST-TO-TIKTOK] Using ${isSandbox ? 'SANDBOX' : 'PRODUCTION'} credentials`);
-  console.log(`[POST-TO-TIKTOK] Client key exists: ${!!clientKey}, Client secret exists: ${!!clientSecret}`);
-  console.log(`[POST-TO-TIKTOK] Client key length: ${clientKey?.length || 0}, Client secret length: ${clientSecret?.length || 0}`);
-
   if (!clientKey || !clientSecret) {
-    console.error(`[POST-TO-TIKTOK] Missing TikTok ${isSandbox ? 'sandbox ' : 'production '}credentials for token refresh`);
+    console.error(`[POST-TO-TIKTOK-PHOTO] Missing TikTok ${isSandbox ? 'sandbox ' : 'production '}credentials`);
     return null;
   }
 
-  // Decrypt refresh token
   const { data: decryptedRefresh, error: decryptError } = await supabase
     .rpc("decrypt_token", { encrypted_token: refreshToken });
 
@@ -36,7 +30,6 @@ async function refreshTikTokToken(supabase: any, userId: string, refreshToken: s
     return null;
   }
 
-  // Request new token
   const response = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
     method: "POST",
     headers: {
@@ -57,14 +50,12 @@ async function refreshTikTokToken(supabase: any, userId: string, refreshToken: s
     return null;
   }
 
-  // Encrypt new tokens - use correct parameter name: plain_token
   const { data: encryptedAccess } = await supabase
     .rpc("encrypt_token", { plain_token: data.access_token });
 
   const { data: encryptedRefresh } = await supabase
     .rpc("encrypt_token", { plain_token: data.refresh_token });
 
-  // Update database with dynamic platform
   const tokenExpiry = new Date(Date.now() + data.expires_in * 1000).toISOString();
   
   await supabase
@@ -82,7 +73,6 @@ async function refreshTikTokToken(supabase: any, userId: string, refreshToken: s
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -98,7 +88,6 @@ serve(async (req) => {
       );
     }
 
-    // Verify auth token
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -118,28 +107,39 @@ serve(async (req) => {
       );
     }
 
-    // Parse request body
     const { 
-      videoUrl, 
-      caption, 
+      photoUrls,
+      title,
+      caption,
       privacyLevel = "PUBLIC_TO_EVERYONE",
-      brandContentToggle = false,
-      brandOrganicToggle = false,
       disableComment = true,
-      disableDuet = true,
-      disableStitch = true,
+      autoAddMusic = false,
     } = await req.json();
 
-    if (!videoUrl) {
+    if (!photoUrls || !Array.isArray(photoUrls) || photoUrls.length === 0) {
       return new Response(
-        JSON.stringify({ error: "Video URL is required" }),
+        JSON.stringify({ error: "At least one photo URL is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Starting TikTok upload for video:", videoUrl);
+    if (photoUrls.length > 35) {
+      return new Response(
+        JSON.stringify({ error: "Maximum 35 photos allowed per post" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // Get TikTok connection (support both production and sandbox)
+    if (!title || title.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Title is required for photo posts" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("Starting TikTok photo upload:", { photoCount: photoUrls.length, title });
+
+    // Get TikTok connection
     const { data: connections, error: connectionError } = await supabase
       .from("social_connections")
       .select("*")
@@ -157,20 +157,12 @@ serve(async (req) => {
     const connection = connections[0];
     const isSandbox = connection.platform === "tiktok_sandbox";
     
-    console.log(`[POST-TO-TIKTOK] ========== CONNECTION INFO ==========`);
-    console.log(`[POST-TO-TIKTOK] Connection platform: ${connection.platform}`);
-    console.log(`[POST-TO-TIKTOK] isSandbox: ${isSandbox}`);
-    console.log(`[POST-TO-TIKTOK] Token expires at: ${connection.token_expires_at}`);
-    console.log(`[POST-TO-TIKTOK] Account name: ${connection.account_name}`);
-    console.log(`[POST-TO-TIKTOK] =====================================`);
+    console.log(`[POST-TO-TIKTOK-PHOTO] Connection platform: ${connection.platform}, isSandbox: ${isSandbox}`);
     
-    // For sandbox/unaudited apps, TikTok requires SELF_ONLY privacy
     const effectivePrivacyLevel = isSandbox ? "SELF_ONLY" : privacyLevel;
-    console.log(`[POST-TO-TIKTOK] Platform: ${connection.platform}, using privacy_level: ${effectivePrivacyLevel}`);
     
     let accessToken: string;
 
-    // Check if token is expired
     const tokenExpiry = new Date(connection.token_expires_at);
     if (tokenExpiry <= new Date()) {
       console.log("Token expired, refreshing...");
@@ -183,7 +175,6 @@ serve(async (req) => {
       }
       accessToken = newToken;
     } else {
-      // Decrypt access token
       const { data: decryptedToken, error: decryptError } = await supabase
         .rpc("decrypt_token", { encrypted_token: connection.access_token });
 
@@ -196,61 +187,40 @@ serve(async (req) => {
       accessToken = decryptedToken;
     }
 
-    // Step 1: Download the video to get its size and bytes
-    console.log("Downloading video from URL...");
-    const videoResponse = await fetch(videoUrl);
-    if (!videoResponse.ok) {
-      console.error("Failed to download video:", videoResponse.status, videoResponse.statusText);
-      return new Response(
-        JSON.stringify({ error: "Failed to download video from storage" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const videoBytes = await videoResponse.arrayBuffer();
-    const videoSize = videoBytes.byteLength;
-    const contentType = videoResponse.headers.get("content-type") || "video/mp4";
-    console.log(`Video downloaded: ${videoSize} bytes, content-type: ${contentType}`);
-
-    // Step 2: Initialize video post with FILE_UPLOAD
-    console.log("Initializing TikTok upload with FILE_UPLOAD...");
-    const initResponse = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
+    // Initialize photo post with PULL_FROM_URL
+    console.log("Initializing TikTok photo upload with PULL_FROM_URL...");
+    const initResponse = await fetch("https://open.tiktokapis.com/v2/post/publish/content/init/", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json; charset=UTF-8",
       },
       body: JSON.stringify({
+        media_type: "PHOTO",
+        post_mode: "DIRECT_POST",
         post_info: {
-          title: caption || "",
+          title: title.slice(0, 90),
+          description: caption || "",
           privacy_level: effectivePrivacyLevel,
-          disable_duet: disableDuet,
           disable_comment: disableComment,
-          disable_stitch: disableStitch,
-          brand_content_toggle: brandContentToggle,
-          brand_organic_toggle: brandOrganicToggle,
+          auto_add_music: autoAddMusic,
         },
         source_info: {
-          source: "FILE_UPLOAD",
-          video_size: videoSize,
-          chunk_size: videoSize,
-          total_chunk_count: 1,
+          source: "PULL_FROM_URL",
+          photo_images: photoUrls,
+          photo_cover_index: 0,
         },
       }),
     });
 
     const initData = await initResponse.json();
-    console.log("[POST-TO-TIKTOK] TikTok init response status:", initResponse.status);
-    console.log("[POST-TO-TIKTOK] TikTok init response:", JSON.stringify(initData, null, 2));
+    console.log("[POST-TO-TIKTOK-PHOTO] TikTok init response:", JSON.stringify(initData, null, 2));
 
-    // TikTok returns error.code = "ok" for success, so only treat non-"ok" as errors
     if (initData.error?.code && initData.error.code !== "ok") {
-      console.error("[POST-TO-TIKTOK] TikTok init error code:", initData.error.code);
-      console.error("[POST-TO-TIKTOK] TikTok init error message:", initData.error.message);
-      console.error("[POST-TO-TIKTOK] TikTok init full error:", JSON.stringify(initData.error, null, 2));
+      console.error("[POST-TO-TIKTOK-PHOTO] TikTok init error:", initData.error);
       return new Response(
         JSON.stringify({ 
-          error: initData.error.message || "Failed to initialize video post",
+          error: initData.error.message || "Failed to initialize photo post",
           tiktok_error: initData.error
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -258,49 +228,20 @@ serve(async (req) => {
     }
 
     const publishId = initData.data?.publish_id;
-    const uploadUrl = initData.data?.upload_url;
 
-    if (!publishId || !uploadUrl) {
-      console.error("No publish_id or upload_url in response:", initData);
+    if (!publishId) {
+      console.error("No publish_id in response:", initData);
       return new Response(
-        JSON.stringify({ error: "Failed to get upload URL from TikTok" }),
+        JSON.stringify({ error: "Failed to get publish ID from TikTok" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Got publish_id: ${publishId}, uploading to: ${uploadUrl}`);
+    console.log(`Got publish_id: ${publishId}, polling for status...`);
 
-    // Step 3: Upload the video bytes to TikTok
-    console.log("Uploading video bytes to TikTok...");
-    const uploadResponse = await fetch(uploadUrl, {
-      method: "PUT",
-      headers: {
-        "Content-Type": contentType,
-        "Content-Length": videoSize.toString(),
-        "Content-Range": `bytes 0-${videoSize - 1}/${videoSize}`,
-      },
-      body: videoBytes,
-    });
-
-    console.log("Upload response status:", uploadResponse.status);
-    
-    if (!uploadResponse.ok) {
-      const uploadError = await uploadResponse.text();
-      console.error("TikTok upload failed:", uploadResponse.status, uploadError);
-      return new Response(
-        JSON.stringify({ 
-          error: "Failed to upload video to TikTok",
-          details: uploadError
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log("Video upload successful, polling for status...");
-
-    // Step 4: Poll for publish status (TikTok processes videos async)
+    // Poll for publish status
     let attempts = 0;
-    const maxAttempts = 30; // 30 seconds max
+    const maxAttempts = 30;
     let status = "PROCESSING";
 
     while (status === "PROCESSING" && attempts < maxAttempts) {
@@ -324,12 +265,12 @@ serve(async (req) => {
       console.log(`Poll attempt ${attempts}: status = ${status}`);
 
       if (status === "PUBLISH_COMPLETE") {
-        console.log("TikTok video published successfully");
+        console.log("TikTok photo published successfully");
         return new Response(
           JSON.stringify({
             success: true,
             publishId,
-            message: "Video published to TikTok successfully!",
+            message: "Photo published to TikTok successfully!",
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
@@ -337,7 +278,7 @@ serve(async (req) => {
         console.error("TikTok publish failed:", statusData);
         return new Response(
           JSON.stringify({
-            error: statusData.data?.fail_reason || "Video publish failed",
+            error: statusData.data?.fail_reason || "Photo publish failed",
             tiktok_error: statusData.data
           }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -345,18 +286,17 @@ serve(async (req) => {
       }
     }
 
-    // If we're still processing after max attempts, return pending status
     return new Response(
       JSON.stringify({
         success: true,
         publishId,
         status: "PROCESSING",
-        message: "Video is still processing. It may take a few minutes to appear on TikTok.",
+        message: "Photo is still processing. It may take a few minutes to appear on TikTok.",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
-    console.error("Error in post-to-tiktok:", error);
+    console.error("Error in post-to-tiktok-photo:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
       JSON.stringify({ error: "Internal server error", details: errorMessage }),

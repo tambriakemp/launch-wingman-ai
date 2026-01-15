@@ -210,6 +210,9 @@ verify_jwt = false
 [functions.tiktok-revoke-token]
 verify_jwt = false
 
+[functions.post-to-tiktok-photo]
+verify_jwt = false
+
 [functions.surecontact-webhook]
 verify_jwt = false
 
