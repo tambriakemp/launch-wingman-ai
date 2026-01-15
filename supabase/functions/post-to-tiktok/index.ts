@@ -9,6 +9,8 @@ const corsHeaders = {
 async function refreshTikTokToken(supabase: any, userId: string, refreshToken: string, platform: string): Promise<string | null> {
   // Use sandbox credentials for sandbox connections
   const isSandbox = platform === "tiktok_sandbox";
+  console.log(`[POST-TO-TIKTOK] refreshTikTokToken called - platform: ${platform}, isSandbox: ${isSandbox}`);
+  
   const clientKey = isSandbox 
     ? Deno.env.get("TIKTOK_SANDBOX_CLIENT_KEY") 
     : Deno.env.get("TIKTOK_CLIENT_KEY");
@@ -16,8 +18,12 @@ async function refreshTikTokToken(supabase: any, userId: string, refreshToken: s
     ? Deno.env.get("TIKTOK_SANDBOX_CLIENT_SECRET") 
     : Deno.env.get("TIKTOK_CLIENT_SECRET");
 
+  console.log(`[POST-TO-TIKTOK] Using ${isSandbox ? 'SANDBOX' : 'PRODUCTION'} credentials`);
+  console.log(`[POST-TO-TIKTOK] Client key exists: ${!!clientKey}, Client secret exists: ${!!clientSecret}`);
+  console.log(`[POST-TO-TIKTOK] Client key length: ${clientKey?.length || 0}, Client secret length: ${clientSecret?.length || 0}`);
+
   if (!clientKey || !clientSecret) {
-    console.error(`Missing TikTok ${isSandbox ? 'sandbox ' : ''}credentials for token refresh`);
+    console.error(`[POST-TO-TIKTOK] Missing TikTok ${isSandbox ? 'sandbox ' : 'production '}credentials for token refresh`);
     return null;
   }
 
@@ -148,9 +154,16 @@ serve(async (req) => {
     const connection = connections[0];
     const isSandbox = connection.platform === "tiktok_sandbox";
     
+    console.log(`[POST-TO-TIKTOK] ========== CONNECTION INFO ==========`);
+    console.log(`[POST-TO-TIKTOK] Connection platform: ${connection.platform}`);
+    console.log(`[POST-TO-TIKTOK] isSandbox: ${isSandbox}`);
+    console.log(`[POST-TO-TIKTOK] Token expires at: ${connection.token_expires_at}`);
+    console.log(`[POST-TO-TIKTOK] Account name: ${connection.account_name}`);
+    console.log(`[POST-TO-TIKTOK] =====================================`);
+    
     // For sandbox/unaudited apps, TikTok requires SELF_ONLY privacy
     const effectivePrivacyLevel = isSandbox ? "SELF_ONLY" : privacyLevel;
-    console.log(`Platform: ${connection.platform}, using privacy_level: ${effectivePrivacyLevel}`);
+    console.log(`[POST-TO-TIKTOK] Platform: ${connection.platform}, using privacy_level: ${effectivePrivacyLevel}`);
     
     let accessToken: string;
 
@@ -224,11 +237,14 @@ serve(async (req) => {
     });
 
     const initData = await initResponse.json();
-    console.log("TikTok init response:", JSON.stringify(initData));
+    console.log("[POST-TO-TIKTOK] TikTok init response status:", initResponse.status);
+    console.log("[POST-TO-TIKTOK] TikTok init response:", JSON.stringify(initData, null, 2));
 
     // TikTok returns error.code = "ok" for success, so only treat non-"ok" as errors
     if (initData.error?.code && initData.error.code !== "ok") {
-      console.error("TikTok init error:", initData);
+      console.error("[POST-TO-TIKTOK] TikTok init error code:", initData.error.code);
+      console.error("[POST-TO-TIKTOK] TikTok init error message:", initData.error.message);
+      console.error("[POST-TO-TIKTOK] TikTok init full error:", JSON.stringify(initData.error, null, 2));
       return new Response(
         JSON.stringify({ 
           error: initData.error.message || "Failed to initialize video post",
