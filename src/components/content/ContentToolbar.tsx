@@ -54,7 +54,8 @@ export function ContentToolbar({
               disabled={!showMultiplePlatforms}
               className={cn(
                 "h-8 w-8 p-0",
-                customizePerNetwork && "bg-yellow-400 text-foreground hover:bg-yellow-400/90",
+                customizePerNetwork &&
+                  "bg-highlight text-highlight-foreground hover:bg-highlight/90",
                 !showMultiplePlatforms && "opacity-40"
               )}
             >
@@ -112,7 +113,7 @@ export function ContentToolbar({
               onClick={onSelectMedia}
               className={cn(
                 "h-8 w-8 p-0",
-                hasMedia && "bg-yellow-400 text-foreground hover:bg-yellow-400/90"
+                hasMedia && "bg-highlight text-highlight-foreground hover:bg-highlight/90"
               )}
             >
               <ImagePlus className="w-4 h-4" />
@@ -133,7 +134,9 @@ export function ContentToolbar({
               onClick={onContentTypeClick}
               className={cn(
                 "h-8 w-8 p-0",
-                contentType && contentType !== "general" && "bg-yellow-400 text-foreground hover:bg-yellow-400/90"
+                contentType &&
+                  contentType !== "general" &&
+                  "bg-highlight text-highlight-foreground hover:bg-highlight/90"
               )}
             >
               <Tag className="w-4 h-4" />
