@@ -44,6 +44,7 @@ import { ScheduleModal } from "./ScheduleModal";
 import { PerNetworkEditor, PerPlatformContent } from "./PerNetworkEditor";
 import { ThreadChainEditor, ThreadPost } from "./ThreadChainEditor";
 import { TikTokPostOptions } from "./TikTokPostOptions";
+import { TikTokCarouselUploader } from "./TikTokCarouselUploader";
 import { ContentToolbar } from "./ContentToolbar";
 import { AIAssistPanel } from "./AIAssistPanel";
 import { MediaSelectModal } from "./MediaSelectModal";
@@ -247,6 +248,7 @@ export function PostEditorSheet({
     tiktok_brand_organic: false,
     tiktok_brand_content: false,
     tiktok_auto_add_music: false, // For photos only
+    tiktok_photo_urls: [] as string[], // For carousel posts (up to 35 photos)
   });
 
   const isAlreadyScheduled = !!existingItem?.scheduled_at;
@@ -428,6 +430,7 @@ export function PostEditorSheet({
           tiktok_brand_organic: false,
           tiktok_brand_content: false,
           tiktok_auto_add_music: false,
+          tiktok_photo_urls: [],
         });
       } else {
         // Creating from talking point - generate draft
@@ -457,6 +460,7 @@ export function PostEditorSheet({
           tiktok_brand_organic: false,
           tiktok_brand_content: false,
           tiktok_auto_add_music: false,
+          tiktok_photo_urls: [],
         });
         generateDraft();
       }
@@ -487,6 +491,7 @@ export function PostEditorSheet({
         tiktok_brand_organic: false,
         tiktok_brand_content: false,
         tiktok_auto_add_music: false,
+        tiktok_photo_urls: [],
       });
       
       // If slot context is provided, pre-assign to that slot
@@ -1029,15 +1034,18 @@ export function PostEditorSheet({
       if (!tiktokConnection) {
         errors.push("Please connect your TikTok account first");
       }
-      if (!formData.media_url) {
+      // Check for media - either single media or carousel photos
+      const hasCarouselPhotos = formData.tiktok_photo_urls.length > 0;
+      const hasSingleMedia = !!formData.media_url;
+      if (!hasCarouselPhotos && !hasSingleMedia) {
         errors.push("TikTok requires media (photo or video)");
       }
       // Privacy validation
       if (!formData.tiktok_privacy_level) {
         errors.push("Please select who can view this post");
       }
-      // Photo-specific validation
-      const isPhoto = formData.media_type === "image";
+      // Photo-specific validation (carousel or single image)
+      const isPhoto = hasCarouselPhotos || formData.media_type === "image";
       if (isPhoto && !formData.tiktok_title?.trim()) {
         errors.push("Title is required for TikTok photo posts");
       }
@@ -1099,13 +1107,19 @@ export function PostEditorSheet({
         return;
       }
 
-      const isPhoto = formData.media_type === "image";
+      // Determine if this is a photo post (carousel or single image)
+      const hasCarouselPhotos = formData.tiktok_photo_urls.length > 0;
+      const isPhoto = hasCarouselPhotos || formData.media_type === "image";
       
       if (isPhoto) {
-        // Use photo endpoint for images
+        // Use photo endpoint for images/carousel
+        const photoUrls = hasCarouselPhotos 
+          ? formData.tiktok_photo_urls 
+          : [formData.media_url];
+          
         const response = await supabase.functions.invoke("post-to-tiktok-photo", {
           body: {
-            photoUrls: [formData.media_url],
+            photoUrls,
             title: formData.tiktok_title,
             caption: content,
             privacyLevel: formData.tiktok_privacy_level,
@@ -1533,6 +1547,7 @@ export function PostEditorSheet({
       tiktok_brand_organic: false,
       tiktok_brand_content: false,
       tiktok_auto_add_music: false,
+      tiktok_photo_urls: [],
     });
     setThreadPosts([]);
     onOpenChange(false);
@@ -1648,30 +1663,49 @@ export function PostEditorSheet({
                       {/* Auto-determine info for Instagram when multi-platform - now shown in Instagram card */}
 
                       {/* TikTok Post Options */}
-                      {formData.scheduled_platforms.includes("tiktok") &&
+                      {(formData.scheduled_platforms.includes("tiktok") || 
+                        formData.scheduled_platforms.includes("tiktok_sandbox")) &&
                         formData.scheduled_platforms.length === 1 && (
-                          <TikTokPostOptions
-                            mediaType={formData.media_type === "image" ? "photo" : "video"}
-                            title={formData.tiktok_title}
-                            onTitleChange={(value) => setFormData(prev => ({ ...prev, tiktok_title: value }))}
-                            privacyLevel={formData.tiktok_privacy_level}
-                            onPrivacyChange={(value) => setFormData(prev => ({ ...prev, tiktok_privacy_level: value }))}
-                            allowComment={formData.tiktok_allow_comment}
-                            onAllowCommentChange={(checked) => setFormData(prev => ({ ...prev, tiktok_allow_comment: checked }))}
-                            allowDuet={formData.tiktok_allow_duet}
-                            onAllowDuetChange={(checked) => setFormData(prev => ({ ...prev, tiktok_allow_duet: checked }))}
-                            allowStitch={formData.tiktok_allow_stitch}
-                            onAllowStitchChange={(checked) => setFormData(prev => ({ ...prev, tiktok_allow_stitch: checked }))}
-                            discloseContent={formData.tiktok_disclose_content}
-                            onDiscloseContentChange={(checked) => setFormData(prev => ({ ...prev, tiktok_disclose_content: checked }))}
-                            isBrandOrganic={formData.tiktok_brand_organic}
-                            onBrandOrganicChange={(checked) => setFormData(prev => ({ ...prev, tiktok_brand_organic: checked }))}
-                            isBrandedContent={formData.tiktok_brand_content}
-                            onBrandedContentChange={(checked) => setFormData(prev => ({ ...prev, tiktok_brand_content: checked }))}
-                            autoAddMusic={formData.tiktok_auto_add_music}
-                            onAutoAddMusicChange={(checked) => setFormData(prev => ({ ...prev, tiktok_auto_add_music: checked }))}
-                            disabled={isPostedContent}
-                          />
+                          <>
+                            {/* TikTok Carousel Uploader - show when no video is uploaded */}
+                            {formData.media_type !== "video" && (
+                              <TikTokCarouselUploader
+                                photoUrls={formData.tiktok_photo_urls}
+                                onPhotosChange={(urls) => setFormData(prev => ({ 
+                                  ...prev, 
+                                  tiktok_photo_urls: urls,
+                                  // Clear single media when using carousel
+                                  media_url: urls.length > 0 ? null : prev.media_url,
+                                  media_type: urls.length > 0 ? null : prev.media_type,
+                                }))}
+                                projectId={projectId}
+                                disabled={isPostedContent}
+                              />
+                            )}
+                            
+                            <TikTokPostOptions
+                              mediaType={formData.tiktok_photo_urls.length > 0 || formData.media_type === "image" ? "photo" : "video"}
+                              title={formData.tiktok_title}
+                              onTitleChange={(value) => setFormData(prev => ({ ...prev, tiktok_title: value }))}
+                              privacyLevel={formData.tiktok_privacy_level}
+                              onPrivacyChange={(value) => setFormData(prev => ({ ...prev, tiktok_privacy_level: value }))}
+                              allowComment={formData.tiktok_allow_comment}
+                              onAllowCommentChange={(checked) => setFormData(prev => ({ ...prev, tiktok_allow_comment: checked }))}
+                              allowDuet={formData.tiktok_allow_duet}
+                              onAllowDuetChange={(checked) => setFormData(prev => ({ ...prev, tiktok_allow_duet: checked }))}
+                              allowStitch={formData.tiktok_allow_stitch}
+                              onAllowStitchChange={(checked) => setFormData(prev => ({ ...prev, tiktok_allow_stitch: checked }))}
+                              discloseContent={formData.tiktok_disclose_content}
+                              onDiscloseContentChange={(checked) => setFormData(prev => ({ ...prev, tiktok_disclose_content: checked }))}
+                              isBrandOrganic={formData.tiktok_brand_organic}
+                              onBrandOrganicChange={(checked) => setFormData(prev => ({ ...prev, tiktok_brand_organic: checked }))}
+                              isBrandedContent={formData.tiktok_brand_content}
+                              onBrandedContentChange={(checked) => setFormData(prev => ({ ...prev, tiktok_brand_content: checked }))}
+                              autoAddMusic={formData.tiktok_auto_add_music}
+                              onAutoAddMusicChange={(checked) => setFormData(prev => ({ ...prev, tiktok_auto_add_music: checked }))}
+                              disabled={isPostedContent}
+                            />
+                          </>
                         )}
                     </div>
                   )}
@@ -1783,7 +1817,7 @@ export function PostEditorSheet({
                     pinterestHasWarning={!formData.pinterest_board_id}
                     showMultiplePlatforms={formData.scheduled_platforms.length > 1}
                     onSelectMedia={() => setShowMediaModal(true)}
-                    hasMedia={!!formData.media_url}
+                    hasMedia={!!formData.media_url || formData.tiktok_photo_urls.length > 0}
                     onContentTypeClick={() => setShowContentTypeModal(true)}
                     contentType={contentType}
                   />
@@ -1818,8 +1852,8 @@ export function PostEditorSheet({
             <SocialPostPreview
               platforms={formData.scheduled_platforms}
               content={content}
-              mediaUrl={formData.media_url}
-              mediaType={formData.media_type}
+              mediaUrl={formData.tiktok_photo_urls.length > 0 ? formData.tiktok_photo_urls[0] : formData.media_url}
+              mediaType={formData.tiktok_photo_urls.length > 0 ? "image" : formData.media_type}
               title={title}
               linkUrl={formData.link_url}
               accountNames={{
