@@ -882,12 +882,18 @@ export function PostEditorSheet({
     setIsPosting(true);
     try {
       const isVideo = formData.media_type === "video";
+      
+      // Get thread posts from per-platform content if customizing per network
+      const threadsContent = perPlatformContent["threads"];
+      const threadPosts = threadsContent?.threadPosts || [];
+      
       const response = await supabase.functions.invoke("post-to-threads", {
         body: {
           text: content,
           mediaType: formData.media_url ? (isVideo ? "VIDEO" : "IMAGE") : "TEXT",
           imageUrl: !isVideo ? formData.media_url : undefined,
           videoUrl: isVideo ? formData.media_url : undefined,
+          threadPosts: threadPosts.map((post) => ({ text: post.text })),
         },
       });
 
@@ -909,7 +915,8 @@ export function PostEditorSheet({
           .eq("id", timelineItemId);
       }
 
-      toast.success("Posted to Threads successfully!");
+      const totalPosts = response.data?.totalPosts || 1;
+      toast.success(`Posted ${totalPosts > 1 ? `thread (${totalPosts} posts)` : 'to Threads'} successfully!`);
       trackSocialPostPublish('threads');
       queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
       onSaved?.();

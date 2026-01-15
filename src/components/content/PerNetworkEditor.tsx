@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, Instagram, Facebook, Sparkles, ImagePlus } from "lucide-react";
+import { ChevronDown, ChevronUp, Instagram, Facebook, Sparkles, ImagePlus, Plus, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,12 +43,21 @@ const getIconComponent = (platformId: string) => {
   }
 };
 
+// Thread post for multi-thread chains
+export interface ThreadPost {
+  id: string;
+  text: string;
+  mediaUrl?: string | null;
+  mediaType?: string | null;
+}
+
 export interface PerPlatformContent {
   [platformId: string]: {
     title?: string;
     content: string;
     mediaUrl?: string | null;
     mediaType?: string | null;
+    threadPosts?: ThreadPost[]; // Additional thread posts for Threads platform
   };
 }
 
@@ -108,10 +117,67 @@ export function PerNetworkEditor({
     });
   };
 
+  // Thread chain management for Threads platform
+  const handleAddThreadPost = (platformId: string) => {
+    const currentPlatformContent = perPlatformContent[platformId] || {
+      title: defaultTitle,
+      content: defaultContent,
+      threadPosts: [],
+    };
+    
+    const newThreadPost: ThreadPost = {
+      id: crypto.randomUUID(),
+      text: "",
+    };
+    
+    onPerPlatformContentChange({
+      ...perPlatformContent,
+      [platformId]: {
+        ...currentPlatformContent,
+        threadPosts: [...(currentPlatformContent.threadPosts || []), newThreadPost],
+      },
+    });
+  };
+
+  const handleUpdateThreadPost = (platformId: string, threadPostId: string, text: string) => {
+    const currentPlatformContent = perPlatformContent[platformId];
+    if (!currentPlatformContent?.threadPosts) return;
+    
+    const updatedThreadPosts = currentPlatformContent.threadPosts.map((post) =>
+      post.id === threadPostId ? { ...post, text } : post
+    );
+    
+    onPerPlatformContentChange({
+      ...perPlatformContent,
+      [platformId]: {
+        ...currentPlatformContent,
+        threadPosts: updatedThreadPosts,
+      },
+    });
+  };
+
+  const handleRemoveThreadPost = (platformId: string, threadPostId: string) => {
+    const currentPlatformContent = perPlatformContent[platformId];
+    if (!currentPlatformContent?.threadPosts) return;
+    
+    const updatedThreadPosts = currentPlatformContent.threadPosts.filter(
+      (post) => post.id !== threadPostId
+    );
+    
+    onPerPlatformContentChange({
+      ...perPlatformContent,
+      [platformId]: {
+        ...currentPlatformContent,
+        threadPosts: updatedThreadPosts,
+      },
+    });
+  };
+
   const getPlatformContent = (platformId: string) => {
     return perPlatformContent[platformId] || {
       title: defaultTitle,
       content: defaultContent,
+      threadPosts: [],
     };
   };
 
@@ -246,6 +312,81 @@ export function PerNetworkEditor({
                     )}
                   </div>
                 </div>
+
+                {/* Thread Chain UI - Threads platform only */}
+                {platformId === "threads" && (
+                  <div className="space-y-3 pt-2">
+                    {/* Thread posts */}
+                    {(platformContent.threadPosts || []).map((threadPost, index) => (
+                      <div
+                        key={threadPost.id}
+                        className="relative border-l-2 border-muted pl-4 py-2"
+                      >
+                        <div className="flex items-start gap-2">
+                          <div className="flex-shrink-0 mt-1">
+                            <div
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-white"
+                              style={{ backgroundColor: platform.color }}
+                            >
+                              <ThreadsIcon className="w-3 h-3" />
+                            </div>
+                          </div>
+                          <div className="flex-1 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs text-muted-foreground">
+                                Thread {index + 2}
+                              </Label>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">
+                                  {threadPost.text.length} / 500
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveThreadPost(platformId, threadPost.id)}
+                                  className="text-muted-foreground hover:text-destructive transition-colors"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                            <Textarea
+                              value={threadPost.text}
+                              onChange={(e) => {
+                                handleUpdateThreadPost(platformId, threadPost.id, e.target.value);
+                                const target = e.target as HTMLTextAreaElement;
+                                target.style.height = 'auto';
+                                target.style.height = `${Math.max(80, target.scrollHeight)}px`;
+                              }}
+                              placeholder="Continue your thread..."
+                              className="min-h-[80px] resize-none overflow-hidden text-sm"
+                              maxLength={500}
+                              style={{ height: 'auto' }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Add to thread button */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAddThreadPost(platformId)}
+                      className="w-full border-dashed text-muted-foreground hover:text-foreground"
+                      disabled={(platformContent.threadPosts || []).length >= 10}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add to thread
+                    </Button>
+                    
+                    {(platformContent.threadPosts || []).length >= 10 && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        Maximum of 10 thread posts reached
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Icon Toolbar for this platform */}
                 <div className="flex items-center gap-1 pt-1">
