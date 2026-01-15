@@ -201,12 +201,61 @@ serve(async (req) => {
 
     const creatorInfo = creatorInfoData.data;
 
+    // Check if stored account_name looks like an open_id (fallback value from failed user info fetch)
+    const storedName = connection.account_name || "";
+    const looksLikeOpenId = storedName.match(/^[a-zA-Z0-9_-]{20,}$/) && !storedName.includes(" ");
+    
+    let displayUsername = creatorInfo?.creator_username || connection.account_name;
+    let displayNickname = creatorInfo?.creator_nickname || connection.account_name;
+    let displayAvatar = creatorInfo?.creator_avatar_url || connection.avatar_url || null;
+
+    // If the stored name looks like an open_id, try to fetch the real username
+    if (looksLikeOpenId) {
+      console.log("Stored account_name looks like open_id, attempting to fetch real username...");
+      try {
+        const userResponse = await fetch(
+          "https://open.tiktokapis.com/v2/user/info/?fields=display_name,username,avatar_url",
+          { 
+            method: "GET",
+            headers: { Authorization: `Bearer ${accessToken}` } 
+          }
+        );
+        const userData = await userResponse.json();
+        console.log("User info response:", JSON.stringify(userData));
+        
+        if (userData.data?.user?.display_name || userData.data?.user?.username) {
+          const newUsername = userData.data.user.username || userData.data.user.display_name;
+          const newNickname = userData.data.user.display_name || userData.data.user.username;
+          const newAvatar = userData.data.user.avatar_url;
+          
+          console.log("Found real username, updating database:", newUsername);
+          
+          // Update the database with correct username
+          await supabase
+            .from("social_connections")
+            .update({ 
+              account_name: newUsername,
+              avatar_url: newAvatar || connection.avatar_url 
+            })
+            .eq("user_id", user.id)
+            .eq("platform", connection.platform);
+          
+          // Use the new values in response
+          displayUsername = newUsername;
+          displayNickname = newNickname;
+          displayAvatar = newAvatar || displayAvatar;
+        }
+      } catch (e) {
+        console.log("Could not fetch updated user info:", e);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         is_sandbox: false,
-        creator_avatar_url: creatorInfo?.creator_avatar_url || null,
-        creator_username: creatorInfo?.creator_username || connection.account_name,
-        creator_nickname: creatorInfo?.creator_nickname || connection.account_name,
+        creator_avatar_url: displayAvatar,
+        creator_username: displayUsername,
+        creator_nickname: displayNickname,
         privacy_level_options: creatorInfo?.privacy_level_options || ["PUBLIC_TO_EVERYONE", "SELF_ONLY"],
         comment_disabled: creatorInfo?.comment_disabled || false,
         duet_disabled: creatorInfo?.duet_disabled || false,
