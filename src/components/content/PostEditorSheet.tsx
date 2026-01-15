@@ -1684,6 +1684,7 @@ export function PostEditorSheet({
                             )}
                             
                             <TikTokPostOptions
+                              hasConnection={!!tiktokConnection}
                               mediaType={formData.tiktok_photo_urls.length > 0 || formData.media_type === "image" ? "photo" : "video"}
                               title={formData.tiktok_title}
                               onTitleChange={(value) => setFormData(prev => ({ ...prev, tiktok_title: value }))}
