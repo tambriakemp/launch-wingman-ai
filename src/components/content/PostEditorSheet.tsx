@@ -231,13 +231,23 @@ export function PostEditorSheet({
     tiktok_brand_organic: false,
   });
 
-  const isAlreadyScheduled = !!(existingItem?.scheduled_at);
+  const isAlreadyScheduled = !!existingItem?.scheduled_at;
   const isEditingExisting = !!existingItem;
   // Posted content = status is "completed" (successfully posted to social platform)
   const isPostedContent = existingItem?.status === "completed";
   // Draft content = status is "draft" (scheduled but not yet set to post)
   const isDraftContent = existingItem?.status === "draft";
-  
+
+  const scheduledPlatformsCount = formData.scheduled_platforms.length;
+  const isThreadsOnly =
+    scheduledPlatformsCount === 1 && formData.scheduled_platforms[0] === "threads";
+
+  // If a user deselects down to 0–1 platforms, force per-network mode off so the main editor shows again.
+  useEffect(() => {
+    if (scheduledPlatformsCount <= 1 && customizePerNetwork) {
+      setCustomizePerNetwork(false);
+    }
+  }, [scheduledPlatformsCount, customizePerNetwork]);
   // Check social connections - always use production Pinterest
   const { data: pinterestConnection } = useQuery({
     queryKey: ["pinterest-connection", user?.id],
@@ -1523,17 +1533,19 @@ export function PostEditorSheet({
                 {/* Main Title & Content - hide when customizePerNetwork is enabled with 2+ platforms */}
                 {!customizePerNetwork && (
                   <>
-                    {/* Title */}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Title</Label>
-                      <Input
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="Enter post title..."
-                        disabled={isPostedContent}
-                        readOnly={isPostedContent}
-                      />
-                    </div>
+                    {/* Title (not used for Threads-only posts) */}
+                    {!isThreadsOnly && (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Title</Label>
+                        <Input
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          placeholder="Enter post title..."
+                          disabled={isPostedContent}
+                          readOnly={isPostedContent}
+                        />
+                      </div>
+                    )}
 
                     {/* Category guidance */}
                     <p className="text-sm text-muted-foreground italic">
@@ -1613,7 +1625,10 @@ export function PostEditorSheet({
                 {!isPostedContent && (
                   <ContentToolbar
                     customizePerNetwork={customizePerNetwork}
-                    onCustomizeToggle={() => setCustomizePerNetwork(!customizePerNetwork)}
+                    onCustomizeToggle={() => {
+                      if (formData.scheduled_platforms.length <= 1) return;
+                      setCustomizePerNetwork(!customizePerNetwork);
+                    }}
                     showPinterestOption={formData.scheduled_platforms.includes("pinterest")}
                     onPinterestClick={() => setShowPinterestOptions(true)}
                     pinterestHasWarning={!formData.pinterest_board_id}

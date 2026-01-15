@@ -33,6 +33,9 @@
     --accent: 47 96% 53%;
     --accent-foreground: 40 6% 7%;
 
+    /* Toolbar active state */
+    --highlight: 47 96% 53%;
+    --highlight-foreground: 40 6% 7%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
@@ -100,6 +103,9 @@
     --accent: 262 50% 20%;
     --accent-foreground: 262 83% 75%;
 
+    /* Toolbar active state (keep yellow in dark mode too) */
+    --highlight: 47 96% 53%;
+    --highlight-foreground: 40 6% 7%;
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
