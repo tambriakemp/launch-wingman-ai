@@ -237,9 +237,16 @@ export function PostEditorSheet({
     pinterest_board_id: null as string | null,
     link_url: "",
     instagram_post_type: "feed" as "feed" | "reel" | "story",
-    tiktok_privacy_level: "PUBLIC_TO_EVERYONE",
-    tiktok_brand_content: false,
+    // TikTok fields - new structure for Content Sharing Guidelines compliance
+    tiktok_privacy_level: "", // No default - user must select
+    tiktok_title: "", // Required for photos
+    tiktok_allow_comment: false, // Unchecked by default per guidelines
+    tiktok_allow_duet: false,
+    tiktok_allow_stitch: false,
+    tiktok_disclose_content: false, // Master toggle
     tiktok_brand_organic: false,
+    tiktok_brand_content: false,
+    tiktok_auto_add_music: false, // For photos only
   });
 
   const isAlreadyScheduled = !!existingItem?.scheduled_at;
@@ -412,9 +419,15 @@ export function PostEditorSheet({
           pinterest_board_id: null,
           link_url: "",
           instagram_post_type: "feed",
-          tiktok_privacy_level: "PUBLIC_TO_EVERYONE",
-          tiktok_brand_content: false,
+          tiktok_privacy_level: "",
+          tiktok_title: "",
+          tiktok_allow_comment: false,
+          tiktok_allow_duet: false,
+          tiktok_allow_stitch: false,
+          tiktok_disclose_content: false,
           tiktok_brand_organic: false,
+          tiktok_brand_content: false,
+          tiktok_auto_add_music: false,
         });
       } else {
         // Creating from talking point - generate draft
@@ -435,9 +448,15 @@ export function PostEditorSheet({
           pinterest_board_id: null,
           link_url: "",
           instagram_post_type: "feed",
-          tiktok_privacy_level: "PUBLIC_TO_EVERYONE",
-          tiktok_brand_content: false,
+          tiktok_privacy_level: "",
+          tiktok_title: "",
+          tiktok_allow_comment: false,
+          tiktok_allow_duet: false,
+          tiktok_allow_stitch: false,
+          tiktok_disclose_content: false,
           tiktok_brand_organic: false,
+          tiktok_brand_content: false,
+          tiktok_auto_add_music: false,
         });
         generateDraft();
       }
@@ -459,9 +478,15 @@ export function PostEditorSheet({
         pinterest_board_id: null,
         link_url: "",
         instagram_post_type: "feed",
-        tiktok_privacy_level: "PUBLIC_TO_EVERYONE",
-        tiktok_brand_content: false,
+        tiktok_privacy_level: "",
+        tiktok_title: "",
+        tiktok_allow_comment: false,
+        tiktok_allow_duet: false,
+        tiktok_allow_stitch: false,
+        tiktok_disclose_content: false,
         tiktok_brand_organic: false,
+        tiktok_brand_content: false,
+        tiktok_auto_add_music: false,
       });
       
       // If slot context is provided, pre-assign to that slot
@@ -1000,12 +1025,29 @@ export function PostEditorSheet({
       if (!threadsConnection) {
         errors.push("Please connect your Threads account first");
       }
-    } else if (platform === "tiktok") {
+    } else if (platform === "tiktok" || platform === "tiktok_sandbox") {
       if (!tiktokConnection) {
         errors.push("Please connect your TikTok account first");
       }
-      if (!formData.media_url || formData.media_type !== "video") {
-        errors.push("TikTok only supports video posts");
+      if (!formData.media_url) {
+        errors.push("TikTok requires media (photo or video)");
+      }
+      // Privacy validation
+      if (!formData.tiktok_privacy_level) {
+        errors.push("Please select who can view this post");
+      }
+      // Photo-specific validation
+      const isPhoto = formData.media_type === "image";
+      if (isPhoto && !formData.tiktok_title?.trim()) {
+        errors.push("Title is required for TikTok photo posts");
+      }
+      // Commercial content validation
+      if (formData.tiktok_disclose_content && !formData.tiktok_brand_organic && !formData.tiktok_brand_content) {
+        errors.push("Please select at least one commercial disclosure option");
+      }
+      // Branded content privacy validation
+      if (formData.tiktok_brand_content && formData.tiktok_privacy_level === "SELF_ONLY") {
+        errors.push("Branded content cannot have private visibility");
       }
     }
     
@@ -1057,50 +1099,101 @@ export function PostEditorSheet({
         return;
       }
 
-      const response = await supabase.functions.invoke("post-to-tiktok", {
-        body: {
-          videoUrl: formData.media_url,
-          caption: content,
-          privacyLevel: formData.tiktok_privacy_level,
-          brandContentToggle: formData.tiktok_brand_content,
-          brandOrganicToggle: formData.tiktok_brand_organic,
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      const isPhoto = formData.media_type === "image";
+      
+      if (isPhoto) {
+        // Use photo endpoint for images
+        const response = await supabase.functions.invoke("post-to-tiktok-photo", {
+          body: {
+            photoUrls: [formData.media_url],
+            title: formData.tiktok_title,
+            caption: content,
+            privacyLevel: formData.tiktok_privacy_level,
+            disableComment: !formData.tiktok_allow_comment,
+            autoAddMusic: formData.tiktok_auto_add_music,
+          },
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
 
-      // Handle Supabase function invocation error
-      if (response.error) {
-        // Try to extract TikTok-specific error from response data
-        const tiktokError = response.data?.tiktok_error;
-        const errorMessage = tiktokError?.message || response.data?.error || response.error.message || "Failed to post to TikTok";
-        throw new Error(errorMessage);
+        if (response.error) {
+          const tiktokError = response.data?.tiktok_error;
+          const errorMessage = tiktokError?.message || response.data?.error || response.error.message || "Failed to post to TikTok";
+          throw new Error(errorMessage);
+        }
+        
+        if (response.data?.error) {
+          const tiktokError = response.data?.tiktok_error;
+          const errorMessage = tiktokError?.message || response.data.error;
+          throw new Error(errorMessage);
+        }
+
+        if (timelineItemId) {
+          await supabase
+            .from("content_planner")
+            .update({
+              scheduled_platforms: formData.scheduled_platforms,
+              scheduled_at: new Date().toISOString(),
+              status: "completed",
+            })
+            .eq("id", timelineItemId);
+        }
+
+        if (response.data?.status === "PROCESSING") {
+          toast.success("Photo submitted to TikTok! It may take a few minutes to appear.");
+        } else {
+          toast.success("Posted to TikTok successfully!");
+        }
+      } else {
+        // Use video endpoint
+        const response = await supabase.functions.invoke("post-to-tiktok", {
+          body: {
+            videoUrl: formData.media_url,
+            caption: content,
+            privacyLevel: formData.tiktok_privacy_level,
+            brandContentToggle: formData.tiktok_brand_content,
+            brandOrganicToggle: formData.tiktok_brand_organic,
+            disableComment: !formData.tiktok_allow_comment,
+            disableDuet: !formData.tiktok_allow_duet,
+            disableStitch: !formData.tiktok_allow_stitch,
+          },
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+
+        // Handle Supabase function invocation error
+        if (response.error) {
+          const tiktokError = response.data?.tiktok_error;
+          const errorMessage = tiktokError?.message || response.data?.error || response.error.message || "Failed to post to TikTok";
+          throw new Error(errorMessage);
+        }
+        
+        if (response.data?.error) {
+          const tiktokError = response.data?.tiktok_error;
+          const errorMessage = tiktokError?.message || response.data.error;
+          throw new Error(errorMessage);
+        }
+
+        if (timelineItemId) {
+          await supabase
+            .from("content_planner")
+            .update({
+              scheduled_platforms: formData.scheduled_platforms,
+              scheduled_at: new Date().toISOString(),
+              status: "completed",
+            })
+            .eq("id", timelineItemId);
+        }
+
+        if (response.data?.status === "PROCESSING") {
+          toast.success("Video submitted to TikTok! It may take a few minutes to appear.");
+        } else {
+          toast.success("Posted to TikTok successfully!");
+        }
       }
       
-      // Handle error returned in response data
-      if (response.data?.error) {
-        const tiktokError = response.data?.tiktok_error;
-        const errorMessage = tiktokError?.message || response.data.error;
-        throw new Error(errorMessage);
-      }
-
-      if (timelineItemId) {
-        await supabase
-          .from("content_planner")
-          .update({
-            scheduled_platforms: formData.scheduled_platforms,
-            scheduled_at: new Date().toISOString(),
-            status: "completed",
-          })
-          .eq("id", timelineItemId);
-      }
-
-      if (response.data?.status === "PROCESSING") {
-        toast.success("Video submitted to TikTok! It may take a few minutes to appear.");
-      } else {
-        toast.success("Posted to TikTok successfully!");
-      }
       trackSocialPostPublish('tiktok');
       queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
       onSaved?.();
@@ -1431,9 +1524,15 @@ export function PostEditorSheet({
       pinterest_board_id: null,
       link_url: "",
       instagram_post_type: "feed",
-      tiktok_privacy_level: "PUBLIC_TO_EVERYONE",
-      tiktok_brand_content: false,
+      tiktok_privacy_level: "",
+      tiktok_title: "",
+      tiktok_allow_comment: false,
+      tiktok_allow_duet: false,
+      tiktok_allow_stitch: false,
+      tiktok_disclose_content: false,
       tiktok_brand_organic: false,
+      tiktok_brand_content: false,
+      tiktok_auto_add_music: false,
     });
     setThreadPosts([]);
     onOpenChange(false);
