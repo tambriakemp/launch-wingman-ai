@@ -76,8 +76,8 @@ export function ThreadChainEditor({
                   Thread {index + 2}
                 </Label>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">
-                    {threadPost.text.length} / 500
+                  <span className={`text-xs ${threadPost.text.length > 500 ? 'text-destructive font-medium' : threadPost.text.length > 450 ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                    {500 - threadPost.text.length} remaining
                   </span>
                   <button
                     type="button"
