@@ -987,9 +987,11 @@ const Settings = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-foreground">Pinterest</p>
-                        <Badge variant={pinterestEnvironment === "sandbox" ? "default" : "secondary"} className="text-xs">
-                          {pinterestEnvironment === "sandbox" ? "Sandbox" : "Production"}
-                        </Badge>
+                        {hasAdminAccess && (
+                          <Badge variant={pinterestEnvironment === "sandbox" ? "default" : "secondary"} className="text-xs">
+                            {pinterestEnvironment === "sandbox" ? "Sandbox" : "Production"}
+                          </Badge>
+                        )}
                       </div>
                       {pinterestConnection ? (
                         <div className="flex flex-col gap-0.5">
@@ -1061,8 +1063,8 @@ const Settings = () => {
                   )}
                 </div>
 
-                {/* Pinterest Sandbox Token Input - Only show when in sandbox mode */}
-                {pinterestEnvironment === "sandbox" && (
+                {/* Pinterest Sandbox Token Input - Only show for admins in sandbox mode */}
+                {hasAdminAccess && pinterestEnvironment === "sandbox" && (
                   <div className="p-4 rounded-lg border bg-muted/30 space-y-3">
                     <div className="flex items-center gap-2">
                       <FlaskConical className="w-4 h-4 text-muted-foreground" />
@@ -1467,22 +1469,24 @@ const Settings = () => {
                         <div>
                           <div className="flex items-center gap-2">
                             <p className="font-medium text-foreground">TikTok</p>
-                            <Badge 
-                              variant={isSandbox ? "secondary" : "default"} 
-                              className="text-xs flex items-center gap-1"
-                            >
-                              {isSandbox ? (
-                                <>
-                                  <FlaskConical className="w-3 h-3" />
-                                  Sandbox
-                                </>
-                              ) : (
-                                <>
-                                  <Zap className="w-3 h-3" />
-                                  Production
-                                </>
-                              )}
-                            </Badge>
+                            {hasAdminAccess && (
+                              <Badge 
+                                variant={isSandbox ? "secondary" : "default"} 
+                                className="text-xs flex items-center gap-1"
+                              >
+                                {isSandbox ? (
+                                  <>
+                                    <FlaskConical className="w-3 h-3" />
+                                    Sandbox
+                                  </>
+                                ) : (
+                                  <>
+                                    <Zap className="w-3 h-3" />
+                                    Production
+                                  </>
+                                )}
+                              </Badge>
+                            )}
                           </div>
                           {activeConnection ? (
                             <div className="flex flex-col gap-0.5">
