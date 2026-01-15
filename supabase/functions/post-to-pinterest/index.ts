@@ -95,7 +95,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { board_id, title, description, media_url, link } = await req.json();
+    const { board_id, title, description, media_url, link, environment = "production" } = await req.json();
 
     if (!board_id) {
       throw new Error('Board ID is required');
@@ -105,7 +105,11 @@ serve(async (req) => {
       throw new Error('Media URL is required for Pinterest pins');
     }
 
-    console.log('[POST-TO-PINTEREST] Creating pin for user:', sanitizeId(user.id));
+    const apiBase = environment === "sandbox" 
+      ? "https://api-sandbox.pinterest.com" 
+      : "https://api.pinterest.com";
+
+    console.log('[POST-TO-PINTEREST] Creating pin for user:', sanitizeId(user.id), 'environment:', environment);
 
     // Get Pinterest connection (always production)
     const { data: connection, error: connError } = await supabase
@@ -120,7 +124,7 @@ serve(async (req) => {
       throw new Error('Pinterest not connected. Go to Settings and connect Pinterest.');
     }
 
-    console.log('[POST-TO-PINTEREST] Using production API');
+    console.log('[POST-TO-PINTEREST] Using', environment, 'API at', apiBase);
 
     // Decrypt the access token
     const { data: decryptedAccessToken, error: decryptError } = await supabase.rpc('decrypt_token', { 
@@ -177,9 +181,9 @@ serve(async (req) => {
       pinData.link = link;
     }
 
-    console.log('[POST-TO-PINTEREST] Creating pin via production API');
+    console.log('[POST-TO-PINTEREST] Creating pin via', environment, 'API');
 
-    const pinResponse = await fetch('https://api.pinterest.com/v5/pins', {
+    const pinResponse = await fetch(`${apiBase}/v5/pins`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,

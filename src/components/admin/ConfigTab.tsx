@@ -8,6 +8,7 @@ import { Loader2, Users, FlaskConical, RefreshCw, UserCheck, Settings, Tag, List
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { TikTokEnvironmentToggle } from './TikTokEnvironmentToggle';
+import { PinterestEnvironmentToggle } from './PinterestEnvironmentToggle';
 
 interface SureContactConfigItem {
   config_type: string;
@@ -138,6 +139,7 @@ export function ConfigTab() {
   return (
     <div className="space-y-6">
       {/* Environment Toggles */}
+      <PinterestEnvironmentToggle />
       <TikTokEnvironmentToggle />
 
       {/* SureContact Configuration Card */}

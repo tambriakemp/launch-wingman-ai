@@ -91,7 +91,20 @@ serve(async (req) => {
       throw new Error('Invalid token');
     }
 
-    console.log('[PINTEREST-GET-BOARDS] Fetching boards for user:', user.id);
+    // Parse request body for environment parameter
+    let environment = "production";
+    try {
+      const body = await req.json();
+      environment = body.environment || "production";
+    } catch {
+      // If no body, default to production
+    }
+
+    const apiBase = environment === "sandbox" 
+      ? "https://api-sandbox.pinterest.com" 
+      : "https://api.pinterest.com";
+
+    console.log('[PINTEREST-GET-BOARDS] Fetching boards for user:', user.id, 'environment:', environment);
 
     // Get Pinterest connection (always production)
     const { data: connection, error: connError } = await supabase
@@ -106,7 +119,7 @@ serve(async (req) => {
       throw new Error('Pinterest not connected. Go to Settings and connect Pinterest.');
     }
 
-    console.log('[PINTEREST-GET-BOARDS] Using production API');
+    console.log('[PINTEREST-GET-BOARDS] Using', environment, 'API at', apiBase);
 
     // Decrypt the access token
     const { data: decryptedAccessToken, error: decryptError } = await supabase.rpc('decrypt_token', { 
@@ -142,8 +155,8 @@ serve(async (req) => {
       }
     }
 
-    // Fetch boards from Pinterest (always production API)
-    const boardsResponse = await fetch('https://api.pinterest.com/v5/boards', {
+    // Fetch boards from Pinterest (use environment-specific API)
+    const boardsResponse = await fetch(`${apiBase}/v5/boards`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
       },
