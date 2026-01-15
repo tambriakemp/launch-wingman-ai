@@ -69,6 +69,9 @@ verify_jwt = false
 [functions.pinterest-get-boards]
 verify_jwt = false
 
+[functions.pinterest-create-board]
+verify_jwt = false
+
 [functions.post-to-pinterest]
 verify_jwt = false
 
