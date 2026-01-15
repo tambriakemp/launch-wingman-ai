@@ -191,15 +191,23 @@ export function PerNetworkEditor({
     return null;
   }
 
+  // Check if threads is the only platform selected
+  const isThreadsOnly = selectedPlatforms.length === 1 && selectedPlatforms[0] === "threads";
+
   return (
     <div className="space-y-3">
-      <Label className="text-xs font-medium text-muted-foreground">Per-Network Content</Label>
+      {/* Only show "Per-Network Content" label when multiple platforms are selected */}
+      {selectedPlatforms.length > 1 && (
+        <Label className="text-xs font-medium text-muted-foreground">Per-Network Content</Label>
+      )}
       {selectedPlatforms.map((platformId) => {
         const platform = getPlatformById(platformId);
         if (!platform) return null;
 
         const IconComponent = getIconComponent(platformId);
-        const isExpanded = expandedPlatform === platformId;
+        // When threads is the only platform, keep it always expanded
+        const isPlatformThreadsOnly = isThreadsOnly && platformId === "threads";
+        const isExpanded = isPlatformThreadsOnly || expandedPlatform === platformId;
         const platformContent = getPlatformContent(platformId);
         const charLimit = getCharacterLimit(platformId);
         const showTitle = platformId === "pinterest";
@@ -208,34 +216,39 @@ export function PerNetworkEditor({
         return (
           <div
             key={platformId}
-            className="border rounded-lg overflow-hidden"
-            style={{ borderLeftColor: platform.color, borderLeftWidth: 3 }}
+            className={cn(
+              "border rounded-lg overflow-hidden",
+              isPlatformThreadsOnly && "border-0" // No border when threads-only mode
+            )}
+            style={{ borderLeftColor: isPlatformThreadsOnly ? undefined : platform.color, borderLeftWidth: isPlatformThreadsOnly ? 0 : 3 }}
           >
-            {/* Platform Header */}
-            <button
-              type="button"
-              onClick={() => toggleExpanded(platformId)}
-              className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white"
-                  style={{ backgroundColor: platform.color }}
-                >
-                  {IconComponent && <IconComponent className="w-4 h-4" />}
+            {/* Platform Header - hide when threads is the only platform */}
+            {!isPlatformThreadsOnly && (
+              <button
+                type="button"
+                onClick={() => toggleExpanded(platformId)}
+                className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                    style={{ backgroundColor: platform.color }}
+                  >
+                    {IconComponent && <IconComponent className="w-4 h-4" />}
+                  </div>
+                  <span className="font-medium text-sm">{platform.name}</span>
                 </div>
-                <span className="font-medium text-sm">{platform.name}</span>
-              </div>
-              {isExpanded ? (
-                <ChevronUp className="w-4 h-4 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
-              )}
-            </button>
+                {isExpanded ? (
+                  <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                )}
+              </button>
+            )}
 
             {/* Platform Editor */}
             {isExpanded && (
-              <div className="p-4 space-y-3">
+              <div className={cn("space-y-3", !isPlatformThreadsOnly && "p-4")}>
                 {/* Title (Pinterest only) */}
                 {showTitle && (
                   <div className="space-y-1.5">
