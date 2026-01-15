@@ -1520,9 +1520,8 @@ export function PostEditorSheet({
                 </div>
                 )}
 
-                {/* Main Title & Content - hide when customizePerNetwork is enabled with 2+ platforms, OR when ONLY Threads is selected */}
-                {!customizePerNetwork && 
-                  !(formData.scheduled_platforms.length === 1 && formData.scheduled_platforms[0] === "threads") && (
+                {/* Main Title & Content - hide when customizePerNetwork is enabled with 2+ platforms */}
+                {!customizePerNetwork && (
                   <>
                     {/* Title */}
                     <div className="space-y-1.5">
