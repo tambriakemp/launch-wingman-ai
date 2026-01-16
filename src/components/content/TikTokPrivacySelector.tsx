@@ -27,7 +27,7 @@ interface TikTokPrivacySelectorProps {
 const PRIVACY_LABELS: Record<string, string> = {
   PUBLIC_TO_EVERYONE: "Everyone",
   MUTUAL_FOLLOW_FRIENDS: "Friends",
-  FOLLOWER_OF_CREATOR: "Followers",
+  FOLLOWER_OF_CREATOR: "Everyone",
   SELF_ONLY: "Only Me",
 };
 

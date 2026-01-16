@@ -283,6 +283,19 @@ export function PostEditorSheet({
       }));
     }
   }, [formData.media_url, formData.media_type, formData.scheduled_platforms]);
+
+  // Sync main title to TikTok title when TikTok is selected
+  useEffect(() => {
+    const isTikTokSelected = formData.scheduled_platforms?.includes('tiktok') || 
+                             formData.scheduled_platforms?.includes('tiktok_sandbox');
+    
+    if (isTikTokSelected && title) {
+      setFormData(prev => ({
+        ...prev,
+        tiktok_title: title,
+      }));
+    }
+  }, [title, formData.scheduled_platforms]);
   // Check social connections - always use production Pinterest
   const { data: pinterestConnection } = useQuery({
     queryKey: ["pinterest-connection", user?.id],
