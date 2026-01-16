@@ -1662,12 +1662,12 @@ export function PostEditorSheet({
 
                       {/* Auto-determine info for Instagram when multi-platform - now shown in Instagram card */}
 
-                      {/* TikTok Post Options */}
+                      {/* TikTok Post Options - only when TikTok is the ONLY platform selected */}
                       {(formData.scheduled_platforms.includes("tiktok") || 
                         formData.scheduled_platforms.includes("tiktok_sandbox")) &&
                         formData.scheduled_platforms.length === 1 && (
                           <>
-                            {/* TikTok Carousel Uploader - show when no video is uploaded */}
+                            {/* TikTok Carousel Uploader - show only when first media is a photo (not video) */}
                             {formData.media_type !== "video" && (
                               <TikTokCarouselUploader
                                 photoUrls={formData.tiktok_photo_urls}
@@ -1792,6 +1792,41 @@ export function PostEditorSheet({
                     onOpenAIAssist={() => setShowAIPanel(true)}
                     onSelectMedia={() => setShowMediaModal(true)}
                     onPinterestSettings={() => setShowPinterestOptions(true)}
+                    tiktokProps={(formData.scheduled_platforms.includes("tiktok") || 
+                                  formData.scheduled_platforms.includes("tiktok_sandbox")) ? {
+                      hasConnection: !!tiktokConnection,
+                      mediaType: formData.tiktok_photo_urls.length > 0 || formData.media_type === "image" ? "photo" : "video",
+                      photoUrls: formData.tiktok_photo_urls,
+                      onPhotosChange: (urls) => setFormData(prev => ({ 
+                        ...prev, 
+                        tiktok_photo_urls: urls,
+                        // Clear single media when using carousel
+                        media_url: urls.length > 0 ? null : prev.media_url,
+                        media_type: urls.length > 0 ? null : prev.media_type,
+                      })),
+                      title: formData.tiktok_title,
+                      onTitleChange: (value) => setFormData(prev => ({ ...prev, tiktok_title: value })),
+                      privacyLevel: formData.tiktok_privacy_level,
+                      onPrivacyChange: (value) => setFormData(prev => ({ ...prev, tiktok_privacy_level: value })),
+                      allowComment: formData.tiktok_allow_comment,
+                      onAllowCommentChange: (checked) => setFormData(prev => ({ ...prev, tiktok_allow_comment: checked })),
+                      allowDuet: formData.tiktok_allow_duet,
+                      onAllowDuetChange: (checked) => setFormData(prev => ({ ...prev, tiktok_allow_duet: checked })),
+                      allowStitch: formData.tiktok_allow_stitch,
+                      onAllowStitchChange: (checked) => setFormData(prev => ({ ...prev, tiktok_allow_stitch: checked })),
+                      discloseContent: formData.tiktok_disclose_content,
+                      onDiscloseContentChange: (checked) => setFormData(prev => ({ ...prev, tiktok_disclose_content: checked })),
+                      isBrandOrganic: formData.tiktok_brand_organic,
+                      onBrandOrganicChange: (checked) => setFormData(prev => ({ ...prev, tiktok_brand_organic: checked })),
+                      isBrandedContent: formData.tiktok_brand_content,
+                      onBrandedContentChange: (checked) => setFormData(prev => ({ ...prev, tiktok_brand_content: checked })),
+                      autoAddMusic: formData.tiktok_auto_add_music,
+                      onAutoAddMusicChange: (checked) => setFormData(prev => ({ ...prev, tiktok_auto_add_music: checked })),
+                      projectId: projectId,
+                      disabled: isPostedContent,
+                      // Show carousel only when first media is a photo (not video)
+                      showCarousel: formData.media_type !== "video",
+                    } : undefined}
                   />
                 )}
 

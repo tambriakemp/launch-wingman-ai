@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PLATFORMS, getPlatformById } from "./platformConfigs";
+import { TikTokCarouselUploader } from "./TikTokCarouselUploader";
+import { TikTokPostOptions } from "./TikTokPostOptions";
 
 // Custom icons for platforms not in Lucide
 const PinterestIcon = ({ className }: { className?: string }) => (
@@ -61,6 +63,36 @@ export interface PerPlatformContent {
   };
 }
 
+// TikTok specific props for per-network mode
+interface TikTokPerNetworkProps {
+  hasConnection: boolean;
+  mediaType: "video" | "photo";
+  photoUrls: string[];
+  onPhotosChange: (urls: string[]) => void;
+  title: string;
+  onTitleChange: (value: string) => void;
+  privacyLevel: string;
+  onPrivacyChange: (value: string) => void;
+  allowComment: boolean;
+  onAllowCommentChange: (checked: boolean) => void;
+  allowDuet: boolean;
+  onAllowDuetChange: (checked: boolean) => void;
+  allowStitch: boolean;
+  onAllowStitchChange: (checked: boolean) => void;
+  discloseContent: boolean;
+  onDiscloseContentChange: (checked: boolean) => void;
+  isBrandOrganic: boolean;
+  onBrandOrganicChange: (checked: boolean) => void;
+  isBrandedContent: boolean;
+  onBrandedContentChange: (checked: boolean) => void;
+  autoAddMusic: boolean;
+  onAutoAddMusicChange: (checked: boolean) => void;
+  projectId: string;
+  disabled?: boolean;
+  // Whether to show carousel (first media was a photo, not video)
+  showCarousel: boolean;
+}
+
 interface PerNetworkEditorProps {
   selectedPlatforms: string[];
   defaultTitle: string;
@@ -71,6 +103,8 @@ interface PerNetworkEditorProps {
   onOpenAIAssist?: (platformId: string) => void;
   onSelectMedia?: (platformId: string) => void;
   onPinterestSettings?: () => void;
+  // TikTok props for per-network mode
+  tiktokProps?: TikTokPerNetworkProps;
 }
 
 export function PerNetworkEditor({
@@ -83,6 +117,7 @@ export function PerNetworkEditor({
   onOpenAIAssist,
   onSelectMedia,
   onPinterestSettings,
+  tiktokProps,
 }: PerNetworkEditorProps) {
   // Only one platform can be expanded at a time
   const [expandedPlatform, setExpandedPlatform] = useState<string | null>(
@@ -394,6 +429,45 @@ export function PerNetworkEditor({
                         Maximum of 10 thread posts reached
                       </p>
                     )}
+                  </div>
+                )}
+
+                {/* TikTok Options - only show in TikTok box */}
+                {(platformId === "tiktok" || platformId === "tiktok_sandbox") && tiktokProps && (
+                  <div className="space-y-3 pt-2">
+                    {/* TikTok Carousel Uploader - show when showCarousel is true (first media was photo, not video) */}
+                    {tiktokProps.showCarousel && (
+                      <TikTokCarouselUploader
+                        photoUrls={tiktokProps.photoUrls}
+                        onPhotosChange={tiktokProps.onPhotosChange}
+                        projectId={tiktokProps.projectId}
+                        disabled={tiktokProps.disabled}
+                      />
+                    )}
+                    
+                    <TikTokPostOptions
+                      hasConnection={tiktokProps.hasConnection}
+                      mediaType={tiktokProps.mediaType}
+                      title={tiktokProps.title}
+                      onTitleChange={tiktokProps.onTitleChange}
+                      privacyLevel={tiktokProps.privacyLevel}
+                      onPrivacyChange={tiktokProps.onPrivacyChange}
+                      allowComment={tiktokProps.allowComment}
+                      onAllowCommentChange={tiktokProps.onAllowCommentChange}
+                      allowDuet={tiktokProps.allowDuet}
+                      onAllowDuetChange={tiktokProps.onAllowDuetChange}
+                      allowStitch={tiktokProps.allowStitch}
+                      onAllowStitchChange={tiktokProps.onAllowStitchChange}
+                      discloseContent={tiktokProps.discloseContent}
+                      onDiscloseContentChange={tiktokProps.onDiscloseContentChange}
+                      isBrandOrganic={tiktokProps.isBrandOrganic}
+                      onBrandOrganicChange={tiktokProps.onBrandOrganicChange}
+                      isBrandedContent={tiktokProps.isBrandedContent}
+                      onBrandedContentChange={tiktokProps.onBrandedContentChange}
+                      autoAddMusic={tiktokProps.autoAddMusic}
+                      onAutoAddMusicChange={tiktokProps.onAutoAddMusicChange}
+                      disabled={tiktokProps.disabled}
+                    />
                   </div>
                 )}
 
