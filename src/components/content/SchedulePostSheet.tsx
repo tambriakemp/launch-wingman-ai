@@ -366,7 +366,7 @@ export function SchedulePostSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[50vw] min-w-[700px] p-0 flex flex-col">
+      <SheetContent side="right" className="w-full md:w-[50vw] md:min-w-[700px] p-0 flex flex-col">
         <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <SheetTitle>Schedule Social Post</SheetTitle>
           <SheetDescription>
@@ -374,10 +374,10 @@ export function SchedulePostSheet({
           </SheetDescription>
         </SheetHeader>
 
-        {/* Two Column Layout */}
-        <div className="flex-1 overflow-hidden flex">
+        {/* Two Column Layout - stack on mobile */}
+        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
           {/* Left Column - Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+          <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-4 md:space-y-6">
             {/* Social Post Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-sm font-medium">
@@ -523,8 +523,8 @@ export function SchedulePostSheet({
             </div>
           </div>
 
-          {/* Right Column - Preview */}
-          <div className="w-[320px] border-l bg-muted/30 p-6 overflow-y-auto">
+          {/* Right Column - Preview - Hidden on mobile, shown on md+ */}
+          <div className="hidden md:block w-[320px] border-l bg-muted/30 p-6 overflow-y-auto">
             <SocialPostPreview
               platforms={formData.scheduled_platforms}
               content={formData.content}
@@ -537,9 +537,9 @@ export function SchedulePostSheet({
         </div>
 
         {/* Footer */}
-        <SheetFooter className="px-6 py-4 border-t shrink-0 flex justify-between">
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <SheetFooter className="px-4 md:px-6 py-4 border-t shrink-0 flex flex-col-reverse gap-3 md:flex-row md:justify-between">
+          <div className="flex gap-2 w-full md:w-auto">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 md:flex-initial">
               Close
             </Button>
             {isAlreadyScheduled && (
@@ -547,22 +547,24 @@ export function SchedulePostSheet({
                 variant="destructive"
                 onClick={handleCancelSchedule}
                 disabled={isCancelling}
+                className="flex-1 md:flex-initial"
               >
                 {isCancelling ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 ) : (
                   <X className="w-4 h-4 mr-2" />
                 )}
-                Cancel Schedule
+                <span className="hidden sm:inline">Cancel Schedule</span>
+                <span className="sm:hidden">Cancel</span>
               </Button>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full md:w-auto">
             {scheduleMode === "now" ? (
               <Button
                 onClick={handlePostNow}
                 disabled={isPosting || !formData.scheduled_platforms.length}
-                className="bg-rose-500 hover:bg-rose-600"
+                className="bg-rose-500 hover:bg-rose-600 flex-1 md:flex-initial"
               >
                 {isPosting ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -575,6 +577,7 @@ export function SchedulePostSheet({
               <Button
                 onClick={handleSchedule}
                 disabled={isScheduling || !scheduledDate || !formData.scheduled_platforms.length}
+                className="flex-1 md:flex-initial"
               >
                 {isScheduling ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />

@@ -189,8 +189,8 @@ export const ContentCalendarView = ({
   return (
     <div className="space-y-4">
         {/* Calendar Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
             <Button
               variant="outline"
               size="icon"
@@ -207,135 +207,138 @@ export const ContentCalendarView = ({
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <h2 className="text-lg font-semibold text-foreground ml-2">
+            <h2 className="text-base md:text-lg font-semibold text-foreground ml-1 md:ml-2">
               {format(currentMonth, "MMMM yyyy")}
             </h2>
           </div>
-          <Button variant="outline" size="sm" onClick={goToToday}>
+          <Button variant="outline" size="sm" onClick={goToToday} className="h-8">
             Today
           </Button>
         </div>
 
-        {/* Calendar Grid */}
+        {/* Calendar Grid - Horizontal scroll on mobile */}
         <Card className="overflow-hidden">
-          {/* Weekday Headers */}
-          <div className="grid grid-cols-7 border-b border-border">
-            {WEEKDAYS.map((day) => (
-              <div
-                key={day}
-                className="py-2 text-center text-xs font-medium text-muted-foreground"
-              >
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* Calendar Days */}
-          <div className="grid grid-cols-7">
-            {calendarDays.map((day, idx) => {
-              const isCurrentMonth = isSameMonth(day, currentMonth);
-              const isToday = isSameDay(day, new Date());
-              const dayItems = getItemsForDate(day);
-              const hasItems = dayItems.length > 0;
-
-              return (
-                <CalendarDayPopover
-                  key={idx}
-                  date={day}
-                  items={dayItems}
-                  onCreatePost={onCreatePost}
-                  onEditPost={onEditPost}
-                  onSchedulePost={onSchedulePost}
-                  onDeletePost={handleDeletePost}
-                >
+          <div className="overflow-x-auto">
+            <div className="min-w-[600px] md:min-w-0">
+              {/* Weekday Headers */}
+              <div className="grid grid-cols-7 border-b border-border">
+                {WEEKDAYS.map((day) => (
                   <div
-                    className={cn(
-                      "min-h-32 p-2 border-b border-r border-border cursor-pointer transition-colors hover:bg-accent/50",
-                      !isCurrentMonth && "bg-muted/30",
-                      idx % 7 === 6 && "border-r-0"
-                    )}
+                    key={day}
+                    className="py-1.5 md:py-2 text-center text-[10px] md:text-xs font-medium text-muted-foreground"
                   >
-                    <div className="flex items-start justify-between">
-                      <span
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar Days */}
+              <div className="grid grid-cols-7">
+                {calendarDays.map((day, idx) => {
+                  const isCurrentMonth = isSameMonth(day, currentMonth);
+                  const isToday = isSameDay(day, new Date());
+                  const dayItems = getItemsForDate(day);
+                  const hasItems = dayItems.length > 0;
+
+                  return (
+                    <CalendarDayPopover
+                      key={idx}
+                      date={day}
+                      items={dayItems}
+                      onCreatePost={onCreatePost}
+                      onEditPost={onEditPost}
+                      onSchedulePost={onSchedulePost}
+                      onDeletePost={handleDeletePost}
+                    >
+                      <div
                         className={cn(
-                          "text-sm w-6 h-6 flex items-center justify-center rounded-full",
-                          !isCurrentMonth && "text-muted-foreground",
-                          isToday && "bg-primary text-primary-foreground font-semibold"
+                          "min-h-20 md:min-h-32 p-1.5 md:p-2 border-b border-r border-border cursor-pointer transition-colors hover:bg-accent/50",
+                          !isCurrentMonth && "bg-muted/30",
+                          idx % 7 === 6 && "border-r-0"
                         )}
                       >
-                        {format(day, "d")}
-                      </span>
-                    </div>
-                    
-                    {/* Content Indicators */}
-                    {hasItems && (
-                      <div className="mt-1 space-y-1">
-                        {dayItems.slice(0, 3).map((item) => {
-                          const phaseConfig = PHASE_CONFIG[item.phase as keyof typeof PHASE_CONFIG];
-                          const borderColor = CONTENT_TYPE_BORDER_COLORS[item.content_type] || "border-l-slate-500";
-                          const scheduledTime = item.scheduled_at 
-                            ? format(new Date(item.scheduled_at), "h:mm a")
-                            : null;
-                          const excerpt = getExcerpt(item);
-                          const cleanedTitle = cleanTitle(item.title);
-                          
-                          return (
-                            <div
-                              key={item.id}
-                              className={cn(
-                                "text-xs px-1.5 py-1.5 rounded-r truncate border-l-4 bg-muted/80 dark:bg-muted/60",
-                                borderColor
-                              )}
-                            >
-                              {/* Platform icons row */}
-                              {item.scheduled_platforms && item.scheduled_platforms.length > 0 && (
-                                <div className="flex items-center gap-1 mb-0.5 text-muted-foreground">
-                                  {item.scheduled_platforms.map((platform) => (
-                                    <span key={platform}>{getPlatformIcon(platform)}</span>
-                                  ))}
-                                  {scheduledTime && (
-                                    <span className="ml-auto text-[10px]">{scheduledTime}</span>
+                        <div className="flex items-start justify-between">
+                          <span
+                            className={cn(
+                              "text-xs md:text-sm w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full",
+                              !isCurrentMonth && "text-muted-foreground",
+                              isToday && "bg-primary text-primary-foreground font-semibold"
+                            )}
+                          >
+                            {format(day, "d")}
+                          </span>
+                        </div>
+                        
+                        {/* Content Indicators */}
+                        {hasItems && (
+                          <div className="mt-1 space-y-0.5 md:space-y-1">
+                            {dayItems.slice(0, 2).map((item) => {
+                              const phaseConfig = PHASE_CONFIG[item.phase as keyof typeof PHASE_CONFIG];
+                              const borderColor = CONTENT_TYPE_BORDER_COLORS[item.content_type] || "border-l-slate-500";
+                              const scheduledTime = item.scheduled_at 
+                                ? format(new Date(item.scheduled_at), "h:mm a")
+                                : null;
+                              const cleanedTitle = cleanTitle(item.title);
+                              
+                              return (
+                                <div
+                                  key={item.id}
+                                  className={cn(
+                                    "text-[10px] md:text-xs px-1 md:px-1.5 py-0.5 md:py-1.5 rounded-r truncate border-l-2 md:border-l-4 bg-muted/80 dark:bg-muted/60",
+                                    borderColor
+                                  )}
+                                >
+                                  {/* Platform icons row - hidden on mobile */}
+                                  {item.scheduled_platforms && item.scheduled_platforms.length > 0 && (
+                                    <div className="hidden md:flex items-center gap-1 mb-0.5 text-muted-foreground">
+                                      {item.scheduled_platforms.map((platform) => (
+                                        <span key={platform}>{getPlatformIcon(platform)}</span>
+                                      ))}
+                                      {scheduledTime && (
+                                        <span className="ml-auto text-[10px]">{scheduledTime}</span>
+                                      )}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Title */}
+                                  <span className="truncate block text-foreground font-medium">
+                                    {cleanedTitle}
+                                  </span>
+                                  
+                                  {/* Phase badge - only for launch content, hidden on mobile */}
+                                  {phaseConfig && (
+                                    <span className={cn(
+                                      "hidden md:inline-block mt-0.5 px-1 py-0 rounded text-[9px] text-white",
+                                      phaseConfig.color
+                                    )}>
+                                      {phaseConfig.label}
+                                    </span>
                                   )}
                                 </div>
-                              )}
-                              
-                              {/* Title */}
-                              <span className="truncate block text-foreground font-medium">
-                                {cleanedTitle}
-                              </span>
-                              
-                              {/* Phase badge - only for launch content */}
-                              {phaseConfig && (
-                                <span className={cn(
-                                  "inline-block mt-0.5 px-1 py-0 rounded text-[9px] text-white",
-                                  phaseConfig.color
-                                )}>
-                                  {phaseConfig.label}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                        {dayItems.length > 3 && (
-                          <div className="text-[10px] text-muted-foreground pl-1">
-                            +{dayItems.length - 3} more
+                              );
+                            })}
+                            {dayItems.length > 2 && (
+                              <div className="text-[9px] md:text-[10px] text-muted-foreground pl-1">
+                                +{dayItems.length - 2} more
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                </CalendarDayPopover>
-              );
-            })}
+                    </CalendarDayPopover>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </Card>
 
-        {/* Legend - Content Types only */}
-        <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-          <span className="font-medium">Content Types:</span>
+        {/* Legend - Content Types only - Hidden on mobile, scrollable on tablet */}
+        <div className="hidden sm:flex items-center gap-2 md:gap-4 text-[10px] md:text-xs text-muted-foreground flex-wrap overflow-x-auto pb-1">
+          <span className="font-medium shrink-0">Content Types:</span>
           {Object.entries(CONTENT_TYPE_BORDER_COLORS).map(([type, borderClass]) => (
-            <div key={type} className="flex items-center gap-1.5">
-              <div className={cn("w-1 h-4 rounded", borderClass.replace("border-l-", "bg-"))} />
+            <div key={type} className="flex items-center gap-1 md:gap-1.5 shrink-0">
+              <div className={cn("w-1 h-3 md:h-4 rounded", borderClass.replace("border-l-", "bg-"))} />
               <span className="capitalize">{type.replace("-", " ")}</span>
             </div>
           ))}
