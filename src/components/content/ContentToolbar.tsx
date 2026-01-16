@@ -21,6 +21,7 @@ interface ContentToolbarProps {
   showPinterestOption: boolean;
   onPinterestClick: () => void;
   pinterestHasWarning?: boolean;
+  pinterestIsConfigured?: boolean;
   showMultiplePlatforms: boolean;
   onSelectMedia: () => void;
   hasMedia?: boolean;
@@ -34,6 +35,7 @@ export function ContentToolbar({
   showPinterestOption,
   onPinterestClick,
   pinterestHasWarning,
+  pinterestIsConfigured,
   showMultiplePlatforms,
   onSelectMedia,
   hasMedia,
@@ -84,6 +86,10 @@ export function ContentToolbar({
               disabled={!showPinterestOption}
               className={cn(
                 "h-8 w-8 p-0 relative",
+                // Success state - board is configured
+                showPinterestOption && pinterestIsConfigured && !pinterestHasWarning && 
+                  "bg-highlight text-highlight-foreground hover:bg-highlight/90",
+                // Warning state - needs attention
                 showPinterestOption && pinterestHasWarning && "text-amber-600",
                 !showPinterestOption && "opacity-40"
               )}

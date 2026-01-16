@@ -2215,6 +2215,7 @@ export function PostEditorSheet({
                     showPinterestOption={formData.scheduled_platforms.includes("pinterest")}
                     onPinterestClick={() => setShowPinterestOptions(true)}
                     pinterestHasWarning={!formData.pinterest_board_id}
+                    pinterestIsConfigured={!!formData.pinterest_board_id}
                     showMultiplePlatforms={formData.scheduled_platforms.length > 1}
                     onSelectMedia={() => setShowMediaModal(true)}
                     hasMedia={!!formData.media_url || formData.tiktok_photo_urls.length > 0}

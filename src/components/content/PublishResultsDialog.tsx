@@ -141,12 +141,13 @@ export function PublishResultsDialog({
             {/* Successful platforms */}
             {successfulPlatforms.map((platform) => {
               const result = results[platform];
+              const isPinterest = platform.toLowerCase() === 'pinterest';
               return (
                 <div
                   key={platform}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20"
+                  className="flex items-start gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20"
                 >
-                  <div className="text-emerald-600">
+                  <div className="text-emerald-600 mt-0.5">
                     {getPlatformIcon(platform)}
                   </div>
                   <div className="flex-1">
@@ -157,12 +158,17 @@ export function PublishResultsDialog({
                       <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                     </div>
                     <span className="text-xs text-muted-foreground">Posted successfully</span>
+                    {isPinterest && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Images typically appear on Pinterest within 10-20 seconds.
+                      </p>
+                    )}
                   </div>
                   {result.url && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8"
+                      className="h-8 shrink-0"
                       onClick={() => window.open(result.url, '_blank')}
                     >
                       <ExternalLink className="h-4 w-4" />

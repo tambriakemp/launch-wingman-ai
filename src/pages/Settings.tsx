@@ -622,7 +622,9 @@ const Settings = () => {
   };
 
   // Generic helper to check token status for any connection
-  const getTokenStatus = (connection: SocialConnection | undefined) => {
+  // hasAutoRefresh = true for platforms that auto-refresh tokens (Pinterest, TikTok)
+  // For those platforms, only show warning if truly expired (auto-refresh failed)
+  const getTokenStatus = (connection: SocialConnection | undefined, hasAutoRefresh: boolean = false) => {
     if (!connection?.token_expires_at) return null;
     
     const expiresAt = new Date(connection.token_expires_at);
@@ -631,6 +633,16 @@ const Settings = () => {
     const hoursUntilExpiry = msUntilExpiry / (1000 * 60 * 60);
     const daysUntilExpiry = Math.floor(hoursUntilExpiry / 24);
     
+    // For platforms with auto-refresh, only show warning if actually expired
+    if (hasAutoRefresh) {
+      if (msUntilExpiry < 0) {
+        return { status: 'expired' as const, message: 'Connection issue - please reconnect', daysUntilExpiry: -1 };
+      }
+      // Otherwise, auto-refresh is working - don't show any warning
+      return null;
+    }
+    
+    // For platforms without auto-refresh, show expiration warnings
     if (msUntilExpiry < 0) {
       return { status: 'expired' as const, message: 'Expired', daysUntilExpiry };
     } else if (hoursUntilExpiry < 24) {
@@ -646,13 +658,18 @@ const Settings = () => {
     }
   };
 
-  const instagramTokenStatus = getTokenStatus(instagramConnection);
-  const pinterestTokenStatus = getTokenStatus(pinterestConnection);
-  const facebookTokenStatus = getTokenStatus(facebookConnection);
-  const threadsTokenStatus = getTokenStatus(threadsConnection);
-  const tiktokTokenStatus = getTokenStatus(tiktokConnection);
-  const tiktokSandboxTokenStatus = getTokenStatus(tiktokSandboxConnection);
-  const pinterestSandboxTokenStatus = getTokenStatus(pinterestSandboxConnection);
+  // Instagram - long-lived token, no auto-refresh in our system
+  const instagramTokenStatus = getTokenStatus(instagramConnection, false);
+  // Pinterest - HAS auto-refresh via refresh_token
+  const pinterestTokenStatus = getTokenStatus(pinterestConnection, true);
+  const pinterestSandboxTokenStatus = getTokenStatus(pinterestSandboxConnection, true);
+  // Facebook - long-lived token (60 days), no auto-refresh
+  const facebookTokenStatus = getTokenStatus(facebookConnection, false);
+  // Threads - short-lived, needs manual reconnection
+  const threadsTokenStatus = getTokenStatus(threadsConnection, false);
+  // TikTok - HAS auto-refresh via refresh_token
+  const tiktokTokenStatus = getTokenStatus(tiktokConnection, true);
+  const tiktokSandboxTokenStatus = getTokenStatus(tiktokSandboxConnection, true);
 
   const hasProfileChanges = firstName !== (profile.first_name || "") || lastName !== (profile.last_name || "");
 
