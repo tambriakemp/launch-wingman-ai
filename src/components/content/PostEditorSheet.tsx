@@ -1773,8 +1773,7 @@ export function PostEditorSheet({
                       <TikTokPostOptions
                         hasConnection={!!tiktokConnection}
                         mediaType={formData.tiktok_photo_urls.length > 0 || formData.media_type === "image" ? "photo" : "video"}
-                        title={formData.tiktok_title}
-                        onTitleChange={(value) => setFormData(prev => ({ ...prev, tiktok_title: value }))}
+                        hasMedia={!!formData.media_url || formData.tiktok_photo_urls.length > 0}
                         privacyLevel={formData.tiktok_privacy_level}
                         onPrivacyChange={(value) => setFormData(prev => ({ ...prev, tiktok_privacy_level: value }))}
                         allowComment={formData.tiktok_allow_comment}
@@ -1814,6 +1813,7 @@ export function PostEditorSheet({
                                   formData.scheduled_platforms.includes("tiktok_sandbox")) ? {
                       hasConnection: !!tiktokConnection,
                       mediaType: formData.tiktok_photo_urls.length > 0 || formData.media_type === "image" ? "photo" : "video",
+                      hasMedia: !!formData.media_url || formData.tiktok_photo_urls.length > 0,
                       photoUrls: formData.tiktok_photo_urls,
                       onPhotosChange: (urls) => setFormData(prev => ({ 
                         ...prev, 
@@ -1822,8 +1822,6 @@ export function PostEditorSheet({
                         media_url: urls.length > 0 ? null : prev.media_url,
                         media_type: urls.length > 0 ? "image" : prev.media_type,
                       })),
-                      title: formData.tiktok_title,
-                      onTitleChange: (value) => setFormData(prev => ({ ...prev, tiktok_title: value })),
                       privacyLevel: formData.tiktok_privacy_level,
                       onPrivacyChange: (value) => setFormData(prev => ({ ...prev, tiktok_privacy_level: value })),
                       allowComment: formData.tiktok_allow_comment,
