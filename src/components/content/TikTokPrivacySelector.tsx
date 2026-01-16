@@ -62,7 +62,7 @@ export function TikTokPrivacySelector({
         {isSandbox && (
           <Badge variant="secondary" className="text-xs gap-1">
             <FlaskConical className="w-3 h-3" />
-            Sandbox: Only Me
+            Only Me (App Unaudited)
           </Badge>
         )}
       </div>
