@@ -174,38 +174,9 @@ export function TikTokPostOptions({
 
   const isSandbox = creatorInfo.is_sandbox;
 
-  // If no media uploaded yet, show message instead of full options
+  // If no media uploaded yet, don't render TikTok options at all
   if (!hasMedia) {
-    return (
-      <div className="space-y-4 rounded-lg border bg-card p-4">
-        {/* Creator Info Display */}
-        <div className="flex items-center gap-3 pb-3 border-b">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={creatorInfo.creator_avatar_url || undefined} />
-            <AvatarFallback>
-              <Video className="w-5 h-5" />
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-medium truncate">{creatorInfo.creator_nickname}</span>
-              {isSandbox && (
-                <Badge variant="secondary" className="text-xs gap-1">
-                  <FlaskConical className="w-3 h-3" />
-                  Sandbox
-                </Badge>
-              )}
-            </div>
-            <span className="text-sm text-muted-foreground">@{creatorInfo.creator_username}</span>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-          <Info className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Upload media to configure TikTok post options</span>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
