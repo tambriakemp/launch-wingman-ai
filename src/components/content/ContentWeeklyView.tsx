@@ -355,6 +355,12 @@ const WeeklyPostCard = ({ item, onEdit, onDelete }: WeeklyPostCardProps) => {
           Scheduled
         </div>
       )}
+      {item.status === "posted" && (
+        <div className="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 text-[10px]">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          Posted
+        </div>
+      )}
     </div>
   );
 };
