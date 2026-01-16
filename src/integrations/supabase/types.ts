@@ -484,6 +484,7 @@ export type Database = {
           media_url: string | null
           phase: string
           project_id: string
+          publish_results: Json | null
           scheduled_at: string | null
           scheduled_platforms: string[] | null
           status: string
@@ -505,6 +506,7 @@ export type Database = {
           media_url?: string | null
           phase: string
           project_id: string
+          publish_results?: Json | null
           scheduled_at?: string | null
           scheduled_platforms?: string[] | null
           status?: string
@@ -526,6 +528,7 @@ export type Database = {
           media_url?: string | null
           phase?: string
           project_id?: string
+          publish_results?: Json | null
           scheduled_at?: string | null
           scheduled_platforms?: string[] | null
           status?: string
