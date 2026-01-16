@@ -305,8 +305,16 @@ export const ContentCalendarView = ({
                                     {cleanedTitle}
                                   </span>
                                   
+                                  {/* Status badge - Posted indicator */}
+                                  {item.status === "posted" && (
+                                    <span className="inline-flex items-center gap-0.5 mt-0.5 px-1 py-0 rounded text-[9px] bg-emerald-500/10 text-emerald-600">
+                                      <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                                      Posted
+                                    </span>
+                                  )}
+                                  
                                   {/* Phase badge - only for launch content, hidden on mobile */}
-                                  {phaseConfig && (
+                                  {phaseConfig && item.status !== "posted" && (
                                     <span className={cn(
                                       "hidden md:inline-block mt-0.5 px-1 py-0 rounded text-[9px] text-white",
                                       phaseConfig.color
