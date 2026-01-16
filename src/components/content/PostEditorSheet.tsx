@@ -53,6 +53,14 @@ import { trackSocialPostPublish, trackSocialPostSchedule, trackSocialPostSchedul
 import { CharacterCounter } from "./CharacterCounter";
 import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
 import { usePinterestSandboxToken } from "@/hooks/usePinterestSandboxToken";
+import { PublishResultsDialog } from "./PublishResultsDialog";
+import { 
+  PublishResults, 
+  PublishResult, 
+  categorizePublishError, 
+  getOverallStatus,
+  getErrorMessage,
+} from "@/utils/publishErrors";
 
 // Types for the unified component
 interface TalkingPoint {
@@ -85,6 +93,7 @@ export interface ContentPlannerItem {
   media_type?: string | null;
   labels?: string[] | null;
   thread_posts?: Array<{ id: string; text: string; mediaUrl?: string | null; mediaType?: string | null }> | null;
+  publish_results?: PublishResults | null;
 }
 
 // Character limits per platform
@@ -229,6 +238,10 @@ export function PostEditorSheet({
   
   // Content Type modal state
   const [showContentTypeModal, setShowContentTypeModal] = useState(false);
+
+  // Publish results dialog state
+  const [showPublishResults, setShowPublishResults] = useState(false);
+  const [publishResults, setPublishResults] = useState<PublishResults>({});
 
   // Social post state
   const [formData, setFormData] = useState({
@@ -1093,31 +1106,345 @@ export function PostEditorSheet({
     return true;
   };
 
-  const handlePostNow = async () => {
-    const selectedPlatform = formData.scheduled_platforms[0];
+  // Helper function to post to a single platform and return a result
+  const postToPlatformSingle = async (platform: string): Promise<PublishResult> => {
+    try {
+      // Validate requirements for this specific platform
+      if (!validatePostRequirements(platform)) {
+        return {
+          success: false,
+          platform,
+          error: 'Validation failed',
+          errorCode: 'UNKNOWN',
+        };
+      }
 
-    if (!selectedPlatform) {
-      toast.error("Please select a platform to post");
+      if (platform === "pinterest") {
+        return await postToPinterestSingle();
+      } else if (platform === "instagram") {
+        return await postToInstagramSingle();
+      } else if (platform === "facebook") {
+        return await postToFacebookSingle();
+      } else if (platform === "threads") {
+        return await postToThreadsSingle();
+      } else if (platform === "tiktok" || platform === "tiktok_sandbox") {
+        return await postToTikTokSingle();
+      } else {
+        return {
+          success: false,
+          platform,
+          error: `Posting to ${platform} is not yet supported`,
+          errorCode: 'UNKNOWN',
+        };
+      }
+    } catch (error: any) {
+      console.error(`Error posting to ${platform}:`, error);
+      return {
+        success: false,
+        platform,
+        error: error.message || `Failed to post to ${platform}`,
+        errorCode: categorizePublishError(error),
+      };
+    }
+  };
+
+  const handlePostNow = async () => {
+    const platforms = formData.scheduled_platforms;
+
+    if (!platforms.length) {
+      toast.error("Please select at least one platform to post");
       return;
     }
     
-    // Validate requirements before posting
-    if (!validatePostRequirements(selectedPlatform)) {
+    // Validate all platforms first
+    const invalidPlatforms = platforms.filter(p => !validatePostRequirements(p));
+    if (invalidPlatforms.length === platforms.length) {
+      // All platforms failed validation, errors already shown
       return;
     }
 
-    if (selectedPlatform === "pinterest") {
-      await postToPinterest();
-    } else if (selectedPlatform === "instagram") {
-      await postToInstagram();
-    } else if (selectedPlatform === "facebook") {
-      await postToFacebook();
-    } else if (selectedPlatform === "threads") {
-      await postToThreads();
-    } else if (selectedPlatform === "tiktok") {
-      await postToTikTok();
+    setIsPosting(true);
+    const results: PublishResults = {};
+    
+    // Post to each platform sequentially (parallel can cause auth issues)
+    for (const platform of platforms) {
+      toast.loading(`Posting to ${platform}...`, { id: `posting-${platform}` });
+      const result = await postToPlatformSingle(platform);
+      results[platform] = result;
+      toast.dismiss(`posting-${platform}`);
+      
+      if (result.success) {
+        trackSocialPostPublish(platform);
+      }
+    }
+    
+    // Calculate overall status
+    const overallStatus = getOverallStatus(results);
+    
+    // Update the content_planner item with results
+    if (timelineItemId) {
+      await supabase
+        .from("content_planner")
+        .update({
+          scheduled_platforms: platforms,
+          scheduled_at: new Date().toISOString(),
+          status: overallStatus,
+          publish_results: JSON.parse(JSON.stringify(results)),
+        })
+        .eq("id", timelineItemId);
+    }
+    
+    setPublishResults(results);
+    setIsPosting(false);
+    
+    // Show results dialog for multi-platform or partial success
+    if (platforms.length > 1 || overallStatus !== 'posted') {
+      setShowPublishResults(true);
     } else {
-      toast.error(`Posting to ${selectedPlatform} is not yet supported`);
+      // Single platform, full success - just show toast and close
+      toast.success(`Posted successfully!`);
+      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+      onSaved?.();
+      onOpenChange(false);
+    }
+  };
+
+  // Handle retry of failed platforms
+  const handleRetryFailed = async (failedPlatforms: string[]) => {
+    setIsPosting(true);
+    const newResults = { ...publishResults };
+    
+    for (const platform of failedPlatforms) {
+      toast.loading(`Retrying ${platform}...`, { id: `posting-${platform}` });
+      const result = await postToPlatformSingle(platform);
+      newResults[platform] = result;
+      toast.dismiss(`posting-${platform}`);
+      
+      if (result.success) {
+        trackSocialPostPublish(platform);
+      }
+    }
+    
+    // Update the content_planner item with new results
+    const overallStatus = getOverallStatus(newResults);
+    if (timelineItemId) {
+      await supabase
+        .from("content_planner")
+        .update({
+          status: overallStatus,
+          publish_results: JSON.parse(JSON.stringify(newResults)),
+        })
+        .eq("id", timelineItemId);
+    }
+    
+    setPublishResults(newResults);
+    setIsPosting(false);
+    
+    // If all now successful, we can close the dialog
+    if (overallStatus === 'posted') {
+      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+      onSaved?.();
+    }
+  };
+
+  const handlePublishDialogClose = () => {
+    setShowPublishResults(false);
+    queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
+    onSaved?.();
+    onOpenChange(false);
+  };
+
+  // Individual platform posting functions that return results
+  const postToPinterestSingle = async (): Promise<PublishResult> => {
+    const response = await supabase.functions.invoke("post-to-pinterest", {
+      body: {
+        title: title,
+        description: content,
+        media_url: formData.media_url,
+        board_id: formData.pinterest_board_id,
+        link: formData.link_url || undefined,
+        environment: pinterestEnvironment,
+        sandboxToken: pinterestEnvironment === "sandbox" ? pinterestSandboxToken : undefined,
+      },
+    });
+
+    if (response.error) {
+      throw new Error(response.error.message || "Failed to post to Pinterest");
+    }
+
+    return {
+      success: true,
+      platform: 'pinterest',
+      postId: response.data?.id,
+      url: response.data?.url,
+      postedAt: new Date().toISOString(),
+    };
+  };
+
+  const postToInstagramSingle = async (): Promise<PublishResult> => {
+    const isVideo = formData.media_type === "video";
+    
+    const response = await supabase.functions.invoke("post-to-instagram", {
+      body: {
+        caption: content,
+        postType: formData.instagram_post_type,
+        ...(isVideo
+          ? { videoUrl: formData.media_url, mediaType: "video" }
+          : { imageUrl: formData.media_url, mediaType: "image" }),
+      },
+    });
+
+    if (response.error) {
+      throw new Error(response.error.message || "Failed to post to Instagram");
+    }
+    if (response.data?.error) {
+      throw new Error(response.data.error);
+    }
+
+    return {
+      success: true,
+      platform: 'instagram',
+      postId: response.data?.postId,
+      url: response.data?.url || response.data?.permalink,
+      postedAt: new Date().toISOString(),
+    };
+  };
+
+  const postToFacebookSingle = async (): Promise<PublishResult> => {
+    const response = await supabase.functions.invoke("post-to-facebook", {
+      body: {
+        message: content,
+        imageUrl: formData.media_url || undefined,
+        videoUrl: formData.media_type === "video" ? formData.media_url : undefined,
+        link: formData.link_url || undefined,
+        postType: formData.media_type === "video" ? "video" : formData.media_url ? "photo" : "feed",
+      },
+    });
+
+    if (response.error) {
+      throw new Error(response.error.message || "Failed to post to Facebook");
+    }
+    if (response.data?.error) {
+      throw new Error(response.data.error);
+    }
+
+    return {
+      success: true,
+      platform: 'facebook',
+      postId: response.data?.postId,
+      url: response.data?.postUrl,
+      postedAt: new Date().toISOString(),
+    };
+  };
+
+  const postToThreadsSingle = async (): Promise<PublishResult> => {
+    const isVideo = formData.media_type === "video";
+    const threadsContent = perPlatformContent["threads"];
+    const threadPostsData = threadsContent?.threadPosts || [];
+    
+    const response = await supabase.functions.invoke("post-to-threads", {
+      body: {
+        text: content,
+        mediaType: formData.media_url ? (isVideo ? "VIDEO" : "IMAGE") : "TEXT",
+        imageUrl: !isVideo ? formData.media_url : undefined,
+        videoUrl: isVideo ? formData.media_url : undefined,
+        threadPosts: threadPostsData.map((post) => ({ text: post.text })),
+      },
+    });
+
+    if (response.error) {
+      throw new Error(response.error.message || "Failed to post to Threads");
+    }
+    if (response.data?.error) {
+      throw new Error(response.data.error);
+    }
+
+    return {
+      success: true,
+      platform: 'threads',
+      postId: response.data?.postId,
+      url: response.data?.url || response.data?.permalink,
+      postedAt: new Date().toISOString(),
+    };
+  };
+
+  const postToTikTokSingle = async (): Promise<PublishResult> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error("Please sign in again");
+    }
+
+    const hasCarouselPhotos = formData.tiktok_photo_urls.length > 0;
+    const isPhoto = hasCarouselPhotos || formData.media_type === "image";
+    
+    if (isPhoto) {
+      const photoUrls = hasCarouselPhotos 
+        ? formData.tiktok_photo_urls 
+        : [formData.media_url];
+        
+      const response = await supabase.functions.invoke("post-to-tiktok-photo", {
+        body: {
+          photoUrls,
+          title: formData.tiktok_title,
+          caption: content,
+          privacyLevel: formData.tiktok_privacy_level,
+          disableComment: !formData.tiktok_allow_comment,
+          autoAddMusic: formData.tiktok_auto_add_music,
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        const tiktokError = response.data?.tiktok_error;
+        throw new Error(tiktokError?.message || response.data?.error || response.error.message || "Failed to post to TikTok");
+      }
+      
+      if (response.data?.error) {
+        const tiktokError = response.data?.tiktok_error;
+        throw new Error(tiktokError?.message || response.data.error);
+      }
+
+      return {
+        success: true,
+        platform: 'tiktok',
+        postId: response.data?.publish_id,
+        postedAt: new Date().toISOString(),
+      };
+    } else {
+      const response = await supabase.functions.invoke("post-to-tiktok", {
+        body: {
+          videoUrl: formData.media_url,
+          caption: content,
+          privacyLevel: formData.tiktok_privacy_level,
+          brandContentToggle: formData.tiktok_brand_content,
+          brandOrganicToggle: formData.tiktok_brand_organic,
+          disableComment: !formData.tiktok_allow_comment,
+          disableDuet: !formData.tiktok_allow_duet,
+          disableStitch: !formData.tiktok_allow_stitch,
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        const tiktokError = response.data?.tiktok_error;
+        throw new Error(tiktokError?.message || response.data?.error || response.error.message || "Failed to post to TikTok");
+      }
+      
+      if (response.data?.error) {
+        const tiktokError = response.data?.tiktok_error;
+        throw new Error(tiktokError?.message || response.data.error);
+      }
+
+      return {
+        success: true,
+        platform: 'tiktok',
+        postId: response.data?.publish_id,
+        postedAt: new Date().toISOString(),
+      };
     }
   };
 
