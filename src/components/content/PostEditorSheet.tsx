@@ -268,6 +268,21 @@ export function PostEditorSheet({
       setCustomizePerNetwork(false);
     }
   }, [scheduledPlatformsCount, customizePerNetwork]);
+
+  // Auto-seed TikTok carousel with the first uploaded photo
+  useEffect(() => {
+    const isTikTokSelected = formData.scheduled_platforms?.includes('tiktok') || 
+                             formData.scheduled_platforms?.includes('tiktok_sandbox');
+    const hasMediaUrl = formData.media_url && formData.media_type === "image";
+    const carouselIsEmpty = formData.tiktok_photo_urls.length === 0;
+    
+    if (isTikTokSelected && hasMediaUrl && carouselIsEmpty) {
+      setFormData(prev => ({
+        ...prev,
+        tiktok_photo_urls: [prev.media_url as string],
+      }));
+    }
+  }, [formData.media_url, formData.media_type, formData.scheduled_platforms]);
   // Check social connections - always use production Pinterest
   const { data: pinterestConnection } = useQuery({
     queryKey: ["pinterest-connection", user?.id],
@@ -1746,9 +1761,9 @@ export function PostEditorSheet({
                           onPhotosChange={(urls) => setFormData(prev => ({ 
                             ...prev, 
                             tiktok_photo_urls: urls,
-                            // Clear single media when using carousel
+                            // Clear single media URL when using carousel, but keep media_type as image
                             media_url: urls.length > 0 ? null : prev.media_url,
-                            media_type: urls.length > 0 ? null : prev.media_type,
+                            media_type: urls.length > 0 ? "image" : prev.media_type,
                           }))}
                           projectId={projectId}
                           disabled={isPostedContent}
@@ -1803,9 +1818,9 @@ export function PostEditorSheet({
                       onPhotosChange: (urls) => setFormData(prev => ({ 
                         ...prev, 
                         tiktok_photo_urls: urls,
-                        // Clear single media when using carousel
+                        // Clear single media URL when using carousel, but keep media_type as image
                         media_url: urls.length > 0 ? null : prev.media_url,
-                        media_type: urls.length > 0 ? null : prev.media_type,
+                        media_type: urls.length > 0 ? "image" : prev.media_type,
                       })),
                       title: formData.tiktok_title,
                       onTitleChange: (value) => setFormData(prev => ({ ...prev, tiktok_title: value })),

@@ -197,7 +197,8 @@ export function TikTokCarouselUploader({
               <div
                 ref={provided.innerRef}
                 {...provided.droppableProps}
-                className="flex flex-wrap gap-2"
+                className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
+                style={{ scrollbarWidth: 'thin' }}
               >
                 {photoUrls.map((url, index) => (
                   <Draggable
@@ -211,7 +212,7 @@ export function TikTokCarouselUploader({
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         className={cn(
-                          "relative group w-20 h-20 rounded-lg overflow-hidden border-2 transition-all",
+                          "relative group w-24 h-32 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0",
                           index === 0 ? "border-primary" : "border-border",
                           snapshot.isDragging && "shadow-lg ring-2 ring-primary"
                         )}
@@ -260,7 +261,7 @@ export function TikTokCarouselUploader({
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
                     className={cn(
-                      "w-20 h-20 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 transition-colors",
+                      "w-24 h-32 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 transition-colors flex-shrink-0",
                       isUploading
                         ? "opacity-50 cursor-not-allowed"
                         : "hover:border-primary hover:bg-muted/50 cursor-pointer"
