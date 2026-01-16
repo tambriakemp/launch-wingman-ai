@@ -172,13 +172,13 @@ export const CalendarDayPopover = ({
                             {phaseConfig?.fullLabel}
                           </Badge>
                         )}
-                        {item.status === "completed" && item.scheduled_at && (
+                        {(item.status === "completed" || item.status === "posted") && item.scheduled_at && (
                           <Badge variant="secondary" className="text-[10px] h-5 gap-1">
                             <CheckCircle2 className="w-2.5 h-2.5" />
                             Posted
                           </Badge>
                         )}
-                        {item.scheduled_at && item.status !== "completed" && (
+                        {item.scheduled_at && item.status !== "completed" && item.status !== "posted" && (
                           <Badge variant="secondary" className="text-[10px] h-5 gap-1 bg-amber-500/10 text-amber-600 border-amber-200">
                             <Clock className="w-2.5 h-2.5" />
                             {format(new Date(item.scheduled_at), "h:mm a")}

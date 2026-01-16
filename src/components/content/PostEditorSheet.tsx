@@ -253,8 +253,8 @@ export function PostEditorSheet({
 
   const isAlreadyScheduled = !!existingItem?.scheduled_at;
   const isEditingExisting = !!existingItem;
-  // Posted content = status is "completed" (successfully posted to social platform)
-  const isPostedContent = existingItem?.status === "completed";
+  // Posted content = status is "completed" or "posted" (successfully posted to social platform)
+  const isPostedContent = existingItem?.status === "completed" || existingItem?.status === "posted";
   // Draft content = status is "draft" (scheduled but not yet set to post)
   const isDraftContent = existingItem?.status === "draft";
 
