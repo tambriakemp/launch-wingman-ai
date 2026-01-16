@@ -1175,7 +1175,7 @@ export function PostEditorSheet({
             .update({
               scheduled_platforms: formData.scheduled_platforms,
               scheduled_at: new Date().toISOString(),
-              status: "completed",
+              status: "posted",
             })
             .eq("id", timelineItemId);
         }
@@ -1222,7 +1222,7 @@ export function PostEditorSheet({
             .update({
               scheduled_platforms: formData.scheduled_platforms,
               scheduled_at: new Date().toISOString(),
-              status: "completed",
+              status: "posted",
             })
             .eq("id", timelineItemId);
         }
