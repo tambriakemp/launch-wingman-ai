@@ -1026,8 +1026,10 @@ export function PostEditorSheet({
   const validatePostRequirements = (platform: string): boolean => {
     const errors: string[] = [];
     
-    // Content is always required
-    if (!content?.trim()) {
+    // Content requirement depends on platform
+    // TikTok only requires media, caption/content is optional per TikTok API
+    const isTikTokPlatform = platform === "tiktok" || platform === "tiktok_sandbox";
+    if (!isTikTokPlatform && !content?.trim()) {
       errors.push("Post content is required");
     }
     
@@ -1072,11 +1074,7 @@ export function PostEditorSheet({
       if (!formData.tiktok_privacy_level) {
         errors.push("Please select who can view this post");
       }
-      // Photo-specific validation (carousel or single image)
-      const isPhoto = hasCarouselPhotos || formData.media_type === "image";
-      if (isPhoto && !formData.tiktok_title?.trim()) {
-        errors.push("Title is required for TikTok photo posts");
-      }
+      // Title is optional per TikTok API requirements - removed validation
       // Commercial content validation
       if (formData.tiktok_disclose_content && !formData.tiktok_brand_organic && !formData.tiktok_brand_content) {
         errors.push("Please select at least one commercial disclosure option");
