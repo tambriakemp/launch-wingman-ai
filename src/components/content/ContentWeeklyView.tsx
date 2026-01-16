@@ -164,11 +164,13 @@ export const ContentWeeklyView = ({
   return (
     <div className="space-y-4">
       {/* Calendar Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-lg font-semibold text-foreground">
+          <span className="text-base md:text-lg font-semibold text-foreground">
             {weekRangeLabel}
           </span>
+        </div>
+        <div className="flex items-center gap-1 md:gap-2">
           <Button
             variant="outline"
             size="icon"
@@ -181,6 +183,7 @@ export const ContentWeeklyView = ({
             variant="outline"
             size="sm"
             onClick={goToToday}
+            className="h-8 px-2 md:px-3"
           >
             Today
           </Button>
@@ -195,65 +198,67 @@ export const ContentWeeklyView = ({
         </div>
       </div>
 
-      {/* Weekly Grid */}
+      {/* Weekly Grid - Horizontal scroll on mobile */}
       <Card className="overflow-hidden">
-        <div className="grid grid-cols-7 min-h-[500px]">
-          {weekDays.map((day, idx) => {
-            const isToday = isSameDay(day, new Date());
-            const dayItems = getItemsForDate(day);
+        <div className="overflow-x-auto">
+          <div className="grid grid-cols-7 min-w-[700px] md:min-w-0 min-h-[400px] md:min-h-[500px]">
+            {weekDays.map((day, idx) => {
+              const isToday = isSameDay(day, new Date());
+              const dayItems = getItemsForDate(day);
 
-            return (
-              <div
-                key={idx}
-                className={cn(
-                  "flex flex-col border-r border-border last:border-r-0",
-                  isToday && "bg-accent/20"
-                )}
-              >
-                {/* Day Header */}
-                <div className={cn(
-                  "px-3 py-2 border-b border-border text-center",
-                  isToday && "bg-primary/10"
-                )}>
-                  <div className="text-xs font-medium text-muted-foreground">
-                    {WEEKDAYS[idx]}
-                  </div>
+              return (
+                <div
+                  key={idx}
+                  className={cn(
+                    "flex flex-col border-r border-border last:border-r-0",
+                    isToday && "bg-accent/20"
+                  )}
+                >
+                  {/* Day Header */}
                   <div className={cn(
-                    "text-sm font-semibold mt-0.5",
-                    isToday ? "text-primary" : "text-foreground"
+                    "px-2 md:px-3 py-1.5 md:py-2 border-b border-border text-center",
+                    isToday && "bg-primary/10"
                   )}>
-                    {format(day, "MMM d")}
+                    <div className="text-[10px] md:text-xs font-medium text-muted-foreground">
+                      {WEEKDAYS[idx].slice(0, 3)}
+                    </div>
+                    <div className={cn(
+                      "text-xs md:text-sm font-semibold mt-0.5",
+                      isToday ? "text-primary" : "text-foreground"
+                    )}>
+                      {format(day, "MMM d")}
+                    </div>
+                  </div>
+
+                  {/* Day Content */}
+                  <ScrollArea className="flex-1 p-1.5 md:p-2">
+                    <div className="space-y-1.5 md:space-y-2">
+                      {dayItems.map((item) => (
+                        <WeeklyPostCard
+                          key={item.id}
+                          item={item}
+                          onEdit={() => onEditPost(item)}
+                          onDelete={() => handleDeletePost(item.id)}
+                        />
+                      ))}
+                    </div>
+                  </ScrollArea>
+
+                  {/* Add Post Button at bottom */}
+                  <div className="p-1.5 md:p-2 border-t border-border mt-auto">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full h-6 md:h-7 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={onCreatePost}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
                   </div>
                 </div>
-
-                {/* Day Content */}
-                <ScrollArea className="flex-1 p-2">
-                  <div className="space-y-2">
-                    {dayItems.map((item) => (
-                      <WeeklyPostCard
-                        key={item.id}
-                        item={item}
-                        onEdit={() => onEditPost(item)}
-                        onDelete={() => handleDeletePost(item.id)}
-                      />
-                    ))}
-                  </div>
-                </ScrollArea>
-
-                {/* Add Post Button at bottom */}
-                <div className="p-2 border-t border-border mt-auto">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full h-7 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={onCreatePost}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </Card>
     </div>

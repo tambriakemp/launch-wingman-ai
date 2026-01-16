@@ -520,14 +520,14 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         {/* Search & Filters */}
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <div className="relative flex-1 md:flex-initial">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search tasks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-52 h-9 pl-8"
+              className="w-full md:w-52 h-9 pl-8"
             />
           </div>
 
@@ -544,17 +544,18 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 text-muted-foreground">
               <X className="w-4 h-4 mr-1" />
-              Clear
+              <span className="hidden sm:inline">Clear</span>
             </Button>
           )}
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
-          <Link to={`/projects/${projectId}/summary`}>
+        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+          <Link to={`/projects/${projectId}/summary`} className="hidden sm:block">
             <Button variant="outline" size="sm" className="h-9 gap-2">
               <FileText className="w-4 h-4" />
-              View Phase Snapshot
+              <span className="hidden lg:inline">View Phase Snapshot</span>
+              <span className="lg:hidden">Snapshot</span>
             </Button>
           </Link>
           <DropdownMenu>
@@ -566,6 +567,12 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuLabel>Board Settings</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <Link to={`/projects/${projectId}/summary`} className="sm:hidden">
+                <DropdownMenuItem>
+                  <FileText className="w-4 h-4 mr-2" />
+                  View Phase Snapshot
+                </DropdownMenuItem>
+              </Link>
               <LoadLaunchTasksDialog
                 projectId={projectId}
                 projectType={projectType}
@@ -596,9 +603,9 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button onClick={() => { setEditingTask(null); setTaskDialogOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1" />
-            Add Task
+          <Button onClick={() => { setEditingTask(null); setTaskDialogOpen(true); }} className="gap-1">
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Add Task</span>
           </Button>
         </div>
       </div>

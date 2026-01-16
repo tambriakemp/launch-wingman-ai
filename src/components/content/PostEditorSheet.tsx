@@ -1583,10 +1583,10 @@ export function PostEditorSheet({
     <Sheet open={open} onOpenChange={handleClose}>
       <SheetContent
         side="right"
-        className="w-[98vw] max-w-[1600px] p-0 flex flex-col"
+        className="w-full md:w-[98vw] md:max-w-[1600px] p-0 flex flex-col"
       >
-        <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
-          <SheetTitle>
+        <SheetHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-3 md:pb-4 border-b shrink-0">
+          <SheetTitle className="text-base md:text-lg">
             {isPostedContent
               ? "View Posted Content"
               : isCreateMode
@@ -1597,10 +1597,10 @@ export function PostEditorSheet({
           </SheetTitle>
         </SheetHeader>
 
-        {/* Two Column Layout */}
-        <div className="flex-1 overflow-hidden flex">
+        {/* Two Column Layout - stack on mobile */}
+        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
           {/* Left Column - Content Editor & Scheduling */}
-          <div className="flex-1 min-w-[400px] overflow-y-auto px-6 py-4 space-y-5">
+          <div className="flex-1 md:min-w-[400px] overflow-y-auto px-4 md:px-6 py-4 space-y-4 md:space-y-5">
             {generating ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -1917,8 +1917,8 @@ export function PostEditorSheet({
             )}
           </div>
 
-          {/* Right Column - Preview Only */}
-          <div className="w-[420px] border-l bg-muted/30 p-6 overflow-y-auto flex flex-col">
+          {/* Right Column - Preview Only - Hidden on mobile */}
+          <div className="hidden md:flex w-[420px] border-l bg-muted/30 p-6 overflow-y-auto flex-col">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">
               Preview
             </p>
@@ -1956,8 +1956,8 @@ export function PostEditorSheet({
         </div>
 
         {/* Footer */}
-        <SheetFooter className="px-6 py-4 border-t shrink-0 flex justify-between">
-          <div className="flex gap-2">
+        <SheetFooter className="px-4 md:px-6 py-3 md:py-4 border-t shrink-0 flex flex-col-reverse gap-3 md:flex-row md:justify-between">
+          <div className="flex gap-2 w-full md:w-auto">
             {!isPostedContent && (
               <>
                 {/* Trash - only for existing items */}
@@ -1989,19 +1989,20 @@ export function PostEditorSheet({
             )}
           </div>
           {!isPostedContent && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full md:w-auto">
               {/* Post Now */}
               <Button
                 onClick={handlePostNow}
                 disabled={isPosting || !formData.scheduled_platforms.length}
-                className="bg-rose-500 hover:bg-rose-600"
+                className="bg-rose-500 hover:bg-rose-600 flex-1 md:flex-initial"
               >
                 {isPosting ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 ) : (
                   <Send className="w-4 h-4 mr-2" />
                 )}
-                Post Now
+                <span className="hidden sm:inline">Post Now</span>
+                <span className="sm:hidden">Post</span>
               </Button>
               {/* Schedule with dropdown - show "Schedule" for drafts, "Reschedule" only for already scheduled non-draft posts */}
               <div className="flex">

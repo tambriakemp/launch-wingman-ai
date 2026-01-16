@@ -176,13 +176,13 @@ const Assessments = () => {
 
   return (
     <ProjectLayout>
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 px-4 md:px-0">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-3xl font-bold text-foreground mb-2">Assessments</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Assessments</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             Take these assessments to understand your current approach and get personalized recommendations.
           </p>
         </motion.div>
@@ -228,34 +228,34 @@ const Assessments = () => {
               >
                 <Card variant="elevated" className="hover:shadow-lg transition-shadow">
                   <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-14 h-14 rounded-xl ${assessment.bgColor} flex items-center justify-center`}>
-                          <assessment.icon className={`w-7 h-7 ${assessment.color}`} />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <CardTitle className="text-xl">{assessment.title}</CardTitle>
-                            {isCompleted && (
-                              <Badge variant="outline" className="text-success border-success/30 bg-success/10">
-                                <CheckCircle2 className="w-3 h-3 mr-1" />
-                                Completed
-                              </Badge>
-                            )}
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 md:gap-4">
+                          <div className={`w-10 h-10 md:w-14 md:h-14 rounded-xl ${assessment.bgColor} flex items-center justify-center shrink-0`}>
+                            <assessment.icon className={`w-5 h-5 md:w-7 md:h-7 ${assessment.color}`} />
                           </div>
-                          <div className="flex items-center gap-3 mt-1">
-                            <Badge variant="outline" className="text-xs">
-                              <Clock className="w-3 h-3 mr-1" />
-                              {assessment.duration}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                              <Target className="w-3 h-3 mr-1" />
-                              {assessment.questions} {assessment.questions === 1 ? "part" : assessment.questions > 10 ? "questions" : "parts"}
-                            </Badge>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <CardTitle className="text-base md:text-xl">{assessment.title}</CardTitle>
+                              {isCompleted && (
+                                <Badge variant="outline" className="text-success border-success/30 bg-success/10 text-[10px] md:text-xs">
+                                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                                  Completed
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1">
+                              <Badge variant="outline" className="text-[10px] md:text-xs">
+                                <Clock className="w-3 h-3 mr-1" />
+                                {assessment.duration}
+                              </Badge>
+                              <Badge variant="outline" className="text-[10px] md:text-xs">
+                                <Target className="w-3 h-3 mr-1" />
+                                {assessment.questions} {assessment.questions === 1 ? "part" : assessment.questions > 10 ? "questions" : "parts"}
+                              </Badge>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <CardDescription className="text-base">
