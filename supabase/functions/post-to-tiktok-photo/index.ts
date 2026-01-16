@@ -130,14 +130,8 @@ serve(async (req) => {
       );
     }
 
-    if (!title || title.trim().length === 0) {
-      return new Response(
-        JSON.stringify({ error: "Title is required for photo posts" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log("Starting TikTok photo upload:", { photoCount: photoUrls.length, title });
+    // Title is optional per TikTok API requirements
+    console.log("Starting TikTok photo upload:", { photoCount: photoUrls.length, title: title || "(no title)" });
 
     // Get TikTok connection
     const { data: connections, error: connectionError } = await supabase
@@ -192,6 +186,9 @@ serve(async (req) => {
 
     // Initialize photo post with PULL_FROM_URL
     console.log("Initializing TikTok photo upload with PULL_FROM_URL...");
+    // Title is optional - use empty string if not provided
+    const effectiveTitle = title?.trim() ? title.slice(0, 90) : "";
+    
     const initResponse = await fetch("https://open.tiktokapis.com/v2/post/publish/content/init/", {
       method: "POST",
       headers: {
@@ -202,7 +199,7 @@ serve(async (req) => {
         media_type: "PHOTO",
         post_mode: "DIRECT_POST",
         post_info: {
-          title: title.slice(0, 90),
+          title: effectiveTitle,
           description: caption || "",
           privacy_level: effectivePrivacyLevel,
           disable_comment: disableComment,
