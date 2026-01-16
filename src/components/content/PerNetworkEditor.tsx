@@ -435,7 +435,7 @@ export function PerNetworkEditor({
                 {/* TikTok Options - only show in TikTok box */}
                 {(platformId === "tiktok" || platformId === "tiktok_sandbox") && tiktokProps && (
                   <div className="space-y-3 pt-2">
-                    {/* TikTok Carousel Uploader - show when showCarousel is true (first media was photo, not video) */}
+                    {/* TikTok Carousel Uploader - show when showCarousel is true (first media was photo) */}
                     {tiktokProps.showCarousel && (
                       <TikTokCarouselUploader
                         photoUrls={tiktokProps.photoUrls}
@@ -471,7 +471,7 @@ export function PerNetworkEditor({
                   </div>
                 )}
 
-                {/* Icon Toolbar for this platform */}
+                {/* Icon Toolbar for this platform - after TikTok options */}
                 <div className="flex items-center gap-1 pt-1">
                   {/* Select Media */}
                   {onSelectMedia && (
