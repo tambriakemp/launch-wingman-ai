@@ -172,7 +172,12 @@ export function TikTokPostOptions({
     );
   }
 
+  // Check if sandbox OR unaudited (only SELF_ONLY privacy available)
   const isSandbox = creatorInfo.is_sandbox;
+  const isUnaudited = !isSandbox && 
+    creatorInfo.privacy_level_options.length === 1 && 
+    creatorInfo.privacy_level_options[0] === "SELF_ONLY";
+  const requiresPrivateOnly = isSandbox || isUnaudited;
 
   // If no media uploaded yet, don't render TikTok options at all
   if (!hasMedia) {
@@ -192,10 +197,10 @@ export function TikTokPostOptions({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-medium truncate">{creatorInfo.creator_nickname}</span>
-            {isSandbox && (
+            {requiresPrivateOnly && (
               <Badge variant="secondary" className="text-xs gap-1">
                 <FlaskConical className="w-3 h-3" />
-                Sandbox
+                {isSandbox ? "Sandbox" : "Unaudited"}
               </Badge>
             )}
           </div>
@@ -208,7 +213,7 @@ export function TikTokPostOptions({
         value={privacyLevel}
         onChange={onPrivacyChange}
         privacyOptions={creatorInfo.privacy_level_options}
-        isSandbox={isSandbox}
+        isSandbox={requiresPrivateOnly}
         isBrandedContent={effectiveBrandedContent}
         disabled={disabled}
       />

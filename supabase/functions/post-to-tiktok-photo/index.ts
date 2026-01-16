@@ -159,7 +159,10 @@ serve(async (req) => {
     
     console.log(`[POST-TO-TIKTOK-PHOTO] Connection platform: ${connection.platform}, isSandbox: ${isSandbox}`);
     
+    // For sandbox/unaudited apps, TikTok requires SELF_ONLY privacy
+    // Always force SELF_ONLY for sandbox, and allow frontend to pass it for unaudited production apps
     const effectivePrivacyLevel = isSandbox ? "SELF_ONLY" : privacyLevel;
+    console.log(`[POST-TO-TIKTOK-PHOTO] Using privacy_level: ${effectivePrivacyLevel}`);
     
     let accessToken: string;
 
