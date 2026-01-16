@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -285,12 +286,15 @@ export function TikTokPostOptions({
         </div>
       </div>
 
-      {/* Commercial Content Disclosure - Only for production */}
+      {/* Commercial Content Disclosure - Only for production, disabled for private posts */}
       {!isSandbox && (
         <div className="space-y-3 pt-2 border-t">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Label className="text-sm font-medium">Disclose post content</Label>
+              <Label className={cn(
+                "text-sm font-medium",
+                privacyLevel === "SELF_ONLY" && "text-muted-foreground"
+              )}>Disclose post content</Label>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
@@ -303,11 +307,18 @@ export function TikTokPostOptions({
               </TooltipProvider>
             </div>
             <Switch
-              checked={discloseContent}
+              checked={privacyLevel === "SELF_ONLY" ? false : discloseContent}
               onCheckedChange={onDiscloseContentChange}
-              disabled={disabled}
+              disabled={disabled || privacyLevel === "SELF_ONLY"}
             />
           </div>
+          
+          {/* Helper message when privacy is Only Me */}
+          {privacyLevel === "SELF_ONLY" && (
+            <p className="text-xs text-muted-foreground">
+              Content disclosure is not available for private posts. Change visibility to enable this option.
+            </p>
+          )}
 
           {/* Sub-options when disclosure is enabled */}
           {discloseContent && (

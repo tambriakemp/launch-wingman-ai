@@ -306,7 +306,7 @@ export const ContentCalendarView = ({
                                   </span>
                                   
                                   {/* Status badge - Posted indicator */}
-                                  {item.status === "posted" && (
+                                  {(item.status === "posted" || item.status === "completed") && (
                                     <span className="inline-flex items-center gap-0.5 mt-0.5 px-1 py-0 rounded text-[9px] bg-emerald-500/10 text-emerald-600">
                                       <span className="w-1 h-1 rounded-full bg-emerald-500" />
                                       Posted
@@ -314,7 +314,7 @@ export const ContentCalendarView = ({
                                   )}
                                   
                                   {/* Phase badge - only for launch content, hidden on mobile */}
-                                  {phaseConfig && item.status !== "posted" && (
+                                  {phaseConfig && item.status !== "posted" && item.status !== "completed" && (
                                     <span className={cn(
                                       "hidden md:inline-block mt-0.5 px-1 py-0 rounded text-[9px] text-white",
                                       phaseConfig.color

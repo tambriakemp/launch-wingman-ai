@@ -778,13 +778,13 @@ export const TimelineSlotGrid = ({ projectId, onWritePost }: TimelineSlotGridPro
                                               Draft ready
                                             </Badge>
                                           )}
-                                          {item.status === "completed" && item.scheduled_at && (
+                                          {(item.status === "completed" || item.status === "posted") && item.scheduled_at && (
                                             <Badge className="text-xs bg-primary/10 text-primary border-primary/20 gap-1">
                                               <CheckCircle2 className="w-3 h-3" />
                                               Posted {format(new Date(item.scheduled_at), "MMM d")}
                                             </Badge>
                                           )}
-                                          {item.scheduled_at && item.status !== "completed" && (
+                                          {item.scheduled_at && item.status !== "completed" && item.status !== "posted" && (
                                             <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
                                                 <Badge 
