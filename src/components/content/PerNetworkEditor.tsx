@@ -67,10 +67,9 @@ export interface PerPlatformContent {
 interface TikTokPerNetworkProps {
   hasConnection: boolean;
   mediaType: "video" | "photo";
+  hasMedia: boolean;
   photoUrls: string[];
   onPhotosChange: (urls: string[]) => void;
-  title: string;
-  onTitleChange: (value: string) => void;
   privacyLevel: string;
   onPrivacyChange: (value: string) => void;
   allowComment: boolean;
@@ -448,8 +447,7 @@ export function PerNetworkEditor({
                     <TikTokPostOptions
                       hasConnection={tiktokProps.hasConnection}
                       mediaType={tiktokProps.mediaType}
-                      title={tiktokProps.title}
-                      onTitleChange={tiktokProps.onTitleChange}
+                      hasMedia={tiktokProps.hasMedia}
                       privacyLevel={tiktokProps.privacyLevel}
                       onPrivacyChange={tiktokProps.onPrivacyChange}
                       allowComment={tiktokProps.allowComment}

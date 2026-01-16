@@ -37,9 +37,8 @@ interface TikTokPostOptionsProps {
   // Content type
   mediaType: "video" | "photo";
   
-  // Title (photos only)
-  title: string;
-  onTitleChange: (value: string) => void;
+  // Whether media has been uploaded (controls visibility of options)
+  hasMedia: boolean;
   
   // Privacy
   privacyLevel: string;
@@ -71,8 +70,7 @@ interface TikTokPostOptionsProps {
 export function TikTokPostOptions({
   hasConnection,
   mediaType,
-  title,
-  onTitleChange,
+  hasMedia,
   privacyLevel,
   onPrivacyChange,
   allowComment,
@@ -93,6 +91,9 @@ export function TikTokPostOptions({
 }: TikTokPostOptionsProps) {
   const { user } = useAuth();
   const isPhoto = mediaType === "photo";
+  
+  // Effective branded content status - only active when discloseContent is also true
+  const effectiveBrandedContent = discloseContent && isBrandedContent;
 
   const { data: creatorInfo, isLoading, error } = useQuery<TikTokCreatorInfo>({
     queryKey: ["tiktok-creator-info", user?.id],
@@ -125,13 +126,13 @@ export function TikTokPostOptions({
     }
   }, [creatorInfo?.is_sandbox, privacyLevel, onPrivacyChange]);
 
-  // Enforce branded content privacy restriction
+  // Enforce branded content privacy restriction - only when disclosure is enabled
   useEffect(() => {
-    if (isBrandedContent && privacyLevel === "SELF_ONLY") {
+    if (effectiveBrandedContent && privacyLevel === "SELF_ONLY") {
       // Auto-switch to PUBLIC if branded content is selected with private visibility
       onPrivacyChange("PUBLIC_TO_EVERYONE");
     }
-  }, [isBrandedContent, privacyLevel, onPrivacyChange]);
+  }, [effectiveBrandedContent, privacyLevel, onPrivacyChange]);
 
   // Get the label feedback text
   const getLabelFeedback = () => {
@@ -173,6 +174,40 @@ export function TikTokPostOptions({
 
   const isSandbox = creatorInfo.is_sandbox;
 
+  // If no media uploaded yet, show message instead of full options
+  if (!hasMedia) {
+    return (
+      <div className="space-y-4 rounded-lg border bg-card p-4">
+        {/* Creator Info Display */}
+        <div className="flex items-center gap-3 pb-3 border-b">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={creatorInfo.creator_avatar_url || undefined} />
+            <AvatarFallback>
+              <Video className="w-5 h-5" />
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-medium truncate">{creatorInfo.creator_nickname}</span>
+              {isSandbox && (
+                <Badge variant="secondary" className="text-xs gap-1">
+                  <FlaskConical className="w-3 h-3" />
+                  Sandbox
+                </Badge>
+              )}
+            </div>
+            <span className="text-sm text-muted-foreground">@{creatorInfo.creator_username}</span>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+          <Info className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Upload media to configure TikTok post options</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 rounded-lg border bg-card p-4">
       {/* Creator Info Display */}
@@ -197,36 +232,31 @@ export function TikTokPostOptions({
         </div>
       </div>
 
-      {/* Title field - Photos only */}
-      {isPhoto && (
-        <div className="space-y-1.5">
-          <Label className="text-sm">
-            Add a title <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            value={title}
-            onChange={(e) => onTitleChange(e.target.value.slice(0, 90))}
-            placeholder="Enter title (required for photos)"
-            maxLength={90}
-            disabled={disabled}
-          />
-          <p className="text-xs text-muted-foreground text-right">{title.length}/90</p>
-        </div>
-      )}
-
       {/* Privacy Selector */}
       <TikTokPrivacySelector
         value={privacyLevel}
         onChange={onPrivacyChange}
         privacyOptions={creatorInfo.privacy_level_options}
         isSandbox={isSandbox}
-        isBrandedContent={isBrandedContent}
+        isBrandedContent={effectiveBrandedContent}
         disabled={disabled}
       />
 
       {/* Interaction Controls - inline checkboxes */}
       <div className="space-y-2">
-        <Label className="text-sm">Allow users to</Label>
+        <div className="flex items-center gap-2">
+          <Label className="text-sm">Allow users to</Label>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <Info className="w-4 h-4 text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>Your privacy settings on the TikTok mobile app will control who can comment on, duet, or stitch your post.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         <div className="flex flex-wrap gap-4">
           <div className="flex items-center gap-2">
             <Checkbox
@@ -291,7 +321,7 @@ export function TikTokPostOptions({
                     <Info className="w-4 h-4 text-muted-foreground" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p>Turn this on to disclose that this content promotes goods or services in exchange for something of value. Your video will receive a disclosure label.</p>
+                    <p>Turn on to disclose that this post promotes goods or services in exchange for something of value. Your post could promote yourself, a third party, or both. Keep in mind that the visibility of the branded content cannot be private.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -374,7 +404,7 @@ export function TikTokPostOptions({
                   <Info className="w-4 h-4 text-muted-foreground" />
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
-                  <p>TikTok will automatically add trending music to your photo post.</p>
+                  <p>Turning on recommended music will automatically assign music to your photos. Note that you can change the photo music on TikTok if you prefer other music.</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -401,7 +431,7 @@ export function TikTokPostOptions({
             <ExternalLink className="w-3 h-3" />
           </a>
         </p>
-        {isBrandedContent && (
+        {effectiveBrandedContent && (
           <p className="text-xs text-muted-foreground">
             and{" "}
             <a
