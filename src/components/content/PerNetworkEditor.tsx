@@ -130,6 +130,18 @@ export function PerNetworkEditor({
     }
   }, [selectedPlatforms]);
 
+  // Auto-expand TikTok when media is uploaded and TikTok is selected
+  useEffect(() => {
+    const hasTikTok = selectedPlatforms.includes("tiktok") || selectedPlatforms.includes("tiktok_sandbox");
+    if (hasTikTok && tiktokProps?.hasMedia && expandedPlatform !== "tiktok" && expandedPlatform !== "tiktok_sandbox") {
+      // Auto-expand TikTok when media is added so user can see/configure TikTok options
+      const tiktokPlatform = selectedPlatforms.find(p => p === "tiktok" || p === "tiktok_sandbox");
+      if (tiktokPlatform) {
+        setExpandedPlatform(tiktokPlatform);
+      }
+    }
+  }, [tiktokProps?.hasMedia, selectedPlatforms]);
+
   const toggleExpanded = (platformId: string) => {
     // If clicking on the already expanded platform, collapse it
     // Otherwise, expand the clicked platform (collapsing others)
@@ -279,6 +291,43 @@ export function PerNetworkEditor({
             {/* Platform Editor */}
             {isExpanded && (
               <div className={cn("space-y-3", !isPlatformThreadsOnly && "p-4")}>
+                {/* TikTok Options - always show when TikTok is expanded and has media */}
+                {(platformId === "tiktok" || platformId === "tiktok_sandbox") && tiktokProps && tiktokProps.hasMedia && (
+                  <div className="space-y-3">
+                    {/* TikTok Carousel Uploader - show when showCarousel is true (first media was photo) */}
+                    {tiktokProps.showCarousel && (
+                      <TikTokCarouselUploader
+                        photoUrls={tiktokProps.photoUrls}
+                        onPhotosChange={tiktokProps.onPhotosChange}
+                        projectId={tiktokProps.projectId}
+                        disabled={tiktokProps.disabled}
+                      />
+                    )}
+                    
+                    <TikTokPostOptions
+                      hasConnection={tiktokProps.hasConnection}
+                      mediaType={tiktokProps.mediaType}
+                      hasMedia={tiktokProps.hasMedia}
+                      privacyLevel={tiktokProps.privacyLevel}
+                      onPrivacyChange={tiktokProps.onPrivacyChange}
+                      allowComment={tiktokProps.allowComment}
+                      onAllowCommentChange={tiktokProps.onAllowCommentChange}
+                      allowDuet={tiktokProps.allowDuet}
+                      onAllowDuetChange={tiktokProps.onAllowDuetChange}
+                      allowStitch={tiktokProps.allowStitch}
+                      onAllowStitchChange={tiktokProps.onAllowStitchChange}
+                      discloseContent={tiktokProps.discloseContent}
+                      onDiscloseContentChange={tiktokProps.onDiscloseContentChange}
+                      isBrandOrganic={tiktokProps.isBrandOrganic}
+                      onBrandOrganicChange={tiktokProps.onBrandOrganicChange}
+                      isBrandedContent={tiktokProps.isBrandedContent}
+                      onBrandedContentChange={tiktokProps.onBrandedContentChange}
+                      autoAddMusic={tiktokProps.autoAddMusic}
+                      onAutoAddMusicChange={tiktokProps.onAutoAddMusicChange}
+                      disabled={tiktokProps.disabled}
+                    />
+                  </div>
+                )}
                 {/* Title (Pinterest only) */}
                 {showTitle && (
                   <div className="space-y-1.5">
@@ -431,45 +480,7 @@ export function PerNetworkEditor({
                   </div>
                 )}
 
-                {/* TikTok Options - only show in TikTok box */}
-                {(platformId === "tiktok" || platformId === "tiktok_sandbox") && tiktokProps && (
-                  <div className="space-y-3 pt-2">
-                    {/* TikTok Carousel Uploader - show when showCarousel is true (first media was photo) */}
-                    {tiktokProps.showCarousel && (
-                      <TikTokCarouselUploader
-                        photoUrls={tiktokProps.photoUrls}
-                        onPhotosChange={tiktokProps.onPhotosChange}
-                        projectId={tiktokProps.projectId}
-                        disabled={tiktokProps.disabled}
-                      />
-                    )}
-                    
-                    <TikTokPostOptions
-                      hasConnection={tiktokProps.hasConnection}
-                      mediaType={tiktokProps.mediaType}
-                      hasMedia={tiktokProps.hasMedia}
-                      privacyLevel={tiktokProps.privacyLevel}
-                      onPrivacyChange={tiktokProps.onPrivacyChange}
-                      allowComment={tiktokProps.allowComment}
-                      onAllowCommentChange={tiktokProps.onAllowCommentChange}
-                      allowDuet={tiktokProps.allowDuet}
-                      onAllowDuetChange={tiktokProps.onAllowDuetChange}
-                      allowStitch={tiktokProps.allowStitch}
-                      onAllowStitchChange={tiktokProps.onAllowStitchChange}
-                      discloseContent={tiktokProps.discloseContent}
-                      onDiscloseContentChange={tiktokProps.onDiscloseContentChange}
-                      isBrandOrganic={tiktokProps.isBrandOrganic}
-                      onBrandOrganicChange={tiktokProps.onBrandOrganicChange}
-                      isBrandedContent={tiktokProps.isBrandedContent}
-                      onBrandedContentChange={tiktokProps.onBrandedContentChange}
-                      autoAddMusic={tiktokProps.autoAddMusic}
-                      onAutoAddMusicChange={tiktokProps.onAutoAddMusicChange}
-                      disabled={tiktokProps.disabled}
-                    />
-                  </div>
-                )}
-
-                {/* Icon Toolbar for this platform - after TikTok options */}
+                {/* Icon Toolbar for this platform */}
                 <div className="flex items-center gap-1 pt-1">
                   {/* Select Media */}
                   {onSelectMedia && (
