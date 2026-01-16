@@ -1079,8 +1079,8 @@ export function PostEditorSheet({
       if (formData.tiktok_disclose_content && !formData.tiktok_brand_organic && !formData.tiktok_brand_content) {
         errors.push("Please select at least one commercial disclosure option");
       }
-      // Branded content privacy validation
-      if (formData.tiktok_brand_content && formData.tiktok_privacy_level === "SELF_ONLY") {
+      // Branded content privacy validation - only check if disclosure is enabled
+      if (formData.tiktok_disclose_content && formData.tiktok_brand_content && formData.tiktok_privacy_level === "SELF_ONLY") {
         errors.push("Branded content cannot have private visibility");
       }
     }
@@ -1794,7 +1794,12 @@ export function PostEditorSheet({
                         allowStitch={formData.tiktok_allow_stitch}
                         onAllowStitchChange={(checked) => setFormData(prev => ({ ...prev, tiktok_allow_stitch: checked }))}
                         discloseContent={formData.tiktok_disclose_content}
-                        onDiscloseContentChange={(checked) => setFormData(prev => ({ ...prev, tiktok_disclose_content: checked }))}
+                        onDiscloseContentChange={(checked) => setFormData(prev => ({ 
+                          ...prev, 
+                          tiktok_disclose_content: checked,
+                          // Reset child options when disclosure is turned off
+                          ...(checked ? {} : { tiktok_brand_organic: false, tiktok_brand_content: false })
+                        }))}
                         isBrandOrganic={formData.tiktok_brand_organic}
                         onBrandOrganicChange={(checked) => setFormData(prev => ({ ...prev, tiktok_brand_organic: checked }))}
                         isBrandedContent={formData.tiktok_brand_content}
@@ -1842,7 +1847,12 @@ export function PostEditorSheet({
                       allowStitch: formData.tiktok_allow_stitch,
                       onAllowStitchChange: (checked) => setFormData(prev => ({ ...prev, tiktok_allow_stitch: checked })),
                       discloseContent: formData.tiktok_disclose_content,
-                      onDiscloseContentChange: (checked) => setFormData(prev => ({ ...prev, tiktok_disclose_content: checked })),
+                      onDiscloseContentChange: (checked) => setFormData(prev => ({ 
+                        ...prev, 
+                        tiktok_disclose_content: checked,
+                        // Reset child options when disclosure is turned off
+                        ...(checked ? {} : { tiktok_brand_organic: false, tiktok_brand_content: false })
+                      })),
                       isBrandOrganic: formData.tiktok_brand_organic,
                       onBrandOrganicChange: (checked) => setFormData(prev => ({ ...prev, tiktok_brand_organic: checked })),
                       isBrandedContent: formData.tiktok_brand_content,
