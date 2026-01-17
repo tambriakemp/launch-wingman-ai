@@ -1181,8 +1181,9 @@ export function PostEditorSheet({
     // Calculate overall status
     const overallStatus = getOverallStatus(results);
     
-    // Update the content_planner item with results
+    // Update or create the content_planner item with results
     if (timelineItemId) {
+      // Update existing item
       await supabase
         .from("content_planner")
         .update({
@@ -1192,10 +1193,40 @@ export function PostEditorSheet({
           publish_results: JSON.parse(JSON.stringify(results)),
         })
         .eq("id", timelineItemId);
+    } else if (user) {
+      // Create a new content_planner item so it shows on the calendar
+      const { data: newItem } = await supabase
+        .from("content_planner")
+        .insert({
+          project_id: projectId,
+          user_id: user.id,
+          title: title || "Posted content",
+          description: content?.substring(0, 200) || null,
+          content: content || null,
+          content_type: contentType || "general",
+          phase: slotContext?.phase || "pre-launch-week-1",
+          day_number: slotContext?.dayNumber || 1,
+          time_of_day: slotContext?.timeOfDay || "morning",
+          media_url: formData.media_url,
+          media_type: formData.media_type,
+          scheduled_platforms: platforms,
+          scheduled_at: new Date().toISOString(),
+          status: overallStatus,
+          publish_results: JSON.parse(JSON.stringify(results)),
+        })
+        .select("id")
+        .single();
+      
+      if (newItem) {
+        setTimelineItemId(newItem.id);
+      }
     }
     
     setPublishResults(results);
     setIsPosting(false);
+    
+    // ALWAYS invalidate the calendar query to ensure UI updates
+    queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
     
     // Show results dialog for multi-platform or partial success
     if (platforms.length > 1 || overallStatus !== 'posted') {
@@ -1203,7 +1234,6 @@ export function PostEditorSheet({
     } else {
       // Single platform, full success - just show toast and close
       toast.success(`Posted successfully!`);
-      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
       onSaved?.();
       onOpenChange(false);
     }
