@@ -138,8 +138,31 @@ function PinterestPreview({ content, mediaUrl, mediaType, linkUrl, title }: { co
   const isVideo = mediaType === "video";
   return (
     <div className="flex flex-col h-full bg-white">
-      {mediaUrl ? (<div className={cn("relative", isVideo ? "flex-1" : "")}>{isVideo ? <video key={mediaUrl} src={mediaUrl} className="w-full h-full object-cover bg-black" muted loop autoPlay playsInline /> : <img src={mediaUrl} alt="" className="w-full aspect-[3/4] object-cover" />}{linkUrl && <div className="absolute bottom-3 left-3 right-3"><div className="bg-white/90 rounded-full px-3 py-1.5 text-sm text-gray-700 truncate flex items-center gap-2"><span>🔗</span><span>{getHostname(linkUrl)}</span></div></div>}</div>) : <div className="w-full aspect-[3/4] bg-muted flex items-center justify-center"><span className="text-sm text-muted-foreground">Add image</span></div>}
-      <div className={cn("p-3 overflow-hidden bg-white", !isVideo && "flex-1")}>{title && <h3 className="text-base font-bold line-clamp-1 text-gray-900 mb-1">{title}</h3>}<p className="text-sm text-gray-600 line-clamp-2">{content || "Pin description..."}</p></div>
+      {mediaUrl ? (
+        <div className={cn("relative bg-gray-100 flex items-center justify-center", isVideo ? "flex-1" : "max-h-[320px]")}>
+          {isVideo ? (
+            <video key={mediaUrl} src={mediaUrl} className="w-full h-full object-cover bg-black" muted loop autoPlay playsInline />
+          ) : (
+            <img src={mediaUrl} alt="" className="w-full h-full object-contain" />
+          )}
+          {linkUrl && (
+            <div className="absolute bottom-3 left-3 right-3">
+              <div className="bg-white/90 rounded-full px-3 py-1.5 text-sm text-gray-700 truncate flex items-center gap-2">
+                <span>🔗</span>
+                <span>{getHostname(linkUrl)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="w-full h-[200px] bg-muted flex items-center justify-center">
+          <span className="text-sm text-muted-foreground">Add image</span>
+        </div>
+      )}
+      <div className={cn("p-3 overflow-hidden bg-white flex-1")}>
+        {title && <h3 className="text-base font-bold line-clamp-1 text-gray-900 mb-1">{title}</h3>}
+        <p className="text-sm text-gray-600 line-clamp-2">{content || "Pin description..."}</p>
+      </div>
     </div>
   );
 }
