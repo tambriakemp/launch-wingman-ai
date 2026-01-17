@@ -2430,6 +2430,15 @@ export function PostEditorSheet({
           selectedContentType={contentType}
           onContentTypeChange={setContentType}
         />
+
+        {/* Publish Results Dialog */}
+        <PublishResultsDialog
+          open={showPublishResults}
+          onOpenChange={setShowPublishResults}
+          results={publishResults}
+          onRetryFailed={handleRetryFailed}
+          onClose={handlePublishDialogClose}
+        />
       </SheetContent>
     </Sheet>
   );
