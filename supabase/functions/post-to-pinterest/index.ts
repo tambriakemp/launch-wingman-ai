@@ -97,12 +97,31 @@ serve(async (req) => {
     // Parse request body
     const { board_id, title, description, media_url, link, environment = "production", sandboxToken = "" } = await req.json();
 
+    console.log('[POST-TO-PINTEREST] Request data:', {
+      board_id: board_id ? `${board_id.substring(0, 10)}...` : 'missing',
+      has_title: !!title,
+      has_description: !!description,
+      media_url: media_url ? `${media_url.substring(0, 50)}...` : 'missing',
+      link: link || 'none',
+      environment,
+    });
+
     if (!board_id) {
       throw new Error('Board ID is required');
     }
 
     if (!media_url) {
       throw new Error('Media URL is required for Pinterest pins');
+    }
+
+    // Validate media_url is a proper URL that Pinterest can access
+    try {
+      const parsedMediaUrl = new URL(media_url);
+      if (!['http:', 'https:'].includes(parsedMediaUrl.protocol)) {
+        throw new Error('Media URL must be an HTTP or HTTPS URL');
+      }
+    } catch (urlError) {
+      throw new Error(`Invalid media URL format: ${media_url.substring(0, 100)}`);
     }
 
     const apiBase = environment === "sandbox" 
@@ -185,8 +204,18 @@ serve(async (req) => {
       pinData.description = description.substring(0, 500); // Pinterest description limit
     }
 
-    if (link) {
-      pinData.link = link;
+    // Only add link if it's a valid URL
+    if (link && typeof link === 'string' && link.trim()) {
+      try {
+        const parsedLink = new URL(link.trim());
+        if (['http:', 'https:'].includes(parsedLink.protocol)) {
+          pinData.link = link.trim();
+        } else {
+          console.log('[POST-TO-PINTEREST] Skipping invalid link protocol:', parsedLink.protocol);
+        }
+      } catch {
+        console.log('[POST-TO-PINTEREST] Skipping invalid link URL:', link.substring(0, 50));
+      }
     }
 
     console.log('[POST-TO-PINTEREST] Creating pin via', environment, 'API');
