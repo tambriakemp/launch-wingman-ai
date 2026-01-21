@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Crown, Check, Loader2, ArrowRight, Tag, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { invokeCheckoutWithRetry, openCheckoutUrl } from "@/utils/authHelpers";
 
 interface UpgradeDialogProps {
   open: boolean;
@@ -89,13 +90,14 @@ export const UpgradeDialog = ({ open, onOpenChange, feature }: UpgradeDialogProp
   const handleUpgrade = async () => {
     setIsCheckingOut(true);
     try {
-      const { data, error } = await supabase.functions.invoke('surecart-checkout', {
-        body: appliedCoupon ? { coupon_code: appliedCoupon.coupon_id } : {}
-      });
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, '_blank');
+      const couponId = appliedCoupon?.coupon_id;
+      const { url, error } = await invokeCheckoutWithRetry(3, couponId);
+      
+      if (url) {
+        openCheckoutUrl(url);
         onOpenChange(false);
+      } else {
+        throw error || new Error("Failed to get checkout URL");
       }
     } catch (error) {
       console.error('Checkout error:', error);

@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Sparkles, ArrowLeft, Mail, Lock, Loader2, User } from "lucide-react";
 import { z } from "zod";
+import { waitForSession, invokeCheckoutWithRetry, openCheckoutUrl } from "@/utils/authHelpers";
 import { supabase } from "@/integrations/supabase/client";
 
 const signInSchema = z.object({
@@ -46,24 +47,16 @@ const Auth = () => {
     const handleLoggedInProCheckout = async () => {
       if (user && isProCheckoutRoute && !checkoutInProgress) {
         setCheckoutInProgress(true);
-        toast.info("Redirecting to checkout...");
-        try {
-          const { data, error } = await supabase.functions.invoke("surecart-checkout");
-          if (error) throw error;
-          if (data?.url) {
-            // Open in new tab to avoid iframe issues
-            const checkoutWindow = window.open(data.url, "_blank");
-            if (!checkoutWindow) {
-              // Fallback if popup blocked
-              window.location.href = data.url;
-            }
-            toast.info("Complete your payment in the new tab, then return here.");
-            setCheckoutInProgress(false);
-            return;
-          }
-          throw new Error("No checkout URL returned");
-        } catch (err) {
-          console.error("Checkout error:", err);
+        toast.info("Setting up checkout...");
+        
+        const { url, error } = await invokeCheckoutWithRetry(3);
+        
+        if (url) {
+          openCheckoutUrl(url);
+          toast.info("Complete your payment in the new tab, then return here.");
+          setCheckoutInProgress(false);
+        } else {
+          console.error("Checkout error after retries:", error);
           toast.error("Failed to start checkout. Please go to Settings to upgrade.");
           setCheckoutInProgress(false);
           navigate("/settings");
@@ -167,27 +160,36 @@ const Auth = () => {
       toast.success("Account created successfully!");
 
       if (isProSignup) {
+        toast.info("Setting up your Pro account...");
+        
+        // Wait for session to be established after signup
+        const sessionReady = await waitForSession(5000);
+        if (!sessionReady) {
+          console.error("Session not ready after signup");
+          toast.error("Session not ready. Please upgrade from Settings.");
+          setCheckoutInProgress(false);
+          setLoading(false);
+          navigate("/settings");
+          return;
+        }
+        
         toast.info("Opening checkout...");
-        try {
-          const { data, error: checkoutError } = await supabase.functions.invoke("surecart-checkout");
-          if (checkoutError) throw checkoutError;
-          if (!data?.url) throw new Error("No checkout URL returned");
-
-          // Open in new tab to avoid iframe issues
-          const checkoutWindow = window.open(data.url, "_blank");
-          if (!checkoutWindow) {
-            // Fallback if popup blocked
-            window.location.href = data.url;
-          }
+        
+        // Invoke checkout with retry logic
+        const { url, error: checkoutError } = await invokeCheckoutWithRetry(3);
+        
+        if (url) {
+          openCheckoutUrl(url);
           toast.info("Complete your payment in the new tab, then return here.");
           setCheckoutInProgress(false);
           setLoading(false);
           return;
-        } catch (checkoutErr) {
-          console.error("Checkout error:", checkoutErr);
+        } else {
+          console.error("Checkout error after retries:", checkoutError);
           toast.error("Failed to start checkout. Please go to Settings to upgrade.");
           setCheckoutInProgress(false);
           navigate("/settings");
+          setLoading(false);
           return;
         }
       }
