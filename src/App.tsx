@@ -14,6 +14,7 @@ import HowItWorks from "./pages/HowItWorks";
 import Pricing from "./pages/Pricing";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Auth from "./pages/Auth";
+import Checkout from "./pages/Checkout";
 import AppRedirect from "./pages/AppRedirect";
 import Settings from "./pages/Settings";
 import Assessments from "./pages/Assessments";
@@ -113,6 +114,7 @@ const App = () => (
             <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/checkout" element={<Checkout />} />
             
             {/* Feature pages */}
             <Route path="/features/assessments" element={<AssessmentsFeature />} />

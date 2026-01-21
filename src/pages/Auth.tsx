@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Sparkles, ArrowLeft, Mail, Lock, Loader2, User } from "lucide-react";
 import { z } from "zod";
-import { waitForSession, invokeCheckoutWithRetry, openCheckoutUrl } from "@/utils/authHelpers";
 import { supabase } from "@/integrations/supabase/client";
 
 const signInSchema = z.object({
@@ -34,48 +33,29 @@ const Auth = () => {
   const [resetLoading, setResetLoading] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
-  const [checkoutInProgress, setCheckoutInProgress] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; firstName?: string; lastName?: string }>({});
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") === "signup" ? "signup" : "signin";
-  const isProCheckoutRoute = searchParams.get("plan") === "pro";
+  const checkoutSuccess = searchParams.get("checkout") === "success";
 
-  // Handle logged-in users on Pro checkout route - redirect them to checkout immediately
+  // Show success message if coming from checkout
   useEffect(() => {
-    const handleLoggedInProCheckout = async () => {
-      if (user && isProCheckoutRoute && !checkoutInProgress) {
-        setCheckoutInProgress(true);
-        toast.info("Setting up checkout...");
-        
-        const { url, error } = await invokeCheckoutWithRetry(3);
-        
-        if (url) {
-          openCheckoutUrl(url);
-          toast.info("Complete your payment in the new tab, then return here.");
-          setCheckoutInProgress(false);
-        } else {
-          console.error("Checkout error after retries:", error);
-          toast.error("Failed to start checkout. Please go to Settings to upgrade.");
-          setCheckoutInProgress(false);
-          navigate("/settings");
-        }
-      }
-    };
-    
-    handleLoggedInProCheckout();
-  }, [user, isProCheckoutRoute, checkoutInProgress, navigate]);
+    if (checkoutSuccess) {
+      toast.success("Your Pro subscription is active! Sign in to continue.");
+    }
+  }, [checkoutSuccess]);
 
-  // Redirect authenticated users to app, but skip if checkout is in progress (or we're in the Pro checkout route)
+  // Redirect authenticated users to app
   useEffect(() => {
-    if (user && !checkoutInProgress && !isProCheckoutRoute) {
+    if (user) {
       navigate("/app");
     }
-  }, [user, checkoutInProgress, isProCheckoutRoute, navigate]);
+  }, [user, navigate]);
 
-  // Don't render auth form if user is logged in and not in checkout flow
-  if (user && !checkoutInProgress && !isProCheckoutRoute) {
+  // Don't render auth form if user is logged in
+  if (user) {
     return null;
   }
 
@@ -136,21 +116,11 @@ const Auth = () => {
     e.preventDefault();
     if (!validateSignUp()) return;
 
-    const plan = searchParams.get("plan");
-    const isProSignup = plan === "pro";
-
-    if (isProSignup) {
-      // Prevent the authenticated-user redirect racing ahead of checkout
-      setCheckoutInProgress(true);
-    }
-
     setLoading(true);
-    // Pass skipNavigation=true for Pro signups to prevent AuthContext from navigating before checkout
-    const { error } = await signUp(email, password, firstName, lastName, isProSignup);
+    const { error } = await signUp(email, password, firstName, lastName);
 
     if (error) {
       setLoading(false);
-      if (isProSignup) setCheckoutInProgress(false);
       if (error.message.includes("already registered")) {
         toast.error("This email is already registered. Try signing in instead.");
       } else {
@@ -158,42 +128,6 @@ const Auth = () => {
       }
     } else {
       toast.success("Account created successfully!");
-
-      if (isProSignup) {
-        toast.info("Setting up your Pro account...");
-        
-        // Wait for session to be established after signup
-        const sessionReady = await waitForSession(5000);
-        if (!sessionReady) {
-          console.error("Session not ready after signup");
-          toast.error("Session not ready. Please upgrade from Settings.");
-          setCheckoutInProgress(false);
-          setLoading(false);
-          navigate("/settings");
-          return;
-        }
-        
-        toast.info("Opening checkout...");
-        
-        // Invoke checkout with retry logic
-        const { url, error: checkoutError } = await invokeCheckoutWithRetry(3);
-        
-        if (url) {
-          openCheckoutUrl(url);
-          toast.info("Complete your payment in the new tab, then return here.");
-          setCheckoutInProgress(false);
-          setLoading(false);
-          return;
-        } else {
-          console.error("Checkout error after retries:", checkoutError);
-          toast.error("Failed to start checkout. Please go to Settings to upgrade.");
-          setCheckoutInProgress(false);
-          navigate("/settings");
-          setLoading(false);
-          return;
-        }
-      }
-
       setLoading(false);
     }
   };

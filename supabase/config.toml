@@ -242,3 +242,6 @@ verify_jwt = false
 
 [functions.admin-manage-surecart-subscription]
 verify_jwt = false
+
+[functions.surecart-process-subscription]
+verify_jwt = false
