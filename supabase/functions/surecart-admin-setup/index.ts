@@ -99,19 +99,17 @@ serve(async (req) => {
       const product = await productResponse.json();
       logStep("Product created", { productId: product.id });
 
-      // Step 2: Create the price
+      // Step 2: Create the price separately
       logStep("Creating price...");
       const priceResponse = await fetch(`${SURECART_API_BASE}/prices`, {
         method: "POST",
         headers,
         body: JSON.stringify({
-          product: product.id,
+          product_id: product.id,
           amount: 2500, // $25.00 in cents
           currency: "usd",
-          recurring: {
-            interval: "month",
-            interval_count: 1,
-          },
+          recurring_interval: "month",
+          recurring_interval_count: 1,
         }),
       });
 
@@ -121,7 +119,8 @@ serve(async (req) => {
       }
 
       const price = await priceResponse.json();
-      logStep("Price created", { priceId: price.id });
+      const priceId = price.id;
+      logStep("Price created", { priceId });
 
       // Step 3: Register webhook endpoint
       logStep("Registering webhook...");
@@ -155,7 +154,7 @@ serve(async (req) => {
       // Step 4: Store configuration in database
       const configItems = [
         { provider: 'surecart', key: 'product_id', value: product.id },
-        { provider: 'surecart', key: 'price_id', value: price.id },
+        { provider: 'surecart', key: 'price_id', value: priceId },
         { provider: 'surecart', key: 'product_name', value: product.name },
       ];
 
@@ -171,7 +170,7 @@ serve(async (req) => {
         message: "SureCart setup completed successfully",
         config: {
           product_id: product.id,
-          price_id: price.id,
+          price_id: priceId,
           product_name: product.name,
         }
       }), {
@@ -210,6 +209,36 @@ serve(async (req) => {
       
       return new Response(JSON.stringify({
         config: config?.reduce((acc, item) => ({ ...acc, [item.key]: item.value }), {}) || {}
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+
+    } else if (action === "configure") {
+      // Manually configure existing product/price IDs
+      const { product_id, price_id, product_name } = body;
+      
+      if (!product_id || !price_id) {
+        throw new Error("Both product_id and price_id are required");
+      }
+
+      const configItems = [
+        { provider: 'surecart', key: 'product_id', value: product_id },
+        { provider: 'surecart', key: 'price_id', value: price_id },
+        { provider: 'surecart', key: 'product_name', value: product_name || 'Launchely Pro' },
+      ];
+
+      for (const item of configItems) {
+        await supabaseClient.from('payment_config').upsert(item, {
+          onConflict: 'provider,key'
+        });
+      }
+      logStep("Manual configuration saved", { product_id, price_id });
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: "SureCart configuration saved successfully",
+        config: { product_id, price_id, product_name: product_name || 'Launchely Pro' }
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
