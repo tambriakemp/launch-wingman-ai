@@ -1360,6 +1360,33 @@ export type Database = {
           },
         ]
       }
+      payment_config: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          provider: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          provider: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          provider?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       post_templates: {
         Row: {
           created_at: string
@@ -1401,6 +1428,9 @@ export type Database = {
           id: string
           last_active: string | null
           last_name: string | null
+          surecart_customer_id: string | null
+          surecart_subscription_id: string | null
+          surecart_subscription_status: string | null
           updated_at: string
           user_id: string
         }
@@ -1411,6 +1441,9 @@ export type Database = {
           id?: string
           last_active?: string | null
           last_name?: string | null
+          surecart_customer_id?: string | null
+          surecart_subscription_id?: string | null
+          surecart_subscription_status?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1421,6 +1454,9 @@ export type Database = {
           id?: string
           last_active?: string | null
           last_name?: string | null
+          surecart_customer_id?: string | null
+          surecart_subscription_id?: string | null
+          surecart_subscription_status?: string | null
           updated_at?: string
           user_id?: string
         }

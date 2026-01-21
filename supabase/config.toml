@@ -221,3 +221,24 @@ verify_jwt = false
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.surecart-admin-setup]
+verify_jwt = false
+
+[functions.surecart-checkout]
+verify_jwt = false
+
+[functions.check-surecart-subscription]
+verify_jwt = false
+
+[functions.surecart-webhook]
+verify_jwt = false
+
+[functions.surecart-portal]
+verify_jwt = false
+
+[functions.validate-surecart-coupon]
+verify_jwt = false
+
+[functions.admin-manage-surecart-subscription]
+verify_jwt = false
