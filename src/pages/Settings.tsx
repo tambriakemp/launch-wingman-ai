@@ -312,7 +312,7 @@ const Settings = () => {
   const handleUpgrade = async () => {
     setIsCheckingOut(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout');
+      const { data, error } = await supabase.functions.invoke('surecart-checkout');
       if (error) throw error;
       if (data?.url) {
         window.open(data.url, '_blank');
@@ -328,7 +328,7 @@ const Settings = () => {
   const handleManageSubscription = async () => {
     setIsOpeningPortal(true);
     try {
-      const { data, error } = await supabase.functions.invoke('customer-portal');
+      const { data, error } = await supabase.functions.invoke('surecart-portal');
       if (error) throw error;
       if (data?.url) {
         window.open(data.url, '_blank');

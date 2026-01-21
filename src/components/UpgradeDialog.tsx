@@ -60,7 +60,7 @@ export const UpgradeDialog = ({ open, onOpenChange, feature }: UpgradeDialogProp
     setPromoError("");
     
     try {
-      const { data, error } = await supabase.functions.invoke('validate-coupon', {
+      const { data, error } = await supabase.functions.invoke('validate-surecart-coupon', {
         body: { coupon_code: promoCode.trim().toUpperCase() }
       });
       
@@ -89,8 +89,8 @@ export const UpgradeDialog = ({ open, onOpenChange, feature }: UpgradeDialogProp
   const handleUpgrade = async () => {
     setIsCheckingOut(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: appliedCoupon ? { coupon_code: appliedCoupon.coupon_id } : undefined
+      const { data, error } = await supabase.functions.invoke('surecart-checkout', {
+        body: appliedCoupon ? { coupon_code: appliedCoupon.coupon_id } : {}
       });
       if (error) throw error;
       if (data?.url) {
