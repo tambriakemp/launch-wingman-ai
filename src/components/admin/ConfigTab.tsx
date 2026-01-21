@@ -4,7 +4,9 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Users, FlaskConical, RefreshCw, UserCheck, Settings, Tag, List, FileText } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, Users, FlaskConical, RefreshCw, UserCheck, Settings, Tag, List, FileText, CreditCard, Save, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { TikTokEnvironmentToggle } from './TikTokEnvironmentToggle';
@@ -17,8 +19,14 @@ interface SureContactConfigItem {
   updated_at: string;
 }
 
+interface SureCartConfig {
+  product_id: string;
+  price_id: string;
+  product_name: string;
+}
+
 export function ConfigTab() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [sureContactSyncLoading, setSureContactSyncLoading] = useState(false);
   const [sureContactTestLoading, setSureContactTestLoading] = useState(false);
   const [sureContactConfigLoading, setSureContactConfigLoading] = useState(false);
@@ -32,8 +40,17 @@ export function ConfigTab() {
     message: string;
   } | null>(null);
 
+  // SureCart config state
+  const [sureCartConfig, setSureCartConfig] = useState<SureCartConfig | null>(null);
+  const [sureCartLoading, setSureCartLoading] = useState(false);
+  const [sureCartSaving, setSureCartSaving] = useState(false);
+  const [editProductId, setEditProductId] = useState('');
+  const [editPriceId, setEditPriceId] = useState('');
+  const [editProductName, setEditProductName] = useState('');
+
   useEffect(() => {
     fetchSureContactConfig();
+    fetchSureCartConfig();
   }, []);
 
   const fetchSureContactConfig = async () => {
@@ -47,6 +64,71 @@ export function ConfigTab() {
       setSureContactConfig(data || []);
     } catch (error) {
       console.error('Error fetching SureContact config:', error);
+    }
+  };
+
+  const fetchSureCartConfig = async () => {
+    if (!session?.access_token) return;
+    
+    setSureCartLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('surecart-admin-setup', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: { action: 'get-config' },
+      });
+
+      if (error) throw error;
+      
+      if (data?.config) {
+        const config = {
+          product_id: data.config.product_id || '',
+          price_id: data.config.price_id || '',
+          product_name: data.config.product_name || 'Launchely Pro',
+        };
+        setSureCartConfig(config);
+        setEditProductId(config.product_id);
+        setEditPriceId(config.price_id);
+        setEditProductName(config.product_name);
+      }
+    } catch (error) {
+      console.error('Error fetching SureCart config:', error);
+    } finally {
+      setSureCartLoading(false);
+    }
+  };
+
+  const handleSaveSureCartConfig = async () => {
+    if (!session?.access_token) return;
+    if (!editProductId.trim() || !editPriceId.trim()) {
+      toast.error('Product ID and Price ID are required');
+      return;
+    }
+
+    setSureCartSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('surecart-admin-setup', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: {
+          action: 'configure',
+          product_id: editProductId.trim(),
+          price_id: editPriceId.trim(),
+          product_name: editProductName.trim() || 'Launchely Pro',
+        },
+      });
+
+      if (error) throw error;
+      
+      toast.success('SureCart configuration saved!');
+      setSureCartConfig({
+        product_id: editProductId.trim(),
+        price_id: editPriceId.trim(),
+        product_name: editProductName.trim() || 'Launchely Pro',
+      });
+    } catch (error) {
+      console.error('Error saving SureCart config:', error);
+      toast.error('Failed to save SureCart configuration');
+    } finally {
+      setSureCartSaving(false);
     }
   };
 
@@ -141,6 +223,108 @@ export function ConfigTab() {
       {/* Environment Toggles */}
       <PinterestEnvironmentToggle />
       <TikTokEnvironmentToggle />
+
+      {/* SureCart Configuration Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <CreditCard className="h-5 w-5" />
+                SureCart Payment Configuration
+              </CardTitle>
+              <CardDescription>
+                Configure your SureCart product and price IDs for subscription billing
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              onClick={fetchSureCartConfig}
+              disabled={sureCartLoading}
+              size="sm"
+            >
+              {sureCartLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {sureCartLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sureCartConfig && (
+                <div className="flex items-center gap-2 p-3 bg-primary/5 border border-primary/20 rounded-lg text-sm">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  <span className="text-primary font-medium">SureCart is configured</span>
+                  <Badge variant="outline" className="ml-auto">{sureCartConfig.product_name}</Badge>
+                </div>
+              )}
+              
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="product-name">Product Name</Label>
+                  <Input
+                    id="product-name"
+                    placeholder="Launchely Pro"
+                    value={editProductName}
+                    onChange={(e) => setEditProductName(e.target.value)}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="product-id">Product ID</Label>
+                    <Input
+                      id="product-id"
+                      placeholder="091af55e-93bd-4452-..."
+                      value={editProductId}
+                      onChange={(e) => setEditProductId(e.target.value)}
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">From your SureCart dashboard</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="price-id">Price ID</Label>
+                    <Input
+                      id="price-id"
+                      placeholder="c6959cf3-6767-4d5a-..."
+                      value={editPriceId}
+                      onChange={(e) => setEditPriceId(e.target.value)}
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">The recurring price ID</p>
+                  </div>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={handleSaveSureCartConfig} 
+                disabled={sureCartSaving || !editProductId.trim() || !editPriceId.trim()}
+                className="gap-2"
+              >
+                {sureCartSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Save Configuration
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* SureContact Configuration Card */}
       <Card>
