@@ -523,7 +523,7 @@ const AdminDocs = () => {
 
                         <Step number={3} title="Grant Pro Access">
                           <p>Select <strong>"Grant Pro Access"</strong> from the menu. 
-                          This creates a non-Stripe subscription.</p>
+                          This creates a subscription through our payment system.</p>
                         </Step>
 
                         <UploadableScreenshot 
@@ -544,7 +544,7 @@ const AdminDocs = () => {
                         </Step>
 
                         <Callout type="warning">
-                          <strong>Stripe Subscriptions:</strong> Canceling a Stripe-managed subscription 
+                          <strong>Paid Subscriptions:</strong> Canceling a paid subscription 
                           will cancel at the end of the current billing period. The user retains access 
                           until then.
                         </Callout>
@@ -836,12 +836,12 @@ supabase/
                             <p className="text-xs text-muted-foreground mt-1">Fetches user list with subscription data for admin panel</p>
                           </div>
                           <div className="p-3 bg-muted/50 rounded-lg">
-                            <code className="text-sm font-mono text-primary">admin-manage-subscription</code>
-                            <p className="text-xs text-muted-foreground mt-1">Handles granting/canceling subscriptions</p>
+                            <code className="text-sm font-mono text-primary">admin-manage-surecart-subscription</code>
+                            <p className="text-xs text-muted-foreground mt-1">Handles granting/canceling subscriptions via SureCart</p>
                           </div>
                           <div className="p-3 bg-muted/50 rounded-lg">
-                            <code className="text-sm font-mono text-primary">check-subscription</code>
-                            <p className="text-xs text-muted-foreground mt-1">Validates user subscription status</p>
+                            <code className="text-sm font-mono text-primary">check-surecart-subscription</code>
+                            <p className="text-xs text-muted-foreground mt-1">Validates user subscription status via SureCart</p>
                           </div>
                           <div className="p-3 bg-muted/50 rounded-lg">
                             <code className="text-sm font-mono text-primary">generate-*</code>
@@ -1039,19 +1039,23 @@ const AdminComponent = () => {
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="pt-4">
-                        <h4 className="font-semibold mb-4">Stripe Integration</h4>
+                        <h4 className="font-semibold mb-4">SureCart Integration</h4>
                         <p className="text-muted-foreground mb-4">
-                          Stripe handles subscription billing. Key edge functions:
+                          SureCart handles subscription billing. Key edge functions:
                         </p>
                         
                         <div className="space-y-2 mb-6">
                           <div className="p-3 bg-muted/50 rounded-lg">
-                            <code className="text-sm font-mono">create-checkout</code>
+                            <code className="text-sm font-mono">surecart-checkout</code>
                             <span className="text-xs text-muted-foreground ml-2">Creates checkout sessions</span>
                           </div>
                           <div className="p-3 bg-muted/50 rounded-lg">
-                            <code className="text-sm font-mono">customer-portal</code>
+                            <code className="text-sm font-mono">surecart-portal</code>
                             <span className="text-xs text-muted-foreground ml-2">Opens billing portal</span>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <code className="text-sm font-mono">surecart-webhook</code>
+                            <span className="text-xs text-muted-foreground ml-2">Handles payment events</span>
                           </div>
                         </div>
 
@@ -1116,8 +1120,12 @@ const AdminComponent = () => {
                         
                         <div className="space-y-2 mb-6">
                           <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm">
-                            <span className="text-muted-foreground">STRIPE_SECRET_KEY</span>
-                            <span className="text-xs text-muted-foreground ml-2">— Stripe API</span>
+                            <span className="text-muted-foreground">SURECART_API_KEY</span>
+                            <span className="text-xs text-muted-foreground ml-2">— SureCart API</span>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm">
+                            <span className="text-muted-foreground">SURECART_WEBHOOK_SECRET</span>
+                            <span className="text-xs text-muted-foreground ml-2">— Webhook verification</span>
                           </div>
                           <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm">
                             <span className="text-muted-foreground">ELEVENLABS_API_KEY</span>
