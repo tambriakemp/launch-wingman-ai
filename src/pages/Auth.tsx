@@ -48,7 +48,7 @@ const Auth = () => {
         setCheckoutInProgress(true);
         toast.info("Redirecting to checkout...");
         try {
-          const { data, error } = await supabase.functions.invoke("create-checkout");
+          const { data, error } = await supabase.functions.invoke("surecart-checkout");
           if (error) throw error;
           if (data?.url) {
             // Open in new tab to avoid iframe issues
@@ -169,7 +169,7 @@ const Auth = () => {
       if (isProSignup) {
         toast.info("Opening checkout...");
         try {
-          const { data, error: checkoutError } = await supabase.functions.invoke("create-checkout");
+          const { data, error: checkoutError } = await supabase.functions.invoke("surecart-checkout");
           if (checkoutError) throw checkoutError;
           if (!data?.url) throw new Error("No checkout URL returned");
 
