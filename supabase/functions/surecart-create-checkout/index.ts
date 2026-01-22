@@ -44,7 +44,8 @@ serve(async (req) => {
     const { data: paymentConfig, error: configError } = await supabaseClient
       .from('payment_config')
       .select('value')
-      .eq('key', 'surecart_price_id')
+      .eq('provider', 'surecart')
+      .eq('key', 'price_id')
       .single();
 
     if (configError || !paymentConfig?.value) {
