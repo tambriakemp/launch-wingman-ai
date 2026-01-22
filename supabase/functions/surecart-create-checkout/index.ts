@@ -159,31 +159,32 @@ serve(async (req) => {
     const checkoutId = draftData.id;
     logStep("Draft checkout created", { checkoutId, status: draftData.status });
 
-    // STEP 2: Add line item via separate API call
-    logStep("Step 2: Adding line item", { checkoutId, priceId });
+    // STEP 2: Add line item by updating the checkout with line_items
+    logStep("Step 2: Adding line item via checkout update", { checkoutId, priceId });
 
-    const lineItemRes = await fetch("https://api.surecart.com/v1/line_items", {
-      method: "POST",
+    const updateRes = await fetch(`https://api.surecart.com/v1/checkouts/${checkoutId}`, {
+      method: "PATCH",
       headers: {
         "Authorization": `Bearer ${SURECART_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        checkout: checkoutId,
-        price: priceId,
-        quantity: 1,
+        line_items: [{
+          price_id: priceId,
+          quantity: 1,
+        }],
       }),
     });
 
-    const lineItemData = await lineItemRes.json();
-    logStep("Line item response", { status: lineItemRes.status, data: lineItemData });
+    const updateData = await updateRes.json();
+    logStep("Checkout update response", { status: updateRes.status, data: updateData });
 
-    if (!lineItemRes.ok) {
-      logStep("Line item error", { status: lineItemRes.status, data: lineItemData });
-      throw new Error(lineItemData.message || "Failed to add line item to checkout");
+    if (!updateRes.ok) {
+      logStep("Checkout update error", { status: updateRes.status, data: updateData });
+      throw new Error(updateData.message || "Failed to add line item to checkout");
     }
 
-    logStep("Line item added successfully", { lineItemId: lineItemData.id });
+    logStep("Line item added via checkout update", { totalAmount: updateData.total_amount });
 
     // STEP 3: Finalize checkout to get the hosted URL
     logStep("Step 3: Finalizing checkout with return URL");
