@@ -83,13 +83,28 @@ export function ConfigTab() {
     }
   };
 
+  // Helper to get fresh access token
+  const getFreshToken = async (): Promise<string | null> => {
+    const { data: { session: freshSession }, error } = await supabase.auth.getSession();
+    if (error || !freshSession?.access_token) {
+      // Try to refresh if current session exists
+      const { data: refreshData } = await supabase.auth.refreshSession();
+      return refreshData?.session?.access_token || null;
+    }
+    return freshSession.access_token;
+  };
+
   const fetchSureCartConfig = async () => {
-    if (!session?.access_token) return;
-    
     setSureCartLoading(true);
     try {
+      const token = await getFreshToken();
+      if (!token) {
+        console.error('No valid session for SureCart config fetch');
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('surecart-admin-setup', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: { Authorization: `Bearer ${token}` },
         body: { action: 'get-config' },
       });
 
@@ -116,7 +131,6 @@ export function ConfigTab() {
   };
 
   const handleSaveSureCartConfig = async () => {
-    if (!session?.access_token) return;
     if (!editProductId.trim() || !editPriceId.trim()) {
       toast.error('Product ID and Price ID are required');
       return;
@@ -130,8 +144,14 @@ export function ConfigTab() {
 
     setSureCartSaving(true);
     try {
+      const token = await getFreshToken();
+      if (!token) {
+        toast.error('Session expired. Please refresh the page.');
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('surecart-admin-setup', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: { Authorization: `Bearer ${token}` },
         body: {
           action: 'configure',
           product_id: editProductId.trim(),
@@ -159,14 +179,18 @@ export function ConfigTab() {
   };
 
   const fetchProcessors = async () => {
-    if (!session?.access_token) return;
-    
     setProcessorsLoading(true);
     setProcessorsError(null);
     
     try {
+      const token = await getFreshToken();
+      if (!token) {
+        setProcessorsError('Session expired. Please refresh the page.');
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('surecart-admin-setup', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: { Authorization: `Bearer ${token}` },
         body: { action: 'list-processors' },
       });
 
