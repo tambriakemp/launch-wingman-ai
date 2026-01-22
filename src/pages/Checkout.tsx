@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { z } from "zod";
 
-const SURECART_COMPONENTS_SRC = "https://js.surecart.com/v1/components.js";
+const SURECART_COMPONENTS_SRC = "https://cdn.jsdelivr.net/npm/@surecart/components/dist/surecart/surecart.esm.js";
 
 // Validation schemas
 const newUserSchema = z.object({
