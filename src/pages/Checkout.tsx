@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 import { z } from "zod";
 
+const SURECART_COMPONENTS_SRC = "https://js.surecart.com/v1/components.js";
+
 // Validation schemas
 const newUserSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -79,6 +81,84 @@ const Checkout = () => {
   const [searchParams] = useSearchParams();
   const { user, session, checkSubscription } = useAuth();
   const isUpgrade = searchParams.get("upgrade") === "true" || !!user;
+
+  const getSureCartScript = () => {
+    if (typeof document === "undefined") return null;
+    return document.querySelector(
+      `script[src="${SURECART_COMPONENTS_SRC}"]`
+    ) as HTMLScriptElement | null;
+  };
+
+  const logSureCartDiagnostics = (
+    label: string,
+    currentStoreId?: string,
+    extra?: Record<string, unknown>
+  ) => {
+    try {
+      const script = getSureCartScript();
+      const hasWindow = typeof window !== "undefined";
+      const hasSureCartGlobal = hasWindow && !!(window as any).SureCart;
+      const sureCartKeys = hasSureCartGlobal
+        ? Object.keys((window as any).SureCart).slice(0, 25)
+        : [];
+
+      const ceDefined =
+        typeof customElements !== "undefined" &&
+        !!customElements.get("sc-payment-method");
+      const ceCtor =
+        typeof customElements !== "undefined"
+          ? customElements.get("sc-payment-method")
+          : undefined;
+
+      const perfEntries =
+        typeof performance !== "undefined"
+          ? performance.getEntriesByName(SURECART_COMPONENTS_SRC)
+          : [];
+      const perfLast = (perfEntries[perfEntries.length - 1] ||
+        null) as PerformanceResourceTiming | null;
+
+      const scriptInfo = script
+        ? {
+            src: script.src,
+            type: script.type,
+            async: script.async,
+            defer: script.defer,
+            crossOrigin: script.crossOrigin || undefined,
+            referrerPolicy: script.referrerPolicy || undefined,
+          }
+        : null;
+
+      const resourceTiming = perfLast
+        ? {
+            initiatorType: perfLast.initiatorType,
+            durationMs: Math.round(perfLast.duration),
+            transferSize: perfLast.transferSize,
+            encodedBodySize: perfLast.encodedBodySize,
+            decodedBodySize: perfLast.decodedBodySize,
+            nextHopProtocol: (perfLast as any).nextHopProtocol,
+          }
+        : null;
+
+      console.groupCollapsed(`[Checkout] SureCart diagnostics: ${label}`);
+      console.log({
+        href: hasWindow ? window.location.href : "n/a",
+        origin: hasWindow ? window.location.origin : "n/a",
+        isSecureContext: hasWindow ? window.isSecureContext : undefined,
+        readyState: typeof document !== "undefined" ? document.readyState : "n/a",
+        storeId: currentStoreId,
+        script: scriptInfo,
+        resourceTiming,
+        hasSureCartGlobal,
+        sureCartGlobalKeys: sureCartKeys,
+        customElementDefined: ceDefined,
+        customElementCtorName: (ceCtor as any)?.name,
+        ...extra,
+      });
+      console.groupEnd();
+    } catch (e) {
+      console.warn("[Checkout] SureCart diagnostics failed", e);
+    }
+  };
   
   // Form state
   const [email, setEmail] = useState(user?.email || "");
@@ -109,6 +189,58 @@ const Checkout = () => {
   // Ref for the payment element
   const paymentRef = useRef<HTMLElement | null>(null);
 
+  // Attach resource-load diagnostics for the SureCart components script
+  useEffect(() => {
+    logSureCartDiagnostics("mount");
+
+    const script = getSureCartScript();
+    if (!script) {
+      console.warn("[Checkout] SureCart script tag not found in DOM", {
+        expectedSrc: SURECART_COMPONENTS_SRC,
+      });
+    }
+
+    const onWindowErrorCapture = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (!target || target.tagName !== "SCRIPT") return;
+      const src = (target as HTMLScriptElement).src;
+      if (src !== SURECART_COMPONENTS_SRC) return;
+
+      console.error("[Checkout] SureCart script failed to load (captured)", {
+        src,
+        event,
+      });
+      logSureCartDiagnostics("script_error_captured");
+    };
+
+    window.addEventListener("error", onWindowErrorCapture, true);
+
+    let cleanupScriptListeners = () => {};
+    if (script) {
+      const onLoad = () => {
+        console.log("[Checkout] SureCart script loaded");
+        logSureCartDiagnostics("script_load");
+      };
+      const onError = () => {
+        console.error("[Checkout] SureCart script error event fired");
+        logSureCartDiagnostics("script_error_element");
+      };
+
+      script.addEventListener("load", onLoad);
+      script.addEventListener("error", onError);
+      cleanupScriptListeners = () => {
+        script.removeEventListener("load", onLoad);
+        script.removeEventListener("error", onError);
+      };
+    }
+
+    return () => {
+      window.removeEventListener("error", onWindowErrorCapture, true);
+      cleanupScriptListeners();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Check if SureCart script is loaded with timeout and error handling
   useEffect(() => {
     const TIMEOUT_MS = 15000; // 15 second timeout
@@ -136,6 +268,15 @@ const Checkout = () => {
         hasCustomElement: !!hasCustomElement,
         storeId: currentStoreId
       });
+
+      if (attempts === 1 || attempts % 5 === 0) {
+        logSureCartDiagnostics("poll", currentStoreId, {
+          attempt: attempts,
+          maxAttempts,
+          hasSureCart: !!hasSureCart,
+          hasCustomElement: !!hasCustomElement,
+        });
+      }
       
       if (hasSureCart && hasCustomElement && currentStoreId) {
         console.log('[Checkout] SureCart ready, rendering payment element');
@@ -145,6 +286,7 @@ const Checkout = () => {
       
       if (attempts >= maxAttempts) {
         console.log('[Checkout] SureCart timeout reached');
+        logSureCartDiagnostics("timeout", currentStoreId, { attempts, maxAttempts });
         setPaymentState('timeout');
         setLoadError('Payment form took too long to load. Please check your connection and try again.');
         return;
@@ -167,6 +309,11 @@ const Checkout = () => {
         if (!isMounted) return;
         
         console.log('[Checkout] Payment config response:', { data, error });
+
+        logSureCartDiagnostics("payment_config_response", data?.store_id, {
+          configured: !!data?.configured,
+          hasStoreId: !!data?.store_id,
+        });
         
         if (error) {
           throw new Error('Failed to load payment configuration');
@@ -184,6 +331,9 @@ const Checkout = () => {
       } catch (err) {
         if (!isMounted) return;
         console.error('[Checkout] Payment config error:', err);
+        logSureCartDiagnostics("payment_config_error", undefined, {
+          message: err instanceof Error ? err.message : String(err),
+        });
         setPaymentState('error');
         setLoadError('Unable to load payment system. Please try again later.');
       }
