@@ -159,32 +159,39 @@ serve(async (req) => {
     const checkoutId = draftData.id;
     logStep("Draft checkout created", { checkoutId, status: draftData.status });
 
-    // STEP 2: Add line item by updating the checkout with line_items
-    logStep("Step 2: Adding line item via checkout update", { checkoutId, priceId });
+    // STEP 2: Add line item
+    // SureCart expects line items to be created via the line_items endpoint with an explicit `checkout` field.
+    // The prior PATCH /checkouts/:id approach returns: "param is missing or the value is empty or invalid: checkout".
+    logStep("Step 2: Adding line item via line_items create", { checkoutId, priceId });
 
-    const updateRes = await fetch(`https://api.surecart.com/v1/checkouts/${checkoutId}`, {
-      method: "PATCH",
+    const lineItemPayload = {
+      line_item: {
+        checkout: checkoutId,
+        price: priceId,
+        quantity: 1,
+      },
+    };
+
+    logStep("Line item payload", { payload: lineItemPayload });
+
+    const lineItemRes = await fetch("https://api.surecart.com/v1/line_items", {
+      method: "POST",
       headers: {
         "Authorization": `Bearer ${SURECART_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        line_items: [{
-          price: priceId,
-          quantity: 1,
-        }],
-      }),
+      body: JSON.stringify(lineItemPayload),
     });
 
-    const updateData = await updateRes.json();
-    logStep("Checkout update response", { status: updateRes.status, data: updateData });
+    const lineItemData = await lineItemRes.json();
+    logStep("Line item create response", { status: lineItemRes.status, data: lineItemData });
 
-    if (!updateRes.ok) {
-      logStep("Checkout update error", { status: updateRes.status, data: updateData });
-      throw new Error(updateData.message || "Failed to add line item to checkout");
+    if (!lineItemRes.ok) {
+      logStep("Line item create error", { status: lineItemRes.status, data: lineItemData });
+      throw new Error(lineItemData.message || "Failed to add line item to checkout");
     }
 
-    logStep("Line item added via checkout update", { totalAmount: updateData.total_amount });
+    logStep("Line item added", { lineItemId: lineItemData.id });
 
     // STEP 3: Finalize checkout to get the hosted URL
     logStep("Step 3: Finalizing checkout with return URL");
