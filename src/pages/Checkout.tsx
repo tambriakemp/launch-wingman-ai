@@ -170,12 +170,21 @@ const Checkout = () => {
     setIsProcessing(true);
 
     try {
+      // For upgrade, use the user's email; for new users, use the form email
+      const checkoutEmail = isUpgrade ? user?.email : email;
+      
+      if (!checkoutEmail) {
+        toast.error("Email is required");
+        setIsProcessing(false);
+        return;
+      }
+
       // Call edge function to create hosted checkout session
       const { data, error } = await supabase.functions.invoke('surecart-create-checkout', {
         body: {
-          email: isUpgrade ? user?.email : email,
-          firstName,
-          lastName,
+          email: checkoutEmail,
+          firstName: firstName || user?.user_metadata?.first_name || '',
+          lastName: lastName || user?.user_metadata?.last_name || '',
           couponCode: appliedCoupon?.coupon_id,
           isUpgrade,
         }
