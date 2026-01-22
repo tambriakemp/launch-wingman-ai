@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Users, FlaskConical, RefreshCw, UserCheck, Settings, Tag, List, FileText, CreditCard, Save, CheckCircle2 } from 'lucide-react';
+import { Loader2, Users, FlaskConical, RefreshCw, UserCheck, Settings, Tag, List, FileText, CreditCard, Save, CheckCircle2, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { TikTokEnvironmentToggle } from './TikTokEnvironmentToggle';
 import { PinterestEnvironmentToggle } from './PinterestEnvironmentToggle';
+import { cn } from '@/lib/utils';
 
 interface SureContactConfigItem {
   config_type: string;
@@ -24,6 +25,14 @@ interface SureCartConfig {
   price_id: string;
   product_name: string;
   store_id: string;
+}
+
+interface Processor {
+  id: string;
+  method: string;
+  status: string;
+  name: string;
+  live_mode: boolean;
 }
 
 export function ConfigTab() {
@@ -49,6 +58,11 @@ export function ConfigTab() {
   const [editPriceId, setEditPriceId] = useState('');
   const [editProductName, setEditProductName] = useState('');
   const [editStoreId, setEditStoreId] = useState('');
+
+  // Processor fetching state
+  const [processors, setProcessors] = useState<Processor[]>([]);
+  const [processorsLoading, setProcessorsLoading] = useState(false);
+  const [processorsError, setProcessorsError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSureContactConfig();
@@ -108,6 +122,12 @@ export function ConfigTab() {
       return;
     }
 
+    // Validate processor ID format
+    if (editStoreId.trim().startsWith('acct_')) {
+      toast.error('Invalid Processor ID. Use "Fetch from SureCart" to get the correct ID.');
+      return;
+    }
+
     setSureCartSaving(true);
     try {
       const { data, error } = await supabase.functions.invoke('surecart-admin-setup', {
@@ -135,6 +155,37 @@ export function ConfigTab() {
       toast.error('Failed to save SureCart configuration');
     } finally {
       setSureCartSaving(false);
+    }
+  };
+
+  const fetchProcessors = async () => {
+    if (!session?.access_token) return;
+    
+    setProcessorsLoading(true);
+    setProcessorsError(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('surecart-admin-setup', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: { action: 'list-processors' },
+      });
+
+      if (error) throw error;
+      
+      if (data?.processors) {
+        setProcessors(data.processors);
+        if (data.processors.length === 0) {
+          setProcessorsError('No processors found. Please configure a payment processor in SureCart first.');
+        } else {
+          toast.success(`Found ${data.processors.length} processor(s)`);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching processors:', error);
+      setProcessorsError('Failed to fetch processors from SureCart');
+      toast.error('Failed to fetch processors');
+    } finally {
+      setProcessorsLoading(false);
     }
   };
 
@@ -285,15 +336,84 @@ export function ConfigTab() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="store-id">Processor ID</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="store-id">Processor ID</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={fetchProcessors}
+                        disabled={processorsLoading}
+                        className="h-7 px-2 text-xs"
+                      >
+                        {processorsLoading ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <>
+                            <Download className="h-3 w-3 mr-1" />
+                            Fetch from SureCart
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    
+                    {/* Show fetched processors as selectable options */}
+                    {processors.length > 0 && (
+                      <div className="space-y-2 p-3 bg-muted/50 rounded-lg border">
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Available Processors (click to select):
+                        </p>
+                        <div className="space-y-1">
+                          {processors.map((proc) => (
+                            <button
+                              key={proc.id}
+                              type="button"
+                              onClick={() => setEditStoreId(proc.id)}
+                              className={cn(
+                                "w-full text-left p-2 rounded text-sm flex items-center justify-between transition-colors",
+                                editStoreId === proc.id
+                                  ? "bg-primary/10 border border-primary/30"
+                                  : "bg-background border border-border hover:bg-muted"
+                              )}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-xs truncate max-w-[180px]">{proc.id}</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {proc.method}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {proc.live_mode ? (
+                                  <Badge className="text-xs bg-primary text-primary-foreground">
+                                    Live
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Test
+                                  </Badge>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Error message */}
+                    {processorsError && (
+                      <p className="text-xs text-destructive">{processorsError}</p>
+                    )}
+                    
                     <Input
                       id="store-id"
-                      placeholder="proc_xxx... or live_xxx..."
+                      placeholder="Click 'Fetch from SureCart' above"
                       value={editStoreId}
                       onChange={(e) => setEditStoreId(e.target.value)}
                       className="font-mono text-sm"
                     />
-                    <p className="text-xs text-muted-foreground">Found in SureCart → Settings → Processors → Your Stripe processor</p>
+                    <p className="text-xs text-muted-foreground">
+                      <span className="text-destructive font-medium">Important:</span> Do NOT use Stripe Account ID (acct_xxx)
+                    </p>
                   </div>
                 </div>
                 
