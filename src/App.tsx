@@ -15,6 +15,7 @@ import Pricing from "./pages/Pricing";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Auth from "./pages/Auth";
 import Checkout from "./pages/Checkout";
+import CheckoutSuccess from "./pages/CheckoutSuccess";
 import AppRedirect from "./pages/AppRedirect";
 import Settings from "./pages/Settings";
 import Assessments from "./pages/Assessments";
@@ -115,6 +116,7 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/checkout/success" element={<CheckoutSuccess />} />
             
             {/* Feature pages */}
             <Route path="/features/assessments" element={<AssessmentsFeature />} />

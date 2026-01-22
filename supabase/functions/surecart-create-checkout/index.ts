@@ -103,17 +103,12 @@ serve(async (req) => {
     const processorId = storeConfig?.value;
     logStep("Processor ID", { processorId });
     
-    // Create checkout with line items included directly
+    // STEP 1: Create draft checkout WITHOUT line items
+    logStep("Step 1: Creating draft checkout (no line items)");
+    
     const checkoutPayload: Record<string, unknown> = {
       live_mode: true,
       currency: "usd",
-      // Include line items directly in the checkout creation
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        }
-      ],
       metadata: {
         first_name: firstName || '',
         last_name: lastName || '',
@@ -141,10 +136,10 @@ serve(async (req) => {
       checkoutPayload.discount = couponCode;
     }
 
-    logStep("Creating SureCart checkout with line items", { payload: checkoutPayload });
+    logStep("Draft checkout payload", { payload: checkoutPayload });
 
-    // Create the checkout with all data
-    const checkoutRes = await fetch("https://api.surecart.com/v1/checkouts", {
+    // Create draft checkout
+    const draftRes = await fetch("https://api.surecart.com/v1/checkouts", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${SURECART_API_KEY}`,
@@ -153,54 +148,92 @@ serve(async (req) => {
       body: JSON.stringify(checkoutPayload),
     });
 
-    const checkoutData = await checkoutRes.json();
-    logStep("Checkout response", { status: checkoutRes.status, data: checkoutData });
+    const draftData = await draftRes.json();
+    logStep("Draft checkout response", { status: draftRes.status, data: draftData });
 
-    if (!checkoutRes.ok) {
-      logStep("SureCart checkout error", { status: checkoutRes.status, data: checkoutData });
-      throw new Error(checkoutData.message || "Failed to create checkout session");
+    if (!draftRes.ok) {
+      logStep("Draft checkout error", { status: draftRes.status, data: draftData });
+      throw new Error(draftData.message || "Failed to create draft checkout");
     }
 
-    const checkoutId = checkoutData.id;
+    const checkoutId = draftData.id;
+    logStep("Draft checkout created", { checkoutId, status: draftData.status });
 
-    // Try multiple possible URL fields from the checkout response (exclude portal_url as it redirects incorrectly)
-    let checkoutUrl = checkoutData.url || 
-                      checkoutData.checkout_url || 
-                      checkoutData.hosted_checkout_url;
+    // STEP 2: Add line item via separate API call
+    logStep("Step 2: Adding line item", { checkoutId, priceId });
 
-    // If still no URL, try to finalize the checkout
-    if (!checkoutUrl && checkoutId) {
-      logStep("No URL in initial response, attempting to finalize");
-      
-      const finalizeRes = await fetch(`https://api.surecart.com/v1/checkouts/${checkoutId}/finalize`, {
-        method: "PATCH",
-        headers: {
-          "Authorization": `Bearer ${SURECART_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({}),
-      });
+    const lineItemRes = await fetch("https://api.surecart.com/v1/line_items", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${SURECART_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        checkout: checkoutId,
+        price: priceId,
+        quantity: 1,
+      }),
+    });
 
-      const finalizeData = await finalizeRes.json();
-      logStep("Finalize response", { status: finalizeRes.status, data: finalizeData });
+    const lineItemData = await lineItemRes.json();
+    logStep("Line item response", { status: lineItemRes.status, data: lineItemData });
 
-      checkoutUrl = finalizeData.url || 
-                    finalizeData.checkout_url || 
-                    finalizeData.hosted_checkout_url;
+    if (!lineItemRes.ok) {
+      logStep("Line item error", { status: lineItemRes.status, data: lineItemData });
+      throw new Error(lineItemData.message || "Failed to add line item to checkout");
     }
 
-    // Last resort: construct the SureCart hosted checkout URL manually
+    logStep("Line item added successfully", { lineItemId: lineItemData.id });
+
+    // STEP 3: Finalize checkout to get the hosted URL
+    logStep("Step 3: Finalizing checkout with return URL");
+
+    const finalizeRes = await fetch(`https://api.surecart.com/v1/checkouts/${checkoutId}/finalize`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": `Bearer ${SURECART_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        return_url: `${appUrl}/checkout/success?checkout_id=${checkoutId}`,
+      }),
+    });
+
+    const finalizeData = await finalizeRes.json();
+    logStep("Finalize response", { 
+      status: finalizeRes.status, 
+      total: finalizeData.total_amount,
+      paymentRequired: finalizeData.payment_method_required,
+      data: finalizeData 
+    });
+
+    // Get the checkout URL from the finalized response
+    let checkoutUrl = finalizeData.url || 
+                      finalizeData.checkout_url || 
+                      finalizeData.hosted_checkout_url;
+
+    // If still no direct URL, try portal_url (with return_url set, it should work)
+    if (!checkoutUrl && finalizeData.portal_url) {
+      checkoutUrl = finalizeData.portal_url;
+      logStep("Using portal_url as fallback", { checkoutUrl });
+    }
+
+    // Absolute last resort: construct URL manually using the /c/ short form
     if (!checkoutUrl && checkoutId) {
-      checkoutUrl = `https://checkout.surecart.com/checkout/${checkoutId}`;
-      logStep("Using constructed checkout URL", { checkoutUrl });
+      checkoutUrl = `https://app.surecart.com/c/${checkoutId}`;
+      logStep("Using constructed short URL", { checkoutUrl });
     }
     
     if (!checkoutUrl) {
-      logStep("No checkout URL found", { checkoutData });
+      logStep("No checkout URL found", { finalizeData });
       throw new Error("Checkout URL not returned from SureCart");
     }
 
-    logStep("Checkout ready", { checkoutUrl });
+    logStep("Checkout ready", { 
+      checkoutUrl,
+      total: finalizeData.total_amount,
+      paymentRequired: finalizeData.payment_method_required,
+    });
 
     return new Response(JSON.stringify({ 
       success: true,
