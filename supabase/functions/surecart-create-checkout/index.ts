@@ -110,7 +110,7 @@ serve(async (req) => {
       // Include line items directly in the checkout creation
       line_items: [
         {
-          price_id: priceId,
+          price: priceId,
           quantity: 1,
         }
       ],
@@ -163,11 +163,10 @@ serve(async (req) => {
 
     const checkoutId = checkoutData.id;
 
-    // Try multiple possible URL fields from the checkout response
+    // Try multiple possible URL fields from the checkout response (exclude portal_url as it redirects incorrectly)
     let checkoutUrl = checkoutData.url || 
                       checkoutData.checkout_url || 
-                      checkoutData.hosted_checkout_url ||
-                      checkoutData.portal_url;
+                      checkoutData.hosted_checkout_url;
 
     // If still no URL, try to finalize the checkout
     if (!checkoutUrl && checkoutId) {
@@ -187,13 +186,12 @@ serve(async (req) => {
 
       checkoutUrl = finalizeData.url || 
                     finalizeData.checkout_url || 
-                    finalizeData.hosted_checkout_url ||
-                    finalizeData.portal_url;
+                    finalizeData.hosted_checkout_url;
     }
 
     // Last resort: construct the SureCart hosted checkout URL manually
     if (!checkoutUrl && checkoutId) {
-      checkoutUrl = `https://app.surecart.com/checkout/${checkoutId}`;
+      checkoutUrl = `https://checkout.surecart.com/checkout/${checkoutId}`;
       logStep("Using constructed checkout URL", { checkoutUrl });
     }
     
