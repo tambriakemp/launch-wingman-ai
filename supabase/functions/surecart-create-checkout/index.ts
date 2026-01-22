@@ -204,6 +204,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         return_url: `${appUrl}/checkout/success?checkout_id=${checkoutId}`,
+        checkout_type: "hosted",  // Explicitly request hosted checkout
       }),
     });
 
@@ -212,29 +213,30 @@ serve(async (req) => {
       status: finalizeRes.status, 
       total: finalizeData.total_amount,
       paymentRequired: finalizeData.payment_method_required,
-      data: finalizeData 
+      hosted_checkout_url: finalizeData.hosted_checkout_url,
+      url: finalizeData.url,
+      portal_url: finalizeData.portal_url,
     });
 
-    // Get the checkout URL from the finalized response
-    let checkoutUrl = finalizeData.url || 
-                      finalizeData.checkout_url || 
-                      finalizeData.hosted_checkout_url;
+    // Primary: Check for hosted checkout URL (prioritize hosted_checkout_url)
+    let checkoutUrl = finalizeData.hosted_checkout_url || 
+                      finalizeData.url || 
+                      finalizeData.checkout_url;
 
-    // If still no direct URL, try portal_url (with return_url set, it should work)
-    if (!checkoutUrl && finalizeData.portal_url) {
-      checkoutUrl = finalizeData.portal_url;
-      logStep("Using portal_url as fallback", { checkoutUrl });
-    }
-
-    // Absolute last resort: construct URL manually using the /c/ short form
+    // Fallback: Construct hosted checkout URL directly
+    // SureCart hosted checkout format: https://checkout.surecart.com/checkout/{checkout_id}
+    // DO NOT use portal_url as it redirects to merchant site which causes 404
     if (!checkoutUrl && checkoutId) {
       checkoutUrl = `https://checkout.surecart.com/checkout/${checkoutId}`;
-      logStep("Using constructed short URL", { checkoutUrl });
+      logStep("Using constructed hosted checkout URL (skipping portal_url)", { 
+        checkoutUrl, 
+        skippedPortalUrl: finalizeData.portal_url 
+      });
     }
     
     if (!checkoutUrl) {
       logStep("No checkout URL found", { finalizeData });
-      throw new Error("Checkout URL not returned from SureCart");
+      throw new Error("Hosted checkout URL not available");
     }
 
     logStep("Checkout ready", { 
