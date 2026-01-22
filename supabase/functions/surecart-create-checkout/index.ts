@@ -90,7 +90,7 @@ serve(async (req) => {
     }
 
     // Get app URL for redirects
-    const appUrl = Deno.env.get("APP_URL") || "https://launch-wingman-ai.lovable.app";
+    const appUrl = Deno.env.get("APP_URL") || "https://launchely.com";
 
     // Get processor/store ID from payment_config
     const { data: storeConfig } = await supabaseClient
@@ -170,7 +170,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         line_items: [{
-          price_id: priceId,
+          price: priceId,
           quantity: 1,
         }],
       }),
@@ -221,7 +221,7 @@ serve(async (req) => {
 
     // Absolute last resort: construct URL manually using the /c/ short form
     if (!checkoutUrl && checkoutId) {
-      checkoutUrl = `https://app.surecart.com/c/${checkoutId}`;
+      checkoutUrl = `https://checkout.surecart.com/checkout/${checkoutId}`;
       logStep("Using constructed short URL", { checkoutUrl });
     }
     
