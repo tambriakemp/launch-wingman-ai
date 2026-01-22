@@ -91,12 +91,21 @@ serve(async (req) => {
 
     // Get app URL for redirects
     const appUrl = Deno.env.get("APP_URL") || "https://launch-wingman-ai.lovable.app";
+
+    // Get processor/store ID from payment_config
+    const { data: storeConfig } = await supabaseClient
+      .from('payment_config')
+      .select('value')
+      .eq('provider', 'surecart')
+      .eq('key', 'store_id')
+      .single();
+
+    const processorId = storeConfig?.value;
+    logStep("Processor ID", { processorId });
     
-    // Build checkout payload
+    // Step 1: Create checkout with line items
     const checkoutPayload: Record<string, unknown> = {
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${appUrl}/app?checkout=success`,
-      cancel_url: `${appUrl}/checkout${isUpgrade ? '?upgrade=true' : ''}`,
+      live_mode: true,
       metadata: {
         first_name: firstName || '',
         last_name: lastName || '',
@@ -109,19 +118,14 @@ serve(async (req) => {
     if (customerId) {
       checkoutPayload.customer = customerId;
     } else {
-      checkoutPayload.customer_email = email;
-      checkoutPayload.customer_first_name = firstName || undefined;
-      checkoutPayload.customer_last_name = lastName || undefined;
-    }
-
-    // Add coupon if provided
-    if (couponCode) {
-      checkoutPayload.coupon = couponCode;
+      checkoutPayload.email = email;
+      checkoutPayload.first_name = firstName || undefined;
+      checkoutPayload.last_name = lastName || undefined;
     }
 
     logStep("Creating SureCart checkout", { payload: checkoutPayload });
 
-    // Create checkout session with SureCart
+    // Create the checkout
     const checkoutRes = await fetch("https://api.surecart.com/v1/checkouts", {
       method: "POST",
       headers: {
@@ -132,21 +136,87 @@ serve(async (req) => {
     });
 
     const checkoutData = await checkoutRes.json();
+    logStep("Checkout created", { id: checkoutData.id, status: checkoutRes.status });
 
     if (!checkoutRes.ok) {
       logStep("SureCart checkout error", { status: checkoutRes.status, data: checkoutData });
       throw new Error(checkoutData.message || "Failed to create checkout session");
     }
 
-    // Extract checkout URL
-    const checkoutUrl = checkoutData.url || checkoutData.checkout_url;
-    
-    if (!checkoutUrl) {
-      logStep("No checkout URL in response", { data: checkoutData });
-      throw new Error("Checkout URL not returned from SureCart");
+    const checkoutId = checkoutData.id;
+
+    // Step 2: Add line item to the checkout
+    const lineItemPayload = {
+      checkout: checkoutId,
+      price: priceId,
+      quantity: 1,
+    };
+
+    logStep("Adding line item", { lineItemPayload });
+
+    const lineItemRes = await fetch("https://api.surecart.com/v1/line_items", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${SURECART_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(lineItemPayload),
+    });
+
+    const lineItemData = await lineItemRes.json();
+    logStep("Line item response", { status: lineItemRes.status, data: lineItemData });
+
+    if (!lineItemRes.ok) {
+      logStep("Failed to add line item", { error: lineItemData });
+      throw new Error(lineItemData.message || "Failed to add product to checkout");
     }
 
-    logStep("Checkout created successfully", { checkoutUrl });
+    // Step 3: Finalize the checkout to get redirect URL
+    const finalizePayload: Record<string, unknown> = {};
+    
+    // Add processor if available
+    if (processorId) {
+      finalizePayload.processor = processorId;
+    }
+
+    // Add coupon if provided
+    if (couponCode) {
+      finalizePayload.discount = couponCode;
+    }
+
+    logStep("Finalizing checkout", { checkoutId, finalizePayload });
+
+    const finalizeRes = await fetch(`https://api.surecart.com/v1/checkouts/${checkoutId}/finalize`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": `Bearer ${SURECART_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(finalizePayload),
+    });
+
+    const finalizeData = await finalizeRes.json();
+    logStep("Finalize response", { status: finalizeRes.status, keys: Object.keys(finalizeData) });
+
+    // Try multiple possible URL fields from the finalized checkout
+    let checkoutUrl = finalizeData.url || 
+                      finalizeData.checkout_url || 
+                      finalizeData.hosted_checkout_url ||
+                      finalizeData.portal_url;
+
+    // If still no URL, construct the SureCart hosted checkout URL manually
+    if (!checkoutUrl && checkoutId) {
+      // SureCart hosted checkout URL format
+      checkoutUrl = `https://app.surecart.com/checkout/${checkoutId}`;
+      logStep("Using constructed checkout URL", { checkoutUrl });
+    }
+    
+    if (!checkoutUrl) {
+      logStep("No checkout URL found", { finalizeData });
+      throw new Error("Could not generate checkout URL");
+    }
+
+    logStep("Checkout ready", { checkoutUrl });
 
     return new Response(JSON.stringify({ 
       success: true,
