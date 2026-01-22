@@ -278,7 +278,7 @@ const Checkout = () => {
         });
       }
       
-      if (hasSureCart && hasCustomElement && currentStoreId) {
+      if (hasCustomElement && currentStoreId) {
         console.log('[Checkout] SureCart ready, rendering payment element');
         setPaymentState('ready');
         return;
