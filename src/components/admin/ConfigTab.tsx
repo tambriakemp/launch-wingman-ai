@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Users, FlaskConical, RefreshCw, UserCheck, Settings, Tag, List, FileText, CreditCard, Save, CheckCircle2, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -201,7 +202,14 @@ export function ConfigTab() {
         if (data.processors.length === 0) {
           setProcessorsError('No processors found. Please configure a payment processor in SureCart first.');
         } else {
-          toast.success(`Found ${data.processors.length} processor(s)`);
+          // Auto-select: prefer live mode processor, fallback to first available
+          const liveProcessor = data.processors.find((p: Processor) => p.live_mode);
+          const selectedProcessor = liveProcessor || data.processors[0];
+          
+          setEditStoreId(selectedProcessor.id);
+          toast.success(
+            `Auto-selected ${selectedProcessor.live_mode ? 'live' : 'test'} processor: ${selectedProcessor.method}`
+          );
         }
       }
     } catch (error) {
@@ -381,46 +389,40 @@ export function ConfigTab() {
                       </Button>
                     </div>
                     
-                    {/* Show fetched processors as selectable options */}
-                    {processors.length > 0 && (
-                      <div className="space-y-2 p-3 bg-muted/50 rounded-lg border">
-                        <p className="text-xs font-medium text-muted-foreground">
-                          Available Processors (click to select):
-                        </p>
-                        <div className="space-y-1">
+                    {/* Processor dropdown */}
+                    {processors.length > 0 ? (
+                      <Select value={editStoreId} onValueChange={setEditStoreId}>
+                        <SelectTrigger className="font-mono text-sm">
+                          <SelectValue placeholder="Select a processor..." />
+                        </SelectTrigger>
+                        <SelectContent>
                           {processors.map((proc) => (
-                            <button
-                              key={proc.id}
-                              type="button"
-                              onClick={() => setEditStoreId(proc.id)}
-                              className={cn(
-                                "w-full text-left p-2 rounded text-sm flex items-center justify-between transition-colors",
-                                editStoreId === proc.id
-                                  ? "bg-primary/10 border border-primary/30"
-                                  : "bg-background border border-border hover:bg-muted"
-                              )}
-                            >
+                            <SelectItem key={proc.id} value={proc.id}>
                               <div className="flex items-center gap-2">
-                                <span className="font-mono text-xs truncate max-w-[180px]">{proc.id}</span>
-                                <Badge variant="outline" className="text-xs">
-                                  {proc.method}
+                                <span className="font-mono text-xs">{proc.id}</span>
+                                <Badge variant="outline" className="text-xs">{proc.method}</Badge>
+                                <Badge 
+                                  className={cn(
+                                    "text-xs",
+                                    proc.live_mode ? "bg-primary text-primary-foreground" : ""
+                                  )} 
+                                  variant={proc.live_mode ? "default" : "secondary"}
+                                >
+                                  {proc.live_mode ? 'Live' : 'Test'}
                                 </Badge>
                               </div>
-                              <div className="flex items-center gap-1">
-                                {proc.live_mode ? (
-                                  <Badge className="text-xs bg-primary text-primary-foreground">
-                                    Live
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="secondary" className="text-xs">
-                                    Test
-                                  </Badge>
-                                )}
-                              </div>
-                            </button>
+                            </SelectItem>
                           ))}
-                        </div>
-                      </div>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        id="store-id"
+                        placeholder="Click 'Fetch from SureCart' above"
+                        value={editStoreId}
+                        readOnly
+                        className="font-mono text-sm bg-muted cursor-not-allowed"
+                      />
                     )}
                     
                     {/* Error message */}
@@ -428,13 +430,14 @@ export function ConfigTab() {
                       <p className="text-xs text-destructive">{processorsError}</p>
                     )}
                     
-                    <Input
-                      id="store-id"
-                      placeholder="Click 'Fetch from SureCart' above"
-                      value={editStoreId}
-                      onChange={(e) => setEditStoreId(e.target.value)}
-                      className="font-mono text-sm"
-                    />
+                    {/* Show selected ID for transparency */}
+                    {editStoreId && processors.length > 0 && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CheckCircle2 className="h-3 w-3 text-primary" />
+                        <span>Selected: <code className="bg-muted px-1 rounded">{editStoreId}</code></span>
+                      </div>
+                    )}
+                    
                     <p className="text-xs text-muted-foreground">
                       <span className="text-destructive font-medium">Important:</span> Do NOT use Stripe Account ID (acct_xxx)
                     </p>
