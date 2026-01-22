@@ -118,33 +118,39 @@ const Checkout = () => {
     let timeoutId: ReturnType<typeof setTimeout>;
     let isMounted = true;
 
-    const checkSurecart = () => {
+    // Accept storeId as parameter to avoid closure issues
+    const checkSurecart = (currentStoreId: string) => {
       if (!isMounted) return;
       
       attempts++;
       
       // Check if SureCart global exists AND component is defined
-      const surecartLoaded = typeof window !== 'undefined' && 
-        (window as any).SureCart &&
-        customElements.get('sc-payment-method');
+      const hasWindow = typeof window !== 'undefined';
+      const hasSureCart = hasWindow && (window as any).SureCart;
+      const hasCustomElement = customElements.get('sc-payment-method');
       
-      if (surecartLoaded && storeId) {
+      console.log('[Checkout] SureCart check:', {
+        attempt: attempts,
+        hasWindow,
+        hasSureCart: !!hasSureCart,
+        hasCustomElement: !!hasCustomElement,
+        storeId: currentStoreId
+      });
+      
+      if (hasSureCart && hasCustomElement && currentStoreId) {
+        console.log('[Checkout] SureCart ready, rendering payment element');
         setPaymentState('ready');
         return;
       }
       
       if (attempts >= maxAttempts) {
-        if (!storeId) {
-          setPaymentState('error');
-          setLoadError('Payment configuration unavailable. Please contact support.');
-        } else {
-          setPaymentState('timeout');
-          setLoadError('Payment form took too long to load. Please check your connection and try again.');
-        }
+        console.log('[Checkout] SureCart timeout reached');
+        setPaymentState('timeout');
+        setLoadError('Payment form took too long to load. Please check your connection and try again.');
         return;
       }
       
-      timeoutId = setTimeout(checkSurecart, POLL_INTERVAL_MS);
+      timeoutId = setTimeout(() => checkSurecart(currentStoreId), POLL_INTERVAL_MS);
     };
 
     // Fetch store ID first, then start polling
@@ -155,9 +161,12 @@ const Checkout = () => {
       setLoadError('');
       
       try {
+        console.log('[Checkout] Fetching payment config...');
         const { data, error } = await supabase.functions.invoke('get-payment-config');
         
         if (!isMounted) return;
+        
+        console.log('[Checkout] Payment config response:', { data, error });
         
         if (error) {
           throw new Error('Failed to load payment configuration');
@@ -170,10 +179,11 @@ const Checkout = () => {
         }
         
         setStoreId(data.store_id);
-        checkSurecart();
+        // Pass store_id directly to avoid closure issue
+        checkSurecart(data.store_id);
       } catch (err) {
         if (!isMounted) return;
-        console.error('Payment config error:', err);
+        console.error('[Checkout] Payment config error:', err);
         setPaymentState('error');
         setLoadError('Unable to load payment system. Please try again later.');
       }

@@ -285,15 +285,15 @@ export function ConfigTab() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="store-id">Store ID (Processor ID)</Label>
+                    <Label htmlFor="store-id">Processor ID</Label>
                     <Input
                       id="store-id"
-                      placeholder="live_xxx... or test_xxx..."
+                      placeholder="proc_xxx... or live_xxx..."
                       value={editStoreId}
                       onChange={(e) => setEditStoreId(e.target.value)}
                       className="font-mono text-sm"
                     />
-                    <p className="text-xs text-muted-foreground">Found in SureCart → Settings → Store</p>
+                    <p className="text-xs text-muted-foreground">Found in SureCart → Settings → Processors → Your Stripe processor</p>
                   </div>
                 </div>
                 
