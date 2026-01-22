@@ -200,6 +200,33 @@ serve(async (req) => {
         status: 200,
       });
 
+    } else if (action === "list-processors") {
+      // List all configured payment processors
+      logStep("Fetching processors from SureCart...");
+      const response = await fetch(`${SURECART_API_BASE}/processors`, { headers });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to list processors: ${errorText}`);
+      }
+      
+      const result = await response.json();
+      logStep("Processors fetched", { count: result.data?.length || 0 });
+      
+      // Return simplified processor list
+      const processors = (result.data || []).map((proc: any) => ({
+        id: proc.id,
+        method: proc.processor_type || proc.gateway || 'unknown',
+        status: proc.live_mode ? 'live' : 'test',
+        name: proc.processor_type || 'Payment Processor',
+        live_mode: proc.live_mode ?? true,
+      }));
+      
+      return new Response(JSON.stringify({ processors }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+
     } else if (action === "get-config") {
       // Get current configuration
       const { data: config } = await supabaseClient

@@ -42,6 +42,21 @@ serve(async (req) => {
       );
     }
 
+    // Validate that this is not a Stripe Account ID
+    if (config.store_id.startsWith('acct_')) {
+      console.warn('[GET-PAYMENT-CONFIG] Invalid processor ID - Stripe account ID detected:', config.store_id);
+      return new Response(
+        JSON.stringify({ 
+          error: `Invalid Processor ID. "${config.store_id}" is a Stripe Account ID, not a SureCart Processor ID. Please update in Admin → Config using "Fetch from SureCart" button.`, 
+          configured: false 
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         configured: true,
