@@ -20,7 +20,10 @@ import {
   Mail,
   User,
   Eye,
-  EyeOff
+  EyeOff,
+  AlertTriangle,
+  RefreshCw,
+  XCircle
 } from "lucide-react";
 import { z } from "zod";
 
@@ -96,23 +99,93 @@ const Checkout = () => {
   
   // Processing state
   const [isProcessing, setIsProcessing] = useState(false);
-  const [surecartReady, setSurecartReady] = useState(false);
+  
+  // Payment loading state
+  const [paymentState, setPaymentState] = useState<'loading' | 'ready' | 'error' | 'timeout'>('loading');
+  const [storeId, setStoreId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
   
   // Ref for the payment element
   const paymentRef = useRef<HTMLElement | null>(null);
 
-  // Check if SureCart script is loaded
+  // Check if SureCart script is loaded with timeout and error handling
   useEffect(() => {
+    const TIMEOUT_MS = 15000; // 15 second timeout
+    const POLL_INTERVAL_MS = 500;
+    let attempts = 0;
+    const maxAttempts = TIMEOUT_MS / POLL_INTERVAL_MS;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let isMounted = true;
+
     const checkSurecart = () => {
-      if (typeof window !== 'undefined' && (window as any).SureCart) {
-        setSurecartReady(true);
-      } else {
-        // Retry after a short delay
-        setTimeout(checkSurecart, 500);
+      if (!isMounted) return;
+      
+      attempts++;
+      
+      // Check if SureCart global exists AND component is defined
+      const surecartLoaded = typeof window !== 'undefined' && 
+        (window as any).SureCart &&
+        customElements.get('sc-payment-method');
+      
+      if (surecartLoaded && storeId) {
+        setPaymentState('ready');
+        return;
+      }
+      
+      if (attempts >= maxAttempts) {
+        if (!storeId) {
+          setPaymentState('error');
+          setLoadError('Payment configuration unavailable. Please contact support.');
+        } else {
+          setPaymentState('timeout');
+          setLoadError('Payment form took too long to load. Please check your connection and try again.');
+        }
+        return;
+      }
+      
+      timeoutId = setTimeout(checkSurecart, POLL_INTERVAL_MS);
+    };
+
+    // Fetch store ID first, then start polling
+    const init = async () => {
+      if (!isMounted) return;
+      
+      setPaymentState('loading');
+      setLoadError('');
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('get-payment-config');
+        
+        if (!isMounted) return;
+        
+        if (error) {
+          throw new Error('Failed to load payment configuration');
+        }
+        
+        if (!data?.configured || !data?.store_id) {
+          setPaymentState('error');
+          setLoadError('Payment system is not configured. Please contact support.');
+          return;
+        }
+        
+        setStoreId(data.store_id);
+        checkSurecart();
+      } catch (err) {
+        if (!isMounted) return;
+        console.error('Payment config error:', err);
+        setPaymentState('error');
+        setLoadError('Unable to load payment system. Please try again later.');
       }
     };
-    checkSurecart();
-  }, []);
+
+    init();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, [retryCount]);
 
   // Pre-fill name from profile if upgrading
   useEffect(() => {
@@ -164,6 +237,13 @@ const Checkout = () => {
     setAppliedCoupon(null);
     setPromoCode("");
     setPromoError("");
+  };
+
+  const handleRetryPayment = () => {
+    setPaymentState('loading');
+    setLoadError('');
+    setStoreId(null);
+    setRetryCount(prev => prev + 1);
   };
 
   const validateForm = (): boolean => {
@@ -458,13 +538,70 @@ const Checkout = () => {
                 </h2>
 
                 {/* SureCart Payment Element */}
-                <div className="border border-border rounded-lg p-4 bg-background">
-                  {surecartReady ? (
-                    <sc-payment-method ref={paymentRef as any} />
-                  ) : (
-                    <div className="flex items-center justify-center py-8 text-muted-foreground">
-                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                      Loading payment form...
+                <div className="border border-border rounded-lg p-4 bg-background min-h-[120px]">
+                  {paymentState === 'loading' && (
+                    <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                      <Loader2 className="w-6 h-6 animate-spin mb-3" />
+                      <p className="text-sm">Loading secure payment form...</p>
+                      <p className="text-xs mt-1 opacity-60">This should only take a moment</p>
+                    </div>
+                  )}
+
+                  {paymentState === 'ready' && storeId && (
+                    <sc-payment-method 
+                      ref={paymentRef as any}
+                      processor-id={storeId}
+                    />
+                  )}
+
+                  {paymentState === 'timeout' && (
+                    <div className="flex flex-col items-center justify-center py-6 text-center">
+                      <div className="w-12 h-12 bg-warning/10 rounded-full flex items-center justify-center mb-3">
+                        <AlertTriangle className="w-6 h-6 text-warning" />
+                      </div>
+                      <p className="font-medium text-foreground mb-1">Payment form didn't load</p>
+                      <p className="text-sm text-muted-foreground mb-4 max-w-xs">
+                        {loadError}
+                      </p>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={handleRetryPayment}
+                        className="gap-2"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Try Again
+                      </Button>
+                    </div>
+                  )}
+
+                  {paymentState === 'error' && (
+                    <div className="flex flex-col items-center justify-center py-6 text-center">
+                      <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mb-3">
+                        <XCircle className="w-6 h-6 text-destructive" />
+                      </div>
+                      <p className="font-medium text-foreground mb-1">Unable to load payment</p>
+                      <p className="text-sm text-muted-foreground mb-4 max-w-xs">
+                        {loadError}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={handleRetryPayment}
+                          className="gap-2"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          Retry
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          onClick={() => navigate('/pricing')}
+                        >
+                          Go Back
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -522,7 +659,7 @@ const Checkout = () => {
                 type="submit"
                 size="lg"
                 className="w-full"
-                disabled={isProcessing || !surecartReady}
+                disabled={isProcessing || paymentState !== 'ready'}
               >
                 {isProcessing ? (
                   <>

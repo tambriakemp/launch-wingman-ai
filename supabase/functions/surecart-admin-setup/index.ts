@@ -216,7 +216,7 @@ serve(async (req) => {
 
     } else if (action === "configure") {
       // Manually configure existing product/price IDs
-      const { product_id, price_id, product_name } = body;
+      const { product_id, price_id, product_name, store_id } = body;
       
       if (!product_id || !price_id) {
         throw new Error("Both product_id and price_id are required");
@@ -228,17 +228,22 @@ serve(async (req) => {
         { provider: 'surecart', key: 'product_name', value: product_name || 'Launchely Pro' },
       ];
 
+      // Only add store_id if provided
+      if (store_id) {
+        configItems.push({ provider: 'surecart', key: 'store_id', value: store_id });
+      }
+
       for (const item of configItems) {
         await supabaseClient.from('payment_config').upsert(item, {
           onConflict: 'provider,key'
         });
       }
-      logStep("Manual configuration saved", { product_id, price_id });
+      logStep("Manual configuration saved", { product_id, price_id, store_id: store_id || 'not set' });
 
       return new Response(JSON.stringify({
         success: true,
         message: "SureCart configuration saved successfully",
-        config: { product_id, price_id, product_name: product_name || 'Launchely Pro' }
+        config: { product_id, price_id, product_name: product_name || 'Launchely Pro', store_id: store_id || null }
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

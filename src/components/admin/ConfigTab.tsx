@@ -23,6 +23,7 @@ interface SureCartConfig {
   product_id: string;
   price_id: string;
   product_name: string;
+  store_id: string;
 }
 
 export function ConfigTab() {
@@ -47,6 +48,7 @@ export function ConfigTab() {
   const [editProductId, setEditProductId] = useState('');
   const [editPriceId, setEditPriceId] = useState('');
   const [editProductName, setEditProductName] = useState('');
+  const [editStoreId, setEditStoreId] = useState('');
 
   useEffect(() => {
     fetchSureContactConfig();
@@ -84,11 +86,13 @@ export function ConfigTab() {
           product_id: data.config.product_id || '',
           price_id: data.config.price_id || '',
           product_name: data.config.product_name || 'Launchely Pro',
+          store_id: data.config.store_id || '',
         };
         setSureCartConfig(config);
         setEditProductId(config.product_id);
         setEditPriceId(config.price_id);
         setEditProductName(config.product_name);
+        setEditStoreId(config.store_id);
       }
     } catch (error) {
       console.error('Error fetching SureCart config:', error);
@@ -113,6 +117,7 @@ export function ConfigTab() {
           product_id: editProductId.trim(),
           price_id: editPriceId.trim(),
           product_name: editProductName.trim() || 'Launchely Pro',
+          store_id: editStoreId.trim() || undefined,
         },
       });
 
@@ -123,6 +128,7 @@ export function ConfigTab() {
         product_id: editProductId.trim(),
         price_id: editPriceId.trim(),
         product_name: editProductName.trim() || 'Launchely Pro',
+        store_id: editStoreId.trim(),
       });
     } catch (error) {
       console.error('Error saving SureCart config:', error);
@@ -267,14 +273,28 @@ export function ConfigTab() {
               )}
               
               <div className="grid gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="product-name">Product Name</Label>
-                  <Input
-                    id="product-name"
-                    placeholder="Launchely Pro"
-                    value={editProductName}
-                    onChange={(e) => setEditProductName(e.target.value)}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="product-name">Product Name</Label>
+                    <Input
+                      id="product-name"
+                      placeholder="Launchely Pro"
+                      value={editProductName}
+                      onChange={(e) => setEditProductName(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="store-id">Store ID (Processor ID)</Label>
+                    <Input
+                      id="store-id"
+                      placeholder="live_xxx... or test_xxx..."
+                      value={editStoreId}
+                      onChange={(e) => setEditStoreId(e.target.value)}
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">Found in SureCart → Settings → Store</p>
+                  </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
