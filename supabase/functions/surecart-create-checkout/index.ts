@@ -34,12 +34,12 @@ serve(async (req) => {
 
     logStep("Request data", { email, firstName, lastName, isUpgrade, hasCoupon: !!couponCode });
 
-    // Get payment config: buy_link_slug and checkout_base_url
+    // Get payment config: buy_link_slug, test_buy_link_slug, checkout_base_url, test_mode
     const { data: paymentConfigs, error: configError } = await supabaseClient
       .from('payment_config')
       .select('key, value')
       .eq('provider', 'surecart')
-      .in('key', ['buy_link_slug', 'checkout_base_url']);
+      .in('key', ['buy_link_slug', 'test_buy_link_slug', 'checkout_base_url', 'test_mode']);
 
     if (configError) {
       logStep("Payment config error", { error: configError.message });
@@ -52,14 +52,20 @@ serve(async (req) => {
       config[item.key] = item.value;
     });
 
-    const buyLinkSlug = config.buy_link_slug;
+    // Determine if we're in test mode
+    const isTestMode = config.test_mode === 'true';
+    
+    // Select appropriate buy link slug based on mode
+    const buyLinkSlug = isTestMode 
+      ? (config.test_buy_link_slug || config.buy_link_slug)
+      : config.buy_link_slug;
     const checkoutBaseUrl = config.checkout_base_url || 'https://store.launchely.com';
 
     if (!buyLinkSlug) {
       throw new Error("Buy link slug not configured");
     }
 
-    logStep("Config retrieved", { buyLinkSlug, checkoutBaseUrl });
+    logStep("Config retrieved", { buyLinkSlug, checkoutBaseUrl, isTestMode });
 
     // For new users, check if email already exists
     if (!isUpgrade) {
