@@ -223,20 +223,25 @@ serve(async (req) => {
                       finalizeData.url || 
                       finalizeData.checkout_url;
 
-    // Fallback: Construct hosted checkout URL directly
-    // SureCart hosted checkout format: https://checkout.surecart.com/checkout/{checkout_id}
-    // DO NOT use portal_url as it redirects to merchant site which causes 404
+    // Secondary: Use portal_url if it's on a SureCart domain (this is what SureCart actually returns)
+    if (!checkoutUrl && finalizeData.portal_url) {
+      const portalUrl = finalizeData.portal_url;
+      // Verify it's a SureCart domain, not our own domain
+      if (portalUrl.includes('surecart.com')) {
+        checkoutUrl = portalUrl;
+        logStep("Using portal_url (SureCart domain)", { checkoutUrl });
+      }
+    }
+
+    // Last resort fallback: portal_redirect format (what SureCart actually uses)
     if (!checkoutUrl && checkoutId) {
-      checkoutUrl = `https://checkout.surecart.com/checkout/${checkoutId}`;
-      logStep("Using constructed hosted checkout URL (skipping portal_url)", { 
-        checkoutUrl, 
-        skippedPortalUrl: finalizeData.portal_url 
-      });
+      checkoutUrl = `https://app.surecart.com/portal_redirect/checkouts/${checkoutId}`;
+      logStep("Using constructed portal_redirect URL", { checkoutUrl });
     }
     
     if (!checkoutUrl) {
       logStep("No checkout URL found", { finalizeData });
-      throw new Error("Hosted checkout URL not available");
+      throw new Error("Checkout URL not available");
     }
 
     logStep("Checkout ready", { 
