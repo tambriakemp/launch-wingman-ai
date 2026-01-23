@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Users, FlaskConical, RefreshCw, UserCheck, Settings, Tag, List, FileText, CreditCard, Save, CheckCircle2, Download } from 'lucide-react';
+import { Loader2, Users, FlaskConical, RefreshCw, UserCheck, Settings, Tag, List, FileText, CreditCard, Save, CheckCircle2, Download, AlertTriangle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { TikTokEnvironmentToggle } from './TikTokEnvironmentToggle';
@@ -28,6 +29,8 @@ interface SureCartConfig {
   store_id: string;
   checkout_base_url: string;
   buy_link_slug: string;
+  test_mode: boolean;
+  test_buy_link_slug: string;
 }
 
 interface Processor {
@@ -63,6 +66,8 @@ export function ConfigTab() {
   const [editStoreId, setEditStoreId] = useState('');
   const [editCheckoutBaseUrl, setEditCheckoutBaseUrl] = useState('https://store.launchely.com');
   const [editBuyLinkSlug, setEditBuyLinkSlug] = useState('launchely-pro-8');
+  const [editTestMode, setEditTestMode] = useState(false);
+  const [editTestBuyLinkSlug, setEditTestBuyLinkSlug] = useState('');
 
   // Processor fetching state
   const [processors, setProcessors] = useState<Processor[]>([]);
@@ -123,6 +128,8 @@ export function ConfigTab() {
           store_id: data.config.store_id || '',
           checkout_base_url: data.config.checkout_base_url || 'https://store.launchely.com',
           buy_link_slug: data.config.buy_link_slug || 'launchely-pro-8',
+          test_mode: data.config.test_mode === 'true',
+          test_buy_link_slug: data.config.test_buy_link_slug || '',
         };
         setSureCartConfig(config);
         setEditProductId(config.product_id);
@@ -131,6 +138,8 @@ export function ConfigTab() {
         setEditStoreId(config.store_id);
         setEditCheckoutBaseUrl(config.checkout_base_url);
         setEditBuyLinkSlug(config.buy_link_slug);
+        setEditTestMode(config.test_mode);
+        setEditTestBuyLinkSlug(config.test_buy_link_slug);
       }
     } catch (error) {
       console.error('Error fetching SureCart config:', error);
@@ -169,6 +178,8 @@ export function ConfigTab() {
           store_id: editStoreId.trim() || undefined,
           checkout_base_url: editCheckoutBaseUrl.trim() || 'https://store.launchely.com',
           buy_link_slug: editBuyLinkSlug.trim() || 'launchely-pro-8',
+          test_mode: editTestMode ? 'true' : 'false',
+          test_buy_link_slug: editTestBuyLinkSlug.trim() || undefined,
         },
       });
 
@@ -182,6 +193,8 @@ export function ConfigTab() {
         store_id: editStoreId.trim(),
         checkout_base_url: editCheckoutBaseUrl.trim() || 'https://store.launchely.com',
         buy_link_slug: editBuyLinkSlug.trim() || 'launchely-pro-8',
+        test_mode: editTestMode,
+        test_buy_link_slug: editTestBuyLinkSlug.trim(),
       });
     } catch (error) {
       console.error('Error saving SureCart config:', error);
@@ -359,7 +372,47 @@ export function ConfigTab() {
             </div>
           ) : (
             <div className="space-y-4">
-              {sureCartConfig && (
+              {/* Test Mode Toggle */}
+              <div className={cn(
+                "flex items-center justify-between p-4 rounded-lg border-2",
+                editTestMode 
+                  ? "bg-amber-50 dark:bg-amber-950/30 border-amber-400 dark:border-amber-600" 
+                  : "bg-primary/5 border-primary/20"
+              )}>
+                <div className="flex items-center gap-3">
+                  {editTestMode ? (
+                    <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  ) : (
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                  )}
+                  <div>
+                    <p className={cn(
+                      "font-medium",
+                      editTestMode ? "text-amber-800 dark:text-amber-200" : "text-primary"
+                    )}>
+                      {editTestMode ? "Test Mode Active" : "Live Mode Active"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {editTestMode 
+                        ? "Using test credentials - payments won't charge real cards" 
+                        : "Using production credentials - real payments will be processed"
+                      }
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="test-mode" className="text-sm font-medium">
+                    {editTestMode ? "Test" : "Live"}
+                  </Label>
+                  <Switch
+                    id="test-mode"
+                    checked={editTestMode}
+                    onCheckedChange={setEditTestMode}
+                  />
+                </div>
+              </div>
+
+              {sureCartConfig && !editTestMode && (
                 <div className="flex items-center gap-2 p-3 bg-primary/5 border border-primary/20 rounded-lg text-sm">
                   <CheckCircle2 className="h-4 w-4 text-primary" />
                   <span className="text-primary font-medium">SureCart is configured</span>
@@ -368,9 +421,9 @@ export function ConfigTab() {
               )}
               
               <div className="grid gap-4">
-                {/* Buy Link Slug - most important for minimal checkout */}
+                {/* Live Mode Buy Link Slug */}
                 <div className="space-y-2">
-                  <Label htmlFor="buy-link-slug">Buy Link Slug</Label>
+                  <Label htmlFor="buy-link-slug">Live Buy Link Slug</Label>
                   <Input
                     id="buy-link-slug"
                     placeholder="launchely-pro-8"
@@ -379,7 +432,25 @@ export function ConfigTab() {
                     className="font-mono text-sm"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Product slug from SureCart buy link (e.g., "launchely-pro-8" from /buy/launchely-pro-8/)
+                    Production product slug (e.g., "launchely-pro-8" from /buy/launchely-pro-8/)
+                  </p>
+                </div>
+
+                {/* Test Mode Buy Link Slug */}
+                <div className="space-y-2">
+                  <Label htmlFor="test-buy-link-slug">Test Buy Link Slug</Label>
+                  <Input
+                    id="test-buy-link-slug"
+                    placeholder="launchely-pro-test"
+                    value={editTestBuyLinkSlug}
+                    onChange={(e) => setEditTestBuyLinkSlug(e.target.value)}
+                    className={cn(
+                      "font-mono text-sm",
+                      editTestMode ? "border-amber-400 dark:border-amber-600" : ""
+                    )}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Test product slug for sandbox payments (used when Test Mode is ON)
                   </p>
                 </div>
 
