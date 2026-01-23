@@ -243,7 +243,7 @@ serve(async (req) => {
 
     } else if (action === "configure") {
       // Manually configure existing product/price IDs
-      const { product_id, price_id, product_name, store_id } = body;
+      const { product_id, price_id, product_name, store_id, checkout_base_url } = body;
       
       if (!product_id || !price_id) {
         throw new Error("Both product_id and price_id are required");
@@ -260,17 +260,33 @@ serve(async (req) => {
         configItems.push({ provider: 'surecart', key: 'store_id', value: store_id });
       }
 
+      // Add checkout_base_url for WordPress-hosted checkout
+      if (checkout_base_url) {
+        configItems.push({ provider: 'surecart', key: 'checkout_base_url', value: checkout_base_url });
+      }
+
       for (const item of configItems) {
         await supabaseClient.from('payment_config').upsert(item, {
           onConflict: 'provider,key'
         });
       }
-      logStep("Manual configuration saved", { product_id, price_id, store_id: store_id || 'not set' });
+      logStep("Manual configuration saved", { 
+        product_id, 
+        price_id, 
+        store_id: store_id || 'not set',
+        checkout_base_url: checkout_base_url || 'not set'
+      });
 
       return new Response(JSON.stringify({
         success: true,
         message: "SureCart configuration saved successfully",
-        config: { product_id, price_id, product_name: product_name || 'Launchely Pro', store_id: store_id || null }
+        config: { 
+          product_id, 
+          price_id, 
+          product_name: product_name || 'Launchely Pro', 
+          store_id: store_id || null,
+          checkout_base_url: checkout_base_url || 'https://store.launchely.com'
+        }
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
