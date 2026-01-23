@@ -34,12 +34,12 @@ serve(async (req) => {
 
     logStep("Request data", { email, firstName, lastName, isUpgrade, hasCoupon: !!couponCode });
 
-    // Get payment config: price_id and checkout_base_url
+    // Get payment config: buy_link_slug and checkout_base_url
     const { data: paymentConfigs, error: configError } = await supabaseClient
       .from('payment_config')
       .select('key, value')
       .eq('provider', 'surecart')
-      .in('key', ['price_id', 'checkout_base_url']);
+      .in('key', ['buy_link_slug', 'checkout_base_url']);
 
     if (configError) {
       logStep("Payment config error", { error: configError.message });
@@ -52,14 +52,14 @@ serve(async (req) => {
       config[item.key] = item.value;
     });
 
-    const priceId = config.price_id;
+    const buyLinkSlug = config.buy_link_slug;
     const checkoutBaseUrl = config.checkout_base_url || 'https://store.launchely.com';
 
-    if (!priceId) {
-      throw new Error("Price ID not configured");
+    if (!buyLinkSlug) {
+      throw new Error("Buy link slug not configured");
     }
 
-    logStep("Config retrieved", { priceId, checkoutBaseUrl });
+    logStep("Config retrieved", { buyLinkSlug, checkoutBaseUrl });
 
     // For new users, check if email already exists
     if (!isUpgrade) {
@@ -72,13 +72,9 @@ serve(async (req) => {
       }
     }
 
-    // Construct WordPress-hosted SureCart checkout URL
-    // Format: https://store.launchely.com/checkout/?line_items[0][price_id]=xxx&line_items[0][quantity]=1
-    const checkoutUrl = new URL(`${checkoutBaseUrl}/checkout/`);
-    
-    // Add line item (required)
-    checkoutUrl.searchParams.set('line_items[0][price_id]', priceId);
-    checkoutUrl.searchParams.set('line_items[0][quantity]', '1');
+    // Construct SureCart buy link URL (minimal checkout page)
+    // Format: https://store.launchely.com/buy/product-slug/?email=xxx&first_name=xxx
+    const checkoutUrl = new URL(`${checkoutBaseUrl}/buy/${buyLinkSlug}/`);
 
     // Pre-fill customer info
     if (email) {
@@ -93,7 +89,6 @@ serve(async (req) => {
 
     // Apply coupon if provided
     if (couponCode) {
-      // SureCart WordPress checkout supports coupon via 'coupon' param
       checkoutUrl.searchParams.set('coupon', couponCode);
     }
 
@@ -103,9 +98,9 @@ serve(async (req) => {
     checkoutUrl.searchParams.set('cancel_url', `${appUrl}/checkout?canceled=true`);
 
     const finalUrl = checkoutUrl.toString();
-    logStep("Checkout URL constructed", { 
+    logStep("Buy link URL constructed", { 
       url: finalUrl,
-      priceId,
+      buyLinkSlug,
       email,
       hasCoupon: !!couponCode 
     });

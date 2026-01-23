@@ -243,7 +243,7 @@ serve(async (req) => {
 
     } else if (action === "configure") {
       // Manually configure existing product/price IDs
-      const { product_id, price_id, product_name, store_id, checkout_base_url } = body;
+      const { product_id, price_id, product_name, store_id, checkout_base_url, buy_link_slug } = body;
       
       if (!product_id || !price_id) {
         throw new Error("Both product_id and price_id are required");
@@ -265,6 +265,11 @@ serve(async (req) => {
         configItems.push({ provider: 'surecart', key: 'checkout_base_url', value: checkout_base_url });
       }
 
+      // Add buy_link_slug for minimal checkout experience
+      if (buy_link_slug) {
+        configItems.push({ provider: 'surecart', key: 'buy_link_slug', value: buy_link_slug });
+      }
+
       for (const item of configItems) {
         await supabaseClient.from('payment_config').upsert(item, {
           onConflict: 'provider,key'
@@ -274,7 +279,8 @@ serve(async (req) => {
         product_id, 
         price_id, 
         store_id: store_id || 'not set',
-        checkout_base_url: checkout_base_url || 'not set'
+        checkout_base_url: checkout_base_url || 'not set',
+        buy_link_slug: buy_link_slug || 'not set'
       });
 
       return new Response(JSON.stringify({
@@ -285,7 +291,8 @@ serve(async (req) => {
           price_id, 
           product_name: product_name || 'Launchely Pro', 
           store_id: store_id || null,
-          checkout_base_url: checkout_base_url || 'https://store.launchely.com'
+          checkout_base_url: checkout_base_url || 'https://store.launchely.com',
+          buy_link_slug: buy_link_slug || 'launchely-pro-8'
         }
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
