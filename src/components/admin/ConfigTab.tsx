@@ -27,6 +27,7 @@ interface SureCartConfig {
   product_name: string;
   store_id: string;
   checkout_base_url: string;
+  buy_link_slug: string;
 }
 
 interface Processor {
@@ -61,6 +62,7 @@ export function ConfigTab() {
   const [editProductName, setEditProductName] = useState('');
   const [editStoreId, setEditStoreId] = useState('');
   const [editCheckoutBaseUrl, setEditCheckoutBaseUrl] = useState('https://store.launchely.com');
+  const [editBuyLinkSlug, setEditBuyLinkSlug] = useState('launchely-pro-8');
 
   // Processor fetching state
   const [processors, setProcessors] = useState<Processor[]>([]);
@@ -120,6 +122,7 @@ export function ConfigTab() {
           product_name: data.config.product_name || 'Launchely Pro',
           store_id: data.config.store_id || '',
           checkout_base_url: data.config.checkout_base_url || 'https://store.launchely.com',
+          buy_link_slug: data.config.buy_link_slug || 'launchely-pro-8',
         };
         setSureCartConfig(config);
         setEditProductId(config.product_id);
@@ -127,6 +130,7 @@ export function ConfigTab() {
         setEditProductName(config.product_name);
         setEditStoreId(config.store_id);
         setEditCheckoutBaseUrl(config.checkout_base_url);
+        setEditBuyLinkSlug(config.buy_link_slug);
       }
     } catch (error) {
       console.error('Error fetching SureCart config:', error);
@@ -164,6 +168,7 @@ export function ConfigTab() {
           product_name: editProductName.trim() || 'Launchely Pro',
           store_id: editStoreId.trim() || undefined,
           checkout_base_url: editCheckoutBaseUrl.trim() || 'https://store.launchely.com',
+          buy_link_slug: editBuyLinkSlug.trim() || 'launchely-pro-8',
         },
       });
 
@@ -176,6 +181,7 @@ export function ConfigTab() {
         product_name: editProductName.trim() || 'Launchely Pro',
         store_id: editStoreId.trim(),
         checkout_base_url: editCheckoutBaseUrl.trim() || 'https://store.launchely.com',
+        buy_link_slug: editBuyLinkSlug.trim() || 'launchely-pro-8',
       });
     } catch (error) {
       console.error('Error saving SureCart config:', error);
@@ -362,7 +368,22 @@ export function ConfigTab() {
               )}
               
               <div className="grid gap-4">
-                {/* Checkout Base URL - most important for WordPress-hosted checkout */}
+                {/* Buy Link Slug - most important for minimal checkout */}
+                <div className="space-y-2">
+                  <Label htmlFor="buy-link-slug">Buy Link Slug</Label>
+                  <Input
+                    id="buy-link-slug"
+                    placeholder="launchely-pro-8"
+                    value={editBuyLinkSlug}
+                    onChange={(e) => setEditBuyLinkSlug(e.target.value)}
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Product slug from SureCart buy link (e.g., "launchely-pro-8" from /buy/launchely-pro-8/)
+                  </p>
+                </div>
+
+                {/* Checkout Base URL */}
                 <div className="space-y-2">
                   <Label htmlFor="checkout-base-url">Checkout Base URL</Label>
                   <Input
@@ -373,7 +394,7 @@ export function ConfigTab() {
                     className="font-mono text-sm"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Your WordPress subdomain where SureCart checkout is hosted (e.g., https://store.launchely.com)
+                    Your WordPress subdomain where SureCart is hosted (e.g., https://store.launchely.com)
                   </p>
                 </div>
 
