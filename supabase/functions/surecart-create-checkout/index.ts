@@ -97,6 +97,11 @@ serve(async (req) => {
       checkoutUrl.searchParams.set('coupon', couponCode);
     }
 
+    // Add success and cancel URLs for redirect after payment
+    const appUrl = Deno.env.get("APP_URL") || "https://launchely.com";
+    checkoutUrl.searchParams.set('success_url', `${appUrl}/checkout/success`);
+    checkoutUrl.searchParams.set('cancel_url', `${appUrl}/checkout?canceled=true`);
+
     const finalUrl = checkoutUrl.toString();
     logStep("Checkout URL constructed", { 
       url: finalUrl,

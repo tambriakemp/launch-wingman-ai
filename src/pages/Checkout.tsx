@@ -19,11 +19,10 @@ import {
   Lock,
   Mail,
   User,
-  Eye,
-  EyeOff,
   ArrowRight
 } from "lucide-react";
 import { z } from "zod";
+import CheckoutModal from "@/components/checkout/CheckoutModal";
 
 // Validation schemas
 const newUserSchema = z.object({
@@ -79,6 +78,10 @@ const Checkout = () => {
   
   // Processing state
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Checkout modal state
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [checkoutUrl, setCheckoutUrl] = useState("");
 
   // Pre-fill name from profile if upgrading
   useEffect(() => {
@@ -198,14 +201,21 @@ const Checkout = () => {
         throw new Error("Checkout URL not returned");
       }
 
-      // Redirect to SureCart hosted checkout
-      window.location.href = data.checkout_url;
+      // Open the checkout modal instead of redirecting
+      setCheckoutUrl(data.checkout_url);
+      setShowCheckoutModal(true);
+      setIsProcessing(false);
 
     } catch (error) {
       console.error("Checkout error:", error);
       toast.error(error instanceof Error ? error.message : "Failed to start checkout. Please try again.");
       setIsProcessing(false);
     }
+  };
+
+  const handleCloseModal = () => {
+    setShowCheckoutModal(false);
+    setCheckoutUrl("");
   };
 
   const displayPrice = appliedCoupon ? appliedCoupon.discounted_price : 25;
@@ -448,6 +458,13 @@ const Checkout = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Checkout Modal */}
+      <CheckoutModal
+        isOpen={showCheckoutModal}
+        checkoutUrl={checkoutUrl}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 };
