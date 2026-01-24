@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { MotionConfig } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,22 @@ import { toast } from 'sonner';
 import { toPng } from 'html-to-image';
 import JSZip from 'jszip';
 import { SizedMockupFrame, SIZE_PRESETS, type SizePreset } from './SizedMockupFrame';
+
+// Inline theme variables to ensure CSS vars resolve correctly in html-to-image
+const THEME_VARIABLES: React.CSSProperties = {
+  // @ts-ignore - CSS custom properties
+  '--background': '0 0% 100%',
+  '--foreground': '240 10% 3.9%',
+  '--card': '0 0% 100%',
+  '--card-foreground': '240 10% 3.9%',
+  '--muted': '240 4.8% 95.9%',
+  '--muted-foreground': '240 3.8% 46.1%',
+  '--border': '240 5.9% 90%',
+  '--primary': '47.9 95.8% 53.1%',
+  '--primary-foreground': '26 83.3% 14.1%',
+  '--accent': '240 4.8% 95.9%',
+  '--accent-foreground': '240 5.9% 10%',
+};
 
 // Import all mockup components
 import { DashboardMockup } from '@/components/landing/screenshots/DashboardMockup';
@@ -105,6 +122,51 @@ export function SizedAssetsSection() {
     }
   }, []);
 
+  // Helper function to wait for DOM to fully settle
+  const waitForSettle = async () => {
+    // Wait for fonts to load
+    if (document.fonts?.ready) {
+      await document.fonts.ready;
+    }
+    // Wait for multiple animation frames to ensure layout is complete
+    await new Promise(resolve => 
+      requestAnimationFrame(() => 
+        requestAnimationFrame(() => 
+          requestAnimationFrame(resolve)
+        )
+      )
+    );
+    // Additional delay for complex renders
+    await new Promise(resolve => setTimeout(resolve, 300));
+  };
+
+  // Helper function to capture an element with retry logic
+  const captureWithRetry = async (element: HTMLElement, width: number, height: number, retries = 2): Promise<string> => {
+    await waitForSettle();
+    
+    const dataUrl = await toPng(element, {
+      width,
+      height,
+      backgroundColor: '#ffffff',
+      cacheBust: true,
+      pixelRatio: 1,
+      style: {
+        width: `${width}px`,
+        height: `${height}px`,
+      },
+    });
+    
+    // Check if image is blank (very small data URL likely means empty)
+    // A valid 1080x1080 PNG should be at least a few KB
+    if (dataUrl.length < 5000 && retries > 0) {
+      console.warn('Capture may be blank, retrying...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return captureWithRetry(element, width, height, retries - 1);
+    }
+    
+    return dataUrl;
+  };
+
   const generateAssets = async () => {
     if (selectedMockups.size === 0) {
       toast.error('Please select at least one mockup');
@@ -126,15 +188,7 @@ export function SizedAssetsSection() {
           return;
         }
 
-        await new Promise(resolve => setTimeout(resolve, 150));
-
-        const dataUrl = await toPng(element, {
-          width: currentSize.width,
-          height: currentSize.height,
-          backgroundColor: '#ffffff',
-          cacheBust: true,
-          pixelRatio: 1,
-        });
+        const dataUrl = await captureWithRetry(element, currentSize.width, currentSize.height);
 
         const link = document.createElement('a');
         link.download = `launchely-${mockupId}-${currentSize.width}x${currentSize.height}.png`;
@@ -164,15 +218,7 @@ export function SizedAssetsSection() {
           }
 
           try {
-            await new Promise(resolve => setTimeout(resolve, 150));
-
-            const dataUrl = await toPng(element, {
-              width: currentSize.width,
-              height: currentSize.height,
-              backgroundColor: '#ffffff',
-              cacheBust: true,
-              pixelRatio: 1,
-            });
+            const dataUrl = await captureWithRetry(element, currentSize.width, currentSize.height);
 
             const base64Data = dataUrl.split(',')[1];
             folder.file(`launchely-${mockupId}-${currentSize.width}x${currentSize.height}.png`, base64Data, { base64: true });
@@ -390,43 +436,47 @@ export function SizedAssetsSection() {
           )}
         </Button>
 
-        {/* Hidden Capture Containers - using opacity:0 and position to ensure rendering */}
-        <div 
-          className="fixed pointer-events-none"
-          style={{ 
-            left: '-9999px', 
-            top: '0',
-            opacity: 1, // Keep opacity 1 for html-to-image to work
-          }}
-          aria-hidden="true"
-        >
-          {Array.from(selectedMockups).map((mockupId) => {
-            const mockup = mockupOptions.find(m => m.id === mockupId);
-            if (!mockup) return null;
-            const MockupComponent = mockup.component;
-            return (
-              <div
-                key={mockupId}
-                ref={(el) => setRef(mockupId, el)}
-                style={{ 
-                  width: `${currentSize.width}px`, 
-                  height: `${currentSize.height}px`,
-                  backgroundColor: '#ffffff',
-                }}
-              >
-                <SizedMockupFrame
-                  width={currentSize.width}
-                  height={currentSize.height}
-                  showLogo={showLogo}
-                  showTagline={showTagline}
-                  gradientOverlay={gradientOverlay}
+        {/* Hidden Capture Containers - MotionConfig disables animations for reliable capture */}
+        <MotionConfig reducedMotion="always">
+          <div 
+            className="fixed pointer-events-none"
+            style={{ 
+              left: '-9999px', 
+              top: '0',
+              opacity: 1,
+            }}
+            aria-hidden="true"
+          >
+            {Array.from(selectedMockups).map((mockupId) => {
+              const mockup = mockupOptions.find(m => m.id === mockupId);
+              if (!mockup) return null;
+              const MockupComponent = mockup.component;
+              return (
+                <div
+                  key={mockupId}
+                  ref={(el) => setRef(mockupId, el)}
+                  style={{ 
+                    width: `${currentSize.width}px`, 
+                    height: `${currentSize.height}px`,
+                    backgroundColor: '#ffffff',
+                    // Inline theme variables for html-to-image
+                    ...THEME_VARIABLES,
+                  }}
                 >
-                  <MockupComponent />
-                </SizedMockupFrame>
-              </div>
-            );
-          })}
-        </div>
+                  <SizedMockupFrame
+                    width={currentSize.width}
+                    height={currentSize.height}
+                    showLogo={showLogo}
+                    showTagline={showTagline}
+                    gradientOverlay={gradientOverlay}
+                  >
+                    <MockupComponent />
+                  </SizedMockupFrame>
+                </div>
+              );
+            })}
+          </div>
+        </MotionConfig>
       </CardContent>
     </Card>
   );
