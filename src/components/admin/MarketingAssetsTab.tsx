@@ -6,6 +6,7 @@ import { Download, Loader2, Package, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { toPng } from 'html-to-image';
 import JSZip from 'jszip';
+import { SizedAssetsSection } from './SizedAssetsSection';
 
 // Import all mockup components
 import { DashboardMockup } from '@/components/landing/screenshots/DashboardMockup';
@@ -28,23 +29,6 @@ interface MockupConfig {
   description: string;
   component: React.ComponentType;
 }
-
-// Log to debug if components are loaded correctly
-console.log('Mockup components loaded:', {
-  DashboardMockup: typeof DashboardMockup,
-  FunnelBuilderMockup: typeof FunnelBuilderMockup,
-  AudienceBuilderMockup: typeof AudienceBuilderMockup,
-  TransformationMockup: typeof TransformationMockup,
-  BrandingMockup: typeof BrandingMockup,
-  SalesCopyMockup: typeof SalesCopyMockup,
-  TasksMockup: typeof TasksMockup,
-  SocialHubMockup: typeof SocialHubMockup,
-  InsightsMockup: typeof InsightsMockup,
-  RelaunchMockup: typeof RelaunchMockup,
-  ContentVaultMockup: typeof ContentVaultMockup,
-  AssessmentMockup: typeof AssessmentMockup,
-  MessagingMockup: typeof MessagingMockup,
-});
 
 const mockups: MockupConfig[] = [
   { id: 'dashboard', name: 'Dashboard', description: 'Main dashboard overview', component: DashboardMockup },
@@ -291,6 +275,9 @@ export function MarketingAssetsTab() {
           );
         })}
       </div>
+
+      {/* Sized Assets Section */}
+      <SizedAssetsSection />
 
       {/* Info Footer */}
       <Card>
