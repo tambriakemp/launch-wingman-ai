@@ -390,8 +390,16 @@ export function SizedAssetsSection() {
           )}
         </Button>
 
-        {/* Hidden Capture Containers */}
-        <div className="fixed -left-[9999px] top-0 pointer-events-none" aria-hidden="true">
+        {/* Hidden Capture Containers - using opacity:0 and position to ensure rendering */}
+        <div 
+          className="fixed pointer-events-none"
+          style={{ 
+            left: '-9999px', 
+            top: '0',
+            opacity: 1, // Keep opacity 1 for html-to-image to work
+          }}
+          aria-hidden="true"
+        >
           {Array.from(selectedMockups).map((mockupId) => {
             const mockup = mockupOptions.find(m => m.id === mockupId);
             if (!mockup) return null;
@@ -400,7 +408,11 @@ export function SizedAssetsSection() {
               <div
                 key={mockupId}
                 ref={(el) => setRef(mockupId, el)}
-                style={{ width: `${currentSize.width}px`, height: `${currentSize.height}px` }}
+                style={{ 
+                  width: `${currentSize.width}px`, 
+                  height: `${currentSize.height}px`,
+                  backgroundColor: '#ffffff',
+                }}
               >
                 <SizedMockupFrame
                   width={currentSize.width}
