@@ -14,6 +14,10 @@ export const SIZE_PRESETS: SizePreset[] = [
   { id: 'landscape', name: 'Landscape', width: 1920, height: 1080, description: 'YouTube, Facebook Cover' },
 ];
 
+// Base dimensions that mockups are designed at
+const MOCKUP_BASE_WIDTH = 600;
+const MOCKUP_BASE_HEIGHT = 500;
+
 interface SizedMockupFrameProps {
   width: number;
   height: number;
@@ -21,8 +25,6 @@ interface SizedMockupFrameProps {
   showLogo?: boolean;
   showTagline?: boolean;
   gradientOverlay?: boolean;
-  mockupWidth?: number; // Original mockup width for scale calculation
-  mockupHeight?: number; // Original mockup height for scale calculation
 }
 
 export function SizedMockupFrame({
@@ -32,19 +34,17 @@ export function SizedMockupFrame({
   showLogo = true,
   showTagline = true,
   gradientOverlay = true,
-  mockupWidth = 600, // Default mockup width
-  mockupHeight = 400, // Default mockup height
 }: SizedMockupFrameProps) {
   // Calculate scale to FILL the frame (cover, not contain)
-  const scaleX = width / mockupWidth;
-  const scaleY = height / mockupHeight;
+  const scaleX = width / MOCKUP_BASE_WIDTH;
+  const scaleY = height / MOCKUP_BASE_HEIGHT;
   
   // Use the larger scale to ensure the mockup fills the frame completely
   const fillScale = Math.max(scaleX, scaleY);
   
   // Calculate the scaled dimensions
-  const scaledWidth = mockupWidth * fillScale;
-  const scaledHeight = mockupHeight * fillScale;
+  const scaledWidth = MOCKUP_BASE_WIDTH * fillScale;
+  const scaledHeight = MOCKUP_BASE_HEIGHT * fillScale;
   
   // Center the scaled content (negative offset for overflow)
   const offsetX = (width - scaledWidth) / 2;
@@ -52,20 +52,29 @@ export function SizedMockupFrame({
 
   return (
     <div
-      className="relative overflow-hidden bg-background"
-      style={{ width: `${width}px`, height: `${height}px` }}
+      className="relative overflow-hidden"
+      style={{ 
+        width: `${width}px`, 
+        height: `${height}px`,
+        backgroundColor: 'hsl(var(--background))',
+      }}
     >
-      {/* Mockup Content - Scaled to fill */}
+      {/* Mockup Content - Fixed base size, then scaled to fill */}
       <div 
         className="absolute"
         style={{ 
           left: `${offsetX}px`,
           top: `${offsetY}px`,
+          width: `${MOCKUP_BASE_WIDTH}px`,
+          height: `${MOCKUP_BASE_HEIGHT}px`,
           transform: `scale(${fillScale})`,
           transformOrigin: 'top left',
         }}
       >
-        {children}
+        {/* Force the mockup to render at fixed dimensions */}
+        <div style={{ width: `${MOCKUP_BASE_WIDTH}px`, minHeight: `${MOCKUP_BASE_HEIGHT}px` }}>
+          {children}
+        </div>
       </div>
 
       {/* Optional gradient overlay ON TOP of content */}
@@ -73,7 +82,7 @@ export function SizedMockupFrame({
         <div 
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: 'linear-gradient(180deg, transparent 60%, hsl(var(--background)/0.3) 100%)',
+            background: 'linear-gradient(180deg, transparent 60%, hsl(var(--background) / 0.4) 100%)',
           }}
         />
       )}
@@ -87,7 +96,13 @@ export function SizedMockupFrame({
       
       {showTagline && (
         <div className="absolute bottom-4 right-4 z-10">
-          <span className="text-foreground text-lg font-semibold drop-shadow-lg bg-background/80 px-3 py-1 rounded-md">
+          <span 
+            className="text-lg font-semibold drop-shadow-lg px-3 py-1 rounded-md"
+            style={{ 
+              color: 'hsl(var(--foreground))',
+              backgroundColor: 'hsl(var(--background) / 0.8)',
+            }}
+          >
             launchely.com
           </span>
         </div>
