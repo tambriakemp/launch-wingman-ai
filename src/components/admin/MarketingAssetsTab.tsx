@@ -63,14 +63,13 @@ export function MarketingAssetsTab() {
   };
 
   const captureElement = useCallback(async (element: HTMLElement, scale: number): Promise<string> => {
+    // Wait for any animations to settle
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     return await toPng(element, {
       pixelRatio: scale,
       backgroundColor: '#ffffff',
       cacheBust: true,
-      style: {
-        transform: 'scale(1)',
-        transformOrigin: 'top left',
-      },
     });
   }, []);
 
@@ -234,17 +233,21 @@ export function MarketingAssetsTab() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                {/* Mockup Preview Container */}
-                <div 
+                {/* Visual Preview (scaled, clipped for UI) */}
+                <div className="relative h-[200px] overflow-hidden border rounded-lg bg-background">
+                  <div className="transform scale-[0.35] origin-top-left" style={{ width: '286%' }}>
+                    <MockupComponent />
+                  </div>
+                </div>
+                
+                {/* Hidden Full-Size Capture Container (off-screen) */}
+                <div
                   ref={(el) => setRef(mockup.id, el)}
-                  className="transform scale-[0.5] origin-top-left h-[200px] -mb-[200px] overflow-hidden"
-                  style={{ width: '200%' }}
+                  className="fixed -left-[9999px] top-0 pointer-events-none"
+                  aria-hidden="true"
                 >
                   <MockupComponent />
                 </div>
-                
-                {/* Spacer to account for scaled preview */}
-                <div className="h-[200px]" />
                 
                 {/* Download Button */}
                 <Button
