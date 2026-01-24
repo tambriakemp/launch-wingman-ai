@@ -13,7 +13,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Package, Pencil, BookOpen, BarChart3, FileText, Bell, Headphones, Video, Tag, Palette, Settings } from 'lucide-react';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Package, Pencil, BookOpen, BarChart3, FileText, Bell, Headphones, Video, Tag, Palette, Settings, Image as ImageIcon } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -47,6 +47,7 @@ import { ConfigTab } from '@/components/admin/ConfigTab';
 import { SupportTicketsTab } from '@/components/admin/SupportTicketsTab';
 import { ActivityLogsTab } from '@/components/admin/ActivityLogsTab';
 import { CouponManagement } from '@/components/admin/CouponManagement';
+import { MarketingAssetsTab } from '@/components/admin/MarketingAssetsTab';
 
 interface User {
   id: string;
@@ -646,6 +647,10 @@ const AdminDashboard = () => {
               <Tag className="h-4 w-4" />
               <span className="hidden sm:inline">Coupons</span>
             </TabsTrigger>
+            <TabsTrigger value="assets" className="gap-2">
+              <ImageIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Assets</span>
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -1122,6 +1127,11 @@ const AdminDashboard = () => {
           {/* Coupons Tab */}
           <TabsContent value="coupons" className="space-y-4 md:space-y-8">
             <CouponManagement />
+          </TabsContent>
+
+          {/* Assets Tab */}
+          <TabsContent value="assets" className="space-y-4 md:space-y-8">
+            <MarketingAssetsTab />
           </TabsContent>
         </Tabs>
       </main>
