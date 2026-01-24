@@ -114,61 +114,92 @@ export function SizedAssetsSection() {
     setIsGenerating(true);
 
     try {
-      const zip = new JSZip();
-      const folder = zip.folder(`launchely-${currentSize.id}-assets`);
-      
-      if (!folder) {
-        toast.error('Failed to create ZIP folder');
-        return;
-      }
+      const mockupIds = Array.from(selectedMockups);
 
-      let successCount = 0;
-      let failCount = 0;
-
-      for (const mockupId of selectedMockups) {
+      if (mockupIds.length === 1) {
+        // Single file: Download PNG directly (no zip)
+        const mockupId = mockupIds[0];
         const element = captureRefs.current.get(mockupId);
         if (!element) {
-          failCount++;
-          continue;
+          toast.error('Element not found');
+          setIsGenerating(false);
+          return;
         }
 
-        try {
-          // Wait for render
-          await new Promise(resolve => setTimeout(resolve, 150));
+        await new Promise(resolve => setTimeout(resolve, 150));
 
-          const dataUrl = await toPng(element, {
-            width: currentSize.width,
-            height: currentSize.height,
-            backgroundColor: '#ffffff',
-            cacheBust: true,
-            pixelRatio: 1,
-          });
+        const dataUrl = await toPng(element, {
+          width: currentSize.width,
+          height: currentSize.height,
+          backgroundColor: '#ffffff',
+          cacheBust: true,
+          pixelRatio: 1,
+        });
 
-          const base64Data = dataUrl.split(',')[1];
-          folder.file(`launchely-${mockupId}-${currentSize.width}x${currentSize.height}.png`, base64Data, { base64: true });
-          successCount++;
-        } catch (error) {
-          console.error(`Failed to capture ${mockupId}:`, error);
-          failCount++;
-        }
-      }
-
-      if (successCount > 0) {
-        const content = await zip.generateAsync({ type: 'blob' });
-        const url = URL.createObjectURL(content);
         const link = document.createElement('a');
-        link.download = `launchely-${currentSize.id}-assets-${currentSize.width}x${currentSize.height}.zip`;
-        link.href = url;
+        link.download = `launchely-${mockupId}-${currentSize.width}x${currentSize.height}.png`;
+        link.href = dataUrl;
         link.click();
-        URL.revokeObjectURL(url);
-
-        if (failCount > 0) {
-          toast.warning(`Downloaded ${successCount} assets, ${failCount} failed`);
-        } else {
-          toast.success(`Downloaded ${successCount} sized assets`);
-        }
+        
+        toast.success(`Downloaded ${mockupId} at ${currentSize.width}×${currentSize.height}`);
       } else {
-        toast.error('Failed to generate any assets');
+        // Multiple files: Use ZIP
+        const zip = new JSZip();
+        const folder = zip.folder(`launchely-${currentSize.id}-assets`);
+        
+        if (!folder) {
+          toast.error('Failed to create ZIP folder');
+          setIsGenerating(false);
+          return;
+        }
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const mockupId of mockupIds) {
+          const element = captureRefs.current.get(mockupId);
+          if (!element) {
+            failCount++;
+            continue;
+          }
+
+          try {
+            await new Promise(resolve => setTimeout(resolve, 150));
+
+            const dataUrl = await toPng(element, {
+              width: currentSize.width,
+              height: currentSize.height,
+              backgroundColor: '#ffffff',
+              cacheBust: true,
+              pixelRatio: 1,
+            });
+
+            const base64Data = dataUrl.split(',')[1];
+            folder.file(`launchely-${mockupId}-${currentSize.width}x${currentSize.height}.png`, base64Data, { base64: true });
+            successCount++;
+          } catch (error) {
+            console.error(`Failed to capture ${mockupId}:`, error);
+            failCount++;
+          }
+        }
+
+        if (successCount > 0) {
+          const content = await zip.generateAsync({ type: 'blob' });
+          const url = URL.createObjectURL(content);
+          const link = document.createElement('a');
+          link.download = `launchely-${currentSize.id}-assets-${currentSize.width}x${currentSize.height}.zip`;
+          link.href = url;
+          link.click();
+          URL.revokeObjectURL(url);
+
+          if (failCount > 0) {
+            toast.warning(`Downloaded ${successCount} assets, ${failCount} failed`);
+          } else {
+            toast.success(`Downloaded ${successCount} sized assets`);
+          }
+        } else {
+          toast.error('Failed to generate any assets');
+        }
       }
     } catch (error) {
       console.error('Failed to generate assets:', error);
