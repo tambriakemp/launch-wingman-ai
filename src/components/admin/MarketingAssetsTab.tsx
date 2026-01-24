@@ -29,6 +29,23 @@ interface MockupConfig {
   component: React.ComponentType;
 }
 
+// Log to debug if components are loaded correctly
+console.log('Mockup components loaded:', {
+  DashboardMockup: typeof DashboardMockup,
+  FunnelBuilderMockup: typeof FunnelBuilderMockup,
+  AudienceBuilderMockup: typeof AudienceBuilderMockup,
+  TransformationMockup: typeof TransformationMockup,
+  BrandingMockup: typeof BrandingMockup,
+  SalesCopyMockup: typeof SalesCopyMockup,
+  TasksMockup: typeof TasksMockup,
+  SocialHubMockup: typeof SocialHubMockup,
+  InsightsMockup: typeof InsightsMockup,
+  RelaunchMockup: typeof RelaunchMockup,
+  ContentVaultMockup: typeof ContentVaultMockup,
+  AssessmentMockup: typeof AssessmentMockup,
+  MessagingMockup: typeof MessagingMockup,
+});
+
 const mockups: MockupConfig[] = [
   { id: 'dashboard', name: 'Dashboard', description: 'Main dashboard overview', component: DashboardMockup },
   { id: 'funnel-builder', name: 'Funnel Builder', description: 'Funnel type selection', component: FunnelBuilderMockup },
