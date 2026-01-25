@@ -112,6 +112,7 @@ const CheckoutForm = ({
           options={{
             layout: "tabs",
           }}
+          onReady={() => console.log("PaymentElement ready")}
         />
       </div>
 
