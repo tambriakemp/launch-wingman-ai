@@ -44,19 +44,42 @@ serve(async (req) => {
     });
 
     // Verify the token and get the user (pass the JWT explicitly; do NOT rely on session storage)
+    let userId: string | undefined;
+    let email: string | undefined;
+
     const { data: userData, error: userError } = await supabaseService.auth.getUser(token);
-    const user = userData?.user;
-
-    if (userError || !user) {
-      console.error("[check-admin] User verification error:", userError?.message || "No user");
-      return new Response(JSON.stringify({ isAdmin: false, isManager: false, role: null }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+    
+    if (userError || !userData?.user) {
+      console.log("[check-admin] getUser failed, trying getClaims fallback...", userError?.message);
+      
+      // Fallback: Try getClaims to decode the JWT directly
+      // This works even when the session is stale but the JWT is still valid
+      try {
+        const { data: claimsData, error: claimsError } = await supabaseService.auth.getClaims(token);
+        
+        if (claimsError || !claimsData?.claims?.sub) {
+          console.error("[check-admin] Both getUser and getClaims failed:", claimsError?.message);
+          return new Response(JSON.stringify({ isAdmin: false, isManager: false, role: null }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
+        }
+        
+        // Extract user info from claims
+        userId = claimsData.claims.sub as string;
+        email = claimsData.claims.email as string | undefined;
+        console.log("[check-admin] Recovered user from claims:", userId, email);
+      } catch (claimsErr) {
+        console.error("[check-admin] getClaims exception:", claimsErr);
+        return new Response(JSON.stringify({ isAdmin: false, isManager: false, role: null }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+    } else {
+      userId = userData.user.id;
+      email = userData.user.email;
     }
-
-    const userId = user.id;
-    const email = user.email;
 
     if (!userId) {
       console.log("[check-admin] No user ID");
