@@ -202,10 +202,19 @@ const Checkout = () => {
         }
       });
 
+      // Handle errors - supabase-js may put error info in different places
+      const errorMessage = data?.error || error?.message || (error as any)?.context?.body?.error;
+      
       if (error || !data?.success || !data?.clientSecret) {
-        const errorMsg = data?.error || error?.message || "Failed to initialize payment";
+        const errorMsg = errorMessage || "Failed to initialize payment";
         console.error("[Checkout] Intent creation failed:", errorMsg);
-        setIntentError(errorMsg);
+        
+        // Check if this is an "account exists" error
+        if (errorMsg.toLowerCase().includes("already exists") || errorMsg.toLowerCase().includes("log in")) {
+          setIntentError("account_exists");
+        } else {
+          setIntentError(errorMsg);
+        }
         toast.error(errorMsg);
         return;
       }
@@ -528,6 +537,29 @@ const Checkout = () => {
                         <Loader2 className="w-6 h-6 animate-spin text-primary mb-2" />
                         <p className="text-sm text-muted-foreground">Initializing payment...</p>
                       </>
+                    ) : intentError === "account_exists" ? (
+                      <div className="text-center space-y-3">
+                        <p className="text-sm text-destructive">
+                          An account with this email already exists.
+                        </p>
+                        <div className="flex flex-col gap-2">
+                          <Link to="/auth">
+                            <Button variant="default" size="sm" className="w-full">
+                              Log in instead
+                            </Button>
+                          </Link>
+                          <Button 
+                            onClick={() => {
+                              setEmail("");
+                              setIntentError(null);
+                            }} 
+                            variant="outline" 
+                            size="sm"
+                          >
+                            Use a different email
+                          </Button>
+                        </div>
+                      </div>
                     ) : intentError ? (
                       <div className="text-center">
                         <p className="text-sm text-destructive mb-3">{intentError}</p>
