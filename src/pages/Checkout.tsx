@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Elements } from "@stripe/react-stripe-js";
@@ -173,26 +173,23 @@ const Checkout = () => {
 
   const displayPrice = appliedCoupon ? appliedCoupon.discounted_price : 25;
 
-  // Stripe Elements appearance
-  const appearance = {
-    theme: 'stripe' as const,
-    variables: {
-      colorPrimary: 'hsl(174, 100%, 29%)',
-      colorBackground: 'hsl(0, 0%, 100%)',
-      colorText: 'hsl(240, 10%, 3.9%)',
-      colorDanger: 'hsl(0, 84.2%, 60.2%)',
-      fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif',
-      borderRadius: '8px',
-    },
-  };
-
-  // Deferred intent options - no clientSecret needed upfront
-  const elementsOptions = {
+  // Stripe Elements options - memoized to prevent unnecessary re-renders
+  const elementsOptions = useMemo(() => ({
     mode: 'subscription' as const,
-    amount: Math.round(displayPrice * 100), // in cents
+    amount: Math.round(displayPrice * 100),
     currency: 'usd',
-    appearance,
-  };
+    appearance: {
+      theme: 'stripe' as const,
+      variables: {
+        colorPrimary: 'hsl(174, 100%, 29%)',
+        colorBackground: 'hsl(0, 0%, 100%)',
+        colorText: 'hsl(240, 10%, 3.9%)',
+        colorDanger: 'hsl(0, 84.2%, 60.2%)',
+        fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif',
+        borderRadius: '8px',
+      },
+    },
+  }), [displayPrice]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -433,7 +430,6 @@ const Checkout = () => {
                   <Elements
                     stripe={stripePromise}
                     options={elementsOptions}
-                    key={displayPrice}
                   >
                     <CheckoutForm 
                       displayPrice={displayPrice} 
