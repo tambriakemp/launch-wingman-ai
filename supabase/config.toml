@@ -251,3 +251,6 @@ verify_jwt = false
 
 [functions.surecart-create-checkout]
 verify_jwt = false
+
+[functions.create-subscription-intent]
+verify_jwt = false

@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Elements } from "@stripe/react-stripe-js";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { stripePromise } from "@/lib/stripe";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import CheckoutForm from "@/components/checkout/CheckoutForm";
 import { 
   Check, 
   Loader2, 
@@ -16,10 +19,11 @@ import {
   Sparkles,
   Tag,
   X,
-  Lock,
   Mail,
   User,
-  ArrowRight
+  Eye,
+  EyeOff,
+  KeyRound
 } from "lucide-react";
 import { z } from "zod";
 
@@ -28,6 +32,11 @@ const newUserSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 const upgradeSchema = z.object({
@@ -57,6 +66,7 @@ const proFeatures = [
 
 const Checkout = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const isUpgrade = searchParams.get("upgrade") === "true" || !!user;
   
@@ -64,6 +74,9 @@ const Checkout = () => {
   const [email, setEmail] = useState(user?.email || "");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   
   // Coupon state
   const [promoCode, setPromoCode] = useState("");
@@ -74,8 +87,10 @@ const Checkout = () => {
   // Form validation
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  // Processing state
-  const [isProcessing, setIsProcessing] = useState(false);
+  // Stripe state
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [isCreatingSubscription, setIsCreatingSubscription] = useState(false);
+  const [subscriptionCreated, setSubscriptionCreated] = useState(false);
 
   // Pre-fill name from profile if upgrading
   useEffect(() => {
@@ -103,7 +118,7 @@ const Checkout = () => {
     setPromoError("");
     
     try {
-      const { data, error } = await supabase.functions.invoke('validate-surecart-coupon', {
+      const { data, error } = await supabase.functions.invoke('validate-coupon', {
         body: { coupon_code: promoCode.trim().toUpperCase() }
       });
       
@@ -127,6 +142,11 @@ const Checkout = () => {
     setAppliedCoupon(null);
     setPromoCode("");
     setPromoError("");
+    // Reset subscription if already created with coupon
+    if (subscriptionCreated) {
+      setClientSecret(null);
+      setSubscriptionCreated(false);
+    }
   };
 
   const validateForm = (): boolean => {
@@ -138,6 +158,8 @@ const Checkout = () => {
           email,
           firstName,
           lastName,
+          password,
+          confirmPassword,
         });
       }
       setErrors({});
@@ -156,56 +178,68 @@ const Checkout = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleCreateSubscription = async () => {
     if (!validateForm()) {
       toast.error("Please fix the form errors");
       return;
     }
 
-    setIsProcessing(true);
+    setIsCreatingSubscription(true);
 
     try {
-      // For upgrade, use the user's email; for new users, use the form email
       const checkoutEmail = isUpgrade ? user?.email : email;
       
       if (!checkoutEmail) {
         toast.error("Email is required");
-        setIsProcessing(false);
+        setIsCreatingSubscription(false);
         return;
       }
 
-      // Call edge function to create hosted checkout session
-      const { data, error } = await supabase.functions.invoke('surecart-create-checkout', {
+      const { data, error } = await supabase.functions.invoke('create-subscription-intent', {
         body: {
           email: checkoutEmail,
           firstName: firstName || user?.user_metadata?.first_name || '',
           lastName: lastName || user?.user_metadata?.last_name || '',
+          password: isUpgrade ? undefined : password,
           couponCode: appliedCoupon?.coupon_id,
           isUpgrade,
+          userId: user?.id,
         }
       });
 
       if (error || !data?.success) {
-        throw new Error(data?.error || error?.message || "Failed to create checkout");
+        throw new Error(data?.error || error?.message || "Failed to create subscription");
       }
 
-      if (!data.checkout_url) {
-        throw new Error("Checkout URL not returned");
-      }
-
-      // Redirect to full-page checkout
-      window.location.href = data.checkout_url;
-
+      setClientSecret(data.clientSecret);
+      setSubscriptionCreated(true);
+      
     } catch (error) {
-      console.error("Checkout error:", error);
+      console.error("Subscription creation error:", error);
       toast.error(error instanceof Error ? error.message : "Failed to start checkout. Please try again.");
-      setIsProcessing(false);
+    } finally {
+      setIsCreatingSubscription(false);
     }
   };
 
+  const handlePaymentSuccess = () => {
+    navigate("/checkout/success");
+  };
+
   const displayPrice = appliedCoupon ? appliedCoupon.discounted_price : 25;
+
+  // Stripe Elements appearance
+  const appearance = {
+    theme: 'stripe' as const,
+    variables: {
+      colorPrimary: 'hsl(174, 100%, 29%)',
+      colorBackground: 'hsl(0, 0%, 100%)',
+      colorText: 'hsl(240, 10%, 3.9%)',
+      colorDanger: 'hsl(0, 84.2%, 60.2%)',
+      fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif',
+      borderRadius: '8px',
+    },
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -237,7 +271,7 @@ const Checkout = () => {
             </div>
 
             <h1 className="text-3xl lg:text-4xl font-bold mb-4">
-              {isUpgrade ? "Upgrade to Pro" : "Complete Your Order"}
+              {isUpgrade ? "Upgrade to Pro" : "Start Your Pro Journey"}
             </h1>
             
             <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-6 mb-8">
@@ -277,7 +311,7 @@ const Checkout = () => {
 
             <div className="flex items-center gap-2 text-sm text-primary-foreground/70">
               <Shield className="w-4 h-4" />
-              <span>Secure checkout powered by 256-bit encryption</span>
+              <span>Secure checkout powered by Stripe</span>
             </div>
           </motion.div>
         </div>
@@ -290,13 +324,13 @@ const Checkout = () => {
             transition={{ delay: 0.2 }}
             className="w-full max-w-md"
           >
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-6">
               {/* Account Fields - Only for new users */}
               {!isUpgrade && (
                 <div className="space-y-4">
                   <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
                     <User className="w-5 h-5" />
-                    Your Information
+                    Create Your Account
                   </h2>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -307,6 +341,7 @@ const Checkout = () => {
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
                         placeholder="John"
+                        disabled={subscriptionCreated}
                       />
                       {errors.firstName && <p className="text-sm text-destructive">{errors.firstName}</p>}
                     </div>
@@ -317,6 +352,7 @@ const Checkout = () => {
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
                         placeholder="Doe"
+                        disabled={subscriptionCreated}
                       />
                       {errors.lastName && <p className="text-sm text-destructive">{errors.lastName}</p>}
                     </div>
@@ -333,9 +369,51 @@ const Checkout = () => {
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
                         className="pl-10"
+                        disabled={subscriptionCreated}
                       />
                     </div>
                     {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                      <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="pl-10 pr-10"
+                        disabled={subscriptionCreated}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <div className="relative">
+                      <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="confirmPassword"
+                        type={showPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="pl-10"
+                        disabled={subscriptionCreated}
+                      />
+                    </div>
+                    {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
                   </div>
                 </div>
               )}
@@ -348,24 +426,6 @@ const Checkout = () => {
                   </p>
                 </div>
               )}
-
-              {/* Payment Info Section */}
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                  <CreditCard className="w-5 h-5" />
-                  Payment
-                </h2>
-
-                <div className="bg-muted/50 rounded-lg p-4 text-center">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    You'll enter your card details on the next page
-                  </p>
-                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                    <Lock className="w-4 h-4" />
-                    <span>Secure checkout powered by SureCart</span>
-                  </div>
-                </div>
-              </div>
 
               {/* Promo Code Section */}
               <div className="space-y-2">
@@ -380,11 +440,12 @@ const Checkout = () => {
                       }}
                       onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleValidateCoupon())}
                       className="uppercase"
+                      disabled={subscriptionCreated}
                     />
                     <Button 
                       type="button"
                       onClick={handleValidateCoupon}
-                      disabled={isValidatingCoupon || !promoCode.trim()}
+                      disabled={isValidatingCoupon || !promoCode.trim() || subscriptionCreated}
                       variant="outline"
                     >
                       {isValidatingCoupon ? (
@@ -404,6 +465,7 @@ const Checkout = () => {
                       type="button"
                       onClick={handleRemoveCoupon}
                       className="text-muted-foreground hover:text-foreground"
+                      disabled={isCreatingSubscription}
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -414,25 +476,65 @@ const Checkout = () => {
                 )}
               </div>
 
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full"
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Redirecting to payment...
-                  </>
-                ) : (
-                  <>
-                    Continue to Payment - ${displayPrice.toFixed(2)}/month
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </>
-                )}
-              </Button>
+              {/* Payment Section */}
+              {!subscriptionCreated ? (
+                <div className="space-y-4">
+                  <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                    <CreditCard className="w-5 h-5" />
+                    Payment
+                  </h2>
+                  
+                  <div className="bg-muted/50 rounded-lg p-4 text-center">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {isUpgrade 
+                        ? "Click continue to enter your payment details"
+                        : "Fill in your account details above, then click continue to enter payment"
+                      }
+                    </p>
+                  </div>
+
+                  <Button
+                    type="button"
+                    size="lg"
+                    className="w-full"
+                    onClick={handleCreateSubscription}
+                    disabled={isCreatingSubscription}
+                  >
+                    {isCreatingSubscription ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Setting up...
+                      </>
+                    ) : (
+                      <>
+                        Continue to Payment
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                    <CreditCard className="w-5 h-5" />
+                    Payment Details
+                  </h2>
+
+                  {clientSecret && stripePromise && (
+                    <Elements
+                      stripe={stripePromise}
+                      options={{
+                        clientSecret,
+                        appearance,
+                      }}
+                    >
+                      <CheckoutForm 
+                        displayPrice={displayPrice} 
+                        onSuccess={handlePaymentSuccess}
+                      />
+                    </Elements>
+                  )}
+                </div>
+              )}
 
               <p className="text-xs text-center text-muted-foreground">
                 By subscribing, you agree to our{" "}
@@ -441,11 +543,10 @@ const Checkout = () => {
                 <Link to="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>.
                 Cancel anytime.
               </p>
-            </form>
+            </div>
           </motion.div>
         </div>
       </div>
-
     </div>
   );
 };
