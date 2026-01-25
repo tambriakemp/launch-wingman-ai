@@ -39,10 +39,6 @@ const newUserSchema = z.object({
   path: ["confirmPassword"],
 });
 
-const upgradeSchema = z.object({
-  // No fields needed for upgrade - user is already authenticated
-});
-
 interface CouponInfo {
   coupon_id: string;
   name: string;
@@ -86,11 +82,6 @@ const Checkout = () => {
   
   // Form validation
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
-  // Stripe state
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [isCreatingSubscription, setIsCreatingSubscription] = useState(false);
-  const [subscriptionCreated, setSubscriptionCreated] = useState(false);
 
   // Pre-fill name from profile if upgrading
   useEffect(() => {
@@ -142,17 +133,14 @@ const Checkout = () => {
     setAppliedCoupon(null);
     setPromoCode("");
     setPromoError("");
-    // Reset subscription if already created with coupon
-    if (subscriptionCreated) {
-      setClientSecret(null);
-      setSubscriptionCreated(false);
-    }
   };
 
   const validateForm = (): boolean => {
     try {
       if (isUpgrade) {
-        upgradeSchema.parse({});
+        // No validation needed for upgrade - user is already authenticated
+        setErrors({});
+        return true;
       } else {
         newUserSchema.parse({
           email,
@@ -173,52 +161,9 @@ const Checkout = () => {
           }
         });
         setErrors(fieldErrors);
+        toast.error("Please fix the form errors");
       }
       return false;
-    }
-  };
-
-  const handleCreateSubscription = async () => {
-    if (!validateForm()) {
-      toast.error("Please fix the form errors");
-      return;
-    }
-
-    setIsCreatingSubscription(true);
-
-    try {
-      const checkoutEmail = isUpgrade ? user?.email : email;
-      
-      if (!checkoutEmail) {
-        toast.error("Email is required");
-        setIsCreatingSubscription(false);
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke('create-subscription-intent', {
-        body: {
-          email: checkoutEmail,
-          firstName: firstName || user?.user_metadata?.first_name || '',
-          lastName: lastName || user?.user_metadata?.last_name || '',
-          password: isUpgrade ? undefined : password,
-          couponCode: appliedCoupon?.coupon_id,
-          isUpgrade,
-          userId: user?.id,
-        }
-      });
-
-      if (error || !data?.success) {
-        throw new Error(data?.error || error?.message || "Failed to create subscription");
-      }
-
-      setClientSecret(data.clientSecret);
-      setSubscriptionCreated(true);
-      
-    } catch (error) {
-      console.error("Subscription creation error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to start checkout. Please try again.");
-    } finally {
-      setIsCreatingSubscription(false);
     }
   };
 
@@ -239,6 +184,14 @@ const Checkout = () => {
       fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif',
       borderRadius: '8px',
     },
+  };
+
+  // Deferred intent options - no clientSecret needed upfront
+  const elementsOptions = {
+    mode: 'subscription' as const,
+    amount: Math.round(displayPrice * 100), // in cents
+    currency: 'usd',
+    appearance,
   };
 
   return (
@@ -341,7 +294,6 @@ const Checkout = () => {
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
                         placeholder="John"
-                        disabled={subscriptionCreated}
                       />
                       {errors.firstName && <p className="text-sm text-destructive">{errors.firstName}</p>}
                     </div>
@@ -352,7 +304,6 @@ const Checkout = () => {
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
                         placeholder="Doe"
-                        disabled={subscriptionCreated}
                       />
                       {errors.lastName && <p className="text-sm text-destructive">{errors.lastName}</p>}
                     </div>
@@ -369,7 +320,6 @@ const Checkout = () => {
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
                         className="pl-10"
-                        disabled={subscriptionCreated}
                       />
                     </div>
                     {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
@@ -386,7 +336,6 @@ const Checkout = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
                         className="pl-10 pr-10"
-                        disabled={subscriptionCreated}
                       />
                       <button
                         type="button"
@@ -410,7 +359,6 @@ const Checkout = () => {
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
                         className="pl-10"
-                        disabled={subscriptionCreated}
                       />
                     </div>
                     {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
@@ -427,6 +375,34 @@ const Checkout = () => {
                 </div>
               )}
 
+              {/* Payment Section - Always visible */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                  <CreditCard className="w-5 h-5" />
+                  Payment Details
+                </h2>
+
+                {stripePromise && (
+                  <Elements
+                    stripe={stripePromise}
+                    options={elementsOptions}
+                  >
+                    <CheckoutForm 
+                      displayPrice={displayPrice} 
+                      email={isUpgrade ? (user?.email || "") : email}
+                      firstName={firstName}
+                      lastName={lastName}
+                      password={password}
+                      couponCode={appliedCoupon?.coupon_id}
+                      isUpgrade={isUpgrade}
+                      userId={user?.id}
+                      validateForm={validateForm}
+                      onSuccess={handlePaymentSuccess}
+                    />
+                  </Elements>
+                )}
+              </div>
+
               {/* Promo Code Section */}
               <div className="space-y-2">
                 {!appliedCoupon ? (
@@ -440,12 +416,11 @@ const Checkout = () => {
                       }}
                       onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleValidateCoupon())}
                       className="uppercase"
-                      disabled={subscriptionCreated}
                     />
                     <Button 
                       type="button"
                       onClick={handleValidateCoupon}
-                      disabled={isValidatingCoupon || !promoCode.trim() || subscriptionCreated}
+                      disabled={isValidatingCoupon || !promoCode.trim()}
                       variant="outline"
                     >
                       {isValidatingCoupon ? (
@@ -465,7 +440,6 @@ const Checkout = () => {
                       type="button"
                       onClick={handleRemoveCoupon}
                       className="text-muted-foreground hover:text-foreground"
-                      disabled={isCreatingSubscription}
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -475,66 +449,6 @@ const Checkout = () => {
                   <p className="text-sm text-destructive">{promoError}</p>
                 )}
               </div>
-
-              {/* Payment Section */}
-              {!subscriptionCreated ? (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                    <CreditCard className="w-5 h-5" />
-                    Payment
-                  </h2>
-                  
-                  <div className="bg-muted/50 rounded-lg p-4 text-center">
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {isUpgrade 
-                        ? "Click continue to enter your payment details"
-                        : "Fill in your account details above, then click continue to enter payment"
-                      }
-                    </p>
-                  </div>
-
-                  <Button
-                    type="button"
-                    size="lg"
-                    className="w-full"
-                    onClick={handleCreateSubscription}
-                    disabled={isCreatingSubscription}
-                  >
-                    {isCreatingSubscription ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        Setting up...
-                      </>
-                    ) : (
-                      <>
-                        Continue to Payment
-                      </>
-                    )}
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                    <CreditCard className="w-5 h-5" />
-                    Payment Details
-                  </h2>
-
-                  {clientSecret && stripePromise && (
-                    <Elements
-                      stripe={stripePromise}
-                      options={{
-                        clientSecret,
-                        appearance,
-                      }}
-                    >
-                      <CheckoutForm 
-                        displayPrice={displayPrice} 
-                        onSuccess={handlePaymentSuccess}
-                      />
-                    </Elements>
-                  )}
-                </div>
-              )}
 
               <p className="text-xs text-center text-muted-foreground">
                 By subscribing, you agree to our{" "}

@@ -3,13 +3,33 @@ import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js"
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowRight, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CheckoutFormProps {
   displayPrice: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+  couponCode?: string;
+  isUpgrade: boolean;
+  userId?: string;
+  validateForm: () => boolean;
   onSuccess: () => void;
 }
 
-const CheckoutForm = ({ displayPrice, onSuccess }: CheckoutFormProps) => {
+const CheckoutForm = ({ 
+  displayPrice, 
+  email,
+  firstName,
+  lastName,
+  password,
+  couponCode,
+  isUpgrade,
+  userId,
+  validateForm,
+  onSuccess 
+}: CheckoutFormProps) => {
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -21,20 +41,52 @@ const CheckoutForm = ({ displayPrice, onSuccess }: CheckoutFormProps) => {
       return;
     }
 
+    // Validate form fields first
+    if (!validateForm()) {
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
-      const { error, paymentIntent } = await stripe.confirmPayment({
+      // Step 1: Submit the elements to validate payment details
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        toast.error(submitError.message || "Please check your payment details");
+        setIsProcessing(false);
+        return;
+      }
+
+      // Step 2: Create subscription (this creates user + Stripe customer + subscription)
+      const { data, error } = await supabase.functions.invoke('create-subscription-intent', {
+        body: {
+          email,
+          firstName,
+          lastName,
+          password: isUpgrade ? undefined : password,
+          couponCode,
+          isUpgrade,
+          userId,
+        }
+      });
+
+      if (error || !data?.success || !data?.clientSecret) {
+        throw new Error(data?.error || error?.message || "Failed to create subscription");
+      }
+
+      // Step 3: Confirm payment with the returned clientSecret
+      const { error: paymentError, paymentIntent } = await stripe.confirmPayment({
         elements,
+        clientSecret: data.clientSecret,
         confirmParams: {
           return_url: `${window.location.origin}/checkout/success`,
         },
         redirect: "if_required",
       });
 
-      if (error) {
-        if (error.type === "card_error" || error.type === "validation_error") {
-          toast.error(error.message || "Payment failed");
+      if (paymentError) {
+        if (paymentError.type === "card_error" || paymentError.type === "validation_error") {
+          toast.error(paymentError.message || "Payment failed");
         } else {
           toast.error("An unexpected error occurred");
         }
@@ -48,7 +100,7 @@ const CheckoutForm = ({ displayPrice, onSuccess }: CheckoutFormProps) => {
       }
     } catch (err) {
       console.error("Payment error:", err);
-      toast.error("Payment failed. Please try again.");
+      toast.error(err instanceof Error ? err.message : "Payment failed. Please try again.");
       setIsProcessing(false);
     }
   };
