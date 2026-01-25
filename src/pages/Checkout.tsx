@@ -375,34 +375,6 @@ const Checkout = () => {
                 </div>
               )}
 
-              {/* Payment Section - Always visible */}
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                  <CreditCard className="w-5 h-5" />
-                  Payment Details
-                </h2>
-
-                {stripePromise && (
-                  <Elements
-                    stripe={stripePromise}
-                    options={elementsOptions}
-                  >
-                    <CheckoutForm 
-                      displayPrice={displayPrice} 
-                      email={isUpgrade ? (user?.email || "") : email}
-                      firstName={firstName}
-                      lastName={lastName}
-                      password={password}
-                      couponCode={appliedCoupon?.coupon_id}
-                      isUpgrade={isUpgrade}
-                      userId={user?.id}
-                      validateForm={validateForm}
-                      onSuccess={handlePaymentSuccess}
-                    />
-                  </Elements>
-                )}
-              </div>
-
               {/* Promo Code Section */}
               <div className="space-y-2">
                 {!appliedCoupon ? (
@@ -447,6 +419,41 @@ const Checkout = () => {
                 )}
                 {promoError && (
                   <p className="text-sm text-destructive">{promoError}</p>
+                )}
+              </div>
+
+              {/* Payment Section - Always visible */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                  <CreditCard className="w-5 h-5" />
+                  Payment Details
+                </h2>
+
+                {stripePromise ? (
+                  <Elements
+                    stripe={stripePromise}
+                    options={elementsOptions}
+                    key={displayPrice}
+                  >
+                    <CheckoutForm 
+                      displayPrice={displayPrice} 
+                      email={isUpgrade ? (user?.email || "") : email}
+                      firstName={firstName}
+                      lastName={lastName}
+                      password={password}
+                      couponCode={appliedCoupon?.coupon_id}
+                      isUpgrade={isUpgrade}
+                      userId={user?.id}
+                      validateForm={validateForm}
+                      onSuccess={handlePaymentSuccess}
+                    />
+                  </Elements>
+                ) : (
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 text-center">
+                    <p className="text-sm text-destructive">
+                      Stripe is not configured. Please check your environment settings.
+                    </p>
+                  </div>
                 )}
               </div>
 
