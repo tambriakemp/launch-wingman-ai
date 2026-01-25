@@ -34,6 +34,7 @@ export const useAuth = () => {
 const ADMIN_SESSION_KEY = 'coach_hub_admin_session';
 const IMPERSONATION_KEY = 'coach_hub_impersonation';
 const ADMIN_INFO_KEY = 'coach_hub_admin_info';
+const EXPLICIT_LOGOUT_KEY = 'launchely_explicit_logout';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -145,6 +146,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (currentUserId.current === newUserId && isInitialized.current) {
             // Same user, just token refresh - skip state update to prevent re-renders
             return;
+          }
+        }
+        
+        // Detect unexpected session loss (not explicit logout)
+        if (event === 'SIGNED_OUT') {
+          const wasExplicitLogout = localStorage.getItem(EXPLICIT_LOGOUT_KEY) === 'true';
+          localStorage.removeItem(EXPLICIT_LOGOUT_KEY);
+          
+          if (!wasExplicitLogout && currentUserId.current) {
+            console.warn('[AuthContext] Unexpected session loss detected, attempting recovery...');
+            
+            // Attempt to recover session after a brief delay
+            setTimeout(async () => {
+              try {
+                const { data } = await supabase.auth.getSession();
+                if (!data.session) {
+                  // Session truly expired - notify user
+                  toast.warning('Your session expired. Please log in again.');
+                }
+              } catch (err) {
+                console.error('[AuthContext] Session recovery failed:', err);
+              }
+            }, 1000);
           }
         }
         
@@ -274,10 +298,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     trackLogout();
     clearUserId();
     
+    // Mark this as an explicit logout to prevent recovery attempts
+    localStorage.setItem(EXPLICIT_LOGOUT_KEY, 'true');
+    
     // Clear impersonation data if exists
     localStorage.removeItem(ADMIN_SESSION_KEY);
     localStorage.removeItem(IMPERSONATION_KEY);
     localStorage.removeItem(ADMIN_INFO_KEY);
+    // Clear admin cache on logout
+    localStorage.removeItem('launchely_admin_status_cache');
     setIsImpersonating(false);
     setImpersonatedUserEmail(null);
     setIsSubscribed(false);
