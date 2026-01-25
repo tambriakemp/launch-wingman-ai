@@ -42,6 +42,49 @@ async function triggerSureContactSync(email: string, eventType: string) {
   }
 }
 
+// Trigger SureContact order sync in background
+interface OrderData {
+  email: string;
+  order_id: string;
+  total: number;
+  currency: string;
+  status: 'completed' | 'refunded' | 'pending';
+  products: Array<{ name: string; price_id: string; quantity: number; amount: number }>;
+  created_at: string;
+}
+
+async function triggerSureContactOrderSync(orderData: OrderData) {
+  const baseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  
+  try {
+    const response = await fetch(`${baseUrl}/functions/v1/surecontact-webhook`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({
+        action: "sync_order",
+        ...orderData,
+      }),
+    });
+    
+    logStep("SureContact order sync triggered", { 
+      email: orderData.email, 
+      orderId: orderData.order_id, 
+      total: orderData.total,
+      status: response.status 
+    });
+  } catch (error) {
+    logStep("SureContact order sync error", { 
+      email: orderData.email, 
+      orderId: orderData.order_id, 
+      error: String(error) 
+    });
+  }
+}
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -116,6 +159,30 @@ serve(async (req) => {
         
         eventType = "subscription_started";
         logStep("Checkout completed", { customerEmail, mode: session.mode });
+
+        // Sync order to SureContact E-Commerce tab
+        if (customerEmail) {
+          try {
+            const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+            const orderData: OrderData = {
+              email: customerEmail,
+              order_id: `STR-${session.id.substring(0, 20)}`,
+              total: (session.amount_total || 0) / 100,
+              currency: session.currency?.toUpperCase() || 'USD',
+              status: 'completed',
+              products: lineItems.data.map((item: Stripe.LineItem) => ({
+                name: item.description || 'Launchely Pro',
+                price_id: item.price?.id || '',
+                quantity: item.quantity || 1,
+                amount: (item.amount_total || 0) / 100
+              })),
+              created_at: new Date(session.created * 1000).toISOString()
+            };
+            EdgeRuntime.waitUntil(triggerSureContactOrderSync(orderData));
+          } catch (lineItemsError) {
+            logStep("Failed to fetch line items for order sync", { error: String(lineItemsError) });
+          }
+        }
         break;
       }
 
@@ -165,6 +232,25 @@ serve(async (req) => {
         if (invoice.subscription) {
           eventType = "subscription_started";
           logStep("Invoice paid", { customerEmail, invoiceId: invoice.id });
+
+          // Sync renewal order to SureContact E-Commerce tab
+          if (customerEmail && invoice.lines?.data?.length > 0) {
+            const orderData: OrderData = {
+              email: customerEmail,
+              order_id: `STR-INV-${invoice.id?.substring(0, 15) || Date.now()}`,
+              total: (invoice.amount_paid || 0) / 100,
+              currency: invoice.currency?.toUpperCase() || 'USD',
+              status: 'completed',
+              products: invoice.lines.data.map((line: Stripe.InvoiceLineItem) => ({
+                name: line.description || 'Launchely Pro',
+                price_id: line.price?.id || '',
+                quantity: line.quantity || 1,
+                amount: (line.amount || 0) / 100
+              })),
+              created_at: new Date((invoice.created || Date.now() / 1000) * 1000).toISOString()
+            };
+            EdgeRuntime.waitUntil(triggerSureContactOrderSync(orderData));
+          }
         }
         break;
       }

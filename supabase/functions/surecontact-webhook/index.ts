@@ -433,7 +433,12 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { action, user_id, email, first_name, last_name, event_type } = await req.json();
+    const body = await req.json();
+    const { 
+      action, user_id, email, first_name, last_name, event_type,
+      // Order sync fields
+      order_id, total, currency, status, products, created_at 
+    } = body;
     console.log('SureContact sync called with action:', action);
 
     // Verify admin access for sync_all and sync_user actions
@@ -626,9 +631,155 @@ Deno.serve(async (req) => {
           });
         }
       }
+    } else if (action === 'sync_order') {
+      // Sync order to SureContact E-Commerce tab
+      if (!email || !order_id) {
+        return new Response(
+          JSON.stringify({ error: 'Email and order_id required for sync_order' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Syncing order ${order_id} for ${email}`);
+
+      // First, find or create the contact
+      const contactResult = await findOrCreateContact(sureContactApiKey, {
+        email,
+        first_name: first_name || '',
+        last_name: last_name || '',
+        subscription_status: 'pro', // Orders imply pro status
+        event_type: 'order',
+      }, config);
+
+      if (!contactResult.uuid) {
+        console.error('Failed to find/create contact for order sync:', contactResult.error);
+        await logWebhookResult(supabase, {
+          email,
+          event_type: 'order',
+          subscription_status: 'pro',
+          success: false,
+          response_status: 500,
+          error_message: contactResult.error || 'Failed to find/create contact',
+        });
+        return new Response(
+          JSON.stringify({ error: 'Failed to find/create contact' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Create order in SureContact
+      // Note: SureContact may have different API structures for orders
+      // We'll try the /contacts/{uuid}/orders endpoint first
+      const orderPayload = {
+        external_id: order_id,
+        total: total || 0,
+        currency: currency || 'USD',
+        status: status || 'completed',
+        source: 'Stripe',
+        ordered_at: created_at || new Date().toISOString(),
+        line_items: (products || []).map((p: { name: string; quantity: number; amount: number }) => ({
+          name: p.name,
+          quantity: p.quantity || 1,
+          price: p.amount || 0
+        }))
+      };
+
+      console.log('Creating order in SureContact:', JSON.stringify(orderPayload));
+
+      const orderResult = await sureContactRequest(
+        `/contacts/${contactResult.uuid}/orders`,
+        'POST',
+        sureContactApiKey,
+        orderPayload
+      );
+
+      // If orders endpoint doesn't exist, try updating custom fields with order data
+      if (!orderResult.success && orderResult.status === 404) {
+        console.log('Orders endpoint not found, updating custom fields instead');
+        
+        // Get existing contact to read current values
+        const contactData = await sureContactRequest(
+          `/contacts/${contactResult.uuid}`,
+          'GET',
+          sureContactApiKey
+        );
+
+        // Update contact with order summary in custom fields
+        const updatePayload: Record<string, string> = {};
+        
+        // Map custom fields for order tracking
+        const totalSpentField = config.get('custom_field:total_spent');
+        const lastOrderDateField = config.get('custom_field:last_order_date');
+        const lastOrderAmountField = config.get('custom_field:last_order_amount');
+        const totalOrdersField = config.get('custom_field:total_orders');
+
+        if (totalSpentField) {
+          const currentTotal = parseFloat(contactData.data?.custom_fields?.[totalSpentField.surecontact_uuid] || '0');
+          updatePayload[totalSpentField.surecontact_uuid] = String(currentTotal + (total || 0));
+        }
+        if (lastOrderDateField) {
+          updatePayload[lastOrderDateField.surecontact_uuid] = created_at?.split('T')[0] || new Date().toISOString().split('T')[0];
+        }
+        if (lastOrderAmountField) {
+          updatePayload[lastOrderAmountField.surecontact_uuid] = String(total || 0);
+        }
+        if (totalOrdersField) {
+          const currentOrders = parseInt(contactData.data?.custom_fields?.[totalOrdersField.surecontact_uuid] || '0');
+          updatePayload[totalOrdersField.surecontact_uuid] = String(currentOrders + 1);
+        }
+
+        if (Object.keys(updatePayload).length > 0) {
+          const updateResult = await sureContactRequest(
+            `/contacts/${contactResult.uuid}`,
+            'PUT',
+            sureContactApiKey,
+            { custom_fields: updatePayload }
+          );
+          
+          await logWebhookResult(supabase, {
+            email,
+            event_type: 'order',
+            subscription_status: 'pro',
+            success: updateResult.success,
+            response_status: updateResult.status,
+            error_message: updateResult.error,
+          });
+
+          results.push({ 
+            email, 
+            success: updateResult.success, 
+            error: updateResult.error 
+          });
+        } else {
+          console.log('No custom fields configured for order tracking');
+          await logWebhookResult(supabase, {
+            email,
+            event_type: 'order',
+            subscription_status: 'pro',
+            success: true,
+            response_status: 200,
+          });
+          results.push({ email, success: true });
+        }
+      } else {
+        await logWebhookResult(supabase, {
+          email,
+          event_type: 'order',
+          subscription_status: 'pro',
+          success: orderResult.success,
+          response_status: orderResult.status,
+          error_message: orderResult.error,
+        });
+        results.push({ 
+          email, 
+          success: orderResult.success, 
+          error: orderResult.error 
+        });
+      }
+
     } else {
       return new Response(
-        JSON.stringify({ error: 'Invalid action. Use: sync_new_signup, sync_user, or sync_all' }),
+        JSON.stringify({ error: 'Invalid action. Use: sync_new_signup, sync_user, sync_all, or sync_order' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
