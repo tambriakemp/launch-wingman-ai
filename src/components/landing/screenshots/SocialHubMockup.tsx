@@ -100,20 +100,18 @@ export const SocialHubMockup = () => {
         <div className="mt-4 flex items-center justify-center gap-4 pt-4 border-t border-border">
           <span className="text-xs text-muted-foreground">Connected:</span>
           <div className="flex gap-2">
-            {[
-              { icon: PinterestIcon, connected: true, color: "text-red-500" },
-              { icon: Facebook, connected: true, color: "text-blue-500" },
-              { icon: Instagram, connected: false, color: "text-muted-foreground" },
-            ].map((platform, i) => (
-              <div 
-                key={i}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                  platform.connected ? 'bg-muted' : 'bg-muted/50 opacity-50'
-                } ${platform.color}`}
-              >
-                <platform.icon />
-              </div>
-            ))}
+            {/* Pinterest - connected */}
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-muted text-red-500">
+              <PinterestIcon />
+            </div>
+            {/* Facebook - connected */}
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-muted text-blue-500">
+              <Facebook className="w-4 h-4" />
+            </div>
+            {/* Instagram - not connected */}
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-muted/50 opacity-50 text-muted-foreground">
+              <Instagram className="w-4 h-4" />
+            </div>
           </div>
         </div>
       </div>
