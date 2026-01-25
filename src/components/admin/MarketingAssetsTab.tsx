@@ -2,10 +2,12 @@ import { useState, useRef, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, Loader2, Package, Image as ImageIcon } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Download, Loader2, Package, Image as ImageIcon, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { toPng } from 'html-to-image';
 import JSZip from 'jszip';
+import { MotionConfig } from 'framer-motion';
 
 // Import all mockup components
 import { DashboardMockup } from '@/components/landing/screenshots/DashboardMockup';
@@ -47,10 +49,40 @@ const mockups: MockupConfig[] = [
 
 type Resolution = '1x' | '2x' | '3x';
 
+// Theme CSS variables to inject for reliable capture
+const THEME_VARIABLES: Record<string, string> = {
+  '--background': '0 0% 100%',
+  '--foreground': '240 10% 3.9%',
+  '--card': '0 0% 100%',
+  '--card-foreground': '240 10% 3.9%',
+  '--popover': '0 0% 100%',
+  '--popover-foreground': '240 10% 3.9%',
+  '--primary': '240 5.9% 10%',
+  '--primary-foreground': '0 0% 98%',
+  '--secondary': '240 4.8% 95.9%',
+  '--secondary-foreground': '240 5.9% 10%',
+  '--muted': '240 4.8% 95.9%',
+  '--muted-foreground': '240 3.8% 46.1%',
+  '--accent': '47 100% 50%',
+  '--accent-foreground': '240 5.9% 10%',
+  '--destructive': '0 84.2% 60.2%',
+  '--destructive-foreground': '0 0% 98%',
+  '--border': '240 5.9% 90%',
+  '--input': '240 5.9% 90%',
+  '--ring': '240 5.9% 10%',
+  '--radius': '0.5rem',
+};
+
 export function MarketingAssetsTab() {
   const [resolution, setResolution] = useState<Resolution>('2x');
   const [downloading, setDownloading] = useState<string | null>(null);
   const [downloadingAll, setDownloadingAll] = useState(false);
+  const [previewing, setPreviewing] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<{
+    dataUrl: string;
+    mockupName: string;
+    mockupId: string;
+  } | null>(null);
   const mockupRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const getScale = (res: Resolution): number => {
@@ -63,15 +95,60 @@ export function MarketingAssetsTab() {
   };
 
   const captureElement = useCallback(async (element: HTMLElement, scale: number): Promise<string> => {
-    // Wait for any animations to settle
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Step 1: Wait for fonts to load
+    await document.fonts.ready;
     
+    // Step 2: Inject theme variables directly into element for reliable color resolution
+    Object.entries(THEME_VARIABLES).forEach(([key, value]) => {
+      element.style.setProperty(key, value);
+    });
+    
+    // Step 3: Force layout calculation with multiple RAF cycles
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setTimeout(resolve, 100);
+          });
+        });
+      });
+    });
+    
+    // Step 4: Capture with html-to-image
     return await toPng(element, {
       pixelRatio: scale,
       backgroundColor: '#ffffff',
       cacheBust: true,
+      skipAutoScale: true,
+      style: {
+        visibility: 'visible',
+        opacity: '1',
+      },
     });
   }, []);
+
+  const previewSingle = useCallback(async (mockup: MockupConfig) => {
+    const element = mockupRefs.current.get(mockup.id);
+    if (!element) {
+      toast.error(`Could not find mockup element for ${mockup.name}`);
+      return;
+    }
+
+    setPreviewing(mockup.id);
+    try {
+      const dataUrl = await captureElement(element, getScale(resolution));
+      setPreviewData({
+        dataUrl,
+        mockupName: mockup.name,
+        mockupId: mockup.id,
+      });
+    } catch (error) {
+      console.error('Failed to preview mockup:', error);
+      toast.error(`Failed to preview ${mockup.name}`);
+    } finally {
+      setPreviewing(null);
+    }
+  }, [resolution, captureElement]);
 
   const downloadSingle = useCallback(async (mockup: MockupConfig) => {
     const element = mockupRefs.current.get(mockup.id);
@@ -161,6 +238,16 @@ export function MarketingAssetsTab() {
     }
   }, []);
 
+  const handleDownloadFromPreview = useCallback(() => {
+    if (!previewData) return;
+    
+    const link = document.createElement('a');
+    link.download = `launchely-${previewData.mockupId}-mockup-${resolution}.png`;
+    link.href = previewData.dataUrl;
+    link.click();
+    toast.success(`Downloaded ${previewData.mockupName} mockup`);
+  }, [previewData, resolution]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -240,40 +327,107 @@ export function MarketingAssetsTab() {
                   </div>
                 </div>
                 
-                {/* Hidden Full-Size Capture Container (off-screen) */}
-                <div
-                  ref={(el) => setRef(mockup.id, el)}
-                  className="fixed -left-[9999px] top-0 pointer-events-none"
-                  aria-hidden="true"
-                >
-                  <MockupComponent />
+                {/* Buttons Row */}
+                <div className="flex gap-2">
+                  {/* Preview Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 gap-2"
+                    onClick={() => previewSingle(mockup)}
+                    disabled={previewing === mockup.id || downloading === mockup.id || downloadingAll}
+                  >
+                    {previewing === mockup.id ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4" />
+                        Preview
+                      </>
+                    )}
+                  </Button>
+                  
+                  {/* Download Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 gap-2"
+                    onClick={() => downloadSingle(mockup)}
+                    disabled={downloading === mockup.id || previewing === mockup.id || downloadingAll}
+                  >
+                    {downloading === mockup.id ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Capturing...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4" />
+                        Download
+                      </>
+                    )}
+                  </Button>
                 </div>
-                
-                {/* Download Button */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full gap-2"
-                  onClick={() => downloadSingle(mockup)}
-                  disabled={downloading === mockup.id || downloadingAll}
-                >
-                  {downloading === mockup.id ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Capturing...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4" />
-                      Download PNG
-                    </>
-                  )}
-                </Button>
               </CardContent>
             </Card>
           );
         })}
       </div>
+
+      {/* Hidden Capture Containers - wrapped in MotionConfig to disable animations */}
+      <MotionConfig reducedMotion="always">
+        <div className="fixed -left-[9999px] top-0 pointer-events-none" aria-hidden="true">
+          {mockups.map((mockup) => {
+            const MockupComponent = mockup.component;
+            return (
+              <div
+                key={mockup.id}
+                ref={(el) => setRef(mockup.id, el)}
+                style={{ visibility: 'visible' }}
+              >
+                <MockupComponent />
+              </div>
+            );
+          })}
+        </div>
+      </MotionConfig>
+
+      {/* Preview Modal */}
+      <Dialog open={!!previewData} onOpenChange={() => setPreviewData(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>{previewData?.mockupName} Preview</DialogTitle>
+          </DialogHeader>
+          
+          {previewData && (
+            <div className="flex flex-col items-center gap-4">
+              <div className="border rounded-lg overflow-hidden bg-white">
+                <img 
+                  src={previewData.dataUrl} 
+                  alt={`${previewData.mockupName} preview`}
+                  className="max-w-full h-auto"
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setPreviewData(null)}>
+                  Close
+                </Button>
+                <Button 
+                  onClick={handleDownloadFromPreview}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download PNG
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Info Footer */}
       <Card>
