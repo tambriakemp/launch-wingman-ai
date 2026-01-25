@@ -202,20 +202,41 @@ const Checkout = () => {
         }
       });
 
-      // Handle errors - supabase-js may put error info in different places
-      const errorMessage = data?.error || error?.message || (error as any)?.context?.body?.error;
+      // Extract error message - supabase-js puts response body in error.context for non-2xx
+      let errorMessage = "Failed to initialize payment";
+      
+      if (error) {
+        errorMessage = error.message;
+        
+        // Try to get the actual response body from FunctionsHttpError
+        try {
+          const errorContext = error as any;
+          if (errorContext.context && typeof errorContext.context.json === 'function') {
+            const responseBody = await errorContext.context.json();
+            if (responseBody?.error) {
+              errorMessage = responseBody.error;
+            }
+          }
+        } catch {
+          // Ignore JSON parsing errors
+        }
+      }
+      
+      // Also check if data has an error (in case it was returned despite non-2xx)
+      if (data?.error) {
+        errorMessage = data.error;
+      }
       
       if (error || !data?.success || !data?.clientSecret) {
-        const errorMsg = errorMessage || "Failed to initialize payment";
-        console.error("[Checkout] Intent creation failed:", errorMsg);
+        console.error("[Checkout] Intent creation failed:", errorMessage);
         
         // Check if this is an "account exists" error
-        if (errorMsg.toLowerCase().includes("already exists") || errorMsg.toLowerCase().includes("log in")) {
+        if (errorMessage.toLowerCase().includes("already exists") || errorMessage.toLowerCase().includes("log in")) {
           setIntentError("account_exists");
         } else {
-          setIntentError(errorMsg);
+          setIntentError(errorMessage);
         }
-        toast.error(errorMsg);
+        toast.error(errorMessage);
         return;
       }
 
