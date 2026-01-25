@@ -240,6 +240,14 @@ const Checkout = () => {
         return;
       }
 
+      // Handle free subscription (100% discount coupon)
+      if (data.clientSecret === "free_subscription") {
+        console.log("[Checkout] Free subscription - no payment required");
+        toast.success("Subscription activated!");
+        navigate("/projects?checkout=success");
+        return;
+      }
+
       console.log("[Checkout] Intent created successfully");
       setClientSecret(data.clientSecret);
     } catch (err) {
