@@ -92,9 +92,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     setSubscriptionLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('check-surecart-subscription');
+    const { data, error } = await supabase.functions.invoke('check-surecart-subscription');
       if (error) {
         console.error('Error checking subscription:', error);
+        setIsSubscribed(false);
+        setSubscriptionEnd(null);
+        setSubscriptionLoading(false);
         return;
       }
       
@@ -187,11 +190,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
       if (!isInitialized.current) {
-        currentUserId.current = initialSession?.user?.id ?? null;
-        setSession(initialSession);
-        setUser(initialSession?.user ?? null);
+        if (initialSession) {
+          // Validate the session is actually valid by attempting a refresh
+          const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError || !refreshed.session) {
+            // Session is stale, treat as logged out
+            console.warn('[AuthContext] Stale session detected, clearing');
+            currentUserId.current = null;
+            setSession(null);
+            setUser(null);
+            setSubscriptionLoading(false);
+          } else {
+            currentUserId.current = refreshed.session.user.id;
+            setSession(refreshed.session);
+            setUser(refreshed.session.user);
+          }
+        } else {
+          currentUserId.current = null;
+          setSession(null);
+          setUser(null);
+          setSubscriptionLoading(false);
+        }
         isInitialized.current = true;
         setLoading(false);
       }
@@ -199,6 +220,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Safety timeout to prevent infinite loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading || subscriptionLoading) {
+        console.warn('[AuthContext] Loading timeout - forcing completion');
+        setLoading(false);
+        setSubscriptionLoading(false);
+      }
+    }, 10000);
+    
+    return () => clearTimeout(timeout);
+  }, [loading, subscriptionLoading]);
 
   // Check subscription when session changes
   useEffect(() => {
