@@ -111,6 +111,59 @@ serve(async (req) => {
       logStep("Created Stripe customer", { customerId: stripeCustomerId });
     }
 
+    // Get the price details to calculate amount
+    const price = await stripe.prices.retrieve(PRO_PRICE_ID);
+    let amount = price.unit_amount || 0;
+    const currency = price.currency || 'usd';
+    logStep("Retrieved price", { priceId: PRO_PRICE_ID, amount, currency });
+
+    // Check if coupon applies and calculate final amount
+    let appliedCoupon: string | undefined;
+    if (couponCode) {
+      try {
+        const coupon = await stripe.coupons.retrieve(couponCode);
+        if (coupon.valid) {
+          appliedCoupon = couponCode;
+          if (coupon.percent_off) {
+            amount = Math.round(amount * (1 - coupon.percent_off / 100));
+          } else if (coupon.amount_off) {
+            amount = Math.max(0, amount - coupon.amount_off);
+          }
+          logStep("Applied coupon", { couponId: couponCode, finalAmount: amount });
+        }
+      } catch (couponError) {
+        logStep("Coupon not valid, skipping", { code: couponCode });
+      }
+    }
+
+    let clientSecret: string | null = null;
+
+    // Only create payment intent if amount > 0
+    if (amount > 0) {
+      // Create PaymentIntent explicitly
+      const paymentIntent = await stripe.paymentIntents.create({
+        customer: stripeCustomerId,
+        amount,
+        currency,
+        automatic_payment_methods: { enabled: true },
+        setup_future_usage: 'off_session',
+        metadata: {
+          supabase_user_id: supabaseUserId || '',
+          price_id: PRO_PRICE_ID,
+          is_upgrade: isUpgrade ? 'true' : 'false',
+        },
+      });
+      clientSecret = paymentIntent.client_secret;
+      logStep("Created payment intent", { 
+        paymentIntentId: paymentIntent.id, 
+        hasClientSecret: !!clientSecret 
+      });
+    } else {
+      // Free subscription due to 100% coupon
+      clientSecret = "free_subscription";
+      logStep("Free subscription - no payment required");
+    }
+
     // Build subscription options
     const subscriptionOptions: Stripe.SubscriptionCreateParams = {
       customer: stripeCustomerId,
@@ -119,58 +172,21 @@ serve(async (req) => {
       payment_settings: {
         save_default_payment_method: 'on_subscription',
       },
-      expand: ['latest_invoice.payment_intent'],
       metadata: {
         supabase_user_id: supabaseUserId || '',
         is_upgrade: isUpgrade ? 'true' : 'false',
-      }
+      },
     };
 
-    // Apply coupon if provided
-    if (couponCode) {
-      try {
-        const coupon = await stripe.coupons.retrieve(couponCode);
-        if (coupon.valid) {
-          subscriptionOptions.coupon = couponCode;
-          logStep("Applied coupon", { couponId: couponCode });
-        }
-      } catch (couponError) {
-        logStep("Coupon not valid, skipping", { code: couponCode });
-      }
+    if (appliedCoupon) {
+      subscriptionOptions.coupon = appliedCoupon;
     }
 
-    // Create subscription with incomplete payment
+    // Create subscription
     const subscription = await stripe.subscriptions.create(subscriptionOptions);
     logStep("Created subscription", { subscriptionId: subscription.id, status: subscription.status });
 
-    const invoice = subscription.latest_invoice as Stripe.Invoice;
-    logStep("Invoice details", { 
-      invoiceId: invoice?.id, 
-      invoiceStatus: invoice?.status,
-      paymentIntentType: typeof invoice?.payment_intent,
-      paymentIntentValue: invoice?.payment_intent
-    });
-
-    // Handle different payment_intent states
-    let clientSecret: string | null = null;
-    
-    if (invoice?.payment_intent) {
-      if (typeof invoice.payment_intent === 'string') {
-        // payment_intent is just an ID, need to retrieve it
-        logStep("Payment intent is string ID, retrieving...", { id: invoice.payment_intent });
-        const paymentIntent = await stripe.paymentIntents.retrieve(invoice.payment_intent);
-        clientSecret = paymentIntent.client_secret;
-      } else {
-        // payment_intent is expanded object
-        clientSecret = (invoice.payment_intent as Stripe.PaymentIntent).client_secret;
-      }
-    }
-
     if (!clientSecret) {
-      logStep("No client secret available", { 
-        hasInvoice: !!invoice, 
-        hasPaymentIntent: !!invoice?.payment_intent 
-      });
       throw new Error("Failed to create payment intent - no client secret returned");
     }
 
