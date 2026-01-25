@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Elements } from "@stripe/react-stripe-js";
@@ -83,6 +83,11 @@ const Checkout = () => {
   // Form validation
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Payment intent state
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [isCreatingIntent, setIsCreatingIntent] = useState(false);
+  const [intentError, setIntentError] = useState<string | null>(null);
+
   // Pre-fill name from profile if upgrading
   useEffect(() => {
     if (isUpgrade && user) {
@@ -118,6 +123,8 @@ const Checkout = () => {
       if (data?.valid) {
         setAppliedCoupon(data as CouponInfo);
         toast.success("Coupon applied!");
+        // Reset clientSecret so intent is recreated with new price
+        setClientSecret(null);
       } else {
         setPromoError(data?.error || "Invalid coupon code");
       }
@@ -133,9 +140,11 @@ const Checkout = () => {
     setAppliedCoupon(null);
     setPromoCode("");
     setPromoError("");
+    // Reset clientSecret so intent is recreated with original price
+    setClientSecret(null);
   };
 
-  const validateForm = (): boolean => {
+  const validateForm = useCallback((): boolean => {
     try {
       if (isUpgrade) {
         // No validation needed for upgrade - user is already authenticated
@@ -161,11 +170,64 @@ const Checkout = () => {
           }
         });
         setErrors(fieldErrors);
-        toast.error("Please fix the form errors");
       }
       return false;
     }
-  };
+  }, [isUpgrade, email, firstName, lastName, password, confirmPassword]);
+
+  // Create subscription intent when form is valid
+  const createSubscriptionIntent = useCallback(async () => {
+    // Don't create if already have a valid clientSecret
+    if (clientSecret) return;
+    
+    // Validate form first
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsCreatingIntent(true);
+    setIntentError(null);
+
+    try {
+      console.log("[Checkout] Creating subscription intent...");
+      const { data, error } = await supabase.functions.invoke('create-subscription-intent', {
+        body: {
+          email: isUpgrade ? user?.email : email,
+          firstName,
+          lastName,
+          password: isUpgrade ? undefined : password,
+          couponCode: appliedCoupon?.coupon_id,
+          isUpgrade,
+          userId: user?.id,
+        }
+      });
+
+      if (error || !data?.success || !data?.clientSecret) {
+        const errorMsg = data?.error || error?.message || "Failed to initialize payment";
+        console.error("[Checkout] Intent creation failed:", errorMsg);
+        setIntentError(errorMsg);
+        toast.error(errorMsg);
+        return;
+      }
+
+      console.log("[Checkout] Intent created successfully");
+      setClientSecret(data.clientSecret);
+    } catch (err) {
+      console.error("[Checkout] Error creating intent:", err);
+      const errorMsg = err instanceof Error ? err.message : "Failed to initialize payment";
+      setIntentError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setIsCreatingIntent(false);
+    }
+  }, [clientSecret, validateForm, isUpgrade, user, email, firstName, lastName, password, appliedCoupon]);
+
+  // Auto-create intent for upgrades (user already authenticated)
+  useEffect(() => {
+    if (isUpgrade && user && firstName && lastName && !clientSecret && !isCreatingIntent) {
+      createSubscriptionIntent();
+    }
+  }, [isUpgrade, user, firstName, lastName, clientSecret, isCreatingIntent, createSubscriptionIntent]);
 
   const handlePaymentSuccess = () => {
     navigate("/checkout/success");
@@ -173,23 +235,28 @@ const Checkout = () => {
 
   const displayPrice = appliedCoupon ? appliedCoupon.discounted_price : 25;
 
-  // Stripe Elements options - memoized to prevent unnecessary re-renders
-  const elementsOptions = useMemo(() => ({
-    mode: 'subscription' as const,
-    amount: Math.round(displayPrice * 100),
-    currency: 'usd',
-    appearance: {
-      theme: 'stripe' as const,
-      variables: {
-        colorPrimary: 'hsl(174, 100%, 29%)',
-        colorBackground: 'hsl(0, 0%, 100%)',
-        colorText: 'hsl(240, 10%, 3.9%)',
-        colorDanger: 'hsl(0, 84.2%, 60.2%)',
-        fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif',
-        borderRadius: '8px',
+  // Check if form is complete for new users
+  const isFormComplete = isUpgrade || (email && firstName && lastName && password && confirmPassword);
+
+  // Stripe Elements options - only create when we have clientSecret
+  const elementsOptions = useMemo(() => {
+    if (!clientSecret) return null;
+    
+    return {
+      clientSecret,
+      appearance: {
+        theme: 'stripe' as const,
+        variables: {
+          colorPrimary: 'hsl(174, 100%, 29%)',
+          colorBackground: 'hsl(0, 0%, 100%)',
+          colorText: 'hsl(240, 10%, 3.9%)',
+          colorDanger: 'hsl(0, 84.2%, 60.2%)',
+          fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif',
+          borderRadius: '8px',
+        },
       },
-    },
-  }), [displayPrice]);
+    };
+  }, [clientSecret]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -289,7 +356,10 @@ const Checkout = () => {
                       <Input
                         id="firstName"
                         value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
+                        onChange={(e) => {
+                          setFirstName(e.target.value);
+                          setClientSecret(null); // Reset intent on change
+                        }}
                         placeholder="John"
                       />
                       {errors.firstName && <p className="text-sm text-destructive">{errors.firstName}</p>}
@@ -299,7 +369,10 @@ const Checkout = () => {
                       <Input
                         id="lastName"
                         value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
+                        onChange={(e) => {
+                          setLastName(e.target.value);
+                          setClientSecret(null); // Reset intent on change
+                        }}
                         placeholder="Doe"
                       />
                       {errors.lastName && <p className="text-sm text-destructive">{errors.lastName}</p>}
@@ -314,7 +387,10 @@ const Checkout = () => {
                         id="email"
                         type="email"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setClientSecret(null); // Reset intent on change
+                        }}
                         placeholder="you@example.com"
                         className="pl-10"
                       />
@@ -330,7 +406,10 @@ const Checkout = () => {
                         id="password"
                         type={showPassword ? "text" : "password"}
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          setClientSecret(null); // Reset intent on change
+                        }}
                         placeholder="••••••••"
                         className="pl-10 pr-10"
                       />
@@ -353,7 +432,10 @@ const Checkout = () => {
                         id="confirmPassword"
                         type={showPassword ? "text" : "password"}
                         value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          setClientSecret(null); // Reset intent on change
+                        }}
                         placeholder="••••••••"
                         className="pl-10"
                       />
@@ -419,38 +501,54 @@ const Checkout = () => {
                 )}
               </div>
 
-              {/* Payment Section - Always visible */}
+              {/* Payment Section */}
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
                   <CreditCard className="w-5 h-5" />
                   Payment Details
                 </h2>
 
-                {stripePromise ? (
-                  <Elements
-                    stripe={stripePromise}
-                    options={elementsOptions}
-                  >
-                    <CheckoutForm 
-                      displayPrice={displayPrice} 
-                      email={isUpgrade ? (user?.email || "") : email}
-                      firstName={firstName}
-                      lastName={lastName}
-                      password={password}
-                      couponCode={appliedCoupon?.coupon_id}
-                      isUpgrade={isUpgrade}
-                      userId={user?.id}
-                      validateForm={validateForm}
-                      onSuccess={handlePaymentSuccess}
-                    />
-                  </Elements>
-                ) : (
+                {!stripePromise ? (
                   <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 text-center">
                     <p className="text-sm text-destructive">
                       Stripe is not configured. Please check your environment settings.
                     </p>
                   </div>
-                )}
+                ) : !isFormComplete ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center border border-dashed border-muted-foreground/30 rounded-lg">
+                    <User className="w-8 h-8 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      Please fill in your account details above to continue
+                    </p>
+                  </div>
+                ) : !clientSecret ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    {isCreatingIntent ? (
+                      <>
+                        <Loader2 className="w-6 h-6 animate-spin text-primary mb-2" />
+                        <p className="text-sm text-muted-foreground">Initializing payment...</p>
+                      </>
+                    ) : intentError ? (
+                      <div className="text-center">
+                        <p className="text-sm text-destructive mb-3">{intentError}</p>
+                        <Button onClick={createSubscriptionIntent} variant="outline" size="sm">
+                          Try Again
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button onClick={createSubscriptionIntent} className="w-full">
+                        Continue to Payment
+                      </Button>
+                    )}
+                  </div>
+                ) : elementsOptions ? (
+                  <Elements stripe={stripePromise} options={elementsOptions}>
+                    <CheckoutForm 
+                      displayPrice={displayPrice}
+                      onSuccess={handlePaymentSuccess}
+                    />
+                  </Elements>
+                ) : null}
               </div>
 
               <p className="text-xs text-center text-muted-foreground">
