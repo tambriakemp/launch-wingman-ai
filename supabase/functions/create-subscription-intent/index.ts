@@ -144,21 +144,45 @@ serve(async (req) => {
     logStep("Created subscription", { subscriptionId: subscription.id, status: subscription.status });
 
     const invoice = subscription.latest_invoice as Stripe.Invoice;
-    const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+    logStep("Invoice details", { 
+      invoiceId: invoice?.id, 
+      invoiceStatus: invoice?.status,
+      paymentIntentType: typeof invoice?.payment_intent,
+      paymentIntentValue: invoice?.payment_intent
+    });
 
-    if (!paymentIntent?.client_secret) {
-      throw new Error("Failed to create payment intent");
+    // Handle different payment_intent states
+    let clientSecret: string | null = null;
+    
+    if (invoice?.payment_intent) {
+      if (typeof invoice.payment_intent === 'string') {
+        // payment_intent is just an ID, need to retrieve it
+        logStep("Payment intent is string ID, retrieving...", { id: invoice.payment_intent });
+        const paymentIntent = await stripe.paymentIntents.retrieve(invoice.payment_intent);
+        clientSecret = paymentIntent.client_secret;
+      } else {
+        // payment_intent is expanded object
+        clientSecret = (invoice.payment_intent as Stripe.PaymentIntent).client_secret;
+      }
+    }
+
+    if (!clientSecret) {
+      logStep("No client secret available", { 
+        hasInvoice: !!invoice, 
+        hasPaymentIntent: !!invoice?.payment_intent 
+      });
+      throw new Error("Failed to create payment intent - no client secret returned");
     }
 
     logStep("Subscription created successfully", {
       subscriptionId: subscription.id,
-      paymentIntentId: paymentIntent.id,
+      hasClientSecret: !!clientSecret,
     });
 
     return new Response(JSON.stringify({
       success: true,
       subscriptionId: subscription.id,
-      clientSecret: paymentIntent.client_secret,
+      clientSecret,
       customerId: stripeCustomerId,
       userId: supabaseUserId,
     }), {
