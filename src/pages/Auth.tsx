@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Sparkles, ArrowLeft, Mail, Lock, Loader2, User } from "lucide-react";
+import { ArrowLeft, Mail, Lock, Loader2, User } from "lucide-react";
+import { LaunchelyIcon } from "@/components/ui/LaunchelyLogo";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -207,9 +208,7 @@ const Auth = () => {
             transition={{ delay: 0.2 }}
           >
             <Link to="/" className="flex items-center gap-3 mb-12">
-              <div className="w-14 h-14 bg-primary-foreground/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                <Sparkles className="w-7 h-7" />
-              </div>
+              <LaunchelyIcon className="w-14 h-14" />
               <span className="text-3xl font-bold">Launchely</span>
             </Link>
             <h1 className="text-5xl font-bold mb-6 leading-tight">
@@ -241,9 +240,7 @@ const Auth = () => {
             <Card variant="elevated" className="border-0 shadow-xl">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-center mb-4 lg:hidden">
-                  <div className="w-12 h-12 gradient-primary rounded-xl flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-primary-foreground" />
-                  </div>
+                  <LaunchelyIcon className="w-12 h-12" />
                 </div>
                 <CardTitle className="text-center">Reset Password</CardTitle>
                 <CardDescription className="text-center">
@@ -293,9 +290,7 @@ const Auth = () => {
             <Card variant="elevated" className="border-0 shadow-xl">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-center mb-4 lg:hidden">
-                  <div className="w-12 h-12 gradient-primary rounded-xl flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-primary-foreground" />
-                  </div>
+                  <LaunchelyIcon className="w-12 h-12" />
                 </div>
               </CardHeader>
               
