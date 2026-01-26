@@ -431,7 +431,7 @@ const AdminDashboard = () => {
 
     for (const user of eligibleUsers) {
       try {
-        const { error } = await supabase.functions.invoke('admin-manage-surecart-subscription', {
+        const { error } = await supabase.functions.invoke('admin-manage-subscription', {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
           },
@@ -517,14 +517,14 @@ const AdminDashboard = () => {
     setConfirmDialog({ open: false, action: 'cancel', user: null });
 
     try {
-      const { data, error } = await supabase.functions.invoke('admin-manage-surecart-subscription', {
+      const { data, error } = await supabase.functions.invoke('admin-manage-subscription', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
         body: {
           action,
           user_email: user.email,
-          surecart_subscription_id: user.stripe_subscription_id, // Using existing field for backwards compat
+          stripe_subscription_id: user.stripe_subscription_id,
         },
       });
 

@@ -836,12 +836,12 @@ supabase/
                             <p className="text-xs text-muted-foreground mt-1">Fetches user list with subscription data for admin panel</p>
                           </div>
                           <div className="p-3 bg-muted/50 rounded-lg">
-                            <code className="text-sm font-mono text-primary">admin-manage-surecart-subscription</code>
-                            <p className="text-xs text-muted-foreground mt-1">Handles granting/canceling subscriptions via SureCart</p>
+                            <code className="text-sm font-mono text-primary">admin-manage-subscription</code>
+                            <p className="text-xs text-muted-foreground mt-1">Handles granting/canceling subscriptions via Stripe</p>
                           </div>
                           <div className="p-3 bg-muted/50 rounded-lg">
-                            <code className="text-sm font-mono text-primary">check-surecart-subscription</code>
-                            <p className="text-xs text-muted-foreground mt-1">Validates user subscription status via SureCart</p>
+                            <code className="text-sm font-mono text-primary">check-subscription</code>
+                            <p className="text-xs text-muted-foreground mt-1">Validates user subscription status via Stripe</p>
                           </div>
                           <div className="p-3 bg-muted/50 rounded-lg">
                             <code className="text-sm font-mono text-primary">generate-*</code>
