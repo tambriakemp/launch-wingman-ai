@@ -203,12 +203,23 @@ function GenericPreview({ content, mediaUrl, mediaType, platform, accountName = 
 
 export function SocialPostPreview({ platforms, content, mediaUrl, mediaType, linkUrl, title, accountNames, threadPosts }: SocialPostPreviewProps) {
   const [activePlatform, setActivePlatform] = useState<string>(platforms[0] || "");
-  const [instagramPostType, setInstagramPostType] = useState<InstagramPostType>("reel");
+  const [instagramPostType, setInstagramPostType] = useState<InstagramPostType>("photo");
 
   useEffect(() => {
     if (platforms.length > 0 && !platforms.includes(activePlatform)) setActivePlatform(platforms[0]);
     else if (platforms.length > 0 && !activePlatform) setActivePlatform(platforms[0]);
   }, [platforms, activePlatform]);
+
+  // Auto-select Instagram post type based on media
+  useEffect(() => {
+    if (activePlatform === "instagram") {
+      if (mediaType === "video") {
+        setInstagramPostType("reel");
+      } else {
+        setInstagramPostType("photo");
+      }
+    }
+  }, [mediaType, activePlatform]);
 
   if (platforms.length === 0) return <div className="flex items-center justify-center h-full text-center p-4"><div><p className="text-sm text-muted-foreground">Select a platform above</p><p className="text-xs text-muted-foreground mt-1">to see preview</p></div></div>;
 
