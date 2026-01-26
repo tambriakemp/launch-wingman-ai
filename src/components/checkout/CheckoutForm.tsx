@@ -1,21 +1,24 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowRight, Lock } from "lucide-react";
+import { Loader2, ArrowRight, Lock, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface CheckoutFormProps {
   displayPrice: number;
   onSuccess: () => void;
 }
 
-const CheckoutForm = ({ 
+const CheckoutForm = forwardRef<HTMLFormElement, CheckoutFormProps>(({ 
   displayPrice, 
   onSuccess 
-}: CheckoutFormProps) => {
+}, ref) => {
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentElementReady, setPaymentElementReady] = useState(false);
+  const [paymentElementError, setPaymentElementError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,14 +69,44 @@ const CheckoutForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form ref={ref} onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
-        <PaymentElement 
-          options={{
-            layout: "tabs",
-          }}
-          onReady={() => console.log("PaymentElement ready")}
-        />
+        {/* Show skeleton while PaymentElement is loading */}
+        {!paymentElementReady && !paymentElementError && (
+          <div className="space-y-3">
+            <Skeleton className="h-11 w-full rounded-md" />
+            <Skeleton className="h-11 w-full rounded-md" />
+            <Skeleton className="h-11 w-full rounded-md" />
+          </div>
+        )}
+        
+        {/* Show error if PaymentElement failed to load */}
+        {paymentElementError && (
+          <div className="flex items-center gap-2 p-4 bg-destructive/10 text-destructive rounded-lg">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <div>
+              <p className="font-medium">Failed to load payment form</p>
+              <p className="text-sm">Please refresh the page and try again.</p>
+            </div>
+          </div>
+        )}
+        
+        <div className={!paymentElementReady && !paymentElementError ? "opacity-0 h-0 overflow-hidden" : ""}>
+          <PaymentElement 
+            options={{
+              layout: "tabs",
+            }}
+            onReady={() => {
+              console.log("[CheckoutForm] PaymentElement ready and mounted");
+              setPaymentElementReady(true);
+              setPaymentElementError(null);
+            }}
+            onLoadError={(error) => {
+              console.error("[CheckoutForm] PaymentElement failed to load:", error);
+              setPaymentElementError(error.error?.message || "Failed to load payment form");
+            }}
+          />
+        </div>
       </div>
 
       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
@@ -85,7 +118,7 @@ const CheckoutForm = ({
         type="submit"
         size="lg"
         className="w-full"
-        disabled={!stripe || isProcessing}
+        disabled={!stripe || isProcessing || !paymentElementReady}
       >
         {isProcessing ? (
           <>
@@ -101,6 +134,8 @@ const CheckoutForm = ({
       </Button>
     </form>
   );
-};
+});
+
+CheckoutForm.displayName = "CheckoutForm";
 
 export default CheckoutForm;
