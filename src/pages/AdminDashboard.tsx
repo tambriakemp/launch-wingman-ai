@@ -853,6 +853,16 @@ const AdminDashboard = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
+                      onClick={() => setBulkConfirmDialog({ open: true, action: 'grant_content_vault' })}
+                      disabled={bulkActionLoading || getEligibleUsers('grant_content_vault').length === 0}
+                      className="border-green-500 text-green-600 hover:bg-green-50"
+                    >
+                      <Package className="h-4 w-4 mr-1" />
+                      Grant Vault ({getEligibleUsers('grant_content_vault').length})
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
                       onClick={() => setBulkConfirmDialog({ open: true, action: 'grant_pro' })}
                       disabled={bulkActionLoading || getEligibleUsers('grant_pro').length === 0}
                     >
@@ -950,10 +960,10 @@ const AdminDashboard = () => {
                                 <TableCell>
                                   <div className="flex items-center gap-2">
                                     <Badge
-                                      variant={user.is_admin || user.is_manager ? 'default' : user.subscription_status === 'pro' ? 'default' : 'secondary'}
-                                      className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
+                                      variant={user.is_admin || user.is_manager || user.subscription_status !== 'free' ? 'default' : 'secondary'}
+                                      className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : user.subscription_status === 'content_vault' ? 'bg-green-500 hover:bg-green-600' : ''}
                                     >
-                                      {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : 'Free'}
+                                      {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : user.subscription_status === 'content_vault' ? 'Vault' : 'Free'}
                                     </Badge>
                                     {isAdmin && !user.is_admin && (
                                       <AdminRoleToggle
@@ -1031,7 +1041,7 @@ const AdminDashboard = () => {
                                         </Button>
                                       </>
                                     )}
-                                    {user.subscription_status === 'pro' ? (
+                                    {(user.subscription_status === 'pro' || user.subscription_status === 'content_vault') ? (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1046,19 +1056,36 @@ const AdminDashboard = () => {
                                         )}
                                       </Button>
                                     ) : (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleAction('grant_pro', user)}
-                                        disabled={actionLoading === user.id}
-                                        className="text-amber-500 hover:text-amber-600"
-                                      >
-                                        {actionLoading === user.id ? (
-                                          <RefreshCw className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                          <Crown className="h-4 w-4" />
-                                        )}
-                                      </Button>
+                                      <>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleAction('grant_content_vault', user)}
+                                          disabled={actionLoading === user.id}
+                                          className="text-green-500 hover:text-green-600"
+                                          title="Grant Vault"
+                                        >
+                                          {actionLoading === user.id ? (
+                                            <RefreshCw className="h-4 w-4 animate-spin" />
+                                          ) : (
+                                            <Package className="h-4 w-4" />
+                                          )}
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleAction('grant_pro', user)}
+                                          disabled={actionLoading === user.id}
+                                          className="text-amber-500 hover:text-amber-600"
+                                          title="Grant Pro"
+                                        >
+                                          {actionLoading === user.id ? (
+                                            <RefreshCw className="h-4 w-4 animate-spin" />
+                                          ) : (
+                                            <Crown className="h-4 w-4" />
+                                          )}
+                                        </Button>
+                                      </>
                                     )}
                                     {user.id !== currentUser?.id && isAdmin && (
                                       <DeleteUserDialog

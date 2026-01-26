@@ -60,11 +60,41 @@ const proFeatures = [
   "Priority support",
 ];
 
+const contentVaultFeatures = [
+  "Content Vault access",
+  "Organize your launch assets",
+  "Template library",
+  "Resource downloads",
+];
+
+// Plan configuration
+const PLAN_CONFIG = {
+  content_vault: {
+    name: "Content Vault",
+    price: 7,
+    features: contentVaultFeatures,
+    headline: "Get Content Vault Access",
+    upgradeHeadline: "Upgrade to Content Vault",
+  },
+  pro: {
+    name: "Pro Plan",
+    price: 25,
+    features: proFeatures,
+    headline: "Start Your Pro Journey",
+    upgradeHeadline: "Upgrade to Pro",
+  },
+};
+
 const Checkout = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const isUpgrade = searchParams.get("upgrade") === "true" || !!user;
+  
+  // Determine which tier to checkout
+  const tierParam = searchParams.get("tier");
+  const selectedTier = tierParam === 'content_vault' ? 'content_vault' : 'pro';
+  const planConfig = PLAN_CONFIG[selectedTier];
   
   // Form state
   const [email, setEmail] = useState(user?.email || "");
@@ -120,9 +150,9 @@ const Checkout = () => {
     setIntentError(null);
 
     try {
-      console.log("[Checkout] Creating payment intent on mount...");
+      console.log("[Checkout] Creating payment intent on mount...", { tier: selectedTier });
       const { data, error } = await supabase.functions.invoke('create-payment-intent-only', {
-        body: { couponCode }
+        body: { couponCode, tier: selectedTier }
       });
 
       if (error) {
@@ -319,7 +349,7 @@ const Checkout = () => {
     }
   };
 
-  const displayPrice = appliedCoupon ? appliedCoupon.discounted_price : 25;
+  const displayPrice = appliedCoupon ? appliedCoupon.discounted_price : planConfig.price;
 
   // Stripe Elements options - only create when we have clientSecret
   const elementsOptions = useMemo(() => {
@@ -371,13 +401,13 @@ const Checkout = () => {
             </div>
 
             <h1 className="text-3xl lg:text-4xl font-bold mb-4">
-              {isUpgrade ? "Upgrade to Pro" : "Start Your Pro Journey"}
+              {isUpgrade ? planConfig.upgradeHeadline : planConfig.headline}
             </h1>
             
             <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-6 mb-8">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h2 className="text-xl font-semibold">Pro Plan</h2>
+                  <h2 className="text-xl font-semibold">{planConfig.name}</h2>
                   <p className="text-primary-foreground/70 text-sm">Billed monthly</p>
                 </div>
                 <div className="text-right">
@@ -387,7 +417,7 @@ const Checkout = () => {
                       <div className="text-2xl font-bold">${displayPrice.toFixed(2)}<span className="text-sm font-normal">/mo</span></div>
                     </>
                   ) : (
-                    <div className="text-2xl font-bold">$25<span className="text-sm font-normal">/mo</span></div>
+                    <div className="text-2xl font-bold">${planConfig.price}<span className="text-sm font-normal">/mo</span></div>
                   )}
                 </div>
               </div>
@@ -400,7 +430,7 @@ const Checkout = () => {
               )}
 
               <ul className="space-y-3">
-                {proFeatures.map((feature, i) => (
+                {planConfig.features.map((feature, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm text-primary-foreground/90">
                     <Check className="w-4 h-4 text-accent flex-shrink-0" />
                     {feature}

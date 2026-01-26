@@ -11,8 +11,11 @@ const logStep = (step: string, details?: unknown) => {
   console.log(`[CREATE-PAYMENT-INTENT-ONLY] ${step}${detailsStr}`);
 };
 
-// Pro plan price ID
-const PRO_PRICE_ID = "price_1SipMGF2gaEq7adwAGMICdO5";
+// Price IDs for subscription tiers
+const PRICE_IDS = {
+  content_vault: 'price_1StiayF2gaEq7adwKHe9AbQF',
+  pro: 'price_1SipMGF2gaEq7adwAGMICdO5',
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -27,14 +30,19 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    const { couponCode } = await req.json().catch(() => ({}));
-    logStep("Received request", { hasCoupon: !!couponCode });
+    const { couponCode, tier } = await req.json().catch(() => ({}));
+    
+    // Determine which price ID to use based on tier parameter
+    const selectedTier = tier === 'content_vault' ? 'content_vault' : 'pro';
+    const priceId = PRICE_IDS[selectedTier];
+    
+    logStep("Received request", { hasCoupon: !!couponCode, tier: selectedTier, priceId });
 
     // Get the price details to calculate amount
-    const price = await stripe.prices.retrieve(PRO_PRICE_ID);
+    const price = await stripe.prices.retrieve(priceId);
     let amount = price.unit_amount || 0;
     const currency = price.currency || 'usd';
-    logStep("Retrieved price", { priceId: PRO_PRICE_ID, amount, currency });
+    logStep("Retrieved price", { priceId, amount, currency });
 
     // Check if coupon applies and calculate final amount
     if (couponCode) {
@@ -61,6 +69,7 @@ serve(async (req) => {
         clientSecret: "free_subscription",
         amount: 0,
         currency,
+        tier: selectedTier,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -73,7 +82,8 @@ serve(async (req) => {
       currency,
       automatic_payment_methods: { enabled: true },
       metadata: {
-        price_id: PRO_PRICE_ID,
+        price_id: priceId,
+        tier: selectedTier,
         type: 'subscription_checkout',
       },
     });
@@ -81,6 +91,7 @@ serve(async (req) => {
     logStep("Created payment intent", { 
       paymentIntentId: paymentIntent.id, 
       amount,
+      tier: selectedTier,
       hasClientSecret: !!paymentIntent.client_secret 
     });
 
@@ -90,6 +101,7 @@ serve(async (req) => {
       paymentIntentId: paymentIntent.id,
       amount,
       currency,
+      tier: selectedTier,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
