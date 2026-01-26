@@ -273,17 +273,26 @@ const Checkout = () => {
 
   // Auto-create intent when form becomes valid (debounced)
   useEffect(() => {
-    if (!isBasicFormValid || clientSecret || isCreatingIntent || intentError) {
+    console.log("[Checkout] Auto-intent check:", {
+      isBasicFormValid,
+      hasClientSecret: !!clientSecret,
+      isCreatingIntent,
+      intentError
+    });
+    
+    // Don't proceed if form is invalid, we already have a secret, or currently creating
+    if (!isBasicFormValid || clientSecret || isCreatingIntent) {
       return;
     }
 
     const timer = setTimeout(() => {
       console.log("[Checkout] Auto-creating intent - form is valid");
+      setIntentError(null); // Clear any previous error to allow retry
       createSubscriptionIntent();
     }, 800); // Debounce to avoid rapid API calls
 
     return () => clearTimeout(timer);
-  }, [isBasicFormValid, clientSecret, isCreatingIntent, intentError, createSubscriptionIntent]);
+  }, [isBasicFormValid, clientSecret, isCreatingIntent, email, createSubscriptionIntent]);
 
   const handlePaymentSuccess = () => {
     navigate("/checkout/success");
@@ -398,7 +407,7 @@ const Checkout = () => {
             <div className="space-y-6">
               {/* Account Fields - Only for new users */}
               {!isUpgrade && (
-                <div className="space-y-4">
+                <form onSubmit={(e) => e.preventDefault()} autoComplete="on" className="space-y-4">
                   <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
                     <User className="w-5 h-5" />
                     Create Your Account
@@ -409,11 +418,10 @@ const Checkout = () => {
                       <Label htmlFor="firstName">First Name</Label>
                       <Input
                         id="firstName"
+                        name="given-name"
+                        autoComplete="given-name"
                         value={firstName}
-                        onChange={(e) => {
-                          setFirstName(e.target.value);
-                          setClientSecret(null); // Reset intent on change
-                        }}
+                        onChange={(e) => setFirstName(e.target.value)}
                         placeholder="John"
                       />
                       {errors.firstName && <p className="text-sm text-destructive">{errors.firstName}</p>}
@@ -422,11 +430,10 @@ const Checkout = () => {
                       <Label htmlFor="lastName">Last Name</Label>
                       <Input
                         id="lastName"
+                        name="family-name"
+                        autoComplete="family-name"
                         value={lastName}
-                        onChange={(e) => {
-                          setLastName(e.target.value);
-                          setClientSecret(null); // Reset intent on change
-                        }}
+                        onChange={(e) => setLastName(e.target.value)}
                         placeholder="Doe"
                       />
                       {errors.lastName && <p className="text-sm text-destructive">{errors.lastName}</p>}
@@ -439,11 +446,15 @@ const Checkout = () => {
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
                         id="email"
+                        name="email"
                         type="email"
+                        autoComplete="email"
                         value={email}
                         onChange={(e) => {
                           setEmail(e.target.value);
-                          setClientSecret(null); // Reset intent on change
+                          // Only reset intent when email changes (affects Stripe customer)
+                          setClientSecret(null);
+                          setIntentError(null);
                         }}
                         placeholder="you@example.com"
                         className="pl-10"
@@ -458,12 +469,11 @@ const Checkout = () => {
                       <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
                         id="password"
+                        name="new-password"
                         type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
                         value={password}
-                        onChange={(e) => {
-                          setPassword(e.target.value);
-                          setClientSecret(null); // Reset intent on change
-                        }}
+                        onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
                         className="pl-10 pr-10"
                       />
@@ -484,19 +494,18 @@ const Checkout = () => {
                       <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
                         id="confirmPassword"
+                        name="confirm-password"
                         type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
                         value={confirmPassword}
-                        onChange={(e) => {
-                          setConfirmPassword(e.target.value);
-                          setClientSecret(null); // Reset intent on change
-                        }}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
                         className="pl-10"
                       />
                     </div>
                     {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
                   </div>
-                </div>
+                </form>
               )}
 
               {/* Upgrade greeting for existing users */}
