@@ -1,6 +1,7 @@
 import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { SubscriptionTier } from "@/lib/subscriptionTiers";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
@@ -37,6 +38,7 @@ interface NavItem {
   href: string;
   requiresStep?: string;
   isProOnly?: boolean;
+  isContentVaultOrPro?: boolean;
   requiresProject?: boolean;
 }
 
@@ -67,7 +69,7 @@ const createNavSections = (projectId?: string): NavSection[] => [
   {
     heading: "Resources",
     items: [
-      { id: "content-vault", label: "Content Vault", icon: Package, href: "/content-vault", isProOnly: true },
+      { id: "content-vault", label: "Content Vault", icon: Package, href: "/content-vault", isContentVaultOrPro: true },
     ],
   },
 ];
@@ -84,7 +86,7 @@ const SidebarContent = ({
   getLockedMessage, 
   isActiveRoute,
   onNavigate,
-  isSubscribed,
+  tier,
   onUpgradeClick
 }: {
   projectId?: string;
@@ -94,10 +96,14 @@ const SidebarContent = ({
   getLockedMessage: (requiresStep?: string) => string;
   isActiveRoute: (href: string) => boolean;
   onNavigate?: () => void;
-  isSubscribed: boolean;
+  tier: SubscriptionTier;
   onUpgradeClick: (feature: string) => void;
 }) => {
   const navigate = useNavigate();
+  
+  // Determine access levels based on tier
+  const isPro = tier === 'pro' || tier === 'admin';
+  const isContentVaultOrProAccess = tier === 'content_vault' || tier === 'pro' || tier === 'admin';
 
   const handleNavClick = (href: string) => {
     onNavigate?.();
@@ -127,7 +133,7 @@ const SidebarContent = ({
               <span className="text-[11px] font-semibold text-sidebar-foreground uppercase tracking-wider">
                 {section.heading}
               </span>
-              {section.isProOnly && !isSubscribed && (
+              {section.isProOnly && !isPro && (
                 <Crown className="w-3 h-3 text-primary" />
               )}
             </div>
@@ -136,8 +142,10 @@ const SidebarContent = ({
                 const isActive = isActiveRoute(item.href);
                 const isAccessible = isStepAccessible(item.requiresStep);
                 const isLocked = !isAccessible;
-                const isProLocked = item.isProOnly && !isSubscribed;
-                const requiresProject = (item as NavItem & { requiresProject?: boolean }).requiresProject;
+                const isProLocked = item.isProOnly && !isPro;
+                const isVaultLocked = item.isContentVaultOrPro && !isContentVaultOrProAccess;
+                const isFeatureLocked = isProLocked || isVaultLocked;
+                const requiresProject = item.requiresProject;
 
                 // Requires project selection
                 if (requiresProject) {
@@ -161,8 +169,11 @@ const SidebarContent = ({
                   );
                 }
 
-                // Pro-locked items
-                if (isProLocked) {
+                // Feature-locked items (Pro or Content Vault tier required)
+                if (isFeatureLocked) {
+                  const upgradeMessage = isProLocked 
+                    ? "Pro feature - Upgrade to access" 
+                    : "Content Vault feature - Upgrade to access";
                   return (
                     <Tooltip key={item.id}>
                       <TooltipTrigger asChild>
@@ -179,7 +190,7 @@ const SidebarContent = ({
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="right">
-                        <p>Pro feature - Upgrade to access</p>
+                        <p>{upgradeMessage}</p>
                       </TooltipContent>
                     </Tooltip>
                   );
@@ -266,9 +277,7 @@ export const ProjectSidebar = () => {
   const [upgradeFeature, setUpgradeFeature] = useState("");
   const isMobile = useIsMobile();
   const { isOpen, close } = useMobileSidebar();
-  const { isSubscribed } = useAuth();
-  const { hasAdminAccess } = useFeatureAccess();
-  const hasFullAccess = isSubscribed || hasAdminAccess;
+  const { hasAdminAccess, tier } = useFeatureAccess();
 
   // Use the projectId from params, or try to get from localStorage for global pages
   const [storedProjectId, setStoredProjectId] = useState<string | undefined>(undefined);
@@ -365,8 +374,8 @@ export const ProjectSidebar = () => {
     stepCompletion,
     isStepAccessible,
     getLockedMessage,
+    tier,
     isActiveRoute,
-    isSubscribed: hasFullAccess,
     onUpgradeClick: handleUpgradeClick,
   };
 
