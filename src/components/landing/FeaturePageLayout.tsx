@@ -173,7 +173,7 @@ export const FeaturePageLayout = ({
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" variant="accent">
-                <Link to="/auth?tab=signup">Start Free Today</Link>
+                <Link to="/checkout">Start Free Today</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10">
                 <Link to="/pricing">View Pricing</Link>
