@@ -55,6 +55,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   const [selectedTalkingPoint, setSelectedTalkingPoint] = useState<TalkingPoint | null>(null);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [editingPlannerItem, setEditingPlannerItem] = useState<ContentPlannerItem | null>(null);
+  const [isCreatingNewPost, setIsCreatingNewPost] = useState(false);
   
   const { user } = useAuth();
   const { hasAccess } = useFeatureAccess();
@@ -235,6 +236,9 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
                 <Button
                   onClick={() => {
                     setSelectedTalkingPoint(null);
+                    setEditingDraftId(null);
+                    setEditingPlannerItem(null);
+                    setIsCreatingNewPost(true);
                     setPostEditorOpen(true);
                   }}
                   size="sm"
@@ -249,19 +253,23 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
                 projectId={projectId}
                 onCreatePost={() => {
                   setSelectedTalkingPoint(null);
+                  setEditingDraftId(null);
                   setEditingPlannerItem(null);
+                  setIsCreatingNewPost(true);
                   setPostEditorOpen(true);
                 }}
                 onEditPost={(item) => {
                   setSelectedTalkingPoint(null);
                   setEditingDraftId(null);
                   setEditingPlannerItem(item as ContentPlannerItem);
+                  setIsCreatingNewPost(false);
                   setPostEditorOpen(true);
                 }}
                 onSchedulePost={(item) => {
                   setSelectedTalkingPoint(null);
                   setEditingDraftId(null);
                   setEditingPlannerItem(item as ContentPlannerItem);
+                  setIsCreatingNewPost(false);
                   setPostEditorOpen(true);
                 }}
               />
@@ -270,19 +278,23 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
                 projectId={projectId}
                 onCreatePost={() => {
                   setSelectedTalkingPoint(null);
+                  setEditingDraftId(null);
                   setEditingPlannerItem(null);
+                  setIsCreatingNewPost(true);
                   setPostEditorOpen(true);
                 }}
                 onEditPost={(item) => {
                   setSelectedTalkingPoint(null);
                   setEditingDraftId(null);
                   setEditingPlannerItem(item as ContentPlannerItem);
+                  setIsCreatingNewPost(false);
                   setPostEditorOpen(true);
                 }}
                 onSchedulePost={(item) => {
                   setSelectedTalkingPoint(null);
                   setEditingDraftId(null);
                   setEditingPlannerItem(item as ContentPlannerItem);
+                  setIsCreatingNewPost(false);
                   setPostEditorOpen(true);
                 }}
               />
@@ -322,12 +334,14 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
           if (!open) {
             setEditingDraftId(null);
             setEditingPlannerItem(null);
+            setIsCreatingNewPost(false);
           }
         }}
         projectId={projectId}
         talkingPoint={selectedTalkingPoint}
         existingItem={editingPlannerItem}
         existingDraftId={editingDraftId}
+        isCreateMode={isCreatingNewPost}
         currentPhase={currentPhase}
         funnelType={funnelType}
         audienceData={funnel}
