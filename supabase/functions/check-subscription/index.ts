@@ -7,9 +7,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Subscription tier price IDs
+const PRICE_IDS = {
+  content_vault: 'price_1StiayF2gaEq7adwKHe9AbQF',
+  pro: 'price_1SipMGF2gaEq7adwAGMICdO5',
+};
+
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
+};
+
+// Determine subscription tier from price ID
+const getTierFromPriceId = (priceId: string | null): 'free' | 'content_vault' | 'pro' => {
+  if (!priceId) return 'free';
+  if (priceId === PRICE_IDS.content_vault) return 'content_vault';
+  if (priceId === PRICE_IDS.pro) return 'pro';
+  return 'pro'; // Default to pro for any other paid subscription
 };
 
 serve(async (req) => {
@@ -32,7 +46,7 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
       logStep("No authorization header - returning unsubscribed");
-      return new Response(JSON.stringify({ subscribed: false }), {
+      return new Response(JSON.stringify({ subscribed: false, subscription_tier: 'free' }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
@@ -42,7 +56,7 @@ serve(async (req) => {
     const token = authHeader.split(/\s+/)[1]?.trim();
     if (!token) {
       logStep("Could not extract token from header");
-      return new Response(JSON.stringify({ subscribed: false }), {
+      return new Response(JSON.stringify({ subscribed: false, subscription_tier: 'free' }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
@@ -55,7 +69,7 @@ serve(async (req) => {
 
     if (claimsError || !claimsData?.claims) {
       logStep("Claims error - returning unsubscribed", { error: claimsError?.message || "No claims data" });
-      return new Response(JSON.stringify({ subscribed: false }), {
+      return new Response(JSON.stringify({ subscribed: false, subscription_tier: 'free' }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
@@ -66,7 +80,7 @@ serve(async (req) => {
 
     if (!userId || !email) {
       logStep("Missing user ID or email in claims");
-      return new Response(JSON.stringify({ subscribed: false }), {
+      return new Response(JSON.stringify({ subscribed: false, subscription_tier: 'free' }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
@@ -86,6 +100,7 @@ serve(async (req) => {
       logStep("User has staff role - granting full access", { role: roleData[0].role });
       return new Response(JSON.stringify({
         subscribed: true,
+        subscription_tier: 'pro',
         subscription_end: null,
         source: "role"
       }), {
@@ -99,7 +114,7 @@ serve(async (req) => {
     
     if (customers.data.length === 0) {
       logStep("No customer found");
-      return new Response(JSON.stringify({ subscribed: false }), {
+      return new Response(JSON.stringify({ subscribed: false, subscription_tier: 'free' }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
@@ -111,37 +126,52 @@ serve(async (req) => {
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: "active",
-      limit: 1,
+      limit: 10, // Get all active subscriptions to find the highest tier
     });
 
     const hasActiveSub = subscriptions.data.length > 0;
-    let subscriptionEnd = null;
+    let subscriptionEnd: string | null = null;
+    let subscriptionTier: 'free' | 'content_vault' | 'pro' = 'free';
+    let priceId: string | null = null;
 
     if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
-      
-      // Try to get current_period_end - it might be at subscription level or items level
-      let periodEnd = subscription.current_period_end;
-      
-      // If not at subscription level, try getting from items
-      if (!periodEnd && subscription.items?.data?.[0]?.current_period_end) {
-        periodEnd = subscription.items.data[0].current_period_end;
-      }
-      
-      // Safely convert to ISO string
-      try {
-        if (periodEnd && typeof periodEnd === 'number') {
-          subscriptionEnd = new Date(periodEnd * 1000).toISOString();
+      // Check all subscriptions and find the highest tier
+      for (const subscription of subscriptions.data) {
+        const subPriceId = subscription.items.data[0]?.price?.id || null;
+        const subTier = getTierFromPriceId(subPriceId);
+        
+        // Priority: pro > content_vault > free
+        if (subTier === 'pro') {
+          subscriptionTier = 'pro';
+          priceId = subPriceId;
+          
+          // Get subscription end date
+          let periodEnd = subscription.current_period_end;
+          if (!periodEnd && subscription.items?.data?.[0]?.current_period_end) {
+            periodEnd = subscription.items.data[0].current_period_end;
+          }
+          if (periodEnd && typeof periodEnd === 'number') {
+            subscriptionEnd = new Date(periodEnd * 1000).toISOString();
+          }
+          break; // Pro is highest tier
+        } else if (subTier === 'content_vault' && subscriptionTier === 'free') {
+          subscriptionTier = 'content_vault';
+          priceId = subPriceId;
+          
+          let periodEnd = subscription.current_period_end;
+          if (!periodEnd && subscription.items?.data?.[0]?.current_period_end) {
+            periodEnd = subscription.items.data[0].current_period_end;
+          }
+          if (periodEnd && typeof periodEnd === 'number') {
+            subscriptionEnd = new Date(periodEnd * 1000).toISOString();
+          }
         }
-      } catch (dateError) {
-        logStep("Warning: Could not parse subscription end date", { periodEnd, error: String(dateError) });
-        // Continue anyway - user still has a valid subscription
       }
       
       logStep("Active subscription found", { 
-        subscriptionId: subscription.id, 
-        endDate: subscriptionEnd,
-        rawPeriodEnd: periodEnd 
+        subscriptionTier,
+        priceId,
+        endDate: subscriptionEnd 
       });
     } else {
       logStep("No active subscription found");
@@ -149,6 +179,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
+      subscription_tier: subscriptionTier,
       subscription_end: subscriptionEnd
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

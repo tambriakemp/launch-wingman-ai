@@ -7,6 +7,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Subscription tier price IDs
+const PRICE_IDS = {
+  content_vault: 'price_1StiayF2gaEq7adwKHe9AbQF',
+  pro: 'price_1SipMGF2gaEq7adwAGMICdO5',
+};
+
+// Determine subscription tier from price ID
+const getTierFromPriceId = (priceId: string | null): 'free' | 'content_vault' | 'pro' => {
+  if (!priceId) return 'free';
+  if (priceId === PRICE_IDS.content_vault) return 'content_vault';
+  if (priceId === PRICE_IDS.pro) return 'pro';
+  return 'pro'; // Default to pro for any other paid subscription
+};
+
 // Sanitize user ID for logging (show only first 8 chars)
 const sanitizeId = (id: string) => id ? `${id.substring(0, 8)}...` : 'unknown';
 
@@ -93,7 +107,7 @@ serve(async (req) => {
         const isAdmin = userRolesForUser.some(r => r.role === 'admin');
         const isManager = userRolesForUser.some(r => r.role === 'manager');
         
-        let subscriptionStatus = 'free';
+        let subscriptionStatus: 'free' | 'content_vault' | 'pro' = 'free';
         let subscriptionEnd = null;
         let stripeCustomerId = null;
         let stripeSubscriptionId = null;
@@ -107,18 +121,26 @@ serve(async (req) => {
               const subscriptions = await stripe.subscriptions.list({
                 customer: stripeCustomerId,
                 status: "active",
-                limit: 1,
+                limit: 10, // Get all to find highest tier
               });
               
               if (subscriptions.data.length > 0) {
-                const subscription = subscriptions.data[0];
-                subscriptionStatus = 'pro';
-                subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-                stripeSubscriptionId = subscription.id;
-                
-                // Get actual amount from subscription item (handles discounts, free upgrades, etc.)
-                const priceAmount = subscription.items.data[0]?.price?.unit_amount || 0;
-                subscriptionAmountCents = priceAmount;
+                // Find highest tier subscription
+                for (const subscription of subscriptions.data) {
+                  const priceId = subscription.items.data[0]?.price?.id;
+                  const tier = getTierFromPriceId(priceId);
+                  
+                  if (tier === 'pro' || (tier === 'content_vault' && subscriptionStatus !== 'pro')) {
+                    subscriptionStatus = tier;
+                    subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+                    stripeSubscriptionId = subscription.id;
+                    
+                    const priceAmount = subscription.items.data[0]?.price?.unit_amount || 0;
+                    subscriptionAmountCents = priceAmount;
+                    
+                    if (tier === 'pro') break; // Pro is highest
+                  }
+                }
               }
             }
           } catch (err: unknown) {

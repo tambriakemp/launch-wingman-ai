@@ -4,12 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { trackLogin, trackSignup, trackLogout, setUserId, clearUserId } from "@/lib/analytics";
+import { SubscriptionTier } from "@/lib/subscriptionTiers";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   isSubscribed: boolean;
+  subscriptionTier: SubscriptionTier | null;
   subscriptionEnd: string | null;
   isImpersonating: boolean;
   impersonatedUserEmail: string | null;
@@ -41,6 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier | null>(null);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [isImpersonating, setIsImpersonating] = useState(false);
@@ -83,6 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const checkSubscription = useCallback(async () => {
     if (!session) {
       setIsSubscribed(false);
+      setSubscriptionTier(null);
       setSubscriptionEnd(null);
       setSubscriptionLoading(false);
       prevSubscribedRef.current = null;
@@ -96,6 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         console.error('Error checking subscription:', error);
         setIsSubscribed(false);
+        setSubscriptionTier(null);
         setSubscriptionEnd(null);
         setSubscriptionLoading(false);
         return;
@@ -127,6 +132,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       hasCheckedInitialSubscription.current = true;
       
       setIsSubscribed(newSubscribed);
+      setSubscriptionTier(data?.subscription_tier || null);
       setSubscriptionEnd(data?.subscription_end ?? null);
     } catch (error) {
       console.error('Error checking subscription:', error);
@@ -344,6 +350,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsImpersonating(false);
     setImpersonatedUserEmail(null);
     setIsSubscribed(false);
+    setSubscriptionTier(null);
     setSubscriptionEnd(null);
     
     // Navigate first, then sign out to prevent race conditions
@@ -408,6 +415,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         console.log('Subscription check for impersonated user:', subData);
         setIsSubscribed(subData?.subscribed ?? false);
+        setSubscriptionTier(subData?.subscription_tier || null);
         setSubscriptionEnd(subData?.subscription_end ?? null);
       }
 
@@ -488,6 +496,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       session, 
       loading: loading || subscriptionLoading, 
       isSubscribed, 
+      subscriptionTier,
       subscriptionEnd,
       isImpersonating,
       impersonatedUserEmail,

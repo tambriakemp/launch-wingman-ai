@@ -7,7 +7,7 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 
 interface User {
   id: string;
-  subscription_status: 'free' | 'pro';
+  subscription_status: 'free' | 'content_vault' | 'pro';
   subscription_end: string | null;
   created_at: string;
 }

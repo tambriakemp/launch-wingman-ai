@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdmin } from "@/hooks/useAdmin";
+import { SubscriptionTier } from "@/lib/subscriptionTiers";
 
 // Feature keys for gating
 export type FeatureKey = 
@@ -23,7 +24,7 @@ export const FREE_PLAN_LIMITS = {
   salesCopySections: ['headline', 'core_promise', 'cta'], // Limited sections
 };
 
-// Pro features list
+// Pro features list (Content Vault users don't get these)
 export const PRO_FEATURES: FeatureKey[] = [
   'unlimited_projects',
   'relaunch_mode',
@@ -34,8 +35,12 @@ export const PRO_FEATURES: FeatureKey[] = [
   'multiple_offers_sales_copy',
   'unlimited_ideas',
   'unlimited_drafts',
-  'content_vault',
   'social_calendar',
+];
+
+// Content Vault tier features (subset that content_vault users get)
+export const CONTENT_VAULT_FEATURES: FeatureKey[] = [
+  'content_vault',
 ];
 
 // Feature display names for UI
@@ -53,11 +58,11 @@ export const FEATURE_DISPLAY_NAMES: Record<FeatureKey, string> = {
   social_calendar: 'Social Media Calendar',
 };
 
-// Subscription tier type
-export type SubscriptionTier = 'free' | 'pro' | 'admin';
+// Re-export SubscriptionTier for convenience
+export type { SubscriptionTier };
 
 export const useFeatureAccess = () => {
-  const { isSubscribed, loading: authLoading } = useAuth();
+  const { isSubscribed, subscriptionTier, loading: authLoading } = useAuth();
   const { hasAdminAccess, loading: adminLoading } = useAdmin();
 
   // Combined loading state - don't make access decisions until both checks complete
@@ -65,15 +70,25 @@ export const useFeatureAccess = () => {
 
   // Determine the subscription tier
   // hasAdminAccess = admin OR manager, both get full access
-  const tier: SubscriptionTier = hasAdminAccess ? 'admin' : isSubscribed ? 'pro' : 'free';
+  const tier: SubscriptionTier = hasAdminAccess 
+    ? 'admin' 
+    : subscriptionTier || (isSubscribed ? 'pro' : 'free');
 
   // Check if user has access to a specific feature
-  // Admins and managers always have full access
   const hasAccess = (feature: FeatureKey): boolean => {
+    // Admins and managers always have full access
     if (hasAdminAccess) return true;
-    if (isSubscribed) return true;
-    // Free users don't have access to Pro features
-    return !PRO_FEATURES.includes(feature);
+    
+    // Pro users have access to everything
+    if (tier === 'pro') return true;
+    
+    // Content Vault users only get content_vault feature
+    if (tier === 'content_vault') {
+      return CONTENT_VAULT_FEATURES.includes(feature);
+    }
+    
+    // Free users don't have access to Pro or Content Vault features
+    return !PRO_FEATURES.includes(feature) && !CONTENT_VAULT_FEATURES.includes(feature);
   };
 
   // Get limits for free plan (returns null for Pro/Admin/Manager users = unlimited)

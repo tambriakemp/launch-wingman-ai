@@ -58,6 +58,12 @@ serve(async (req) => {
     
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
+    // Price IDs for different tiers
+    const PRICE_IDS = {
+      content_vault: 'price_1StiayF2gaEq7adwKHe9AbQF',
+      pro: 'price_1SipMGF2gaEq7adwAGMICdO5',
+    };
+
     if (action === 'cancel') {
       if (!stripe_subscription_id) throw new Error("Subscription ID required for cancellation");
       
@@ -105,8 +111,9 @@ serve(async (req) => {
       });
     }
 
-    if (action === 'grant_pro') {
-      if (!user_email) throw new Error("User email required to grant pro access");
+    // Helper function to grant a subscription with a specific price
+    const grantSubscription = async (tierName: string, priceId: string) => {
+      if (!user_email) throw new Error(`User email required to grant ${tierName} access`);
       
       // Find or create customer
       let customerId;
@@ -115,15 +122,20 @@ serve(async (req) => {
       if (customers.data.length > 0) {
         customerId = customers.data[0].id;
         
-        // Check if already has active subscription
+        // Check if already has active subscription for this price
         const existingSubs = await stripe.subscriptions.list({
           customer: customerId,
           status: 'active',
-          limit: 1,
+          limit: 10,
         });
         
-        if (existingSubs.data.length > 0) {
-          throw new Error("User already has an active subscription");
+        // Check if user already has this specific tier
+        const hasSameTier = existingSubs.data.some((s: Stripe.Subscription) => 
+          s.items.data[0]?.price?.id === priceId
+        );
+        
+        if (hasSameTier) {
+          throw new Error(`User already has an active ${tierName} subscription`);
         }
       } else {
         const customer = await stripe.customers.create({ email: user_email });
@@ -131,72 +143,75 @@ serve(async (req) => {
         logStep("Created new Stripe customer", { customerId });
       }
 
-      // Create a free subscription (100% off coupon or $0 price)
-      // First, find the pro price
-      const prices = await stripe.prices.list({ limit: 10, active: true });
-      const proPrice = prices.data.find((p: Stripe.Price) => p.unit_amount && p.unit_amount > 0 && p.recurring);
-      
-      if (!proPrice) {
-        throw new Error("No pro subscription price found in Stripe");
-      }
-
       // Create a 100% off coupon for this specific case
       const coupon = await stripe.coupons.create({
         percent_off: 100,
         duration: 'forever',
-        name: `Pro grant - ${user_email.substring(0, 25)}`,
+        name: `${tierName} grant - ${user_email.substring(0, 25)}`,
         metadata: {
           granted_to: user_email,
           granted_by: adminUser.email,
           granted_at: new Date().toISOString(),
+          tier: tierName,
         }
       });
 
       // Create subscription with the coupon
       const subscription = await stripe.subscriptions.create({
         customer: customerId,
-        items: [{ price: proPrice.id }],
+        items: [{ price: priceId }],
         discounts: [{ coupon: coupon.id }],
       });
 
-      logStep("Pro subscription granted", { customerId, subscriptionId: subscription.id });
+      logStep(`${tierName} subscription granted`, { customerId, subscriptionId: subscription.id });
       
       // Log to admin_action_logs
       await supabaseClient.from('admin_action_logs').insert({
         admin_user_id: adminUser.id,
         admin_email: adminUser.email,
         target_email: user_email,
-        action_type: 'subscription_granted',
+        action_type: `${tierName.toLowerCase()}_granted`,
         action_details: { subscription_id: subscription.id, customer_id: customerId }
       });
 
-      // Trigger marketing and surecontact webhooks to update tags
-      const { data: authUsers } = await supabaseClient.auth.admin.listUsers();
-      const targetUser = authUsers?.users?.find(u => u.email === user_email);
-      if (targetUser) {
-        const baseUrl = Deno.env.get("SUPABASE_URL");
-        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-        
+      // Trigger webhooks
+      const baseUrl = Deno.env.get("SUPABASE_URL");
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-        // Trigger SureContact webhook
-        await fetch(`${baseUrl}/functions/v1/surecontact-webhook`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${serviceKey}`,
-          },
-          body: JSON.stringify({
-            action: "sync_user",
-            email: user_email,
-            event_type: "subscription_started",
-          }),
-        });
-        logStep("Contact webhook triggered for subscription_started", { email: user_email });
-      }
+      await fetch(`${baseUrl}/functions/v1/surecontact-webhook`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({
+          action: "sync_user",
+          email: user_email,
+          event_type: "subscription_started",
+        }),
+      });
+      logStep("Contact webhook triggered for subscription_started", { email: user_email });
       
+      return subscription;
+    };
+
+    if (action === 'grant_pro') {
+      const subscription = await grantSubscription('Pro', PRICE_IDS.pro);
       return new Response(JSON.stringify({ 
         success: true, 
         message: "Pro access granted",
+        subscription_id: subscription.id 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    if (action === 'grant_content_vault') {
+      const subscription = await grantSubscription('Content Vault', PRICE_IDS.content_vault);
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: "Content Vault access granted",
         subscription_id: subscription.id 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
