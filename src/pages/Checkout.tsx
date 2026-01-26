@@ -260,12 +260,30 @@ const Checkout = () => {
     }
   }, [clientSecret, validateForm, isUpgrade, user, email, firstName, lastName, password, appliedCoupon]);
 
-  // Auto-create intent for upgrades (user already authenticated)
-  useEffect(() => {
-    if (isUpgrade && user && firstName && lastName && !clientSecret && !isCreatingIntent) {
-      createSubscriptionIntent();
+  // Check if form fields are valid enough to create intent
+  const isBasicFormValid = useMemo(() => {
+    if (isUpgrade) {
+      return !!firstName && !!lastName;
     }
-  }, [isUpgrade, user, firstName, lastName, clientSecret, isCreatingIntent, createSubscriptionIntent]);
+    // For new users, need name, valid email, and matching passwords
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const passwordsMatch = password.length >= 8 && password === confirmPassword;
+    return !!firstName && !!lastName && emailValid && passwordsMatch;
+  }, [isUpgrade, firstName, lastName, email, password, confirmPassword]);
+
+  // Auto-create intent when form becomes valid (debounced)
+  useEffect(() => {
+    if (!isBasicFormValid || clientSecret || isCreatingIntent || intentError) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      console.log("[Checkout] Auto-creating intent - form is valid");
+      createSubscriptionIntent();
+    }, 800); // Debounce to avoid rapid API calls
+
+    return () => clearTimeout(timer);
+  }, [isBasicFormValid, clientSecret, isCreatingIntent, intentError, createSubscriptionIntent]);
 
   const handlePaymentSuccess = () => {
     navigate("/checkout/success");
@@ -273,8 +291,6 @@ const Checkout = () => {
 
   const displayPrice = appliedCoupon ? appliedCoupon.discounted_price : 25;
 
-  // Check if form is complete for new users
-  const isFormComplete = isUpgrade || (email && firstName && lastName && password && confirmPassword);
 
   // Stripe Elements options - only create when we have clientSecret
   const elementsOptions = useMemo(() => {
@@ -539,7 +555,7 @@ const Checkout = () => {
                 )}
               </div>
 
-              {/* Payment Section */}
+              {/* Payment Section - Always visible */}
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
                   <CreditCard className="w-5 h-5" />
@@ -552,64 +568,79 @@ const Checkout = () => {
                       Stripe is not configured. Please check your environment settings.
                     </p>
                   </div>
-                ) : !isFormComplete ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-center border border-dashed border-muted-foreground/30 rounded-lg">
-                    <User className="w-8 h-8 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      Please fill in your account details above to continue
+                ) : intentError === "account_exists" ? (
+                  <div className="text-center space-y-3 py-6">
+                    <p className="text-sm text-destructive">
+                      An account with this email already exists.
                     </p>
-                  </div>
-                ) : !clientSecret ? (
-                  <div className="flex flex-col items-center justify-center py-8">
-                    {isCreatingIntent ? (
-                      <>
-                        <Loader2 className="w-6 h-6 animate-spin text-primary mb-2" />
-                        <p className="text-sm text-muted-foreground">Initializing payment...</p>
-                      </>
-                    ) : intentError === "account_exists" ? (
-                      <div className="text-center space-y-3">
-                        <p className="text-sm text-destructive">
-                          An account with this email already exists.
-                        </p>
-                        <div className="flex flex-col gap-2">
-                          <Link to="/auth">
-                            <Button variant="default" size="sm" className="w-full">
-                              Log in instead
-                            </Button>
-                          </Link>
-                          <Button 
-                            onClick={() => {
-                              setEmail("");
-                              setIntentError(null);
-                            }} 
-                            variant="outline" 
-                            size="sm"
-                          >
-                            Use a different email
-                          </Button>
-                        </div>
-                      </div>
-                    ) : intentError ? (
-                      <div className="text-center">
-                        <p className="text-sm text-destructive mb-3">{intentError}</p>
-                        <Button onClick={createSubscriptionIntent} variant="outline" size="sm">
-                          Try Again
+                    <div className="flex flex-col gap-2">
+                      <Link to="/auth">
+                        <Button variant="default" size="sm" className="w-full">
+                          Log in instead
                         </Button>
-                      </div>
-                    ) : (
-                      <Button onClick={createSubscriptionIntent} className="w-full">
-                        Continue to Payment
+                      </Link>
+                      <Button 
+                        onClick={() => {
+                          setEmail("");
+                          setIntentError(null);
+                        }} 
+                        variant="outline" 
+                        size="sm"
+                      >
+                        Use a different email
                       </Button>
-                    )}
+                    </div>
                   </div>
-                ) : elementsOptions ? (
+                ) : intentError ? (
+                  <div className="text-center py-6">
+                    <p className="text-sm text-destructive mb-3">{intentError}</p>
+                    <Button onClick={createSubscriptionIntent} variant="outline" size="sm">
+                      Try Again
+                    </Button>
+                  </div>
+                ) : clientSecret && elementsOptions ? (
                   <Elements stripe={stripePromise} options={elementsOptions}>
                     <CheckoutForm 
                       displayPrice={displayPrice}
                       onSuccess={handlePaymentSuccess}
                     />
                   </Elements>
-                ) : null}
+                ) : (
+                  /* Loading/Skeleton state for payment fields */
+                  <div className="space-y-4">
+                    <div className="border rounded-lg p-4 bg-muted/30">
+                      <div className="space-y-3">
+                        {/* Card number skeleton */}
+                        <div className="space-y-2">
+                          <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                          <div className="h-10 bg-muted rounded animate-pulse" />
+                        </div>
+                        {/* Expiry and CVC skeleton */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <div className="h-4 w-16 bg-muted rounded animate-pulse" />
+                            <div className="h-10 bg-muted rounded animate-pulse" />
+                          </div>
+                          <div className="space-y-2">
+                            <div className="h-4 w-12 bg-muted rounded animate-pulse" />
+                            <div className="h-10 bg-muted rounded animate-pulse" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {isCreatingIntent && (
+                      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Preparing payment form...</span>
+                      </div>
+                    )}
+                    {!isCreatingIntent && !isBasicFormValid && (
+                      <p className="text-sm text-center text-muted-foreground">
+                        Complete the form above to enable payment
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <p className="text-xs text-center text-muted-foreground">
