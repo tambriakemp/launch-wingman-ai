@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Loader2, AlertCircle, Plus } from "lucide-react";
+import { Loader2, AlertCircle, Plus, RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
 import { usePinterestSandboxToken } from "@/hooks/usePinterestSandboxToken";
@@ -48,7 +48,9 @@ export function PinterestBoardSelector({ selectedBoard, onBoardChange }: Pintere
   const [newBoardName, setNewBoardName] = useState("");
   const [newBoardDescription, setNewBoardDescription] = useState("");
 
-  const { data: boardsData, isLoading, error } = useQuery({
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const { data: boardsData, isLoading, error, isFetching, refetch } = useQuery({
     queryKey: ["pinterest-boards", user?.id, environment, sandboxToken],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -69,6 +71,14 @@ export function PinterestBoardSelector({ selectedBoard, onBoardChange }: Pintere
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
   });
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: ["pinterest-boards"] });
+    await refetch();
+    setIsRefreshing(false);
+    toast.success("Boards refreshed");
+  };
 
   const createBoardMutation = useMutation({
     mutationFn: async ({ name, description }: { name: string; description?: string }) => {
@@ -146,7 +156,19 @@ export function PinterestBoardSelector({ selectedBoard, onBoardChange }: Pintere
   if (!boardsData || boardsData.length === 0) {
     return (
       <div className="space-y-3">
-        <Label>Pinterest Board</Label>
+        <div className="flex items-center justify-between">
+          <Label>Pinterest Board</Label>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-auto p-1 text-xs gap-1"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
         <p className="text-sm text-muted-foreground">
           No Pinterest boards found{isSandbox ? " in sandbox" : ""}.
           {isSandbox ? " Create one to get started." : " Create a board on Pinterest first."}
@@ -215,14 +237,25 @@ export function PinterestBoardSelector({ selectedBoard, onBoardChange }: Pintere
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <Label>Pinterest Board *</Label>
-        {isSandbox && (
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-auto p-1 text-xs gap-1">
-                <Plus className="w-3 h-3" />
-                New
-              </Button>
-            </DialogTrigger>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-auto p-1 text-xs gap-1"
+            onClick={handleRefresh}
+            disabled={isRefreshing || isFetching}
+          >
+            <RefreshCw className={`w-3 h-3 ${(isRefreshing || isFetching) ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          {isSandbox && (
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-auto p-1 text-xs gap-1">
+                  <Plus className="w-3 h-3" />
+                  New
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create Pinterest Board</DialogTitle>
@@ -268,9 +301,10 @@ export function PinterestBoardSelector({ selectedBoard, onBoardChange }: Pintere
                   )}
                 </Button>
               </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
       </div>
       <Select
         value={selectedBoard || ""}
