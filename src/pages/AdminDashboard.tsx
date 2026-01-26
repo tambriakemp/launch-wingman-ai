@@ -48,6 +48,7 @@ import { SupportTicketsTab } from '@/components/admin/SupportTicketsTab';
 import { ActivityLogsTab } from '@/components/admin/ActivityLogsTab';
 import { CouponManagement } from '@/components/admin/CouponManagement';
 import { MarketingAssetsTab } from '@/components/admin/MarketingAssetsTab';
+import { SubscriptionTierToggle } from '@/components/admin/SubscriptionTierToggle';
 
 interface User {
   id: string;
@@ -88,8 +89,6 @@ const MobileUserCard = ({
   onActivity,
   onEdit, 
   onImpersonate, 
-  onAction, 
-  actionLoading, 
   impersonateLoading, 
   currentUserId,
   accessToken,
@@ -102,8 +101,6 @@ const MobileUserCard = ({
   onActivity: () => void;
   onEdit: () => void;
   onImpersonate: () => void;
-  onAction: (action: 'cancel' | 'grant_pro' | 'grant_content_vault') => void;
-  actionLoading: string | null;
   impersonateLoading: string | null;
   currentUserId: string | undefined;
   accessToken: string;
@@ -200,57 +197,14 @@ const MobileUserCard = ({
               </Button>
             </>
           )}
-          {user.subscription_status === 'pro' || user.subscription_status === 'content_vault' ? (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => onAction('cancel')}
-              disabled={actionLoading === user.id}
-            >
-              {actionLoading === user.id ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <X className="h-4 w-4 mr-1" />
-                  Cancel
-                </>
-              )}
-            </Button>
-          ) : (
-            <div className="flex gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onAction('grant_content_vault')}
-                disabled={actionLoading === user.id}
-                className="text-green-600 border-green-600 hover:bg-green-50"
-              >
-                {actionLoading === user.id ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Package className="h-4 w-4 mr-1" />
-                    Vault
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => onAction('grant_pro')}
-                disabled={actionLoading === user.id}
-              >
-                {actionLoading === user.id ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Crown className="h-4 w-4 mr-1" />
-                    Pro
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
+          <SubscriptionTierToggle
+            userId={user.id}
+            userEmail={user.email}
+            currentTier={user.subscription_status}
+            stripeSubscriptionId={user.stripe_subscription_id}
+            accessToken={accessToken}
+            onTierChanged={onRefresh}
+          />
           {user.id !== currentUserId && isAdmin && (
             <DeleteUserDialog
               userId={user.id}
@@ -901,8 +855,6 @@ const AdminDashboard = () => {
                           onActivity={() => setActivityDialog({ open: true, user })}
                           onEdit={() => setEditUserDialog({ open: true, user })}
                           onImpersonate={() => handleImpersonateClick(user)}
-                          onAction={(action) => handleAction(action, user)}
-                          actionLoading={actionLoading}
                           impersonateLoading={impersonateLoading}
                           currentUserId={currentUser?.id}
                           accessToken={session?.access_token || ''}
@@ -1041,52 +993,14 @@ const AdminDashboard = () => {
                                         </Button>
                                       </>
                                     )}
-                                    {(user.subscription_status === 'pro' || user.subscription_status === 'content_vault') ? (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleAction('cancel', user)}
-                                        disabled={actionLoading === user.id}
-                                        className="text-destructive hover:text-destructive"
-                                      >
-                                        {actionLoading === user.id ? (
-                                          <RefreshCw className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                          <X className="h-4 w-4" />
-                                        )}
-                                      </Button>
-                                    ) : (
-                                      <>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleAction('grant_content_vault', user)}
-                                          disabled={actionLoading === user.id}
-                                          className="text-green-500 hover:text-green-600"
-                                          title="Grant Vault"
-                                        >
-                                          {actionLoading === user.id ? (
-                                            <RefreshCw className="h-4 w-4 animate-spin" />
-                                          ) : (
-                                            <Package className="h-4 w-4" />
-                                          )}
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleAction('grant_pro', user)}
-                                          disabled={actionLoading === user.id}
-                                          className="text-amber-500 hover:text-amber-600"
-                                          title="Grant Pro"
-                                        >
-                                          {actionLoading === user.id ? (
-                                            <RefreshCw className="h-4 w-4 animate-spin" />
-                                          ) : (
-                                            <Crown className="h-4 w-4" />
-                                          )}
-                                        </Button>
-                                      </>
-                                    )}
+                                    <SubscriptionTierToggle
+                                      userId={user.id}
+                                      userEmail={user.email}
+                                      currentTier={user.subscription_status}
+                                      stripeSubscriptionId={user.stripe_subscription_id}
+                                      accessToken={session?.access_token || ''}
+                                      onTierChanged={fetchUsers}
+                                    />
                                     {user.id !== currentUser?.id && isAdmin && (
                                       <DeleteUserDialog
                                         userId={user.id}
