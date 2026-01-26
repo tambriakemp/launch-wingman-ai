@@ -48,6 +48,7 @@ import {
   AlertTriangle,
   FlaskConical,
   Zap,
+  Package,
 } from "lucide-react";
 
 interface Profile {
@@ -907,38 +908,48 @@ const Settings = () => {
 
                   <Separator className="my-6" />
 
-                  <div className="p-4 border-2 border-primary/20 rounded-lg bg-primary/5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Crown className="w-5 h-5 text-primary" />
-                      <span className="font-semibold text-foreground">Upgrade to Pro</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Content Vault Option */}
+                    <div className="p-4 border-2 border-green-500/20 rounded-lg bg-green-500/5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Package className="w-5 h-5 text-green-600" />
+                        <span className="font-semibold text-foreground">Content Vault</span>
+                      </div>
+                      <div className="flex items-baseline gap-1 mb-4">
+                        <span className="text-3xl font-bold text-foreground">$7</span>
+                        <span className="text-muted-foreground">/month</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Access exclusive templates, swipe files, and resources.
+                      </p>
+                      <Button 
+                        className="w-full bg-green-600 hover:bg-green-700" 
+                        onClick={() => navigate("/checkout?tier=content_vault")}
+                      >
+                        Get Vault Access <ArrowRight className="w-4 h-4 ml-1" />
+                      </Button>
                     </div>
-                    <div className="flex items-baseline gap-1 mb-4">
-                      <span className="text-3xl font-bold text-foreground">$25</span>
-                      <span className="text-muted-foreground">/month</span>
+
+                    {/* Pro Option */}
+                    <div className="p-4 border-2 border-primary/20 rounded-lg bg-primary/5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Crown className="w-5 h-5 text-primary" />
+                        <span className="font-semibold text-foreground">Pro Plan</span>
+                      </div>
+                      <div className="flex items-baseline gap-1 mb-4">
+                        <span className="text-3xl font-bold text-foreground">$25</span>
+                        <span className="text-muted-foreground">/month</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Full access to all features including Content Vault.
+                      </p>
+                      <Button 
+                        className="w-full" 
+                        onClick={() => navigate("/checkout?tier=pro")}
+                      >
+                        Upgrade to Pro <ArrowRight className="w-4 h-4 ml-1" />
+                      </Button>
                     </div>
-                    <ul className="space-y-2 mb-4">
-                      {[
-                        "Unlimited projects",
-                        "Unlimited AI content ideas",
-                        "Unlimited saved drafts",
-                        "Full sales copy builder",
-                        "Relaunch mode",
-                        "Insights & analytics",
-                        "Export phase snapshot",
-                        "Priority support",
-                      ].map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Check className="w-4 h-4 text-success" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                    <Button 
-                      className="w-full" 
-                      onClick={handleUpgrade}
-                    >
-                      Upgrade Now <ArrowRight className="w-4 h-4 ml-1" />
-                    </Button>
                   </div>
                 </>
               )}
