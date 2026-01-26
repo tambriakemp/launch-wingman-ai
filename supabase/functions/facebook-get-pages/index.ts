@@ -40,16 +40,22 @@ serve(async (req) => {
 
     console.log(`[FACEBOOK-GET-PAGES] Fetching pages for user ${user.id.substring(0, 8)}...`);
 
-    // Get the user's Facebook connection with decrypted token
-    const { data: connection, error: connectionError } = await supabase
-      .from('social_connections_decrypted')
-      .select('access_token, page_id')
-      .eq('user_id', user.id)
-      .eq('platform', 'facebook')
-      .single();
+    // Get the user's Facebook connection using RPC function (bypasses auth.uid() issue with service role)
+    const { data: connections, error: connectionError } = await supabase
+      .rpc('get_social_connections_for_user', { p_user_id: user.id });
 
-    if (connectionError || !connection) {
-      console.error('No Facebook connection found:', connectionError);
+    if (connectionError) {
+      console.error('Error fetching connections:', connectionError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch social connections', pages: [] }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const connection = connections?.find((c: any) => c.platform === 'facebook');
+
+    if (!connection) {
+      console.error('No Facebook connection found for user');
       return new Response(
         JSON.stringify({ error: 'Facebook not connected', pages: [] }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

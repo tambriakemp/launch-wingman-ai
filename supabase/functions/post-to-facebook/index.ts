@@ -56,16 +56,22 @@ serve(async (req) => {
 
     console.log(`[POST-TO-FACEBOOK] Request from user ${sanitizeId(user.id)}, type: ${postType}`);
 
-    // Get Facebook connection
-    const { data: connection, error: connError } = await supabase
-      .from("social_connections_decrypted")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("platform", "facebook")
-      .single();
+    // Get Facebook connection using RPC function (bypasses auth.uid() issue with service role)
+    const { data: connections, error: connError } = await supabase
+      .rpc("get_social_connections_for_user", { p_user_id: user.id });
 
-    if (connError || !connection) {
-      console.error("[POST-TO-FACEBOOK] No connection found:", connError);
+    if (connError) {
+      console.error("[POST-TO-FACEBOOK] Error fetching connections:", connError);
+      return new Response(
+        JSON.stringify({ error: "Failed to fetch social connections" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const connection = connections?.find((c: any) => c.platform === "facebook");
+
+    if (!connection) {
+      console.error("[POST-TO-FACEBOOK] No Facebook connection found");
       return new Response(
         JSON.stringify({ error: "Facebook not connected" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }

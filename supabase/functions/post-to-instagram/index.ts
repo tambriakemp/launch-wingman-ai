@@ -82,16 +82,22 @@ serve(async (req) => {
 
     console.log(`Post to Instagram request from user ${user.id.substring(0, 8)}... type: ${mediaType}, postType: ${postType}`);
 
-    // Get Instagram connection
-    const { data: connection, error: connError } = await supabase
-      .from("social_connections_decrypted")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("platform", "instagram")
-      .single();
+    // Get Instagram connection using RPC function (bypasses auth.uid() issue with service role)
+    const { data: connections, error: connError } = await supabase
+      .rpc("get_social_connections_for_user", { p_user_id: user.id });
 
-    if (connError || !connection) {
-      console.error("No Instagram connection found:", connError);
+    if (connError) {
+      console.error("Error fetching connections:", connError);
+      return new Response(
+        JSON.stringify({ error: "Failed to fetch social connections" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const connection = connections?.find((c: any) => c.platform === "instagram");
+
+    if (!connection) {
+      console.error("No Instagram connection found for user");
       return new Response(
         JSON.stringify({ error: "Instagram not connected" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
