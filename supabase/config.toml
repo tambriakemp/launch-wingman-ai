@@ -225,32 +225,14 @@ verify_jwt = false
 [functions.stripe-webhook]
 verify_jwt = false
 
-[functions.surecart-admin-setup]
-verify_jwt = false
-
-[functions.surecart-checkout]
-verify_jwt = false
-
-[functions.check-surecart-subscription]
-verify_jwt = false
-
-[functions.surecart-webhook]
-verify_jwt = false
-
-[functions.surecart-portal]
-verify_jwt = false
-
-[functions.validate-surecart-coupon]
-verify_jwt = false
-
-[functions.admin-manage-surecart-subscription]
-verify_jwt = false
-
-[functions.surecart-process-subscription]
-verify_jwt = false
-
-[functions.surecart-create-checkout]
-verify_jwt = false
-
 [functions.create-subscription-intent]
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.customer-portal]
+verify_jwt = false
+
+[functions.admin-manage-subscription]
 verify_jwt = false
