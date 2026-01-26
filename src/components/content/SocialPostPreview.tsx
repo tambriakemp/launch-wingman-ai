@@ -97,8 +97,8 @@ function InstagramPhotoPreview({ content, mediaUrl, mediaType, accountName }: { 
         <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center"><User className="w-4 h-4 text-white" /></div>
         <span className="text-sm font-semibold text-gray-900">{accountName}</span>
       </div>
-      <div className="relative w-full" style={{ aspectRatio: '4/5' }}>
-        {mediaUrl ? (mediaType === "video" ? <video key={mediaUrl} src={mediaUrl} className="w-full h-full object-cover" muted loop autoPlay playsInline /> : <img src={mediaUrl} alt="" className="w-full h-full object-cover" />) : <div className="w-full h-full bg-gray-100 flex items-center justify-center"><span className="text-sm text-gray-400">No media</span></div>}
+      <div className="relative w-full bg-gray-100 flex items-center justify-center" style={{ aspectRatio: '4/5' }}>
+        {mediaUrl ? (mediaType === "video" ? <video key={mediaUrl} src={mediaUrl} className="w-full h-full object-cover" muted loop autoPlay playsInline /> : <img src={mediaUrl} alt="" className="w-full h-full object-contain" />) : <div className="w-full h-full flex items-center justify-center"><span className="text-sm text-gray-400">No media</span></div>}
       </div>
       <div className="flex items-center justify-between px-3 py-2 bg-white">
         <div className="flex items-center gap-4"><Heart className="w-6 h-6 text-gray-900" strokeWidth={1.5} /><MessageCircle className="w-6 h-6 text-gray-900" strokeWidth={1.5} /><Send className="w-6 h-6 text-gray-900" strokeWidth={1.5} /></div>
