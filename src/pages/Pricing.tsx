@@ -173,7 +173,7 @@ const Pricing = () => {
                   variant={plan.ctaVariant}
                   size="lg"
                 >
-                  <Link to="/checkout">
+                  <Link to={plan.popular ? "/checkout" : "/auth?tab=signup"}>
                     {plan.cta}
                   </Link>
                 </Button>
