@@ -173,7 +173,7 @@ const Pricing = () => {
                   variant={plan.ctaVariant}
                   size="lg"
                 >
-                  <Link to={plan.name === "Pro" ? "/checkout" : "/auth?tab=signup"}>
+                  <Link to="/checkout">
                     {plan.cta}
                   </Link>
                 </Button>
@@ -310,7 +310,7 @@ const Pricing = () => {
               Start free and upgrade when you're ready.
             </p>
             <Button asChild size="lg" variant="accent">
-              <Link to="/auth?tab=signup">Get Started Free</Link>
+              <Link to="/checkout">Get Started Free</Link>
             </Button>
           </motion.div>
         </div>

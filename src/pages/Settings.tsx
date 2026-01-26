@@ -12,7 +12,7 @@ import { useTikTokEnvironment } from "@/contexts/TikTokEnvironmentContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
@@ -79,7 +79,7 @@ const Settings = () => {
   const [sandboxTokenInput, setSandboxTokenInput] = useState("");
   const { hasAdminAccess, tier } = useFeatureAccess();
   const hasFullAccess = isSubscribed || hasAdminAccess;
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const navigate = useNavigate();
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -309,20 +309,8 @@ const Settings = () => {
     }
   };
 
-  const handleUpgrade = async () => {
-    setIsCheckingOut(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-checkout');
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      toast.error("Failed to start checkout. Please try again.");
-    } finally {
-      setIsCheckingOut(false);
-    }
+  const handleUpgrade = () => {
+    navigate("/checkout?upgrade=true");
   };
 
   const handleManageSubscription = async () => {
@@ -948,15 +936,8 @@ const Settings = () => {
                     <Button 
                       className="w-full" 
                       onClick={handleUpgrade}
-                      disabled={isCheckingOut}
                     >
-                      {isCheckingOut ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          Upgrade Now <ArrowRight className="w-4 h-4 ml-1" />
-                        </>
-                      )}
+                      Upgrade Now <ArrowRight className="w-4 h-4 ml-1" />
                     </Button>
                   </div>
                 </>
