@@ -219,6 +219,70 @@ serve(async (req) => {
       });
     }
 
+    if (action === 'upgrade_to_pro') {
+      if (!stripe_subscription_id) throw new Error("No existing subscription to upgrade");
+      
+      // Cancel existing Vault subscription
+      await stripe.subscriptions.cancel(stripe_subscription_id);
+      logStep("Cancelled existing Vault subscription for upgrade", { stripe_subscription_id });
+      
+      // Grant Pro subscription
+      const subscription = await grantSubscription('Pro', PRICE_IDS.pro);
+      
+      // Log the upgrade action
+      await supabaseClient.from('admin_action_logs').insert({
+        admin_user_id: adminUser.id,
+        admin_email: adminUser.email,
+        target_email: user_email,
+        action_type: 'upgraded_to_pro',
+        action_details: { 
+          old_subscription_id: stripe_subscription_id,
+          new_subscription_id: subscription.id 
+        }
+      });
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: "Upgraded to Pro",
+        subscription_id: subscription.id 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    if (action === 'downgrade_to_vault') {
+      if (!stripe_subscription_id) throw new Error("No existing subscription to downgrade");
+      
+      // Cancel existing Pro subscription
+      await stripe.subscriptions.cancel(stripe_subscription_id);
+      logStep("Cancelled existing Pro subscription for downgrade", { stripe_subscription_id });
+      
+      // Grant Vault subscription
+      const subscription = await grantSubscription('Content Vault', PRICE_IDS.content_vault);
+      
+      // Log the downgrade action
+      await supabaseClient.from('admin_action_logs').insert({
+        admin_user_id: adminUser.id,
+        admin_email: adminUser.email,
+        target_email: user_email,
+        action_type: 'downgraded_to_vault',
+        action_details: { 
+          old_subscription_id: stripe_subscription_id,
+          new_subscription_id: subscription.id 
+        }
+      });
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: "Downgraded to Content Vault",
+        subscription_id: subscription.id 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     throw new Error("Invalid action");
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
