@@ -1190,18 +1190,28 @@ const AdminDashboard = () => {
         <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmDialog.action === 'cancel' ? 'Cancel Subscription' : 'Grant Pro Access'}
+              {confirmDialog.action === 'cancel' 
+                ? 'Cancel Subscription' 
+                : confirmDialog.action === 'grant_content_vault'
+                  ? 'Grant Content Vault Access'
+                  : 'Grant Pro Access'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmDialog.action === 'cancel'
                 ? `Are you sure you want to cancel the subscription for ${confirmDialog.user?.email}?`
-                : `Are you sure you want to grant free Pro access to ${confirmDialog.user?.email}?`}
+                : confirmDialog.action === 'grant_content_vault'
+                  ? `Are you sure you want to grant free Content Vault access to ${confirmDialog.user?.email}?`
+                  : `Are you sure you want to grant free Pro access to ${confirmDialog.user?.email}?`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={executeAction} className="w-full sm:w-auto">
-              {confirmDialog.action === 'cancel' ? 'Yes, Cancel' : 'Yes, Grant Pro'}
+              {confirmDialog.action === 'cancel' 
+                ? 'Yes, Cancel' 
+                : confirmDialog.action === 'grant_content_vault'
+                  ? 'Yes, Grant Vault'
+                  : 'Yes, Grant Pro'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
