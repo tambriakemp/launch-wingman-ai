@@ -51,16 +51,27 @@ Deno.serve(async (req) => {
       accessToken = sandboxToken;
       console.log('Using manual sandbox token for board creation');
     } else {
-      // Get OAuth token from database
-      const { data: connection, error: connError } = await supabase
-        .from('social_connections_decrypted')
-        .select('access_token')
-        .eq('user_id', user.id)
-        .eq('platform', 'pinterest')
-        .single();
+      // Get OAuth token from database using RPC function (bypasses auth.uid() issue)
+      // Note: We need to use service role client for this
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const serviceSupabase = createClient(supabaseUrl, supabaseServiceKey);
 
-      if (connError || !connection?.access_token) {
-        console.error('No Pinterest connection found:', connError);
+      const { data: connections, error: connError } = await serviceSupabase
+        .rpc('get_social_connections_for_user', { p_user_id: user.id });
+
+      if (connError) {
+        console.error('Error fetching connections:', connError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch social connections' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const connection = connections?.find((c: any) => c.platform === 'pinterest');
+
+      if (!connection?.access_token) {
+        console.error('No Pinterest connection found for user');
         return new Response(
           JSON.stringify({ error: 'Pinterest not connected. Please connect your Pinterest account first.' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

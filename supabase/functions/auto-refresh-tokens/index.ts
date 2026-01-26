@@ -374,8 +374,10 @@ serve(async (req) => {
     console.log(`[AUTO-REFRESH] Starting token refresh job. Threshold: ${thresholdDate.toISOString()}`);
 
     // Get all connections that need refreshing (expiring soon but not expired)
-    const { data: connections, error: fetchError } = await supabase
-      .from('social_connections_decrypted')
+    // Note: For auto-refresh, we need to query all users' connections, so we query the table directly
+    // and decrypt tokens manually since we don't have a specific user_id
+    const { data: rawConnections, error: fetchError } = await supabase
+      .from('social_connections')
       .select('id, user_id, platform, access_token, refresh_token, token_expires_at, page_id')
       .not('token_expires_at', 'is', null)
       .gt('token_expires_at', new Date().toISOString()) // Not already expired
@@ -384,6 +386,23 @@ serve(async (req) => {
     if (fetchError) {
       console.error('[AUTO-REFRESH] Error fetching connections:', fetchError);
       throw new Error('Failed to fetch connections');
+    }
+
+    // Decrypt tokens for each connection
+    const connections = [];
+    if (rawConnections) {
+      for (const conn of rawConnections) {
+        const { data: decryptedAccess } = await supabase.rpc('decrypt_token', { encrypted_token: conn.access_token });
+        const { data: decryptedRefresh } = conn.refresh_token 
+          ? await supabase.rpc('decrypt_token', { encrypted_token: conn.refresh_token })
+          : { data: null };
+        
+        connections.push({
+          ...conn,
+          access_token: decryptedAccess,
+          refresh_token: decryptedRefresh,
+        });
+      }
     }
 
     console.log(`[AUTO-REFRESH] Found ${connections?.length || 0} connections to refresh`);

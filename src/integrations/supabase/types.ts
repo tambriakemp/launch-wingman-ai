@@ -2342,6 +2342,23 @@ export type Database = {
     Functions: {
       decrypt_token: { Args: { encrypted_token: string }; Returns: string }
       encrypt_token: { Args: { plain_token: string }; Returns: string }
+      get_social_connections_for_user: {
+        Args: { p_user_id: string }
+        Returns: {
+          access_token: string
+          account_id: string
+          account_name: string
+          avatar_url: string
+          created_at: string
+          id: string
+          page_id: string
+          platform: string
+          refresh_token: string
+          token_expires_at: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       get_user_social_connections: {
         Args: never
         Returns: {
