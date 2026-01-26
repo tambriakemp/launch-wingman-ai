@@ -74,6 +74,10 @@ const Checkout = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   
+  // Email existence check state
+  const [emailExists, setEmailExists] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  
   // Coupon state
   const [promoCode, setPromoCode] = useState("");
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
@@ -198,7 +202,45 @@ const Checkout = () => {
     createPaymentIntent();
   };
 
+  // Check if email already exists (for new users only)
+  const checkEmailExists = useCallback(async (emailToCheck: string) => {
+    if (!emailToCheck || isUpgrade) {
+      setEmailExists(false);
+      return;
+    }
+    
+    // Basic email validation before checking
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailToCheck)) {
+      return;
+    }
+    
+    setIsCheckingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('check-email-exists', {
+        body: { email: emailToCheck }
+      });
+      
+      if (error) {
+        console.error("Email check error:", error);
+        return;
+      }
+      
+      setEmailExists(data?.exists || false);
+    } catch (err) {
+      console.error("Email check error:", err);
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  }, [isUpgrade]);
+
   const validateForm = useCallback((): boolean => {
+    // Check if email exists (for new users only)
+    if (!isUpgrade && emailExists) {
+      toast.error("An account with this email already exists. Please log in instead.");
+      return false;
+    }
+    
     try {
       if (isUpgrade) {
         // No validation needed for upgrade - user is already authenticated
@@ -227,7 +269,7 @@ const Checkout = () => {
       }
       return false;
     }
-  }, [isUpgrade, email, firstName, lastName, password, confirmPassword]);
+  }, [isUpgrade, email, firstName, lastName, password, confirmPassword, emailExists]);
 
   const handlePaymentSuccess = async () => {
     // After payment succeeds, complete the subscription checkout
@@ -428,12 +470,27 @@ const Checkout = () => {
                         type="email"
                         autoComplete="email"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setEmailExists(false); // Reset on change
+                        }}
+                        onBlur={() => checkEmailExists(email)}
                         placeholder="you@example.com"
                         className="pl-10"
                       />
+                      {isCheckingEmail && (
+                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
+                      )}
                     </div>
                     {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                    {emailExists && (
+                      <div className="text-sm text-destructive flex items-center gap-2">
+                        <span>This email already has an account.</span>
+                        <Link to="/auth" className="underline hover:text-destructive/80 font-medium">
+                          Log in instead
+                        </Link>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
