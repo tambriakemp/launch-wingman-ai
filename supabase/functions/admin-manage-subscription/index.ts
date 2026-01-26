@@ -64,11 +64,39 @@ serve(async (req) => {
       pro: 'price_1SipMGF2gaEq7adwAGMICdO5',
     };
 
-    if (action === 'cancel') {
-      if (!stripe_subscription_id) throw new Error("Subscription ID required for cancellation");
+    // Helper function to find user's active subscription from Stripe
+    const findUserSubscription = async (email: string): Promise<{ subscriptionId: string; priceId: string } | null> => {
+      const customers = await stripe.customers.list({ email, limit: 1 });
+      if (customers.data.length === 0) return null;
       
-      await stripe.subscriptions.cancel(stripe_subscription_id);
-      logStep("Subscription cancelled", { stripe_subscription_id });
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customers.data[0].id,
+        status: 'active',
+        limit: 10,
+      });
+      
+      if (subscriptions.data.length === 0) return null;
+      
+      const subscription = subscriptions.data[0];
+      return {
+        subscriptionId: subscription.id,
+        priceId: subscription.items.data[0]?.price?.id || '',
+      };
+    };
+
+    if (action === 'cancel') {
+      if (!user_email) throw new Error("User email required for cancellation");
+      
+      // Look up subscription from Stripe if not provided
+      let subIdToCancel = stripe_subscription_id;
+      if (!subIdToCancel) {
+        const existingSub = await findUserSubscription(user_email);
+        if (!existingSub) throw new Error("No active subscription found for this user");
+        subIdToCancel = existingSub.subscriptionId;
+      }
+      
+      await stripe.subscriptions.cancel(subIdToCancel);
+      logStep("Subscription cancelled", { stripe_subscription_id: subIdToCancel });
       
       // Log to admin_action_logs
       await supabaseClient.from('admin_action_logs').insert({
@@ -76,33 +104,30 @@ serve(async (req) => {
         admin_email: adminUser.email,
         target_email: user_email,
         action_type: 'subscription_cancelled',
-        action_details: { stripe_subscription_id }
+        action_details: { stripe_subscription_id: subIdToCancel }
       });
 
       // Trigger marketing and surecontact webhooks to update tags
-      if (user_email) {
-        const { data: authUsers } = await supabaseClient.auth.admin.listUsers();
-        const targetUser = authUsers?.users?.find(u => u.email === user_email);
-        if (targetUser) {
-          const baseUrl = Deno.env.get("SUPABASE_URL");
-          const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-          
+      const { data: authUsers } = await supabaseClient.auth.admin.listUsers();
+      const targetUser = authUsers?.users?.find(u => u.email === user_email);
+      if (targetUser) {
+        const baseUrl = Deno.env.get("SUPABASE_URL");
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-          // Trigger SureContact webhook
-          await fetch(`${baseUrl}/functions/v1/surecontact-webhook`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${serviceKey}`,
-            },
-            body: JSON.stringify({
-              action: "sync_user",
-              email: user_email,
-              event_type: "subscription_cancelled",
-            }),
-          });
-          logStep("Contact webhook triggered for subscription_cancelled", { email: user_email });
-        }
+        // Trigger SureContact webhook
+        await fetch(`${baseUrl}/functions/v1/surecontact-webhook`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${serviceKey}`,
+          },
+          body: JSON.stringify({
+            action: "sync_user",
+            email: user_email,
+            event_type: "subscription_cancelled",
+          }),
+        });
+        logStep("Contact webhook triggered for subscription_cancelled", { email: user_email });
       }
       
       return new Response(JSON.stringify({ success: true, message: "Subscription cancelled" }), {
@@ -220,11 +245,15 @@ serve(async (req) => {
     }
 
     if (action === 'upgrade_to_pro') {
-      if (!stripe_subscription_id) throw new Error("No existing subscription to upgrade");
+      if (!user_email) throw new Error("User email required to upgrade");
+      
+      // Look up existing subscription from Stripe
+      const existingSub = await findUserSubscription(user_email);
+      if (!existingSub) throw new Error("No active subscription found to upgrade");
       
       // Cancel existing Vault subscription
-      await stripe.subscriptions.cancel(stripe_subscription_id);
-      logStep("Cancelled existing Vault subscription for upgrade", { stripe_subscription_id });
+      await stripe.subscriptions.cancel(existingSub.subscriptionId);
+      logStep("Cancelled existing Vault subscription for upgrade", { subscriptionId: existingSub.subscriptionId });
       
       // Grant Pro subscription
       const subscription = await grantSubscription('Pro', PRICE_IDS.pro);
@@ -236,7 +265,7 @@ serve(async (req) => {
         target_email: user_email,
         action_type: 'upgraded_to_pro',
         action_details: { 
-          old_subscription_id: stripe_subscription_id,
+          old_subscription_id: existingSub.subscriptionId,
           new_subscription_id: subscription.id 
         }
       });
@@ -252,11 +281,15 @@ serve(async (req) => {
     }
 
     if (action === 'downgrade_to_vault') {
-      if (!stripe_subscription_id) throw new Error("No existing subscription to downgrade");
+      if (!user_email) throw new Error("User email required to downgrade");
+      
+      // Look up existing subscription from Stripe
+      const existingSub = await findUserSubscription(user_email);
+      if (!existingSub) throw new Error("No active subscription found to downgrade");
       
       // Cancel existing Pro subscription
-      await stripe.subscriptions.cancel(stripe_subscription_id);
-      logStep("Cancelled existing Pro subscription for downgrade", { stripe_subscription_id });
+      await stripe.subscriptions.cancel(existingSub.subscriptionId);
+      logStep("Cancelled existing Pro subscription for downgrade", { subscriptionId: existingSub.subscriptionId });
       
       // Grant Vault subscription
       const subscription = await grantSubscription('Content Vault', PRICE_IDS.content_vault);
@@ -268,7 +301,7 @@ serve(async (req) => {
         target_email: user_email,
         action_type: 'downgraded_to_vault',
         action_details: { 
-          old_subscription_id: stripe_subscription_id,
+          old_subscription_id: existingSub.subscriptionId,
           new_subscription_id: subscription.id 
         }
       });
