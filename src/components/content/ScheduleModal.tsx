@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, Clock, Globe, Loader2 } from "lucide-react";
 import {
@@ -63,6 +63,16 @@ export function ScheduleModal({
     initialDate || undefined
   );
   const [selectedTime, setSelectedTime] = useState(initialTime);
+
+  // Sync selectedDate when initialDate prop changes
+  useEffect(() => {
+    setSelectedDate(initialDate || undefined);
+  }, [initialDate]);
+
+  // Sync selectedTime when initialTime prop changes
+  useEffect(() => {
+    setSelectedTime(initialTime);
+  }, [initialTime]);
 
   const handleSchedule = async () => {
     if (!selectedDate) return;
