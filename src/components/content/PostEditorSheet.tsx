@@ -117,6 +117,8 @@ interface PostEditorSheetProps {
   isCreateMode?: boolean;
   // Mode 4: Editing an existing saved draft (from content_drafts table)
   existingDraftId?: string | null;
+  // Initial scheduled date - when creating from calendar click
+  initialScheduledDate?: Date | null;
   // Slot context - when creating from a specific timeline slot
   slotContext?: {
     phase: string;
@@ -173,6 +175,7 @@ export function PostEditorSheet({
   existingItem,
   isCreateMode = false,
   existingDraftId,
+  initialScheduledDate,
   slotContext,
   currentPhase = "planning",
   funnelType,
@@ -512,7 +515,6 @@ export function PostEditorSheet({
       setContentType("general");
       setCurrentDraftId(null);
       setTimelineOpen(false);
-      setScheduledDate(null);
       setCustomizePerNetwork(false);
       setPerPlatformContent({});
       setThreadPosts([]);
@@ -535,6 +537,14 @@ export function PostEditorSheet({
         tiktok_photo_urls: [],
       });
       
+      // Use initial scheduled date if provided (from calendar click)
+      if (initialScheduledDate) {
+        setScheduledDate(initialScheduledDate);
+        setScheduledTime("09:00");
+      } else {
+        setScheduledDate(null);
+      }
+      
       // If slot context is provided, pre-assign to that slot
       if (slotContext) {
         setSelectedPhase(slotContext.phase);
@@ -546,7 +556,7 @@ export function PostEditorSheet({
         setTimelineItemId(null);
       }
     }
-  }, [open, existingItem, talkingPoint, isCreateMode, slotContext]);
+  }, [open, existingItem, talkingPoint, isCreateMode, slotContext, initialScheduledDate]);
 
   const generateDraft = async () => {
     if (!talkingPoint) return;

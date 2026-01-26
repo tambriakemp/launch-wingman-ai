@@ -56,6 +56,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [editingPlannerItem, setEditingPlannerItem] = useState<ContentPlannerItem | null>(null);
   const [isCreatingNewPost, setIsCreatingNewPost] = useState(false);
+  const [initialScheduledDate, setInitialScheduledDate] = useState<Date | null>(null);
   
   const { user } = useAuth();
   const { hasAccess } = useFeatureAccess();
@@ -276,11 +277,12 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
             ) : (
               <ContentCalendarView
                 projectId={projectId}
-                onCreatePost={() => {
+                onCreatePost={(date) => {
                   setSelectedTalkingPoint(null);
                   setEditingDraftId(null);
                   setEditingPlannerItem(null);
                   setIsCreatingNewPost(true);
+                  setInitialScheduledDate(date || null);
                   setPostEditorOpen(true);
                 }}
                 onEditPost={(item) => {
@@ -335,6 +337,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
             setEditingDraftId(null);
             setEditingPlannerItem(null);
             setIsCreatingNewPost(false);
+            setInitialScheduledDate(null);
           }
         }}
         projectId={projectId}
@@ -342,6 +345,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
         existingItem={editingPlannerItem}
         existingDraftId={editingDraftId}
         isCreateMode={isCreatingNewPost}
+        initialScheduledDate={initialScheduledDate}
         currentPhase={currentPhase}
         funnelType={funnelType}
         audienceData={funnel}

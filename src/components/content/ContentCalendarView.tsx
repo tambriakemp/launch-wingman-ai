@@ -88,7 +88,7 @@ interface ContentPlannerItem {
 
 interface ContentCalendarViewProps {
   projectId: string;
-  onCreatePost: () => void;
+  onCreatePost: (date?: Date) => void;
   onEditPost: (item: ContentPlannerItem) => void;
   onSchedulePost: (item: ContentPlannerItem) => void;
 }
@@ -245,7 +245,7 @@ export const ContentCalendarView = ({
                       key={idx}
                       date={day}
                       items={dayItems}
-                      onCreatePost={onCreatePost}
+                      onCreatePost={(date) => onCreatePost(date)}
                       onEditPost={onEditPost}
                       onSchedulePost={onSchedulePost}
                       onDeletePost={handleDeletePost}
