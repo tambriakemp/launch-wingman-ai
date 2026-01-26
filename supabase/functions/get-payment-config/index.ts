@@ -17,37 +17,22 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Fetch public payment config
+    // Fetch Stripe payment config
     const { data: configs, error } = await supabaseClient
       .from('payment_config')
       .select('key, value')
-      .eq('provider', 'surecart')
-      .in('key', ['store_id', 'product_name', 'price_id']);
+      .eq('provider', 'stripe')
+      .in('key', ['price_id', 'product_name']);
 
     if (error) throw error;
 
     const config: Record<string, string> = {};
     configs?.forEach(c => { config[c.key] = c.value; });
 
-    if (!config.store_id) {
+    if (!config.price_id) {
       return new Response(
         JSON.stringify({ 
-          error: 'Store ID not configured', 
-          configured: false 
-        }),
-        { 
-          status: 200, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
-        }
-      );
-    }
-
-    // Validate that this is not a Stripe Account ID
-    if (config.store_id.startsWith('acct_')) {
-      console.warn('[GET-PAYMENT-CONFIG] Invalid processor ID - Stripe account ID detected:', config.store_id);
-      return new Response(
-        JSON.stringify({ 
-          error: `Invalid Processor ID. "${config.store_id}" is a Stripe Account ID, not a SureCart Processor ID. Please update in Admin → Config using "Fetch from SureCart" button.`, 
+          error: 'Stripe price_id not configured', 
           configured: false 
         }),
         { 
@@ -60,9 +45,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         configured: true,
-        store_id: config.store_id,
-        product_name: config.product_name || 'Pro Plan',
         price_id: config.price_id,
+        product_name: config.product_name || 'Launchely Pro',
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

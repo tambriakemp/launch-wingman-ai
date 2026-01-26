@@ -16,7 +16,6 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Auth from "./pages/Auth";
 import Checkout from "./pages/Checkout";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
-import SurecartRedirect from "./pages/SurecartRedirect";
 import AppRedirect from "./pages/AppRedirect";
 import Settings from "./pages/Settings";
 import Assessments from "./pages/Assessments";
@@ -118,7 +117,6 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/checkout/success" element={<CheckoutSuccess />} />
-            <Route path="/surecart/redirect/*" element={<SurecartRedirect />} />
             
             {/* Feature pages */}
             <Route path="/features/assessments" element={<AssessmentsFeature />} />

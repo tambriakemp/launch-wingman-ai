@@ -218,40 +218,6 @@
   }
 }
 
-/* SureCart Payment Element Styling */
-sc-payment-method {
-  --sc-font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --sc-color-primary: hsl(47 96% 53%);
-  --sc-color-primary-text: hsl(40 6% 7%);
-  --sc-input-border-color: hsl(220 13% 91%);
-  --sc-input-border-focus-color: hsl(40 6% 10%);
-  --sc-input-background-color: hsl(0 0% 100%);
-  --sc-input-color: hsl(240 10% 10%);
-  --sc-input-placeholder-color: hsl(220 9% 46%);
-  --sc-input-border-radius: 0.5rem;
-  --sc-input-padding: 0.75rem;
-  --sc-input-font-size: 0.875rem;
-  --sc-focus-ring-color: hsl(47 96% 53% / 0.3);
-  --sc-error-color: hsl(0 84% 60%);
-  --sc-spacing-small: 0.5rem;
-  --sc-spacing-medium: 1rem;
-  display: block;
-  width: 100%;
-}
-
-/* Dark mode support for SureCart element */
-.dark sc-payment-method {
-  --sc-color-primary: hsl(262 83% 65%);
-  --sc-color-primary-text: hsl(0 0% 100%);
-  --sc-input-border-color: hsl(240 6% 20%);
-  --sc-input-border-focus-color: hsl(262 83% 65%);
-  --sc-input-background-color: hsl(240 10% 12%);
-  --sc-input-color: hsl(0 0% 95%);
-  --sc-input-placeholder-color: hsl(220 9% 60%);
-  --sc-focus-ring-color: hsl(262 83% 65% / 0.4);
-  --sc-error-color: hsl(0 62% 50%);
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;

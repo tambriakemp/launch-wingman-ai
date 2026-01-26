@@ -22,7 +22,7 @@ export async function waitForSession(maxWaitMs = 5000, pollIntervalMs = 200): Pr
 }
 
 /**
- * Invokes the SureCart checkout with retry logic.
+ * Invokes the Stripe checkout with retry logic.
  * Handles transient auth errors by retrying with exponential backoff.
  * @param maxRetries Maximum number of retry attempts (default: 3)
  * @param couponCode Optional coupon code to apply at checkout
@@ -36,7 +36,7 @@ export async function invokeCheckoutWithRetry(
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const { data, error } = await supabase.functions.invoke("surecart-checkout", {
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: couponCode ? { coupon_code: couponCode } : {}
       });
       

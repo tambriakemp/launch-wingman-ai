@@ -92,7 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     setSubscriptionLoading(true);
     try {
-    const { data, error } = await supabase.functions.invoke('check-surecart-subscription');
+    const { data, error } = await supabase.functions.invoke('check-subscription');
       if (error) {
         console.error('Error checking subscription:', error);
         setIsSubscribed(false);
@@ -402,7 +402,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setImpersonatedUserEmail(targetEmail);
 
       // Explicitly check subscription for the impersonated user's new session
-      const { data: subData, error: subError } = await supabase.functions.invoke('check-surecart-subscription');
+      const { data: subData, error: subError } = await supabase.functions.invoke('check-subscription');
       if (subError) {
         console.error('Error checking subscription during impersonation:', subError);
       } else {
