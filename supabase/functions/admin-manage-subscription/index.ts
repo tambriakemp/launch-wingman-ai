@@ -147,7 +147,7 @@ serve(async (req) => {
       const coupon = await stripe.coupons.create({
         percent_off: 100,
         duration: 'forever',
-        name: `${tierName} grant - ${user_email.substring(0, 25)}`,
+        name: `${tierName} - ${user_email}`.substring(0, 40),
         metadata: {
           granted_to: user_email,
           granted_by: adminUser.email,
