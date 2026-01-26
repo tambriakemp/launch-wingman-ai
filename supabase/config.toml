@@ -236,3 +236,9 @@ verify_jwt = false
 
 [functions.admin-manage-subscription]
 verify_jwt = false
+
+[functions.create-payment-intent-only]
+verify_jwt = false
+
+[functions.complete-subscription-checkout]
+verify_jwt = false
