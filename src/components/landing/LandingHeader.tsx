@@ -152,7 +152,7 @@ export const LandingHeader = () => {
                   <Link to="/auth">Sign In</Link>
                 </Button>
                 <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
-                  <Link to="/checkout">Get Started Free</Link>
+                  <Link to="/auth?tab=signup">Get Started Free</Link>
                 </Button>
               </>
             )}
@@ -248,7 +248,7 @@ export const LandingHeader = () => {
                       <Link to="/auth">Sign In</Link>
                     </Button>
                     <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-                      <Link to="/checkout">Get Started Free</Link>
+                      <Link to="/auth?tab=signup">Get Started Free</Link>
                     </Button>
                   </>
                 )}

@@ -117,7 +117,7 @@ const About = () => {
             Join thousands of coaches who've simplified their launch process with Launchely.
           </p>
           <Button asChild size="lg" className="text-lg px-8">
-            <Link to="/checkout">Get Started Free</Link>
+            <Link to="/auth?tab=signup">Get Started Free</Link>
           </Button>
         </div>
       </section>
