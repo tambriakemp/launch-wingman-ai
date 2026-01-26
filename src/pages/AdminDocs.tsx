@@ -1039,22 +1039,22 @@ const AdminComponent = () => {
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="pt-4">
-                        <h4 className="font-semibold mb-4">SureCart Integration</h4>
+                        <h4 className="font-semibold mb-4">Stripe Integration</h4>
                         <p className="text-muted-foreground mb-4">
-                          SureCart handles subscription billing. Key edge functions:
+                          Stripe handles subscription billing. Key edge functions:
                         </p>
                         
                         <div className="space-y-2 mb-6">
                           <div className="p-3 bg-muted/50 rounded-lg">
-                            <code className="text-sm font-mono">surecart-checkout</code>
+                            <code className="text-sm font-mono">create-checkout</code>
                             <span className="text-xs text-muted-foreground ml-2">Creates checkout sessions</span>
                           </div>
                           <div className="p-3 bg-muted/50 rounded-lg">
-                            <code className="text-sm font-mono">surecart-portal</code>
+                            <code className="text-sm font-mono">customer-portal</code>
                             <span className="text-xs text-muted-foreground ml-2">Opens billing portal</span>
                           </div>
                           <div className="p-3 bg-muted/50 rounded-lg">
-                            <code className="text-sm font-mono">surecart-webhook</code>
+                            <code className="text-sm font-mono">stripe-webhook</code>
                             <span className="text-xs text-muted-foreground ml-2">Handles payment events</span>
                           </div>
                         </div>
@@ -1120,11 +1120,11 @@ const AdminComponent = () => {
                         
                         <div className="space-y-2 mb-6">
                           <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm">
-                            <span className="text-muted-foreground">SURECART_API_KEY</span>
-                            <span className="text-xs text-muted-foreground ml-2">— SureCart API</span>
+                            <span className="text-muted-foreground">STRIPE_SECRET_KEY</span>
+                            <span className="text-xs text-muted-foreground ml-2">— Stripe API</span>
                           </div>
                           <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm">
-                            <span className="text-muted-foreground">SURECART_WEBHOOK_SECRET</span>
+                            <span className="text-muted-foreground">STRIPE_WEBHOOK_SECRET</span>
                             <span className="text-xs text-muted-foreground ml-2">— Webhook verification</span>
                           </div>
                           <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm">

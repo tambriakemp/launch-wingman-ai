@@ -1428,9 +1428,6 @@ export type Database = {
           id: string
           last_active: string | null
           last_name: string | null
-          surecart_customer_id: string | null
-          surecart_subscription_id: string | null
-          surecart_subscription_status: string | null
           updated_at: string
           user_id: string
         }
@@ -1441,9 +1438,6 @@ export type Database = {
           id?: string
           last_active?: string | null
           last_name?: string | null
-          surecart_customer_id?: string | null
-          surecart_subscription_id?: string | null
-          surecart_subscription_status?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1454,9 +1448,6 @@ export type Database = {
           id?: string
           last_active?: string | null
           last_name?: string | null
-          surecart_customer_id?: string | null
-          surecart_subscription_id?: string | null
-          surecart_subscription_status?: string | null
           updated_at?: string
           user_id?: string
         }
