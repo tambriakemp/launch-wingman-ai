@@ -8,11 +8,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface CheckoutFormProps {
   displayPrice: number;
   onSuccess: () => void;
+  validateForm?: () => boolean;
 }
 
 const CheckoutForm = forwardRef<HTMLFormElement, CheckoutFormProps>(({ 
   displayPrice, 
-  onSuccess 
+  onSuccess,
+  validateForm 
 }, ref) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -22,6 +24,12 @@ const CheckoutForm = forwardRef<HTMLFormElement, CheckoutFormProps>(({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate form fields first (account details)
+    if (validateForm && !validateForm()) {
+      toast.error("Please complete all required fields");
+      return;
+    }
 
     if (!stripe || !elements) {
       return;
@@ -38,7 +46,7 @@ const CheckoutForm = forwardRef<HTMLFormElement, CheckoutFormProps>(({
         return;
       }
 
-      // Confirm payment with the existing clientSecret (subscription already created)
+      // Confirm payment with the existing clientSecret
       const { error: paymentError, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {

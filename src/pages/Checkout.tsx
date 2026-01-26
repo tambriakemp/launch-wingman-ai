@@ -85,6 +85,7 @@ const Checkout = () => {
 
   // Payment intent state
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
   const [intentError, setIntentError] = useState<string | null>(null);
 
@@ -107,6 +108,55 @@ const Checkout = () => {
     }
   }, [isUpgrade, user]);
 
+  // Create payment intent immediately on page load
+  const createPaymentIntent = useCallback(async (couponCode?: string) => {
+    if (isCreatingIntent) return;
+    
+    setIsCreatingIntent(true);
+    setIntentError(null);
+
+    try {
+      console.log("[Checkout] Creating payment intent on mount...");
+      const { data, error } = await supabase.functions.invoke('create-payment-intent-only', {
+        body: { couponCode }
+      });
+
+      if (error) {
+        console.error("[Checkout] Intent creation error:", error);
+        throw new Error(error.message);
+      }
+
+      if (!data?.success || !data?.clientSecret) {
+        throw new Error(data?.error || "Failed to initialize payment");
+      }
+
+      // Handle free subscription (100% discount coupon)
+      if (data.clientSecret === "free_subscription") {
+        console.log("[Checkout] Free subscription detected");
+        setClientSecret("free_subscription");
+        return;
+      }
+
+      console.log("[Checkout] Payment intent created successfully");
+      setClientSecret(data.clientSecret);
+      setPaymentIntentId(data.paymentIntentId);
+    } catch (err) {
+      console.error("[Checkout] Error creating payment intent:", err);
+      const errorMsg = err instanceof Error ? err.message : "Failed to initialize payment";
+      setIntentError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setIsCreatingIntent(false);
+    }
+  }, [isCreatingIntent]);
+
+  // Create payment intent on page load
+  useEffect(() => {
+    if (!clientSecret && !isCreatingIntent && !intentError) {
+      createPaymentIntent(appliedCoupon?.coupon_id);
+    }
+  }, []); // Run once on mount
+
   const handleValidateCoupon = async () => {
     if (!promoCode.trim()) return;
     
@@ -123,8 +173,10 @@ const Checkout = () => {
       if (data?.valid) {
         setAppliedCoupon(data as CouponInfo);
         toast.success("Coupon applied!");
-        // Reset clientSecret so intent is recreated with new price
+        // Reset clientSecret and recreate with new coupon
         setClientSecret(null);
+        setPaymentIntentId(null);
+        createPaymentIntent(data.coupon_id);
       } else {
         setPromoError(data?.error || "Invalid coupon code");
       }
@@ -140,8 +192,10 @@ const Checkout = () => {
     setAppliedCoupon(null);
     setPromoCode("");
     setPromoError("");
-    // Reset clientSecret so intent is recreated with original price
+    // Reset clientSecret and recreate without coupon
     setClientSecret(null);
+    setPaymentIntentId(null);
+    createPaymentIntent();
   };
 
   const validateForm = useCallback((): boolean => {
@@ -175,23 +229,20 @@ const Checkout = () => {
     }
   }, [isUpgrade, email, firstName, lastName, password, confirmPassword]);
 
-  // Create subscription intent when form is valid
-  const createSubscriptionIntent = useCallback(async () => {
-    // Don't create if already have a valid clientSecret
-    if (clientSecret) return;
-    
-    // Validate form first
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsCreatingIntent(true);
-    setIntentError(null);
-
+  const handlePaymentSuccess = async () => {
+    // After payment succeeds, complete the subscription checkout
     try {
-      console.log("[Checkout] Creating subscription intent...");
-      const { data, error } = await supabase.functions.invoke('create-subscription-intent', {
+      console.log("[Checkout] Payment succeeded, completing checkout...");
+      
+      // Handle free subscription
+      if (clientSecret === "free_subscription") {
+        navigate("/checkout/success");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('complete-subscription-checkout', {
         body: {
+          paymentIntentId,
           email: isUpgrade ? user?.email : email,
           firstName,
           lastName,
@@ -202,108 +253,35 @@ const Checkout = () => {
         }
       });
 
-      // Extract error message - supabase-js puts response body in error.context for non-2xx
-      let errorMessage = "Failed to initialize payment";
-      
-      if (error) {
-        errorMessage = error.message;
+      if (error || !data?.success) {
+        let errorMessage = "Failed to complete subscription";
+        if (error?.message) errorMessage = error.message;
+        if (data?.error) errorMessage = data.error;
         
-        // Try to get the actual response body from FunctionsHttpError
-        try {
-          const errorContext = error as any;
-          if (errorContext.context && typeof errorContext.context.json === 'function') {
-            const responseBody = await errorContext.context.json();
-            if (responseBody?.error) {
-              errorMessage = responseBody.error;
-            }
-          }
-        } catch {
-          // Ignore JSON parsing errors
-        }
-      }
-      
-      // Also check if data has an error (in case it was returned despite non-2xx)
-      if (data?.error) {
-        errorMessage = data.error;
-      }
-      
-      if (error || !data?.success || !data?.clientSecret) {
-        console.error("[Checkout] Intent creation failed:", errorMessage);
-        
-        // Check if this is an "account exists" error
-        if (errorMessage.toLowerCase().includes("already exists") || errorMessage.toLowerCase().includes("log in")) {
+        // Check for existing account error
+        if (errorMessage.toLowerCase().includes("already exists")) {
           setIntentError("account_exists");
-        } else {
-          setIntentError(errorMessage);
+          toast.error("An account with this email already exists. Please log in instead.");
+          return;
         }
-        toast.error(errorMessage);
-        return;
+        
+        throw new Error(errorMessage);
       }
 
-      // Handle free subscription (100% discount coupon)
-      if (data.clientSecret === "free_subscription") {
-        console.log("[Checkout] Free subscription - no payment required");
-        toast.success("Subscription activated!");
-        navigate("/projects?checkout=success");
-        return;
-      }
-
-      console.log("[Checkout] Intent created successfully");
-      setClientSecret(data.clientSecret);
+      console.log("[Checkout] Subscription completed successfully");
+      navigate("/checkout/success");
     } catch (err) {
-      console.error("[Checkout] Error creating intent:", err);
-      const errorMsg = err instanceof Error ? err.message : "Failed to initialize payment";
-      setIntentError(errorMsg);
+      console.error("[Checkout] Error completing checkout:", err);
+      const errorMsg = err instanceof Error ? err.message : "Failed to complete subscription";
       toast.error(errorMsg);
-    } finally {
-      setIsCreatingIntent(false);
     }
-  }, [clientSecret, validateForm, isUpgrade, user, email, firstName, lastName, password, appliedCoupon]);
-
-  // Check if form fields are valid enough to create intent
-  const isBasicFormValid = useMemo(() => {
-    if (isUpgrade) {
-      return !!firstName && !!lastName;
-    }
-    // For new users, need name, valid email, and matching passwords
-    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    const passwordsMatch = password.length >= 8 && password === confirmPassword;
-    return !!firstName && !!lastName && emailValid && passwordsMatch;
-  }, [isUpgrade, firstName, lastName, email, password, confirmPassword]);
-
-  // Auto-create intent when form becomes valid (debounced)
-  useEffect(() => {
-    console.log("[Checkout] Auto-intent check:", {
-      isBasicFormValid,
-      hasClientSecret: !!clientSecret,
-      isCreatingIntent,
-      intentError
-    });
-    
-    // Don't proceed if form is invalid, we already have a secret, or currently creating
-    if (!isBasicFormValid || clientSecret || isCreatingIntent) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      console.log("[Checkout] Auto-creating intent - form is valid");
-      setIntentError(null); // Clear any previous error to allow retry
-      createSubscriptionIntent();
-    }, 800); // Debounce to avoid rapid API calls
-
-    return () => clearTimeout(timer);
-  }, [isBasicFormValid, clientSecret, isCreatingIntent, email, createSubscriptionIntent]);
-
-  const handlePaymentSuccess = () => {
-    navigate("/checkout/success");
   };
 
   const displayPrice = appliedCoupon ? appliedCoupon.discounted_price : 25;
 
-
   // Stripe Elements options - only create when we have clientSecret
   const elementsOptions = useMemo(() => {
-    if (!clientSecret) return null;
+    if (!clientSecret || clientSecret === "free_subscription") return null;
     
     return {
       clientSecret,
@@ -450,12 +428,7 @@ const Checkout = () => {
                         type="email"
                         autoComplete="email"
                         value={email}
-                        onChange={(e) => {
-                          setEmail(e.target.value);
-                          // Only reset intent when email changes (affects Stripe customer)
-                          setClientSecret(null);
-                          setIntentError(null);
-                        }}
+                        onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
                         className="pl-10"
                       />
@@ -577,6 +550,15 @@ const Checkout = () => {
                       Stripe is not configured. Please check your environment settings.
                     </p>
                   </div>
+                ) : clientSecret === "free_subscription" ? (
+                  <div className="text-center space-y-4 py-6">
+                    <p className="text-sm text-muted-foreground">
+                      🎉 Your coupon covers the full subscription cost!
+                    </p>
+                    <Button onClick={handlePaymentSuccess} className="w-full">
+                      Activate Free Subscription
+                    </Button>
+                  </div>
                 ) : intentError === "account_exists" ? (
                   <div className="text-center space-y-3 py-6">
                     <p className="text-sm text-destructive">
@@ -603,7 +585,7 @@ const Checkout = () => {
                 ) : intentError ? (
                   <div className="text-center py-6">
                     <p className="text-sm text-destructive mb-3">{intentError}</p>
-                    <Button onClick={createSubscriptionIntent} variant="outline" size="sm">
+                    <Button onClick={() => createPaymentIntent(appliedCoupon?.coupon_id)} variant="outline" size="sm">
                       Try Again
                     </Button>
                   </div>
@@ -612,6 +594,7 @@ const Checkout = () => {
                     <CheckoutForm 
                       displayPrice={displayPrice}
                       onSuccess={handlePaymentSuccess}
+                      validateForm={validateForm}
                     />
                   </Elements>
                 ) : (
@@ -642,11 +625,6 @@ const Checkout = () => {
                         <Loader2 className="w-4 h-4 animate-spin" />
                         <span>Preparing payment form...</span>
                       </div>
-                    )}
-                    {!isCreatingIntent && !isBasicFormValid && (
-                      <p className="text-sm text-center text-muted-foreground">
-                        Complete the form above to enable payment
-                      </p>
                     )}
                   </div>
                 )}
