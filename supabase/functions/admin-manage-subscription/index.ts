@@ -95,7 +95,7 @@ serve(async (req) => {
               event_type: "subscription_cancelled",
             }),
           });
-          logStep("SureContact webhook triggered for subscription_cancelled", { email: user_email });
+          logStep("Contact webhook triggered for subscription_cancelled", { email: user_email });
         }
       }
       
@@ -191,7 +191,7 @@ serve(async (req) => {
             event_type: "subscription_started",
           }),
         });
-        logStep("SureContact webhook triggered for subscription_started", { email: user_email });
+        logStep("Contact webhook triggered for subscription_started", { email: user_email });
       }
       
       return new Response(JSON.stringify({ 
