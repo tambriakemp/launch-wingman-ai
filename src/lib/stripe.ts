@@ -1,7 +1,7 @@
 import { loadStripe } from "@stripe/stripe-js";
 
-// Stripe publishable key - loaded from environment variable
-// This MUST match the same Stripe account as the backend STRIPE_SECRET_KEY
+// Stripe publishable key - loaded from environment variable (synced from Cloud secrets)
+// This MUST match the same Stripe account as the backend STRIPE_SECRET_KEY (acct_1Sip76F2gaEq7adw)
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
 if (!STRIPE_PUBLISHABLE_KEY) {
