@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Check, X, Sparkles, HelpCircle } from "lucide-react";
+import { Check, X, Sparkles, HelpCircle, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingFooter } from "@/components/landing/LandingFooter";
@@ -19,6 +19,7 @@ const plans = [
     description: "Perfect for getting started with your first launch",
     cta: "Start Free",
     ctaVariant: "outline" as const,
+    ctaLink: "/auth?tab=signup",
     features: [
       { name: "1 Active Project", included: true },
       { name: "Full Planning & Messaging Tasks", included: true },
@@ -28,16 +29,42 @@ const plans = [
       { name: "5 AI Content Ideas per Day", included: true },
       { name: "Up to 5 Saved Drafts", included: true },
       { name: "Basic Sales Copy (Headline, CTA)", included: true },
-      { name: "Multiple Offers per Sales Page", included: false },
       { name: "Phase Snapshot (View Only)", included: true },
       { name: "Full Library Access", included: true },
+      { name: "Content Vault", included: false },
+      { name: "Multiple Offers per Sales Page", included: false },
       { name: "Unlimited Projects", included: false },
       { name: "Relaunch Mode", included: false },
       { name: "Insights & Analytics", included: false },
       { name: "Social Media Scheduling", included: false },
       { name: "Export Phase Snapshot", included: false },
       { name: "Full Sales Copy Builder", included: false },
-      { name: "Content Vault", included: false },
+    ],
+  },
+  {
+    name: "Content Vault",
+    price: "$7",
+    period: "/month",
+    description: "Access premium templates, guides, and resources",
+    cta: "Get Vault Access",
+    ctaVariant: "outline" as const,
+    ctaLink: "/checkout?tier=content_vault",
+    icon: Package,
+    features: [
+      { name: "Everything in Free", included: true, highlight: true },
+      { name: "Content Vault Access", included: true },
+      { name: "Premium Templates & Guides", included: true },
+      { name: "Canva Templates Library", included: true },
+      { name: "Swipe Files & Examples", included: true },
+      { name: "Multiple Offers per Sales Page", included: false },
+      { name: "Unlimited Projects", included: false },
+      { name: "Social Media Scheduling", included: false },
+      { name: "Relaunch Mode", included: false },
+      { name: "Insights & Analytics", included: false },
+      { name: "Export Phase Snapshot", included: false },
+      { name: "Full Sales Copy Builder", included: false },
+      { name: "Unlimited AI Ideas", included: false },
+      { name: "Unlimited Drafts", included: false },
     ],
   },
   {
@@ -47,6 +74,7 @@ const plans = [
     description: "Everything you need to launch like a pro",
     cta: "Go Pro",
     ctaVariant: "default" as const,
+    ctaLink: "/checkout",
     popular: true,
     features: [
       { name: "Unlimited Projects", included: true },
@@ -73,11 +101,15 @@ const plans = [
 const faqs = [
   {
     question: "Can I upgrade or downgrade at any time?",
-    answer: "Yes! You can upgrade to Pro at any time and get instant access to all features. If you downgrade, you'll keep access until the end of your billing period.",
+    answer: "Yes! You can upgrade to Pro or Content Vault at any time and get instant access to all features. If you downgrade, you'll keep access until the end of your billing period.",
   },
   {
     question: "What happens to my projects if I downgrade?",
     answer: "Your projects and data are never deleted. If you downgrade to Free, you'll still be able to view all projects but can only actively work on 1 project at a time.",
+  },
+  {
+    question: "What's included in the Content Vault?",
+    answer: "The Content Vault includes premium Canva templates, swipe files, email sequences, social media templates, and exclusive guides created by launch experts. New resources are added regularly.",
   },
   {
     question: "Is there a free trial for Pro?",
@@ -85,7 +117,7 @@ const faqs = [
   },
   {
     question: "How does billing work?",
-    answer: "Pro is billed monthly at $25/month. You can cancel anytime, and you'll keep access until the end of your billing period. No long-term contracts or hidden fees.",
+    answer: "Both Pro ($25/month) and Content Vault ($7/month) are billed monthly. You can cancel anytime, and you'll keep access until the end of your billing period. No long-term contracts or hidden fees.",
   },
   {
     question: "Do you offer refunds?",
@@ -119,14 +151,14 @@ const Pricing = () => {
       {/* Pricing Cards */}
       <section className="py-20 -mt-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {plans.map((plan, index) => (
               <motion.div
                 key={plan.name}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: index * 0.1 }}
-                className={`relative bg-card rounded-2xl border-2 p-8 ${
+                className={`relative bg-card rounded-2xl border-2 p-6 lg:p-8 ${
                   plan.popular ? "border-accent shadow-xl" : "border-border"
                 }`}
               >
@@ -139,24 +171,27 @@ const Pricing = () => {
                   </div>
                 )}
 
-                <div className="text-center mb-8">
-                  <h3 className="text-2xl font-bold text-foreground mb-2">{plan.name}</h3>
+                <div className="text-center mb-6">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    {plan.icon && <plan.icon className="w-5 h-5 text-primary" />}
+                    <h3 className="text-xl lg:text-2xl font-bold text-foreground">{plan.name}</h3>
+                  </div>
                   <div className="mb-2">
-                    <span className="text-5xl font-bold text-foreground">{plan.price}</span>
+                    <span className="text-4xl lg:text-5xl font-bold text-foreground">{plan.price}</span>
                     <span className="text-muted-foreground">{plan.period}</span>
                   </div>
-                  <p className="text-muted-foreground">{plan.description}</p>
+                  <p className="text-sm text-muted-foreground">{plan.description}</p>
                 </div>
 
-                <ul className="space-y-4 mb-8">
-                  {plan.features.map((feature) => (
-                    <li key={feature.name} className="flex items-center gap-3">
+                <ul className="space-y-3 mb-6">
+                  {plan.features.slice(0, 10).map((feature) => (
+                    <li key={feature.name} className="flex items-center gap-2">
                       {feature.included ? (
-                        <Check className="w-5 h-5 text-accent flex-shrink-0" />
+                        <Check className="w-4 h-4 text-accent flex-shrink-0" />
                       ) : (
-                        <X className="w-5 h-5 text-muted-foreground/40 flex-shrink-0" />
+                        <X className="w-4 h-4 text-muted-foreground/40 flex-shrink-0" />
                       )}
-                      <span className={feature.included ? "text-foreground" : "text-muted-foreground/60"}>
+                      <span className={`text-sm ${feature.included ? "text-foreground" : "text-muted-foreground/60"}`}>
                         {feature.name}
                       </span>
                     </li>
@@ -173,7 +208,7 @@ const Pricing = () => {
                   variant={plan.ctaVariant}
                   size="lg"
                 >
-                  <Link to={plan.popular ? "/checkout" : "/auth?tab=signup"}>
+                  <Link to={plan.ctaLink}>
                     {plan.cta}
                   </Link>
                 </Button>
@@ -201,34 +236,40 @@ const Pricing = () => {
             </p>
           </motion.div>
 
-          <div className="max-w-3xl mx-auto overflow-x-auto">
+          <div className="max-w-4xl mx-auto overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left py-4 px-4 font-semibold text-foreground">Feature</th>
                   <th className="text-center py-4 px-4 font-semibold text-foreground">Free</th>
+                  <th className="text-center py-4 px-4 font-semibold text-foreground">
+                    <div className="flex items-center justify-center gap-1">
+                      <Package className="w-4 h-4" />
+                      Vault
+                    </div>
+                  </th>
                   <th className="text-center py-4 px-4 font-semibold text-foreground">Pro</th>
                 </tr>
               </thead>
               <tbody>
                 {[
-                  { feature: "Active Projects", free: "1", pro: "Unlimited" },
-                  { feature: "Planning & Messaging Tasks", free: true, pro: true },
-                  { feature: "Funnel Type Selection", free: true, pro: true },
-                  { feature: "Offer Stack", free: true, pro: true },
-                  { feature: "Branding & Visual Direction", free: true, pro: true },
-                  { feature: "AI Content Ideas", free: "5/day", pro: "Unlimited" },
-                  { feature: "Saved Drafts", free: "5 max", pro: "Unlimited" },
-                  { feature: "Sales Copy", free: "Basic", pro: "Full Builder" },
-                  { feature: "Multiple Offers per Sales Page", free: false, pro: true },
-                  { feature: "Social Media Scheduling", free: false, pro: true },
-                  { feature: "Phase Snapshot", free: "View Only", pro: "View + Export" },
-                  { feature: "Library Access", free: true, pro: true },
-                  { feature: "Relaunch Mode", free: false, pro: true },
-                  { feature: "Insights & Analytics", free: false, pro: true },
-                  { feature: "Cross-Project Visibility", free: false, pro: true },
-                  { feature: "Content Vault", free: false, pro: true },
-                  { feature: "Priority Support", free: false, pro: true },
+                  { feature: "Active Projects", free: "1", vault: "1", pro: "Unlimited" },
+                  { feature: "Planning & Messaging Tasks", free: true, vault: true, pro: true },
+                  { feature: "Funnel Type Selection", free: true, vault: true, pro: true },
+                  { feature: "Offer Stack", free: true, vault: true, pro: true },
+                  { feature: "Branding & Visual Direction", free: true, vault: true, pro: true },
+                  { feature: "AI Content Ideas", free: "5/day", vault: "5/day", pro: "Unlimited" },
+                  { feature: "Saved Drafts", free: "5 max", vault: "5 max", pro: "Unlimited" },
+                  { feature: "Sales Copy", free: "Basic", vault: "Basic", pro: "Full Builder" },
+                  { feature: "Content Vault Access", free: false, vault: true, pro: true },
+                  { feature: "Multiple Offers per Sales Page", free: false, vault: false, pro: true },
+                  { feature: "Social Media Scheduling", free: false, vault: false, pro: true },
+                  { feature: "Phase Snapshot", free: "View Only", vault: "View Only", pro: "View + Export" },
+                  { feature: "Library Access", free: true, vault: true, pro: true },
+                  { feature: "Relaunch Mode", free: false, vault: false, pro: true },
+                  { feature: "Insights & Analytics", free: false, vault: false, pro: true },
+                  { feature: "Cross-Project Visibility", free: false, vault: false, pro: true },
+                  { feature: "Priority Support", free: false, vault: false, pro: true },
                 ].map((row, index) => (
                   <tr key={index} className="border-b border-border/50">
                     <td className="py-4 px-4 text-foreground">{row.feature}</td>
@@ -241,6 +282,17 @@ const Pricing = () => {
                         )
                       ) : (
                         <span className="text-foreground">{row.free}</span>
+                      )}
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      {typeof row.vault === "boolean" ? (
+                        row.vault ? (
+                          <Check className="w-5 h-5 text-accent mx-auto" />
+                        ) : (
+                          <X className="w-5 h-5 text-muted-foreground/40 mx-auto" />
+                        )
+                      ) : (
+                        <span className="text-foreground">{row.vault}</span>
                       )}
                     </td>
                     <td className="py-4 px-4 text-center">

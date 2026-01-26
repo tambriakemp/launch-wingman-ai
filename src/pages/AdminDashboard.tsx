@@ -55,7 +55,7 @@ interface User {
   first_name: string | null;
   last_name: string | null;
   created_at: string;
-  subscription_status: 'free' | 'pro';
+  subscription_status: 'free' | 'content_vault' | 'pro';
   subscription_end: string | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
@@ -102,7 +102,7 @@ const MobileUserCard = ({
   onActivity: () => void;
   onEdit: () => void;
   onImpersonate: () => void;
-  onAction: (action: 'cancel' | 'grant_pro') => void;
+  onAction: (action: 'cancel' | 'grant_pro' | 'grant_content_vault') => void;
   actionLoading: string | null;
   impersonateLoading: string | null;
   currentUserId: string | undefined;
@@ -133,10 +133,10 @@ const MobileUserCard = ({
             </div>
           </div>
           <Badge
-            variant={user.is_admin || user.is_manager ? 'default' : user.subscription_status === 'pro' ? 'default' : 'secondary'}
-            className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : ''}
+            variant={user.is_admin || user.is_manager ? 'default' : user.subscription_status === 'pro' ? 'default' : user.subscription_status === 'content_vault' ? 'default' : 'secondary'}
+            className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : user.subscription_status === 'content_vault' ? 'bg-green-500 hover:bg-green-600' : ''}
           >
-            {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : 'Free'}
+            {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : user.subscription_status === 'content_vault' ? 'Vault' : 'Free'}
           </Badge>
         </div>
         <div className="grid grid-cols-3 gap-2 text-sm mb-3">
@@ -200,7 +200,7 @@ const MobileUserCard = ({
               </Button>
             </>
           )}
-          {user.subscription_status === 'pro' ? (
+          {user.subscription_status === 'pro' || user.subscription_status === 'content_vault' ? (
             <Button
               variant="destructive"
               size="sm"
@@ -217,21 +217,39 @@ const MobileUserCard = ({
               )}
             </Button>
           ) : (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => onAction('grant_pro')}
-              disabled={actionLoading === user.id}
-            >
-              {actionLoading === user.id ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <Crown className="h-4 w-4 mr-1" />
-                  Grant Pro
-                </>
-              )}
-            </Button>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onAction('grant_content_vault')}
+                disabled={actionLoading === user.id}
+                className="text-green-600 border-green-600 hover:bg-green-50"
+              >
+                {actionLoading === user.id ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Package className="h-4 w-4 mr-1" />
+                    Vault
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => onAction('grant_pro')}
+                disabled={actionLoading === user.id}
+              >
+                {actionLoading === user.id ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Crown className="h-4 w-4 mr-1" />
+                    Pro
+                  </>
+                )}
+              </Button>
+            </div>
           )}
           {user.id !== currentUserId && isAdmin && (
             <DeleteUserDialog
@@ -257,7 +275,7 @@ const AdminDashboard = () => {
   const [impersonateLoading, setImpersonateLoading] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
-    action: 'cancel' | 'grant_pro';
+    action: 'cancel' | 'grant_pro' | 'grant_content_vault';
     user: User | null;
   }>({ open: false, action: 'cancel', user: null });
   const [impersonateDialog, setImpersonateDialog] = useState<{
@@ -269,7 +287,7 @@ const AdminDashboard = () => {
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userDateFrom, setUserDateFrom] = useState<Date | undefined>(undefined);
   const [userDateTo, setUserDateTo] = useState<Date | undefined>(undefined);
-  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'free' | 'pro' | 'admin' | 'manager'>('all');
+  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'free' | 'content_vault' | 'pro' | 'admin' | 'manager'>('all');
   const [userCurrentPage, setUserCurrentPage] = useState(1);
 
   // Bulk selection state
@@ -277,7 +295,7 @@ const AdminDashboard = () => {
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [bulkConfirmDialog, setBulkConfirmDialog] = useState<{
     open: boolean;
-    action: 'cancel' | 'grant_pro';
+    action: 'cancel' | 'grant_pro' | 'grant_content_vault';
   }>({ open: false, action: 'grant_pro' });
 
   // Activity dialog state
@@ -311,6 +329,8 @@ const AdminDashboard = () => {
         result = result.filter(user => user.is_admin);
       } else if (userStatusFilter === 'manager') {
         result = result.filter(user => user.is_manager);
+      } else if (userStatusFilter === 'content_vault') {
+        result = result.filter(user => user.subscription_status === 'content_vault');
       } else {
         result = result.filter(user => user.subscription_status === userStatusFilter);
       }
@@ -403,11 +423,12 @@ const AdminDashboard = () => {
     setSelectedUsers(new Set());
   };
 
-  const getEligibleUsers = (action: 'cancel' | 'grant_pro') => {
+  const getEligibleUsers = (action: 'cancel' | 'grant_pro' | 'grant_content_vault') => {
     return paginatedUsers.filter(user => {
       if (!selectedUsers.has(user.id)) return false;
-      if (action === 'cancel') return user.subscription_status === 'pro';
+      if (action === 'cancel') return user.subscription_status === 'pro' || user.subscription_status === 'content_vault';
       if (action === 'grant_pro') return user.subscription_status === 'free';
+      if (action === 'grant_content_vault') return user.subscription_status === 'free';
       return false;
     });
   };
@@ -505,7 +526,7 @@ const AdminDashboard = () => {
     fetchUsers();
   }, [session?.access_token]);
 
-  const handleAction = async (action: 'cancel' | 'grant_pro', user: User) => {
+  const handleAction = async (action: 'cancel' | 'grant_pro' | 'grant_content_vault', user: User) => {
     setConfirmDialog({ open: true, action, user });
   };
 
@@ -547,6 +568,7 @@ const AdminDashboard = () => {
   const stats = {
     totalUsers: users.length,
     proUsers: users.filter(u => u.subscription_status === 'pro').length,
+    vaultUsers: users.filter(u => u.subscription_status === 'content_vault').length,
     freeUsers: users.filter(u => u.subscription_status === 'free').length,
     mrrCents: users.reduce((sum, u) => sum + (u.subscription_amount_cents || 0), 0),
   };
