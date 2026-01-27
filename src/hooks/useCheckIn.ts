@@ -76,6 +76,26 @@ export function useCheckIn() {
     enabled: !!user,
   });
 
+  // Fetch user projects to determine if they have past/completed projects
+  const { data: projects = [] } = useQuery({
+    queryKey: ["user-projects-for-checkin", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, status")
+        .eq("user_id", user!.id);
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  // Compute hasPastProjects (projects that are completed/archived/launched OR more than 1 project)
+  const hasPastProjects = projects.some(p => 
+    ['completed', 'archived', 'launched'].includes(p.status)
+  ) || projects.length > 1;
+
   // Create or update preferences
   const updatePreferencesMutation = useMutation({
     mutationFn: async (updates: Partial<CheckInPreferences>) => {
@@ -202,5 +222,6 @@ export function useCheckIn() {
     snoozeCheckIn,
     setCadence,
     updatePreferences: updatePreferencesMutation.mutateAsync,
+    hasPastProjects,
   };
 }
