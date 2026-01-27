@@ -33,6 +33,9 @@ import { generateVoiceScript, hasVoiceSnippetSupport } from "@/lib/generateVoice
 import { trackTaskCompletion, trackTaskStart, trackAIAssist } from "@/lib/analytics";
 import { trackTaskComplete } from "@/lib/activityTracking";
 import { ExportPlanButton } from "@/components/planning/ExportPlanButton";
+import { ExportMessagingButton } from "@/components/messaging/ExportMessagingButton";
+import { ExportBuildButton } from "@/components/build/ExportBuildButton";
+import { ExportContentButton } from "@/components/content/ExportContentButton";
 
 export default function TaskDetail() {
   const { id: projectId, taskId } = useParams();
@@ -136,87 +139,206 @@ export default function TaskDetail() {
     return text.substring(0, maxLength).trim() + '...';
   };
 
-  // Get dynamic description for planning review checklist items
+  // Get dynamic description for phase review checklist items
   const getChecklistItemDescription = useCallback((optionValue: string): React.ReactNode => {
-    // Only process for planning_phase_review task
-    if (taskId !== 'planning_phase_review') return null;
-
     const notDefinedText = <span className="italic text-muted-foreground/70">Not yet defined</span>;
 
-    switch (optionValue) {
-      case 'audience_reviewed': {
-        const task = projectTasks.find(t => t.taskId === 'planning_define_audience');
-        const inputData = task?.inputData as Record<string, unknown> | undefined;
-        const value = inputData?.audience_description;
-        return value ? String(value) : notDefinedText;
+    // Planning phase review
+    if (taskId === 'planning_phase_review') {
+      switch (optionValue) {
+        case 'audience_reviewed': {
+          const task = projectTasks.find(t => t.taskId === 'planning_define_audience');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          const value = inputData?.audience_description;
+          return value ? String(value) : notDefinedText;
+        }
+        case 'problem_reviewed': {
+          const task = projectTasks.find(t => t.taskId === 'planning_define_problem');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          const value = inputData?.primary_problem;
+          return value ? String(value) : notDefinedText;
+        }
+        case 'outcome_reviewed': {
+          const task = projectTasks.find(t => t.taskId === 'planning_define_dream_outcome');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          const value = inputData?.dream_outcome;
+          return value ? String(value) : notDefinedText;
+        }
+        case 'time_effort_reviewed': {
+          const task = projectTasks.find(t => t.taskId === 'planning_time_effort_perception');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          const items: string[] = [];
+          if (inputData?.quick_wins) items.push(`Quick wins: ${String(inputData.quick_wins)}`);
+          if (inputData?.friction_reducers) items.push(`Friction reducers: ${String(inputData.friction_reducers)}`);
+          if (inputData?.effort_reframe) items.push(`Effort reframe: ${String(inputData.effort_reframe)}`);
+          
+          if (items.length === 0) return notDefinedText;
+          return (
+            <ul className="list-disc list-inside space-y-0.5 mt-1">
+              {items.map((item, i) => <li key={i} className="text-sm">{item}</li>)}
+            </ul>
+          );
+        }
+        case 'belief_reviewed': {
+          const task = projectTasks.find(t => t.taskId === 'planning_perceived_likelihood');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          const items: string[] = [];
+          if (inputData?.belief_blockers) items.push(`Belief blockers: ${String(inputData.belief_blockers)}`);
+          if (inputData?.belief_builders) items.push(`Belief builders: ${String(inputData.belief_builders)}`);
+          if (inputData?.past_attempts) items.push(`Past attempts: ${String(inputData.past_attempts)}`);
+          
+          if (items.length === 0) return notDefinedText;
+          return (
+            <ul className="list-disc list-inside space-y-0.5 mt-1">
+              {items.map((item, i) => <li key={i} className="text-sm">{item}</li>)}
+            </ul>
+          );
+        }
+        case 'offer_reviewed': {
+          const configuredOffers = projectOffers.filter(o => o.offer_type?.trim());
+          if (configuredOffers.length === 0) return <span className="italic text-muted-foreground/70">No offers configured yet</span>;
+          
+          return (
+            <ul className="list-disc list-inside space-y-0.5 mt-1">
+              {configuredOffers.map((offer) => (
+                <li key={offer.id} className="text-sm">
+                  <span className="capitalize">{offer.slot_type?.replace('_', ' ') || 'Offer'}</span>: {offer.title || offer.offer_type}
+                </li>
+              ))}
+            </ul>
+          );
+        }
+        case 'path_reviewed': {
+          const task = projectTasks.find(t => t.taskId === 'planning_choose_launch_path');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          const selected = inputData?.selected as string | undefined;
+          if (!selected) return notDefinedText;
+          return FUNNEL_TYPE_LABELS[selected] || selected;
+        }
       }
-      case 'problem_reviewed': {
-        const task = projectTasks.find(t => t.taskId === 'planning_define_problem');
-        const inputData = task?.inputData as Record<string, unknown> | undefined;
-        const value = inputData?.primary_problem;
-        return value ? String(value) : notDefinedText;
-      }
-      case 'outcome_reviewed': {
-        const task = projectTasks.find(t => t.taskId === 'planning_define_dream_outcome');
-        const inputData = task?.inputData as Record<string, unknown> | undefined;
-        const value = inputData?.dream_outcome;
-        return value ? String(value) : notDefinedText;
-      }
-      case 'time_effort_reviewed': {
-        const task = projectTasks.find(t => t.taskId === 'planning_time_effort_perception');
-        const inputData = task?.inputData as Record<string, unknown> | undefined;
-        const items: string[] = [];
-        if (inputData?.quick_wins) items.push(`Quick wins: ${String(inputData.quick_wins)}`);
-        if (inputData?.friction_reducers) items.push(`Friction reducers: ${String(inputData.friction_reducers)}`);
-        if (inputData?.effort_reframe) items.push(`Effort reframe: ${String(inputData.effort_reframe)}`);
-        
-        if (items.length === 0) return notDefinedText;
-        return (
-          <ul className="list-disc list-inside space-y-0.5 mt-1">
-            {items.map((item, i) => <li key={i} className="text-sm">{item}</li>)}
-          </ul>
-        );
-      }
-      case 'belief_reviewed': {
-        const task = projectTasks.find(t => t.taskId === 'planning_perceived_likelihood');
-        const inputData = task?.inputData as Record<string, unknown> | undefined;
-        const items: string[] = [];
-        if (inputData?.belief_blockers) items.push(`Belief blockers: ${String(inputData.belief_blockers)}`);
-        if (inputData?.belief_builders) items.push(`Belief builders: ${String(inputData.belief_builders)}`);
-        if (inputData?.past_attempts) items.push(`Past attempts: ${String(inputData.past_attempts)}`);
-        
-        if (items.length === 0) return notDefinedText;
-        return (
-          <ul className="list-disc list-inside space-y-0.5 mt-1">
-            {items.map((item, i) => <li key={i} className="text-sm">{item}</li>)}
-          </ul>
-        );
-      }
-      case 'offer_reviewed': {
-        const configuredOffers = projectOffers.filter(o => o.offer_type?.trim());
-        if (configuredOffers.length === 0) return <span className="italic text-muted-foreground/70">No offers configured yet</span>;
-        
-        return (
-          <ul className="list-disc list-inside space-y-0.5 mt-1">
-            {configuredOffers.map((offer) => (
-              <li key={offer.id} className="text-sm">
-                <span className="capitalize">{offer.slot_type?.replace('_', ' ') || 'Offer'}</span>: {offer.title || offer.offer_type}
-              </li>
-            ))}
-          </ul>
-        );
-      }
-      case 'path_reviewed': {
-        const task = projectTasks.find(t => t.taskId === 'planning_choose_launch_path');
-        const inputData = task?.inputData as Record<string, unknown> | undefined;
-        const selected = inputData?.selected as string | undefined;
-        if (!selected) return notDefinedText;
-        return FUNNEL_TYPE_LABELS[selected] || selected;
-      }
-      default:
-        return null;
     }
-  }, [taskId, projectTasks, projectOffers]);
+
+    // Messaging phase review
+    if (taskId === 'messaging_phase_review') {
+      switch (optionValue) {
+        case 'core_message_reviewed': {
+          const task = projectTasks.find(t => t.taskId === 'messaging_core_message');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          return inputData?.core_message ? String(inputData.core_message) : notDefinedText;
+        }
+        case 'transformation_reviewed': {
+          const task = projectTasks.find(t => t.taskId === 'messaging_transformation_statement');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          return inputData?.transformation_statement ? String(inputData.transformation_statement) : notDefinedText;
+        }
+        case 'talking_points_reviewed': {
+          const task = projectTasks.find(t => t.taskId === 'messaging_talking_points');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          const items: string[] = [];
+          for (let i = 1; i <= 5; i++) {
+            const point = inputData?.[`talking_point_${i}`];
+            if (point) items.push(String(point));
+          }
+          if (items.length === 0) return notDefinedText;
+          return (
+            <ul className="list-disc list-inside space-y-0.5 mt-1">
+              {items.map((item, i) => <li key={i} className="text-sm">{item}</li>)}
+            </ul>
+          );
+        }
+        case 'objections_reviewed': {
+          const task = projectTasks.find(t => t.taskId === 'messaging_common_objections');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          const items: string[] = [];
+          for (let i = 1; i <= 5; i++) {
+            const objection = inputData?.[`objection_${i}`];
+            if (objection) items.push(String(objection));
+          }
+          if (items.length === 0) return notDefinedText;
+          return (
+            <ul className="list-disc list-inside space-y-0.5 mt-1">
+              {items.map((item, i) => <li key={i} className="text-sm">{item}</li>)}
+            </ul>
+          );
+        }
+      }
+    }
+
+    // Build phase review
+    if (taskId === 'build_phase_review') {
+      switch (optionValue) {
+        case 'platform_chosen': {
+          const task = projectTasks.find(t => t.taskId === 'build_simple_launch_page');
+          if (task?.status === 'completed') return 'Launch page completed';
+          if (task?.status === 'in_progress') return 'Launch page in progress';
+          return notDefinedText;
+        }
+        case 'page_ready': {
+          const task = projectTasks.find(t => t.taskId === 'build_simple_launch_page');
+          if (task?.status === 'completed') return 'Page is ready for visitors';
+          return notDefinedText;
+        }
+        case 'ready_to_share': {
+          return null; // User confirmation only, use default description
+        }
+      }
+    }
+
+    // Content phase review
+    if (taskId === 'content_phase_review') {
+      switch (optionValue) {
+        case 'platforms_chosen': {
+          const task = projectTasks.find(t => t.taskId === 'content_choose_platforms');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          return inputData?.platforms ? String(inputData.platforms) : notDefinedText;
+        }
+        case 'themes_defined': {
+          const task = projectTasks.find(t => t.taskId === 'content_define_themes');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          const items: string[] = [];
+          for (let i = 1; i <= 5; i++) {
+            const theme = inputData?.[`theme_${i}`];
+            if (theme) items.push(String(theme));
+          }
+          if (items.length === 0) return notDefinedText;
+          return (
+            <ul className="list-disc list-inside space-y-0.5 mt-1">
+              {items.map((item, i) => <li key={i} className="text-sm">{item}</li>)}
+            </ul>
+          );
+        }
+        case 'posts_planned': {
+          const task = projectTasks.find(t => t.taskId === 'content_plan_launch_window');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          const days = inputData?.launch_window_days;
+          const summary = inputData?.planned_posts_summary;
+          if (!days && !summary) return notDefinedText;
+          const items: string[] = [];
+          if (days) items.push(`Launch window: ${String(days)} days`);
+          if (summary) items.push(String(summary));
+          return (
+            <div className="mt-1 space-y-1">
+              {items.map((item, i) => <div key={i} className="text-sm">{item}</div>)}
+            </div>
+          );
+        }
+        case 'captions_drafted': {
+          const task = projectTasks.find(t => t.taskId === 'content_write_captions');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          const written = inputData?.captions_written;
+          const sample = inputData?.sample_caption;
+          if (!written && !sample) return notDefinedText;
+          if (written) return String(written);
+          return notDefinedText;
+        }
+        case 'ready_to_share': {
+          return null; // User confirmation only, use default description
+        }
+      }
+    }
+
+    return null;
+  }, [taskId, projectTasks, projectOffers, FUNNEL_TYPE_LABELS]);
 
   // Load existing input data if available
   useEffect(() => {
@@ -785,6 +907,24 @@ export default function TaskDetail() {
                   projectTasks={projectTasks}
                   offers={projectOffers}
                   selectedFunnelType={project.selected_funnel_type}
+                />
+              )}
+              {taskId === 'messaging_phase_review' && project && (
+                <ExportMessagingButton 
+                  projectName={project.name}
+                  projectTasks={projectTasks}
+                />
+              )}
+              {taskId === 'build_phase_review' && project && (
+                <ExportBuildButton 
+                  projectName={project.name}
+                  projectTasks={projectTasks}
+                />
+              )}
+              {taskId === 'content_phase_review' && project && (
+                <ExportContentButton 
+                  projectName={project.name}
+                  projectTasks={projectTasks}
                 />
               )}
             </div>
