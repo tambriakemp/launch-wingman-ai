@@ -428,9 +428,15 @@ export default function OfferSnapshotTask() {
 
         {/* Why This Matters */}
         <section className="mb-8">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">
-            Why this matters
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Why this matters
+            </h2>
+            <VoiceSnippetButton
+              taskId={`offer_stack_${selectedFunnelType}`}
+              script={getOfferStackVoiceScript(selectedFunnelType)}
+            />
+          </div>
           <p className="text-foreground/80 leading-relaxed">
             {taskTemplate.whyItMatters}
           </p>
@@ -455,12 +461,7 @@ export default function OfferSnapshotTask() {
                 customize them to fit your strategy.
               </p>
               <div className="flex items-center gap-3 flex-wrap">
-                {/* Audio explanation button */}
-                <VoiceSnippetButton
-                  taskId={`offer_stack_${selectedFunnelType}`}
-                  script={getOfferStackVoiceScript(selectedFunnelType)}
-                  className="text-xs"
-                />
+                {/* Funnel diagram popup */}
                 
                 {/* Funnel diagram popup */}
                 {funnelConfig && (

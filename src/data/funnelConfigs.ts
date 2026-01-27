@@ -35,6 +35,43 @@ export interface FunnelConfig {
 }
 
 export const FUNNEL_CONFIGS: Record<string, FunnelConfig> = {
+  'content-to-offer-funnel': {
+    id: 'content-to-offer-funnel',
+    name: 'Content to Offer',
+    description: 'Direct content that leads straight to your offer - simple and effective',
+    icon: 'FileText',
+    bestFor: 'Creators with an existing audience',
+    complexity: 'beginner',
+    typicalSetupTime: '1 week',
+    steps: ['Content Post', 'Link in Bio/DMs', 'Sales Page', 'Checkout'],
+    color: 'text-sky-600',
+    bgColor: 'bg-sky-50 dark:bg-sky-950/30',
+    offerSlots: [
+      {
+        type: 'core',
+        label: 'Core Offer',
+        description: 'Your main product or service',
+        isRequired: true,
+        recommendedOfferTypes: ['Course', 'Ebook/Guide', 'Workshop', 'Coaching Package', 'Digital Product'],
+        priceRange: '$27-$497',
+      },
+      {
+        type: 'upsell',
+        label: 'Upsell (Optional)',
+        description: 'Additional offer after purchase',
+        isRequired: false,
+        recommendedOfferTypes: ['Implementation Guide', 'Bonus Training', 'VIP Access'],
+        priceRange: '$27-$197',
+      },
+    ],
+    assets: [
+      { id: 'sales-page', category: 'pages', title: 'Sales Page', description: 'Main offer sales page', linkedSection: 'sales-copy', offerSlotType: 'core' },
+      { id: 'checkout-page', category: 'pages', title: 'Checkout Page', description: 'Purchase flow', linkedSection: 'sales-copy', offerSlotType: 'core' },
+      { id: 'thank-you-page', category: 'pages', title: 'Thank You Page', description: 'Post-purchase confirmation', linkedSection: 'sales-copy', offerSlotType: 'core' },
+      { id: 'promo-content', category: 'content', title: 'Promotional Posts (5-7)', description: 'Content directing to offer', linkedSection: 'content' },
+      { id: 'core-deliverable', category: 'deliverables', title: 'Core Product', description: 'Your main offer content', linkedSection: 'deliverables', offerSlotType: 'core' },
+    ],
+  },
   'freebie-funnel': {
     id: 'freebie-funnel',
     name: 'Freebie Funnel',

@@ -2,7 +2,7 @@ import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 
 // Map from project's selected_funnel_type to FUNNEL_CONFIGS keys
 export const FUNNEL_TYPE_TO_CONFIG: Record<string, string> = {
-  'content_to_offer': 'freebie-funnel',
+  'content_to_offer': 'content-to-offer-funnel',
   'freebie_email_offer': 'freebie-funnel',
   'live_training_offer': 'webinar-funnel',
   'application_call': 'application-funnel',
