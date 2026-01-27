@@ -75,6 +75,8 @@ export const OfferStackBuilder = ({
     const newOffers = offers.filter((_, i) => i !== index);
     onChange(newOffers);
     setActiveOfferIndex(null);
+    // Persist removal to database immediately
+    void onSaveNow?.(newOffers);
   };
 
   const handleAddCustomSlot = (slotType: string) => {

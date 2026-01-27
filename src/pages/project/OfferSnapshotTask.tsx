@@ -280,23 +280,13 @@ export default function OfferSnapshotTask() {
     // Wait for offers query to complete before deciding to use defaults
     if (offersLoading) return;
 
-    const expectedSlotTypes = funnelConfig.offerSlots.map(s => s.type);
-    
-    // existingOffers is already filtered by funnel_type from the query
-    const existingSlotTypes = existingOffers?.map(o => o.slot_type) || [];
-    
-    // Check if we have matching offers for this funnel type
-    const hasMatchingOffers = 
-      expectedSlotTypes.length === existingSlotTypes.length &&
-      expectedSlotTypes.every(type => existingSlotTypes.includes(type)) &&
-      existingSlotTypes.every(type => expectedSlotTypes.includes(type));
-
     console.log('[OfferStack] LOAD - selectedFunnelType:', selectedFunnelType);
     console.log('[OfferStack] LOAD - existingOffers from DB:', existingOffers);
-    console.log('[OfferStack] LOAD - hasMatchingOffers:', hasMatchingOffers);
 
-    if (existingOffers && existingOffers.length > 0 && hasMatchingOffers) {
-      // Load existing offers for this funnel type
+    // Trust saved offers if any exist - don't require exact slot structure match
+    // This allows users to remove/add slots and have those changes persist
+    if (existingOffers && existingOffers.length > 0) {
+      // Load whatever was saved - trust the user's modifications
       const loadedOffers: OfferSlotData[] = existingOffers.map(o => ({
         id: o.id,
         slotType: o.slot_type || "core", // Defensive: ensure slotType is never undefined
@@ -312,7 +302,7 @@ export default function OfferSnapshotTask() {
       console.log('[OfferStack] LOAD - loadedOffers (mapped):', loadedOffers);
       setOffers(loadedOffers);
     } else {
-      // No matching offers - create defaults for this funnel type
+      // No saved offers at all - create defaults for this funnel type
       const defaultOffers: OfferSlotData[] = funnelConfig.offerSlots.map((slot: OfferSlotConfig) => ({
         slotType: slot.type,
         title: '',
