@@ -1,353 +1,242 @@
 
 
-# Refactor Social Media Bio Builder
+# AI-Powered Social Media Bio Generation
 
 ## Overview
 
-This refactor simplifies the Social Bio Builder by:
-1. Adding a "Generate Bio" button after selecting a formula
-2. Greying out platforms that already have a bio (one bio per platform limit)
-3. Restoring the formula field format when editing (using stored `field_data`)
-4. Keeping the Generate button available in edit mode
+This plan modifies the Social Media Bio Builder to:
+1. **Always enable the "Generate Bio" button** (remove the `disabled={!hasAllFields}` condition)
+2. **Create a new edge function** (`generate-social-bio`) that uses full project context from planning and messaging phases to craft a high-converting bio using the selected formula
+3. **Add loading state** while the AI generates the bio
+4. **Update the UI** to show any user-provided field values are used as hints, but the AI can fill in missing pieces
 
 ---
 
-## Current Issues
+## Current Problem
 
-| Issue | Current Behavior | Desired Behavior |
-|-------|------------------|------------------|
-| No Generate button | User fills in fields, bio auto-generates as preview | User clicks "Generate Bio" button after filling fields |
-| Platform re-use | User can select platform even if bio exists (silently updates) | Grey out platforms with existing bios, show lock icon |
-| Edit mode bypass | Opens simple textarea with final content only | Show original formula fields populated from `field_data` + Generate button |
+The button on line 616-618 of `SocialBioBuilder.tsx` is disabled when fields are empty:
+```tsx
+<Button 
+  onClick={() => setIsGenerated(true)} 
+  disabled={!hasAllFields}  // This prevents clicking when fields are empty
+  className="w-full"
+>
+```
 
 ---
 
-## Detailed Changes
+## Solution Architecture
 
-### 1. Grey Out Platforms with Existing Bios
+```text
++-------------------+     +------------------------+     +----------------------+
+|  SocialBioBuilder |---->|  generate-social-bio   |---->|  AI Gateway          |
+|  Component        |     |  Edge Function         |     |  (Gemini 2.5 Flash)  |
++-------------------+     +------------------------+     +----------------------+
+        |                           |
+        |  Sends:                   |  Fetches:
+        |  - projectId              |  - funnel (niche, audience, pain, outcome)
+        |  - platform               |  - offers (title, description)
+        |  - formulaId              |  - project (transformation statement)
+        |  - fieldData (optional)   |  - messaging tasks (core message, talking points)
+        |                           |
+        +---------------------------+
+```
+
+---
+
+## Part 1: Create Edge Function
+
+**File:** `supabase/functions/generate-social-bio/index.ts`
+
+The edge function will:
+1. Accept `projectId`, `platform`, `formulaId`, and optional `fieldData`
+2. Fetch full project context (funnel, offers, project, completed tasks)
+3. Build a prompt that incorporates the bio formula structure
+4. Generate a bio that fits the platform's character limit
+5. Return the generated bio content
+
+### Key Context to Include
+| Source | Data |
+|--------|------|
+| `funnels` table | niche, target_audience, primary_pain_point, desired_outcome |
+| `offers` table | title, description, transformation_statement |
+| `projects` table | transformation_statement, name |
+| `project_tasks` table | core_message, talking_points from messaging phase |
+
+### Prompt Strategy
+The AI will receive:
+- The selected bio formula template (e.g., "I help [who] [achieve result] using [method]")
+- Any user-provided field values (used as hints/preferences)
+- Full project context
+- Platform character limit
+
+The AI generates a complete bio that:
+- Follows the formula structure
+- Uses project context to fill in missing fields
+- Respects platform character limits
+- Sounds natural and converting
+
+---
+
+## Part 2: Update SocialBioBuilder Component
 
 **File:** `src/components/SocialBioBuilder.tsx`
 
-In the platform selection grid (lines 472-496), modify each platform button to:
-- Check if `bios.find(b => b.platform === p.id)` exists
-- If exists: grey out button, show lock icon, add "Bio exists" tooltip
-- Prevent `handlePlatformSelect` from being called
+### Changes
 
+1. **Add loading state**
 ```tsx
-{platforms.map((p) => {
-  const Icon = p.icon;
-  const existingBio = bios.find(b => b.platform === p.id);
-  const isDisabled = !!existingBio;
+const [isGenerating, setIsGenerating] = useState(false);
+```
+
+2. **Remove disabled condition from Generate button** (line 616-618)
+```tsx
+// Before
+disabled={!hasAllFields}
+
+// After
+disabled={isGenerating}
+```
+
+3. **Add AI generation function**
+```tsx
+const handleGenerateBio = async () => {
+  if (!selectedPlatform || !selectedFormula) return;
   
-  return (
-    <button
-      key={p.id}
-      onClick={() => !isDisabled && handlePlatformSelect(p.id)}
-      disabled={isDisabled}
-      className={cn(
-        "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all relative",
-        isDisabled 
-          ? "opacity-50 cursor-not-allowed border-border bg-muted/30"
-          : "hover:border-primary hover:bg-primary/5",
-        selectedPlatform === p.id && !isDisabled
-          ? "border-primary bg-primary/10"
-          : "border-border"
-      )}
-    >
-      {isDisabled && (
-        <div className="absolute top-2 right-2">
-          <Lock className="w-3 h-3 text-muted-foreground" />
-        </div>
-      )}
-      <div className={cn(
-        "w-10 h-10 rounded-full flex items-center justify-center",
-        isDisabled ? "bg-muted/50" : "bg-muted"
-      )}>
-        <Icon className={cn("w-5 h-5", isDisabled ? "text-muted-foreground" : "text-foreground")} />
-      </div>
-      <span className={cn("text-sm font-medium", isDisabled ? "text-muted-foreground" : "text-foreground")}>
-        {p.name}
-      </span>
-      <span className="text-xs text-muted-foreground">
-        {isDisabled ? "Bio exists" : `${p.maxChars} chars`}
-      </span>
-    </button>
-  );
-})}
-```
-
-### 2. Add "Generate Bio" Button Flow
-
-**Current Flow:**
-1. Select Platform → 2. Select Formula → 3. Fill fields (bio auto-generates in preview) → 4. Save
-
-**New Flow:**
-1. Select Platform → 2. Select Formula → 3. Fill fields → 4. Click "Generate Bio" → 5. Review/Edit generated content → 6. Save
-
-**Implementation:**
-
-Add a new state variable:
-```tsx
-const [isGenerated, setIsGenerated] = useState(false);
-```
-
-Modify the content step to have two sub-states:
-- **Fields mode**: Show formula fields + "Generate Bio" button
-- **Preview mode**: Show generated content (editable) + "Regenerate" + "Save"
-
-```tsx
-{step === "content" && (
-  <div className="space-y-4">
-    {/* Formula Reference Card */}
-    {formula && (
-      <div className="p-3 rounded-lg border bg-muted/30">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Formula</span>
-        </div>
-        <p className="text-sm font-medium text-foreground">{formula.name}</p>
-        <p className="text-xs text-muted-foreground italic mt-1">{formula.formula}</p>
-      </div>
-    )}
-
-    {/* Show fields when not yet generated */}
-    {!isGenerated && (
-      <>
-        {formula?.fields.map((field) => (
-          <div key={field.key} className="space-y-2">
-            <Label>{field.label}</Label>
-            <Input
-              value={fieldData[field.key] || ""}
-              onChange={(e) => setFieldData((prev) => ({ ...prev, [field.key]: e.target.value }))}
-              placeholder={field.placeholder}
-            />
-          </div>
-        ))}
-        
-        <Button 
-          onClick={() => setIsGenerated(true)} 
-          disabled={!hasAllFields}
-          className="w-full"
-        >
-          <Sparkles className="w-4 h-4 mr-2" />
-          Generate Bio
-        </Button>
-      </>
-    )}
-
-    {/* Show preview when generated */}
-    {isGenerated && (
-      <>
-        <div className="space-y-2">
-          <Label>Generated Bio</Label>
-          <Textarea
-            value={fieldData.finalContent || generatedContent}
-            onChange={(e) => setFieldData((prev) => ({ ...prev, finalContent: e.target.value }))}
-            rows={4}
-          />
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <p className={cn("text-xs", isOverLimit ? "text-destructive" : "text-muted-foreground")}>
-            {charCount}/{maxChars} characters
-          </p>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => {
-              setFieldData(prev => ({ ...prev, finalContent: undefined }));
-              setIsGenerated(false);
-            }}
-          >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Regenerate
-          </Button>
-        </div>
-      </>
-    )}
-  </div>
-)}
-```
-
-### 3. Restore Formula Fields When Editing
-
-**Current Issue:**
-```tsx
-const handleEdit = (bio: SocialBio) => {
-  setEditingBio(bio);
-  setSelectedPlatform(bio.platform);
-  setSelectedFormula(bio.formula);
-  setFieldData({ finalContent: bio.content }); // Only stores final content!
-  setStep("content");
-  setIsAddMode(true);
-};
-```
-
-**Fix:** The database stores original `field_data`, so we can restore it:
-
-```tsx
-const handleEdit = async (bio: SocialBio) => {
-  // Fetch the full bio with field_data from the database
-  const { data } = await supabase
-    .from("social_bios")
-    .select("field_data")
-    .eq("id", bio.id)
-    .single();
-  
-  const storedFieldData = (data?.field_data as Record<string, string>) || {};
-  
-  setEditingBio(bio);
-  setSelectedPlatform(bio.platform);
-  setSelectedFormula(bio.formula);
-  // Restore original field data AND the final content
-  setFieldData({
-    ...storedFieldData,
-    finalContent: bio.content,
-  });
-  setIsGenerated(true); // Show in "generated" mode since bio already exists
-  setStep("content");
-  setIsAddMode(true);
-};
-```
-
-**Better Approach:** Since we already fetch bios with all data, we can update the query to include `field_data`:
-
-Update the bios query (lines 211-228):
-```tsx
-const { data: bios = [], isLoading } = useQuery({
-  queryKey: ["social-bios", projectId],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from("social_bios")
-      .select("*")
-      .eq("project_id", projectId);
-
+  setIsGenerating(true);
+  try {
+    const { data, error } = await supabase.functions.invoke('generate-social-bio', {
+      body: {
+        projectId,
+        platform: selectedPlatform,
+        formulaId: selectedFormula,
+        fieldData, // Any user-provided hints
+        maxChars: platform?.maxChars || 150,
+      }
+    });
+    
     if (error) throw error;
-    return (data || []).map((item) => ({
-      id: item.id,
-      platform: item.platform,
-      formula: item.formula_id,
-      content: item.bio_content,
-      fieldData: item.field_data as Record<string, string>, // Add this
+    
+    // Set the generated content and switch to preview mode
+    setFieldData(prev => ({
+      ...prev,
+      ...data.fieldData,  // Fill in any field values AI determined
+      finalContent: data.bio,
     }));
-  },
-  enabled: !!projectId,
-});
+    setIsGenerated(true);
+  } catch (error) {
+    toast.error("Failed to generate bio. Please try again.");
+    console.error(error);
+  } finally {
+    setIsGenerating(false);
+  }
+};
 ```
 
-Update SocialBio interface:
+4. **Update button click handler and appearance**
 ```tsx
-interface SocialBio {
-  id: string;
-  platform: string;
-  formula: string;
-  content: string;
-  fieldData?: Record<string, string>; // Add this
+<Button 
+  onClick={handleGenerateBio} 
+  disabled={isGenerating}
+  className="w-full"
+>
+  {isGenerating ? (
+    <>
+      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+      Generating...
+    </>
+  ) : (
+    <>
+      <Sparkles className="w-4 h-4 mr-2" />
+      Generate Bio
+    </>
+  )}
+</Button>
+```
+
+5. **Add Loader2 import**
+```tsx
+import { ..., Loader2 } from "lucide-react";
+```
+
+---
+
+## Part 3: Edge Function Implementation Details
+
+**File:** `supabase/functions/generate-social-bio/index.ts`
+
+### System Prompt Structure
+```text
+You are an expert at writing high-converting social media bios that 
+capture attention and communicate value clearly.
+
+Your task is to generate a social media bio using this formula:
+[FORMULA: I help [who] [achieve result] using [method].]
+
+The bio MUST:
+1. Follow the formula structure exactly
+2. Be no more than [MAX_CHARS] characters
+3. Be specific and compelling, not generic
+4. Sound natural and human, not salesy
+5. Use the project context to make it relevant and specific
+
+PROJECT CONTEXT:
+- Niche: [niche]
+- Target Audience: [target_audience]
+- Main Pain Point: [primary_pain_point]
+- Desired Outcome: [desired_outcome]
+- Transformation Statement: [transformation_statement]
+- Core Message: [core_message]
+- Offer: [offer_title] - [offer_description]
+
+USER HINTS (if provided):
+[Any field values the user has already entered]
+
+Return a JSON object:
+{
+  "bio": "The complete bio text",
+  "fieldData": {
+    "who": "value used for this field",
+    "result": "value used for this field",
+    ...
+  }
 }
 ```
 
-Then `handleEdit` becomes:
-```tsx
-const handleEdit = (bio: SocialBio) => {
-  setEditingBio(bio);
-  setSelectedPlatform(bio.platform);
-  setSelectedFormula(bio.formula);
-  setFieldData({
-    ...bio.fieldData, // Restore original fields
-    finalContent: bio.content,
-  });
-  setIsGenerated(true); // Already generated
-  setStep("content");
-  setIsAddMode(true);
-};
-```
+---
 
-### 4. Update Save Logic
+## Files to Create/Update
 
-The save logic needs to use `finalContent` when generated, or build from fields:
-
-```tsx
-const handleSave = () => {
-  if (!selectedPlatform || !selectedFormula) {
-    toast.error("Please complete all steps");
-    return;
-  }
-
-  // Use finalContent if edited, otherwise build from formula
-  const content = fieldData.finalContent || formula?.build(fieldData) || "";
-  
-  if (!content.trim()) {
-    toast.error("Please fill in the bio content");
-    return;
-  }
-
-  // ... rest of save logic
-};
-```
-
-### 5. Reset `isGenerated` State
-
-Update `resetForm` to include the new state:
-```tsx
-const resetForm = () => {
-  setIsAddMode(false);
-  setStep("platform");
-  setSelectedPlatform(null);
-  setSelectedFormula(null);
-  setFieldData({});
-  setEditingBio(null);
-  setIsGenerated(false); // Add this
-};
-```
+| File | Action | Description |
+|------|--------|-------------|
+| `supabase/functions/generate-social-bio/index.ts` | Create | New edge function for AI bio generation |
+| `src/components/SocialBioBuilder.tsx` | Update | Enable button always, add loading state, add AI generation call |
 
 ---
 
-## UI Flow Comparison
+## UI Flow
 
-### Creating New Bio
+### Before (Current)
+1. User fills all formula fields manually
+2. Button becomes enabled
+3. Click generates bio from fields only
 
-```text
-CURRENT:
-[Platform] → [Formula] → [Fields + Live Preview] → [Save]
-
-NEW:
-[Platform (grayed if exists)] → [Formula] → [Fields] → [Generate Bio] → [Editable Preview] → [Save]
-```
-
-### Editing Existing Bio
-
-```text
-CURRENT:
-Opens with simple textarea (final content only)
-
-NEW:
-Opens with:
-- Formula reference card at top
-- Original fields populated (editable)
-- "Generate Bio" regenerates from fields
-- Or edit the preview directly
-- Save
-```
+### After (New)
+1. User can optionally fill some fields as hints
+2. Button is always enabled
+3. Click calls AI which:
+   - Fetches full project context
+   - Uses any user hints provided
+   - Fills in remaining fields intelligently
+   - Generates a complete bio following the formula
+4. User sees preview with generated bio + filled field values
 
 ---
 
-## Files to Update
+## Edge Cases
 
-| File | Changes |
-|------|---------|
-| `src/components/SocialBioBuilder.tsx` | All changes described above |
-
----
-
-## Summary of Changes
-
-1. **Add `isGenerated` state** - Track whether bio has been generated
-2. **Update `SocialBio` interface** - Include `fieldData` from database
-3. **Update bios query** - Fetch and map `field_data` 
-4. **Grey out platforms with existing bios** - Add disabled state + lock icon
-5. **Split content step** - Fields mode vs Preview mode
-6. **Add Generate Bio button** - Triggers transition to preview
-7. **Add Regenerate button** - Goes back to fields mode
-8. **Fix handleEdit** - Restore fieldData from bio + set isGenerated=true
-9. **Update resetForm** - Reset isGenerated state
-10. **Validate hasAllFields** - Only enable Generate button when required fields are filled
+1. **No project context available**: AI generates best-effort bio from formula + any hints
+2. **Rate limit hit (429)**: Show friendly error, allow retry
+3. **Bio exceeds character limit**: AI is instructed to stay under limit; if it fails, user can edit in preview
+4. **User provides partial hints**: AI uses them and fills in the rest from context
 
