@@ -1,101 +1,113 @@
 
-# Fix Offer Stack Data Persistence Issues
 
-## Problem Summary
-Your offer configurations aren't persisting correctly due to three interrelated bugs:
+# Display Actual User Responses in Planning Review Checklist
 
-1. **Removed slots come back** - When you remove an offer slot (like the upsell), it's only removed from the screen but not saved to the database. When you return, the old slots reappear.
-
-2. **Configured data shows as "Not configured"** - The system uses strict matching logic that expects saved offers to have exactly the same slot types as the funnel template. If you've removed or added slots, it ignores your saved data and recreates empty defaults.
-
-3. **Intermittent behavior** - Sometimes refreshing brings data back because of race conditions between data loading and initialization logic.
+## What We're Changing
+Replace the generic descriptions in the "Your Response" checklist (e.g., "I know exactly who this is for") with the actual user inputs from completed planning tasks.
 
 ---
 
-## Technical Root Causes
+## Current Behavior vs. New Behavior
 
-### Issue 1: Removal Not Persisted
-In `OfferStackBuilder.tsx`, the `handleRemoveOffer` function only updates local state but never saves to the database:
-
-```typescript
-// Current (broken):
-const handleRemoveOffer = (index: number) => {
-  const newOffers = offers.filter((_, i) => i !== index);
-  onChange(newOffers);  // Only updates local state
-  setActiveOfferIndex(null);
-  // Missing: onSaveNow?.(newOffers) to persist
-};
-```
-
-### Issue 2: Strict Slot Matching Overwrites Data
-In `OfferSnapshotTask.tsx`, the initialization logic (lines 289-293) requires an exact match between saved slot types and expected slot types:
-
-```typescript
-const hasMatchingOffers = 
-  expectedSlotTypes.length === existingSlotTypes.length &&
-  expectedSlotTypes.every(type => existingSlotTypes.includes(type)) &&
-  existingSlotTypes.every(type => expectedSlotTypes.includes(type));
-```
-
-If the user has removed or added slots, this check fails and the system creates blank defaults instead of using saved data.
+| Checklist Item | Current Description | New Description (Example) |
+|----------------|--------------------|--------------------|
+| Target audience defined | "I know exactly who this is for" | "Busy professionals feeling overwhelmed by money decisions" |
+| Main problem identified | "The problem feels specific and real" | "They struggle to make confident financial choices" |
+| Dream outcome clear | "I can describe success in human terms" | "Feeling in control and at peace with their finances" |
+| Time & effort defined | "Early relief - Reduced friction - Realistic effort" | Bullet list of quick wins and friction reducers |
+| Trust factors identified | "I know how to address skepticism" | Bullet list of belief blockers and builders |
+| Offer stack mapped | "I can see my offer ecosystem" | List of configured offers with titles |
+| Launch path selected | "I know how I'll sell this" | "Freebie to Email to Offer" (the selected path name) |
 
 ---
 
-## Solution
+## Implementation Approach
 
-### Fix 1: Persist Slot Removals
-Update `handleRemoveOffer` in `OfferStackBuilder.tsx` to also trigger a database save:
+### Step 1: Create Helper Function
+Add a function in `TaskDetail.tsx` that maps each checklist option value to the corresponding user response from `projectTasks`:
 
 ```typescript
-const handleRemoveOffer = (index: number) => {
-  const newOffers = offers.filter((_, i) => i !== index);
-  onChange(newOffers);
-  setActiveOfferIndex(null);
-  void onSaveNow?.(newOffers); // ADD: Persist removal to database
+const getChecklistItemDescription = (optionValue: string): string | React.ReactNode => {
+  // Map checklist values to their source task IDs and extract actual user data
+  switch (optionValue) {
+    case 'audience_reviewed': {
+      const task = projectTasks.find(t => t.taskId === 'planning_define_audience');
+      const inputData = task?.inputData as Record<string, unknown> | undefined;
+      return inputData?.audience_description 
+        ? String(inputData.audience_description)
+        : "Not yet defined";
+    }
+    case 'problem_reviewed': {
+      const task = projectTasks.find(t => t.taskId === 'planning_define_problem');
+      // ... extract primary_problem
+    }
+    // ... etc for each option
+  }
 };
 ```
 
-### Fix 2: Use Flexible Loading Logic
-Change the initialization logic in `OfferSnapshotTask.tsx` to:
-1. Load any saved offers for this funnel type (regardless of slot structure)
-2. Only create fresh defaults if there are truly no saved offers
+### Step 2: Handle Multi-Input Tasks with Bullet Points
+For tasks with multiple inputs (time/effort perception, perceived likelihood), render as a formatted list:
 
-```typescript
-// Replace strict matching with flexible loading:
-if (existingOffers && existingOffers.length > 0) {
-  // Load whatever was saved - trust the user's modifications
-  const loadedOffers: OfferSlotData[] = existingOffers.map(o => ({
-    id: o.id,
-    slotType: o.slot_type || "core",
-    title: o.title || '',
-    description: o.description || '',
-    offerType: o.offer_type || '',
-    price: o.price?.toString() || '',
-    priceType: o.price_type || 'one-time',
-    isConfigured: !!(o.offer_type?.trim()),
-    isSkipped: false,
-  }));
-  setOffers(loadedOffers);
-} else {
-  // No saved offers at all - create defaults for this funnel type
-  const defaultOffers = funnelConfig.offerSlots.map(...);
-  setOffers(defaultOffers);
+```tsx
+case 'time_effort_reviewed': {
+  const task = projectTasks.find(t => t.taskId === 'planning_time_effort_perception');
+  const inputData = task?.inputData as Record<string, unknown> | undefined;
+  const items = [
+    inputData?.quick_wins && `Quick wins: ${inputData.quick_wins}`,
+    inputData?.friction_reducers && `Friction reducers: ${inputData.friction_reducers}`,
+  ].filter(Boolean);
+  
+  if (items.length === 0) return "Not yet defined";
+  
+  return (
+    <ul className="list-disc list-inside space-y-1">
+      {items.map((item, i) => <li key={i}>{item}</li>)}
+    </ul>
+  );
 }
 ```
 
-### Fix 3: Add Query Invalidation After Removal
-Ensure the offers query is invalidated after any save operation so that reloading shows fresh data:
+### Step 3: Fetch Offers for "Offer Stack Mapped"
+Query configured offers from the database or existing state:
 
-```typescript
-const handleRemoveOffer = async (index: number) => {
-  const newOffers = offers.filter((_, i) => i !== index);
-  onChange(newOffers);
-  setActiveOfferIndex(null);
-  await onSaveNow?.(newOffers);
-  // Invalidate to ensure fresh data on next load
-  queryClient.invalidateQueries({ queryKey: ["offers", projectId, selectedFunnelType] });
-};
+```tsx
+case 'offer_reviewed': {
+  // Use offers data from query or projectTasks
+  // Show list of offer titles like:
+  // - Lead Magnet: "Free Budget Template"
+  // - Core Offer: "Money Mastery Course"
+}
 ```
+
+### Step 4: Update Checklist Rendering
+Replace the static description with the dynamic content:
+
+```tsx
+{/* Current */}
+<p className="text-sm text-muted-foreground leading-relaxed">
+  {option.description}
+</p>
+
+{/* Updated */}
+<div className="text-sm text-muted-foreground leading-relaxed">
+  {getChecklistItemDescription(option.value)}
+</div>
+```
+
+---
+
+## Data Mapping Reference
+
+| Checklist Value | Source Task | Input Field(s) |
+|-----------------|-------------|----------------|
+| `audience_reviewed` | `planning_define_audience` | `audience_description` |
+| `problem_reviewed` | `planning_define_problem` | `primary_problem` |
+| `outcome_reviewed` | `planning_define_dream_outcome` | `dream_outcome` |
+| `time_effort_reviewed` | `planning_time_effort_perception` | `quick_wins`, `friction_reducers`, `effort_reframe` |
+| `belief_reviewed` | `planning_perceived_likelihood` | `past_attempts`, `belief_blockers`, `belief_builders` |
+| `offer_reviewed` | Offers table query | `title`, `offer_type` for each slot |
+| `path_reviewed` | `planning_choose_launch_path` | `selected` |
 
 ---
 
@@ -103,19 +115,37 @@ const handleRemoveOffer = async (index: number) => {
 
 | File | Change |
 |------|--------|
-| `src/components/funnel/OfferStackBuilder.tsx` | Add `onSaveNow?.(newOffers)` to `handleRemoveOffer` |
-| `src/pages/project/OfferSnapshotTask.tsx` | Change initialization to trust saved offers instead of requiring exact slot match |
+| `src/pages/project/TaskDetail.tsx` | Add `getChecklistItemDescription` function and update checklist rendering to use dynamic content |
 
 ---
 
-## Testing Checklist
-After implementation:
-1. Configure an offer (select type, add title) → Save → Leave page → Return → Verify data persists
-2. Remove an optional slot → Save for Later → Return → Verify slot stays removed
-3. Add a custom slot → Configure it → Leave → Return → Verify it persists
-4. Refresh the page mid-configuration → Verify data isn't lost
+## Visual Result
+
+**Before:**
+```
+☐ Target audience defined
+   I know exactly who this is for
+
+☐ Time & effort perception defined
+   Early relief • Reduced friction • Realistic effort
+```
+
+**After:**
+```
+☐ Target audience defined
+   Busy professionals feeling overwhelmed by money decisions
+
+☐ Time & effort perception defined
+   • Quick wins: See your spending breakdown in 5 minutes
+   • Friction reducers: No complex spreadsheets needed
+```
 
 ---
 
-## Risk Assessment
-**Low risk** - These changes only affect how offer data is saved and loaded, and make the behavior more predictable by trusting user-saved data rather than overwriting it with defaults.
+## Edge Cases
+
+1. **Task not completed yet**: Show "Not yet defined" in muted/italic style
+2. **Empty response**: Show "Not yet defined"
+3. **Very long responses**: Truncate to ~120 characters with "..." for readability
+4. **Offers not configured**: Show "No offers configured yet"
+
