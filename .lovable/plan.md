@@ -1,242 +1,213 @@
 
+# Fix Impersonation Session State Persistence Bug
 
-# AI-Powered Social Media Bio Generation
+## Problem Summary
 
-## Overview
+You're experiencing unexpected user switches where the app shows you logged in as "bre29@cre8visions.com" (Tambria Kemp) instead of your admin account. This happens because:
 
-This plan modifies the Social Media Bio Builder to:
-1. **Always enable the "Generate Bio" button** (remove the `disabled={!hasAllFields}` condition)
-2. **Create a new edge function** (`generate-social-bio`) that uses full project context from planning and messaging phases to craft a high-converting bio using the selected formula
-3. **Add loading state** while the AI generates the bio
-4. **Update the UI** to show any user-provided field values are used as hints, but the AI can fill in missing pieces
+1. Impersonation state is stored in localStorage (`coach_hub_impersonation`)
+2. On app mount, this state is restored without validating the actual Supabase session
+3. When the preview refreshes (during Lovable planning), stale localStorage data causes confusion between sessions
 
----
+## Root Cause
 
-## Current Problem
+The initialization check on lines 53-61 of `AuthContext.tsx` blindly trusts localStorage:
 
-The button on line 616-618 of `SocialBioBuilder.tsx` is disabled when fields are empty:
-```tsx
-<Button 
-  onClick={() => setIsGenerated(true)} 
-  disabled={!hasAllFields}  // This prevents clicking when fields are empty
-  className="w-full"
->
-```
-
----
-
-## Solution Architecture
-
-```text
-+-------------------+     +------------------------+     +----------------------+
-|  SocialBioBuilder |---->|  generate-social-bio   |---->|  AI Gateway          |
-|  Component        |     |  Edge Function         |     |  (Gemini 2.5 Flash)  |
-+-------------------+     +------------------------+     +----------------------+
-        |                           |
-        |  Sends:                   |  Fetches:
-        |  - projectId              |  - funnel (niche, audience, pain, outcome)
-        |  - platform               |  - offers (title, description)
-        |  - formulaId              |  - project (transformation statement)
-        |  - fieldData (optional)   |  - messaging tasks (core message, talking points)
-        |                           |
-        +---------------------------+
-```
-
----
-
-## Part 1: Create Edge Function
-
-**File:** `supabase/functions/generate-social-bio/index.ts`
-
-The edge function will:
-1. Accept `projectId`, `platform`, `formulaId`, and optional `fieldData`
-2. Fetch full project context (funnel, offers, project, completed tasks)
-3. Build a prompt that incorporates the bio formula structure
-4. Generate a bio that fits the platform's character limit
-5. Return the generated bio content
-
-### Key Context to Include
-| Source | Data |
-|--------|------|
-| `funnels` table | niche, target_audience, primary_pain_point, desired_outcome |
-| `offers` table | title, description, transformation_statement |
-| `projects` table | transformation_statement, name |
-| `project_tasks` table | core_message, talking_points from messaging phase |
-
-### Prompt Strategy
-The AI will receive:
-- The selected bio formula template (e.g., "I help [who] [achieve result] using [method]")
-- Any user-provided field values (used as hints/preferences)
-- Full project context
-- Platform character limit
-
-The AI generates a complete bio that:
-- Follows the formula structure
-- Uses project context to fill in missing fields
-- Respects platform character limits
-- Sounds natural and converting
-
----
-
-## Part 2: Update SocialBioBuilder Component
-
-**File:** `src/components/SocialBioBuilder.tsx`
-
-### Changes
-
-1. **Add loading state**
-```tsx
-const [isGenerating, setIsGenerating] = useState(false);
-```
-
-2. **Remove disabled condition from Generate button** (line 616-618)
-```tsx
-// Before
-disabled={!hasAllFields}
-
-// After
-disabled={isGenerating}
-```
-
-3. **Add AI generation function**
-```tsx
-const handleGenerateBio = async () => {
-  if (!selectedPlatform || !selectedFormula) return;
-  
-  setIsGenerating(true);
-  try {
-    const { data, error } = await supabase.functions.invoke('generate-social-bio', {
-      body: {
-        projectId,
-        platform: selectedPlatform,
-        formulaId: selectedFormula,
-        fieldData, // Any user-provided hints
-        maxChars: platform?.maxChars || 150,
-      }
-    });
-    
-    if (error) throw error;
-    
-    // Set the generated content and switch to preview mode
-    setFieldData(prev => ({
-      ...prev,
-      ...data.fieldData,  // Fill in any field values AI determined
-      finalContent: data.bio,
-    }));
-    setIsGenerated(true);
-  } catch (error) {
-    toast.error("Failed to generate bio. Please try again.");
-    console.error(error);
-  } finally {
-    setIsGenerating(false);
+```typescript
+useEffect(() => {
+  const impersonationData = localStorage.getItem(IMPERSONATION_KEY);
+  if (impersonationData) {
+    const { email } = JSON.parse(impersonationData);
+    setIsImpersonating(true);             // Sets flag without validation!
+    setImpersonatedUserEmail(email);
   }
-};
+}, []);
 ```
 
-4. **Update button click handler and appearance**
-```tsx
-<Button 
-  onClick={handleGenerateBio} 
-  disabled={isGenerating}
-  className="w-full"
->
-  {isGenerating ? (
-    <>
-      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-      Generating...
-    </>
-  ) : (
-    <>
-      <Sparkles className="w-4 h-4 mr-2" />
-      Generate Bio
-    </>
-  )}
-</Button>
-```
-
-5. **Add Loader2 import**
-```tsx
-import { ..., Loader2 } from "lucide-react";
-```
+This doesn't verify:
+- Whether the current Supabase session user matches the impersonated email
+- Whether the admin session tokens in localStorage are still valid
+- Whether the impersonation data is stale (hours/days old)
 
 ---
 
-## Part 3: Edge Function Implementation Details
+## Solution
 
-**File:** `supabase/functions/generate-social-bio/index.ts`
+### Part 1: Add Validation to Impersonation State Recovery
 
-### System Prompt Structure
-```text
-You are an expert at writing high-converting social media bios that 
-capture attention and communicate value clearly.
+When the app mounts and finds impersonation data, validate it against the current session:
 
-Your task is to generate a social media bio using this formula:
-[FORMULA: I help [who] [achieve result] using [method].]
+```typescript
+// Check for existing impersonation on mount - with validation
+useEffect(() => {
+  const validateImpersonation = async () => {
+    const impersonationData = localStorage.getItem(IMPERSONATION_KEY);
+    const adminSessionData = localStorage.getItem(ADMIN_SESSION_KEY);
+    
+    if (!impersonationData || !adminSessionData) {
+      // No impersonation data or incomplete - clear everything
+      localStorage.removeItem(IMPERSONATION_KEY);
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      localStorage.removeItem(ADMIN_INFO_KEY);
+      return;
+    }
+    
+    try {
+      const { email, startedAt } = JSON.parse(impersonationData);
+      
+      // Check if impersonation is stale (older than 4 hours)
+      const startTime = new Date(startedAt).getTime();
+      const MAX_IMPERSONATION_DURATION = 4 * 60 * 60 * 1000; // 4 hours
+      if (Date.now() - startTime > MAX_IMPERSONATION_DURATION) {
+        console.warn('[AuthContext] Stale impersonation data detected, clearing...');
+        localStorage.removeItem(IMPERSONATION_KEY);
+        localStorage.removeItem(ADMIN_SESSION_KEY);
+        localStorage.removeItem(ADMIN_INFO_KEY);
+        return;
+      }
+      
+      // Get current session
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      // Validate current session matches impersonated user
+      if (sessionData?.session?.user?.email === email) {
+        setIsImpersonating(true);
+        setImpersonatedUserEmail(email);
+      } else {
+        // Session doesn't match - clear stale impersonation data
+        console.warn('[AuthContext] Impersonation session mismatch, clearing...');
+        localStorage.removeItem(IMPERSONATION_KEY);
+        localStorage.removeItem(ADMIN_SESSION_KEY);
+        localStorage.removeItem(ADMIN_INFO_KEY);
+      }
+    } catch (err) {
+      console.error('[AuthContext] Error validating impersonation:', err);
+      // On any error, clear impersonation data
+      localStorage.removeItem(IMPERSONATION_KEY);
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      localStorage.removeItem(ADMIN_INFO_KEY);
+    }
+  };
+  
+  validateImpersonation();
+}, []);
+```
 
-The bio MUST:
-1. Follow the formula structure exactly
-2. Be no more than [MAX_CHARS] characters
-3. Be specific and compelling, not generic
-4. Sound natural and human, not salesy
-5. Use the project context to make it relevant and specific
+### Part 2: Clear Impersonation State on User ID Change
 
-PROJECT CONTEXT:
-- Niche: [niche]
-- Target Audience: [target_audience]
-- Main Pain Point: [primary_pain_point]
-- Desired Outcome: [desired_outcome]
-- Transformation Statement: [transformation_statement]
-- Core Message: [core_message]
-- Offer: [offer_title] - [offer_description]
+When the auth state changes and the user ID changes unexpectedly, clear impersonation data:
 
-USER HINTS (if provided):
-[Any field values the user has already entered]
-
-Return a JSON object:
-{
-  "bio": "The complete bio text",
-  "fieldData": {
-    "who": "value used for this field",
-    "result": "value used for this field",
-    ...
+```typescript
+// In the onAuthStateChange callback
+if (currentUserId.current !== newUserId || !isInitialized.current) {
+  currentUserId.current = newUserId;
+  setSession(newSession);
+  setUser(newSession?.user ?? null);
+  
+  // If user changed unexpectedly, clear any stale impersonation data
+  const impersonationData = localStorage.getItem(IMPERSONATION_KEY);
+  if (impersonationData && newSession?.user) {
+    const { email } = JSON.parse(impersonationData);
+    if (newSession.user.email !== email) {
+      // Current user doesn't match impersonation - clear it
+      console.warn('[AuthContext] User changed, clearing impersonation state');
+      localStorage.removeItem(IMPERSONATION_KEY);
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      localStorage.removeItem(ADMIN_INFO_KEY);
+      setIsImpersonating(false);
+      setImpersonatedUserEmail(null);
+    }
   }
 }
 ```
 
+### Part 3: Add Session Expiry Check for Admin Recovery
+
+When attempting to restore admin session, verify the tokens are still valid:
+
+```typescript
+const stopImpersonation = async () => {
+  try {
+    const adminSessionData = localStorage.getItem(ADMIN_SESSION_KEY);
+    
+    if (!adminSessionData) {
+      toast.error('No admin session to return to');
+      // Clean up all impersonation data
+      localStorage.removeItem(IMPERSONATION_KEY);
+      localStorage.removeItem(ADMIN_INFO_KEY);
+      setIsImpersonating(false);
+      setImpersonatedUserEmail(null);
+      await signOut();
+      return;
+    }
+
+    const { access_token, refresh_token } = JSON.parse(adminSessionData);
+    
+    // Try to restore the admin session
+    await supabase.auth.signOut();
+    
+    const { data, error } = await supabase.auth.setSession({
+      access_token,
+      refresh_token,
+    });
+
+    if (error || !data.session) {
+      // Admin session expired - need to re-login
+      console.warn('[AuthContext] Admin session expired');
+      toast.error('Your admin session has expired. Please log in again.');
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      localStorage.removeItem(IMPERSONATION_KEY);
+      localStorage.removeItem(ADMIN_INFO_KEY);
+      setIsImpersonating(false);
+      setImpersonatedUserEmail(null);
+      navigate('/auth');
+      return;
+    }
+    
+    // Success - clear impersonation data
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+    localStorage.removeItem(ADMIN_INFO_KEY);
+    localStorage.removeItem(IMPERSONATION_KEY);
+    setIsImpersonating(false);
+    setImpersonatedUserEmail(null);
+
+    toast.success('Returned to admin account');
+    navigate('/admin');
+  } catch (error) {
+    // ... existing error handling
+  }
+};
+```
+
 ---
 
-## Files to Create/Update
+## Immediate Fix for Your Current Session
 
-| File | Action | Description |
-|------|--------|-------------|
-| `supabase/functions/generate-social-bio/index.ts` | Create | New edge function for AI bio generation |
-| `src/components/SocialBioBuilder.tsx` | Update | Enable button always, add loading state, add AI generation call |
+Before the code fix is applied, you can manually clear the stale impersonation data by running this in your browser's Developer Console:
 
----
-
-## UI Flow
-
-### Before (Current)
-1. User fills all formula fields manually
-2. Button becomes enabled
-3. Click generates bio from fields only
-
-### After (New)
-1. User can optionally fill some fields as hints
-2. Button is always enabled
-3. Click calls AI which:
-   - Fetches full project context
-   - Uses any user hints provided
-   - Fills in remaining fields intelligently
-   - Generates a complete bio following the formula
-4. User sees preview with generated bio + filled field values
+```javascript
+localStorage.removeItem('coach_hub_impersonation');
+localStorage.removeItem('coach_hub_admin_session');
+localStorage.removeItem('coach_hub_admin_info');
+location.reload();
+```
 
 ---
 
-## Edge Cases
+## Files to Update
 
-1. **No project context available**: AI generates best-effort bio from formula + any hints
-2. **Rate limit hit (429)**: Show friendly error, allow retry
-3. **Bio exceeds character limit**: AI is instructed to stay under limit; if it fails, user can edit in preview
-4. **User provides partial hints**: AI uses them and fills in the rest from context
+| File | Changes |
+|------|---------|
+| `src/contexts/AuthContext.tsx` | 1) Add validation to impersonation recovery on mount 2) Clear stale impersonation on user ID change 3) Better error handling in stopImpersonation |
 
+---
+
+## Summary of Fixes
+
+| Issue | Fix |
+|-------|-----|
+| Impersonation state blindly trusted from localStorage | Validate current session email matches impersonated email |
+| No expiry on impersonation data | Add 4-hour max duration check |
+| User ID change doesn't clear impersonation | Detect mismatch and clear state |
+| Admin session recovery doesn't handle expired tokens | Check setSession result and handle gracefully |
+| Incomplete cleanup on errors | Ensure all 3 localStorage keys are cleared together |
