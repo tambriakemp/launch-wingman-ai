@@ -1,139 +1,205 @@
 
-# Replace Brand Photos Uploader with Instructional Content
+# Move Sales Copy to Messaging Phase Task
 
 ## Overview
 
-This change removes the photo upload functionality from the Brand Photos section and replaces it with helpful instructions guiding users to gather inspirational photos from external resources like Pinterest and Pexels.
-
----
-
-## Why This Change
-
-- **Preserve storage**: Eliminates the need to store user-uploaded brand photos in the backend
-- **Better user experience**: Guides users through a proven process for finding brand-aligned imagery
-- **Practical approach**: Encourages users to build a local library of brand photos they can reference
+This change converts the Sales Page Copy feature from a tab on the Content page into a proper task within the Messaging phase. The task will be positioned right before the "Review your messaging" task and will follow the same format as other custom tasks like Social Bio and Visual Direction.
 
 ---
 
 ## What Will Change
 
-| Current | New |
-|---------|-----|
-| Upload button in header | Removed |
-| File input for multiple image uploads | Removed |
-| Empty state with upload prompt | Instructional card with guidance |
-| Photo grid with download/delete | Removed |
-| Supabase storage integration | Removed |
+| Current State | New State |
+|--------------|-----------|
+| Sales Copy lives on Content page as a tab | Sales Copy becomes a Messaging phase task |
+| Accessed via `/projects/:id/content` tab | Accessed via `/projects/:id/tasks/messaging_sales_copy` |
+| No task completion tracking | Full task completion with criteria checkboxes |
+| No "Listen to explanation" option | Voice snippet support enabled |
+| Content page has 2 tabs | Content page has 1 tab (Social Media Schedule only) |
 
 ---
 
-## New Content Structure
+## Implementation Details
 
-The section will display a single instructional card with:
+### 1. Add New Task Template
 
-1. **Title**: "Finding Your Brand Photos"
-2. **Intro text**: Brief explanation of the purpose
-3. **Recommended sites** with links:
-   - Pinterest (pinterest.com)
-   - Pexels (pexels.com) 
-   - Unsplash (unsplash.com)
-4. **Search tips**: Encourage using brand-aligned keywords
-5. **Storage reminder**: Advice to save photos in a dedicated folder
+**File:** `src/data/taskTemplates.ts`
 
----
-
-## UI Design
+Add a new task definition in the messaging phase with `order: 7.5` to place it between Visual Direction (order 7) and Phase Review (order 8):
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│ 📷 Finding Your Brand Photos                                │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│   Gather photos that capture the feeling of your brand.     │
-│                                                             │
-│   🔍 Where to Find Inspiration                              │
-│   ┌─────────────────────────────────────────────────────┐   │
-│   │ • Pinterest - pinterest.com                         │   │
-│   │ • Pexels - pexels.com (free stock photos)          │   │
-│   │ • Unsplash - unsplash.com (free stock photos)      │   │
-│   └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│   💡 Tips for Searching                                     │
-│   • Use keywords that resonate with your brand              │
-│   • Search for colors, moods, or themes                     │
-│   • Look for images that feel "you"                         │
-│                                                             │
-│   📁 Keep It Organized                                      │
-│   Download your favorites and save them in a dedicated      │
-│   folder on your computer for easy reference.               │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+Task ID: messaging_sales_copy
+Title: Write your sales page copy
+Phase: messaging
+Funnel Types: ['all']
+Order: 7.5
+Priority: 2
+Estimated Time: 20-45 min
+Blocking: false
+Dependencies: ['messaging_visual_direction']
+Can Skip: true
+Input Type: custom
+Custom Component: SalesCopyBuilder
+```
+
+Completion Criteria:
+- You've written copy for at least one offer
+- Your messaging aligns with your transformation statement
+
+Why It Matters:
+"Your sales page is where you make the case for your offer. But you don't need to be a professional copywriter to write something that connects. This section-by-section approach helps you build momentum — one block at a time."
+
+Instructions:
+1. Select an offer to write copy for
+2. Work through each section at your own pace
+3. Use AI suggestions when you need inspiration
+
+---
+
+### 2. Add Voice Script
+
+**File:** `src/data/voiceScripts.ts`
+
+Add a new entry:
+
+```typescript
+messaging_sales_copy:
+  "Your sales page is where everything comes together — your message, your offer, and your audience. You don't need to be a copywriter to write something meaningful. This section-by-section approach breaks it down into manageable pieces. Focus on one block at a time, and trust that clarity sells better than clever tricks."
 ```
 
 ---
 
-## Technical Implementation
+### 3. Create Dedicated Task Page
 
-### File to Update
+**File:** `src/pages/project/SalesCopyTask.tsx` (new file)
 
-`src/components/branding/PhotosSection.tsx`
+Create a new task page following the same pattern as `SocialBioTask.tsx`:
 
-### Changes
+```text
+Structure:
+┌────────────────────────────────────────────────────┐
+│ ← Back to Dashboard                                │
+│                                                    │
+│ [Messaging Phase]  [Estimated: 20-45 minutes]      │
+│                                                    │
+│ Write your sales page copy                         │
+│                                                    │
+├────────────────────────────────────────────────────┤
+│ WHY THIS MATTERS                                   │
+│ <Voice snippet button>                             │
+│ <Task explanation text>                            │
+├────────────────────────────────────────────────────┤
+│ WHAT TO DO                                         │
+│ 1. Select an offer to write copy for               │
+│ 2. Work through each section at your own pace      │
+│ 3. Use AI suggestions when you need inspiration    │
+├────────────────────────────────────────────────────┤
+│ YOUR RESPONSE                                      │
+│ <Embedded SalesPageCopyTab component>              │
+├────────────────────────────────────────────────────┤
+│ BEFORE YOU FINISH                                  │
+│ ☐ You've written copy for at least one offer       │
+│ ☐ Your messaging aligns with your transformation   │
+├────────────────────────────────────────────────────┤
+│ [Save & Complete]    [Save for Later]              │
+└────────────────────────────────────────────────────┘
+```
 
-1. **Remove all upload/storage logic**:
-   - Remove `useState`, `useRef` for file handling
-   - Remove `useQuery` for fetching photos
-   - Remove `useMutation` for upload/delete
-   - Remove Supabase storage imports and calls
-   - Remove file input element
-
-2. **Simplify imports**:
-   ```typescript
-   // Before: Many imports for upload functionality
-   // After: Just icons and Card
-   import { Card } from "@/components/ui/card";
-   import { Camera, ExternalLink, Search, FolderOpen, Lightbulb } from "lucide-react";
-   ```
-
-3. **Simplify props**:
-   ```typescript
-   // projectId is no longer needed
-   const PhotosSection = () => { ... }
-   ```
-
-4. **Replace return with instructional content**:
-   - A card with helpful text
-   - Links to Pinterest, Pexels, Unsplash (opens in new tab)
-   - Search tips section
-   - Folder organization reminder
+Key Features:
+- Uses `useTaskEngine` hook for task state management
+- Includes `VoiceSnippetButton` for "Listen to explanation"
+- Embeds `SalesPageCopyTab` component
+- Tracks completion via `sales_page_copy` table (existing)
+- Auto-saves progress to `project_tasks.input_data`
 
 ---
 
-## Also Update
+### 4. Add Route
 
-### `src/pages/project/VisualDirectionTask.tsx`
+**File:** `src/App.tsx`
 
-Remove the `projectId` prop from the PhotosSection component call:
+Add a new protected route:
 
-```tsx
-// Before
-<PhotosSection projectId={projectId!} />
-
-// After
-<PhotosSection />
+```typescript
+<Route
+  path="/projects/:id/tasks/messaging_sales_copy"
+  element={
+    <ProtectedRoute>
+      <SalesCopyTask />
+    </ProtectedRoute>
+  }
+/>
 ```
 
 ---
 
-## Summary
+### 5. Update Messaging Phase Review Dependency
 
-| Item | Action |
+**File:** `src/data/taskTemplates.ts`
+
+Update `messaging_phase_review` task:
+- Change dependency from `['messaging_visual_direction']` to `['messaging_sales_copy']`
+
+---
+
+### 6. Simplify Content Page
+
+**File:** `src/components/content/ContentTab.tsx`
+
+Changes:
+- Remove the Sales Page Copy tab from the tab navigation
+- Remove the `SalesPageCopyTab` import and rendering
+- Since only one tab remains (Social Media Schedule), remove the tab navigation entirely
+- Show the social media schedule content directly
+
+---
+
+### 7. Update Sidebar Navigation (if needed)
+
+If the Content section's Sales Copy tab appears in the sidebar, remove that reference.
+
+---
+
+## File Changes Summary
+
+| File | Action |
 |------|--------|
-| Upload button | Remove |
-| File input | Remove |
-| Photo grid | Remove |
-| Supabase queries/mutations | Remove |
-| Empty state | Replace with instructional content |
-| External links | Add (Pinterest, Pexels, Unsplash) |
-| Search tips | Add |
-| Folder reminder | Add |
+| `src/data/taskTemplates.ts` | Add `messaging_sales_copy` task, update `messaging_phase_review` dependency |
+| `src/data/voiceScripts.ts` | Add voice script for `messaging_sales_copy` |
+| `src/pages/project/SalesCopyTask.tsx` | Create new file (task page) |
+| `src/App.tsx` | Add route for the new task page |
+| `src/components/content/ContentTab.tsx` | Remove Sales Page Copy tab, simplify to single view |
+
+---
+
+## Task Ordering After Change
+
+**Messaging Phase Tasks:**
+1. Clarify your core message (order: 1)
+2. Write your transformation statement (order: 2)
+3. Define your key talking points (order: 3)
+4. Identify common objections (order: 4)
+5. Create your social media bio (order: 6)
+6. Set your launch visual direction (order: 7)
+7. **Write your sales page copy (order: 7.5)** ← NEW
+8. Review your messaging (order: 8)
+
+---
+
+## Completion Tracking Logic
+
+The task will track completion based on:
+1. Whether at least one offer has sales copy saved (check `sales_page_copy` table)
+2. User-confirmed completion criteria checkboxes
+
+The task will query the existing `sales_page_copy` table to determine if there's content saved for the project's offers.
+
+---
+
+## Voice Snippet Integration
+
+The task page will include the `VoiceSnippetButton` component with:
+- `taskId`: "messaging_sales_copy"
+- `script`: The voice script from `voiceScripts.ts`
+
+This enables the "Listen to explanation" feature that appears on other tasks.
