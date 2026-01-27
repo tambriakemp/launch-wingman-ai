@@ -32,6 +32,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -277,6 +283,48 @@ export function PostEditorSheet({
   const scheduledPlatformsCount = formData.scheduled_platforms.length;
   const isThreadsOnly =
     scheduledPlatformsCount === 1 && formData.scheduled_platforms[0] === "threads";
+
+  // Requirements validation for scheduling/posting
+  const getRequirementErrors = (): string[] => {
+    const errors: string[] = [];
+    
+    if (!formData.scheduled_platforms.length) {
+      errors.push("Select at least one platform");
+      return errors;
+    }
+    
+    for (const platform of formData.scheduled_platforms) {
+      const isTikTok = platform === "tiktok" || platform === "tiktok_sandbox";
+      
+      // Content requirement (not for TikTok which uses media primarily)
+      if (!isTikTok && !content?.trim()) {
+        errors.push("Post content is required");
+      }
+      
+      // Platform-specific requirements
+      if (platform === "pinterest") {
+        if (!formData.media_url) errors.push("Pinterest: Image required");
+        if (!formData.pinterest_board_id) errors.push("Pinterest: Board required");
+      } else if (platform === "instagram") {
+        if (!formData.media_url) errors.push("Instagram: Media required");
+      } else if (isTikTok) {
+        const hasMedia = formData.tiktok_photo_urls.length > 0 || !!formData.media_url;
+        if (!hasMedia) errors.push("TikTok: Media required");
+        if (!formData.tiktok_privacy_level) errors.push("TikTok: Privacy level required");
+        if (formData.tiktok_disclose_content && 
+            !formData.tiktok_brand_organic && 
+            !formData.tiktok_brand_content) {
+          errors.push("TikTok: Select disclosure option");
+        }
+      }
+    }
+    
+    return [...new Set(errors)];
+  };
+
+  const requirementErrors = getRequirementErrors();
+  const canSchedule = requirementErrors.length === 0;
+  const canPostNow = requirementErrors.length === 0;
 
   // If a user deselects down to 0–1 platforms, force per-network mode off so the main editor shows again.
   useEffect(() => {
@@ -2358,34 +2406,70 @@ export function PostEditorSheet({
           </div>
           {!isPostedContent && (
             <div className="flex gap-2 w-full md:w-auto">
-              {/* Post Now */}
-              <Button
-                onClick={handlePostNow}
-                disabled={isPosting || !formData.scheduled_platforms.length}
-                className="bg-rose-500 hover:bg-rose-600 flex-1 md:flex-initial"
-              >
-                {isPosting ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Send className="w-4 h-4 mr-2" />
-                )}
-                <span className="hidden sm:inline">Post Now</span>
-                <span className="sm:hidden">Post</span>
-              </Button>
+              {/* Post Now with requirements validation */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex flex-1 md:flex-initial">
+                      <Button
+                        onClick={handlePostNow}
+                        disabled={isPosting || !canPostNow}
+                        className="bg-rose-500 hover:bg-rose-600 w-full"
+                      >
+                        {isPosting ? (
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        ) : (
+                          <Send className="w-4 h-4 mr-2" />
+                        )}
+                        <span className="hidden sm:inline">Post Now</span>
+                        <span className="sm:hidden">Post</span>
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!canPostNow && requirementErrors.length > 0 && (
+                    <TooltipContent side="top" className="max-w-xs">
+                      <p className="font-medium mb-1">Missing requirements:</p>
+                      <ul className="text-xs list-disc pl-3">
+                        {requirementErrors.map((error, i) => (
+                          <li key={i}>{error}</li>
+                        ))}
+                      </ul>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
               {/* Schedule with dropdown - show "Schedule" for drafts, "Reschedule" only for already scheduled non-draft posts */}
               <div className="flex">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsDraftScheduleMode(false);
-                    setShowScheduleModal(true);
-                  }}
-                  disabled={!formData.scheduled_platforms.length}
-                  className="rounded-r-none border-r-0"
-                >
-                  <Clock className="w-4 h-4 mr-2" />
-                  {isAlreadyScheduled && !isDraftContent ? "Reschedule" : "Schedule"}
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setIsDraftScheduleMode(false);
+                            setShowScheduleModal(true);
+                          }}
+                          disabled={!canSchedule}
+                          className="rounded-r-none border-r-0"
+                        >
+                          <Clock className="w-4 h-4 mr-2" />
+                          {isAlreadyScheduled && !isDraftContent ? "Reschedule" : "Schedule"}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {!canSchedule && requirementErrors.length > 0 && (
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="font-medium mb-1">Missing requirements:</p>
+                        <ul className="text-xs list-disc pl-3">
+                          {requirementErrors.map((error, i) => (
+                            <li key={i}>{error}</li>
+                          ))}
+                        </ul>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
                 <DropdownMenu open={showSaveDropdown} onOpenChange={setShowSaveDropdown}>
                   <DropdownMenuTrigger asChild>
                     <Button
