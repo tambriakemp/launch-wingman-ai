@@ -50,14 +50,58 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [impersonatedUserEmail, setImpersonatedUserEmail] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Check for existing impersonation on mount
+  // Check for existing impersonation on mount - with validation
   useEffect(() => {
-    const impersonationData = localStorage.getItem(IMPERSONATION_KEY);
-    if (impersonationData) {
-      const { email } = JSON.parse(impersonationData);
-      setIsImpersonating(true);
-      setImpersonatedUserEmail(email);
-    }
+    const validateImpersonation = async () => {
+      const impersonationData = localStorage.getItem(IMPERSONATION_KEY);
+      const adminSessionData = localStorage.getItem(ADMIN_SESSION_KEY);
+      
+      if (!impersonationData || !adminSessionData) {
+        // No impersonation data or incomplete - clear everything
+        localStorage.removeItem(IMPERSONATION_KEY);
+        localStorage.removeItem(ADMIN_SESSION_KEY);
+        localStorage.removeItem(ADMIN_INFO_KEY);
+        return;
+      }
+      
+      try {
+        const { email, startedAt } = JSON.parse(impersonationData);
+        
+        // Check if impersonation is stale (older than 4 hours)
+        const startTime = new Date(startedAt).getTime();
+        const MAX_IMPERSONATION_DURATION = 4 * 60 * 60 * 1000; // 4 hours
+        if (Date.now() - startTime > MAX_IMPERSONATION_DURATION) {
+          console.warn('[AuthContext] Stale impersonation data detected, clearing...');
+          localStorage.removeItem(IMPERSONATION_KEY);
+          localStorage.removeItem(ADMIN_SESSION_KEY);
+          localStorage.removeItem(ADMIN_INFO_KEY);
+          return;
+        }
+        
+        // Get current session
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        // Validate current session matches impersonated user
+        if (sessionData?.session?.user?.email === email) {
+          setIsImpersonating(true);
+          setImpersonatedUserEmail(email);
+        } else {
+          // Session doesn't match - clear stale impersonation data
+          console.warn('[AuthContext] Impersonation session mismatch, clearing...');
+          localStorage.removeItem(IMPERSONATION_KEY);
+          localStorage.removeItem(ADMIN_SESSION_KEY);
+          localStorage.removeItem(ADMIN_INFO_KEY);
+        }
+      } catch (err) {
+        console.error('[AuthContext] Error validating impersonation:', err);
+        // On any error, clear impersonation data
+        localStorage.removeItem(IMPERSONATION_KEY);
+        localStorage.removeItem(ADMIN_SESSION_KEY);
+        localStorage.removeItem(ADMIN_INFO_KEY);
+      }
+    };
+    
+    validateImpersonation();
   }, []);
 
   // Track previous subscription state to detect changes
@@ -186,6 +230,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           currentUserId.current = newUserId;
           setSession(newSession);
           setUser(newSession?.user ?? null);
+          
+          // If user changed unexpectedly, clear any stale impersonation data
+          const impersonationData = localStorage.getItem(IMPERSONATION_KEY);
+          if (impersonationData && newSession?.user) {
+            try {
+              const { email } = JSON.parse(impersonationData);
+              if (newSession.user.email !== email) {
+                // Current user doesn't match impersonation - clear it
+                console.warn('[AuthContext] User changed, clearing impersonation state');
+                localStorage.removeItem(IMPERSONATION_KEY);
+                localStorage.removeItem(ADMIN_SESSION_KEY);
+                localStorage.removeItem(ADMIN_INFO_KEY);
+                setIsImpersonating(false);
+                setImpersonatedUserEmail(null);
+              }
+            } catch (err) {
+              console.error('[AuthContext] Error parsing impersonation data:', err);
+            }
+          }
         }
         
         // Mark as initialized after first auth event
@@ -440,6 +503,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (!adminSessionData) {
         toast.error('No admin session to return to');
+        // Clean up all impersonation data
+        localStorage.removeItem(IMPERSONATION_KEY);
+        localStorage.removeItem(ADMIN_INFO_KEY);
+        setIsImpersonating(false);
+        setImpersonatedUserEmail(null);
         await signOut();
         return;
       }
@@ -466,12 +534,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await supabase.auth.signOut();
 
       // Restore admin session
-      const { error } = await supabase.auth.setSession({
+      const { data, error } = await supabase.auth.setSession({
         access_token,
         refresh_token,
       });
 
-      if (error) throw error;
+      if (error || !data.session) {
+        // Admin session expired - need to re-login
+        console.warn('[AuthContext] Admin session expired');
+        toast.error('Your admin session has expired. Please log in again.');
+        localStorage.removeItem(ADMIN_SESSION_KEY);
+        localStorage.removeItem(IMPERSONATION_KEY);
+        localStorage.removeItem(ADMIN_INFO_KEY);
+        setIsImpersonating(false);
+        setImpersonatedUserEmail(null);
+        navigate('/auth');
+        return;
+      }
 
       // Clear impersonation data
       localStorage.removeItem(ADMIN_SESSION_KEY);
@@ -485,6 +564,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error: any) {
       console.error('Stop impersonation error:', error);
       toast.error('Failed to return to admin account');
+      // Clean up all impersonation data on failure
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      localStorage.removeItem(IMPERSONATION_KEY);
+      localStorage.removeItem(ADMIN_INFO_KEY);
+      setIsImpersonating(false);
+      setImpersonatedUserEmail(null);
       // Force sign out on failure
       await signOut();
     }
