@@ -220,16 +220,40 @@ function QuestionCard({ question, index }: { question: string; index: number }) 
 
 function ExampleDirectionCard({ label, content, index }: { label: string; content: string; index: number }) {
   const colors = exampleCardColors[index % exampleCardColors.length];
+  const [copied, setCopied] = useState(false);
+  
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      toast.success("Copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
   
   return (
-    <div className={`p-4 rounded-lg ${colors.bg} border ${colors.border}`}>
+    <div className={`relative p-4 rounded-lg ${colors.bg} border ${colors.border}`}>
       <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/50 ${colors.text} text-xs font-medium mb-2`}>
         <Lightbulb className="w-3 h-3" />
         {label}
       </div>
-      <p className="text-sm text-foreground/80 leading-relaxed">
+      <p className="text-sm text-foreground/80 leading-relaxed pr-8">
         {content}
       </p>
+      <button
+        onClick={handleCopy}
+        className={`absolute top-3 right-3 p-1.5 rounded-md hover:bg-background/50 ${colors.text} transition-colors`}
+        title="Copy to clipboard"
+      >
+        {copied ? (
+          <Check className="w-4 h-4" />
+        ) : (
+          <Copy className="w-4 h-4" />
+        )}
+      </button>
     </div>
   );
 }
@@ -256,16 +280,40 @@ function NeutralExampleCard({ label, content, index }: { label: string; content:
     { bg: "bg-zinc-50 dark:bg-zinc-950/30", text: "text-zinc-600 dark:text-zinc-400", border: "border-zinc-200 dark:border-zinc-800/50" },
   ];
   const colors = neutralColors[index % neutralColors.length];
+  const [copied, setCopied] = useState(false);
+  
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      toast.success("Copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
   
   return (
-    <div className={`p-4 rounded-lg ${colors.bg} border ${colors.border}`}>
+    <div className={`relative p-4 rounded-lg ${colors.bg} border ${colors.border}`}>
       <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/50 ${colors.text} text-xs font-medium mb-2`}>
         <Lightbulb className="w-3 h-3" />
         {label}
       </div>
-      <p className="text-sm text-foreground/80 leading-relaxed">
+      <p className="text-sm text-foreground/80 leading-relaxed pr-8">
         {content}
       </p>
+      <button
+        onClick={handleCopy}
+        className={`absolute top-3 right-3 p-1.5 rounded-md hover:bg-background/50 ${colors.text} transition-colors`}
+        title="Copy to clipboard"
+      >
+        {copied ? (
+          <Check className="w-4 h-4" />
+        ) : (
+          <Copy className="w-4 h-4" />
+        )}
+      </button>
     </div>
   );
 }
