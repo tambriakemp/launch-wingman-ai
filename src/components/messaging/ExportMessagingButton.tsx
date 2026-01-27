@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProjectTaskData {
   taskId: string;
@@ -10,12 +12,58 @@ interface ProjectTaskData {
 }
 
 interface ExportMessagingButtonProps {
+  projectId: string;
   projectName: string;
   projectTasks: ProjectTaskData[];
 }
 
-export function ExportMessagingButton({ projectName, projectTasks }: ExportMessagingButtonProps) {
+export function ExportMessagingButton({ projectId, projectName, projectTasks }: ExportMessagingButtonProps) {
   const [isExporting, setIsExporting] = useState(false);
+
+  // Fetch social bios for export
+  const { data: socialBios = [] } = useQuery({
+    queryKey: ["social-bios-export", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("social_bios")
+        .select("id, platform, bio_content")
+        .eq("project_id", projectId)
+        .order("created_at");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch brand colors for export
+  const { data: brandColors = [] } = useQuery({
+    queryKey: ["brand-colors-export", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("brand_colors")
+        .select("id, hex_color, name")
+        .eq("project_id", projectId)
+        .order("position");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch brand fonts for export
+  const { data: brandFonts = [] } = useQuery({
+    queryKey: ["brand-fonts-export", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("brand_fonts")
+        .select("id, font_family, font_category")
+        .eq("project_id", projectId)
+        .order("created_at");
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const handleExportPDF = () => {
     setIsExporting(true);
@@ -43,14 +91,6 @@ export function ExportMessagingButton({ projectName, projectTasks }: ExportMessa
         const objection = objectionsData[`objection_${i}`];
         if (objection) objections.push(String(objection));
       }
-
-      // Extract social bio data
-      const socialBioTask = projectTasks.find(t => t.taskId === 'messaging_social_bio');
-      const socialBioCompleted = socialBioTask?.status === 'completed';
-
-      // Extract visual direction data
-      const visualDirectionTask = projectTasks.find(t => t.taskId === 'messaging_visual_direction');
-      const visualDirectionCompleted = visualDirectionTask?.status === 'completed';
 
       const date = new Date().toLocaleDateString("en-US", {
         year: "numeric",
@@ -82,6 +122,68 @@ export function ExportMessagingButton({ projectName, projectTasks }: ExportMessa
             <div class="section-content">
               <ul class="item-list">${itemsHtml}</ul>
             </div>
+          </div>
+        `;
+      };
+
+      const renderSocialBiosSection = () => {
+        if (socialBios.length === 0) {
+          return renderSection('Social Media Bios', null);
+        }
+        
+        const biosHtml = socialBios.map(bio => `
+          <div class="bio-item">
+            <div class="bio-platform">${bio.platform}</div>
+            <div class="bio-content">${bio.bio_content}</div>
+          </div>
+        `).join('');
+        
+        return `
+          <div class="section">
+            <div class="section-label">Social Media Bios</div>
+            <div class="section-content">${biosHtml}</div>
+          </div>
+        `;
+      };
+
+      const renderVisualDirectionSection = () => {
+        const hasColors = brandColors.length > 0;
+        const hasFonts = brandFonts.length > 0;
+        
+        if (!hasColors && !hasFonts) {
+          return renderSection('Visual Direction', null);
+        }
+        
+        let colorsHtml = '';
+        if (hasColors) {
+          const swatches = brandColors.map(color => `
+            <div class="color-swatch">
+              <div class="swatch" style="background-color: ${color.hex_color};"></div>
+              <span class="color-name">${color.name || color.hex_color}</span>
+            </div>
+          `).join('');
+          colorsHtml = `
+            <div class="visual-subsection">
+              <strong>Colors:</strong>
+              <div class="color-swatches">${swatches}</div>
+            </div>
+          `;
+        }
+        
+        let fontsHtml = '';
+        if (hasFonts) {
+          const fontList = brandFonts.map(f => `${f.font_family} (${f.font_category})`).join(', ');
+          fontsHtml = `
+            <div class="visual-subsection">
+              <strong>Fonts:</strong> ${fontList}
+            </div>
+          `;
+        }
+        
+        return `
+          <div class="section">
+            <div class="section-label">Visual Direction</div>
+            <div class="section-content">${colorsHtml}${fontsHtml}</div>
           </div>
         `;
       };
@@ -163,6 +265,50 @@ export function ExportMessagingButton({ projectName, projectTasks }: ExportMessa
               color: #9ca3af;
             }
             
+            .bio-item {
+              margin-bottom: 12px;
+            }
+            .bio-item:last-child {
+              margin-bottom: 0;
+            }
+            .bio-platform {
+              font-weight: 600;
+              text-transform: capitalize;
+              margin-bottom: 4px;
+              color: #1f2937;
+            }
+            .bio-content {
+              color: #374151;
+            }
+            
+            .visual-subsection {
+              margin-bottom: 12px;
+            }
+            .visual-subsection:last-child {
+              margin-bottom: 0;
+            }
+            .color-swatches {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 12px;
+              margin-top: 8px;
+            }
+            .color-swatch {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            }
+            .swatch {
+              width: 24px;
+              height: 24px;
+              border-radius: 4px;
+              border: 1px solid #e2e8f0;
+            }
+            .color-name {
+              font-size: 13px;
+              color: #6b7280;
+            }
+            
             .footer { 
               margin-top: 52px; 
               padding-top: 20px; 
@@ -189,8 +335,8 @@ export function ExportMessagingButton({ projectName, projectTasks }: ExportMessa
           ${renderSection('Transformation Statement', transformation)}
           ${renderListSection('Talking Points', talkingPoints)}
           ${renderListSection('Common Objections', objections)}
-          ${renderSection('Social Media Bio', socialBioCompleted ? 'Bio configured (see app for details)' : null)}
-          ${renderSection('Visual Direction', visualDirectionCompleted ? 'Visual direction set (see app for details)' : null)}
+          ${renderSocialBiosSection()}
+          ${renderVisualDirectionSection()}
           
           <div class="footer">Generated by Launchely</div>
         </body>
