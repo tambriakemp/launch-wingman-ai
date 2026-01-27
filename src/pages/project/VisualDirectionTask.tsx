@@ -255,7 +255,7 @@ const VisualDirectionTask = () => {
                 </div>
               </AccordionTrigger>
               <AccordionContent className="pb-6">
-                <PhotosSection projectId={projectId!} />
+                <PhotosSection />
               </AccordionContent>
             </AccordionItem>
           </Accordion>

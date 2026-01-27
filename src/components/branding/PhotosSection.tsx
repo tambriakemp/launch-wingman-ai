@@ -1,240 +1,94 @@
-import { useState, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Upload, MoreVertical, Download, Trash2, Camera } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { Camera, ExternalLink, Search, FolderOpen, Lightbulb } from "lucide-react";
 
-interface PhotosSectionProps {
-  projectId: string;
-}
-
-interface BrandPhoto {
-  id: string;
-  project_id: string;
-  user_id: string;
-  file_name: string;
-  file_path: string;
-  file_size: number | null;
-  created_at: string;
-}
-
-const PhotosSection = ({ projectId }: PhotosSectionProps) => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false);
-
-  const { data: photos = [], isLoading } = useQuery({
-    queryKey: ["brand-photos", projectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("brand_photos")
-        .select("*")
-        .eq("project_id", projectId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data as BrandPhoto[];
-    },
-    enabled: !!projectId && !!user,
-  });
-
-  const uploadMutation = useMutation({
-    mutationFn: async (file: File) => {
-      if (!user) throw new Error("Not authenticated");
-
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const filePath = `${user.id}/photos/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("brand-assets")
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { error: dbError } = await supabase.from("brand_photos").insert({
-        project_id: projectId,
-        user_id: user.id,
-        file_name: file.name,
-        file_path: filePath,
-        file_size: file.size,
-      });
-
-      if (dbError) throw dbError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["brand-photos", projectId] });
-      toast({ title: "Photo uploaded successfully" });
-    },
-    onError: (error) => {
-      toast({ title: "Failed to upload photo", description: error.message, variant: "destructive" });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (photo: BrandPhoto) => {
-      const { error: storageError } = await supabase.storage
-        .from("brand-assets")
-        .remove([photo.file_path]);
-
-      if (storageError) throw storageError;
-
-      const { error: dbError } = await supabase
-        .from("brand_photos")
-        .delete()
-        .eq("id", photo.id);
-
-      if (dbError) throw dbError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["brand-photos", projectId] });
-      toast({ title: "Photo deleted successfully" });
-    },
-    onError: (error) => {
-      toast({ title: "Failed to delete photo", description: error.message, variant: "destructive" });
-    },
-  });
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setIsUploading(true);
-    try {
-      for (const file of Array.from(files)) {
-        await uploadMutation.mutateAsync(file);
-      }
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
-
-  const handleDownload = async (photo: BrandPhoto) => {
-    const { data } = supabase.storage.from("brand-assets").getPublicUrl(photo.file_path);
-    
-    const link = document.createElement("a");
-    link.href = data.publicUrl;
-    link.download = photo.file_name;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const getPublicUrl = (filePath: string) => {
-    const { data } = supabase.storage.from("brand-assets").getPublicUrl(filePath);
-    return data.publicUrl;
-  };
-
+const PhotosSection = () => {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Camera className="h-5 w-5 text-primary" />
+          <h4 className="font-medium text-foreground">Finding Your Brand Photos</h4>
+        </div>
+        
+        <p className="text-sm text-muted-foreground mb-6">
+          Gather photos that capture the feeling of your brand. These will help you stay consistent across your launch content.
+        </p>
+
+        {/* Where to Find Inspiration */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Search className="h-4 w-4 text-primary" />
+            <h5 className="text-sm font-medium text-foreground">Where to Find Inspiration</h5>
+          </div>
+          <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+            <a 
+              href="https://pinterest.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-foreground/80 hover:text-primary transition-colors"
+            >
+              <span>•</span>
+              <span>Pinterest</span>
+              <ExternalLink className="h-3 w-3" />
+            </a>
+            <a 
+              href="https://pexels.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-foreground/80 hover:text-primary transition-colors"
+            >
+              <span>•</span>
+              <span>Pexels</span>
+              <span className="text-xs text-muted-foreground">(free stock photos)</span>
+              <ExternalLink className="h-3 w-3" />
+            </a>
+            <a 
+              href="https://unsplash.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-foreground/80 hover:text-primary transition-colors"
+            >
+              <span>•</span>
+              <span>Unsplash</span>
+              <span className="text-xs text-muted-foreground">(free stock photos)</span>
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        </div>
+
+        {/* Tips for Searching */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Lightbulb className="h-4 w-4 text-primary" />
+            <h5 className="text-sm font-medium text-foreground">Tips for Searching</h5>
+          </div>
+          <ul className="space-y-1.5 text-sm text-muted-foreground">
+            <li className="flex items-start gap-2">
+              <span>•</span>
+              <span>Use keywords that resonate with your brand</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span>•</span>
+              <span>Search for colors, moods, or themes</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span>•</span>
+              <span>Look for images that feel "you"</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Keep It Organized */}
         <div>
-          <h3 className="text-lg font-semibold">Brand Photos</h3>
+          <div className="flex items-center gap-2 mb-3">
+            <FolderOpen className="h-4 w-4 text-primary" />
+            <h5 className="text-sm font-medium text-foreground">Keep It Organized</h5>
+          </div>
           <p className="text-sm text-muted-foreground">
-            Upload brand photos and imagery (PNG, JPG, WEBP)
+            Download your favorites and save them in a dedicated folder on your computer for easy reference during your launch.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">
-            Assets ({photos.length})
-          </span>
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            size="sm"
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            {isUploading ? "Uploading..." : "Upload"}
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            multiple
-            onChange={handleFileChange}
-            className="hidden"
-          />
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="aspect-square animate-pulse bg-muted" />
-          ))}
-        </div>
-      ) : photos.length === 0 ? (
-        <Card className="p-12 text-center border-dashed">
-          <Camera className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground mb-4">No photos uploaded yet</p>
-          <Button
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Upload your first photo
-          </Button>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {photos.map((photo) => (
-            <Card key={photo.id} className="group relative overflow-hidden">
-              <div className="aspect-square bg-muted/50">
-                <img
-                  src={getPublicUrl(photo.file_path)}
-                  alt={photo.file_name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="p-3 border-t">
-                <p className="text-sm font-medium truncate">{photo.file_name}</p>
-                <p className="text-xs text-muted-foreground">
-                  Image • {format(new Date(photo.created_at), "MMM d, yyyy")}
-                </p>
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleDownload(photo)}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => deleteMutation.mutate(photo)}
-                    className="text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </Card>
-          ))}
-        </div>
-      )}
+      </Card>
     </div>
   );
 };
