@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Sparkles, Loader2, SkipForward, RefreshCw } from "lucide-react";
+import { ArrowLeft, Sparkles, Loader2, SkipForward, RefreshCw, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +11,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { SalesCopySection, SectionDraft, OfferForCopy } from "./types";
 import { AiSuggestions } from "./AiSuggestions";
 import type { Json } from "@/integrations/supabase/types";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 
 interface SectionEditorProps {
   projectId: string;
@@ -60,14 +62,17 @@ export const SectionEditor = ({
 }: SectionEditorProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { isSubscribed, hasAdminAccess } = useFeatureAccess();
+  const isPro = isSubscribed || hasAdminAccess;
+  
   const [content, setContent] = useState(draft?.content || "");
   const [isSaving, setIsSaving] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [examples, setExamples] = useState<string[]>([]);
   const [isGeneratingExamples, setIsGeneratingExamples] = useState(false);
-  // Track which AI panel is currently visible: 'suggestions' | 'examples' | null
   const [activeAiPanel, setActiveAiPanel] = useState<'suggestions' | 'examples' | null>(null);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   const handleSave = async (status: 'drafted' | 'skipped' = 'drafted') => {
     if (!user) return;
@@ -296,34 +301,50 @@ export const SectionEditor = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={handleGenerateAi}
-            disabled={isGenerating || isGeneratingExamples}
+            onClick={isPro ? handleGenerateAi : () => setShowUpgradeDialog(true)}
+            disabled={isPro ? (isGenerating || isGeneratingExamples) : false}
+            className={!isPro ? "opacity-60" : ""}
           >
-            {isGenerating ? (
-              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-            ) : activeAiPanel === 'suggestions' && aiSuggestions.length > 0 ? (
-              <RefreshCw className="w-4 h-4 mr-1.5" />
+            {isPro ? (
+              isGenerating ? (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              ) : activeAiPanel === 'suggestions' && aiSuggestions.length > 0 ? (
+                <RefreshCw className="w-4 h-4 mr-1.5" />
+              ) : (
+                <Sparkles className="w-4 h-4 mr-1.5" />
+              )
             ) : (
-              <Sparkles className="w-4 h-4 mr-1.5" />
+              <Crown className="w-4 h-4 mr-1.5 text-primary" />
             )}
-            {activeAiPanel === 'suggestions' && aiSuggestions.length > 0 ? 'Regenerate' : 'Help me write this'}
+            {activeAiPanel === 'suggestions' && aiSuggestions.length > 0 && isPro 
+              ? 'Regenerate' 
+              : 'Help me write this'}
+            {!isPro && <Crown className="w-3 h-3 ml-1.5 text-primary" />}
           </Button>
         )}
         {hasFormulas && (
           <Button
             variant="outline"
             size="sm"
-            onClick={handleGenerateExamples}
-            disabled={isGeneratingExamples || isGenerating}
+            onClick={isPro ? handleGenerateExamples : () => setShowUpgradeDialog(true)}
+            disabled={isPro ? (isGeneratingExamples || isGenerating) : false}
+            className={!isPro ? "opacity-60" : ""}
           >
-            {isGeneratingExamples ? (
-              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-            ) : activeAiPanel === 'examples' && examples.length > 0 ? (
-              <RefreshCw className="w-4 h-4 mr-1.5" />
+            {isPro ? (
+              isGeneratingExamples ? (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              ) : activeAiPanel === 'examples' && examples.length > 0 ? (
+                <RefreshCw className="w-4 h-4 mr-1.5" />
+              ) : (
+                <Sparkles className="w-4 h-4 mr-1.5" />
+              )
             ) : (
-              <Sparkles className="w-4 h-4 mr-1.5" />
+              <Crown className="w-4 h-4 mr-1.5 text-primary" />
             )}
-            {activeAiPanel === 'examples' && examples.length > 0 ? 'Regenerate Examples' : 'Generate Examples'}
+            {activeAiPanel === 'examples' && examples.length > 0 && isPro 
+              ? 'Regenerate Examples' 
+              : 'Generate Examples'}
+            {!isPro && <Crown className="w-3 h-3 ml-1.5 text-primary" />}
           </Button>
         )}
       </div>
@@ -404,6 +425,12 @@ export const SectionEditor = ({
           Save draft
         </Button>
       </div>
+
+      <UpgradeDialog 
+        open={showUpgradeDialog} 
+        onOpenChange={setShowUpgradeDialog} 
+        feature="AI Writing Assistant" 
+      />
     </div>
   );
 };
