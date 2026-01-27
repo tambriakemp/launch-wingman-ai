@@ -1006,8 +1006,9 @@ export default function TaskDetail() {
                   selectedFunnelType={project.selected_funnel_type}
                 />
               )}
-              {taskId === 'messaging_phase_review' && project && (
+              {taskId === 'messaging_phase_review' && project && projectId && (
                 <ExportMessagingButton 
+                  projectId={projectId}
                   projectName={project.name}
                   projectTasks={projectTasks}
                 />
