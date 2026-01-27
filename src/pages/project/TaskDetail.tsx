@@ -122,6 +122,51 @@ export default function TaskDetail() {
     },
   });
 
+  // Fetch social bios for messaging review
+  const { data: socialBios = [] } = useQuery({
+    queryKey: ["social-bios-for-review", projectId],
+    enabled: !!projectId && taskId === 'messaging_phase_review',
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("social_bios")
+        .select("id, platform, bio_content")
+        .eq("project_id", projectId!)
+        .order("created_at");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch brand colors for messaging review
+  const { data: brandColors = [] } = useQuery({
+    queryKey: ["brand-colors-for-review", projectId],
+    enabled: !!projectId && taskId === 'messaging_phase_review',
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("brand_colors")
+        .select("id, hex_color, name")
+        .eq("project_id", projectId!)
+        .order("position");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch brand fonts for messaging review
+  const { data: brandFonts = [] } = useQuery({
+    queryKey: ["brand-fonts-for-review", projectId],
+    enabled: !!projectId && taskId === 'messaging_phase_review',
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("brand_fonts")
+        .select("id, font_family, font_category")
+        .eq("project_id", projectId!)
+        .order("created_at");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Funnel type labels for displaying launch path
   const FUNNEL_TYPE_LABELS: Record<string, string> = {
     content_to_offer: 'Content → Offer',
@@ -262,14 +307,56 @@ export default function TaskDetail() {
           );
         }
         case 'social_bio_reviewed': {
-          const task = projectTasks.find(t => t.taskId === 'messaging_social_bio');
-          if (!task || task.status !== 'completed') return notDefinedText;
-          return 'Social bio configured';
+          if (socialBios.length === 0) return notDefinedText;
+          return (
+            <ul className="list-disc list-inside space-y-0.5 mt-1">
+              {socialBios.map((bio) => (
+                <li key={bio.id} className="text-sm">
+                  <span className="capitalize font-medium">{bio.platform}</span>: {bio.bio_content}
+                </li>
+              ))}
+            </ul>
+          );
         }
         case 'visual_direction_reviewed': {
-          const task = projectTasks.find(t => t.taskId === 'messaging_visual_direction');
-          if (!task || task.status !== 'completed') return notDefinedText;
-          return 'Visual direction configured';
+          const hasColors = brandColors.length > 0;
+          const hasFonts = brandFonts.length > 0;
+          
+          if (!hasColors && !hasFonts) return notDefinedText;
+          
+          return (
+            <div className="space-y-2 mt-1">
+              {hasColors && (
+                <div>
+                  <span className="text-sm font-medium">Colors: </span>
+                  <div className="inline-flex gap-1.5 flex-wrap mt-1">
+                    {brandColors.map((color) => (
+                      <div 
+                        key={color.id} 
+                        className="flex items-center gap-1.5"
+                      >
+                        <div 
+                          className="w-4 h-4 rounded border border-border"
+                          style={{ backgroundColor: color.hex_color }}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          {color.name || color.hex_color}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {hasFonts && (
+                <div>
+                  <span className="text-sm font-medium">Fonts: </span>
+                  <span className="text-sm">
+                    {brandFonts.map(f => `${f.font_family} (${f.font_category})`).join(', ')}
+                  </span>
+                </div>
+              )}
+            </div>
+          );
         }
       }
     }
