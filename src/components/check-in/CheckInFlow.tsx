@@ -18,7 +18,7 @@ type Step = "welcome" | "reflection" | "orientation" | "complete";
 
 export function CheckInFlow({ open, onOpenChange }: CheckInFlowProps) {
   const navigate = useNavigate();
-  const { currentPrompt, submitCheckIn, isSubmitting, snoozeCheckIn } = useCheckIn();
+  const { currentPrompt, submitCheckIn, isSubmitting, snoozeCheckIn, hasPastProjects } = useCheckIn();
   const { recordCheckInUncertainty } = useToneLearning();
   
   const [step, setStep] = useState<Step>("welcome");
@@ -138,9 +138,10 @@ export function CheckInFlow({ open, onOpenChange }: CheckInFlowProps) {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
             >
-              <CheckInOrientation
+            <CheckInOrientation
                 onSelect={handleOrientationSelect}
                 isSubmitting={isSubmitting}
+                hasPastProjects={hasPastProjects}
               />
             </motion.div>
           )}

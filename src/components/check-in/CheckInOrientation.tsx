@@ -8,9 +8,11 @@ import { OrientationChoice } from "@/hooks/useCheckIn";
 interface CheckInOrientationProps {
   onSelect: (choice: OrientationChoice) => void;
   isSubmitting: boolean;
+  hasPastProjects: boolean;
 }
 
-const ORIENTATION_OPTIONS: { value: OrientationChoice; label: string }[] = [
+// Options for users WITH past projects
+const EXPERIENCED_USER_OPTIONS: { value: OrientationChoice; label: string }[] = [
   { value: "continue_current", label: "Continue with my current project" },
   { value: "revisit_past", label: "Revisit a past project" },
   { value: "plan_relaunch", label: "Plan a relaunch" },
@@ -18,8 +20,18 @@ const ORIENTATION_OPTIONS: { value: OrientationChoice; label: string }[] = [
   { value: "not_sure", label: "I'm not sure yet" },
 ];
 
-export function CheckInOrientation({ onSelect, isSubmitting }: CheckInOrientationProps) {
+// Simplified options for NEW users (no past projects)
+const NEW_USER_OPTIONS: { value: OrientationChoice; label: string }[] = [
+  { value: "continue_current", label: "Continue with my project" },
+  { value: "start_new", label: "Start something new" },
+  { value: "not_sure", label: "I'm not sure yet" },
+];
+
+export function CheckInOrientation({ onSelect, isSubmitting, hasPastProjects }: CheckInOrientationProps) {
   const [selected, setSelected] = useState<OrientationChoice | null>(null);
+  
+  // Select appropriate options based on user context
+  const options = hasPastProjects ? EXPERIENCED_USER_OPTIONS : NEW_USER_OPTIONS;
 
   const handleSubmit = () => {
     if (selected) {
@@ -43,7 +55,7 @@ export function CheckInOrientation({ onSelect, isSubmitting }: CheckInOrientatio
         onValueChange={(value) => setSelected(value as OrientationChoice)}
         className="space-y-3"
       >
-        {ORIENTATION_OPTIONS.map((option) => (
+        {options.map((option) => (
           <div
             key={option.value}
             className="flex items-center space-x-3 p-3 rounded-lg border border-border/50 hover:border-border transition-colors cursor-pointer"
