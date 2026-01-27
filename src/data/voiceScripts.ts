@@ -62,4 +62,8 @@ export const VOICE_SCRIPTS: Record<string, string> = {
 
   postlaunch_metrics:
     "Looking at your metrics helps you understand what actually happened during your launch. Not to obsess over numbers, but to see patterns and opportunities. What resonated with your audience? Where did people drop off? These insights guide your next steps.",
+
+  // Sales copy
+  messaging_sales_copy:
+    "Your sales page is where everything comes together — your message, your offer, and your audience. You don't need to be a copywriter to write something meaningful. This section-by-section approach breaks it down into manageable pieces. Focus on one block at a time, and trust that clarity sells better than clever tricks.",
 };

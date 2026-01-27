@@ -56,6 +56,7 @@ import ProjectExecute from "./pages/project/ProjectExecute";
 import TaskDetail from "./pages/project/TaskDetail";
 import OfferSnapshotTask from "./pages/project/OfferSnapshotTask";
 import SocialBioTask from "./pages/project/SocialBioTask";
+import SalesCopyTask from "./pages/project/SalesCopyTask";
 import StartingPointTask from "./pages/project/StartingPointTask";
 import VisualDirectionTask from "./pages/project/VisualDirectionTask";
 import PhaseSnapshot from "./pages/project/PhaseSnapshot";
@@ -207,6 +208,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <VisualDirectionTask />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:id/tasks/messaging_sales_copy"
+              element={
+                <ProtectedRoute>
+                  <SalesCopyTask />
                 </ProtectedRoute>
               }
             />
