@@ -1,77 +1,141 @@
 
 
-## Remove Legacy SureCart References
+## Context-Aware Check-In Orientation Options
 
 ### Problem
-The security scan is flagging the `profiles` table because it still contains three legacy SureCart columns that are no longer used:
-- `surecart_customer_id`
-- `surecart_subscription_id`  
-- `surecart_subscription_status`
-
-Additionally, the Admin Docs page still references SureCart integration details that are outdated since Stripe is now the exclusive payment system.
+Currently, the check-in orientation options are hardcoded in `CheckInOrientation.tsx`, showing all 5 options regardless of user history. This means new users with no past projects see "Revisit a past project" and "Plan a relaunch" - options that don't make sense for them.
 
 ### Solution Overview
-
-#### 1. Database Migration - Remove SureCart Columns
-
-Create a migration to drop the unused columns from the `profiles` table:
-
-```sql
--- Remove legacy SureCart columns from profiles table
-ALTER TABLE public.profiles 
-  DROP COLUMN IF EXISTS surecart_customer_id,
-  DROP COLUMN IF EXISTS surecart_subscription_id,
-  DROP COLUMN IF EXISTS surecart_subscription_status;
-```
-
-**Impact**: 
-- All existing data in these columns is `NULL` (verified), so no data loss
-- The auto-generated `types.ts` will automatically update after the migration
-- This resolves the security finding about SureCart customer data exposure
+Make the orientation options context-aware by:
+1. Querying the user's project history in the `useCheckIn` hook
+2. Passing a `hasPastProjects` flag through the component chain
+3. Filtering displayed options based on user context
 
 ---
 
-#### 2. Update AdminDocs.tsx - Replace SureCart with Stripe
+## Implementation Details
 
-**File**: `src/pages/AdminDocs.tsx`
+### 1. Update `src/hooks/useCheckIn.ts`
 
-**Section: External Integrations (lines 1042-1060)**
+Add a new query to check if the user has any past/completed projects:
 
-Change from:
-```text
-"SureCart Integration" with surecart-checkout, surecart-portal, surecart-webhook
+```typescript
+// Add query for project history (around line 77)
+const { data: projects = [] } = useQuery({
+  queryKey: ["user-projects-for-checkin", user?.id],
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("id, status")
+      .eq("user_id", user!.id);
+
+    if (error) throw error;
+    return data || [];
+  },
+  enabled: !!user,
+});
+
+// Compute hasPastProjects (projects that are completed/archived OR more than 1 project)
+const hasPastProjects = projects.some(p => 
+  ['completed', 'archived', 'launched'].includes(p.status)
+) || projects.length > 1;
 ```
 
-To:
-```text
-"Stripe Integration" with create-checkout, customer-portal, stripe-webhook
-```
-
-**Section: Environment Variables (lines 1122-1129)**
-
-Change from:
-```text
-SURECART_API_KEY — SureCart API
-SURECART_WEBHOOK_SECRET — Webhook verification
-```
-
-To:
-```text
-STRIPE_SECRET_KEY — Stripe API
-STRIPE_WEBHOOK_SECRET — Webhook verification
+Update the return statement to include:
+```typescript
+return {
+  // ... existing returns
+  hasPastProjects,
+};
 ```
 
 ---
 
-### Files to Modify
+### 2. Update `src/components/check-in/CheckInFlow.tsx`
 
-| File | Action |
-|------|--------|
-| Database migration | Drop 3 SureCart columns from profiles |
-| `src/pages/AdminDocs.tsx` | Update integration docs (Stripe replaces SureCart) |
+Pass `hasPastProjects` from the hook to the `CheckInOrientation` component:
 
-### Expected Result
-- Security scan will no longer flag SureCart-related columns
-- Admin documentation accurately reflects current Stripe integration
-- Types will auto-regenerate without SureCart fields
+```tsx
+// Get hasPastProjects from hook
+const { currentPrompt, submitCheckIn, isSubmitting, snoozeCheckIn, hasPastProjects } = useCheckIn();
+
+// Pass to CheckInOrientation (around line 141-144)
+<CheckInOrientation
+  onSelect={handleOrientationSelect}
+  isSubmitting={isSubmitting}
+  hasPastProjects={hasPastProjects}
+/>
+```
+
+---
+
+### 3. Update `src/components/check-in/CheckInOrientation.tsx`
+
+Modify the component to accept and use `hasPastProjects`:
+
+**Update interface:**
+```typescript
+interface CheckInOrientationProps {
+  onSelect: (choice: OrientationChoice) => void;
+  isSubmitting: boolean;
+  hasPastProjects: boolean;  // NEW
+}
+```
+
+**Split options into two sets:**
+```typescript
+// Options for users WITH past projects
+const EXPERIENCED_USER_OPTIONS: { value: OrientationChoice; label: string }[] = [
+  { value: "continue_current", label: "Continue with my current project" },
+  { value: "revisit_past", label: "Revisit a past project" },
+  { value: "plan_relaunch", label: "Plan a relaunch" },
+  { value: "start_new", label: "Start something new" },
+  { value: "not_sure", label: "I'm not sure yet" },
+];
+
+// Simplified options for NEW users (no past projects)
+const NEW_USER_OPTIONS: { value: OrientationChoice; label: string }[] = [
+  { value: "continue_current", label: "Continue with my project" },
+  { value: "start_new", label: "Start something new" },
+  { value: "not_sure", label: "I'm not sure yet" },
+];
+```
+
+**Use context to select options:**
+```typescript
+export function CheckInOrientation({ onSelect, isSubmitting, hasPastProjects }: CheckInOrientationProps) {
+  const [selected, setSelected] = useState<OrientationChoice | null>(null);
+  
+  // Select appropriate options based on user context
+  const options = hasPastProjects ? EXPERIENCED_USER_OPTIONS : NEW_USER_OPTIONS;
+  
+  // ... rest of component uses `options` instead of `ORIENTATION_OPTIONS`
+}
+```
+
+---
+
+## Option Labels by User Type
+
+| User Type | Options Shown |
+|-----------|---------------|
+| **New User** (no past projects) | Continue with my project, Start something new, I'm not sure yet |
+| **Experienced User** (has past/completed projects) | Continue with my current project, Revisit a past project, Plan a relaunch, Start something new, I'm not sure yet |
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/hooks/useCheckIn.ts` | Add projects query, compute and export `hasPastProjects` |
+| `src/components/check-in/CheckInFlow.tsx` | Pass `hasPastProjects` to `CheckInOrientation` |
+| `src/components/check-in/CheckInOrientation.tsx` | Accept prop, define two option sets, conditionally render |
+
+---
+
+## Expected Result
+- New users with no completed/archived projects will see 3 simplified, relevant options
+- Users with project history will see all 5 options including "Revisit a past project" and "Plan a relaunch"
+- The check-in flow feels more personalized and contextually appropriate
 
