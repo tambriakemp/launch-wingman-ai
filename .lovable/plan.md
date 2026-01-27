@@ -1,213 +1,139 @@
 
-# Fix Impersonation Session State Persistence Bug
+# Replace Brand Photos Uploader with Instructional Content
 
-## Problem Summary
+## Overview
 
-You're experiencing unexpected user switches where the app shows you logged in as "bre29@cre8visions.com" (Tambria Kemp) instead of your admin account. This happens because:
-
-1. Impersonation state is stored in localStorage (`coach_hub_impersonation`)
-2. On app mount, this state is restored without validating the actual Supabase session
-3. When the preview refreshes (during Lovable planning), stale localStorage data causes confusion between sessions
-
-## Root Cause
-
-The initialization check on lines 53-61 of `AuthContext.tsx` blindly trusts localStorage:
-
-```typescript
-useEffect(() => {
-  const impersonationData = localStorage.getItem(IMPERSONATION_KEY);
-  if (impersonationData) {
-    const { email } = JSON.parse(impersonationData);
-    setIsImpersonating(true);             // Sets flag without validation!
-    setImpersonatedUserEmail(email);
-  }
-}, []);
-```
-
-This doesn't verify:
-- Whether the current Supabase session user matches the impersonated email
-- Whether the admin session tokens in localStorage are still valid
-- Whether the impersonation data is stale (hours/days old)
+This change removes the photo upload functionality from the Brand Photos section and replaces it with helpful instructions guiding users to gather inspirational photos from external resources like Pinterest and Pexels.
 
 ---
 
-## Solution
+## Why This Change
 
-### Part 1: Add Validation to Impersonation State Recovery
+- **Preserve storage**: Eliminates the need to store user-uploaded brand photos in the backend
+- **Better user experience**: Guides users through a proven process for finding brand-aligned imagery
+- **Practical approach**: Encourages users to build a local library of brand photos they can reference
 
-When the app mounts and finds impersonation data, validate it against the current session:
+---
 
-```typescript
-// Check for existing impersonation on mount - with validation
-useEffect(() => {
-  const validateImpersonation = async () => {
-    const impersonationData = localStorage.getItem(IMPERSONATION_KEY);
-    const adminSessionData = localStorage.getItem(ADMIN_SESSION_KEY);
-    
-    if (!impersonationData || !adminSessionData) {
-      // No impersonation data or incomplete - clear everything
-      localStorage.removeItem(IMPERSONATION_KEY);
-      localStorage.removeItem(ADMIN_SESSION_KEY);
-      localStorage.removeItem(ADMIN_INFO_KEY);
-      return;
-    }
-    
-    try {
-      const { email, startedAt } = JSON.parse(impersonationData);
-      
-      // Check if impersonation is stale (older than 4 hours)
-      const startTime = new Date(startedAt).getTime();
-      const MAX_IMPERSONATION_DURATION = 4 * 60 * 60 * 1000; // 4 hours
-      if (Date.now() - startTime > MAX_IMPERSONATION_DURATION) {
-        console.warn('[AuthContext] Stale impersonation data detected, clearing...');
-        localStorage.removeItem(IMPERSONATION_KEY);
-        localStorage.removeItem(ADMIN_SESSION_KEY);
-        localStorage.removeItem(ADMIN_INFO_KEY);
-        return;
-      }
-      
-      // Get current session
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      // Validate current session matches impersonated user
-      if (sessionData?.session?.user?.email === email) {
-        setIsImpersonating(true);
-        setImpersonatedUserEmail(email);
-      } else {
-        // Session doesn't match - clear stale impersonation data
-        console.warn('[AuthContext] Impersonation session mismatch, clearing...');
-        localStorage.removeItem(IMPERSONATION_KEY);
-        localStorage.removeItem(ADMIN_SESSION_KEY);
-        localStorage.removeItem(ADMIN_INFO_KEY);
-      }
-    } catch (err) {
-      console.error('[AuthContext] Error validating impersonation:', err);
-      // On any error, clear impersonation data
-      localStorage.removeItem(IMPERSONATION_KEY);
-      localStorage.removeItem(ADMIN_SESSION_KEY);
-      localStorage.removeItem(ADMIN_INFO_KEY);
-    }
-  };
-  
-  validateImpersonation();
-}, []);
-```
+## What Will Change
 
-### Part 2: Clear Impersonation State on User ID Change
+| Current | New |
+|---------|-----|
+| Upload button in header | Removed |
+| File input for multiple image uploads | Removed |
+| Empty state with upload prompt | Instructional card with guidance |
+| Photo grid with download/delete | Removed |
+| Supabase storage integration | Removed |
 
-When the auth state changes and the user ID changes unexpectedly, clear impersonation data:
+---
 
-```typescript
-// In the onAuthStateChange callback
-if (currentUserId.current !== newUserId || !isInitialized.current) {
-  currentUserId.current = newUserId;
-  setSession(newSession);
-  setUser(newSession?.user ?? null);
-  
-  // If user changed unexpectedly, clear any stale impersonation data
-  const impersonationData = localStorage.getItem(IMPERSONATION_KEY);
-  if (impersonationData && newSession?.user) {
-    const { email } = JSON.parse(impersonationData);
-    if (newSession.user.email !== email) {
-      // Current user doesn't match impersonation - clear it
-      console.warn('[AuthContext] User changed, clearing impersonation state');
-      localStorage.removeItem(IMPERSONATION_KEY);
-      localStorage.removeItem(ADMIN_SESSION_KEY);
-      localStorage.removeItem(ADMIN_INFO_KEY);
-      setIsImpersonating(false);
-      setImpersonatedUserEmail(null);
-    }
-  }
-}
-```
+## New Content Structure
 
-### Part 3: Add Session Expiry Check for Admin Recovery
+The section will display a single instructional card with:
 
-When attempting to restore admin session, verify the tokens are still valid:
+1. **Title**: "Finding Your Brand Photos"
+2. **Intro text**: Brief explanation of the purpose
+3. **Recommended sites** with links:
+   - Pinterest (pinterest.com)
+   - Pexels (pexels.com) 
+   - Unsplash (unsplash.com)
+4. **Search tips**: Encourage using brand-aligned keywords
+5. **Storage reminder**: Advice to save photos in a dedicated folder
 
-```typescript
-const stopImpersonation = async () => {
-  try {
-    const adminSessionData = localStorage.getItem(ADMIN_SESSION_KEY);
-    
-    if (!adminSessionData) {
-      toast.error('No admin session to return to');
-      // Clean up all impersonation data
-      localStorage.removeItem(IMPERSONATION_KEY);
-      localStorage.removeItem(ADMIN_INFO_KEY);
-      setIsImpersonating(false);
-      setImpersonatedUserEmail(null);
-      await signOut();
-      return;
-    }
+---
 
-    const { access_token, refresh_token } = JSON.parse(adminSessionData);
-    
-    // Try to restore the admin session
-    await supabase.auth.signOut();
-    
-    const { data, error } = await supabase.auth.setSession({
-      access_token,
-      refresh_token,
-    });
+## UI Design
 
-    if (error || !data.session) {
-      // Admin session expired - need to re-login
-      console.warn('[AuthContext] Admin session expired');
-      toast.error('Your admin session has expired. Please log in again.');
-      localStorage.removeItem(ADMIN_SESSION_KEY);
-      localStorage.removeItem(IMPERSONATION_KEY);
-      localStorage.removeItem(ADMIN_INFO_KEY);
-      setIsImpersonating(false);
-      setImpersonatedUserEmail(null);
-      navigate('/auth');
-      return;
-    }
-    
-    // Success - clear impersonation data
-    localStorage.removeItem(ADMIN_SESSION_KEY);
-    localStorage.removeItem(ADMIN_INFO_KEY);
-    localStorage.removeItem(IMPERSONATION_KEY);
-    setIsImpersonating(false);
-    setImpersonatedUserEmail(null);
-
-    toast.success('Returned to admin account');
-    navigate('/admin');
-  } catch (error) {
-    // ... existing error handling
-  }
-};
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ 📷 Finding Your Brand Photos                                │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│   Gather photos that capture the feeling of your brand.     │
+│                                                             │
+│   🔍 Where to Find Inspiration                              │
+│   ┌─────────────────────────────────────────────────────┐   │
+│   │ • Pinterest - pinterest.com                         │   │
+│   │ • Pexels - pexels.com (free stock photos)          │   │
+│   │ • Unsplash - unsplash.com (free stock photos)      │   │
+│   └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│   💡 Tips for Searching                                     │
+│   • Use keywords that resonate with your brand              │
+│   • Search for colors, moods, or themes                     │
+│   • Look for images that feel "you"                         │
+│                                                             │
+│   📁 Keep It Organized                                      │
+│   Download your favorites and save them in a dedicated      │
+│   folder on your computer for easy reference.               │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Immediate Fix for Your Current Session
+## Technical Implementation
 
-Before the code fix is applied, you can manually clear the stale impersonation data by running this in your browser's Developer Console:
+### File to Update
 
-```javascript
-localStorage.removeItem('coach_hub_impersonation');
-localStorage.removeItem('coach_hub_admin_session');
-localStorage.removeItem('coach_hub_admin_info');
-location.reload();
+`src/components/branding/PhotosSection.tsx`
+
+### Changes
+
+1. **Remove all upload/storage logic**:
+   - Remove `useState`, `useRef` for file handling
+   - Remove `useQuery` for fetching photos
+   - Remove `useMutation` for upload/delete
+   - Remove Supabase storage imports and calls
+   - Remove file input element
+
+2. **Simplify imports**:
+   ```typescript
+   // Before: Many imports for upload functionality
+   // After: Just icons and Card
+   import { Card } from "@/components/ui/card";
+   import { Camera, ExternalLink, Search, FolderOpen, Lightbulb } from "lucide-react";
+   ```
+
+3. **Simplify props**:
+   ```typescript
+   // projectId is no longer needed
+   const PhotosSection = () => { ... }
+   ```
+
+4. **Replace return with instructional content**:
+   - A card with helpful text
+   - Links to Pinterest, Pexels, Unsplash (opens in new tab)
+   - Search tips section
+   - Folder organization reminder
+
+---
+
+## Also Update
+
+### `src/pages/project/VisualDirectionTask.tsx`
+
+Remove the `projectId` prop from the PhotosSection component call:
+
+```tsx
+// Before
+<PhotosSection projectId={projectId!} />
+
+// After
+<PhotosSection />
 ```
 
 ---
 
-## Files to Update
+## Summary
 
-| File | Changes |
-|------|---------|
-| `src/contexts/AuthContext.tsx` | 1) Add validation to impersonation recovery on mount 2) Clear stale impersonation on user ID change 3) Better error handling in stopImpersonation |
-
----
-
-## Summary of Fixes
-
-| Issue | Fix |
-|-------|-----|
-| Impersonation state blindly trusted from localStorage | Validate current session email matches impersonated email |
-| No expiry on impersonation data | Add 4-hour max duration check |
-| User ID change doesn't clear impersonation | Detect mismatch and clear state |
-| Admin session recovery doesn't handle expired tokens | Check setSession result and handle gracefully |
-| Incomplete cleanup on errors | Ensure all 3 localStorage keys are cleared together |
+| Item | Action |
+|------|--------|
+| Upload button | Remove |
+| File input | Remove |
+| Photo grid | Remove |
+| Supabase queries/mutations | Remove |
+| Empty state | Replace with instructional content |
+| External links | Add (Pinterest, Pexels, Unsplash) |
+| Search tips | Add |
+| Folder reminder | Add |
