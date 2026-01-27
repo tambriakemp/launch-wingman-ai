@@ -1,141 +1,102 @@
 
+Goal
+- Fix the “tasks look complete but the ‘This step is complete when’ checkboxes and niche/audience context don’t persist” problem.
+- Ensure the Offer Stack slideout shows the “Generate Examples” button reliably once an offer type is selected, and that it has the planning-phase context needed to generate good ideas.
 
-## Context-Aware Check-In Orientation Options
+What’s happening (root causes)
+1) “This step is complete when” checkboxes are being overwritten
+- In TaskDetail, completion criteria are saved via handleCriteriaToggle(), but:
+  - Auto-save (saveInputData) writes input_data WITHOUT completedCriteria.
+  - “Save & mark complete” (handleSaveAndComplete) also writes input_data WITHOUT completedCriteria.
+- Because completeTask() overwrites the task’s input_data, the saved criteria get erased even if they were checked.
 
-### Problem
-Currently, the check-in orientation options are hardcoded in `CheckInOrientation.tsx`, showing all 5 options regardless of user history. This means new users with no past projects see "Revisit a past project" and "Plan a relaunch" - options that don't make sense for them.
+2) Offer Stack “Generate Examples” button is hidden because audienceData is undefined
+- OfferSnapshotTask builds audienceData from the funnels table.
+- Your project currently has 0 rows in funnels for this project, so audienceData becomes undefined.
+- OfferSlotSheet currently renders the button only if (audienceData && offerType). With no funnel row, audienceData is undefined → button never appears.
 
-### Solution Overview
-Make the orientation options context-aware by:
-1. Querying the user's project history in the `useCheckIn` hook
-2. Passing a `hasPastProjects` flag through the component chain
-3. Filtering displayed options based on user context
+3) “Niche not saved” is (mostly) a sync issue, not a UI input issue
+- Planning tasks store values in project_tasks.input_data (e.g., audience_description, niche_context).
+- Offer Stack and other funnel-aware features read from funnels.niche / funnels.target_audience.
+- With no funnels row (and no syncing), the app behaves like the niche/audience isn’t saved even though the planning task may have captured it.
 
----
+Implementation approach (high level)
+- Make task completion criteria persist by including completedCriteria in ALL task saves (auto-save + complete).
+- Ensure a funnel context record exists for every project after a launch path is selected (funnel_type is required), and backfill it from completed planning tasks.
+- Add a fallback/backfill on the Offer Stack page so that if funnels is missing, it is created from existing planning task data automatically.
+- Improve the Offer Slot slideout UX: show “Generate Examples” as soon as an offer type is selected; if audience context is missing, keep it visible but disabled and explain what to complete.
 
-## Implementation Details
+Files to update
+1) src/pages/project/TaskDetail.tsx
+Changes:
+- Persist completion criteria everywhere:
+  - Update saveInputData() to include completedCriteria in the input_data payload.
+  - Update handleSaveAndComplete() to include completedCriteria in the inputData passed to completeTask().
+  - Ensure auto-save “hasData” logic remains correct (it can ignore completedCriteria for deciding whether to save, but completedCriteria should still be included once saving happens).
+- Optional robustness:
+  - After handleCriteriaToggle() write, call refreshTasks() (from useTaskEngine) or invalidate local state so the in-memory projectTasks doesn’t lag behind DB (helps edge cases when navigating quickly).
 
-### 1. Update `src/hooks/useCheckIn.ts`
+2) src/hooks/useTaskEngine.ts
+Changes:
+- Prevent accidental data loss:
+  - In completeTask(), when setting input_data, merge new inputData with existingTask.inputData instead of overwriting blindly (at minimum preserve completedCriteria).
+    - Example approach: const merged = { ...(existingTask.inputData||{}), ...(inputData||{}) }.
+- Ensure a funnels row exists once launch path is chosen:
+  - In the existing special-case for planning_choose_launch_path, after updating projects.selected_funnel_type:
+    - Upsert into funnels on conflict(project_id) with:
+      - project_id, user_id, funnel_type = selectedType
+      - plus a “backfill” of planning context gathered from projectTasks (audience/problem/outcome/time-effort/belief-building).
+- Add a small helper inside this file (or extracted to a lib util) to build funnel updates from projectTasks:
+  - planning_define_audience:
+    - target_audience <- audience_description
+    - niche <- map niche_context to its label if present (or store the raw value as fallback)
+  - planning_define_problem:
+    - primary_pain_point <- primary_problem
+  - planning_define_dream_outcome:
+    - desired_outcome <- dream_outcome
+  - planning_time_effort_perception:
+    - time_effort_elements <- [{type:'quick_win',content:quick_wins},{type:'friction_reducer',content:friction_reducers},{type:'effort_reframe',content:effort_reframe?}]
+  - planning_perceived_likelihood:
+    - main_objections <- belief_blockers
+    - likelihood_elements <- [{type:'past_attempts',content:past_attempts},{type:'belief_builders',content:belief_builders}]
 
-Add a new query to check if the user has any past/completed projects:
+3) src/pages/project/OfferSnapshotTask.tsx
+Changes:
+- Add a “ensure funnel context exists” backfill:
+  - If funnel query returns null AND selectedFunnelType exists:
+    - Build funnel context from projectTasks (already available via useTaskEngine) using the same mapping helper idea.
+    - Upsert into funnels with project_id/user_id/funnel_type + mapped fields.
+    - Invalidate/refetch the funnel query so audienceData becomes available immediately.
+- (Optional) Improve resilience:
+  - If funnel still missing after refetch, show a small inline callout explaining “Complete the audience tasks to unlock AI examples” (but ideally it won’t be needed once backfill works).
 
-```typescript
-// Add query for project history (around line 77)
-const { data: projects = [] } = useQuery({
-  queryKey: ["user-projects-for-checkin", user?.id],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from("projects")
-      .select("id, status")
-      .eq("user_id", user!.id);
+4) src/components/funnel/OfferSlotSheet.tsx
+Changes:
+- Make the button visible in the slideout as requested:
+  - Render “Generate Examples” whenever data.offerType is selected (not dependent on audienceData existing).
+  - Disable it when audienceData is missing OR when required context like target audience is missing.
+  - Add a small helper line under the button when disabled:
+    - “Complete ‘Define your target audience’ to unlock examples.”
+- Keep the generated cards placement exactly as you requested (already correct): below pricing row, above Save button.
 
-    if (error) throw error;
-    return data || [];
-  },
-  enabled: !!user,
-});
+Validation / testing checklist
+- Task criteria persistence:
+  1) Open “Define your target audience”.
+  2) Check a criterion, refresh page → stays checked.
+  3) Check all criteria + Save & mark complete, reopen task → still checked.
+- Funnel context persistence:
+  1) Complete the planning tasks (audience/problem/outcome/etc.).
+  2) Go to “Map your offer stack” → the app should auto-create funnel context and the Offer Stack should now have audienceData.
+  3) Verify that other funnel-based summaries now show niche/target audience (no longer “Not set”).
+- Offer slot slideout:
+  1) Open an offer slot.
+  2) Select Offer Type → “Generate Examples” appears under Description (right-aligned).
+  3) If audience data exists: click Generate Examples → 3 cards appear between pricing row and Save; “Generate More” works.
+  4) If audience data missing: button remains visible but disabled with guidance.
 
-// Compute hasPastProjects (projects that are completed/archived OR more than 1 project)
-const hasPastProjects = projects.some(p => 
-  ['completed', 'archived', 'launched'].includes(p.status)
-) || projects.length > 1;
-```
+Notes / edge cases
+- funnels.funnel_type is required, so we only create the funnels row once a funnel type exists (after “Choose how you’ll sell your offer”).
+- The backfill in OfferSnapshotTask is important for existing projects that already have completed tasks but no funnels row (like yours right now).
 
-Update the return statement to include:
-```typescript
-return {
-  // ... existing returns
-  hasPastProjects,
-};
-```
-
----
-
-### 2. Update `src/components/check-in/CheckInFlow.tsx`
-
-Pass `hasPastProjects` from the hook to the `CheckInOrientation` component:
-
-```tsx
-// Get hasPastProjects from hook
-const { currentPrompt, submitCheckIn, isSubmitting, snoozeCheckIn, hasPastProjects } = useCheckIn();
-
-// Pass to CheckInOrientation (around line 141-144)
-<CheckInOrientation
-  onSelect={handleOrientationSelect}
-  isSubmitting={isSubmitting}
-  hasPastProjects={hasPastProjects}
-/>
-```
-
----
-
-### 3. Update `src/components/check-in/CheckInOrientation.tsx`
-
-Modify the component to accept and use `hasPastProjects`:
-
-**Update interface:**
-```typescript
-interface CheckInOrientationProps {
-  onSelect: (choice: OrientationChoice) => void;
-  isSubmitting: boolean;
-  hasPastProjects: boolean;  // NEW
-}
-```
-
-**Split options into two sets:**
-```typescript
-// Options for users WITH past projects
-const EXPERIENCED_USER_OPTIONS: { value: OrientationChoice; label: string }[] = [
-  { value: "continue_current", label: "Continue with my current project" },
-  { value: "revisit_past", label: "Revisit a past project" },
-  { value: "plan_relaunch", label: "Plan a relaunch" },
-  { value: "start_new", label: "Start something new" },
-  { value: "not_sure", label: "I'm not sure yet" },
-];
-
-// Simplified options for NEW users (no past projects)
-const NEW_USER_OPTIONS: { value: OrientationChoice; label: string }[] = [
-  { value: "continue_current", label: "Continue with my project" },
-  { value: "start_new", label: "Start something new" },
-  { value: "not_sure", label: "I'm not sure yet" },
-];
-```
-
-**Use context to select options:**
-```typescript
-export function CheckInOrientation({ onSelect, isSubmitting, hasPastProjects }: CheckInOrientationProps) {
-  const [selected, setSelected] = useState<OrientationChoice | null>(null);
-  
-  // Select appropriate options based on user context
-  const options = hasPastProjects ? EXPERIENCED_USER_OPTIONS : NEW_USER_OPTIONS;
-  
-  // ... rest of component uses `options` instead of `ORIENTATION_OPTIONS`
-}
-```
-
----
-
-## Option Labels by User Type
-
-| User Type | Options Shown |
-|-----------|---------------|
-| **New User** (no past projects) | Continue with my project, Start something new, I'm not sure yet |
-| **Experienced User** (has past/completed projects) | Continue with my current project, Revisit a past project, Plan a relaunch, Start something new, I'm not sure yet |
-
----
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/hooks/useCheckIn.ts` | Add projects query, compute and export `hasPastProjects` |
-| `src/components/check-in/CheckInFlow.tsx` | Pass `hasPastProjects` to `CheckInOrientation` |
-| `src/components/check-in/CheckInOrientation.tsx` | Accept prop, define two option sets, conditionally render |
-
----
-
-## Expected Result
-- New users with no completed/archived projects will see 3 simplified, relevant options
-- Users with project history will see all 5 options including "Revisit a past project" and "Plan a relaunch"
-- The check-in flow feels more personalized and contextually appropriate
-
+Out of scope (for this iteration)
+- Reworking the entire planning flow to use only the newer Plan pages; this plan focuses on making the current Tasks flow consistent and reliable.
