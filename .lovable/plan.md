@@ -1,9 +1,30 @@
 
-# Gate AI Features in Sales Copy Builder for Free Users
+# Block Scheduling Until Requirements Are Met
 
 ## Overview
 
-This change adds Pro-only gating to the AI features in the Sales Copy Builder. Free plan users will see the AI buttons greyed out with a crown icon, and clicking them will trigger the upgrade dialog instead of generating content.
+This change adds validation that prevents users from scheduling posts until all platform-specific requirements are fulfilled. Users can still save as drafts, but the Schedule and Post Now buttons will be disabled with clear messaging about what's missing.
+
+---
+
+## The Problem
+
+Currently, users can click "Schedule" even when:
+- Pinterest is selected but no board is chosen
+- Instagram/Pinterest is selected but no media is uploaded
+- TikTok is selected but no privacy level is set
+
+The validation happens **after** they select a date/time in the ScheduleModal, causing frustration and missed scheduled posts.
+
+---
+
+## Solution
+
+Validate requirements **before** allowing users to open the schedule modal or post:
+1. Create a computed `getRequirementErrors()` function that returns missing requirements
+2. Disable Schedule and Post Now buttons when requirements aren't met
+3. Add tooltip feedback showing what's missing
+4. Keep Draft button enabled (drafts don't need all requirements)
 
 ---
 
@@ -11,191 +32,201 @@ This change adds Pro-only gating to the AI features in the Sales Copy Builder. F
 
 | Current State | New State |
 |--------------|-----------|
-| AI buttons available to all users | AI buttons greyed out for free users |
-| No visual indicator of Pro features | Crown icon shown on AI buttons for free users |
-| Clicking AI button generates content | Clicking shows upgrade dialog for free users |
-
----
-
-## Affected Components
-
-The Sales Copy Builder has **two AI features** that need gating in `SectionEditor.tsx`:
-
-1. **"Help me write this"** button - Generates AI writing suggestions
-2. **"Generate Examples"** button - Generates headline/copy examples based on formulas
-
-Both are powered by the `generate-sales-copy` edge function.
+| Schedule button enabled with just platform selected | Schedule button disabled until requirements met |
+| Post Now button enabled with just platform selected | Post Now button disabled until requirements met |
+| Validation errors shown after clicking | Tooltip shows missing requirements before clicking |
+| Warning banner shown but not enforced | Requirements enforced at button level |
 
 ---
 
 ## Implementation Details
 
-### File: `src/components/content/sales-copy/SectionEditor.tsx`
+### 1. Add Requirements Validation Logic
 
-**1. Add Required Imports**
+Create a new computed function that returns an array of missing requirements (without triggering toasts):
 
 ```typescript
-import { Crown } from "lucide-react";
-import { useFeatureAccess } from "@/hooks/useFeatureAccess";
-import { UpgradeDialog } from "@/components/UpgradeDialog";
+// Returns array of missing requirement messages (empty = ready to schedule)
+const getRequirementErrors = (): string[] => {
+  const errors: string[] = [];
+  
+  if (!formData.scheduled_platforms.length) {
+    errors.push("Select at least one platform");
+    return errors; // Return early - no point checking platform-specific reqs
+  }
+  
+  // Check each selected platform
+  for (const platform of formData.scheduled_platforms) {
+    // Content requirement (not for TikTok)
+    const isTikTok = platform === "tiktok" || platform === "tiktok_sandbox";
+    if (!isTikTok && !content?.trim()) {
+      errors.push("Post content is required");
+    }
+    
+    // Platform-specific
+    if (platform === "pinterest") {
+      if (!formData.media_url) errors.push("Pinterest: Image required");
+      if (!formData.pinterest_board_id) errors.push("Pinterest: Board required");
+    } else if (platform === "instagram") {
+      if (!formData.media_url) errors.push("Instagram: Media required");
+    } else if (platform === "tiktok" || platform === "tiktok_sandbox") {
+      const hasMedia = formData.tiktok_photo_urls.length > 0 || !!formData.media_url;
+      if (!hasMedia) errors.push("TikTok: Media required");
+      if (!formData.tiktok_privacy_level) errors.push("TikTok: Privacy level required");
+      // Commercial disclosure validation
+      if (formData.tiktok_disclose_content && 
+          !formData.tiktok_brand_organic && 
+          !formData.tiktok_brand_content) {
+        errors.push("TikTok: Select disclosure option");
+      }
+    }
+  }
+  
+  // Remove duplicates (e.g., "Post content is required" might appear multiple times)
+  return [...new Set(errors)];
+};
 ```
 
-**2. Add Hook and State**
+### 2. Create Computed Values
 
-Inside the component, add:
+Add computed values derived from the requirements check:
+
 ```typescript
-const { isSubscribed, hasAdminAccess } = useFeatureAccess();
-const isPro = isSubscribed || hasAdminAccess;
-const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+const requirementErrors = getRequirementErrors();
+const canSchedule = requirementErrors.length === 0;
+const canPostNow = requirementErrors.length === 0;
 ```
 
-**3. Update "Help me write this" Button (Lines ~293-311)**
+### 3. Update Schedule Button
 
-Current:
+Update the Schedule button to be disabled and show a tooltip when requirements aren't met:
+
 ```tsx
-{section.aiEnabled && (
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={handleGenerateAi}
-    disabled={isGenerating || isGeneratingExamples}
-  >
-    {isGenerating ? (
-      <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-    ) : activeAiPanel === 'suggestions' && aiSuggestions.length > 0 ? (
-      <RefreshCw className="w-4 h-4 mr-1.5" />
-    ) : (
-      <Sparkles className="w-4 h-4 mr-1.5" />
+{/* Schedule button with requirements validation */}
+<TooltipProvider>
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <span className="inline-block"> {/* Wrapper for disabled button tooltip */}
+        <Button
+          variant="outline"
+          onClick={() => {
+            setIsDraftScheduleMode(false);
+            setShowScheduleModal(true);
+          }}
+          disabled={!canSchedule}
+          className="rounded-r-none border-r-0"
+        >
+          <Clock className="w-4 h-4 mr-2" />
+          {isAlreadyScheduled && !isDraftContent ? "Reschedule" : "Schedule"}
+        </Button>
+      </span>
+    </TooltipTrigger>
+    {!canSchedule && requirementErrors.length > 0 && (
+      <TooltipContent side="top" className="max-w-xs">
+        <p className="font-medium mb-1">Missing requirements:</p>
+        <ul className="text-xs list-disc pl-3">
+          {requirementErrors.map((error, i) => (
+            <li key={i}>{error}</li>
+          ))}
+        </ul>
+      </TooltipContent>
     )}
-    {activeAiPanel === 'suggestions' && aiSuggestions.length > 0 ? 'Regenerate' : 'Help me write this'}
-  </Button>
-)}
+  </Tooltip>
+</TooltipProvider>
 ```
 
-New:
+### 4. Update Post Now Button
+
+Apply the same validation to the Post Now button:
+
 ```tsx
-{section.aiEnabled && (
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={isPro ? handleGenerateAi : () => setShowUpgradeDialog(true)}
-    disabled={isPro ? (isGenerating || isGeneratingExamples) : false}
-    className={!isPro ? "opacity-60" : ""}
-  >
-    {isPro ? (
-      isGenerating ? (
-        <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-      ) : activeAiPanel === 'suggestions' && aiSuggestions.length > 0 ? (
-        <RefreshCw className="w-4 h-4 mr-1.5" />
-      ) : (
-        <Sparkles className="w-4 h-4 mr-1.5" />
-      )
-    ) : (
-      <Crown className="w-4 h-4 mr-1.5 text-primary" />
+<TooltipProvider>
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <span className="inline-block">
+        <Button
+          onClick={handlePostNow}
+          disabled={isPosting || !canPostNow}
+          className="bg-rose-500 hover:bg-rose-600 flex-1 md:flex-initial"
+        >
+          {isPosting ? (
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          ) : (
+            <Send className="w-4 h-4 mr-2" />
+          )}
+          <span className="hidden sm:inline">Post Now</span>
+          <span className="sm:hidden">Post</span>
+        </Button>
+      </span>
+    </TooltipTrigger>
+    {!canPostNow && requirementErrors.length > 0 && (
+      <TooltipContent side="top" className="max-w-xs">
+        <p className="font-medium mb-1">Missing requirements:</p>
+        <ul className="text-xs list-disc pl-3">
+          {requirementErrors.map((error, i) => (
+            <li key={i}>{error}</li>
+          ))}
+        </ul>
+      </TooltipContent>
     )}
-    {activeAiPanel === 'suggestions' && aiSuggestions.length > 0 && isPro 
-      ? 'Regenerate' 
-      : 'Help me write this'}
-    {!isPro && <Crown className="w-3 h-3 ml-1.5 text-primary" />}
-  </Button>
-)}
+  </Tooltip>
+</TooltipProvider>
 ```
 
-**4. Update "Generate Examples" Button (Lines ~312-328)**
+### 5. Add Tooltip Imports
 
-Current:
-```tsx
-{hasFormulas && (
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={handleGenerateExamples}
-    disabled={isGeneratingExamples || isGenerating}
-  >
-    {isGeneratingExamples ? (
-      <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-    ) : activeAiPanel === 'examples' && examples.length > 0 ? (
-      <RefreshCw className="w-4 h-4 mr-1.5" />
-    ) : (
-      <Sparkles className="w-4 h-4 mr-1.5" />
-    )}
-    {activeAiPanel === 'examples' && examples.length > 0 ? 'Regenerate Examples' : 'Generate Examples'}
-  </Button>
-)}
-```
+Add the Tooltip components to the imports:
 
-New:
-```tsx
-{hasFormulas && (
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={isPro ? handleGenerateExamples : () => setShowUpgradeDialog(true)}
-    disabled={isPro ? (isGeneratingExamples || isGenerating) : false}
-    className={!isPro ? "opacity-60" : ""}
-  >
-    {isPro ? (
-      isGeneratingExamples ? (
-        <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-      ) : activeAiPanel === 'examples' && examples.length > 0 ? (
-        <RefreshCw className="w-4 h-4 mr-1.5" />
-      ) : (
-        <Sparkles className="w-4 h-4 mr-1.5" />
-      )
-    ) : (
-      <Crown className="w-4 h-4 mr-1.5 text-primary" />
-    )}
-    {activeAiPanel === 'examples' && examples.length > 0 && isPro 
-      ? 'Regenerate Examples' 
-      : 'Generate Examples'}
-    {!isPro && <Crown className="w-3 h-3 ml-1.5 text-primary" />}
-  </Button>
-)}
-```
-
-**5. Add Upgrade Dialog at End of Component**
-
-Before the closing `</div>` of the component, add:
-```tsx
-<UpgradeDialog 
-  open={showUpgradeDialog} 
-  onOpenChange={setShowUpgradeDialog} 
-  feature="AI Writing Assistant" 
-/>
+```typescript
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 ```
 
 ---
 
-## Visual Appearance for Free Users
+## Visual Appearance
+
+When requirements aren't met:
 
 ```text
-┌────────────────────────────────────────────────────┐
-│ Your draft                                         │
-│ ┌────────────────────────────────────────────────┐ │
-│ │                                                │ │
-│ │ [Textarea - still fully editable]              │ │
-│ │                                                │ │
-│ └────────────────────────────────────────────────┘ │
-│                                                    │
-│ ┌─────────────────────────┐ ┌────────────────────┐ │
-│ │ 👑 Help me write this 👑 │ │ 👑 Gen Examples 👑 │ │
-│ │ (greyed out - 60% opacity)│ │ (greyed out)      │ │
-│ └─────────────────────────┘ └────────────────────┘ │
-│                                                    │
-│ [Clicking opens Upgrade Dialog]                    │
-└────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│  Footer                                                          │
+│                                                                  │
+│  [Draft]     [Post Now (disabled)]  [Schedule (disabled)] [▼]   │
+│                      │                     │                     │
+│                      ▼                     ▼                     │
+│              ┌─────────────────────────────────────┐             │
+│              │ Missing requirements:               │             │
+│              │ • Pinterest: Board required         │             │
+│              │ • Pinterest: Image required         │             │
+│              └─────────────────────────────────────┘             │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+When requirements are met:
+
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│  Footer                                                          │
+│                                                                  │
+│  [Draft]     [Post Now]              [Schedule]          [▼]    │
+│               (enabled)               (enabled)                  │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Behavior Summary
 
-| User Type | Button Appearance | Click Action |
-|-----------|------------------|--------------|
-| Free | 60% opacity, Crown icon visible | Opens upgrade dialog |
-| Content Vault | 60% opacity, Crown icon visible | Opens upgrade dialog |
-| Pro | Normal appearance, Sparkles icon | Generates AI content |
-| Admin/Manager | Normal appearance, Sparkles icon | Generates AI content |
+| Button | When Disabled | When Enabled |
+|--------|---------------|--------------|
+| Draft | Only when content is empty | Always (requirements not needed for drafts) |
+| Post Now | When any requirement is missing OR posting | When all requirements met AND not posting |
+| Schedule | When any requirement is missing | When all requirements met |
 
 ---
 
@@ -203,14 +234,14 @@ Before the closing `</div>` of the component, add:
 
 | File | Changes |
 |------|---------|
-| `src/components/content/sales-copy/SectionEditor.tsx` | Add subscription check, update button rendering, add upgrade dialog |
+| `src/components/content/PostEditorSheet.tsx` | Add `getRequirementErrors()`, add tooltip imports, update button disabled states and add tooltips |
 
 ---
 
 ## Technical Notes
 
-- Uses existing `useFeatureAccess` hook (same pattern as other Pro-gated features)
-- Uses existing `UpgradeDialog` component for consistent upgrade UX
-- Crown icon from `lucide-react` (already used throughout the app)
-- No backend changes needed - just frontend gating
-- Free users can still manually write content; only AI generation is gated
+- Draft functionality remains unchanged - users can save drafts without meeting all requirements
+- The existing `validatePostRequirements()` function in `handleSchedule` serves as a backup validation
+- Tooltips use the existing shadcn/ui Tooltip component
+- Requirements are checked for all selected platforms (not just the first one)
+- Duplicate error messages are filtered out using `Set`
