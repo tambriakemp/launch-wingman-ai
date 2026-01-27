@@ -102,6 +102,121 @@ export default function TaskDetail() {
     enabled: !!projectId,
   });
 
+  // Fetch offers for the planning review checklist (when viewing planning_phase_review task)
+  const { data: projectOffers = [] } = useQuery({
+    queryKey: ["offers-for-review", projectId, project?.selected_funnel_type],
+    enabled: !!projectId && !!project?.selected_funnel_type && taskId === 'planning_phase_review',
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("offers")
+        .select("id, title, offer_type, slot_type")
+        .eq("project_id", projectId!)
+        .eq("funnel_type", project!.selected_funnel_type)
+        .order("slot_position");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Funnel type labels for displaying launch path
+  const FUNNEL_TYPE_LABELS: Record<string, string> = {
+    content_to_offer: 'Content → Offer',
+    freebie_email_offer: 'Freebie → Email → Offer',
+    live_training_offer: 'Live Training → Offer',
+    application_call: 'Application → Call',
+    membership: 'Membership',
+    challenge: 'Challenge',
+    launch: 'Launch',
+  };
+
+  // Helper to truncate long text
+  const truncateText = (text: string, maxLength: number = 120): string => {
+    if (!text || text.length <= maxLength) return text;
+    return text.substring(0, maxLength).trim() + '...';
+  };
+
+  // Get dynamic description for planning review checklist items
+  const getChecklistItemDescription = useCallback((optionValue: string): React.ReactNode => {
+    // Only process for planning_phase_review task
+    if (taskId !== 'planning_phase_review') return null;
+
+    const notDefinedText = <span className="italic text-muted-foreground/70">Not yet defined</span>;
+
+    switch (optionValue) {
+      case 'audience_reviewed': {
+        const task = projectTasks.find(t => t.taskId === 'planning_define_audience');
+        const inputData = task?.inputData as Record<string, unknown> | undefined;
+        const value = inputData?.audience_description;
+        return value ? truncateText(String(value)) : notDefinedText;
+      }
+      case 'problem_reviewed': {
+        const task = projectTasks.find(t => t.taskId === 'planning_define_problem');
+        const inputData = task?.inputData as Record<string, unknown> | undefined;
+        const value = inputData?.primary_problem;
+        return value ? truncateText(String(value)) : notDefinedText;
+      }
+      case 'outcome_reviewed': {
+        const task = projectTasks.find(t => t.taskId === 'planning_define_dream_outcome');
+        const inputData = task?.inputData as Record<string, unknown> | undefined;
+        const value = inputData?.dream_outcome;
+        return value ? truncateText(String(value)) : notDefinedText;
+      }
+      case 'time_effort_reviewed': {
+        const task = projectTasks.find(t => t.taskId === 'planning_time_effort_perception');
+        const inputData = task?.inputData as Record<string, unknown> | undefined;
+        const items: string[] = [];
+        if (inputData?.quick_wins) items.push(`Quick wins: ${truncateText(String(inputData.quick_wins), 80)}`);
+        if (inputData?.friction_reducers) items.push(`Friction reducers: ${truncateText(String(inputData.friction_reducers), 80)}`);
+        if (inputData?.effort_reframe) items.push(`Effort reframe: ${truncateText(String(inputData.effort_reframe), 80)}`);
+        
+        if (items.length === 0) return notDefinedText;
+        return (
+          <ul className="list-disc list-inside space-y-0.5 mt-1">
+            {items.map((item, i) => <li key={i} className="text-sm">{item}</li>)}
+          </ul>
+        );
+      }
+      case 'belief_reviewed': {
+        const task = projectTasks.find(t => t.taskId === 'planning_perceived_likelihood');
+        const inputData = task?.inputData as Record<string, unknown> | undefined;
+        const items: string[] = [];
+        if (inputData?.belief_blockers) items.push(`Belief blockers: ${truncateText(String(inputData.belief_blockers), 80)}`);
+        if (inputData?.belief_builders) items.push(`Belief builders: ${truncateText(String(inputData.belief_builders), 80)}`);
+        if (inputData?.past_attempts) items.push(`Past attempts: ${truncateText(String(inputData.past_attempts), 80)}`);
+        
+        if (items.length === 0) return notDefinedText;
+        return (
+          <ul className="list-disc list-inside space-y-0.5 mt-1">
+            {items.map((item, i) => <li key={i} className="text-sm">{item}</li>)}
+          </ul>
+        );
+      }
+      case 'offer_reviewed': {
+        const configuredOffers = projectOffers.filter(o => o.offer_type?.trim());
+        if (configuredOffers.length === 0) return <span className="italic text-muted-foreground/70">No offers configured yet</span>;
+        
+        return (
+          <ul className="list-disc list-inside space-y-0.5 mt-1">
+            {configuredOffers.map((offer) => (
+              <li key={offer.id} className="text-sm">
+                <span className="capitalize">{offer.slot_type?.replace('_', ' ') || 'Offer'}</span>: {offer.title || offer.offer_type}
+              </li>
+            ))}
+          </ul>
+        );
+      }
+      case 'path_reviewed': {
+        const task = projectTasks.find(t => t.taskId === 'planning_choose_launch_path');
+        const inputData = task?.inputData as Record<string, unknown> | undefined;
+        const selected = inputData?.selected as string | undefined;
+        if (!selected) return notDefinedText;
+        return FUNNEL_TYPE_LABELS[selected] || selected;
+      }
+      default:
+        return null;
+    }
+  }, [taskId, projectTasks, projectOffers]);
+
   // Load existing input data if available
   useEffect(() => {
     if (projectTask?.inputData) {
@@ -786,32 +901,37 @@ export default function TaskDetail() {
           {/* Checklist Input */}
           {taskTemplate.inputType === 'checklist' && taskTemplate.inputSchema?.options && (
             <div className="space-y-3">
-              {taskTemplate.inputSchema.options.map((option) => (
-                <div
-                  key={option.value}
-                  className={`flex items-start gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
-                    checklistItems.includes(option.value)
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
-                  }`}
-                  onClick={() => handleChecklistToggle(option.value)}
-                >
-                  <Checkbox
-                    id={option.value}
-                    checked={checklistItems.includes(option.value)}
-                    onCheckedChange={() => handleChecklistToggle(option.value)}
-                    className="mt-0.5"
-                  />
-                  <div className="space-y-1">
-                    <Label htmlFor={option.value} className="font-medium text-foreground cursor-pointer">
-                      {option.label}
-                    </Label>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {option.description}
-                    </p>
+              {taskTemplate.inputSchema.options.map((option) => {
+                // Get dynamic description for planning review checklist
+                const dynamicDescription = getChecklistItemDescription(option.value);
+                
+                return (
+                  <div
+                    key={option.value}
+                    className={`flex items-start gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
+                      checklistItems.includes(option.value)
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
+                    }`}
+                    onClick={() => handleChecklistToggle(option.value)}
+                  >
+                    <Checkbox
+                      id={option.value}
+                      checked={checklistItems.includes(option.value)}
+                      onCheckedChange={() => handleChecklistToggle(option.value)}
+                      className="mt-0.5"
+                    />
+                    <div className="space-y-1 flex-1">
+                      <Label htmlFor={option.value} className="font-medium text-foreground cursor-pointer">
+                        {option.label}
+                      </Label>
+                      <div className="text-sm text-muted-foreground leading-relaxed">
+                        {dynamicDescription || option.description}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
