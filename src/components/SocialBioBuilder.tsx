@@ -23,6 +23,7 @@ interface SocialBio {
   platform: string;
   formula: string;
   content: string;
+  fieldData?: Record<string, string>;
 }
 
 interface TransformationVersions {
@@ -206,8 +207,9 @@ export const SocialBioBuilder = ({ projectId, onBiosChange }: SocialBioBuilderPr
   const [selectedFormula, setSelectedFormula] = useState<string | null>(null);
   const [fieldData, setFieldData] = useState<Record<string, string>>({});
   const [editingBio, setEditingBio] = useState<SocialBio | null>(null);
+  const [isGenerated, setIsGenerated] = useState(false);
 
-  // Fetch bios from database
+  // Fetch bios from database - includes field_data
   const { data: bios = [], isLoading } = useQuery({
     queryKey: ["social-bios", projectId],
     queryFn: async () => {
@@ -222,6 +224,7 @@ export const SocialBioBuilder = ({ projectId, onBiosChange }: SocialBioBuilderPr
         platform: item.platform,
         formula: item.formula_id,
         content: item.bio_content,
+        fieldData: item.field_data as Record<string, string>,
       }));
     },
     enabled: !!projectId,
@@ -334,6 +337,7 @@ export const SocialBioBuilder = ({ projectId, onBiosChange }: SocialBioBuilderPr
     setSelectedFormula(null);
     setFieldData({});
     setEditingBio(null);
+    setIsGenerated(false);
   };
 
   const handleAdd = () => {
@@ -342,6 +346,7 @@ export const SocialBioBuilder = ({ projectId, onBiosChange }: SocialBioBuilderPr
     setSelectedPlatform(null);
     setSelectedFormula(null);
     setFieldData({});
+    setIsGenerated(false);
     setIsAddMode(true);
   };
 
@@ -349,7 +354,12 @@ export const SocialBioBuilder = ({ projectId, onBiosChange }: SocialBioBuilderPr
     setEditingBio(bio);
     setSelectedPlatform(bio.platform);
     setSelectedFormula(bio.formula);
-    setFieldData({ finalContent: bio.content });
+    // Restore original field data AND the final content
+    setFieldData({
+      ...bio.fieldData,
+      finalContent: bio.content,
+    });
+    setIsGenerated(true); // Already generated, show preview mode
     setStep("content");
     setIsAddMode(true);
   };
@@ -366,11 +376,19 @@ export const SocialBioBuilder = ({ projectId, onBiosChange }: SocialBioBuilderPr
   const handleFormulaSelect = (formulaId: string) => {
     setSelectedFormula(formulaId);
     setFieldData({});
+    setIsGenerated(false);
     setStep("content");
   };
 
-const generatedContent = formula && !editingBio ? formula.build(fieldData) : fieldData.finalContent || "";
-const charCount = generatedContent?.length || 0;
+  // Check if all required fields are filled
+  const hasAllFields = formula?.fields.every(field => fieldData[field.key]?.trim()) ?? false;
+
+  // Generate content from formula
+  const generatedContent = formula?.build(fieldData) || "";
+  
+  // Display content: use finalContent if edited, otherwise use generated
+  const displayContent = fieldData.finalContent ?? generatedContent;
+  const charCount = displayContent?.length || 0;
   const maxChars = platform?.maxChars || 150;
   const isOverLimit = charCount > maxChars;
 
@@ -380,7 +398,8 @@ const charCount = generatedContent?.length || 0;
       return;
     }
 
-    const content = editingBio ? fieldData.finalContent : formula?.build(fieldData) || "";
+    // Use finalContent if manually edited, otherwise use formula-built content
+    const content = fieldData.finalContent ?? (formula?.build(fieldData) || "");
     
     if (!content.trim()) {
       toast.error("Please fill in the bio content");
@@ -392,8 +411,8 @@ const charCount = generatedContent?.length || 0;
       return;
     }
 
-    // Check if a bio for this platform already exists
-    const existingBioForPlatform = bios.find(b => b.platform === selectedPlatform);
+    // Create a clean copy of fieldData without finalContent for storage
+    const { finalContent, ...cleanFieldData } = fieldData;
 
     if (editingBio) {
       updateMutation.mutate({
@@ -401,23 +420,14 @@ const charCount = generatedContent?.length || 0;
         platform: selectedPlatform,
         formulaId: selectedFormula,
         content,
-        fieldData,
-      });
-    } else if (existingBioForPlatform) {
-      // Update the existing bio for this platform instead of creating a duplicate
-      updateMutation.mutate({
-        id: existingBioForPlatform.id,
-        platform: selectedPlatform,
-        formulaId: selectedFormula,
-        content,
-        fieldData,
+        fieldData: cleanFieldData,
       });
     } else {
       createMutation.mutate({
         platform: selectedPlatform,
         formulaId: selectedFormula,
         content,
-        fieldData,
+        fieldData: cleanFieldData,
       });
     }
   };
@@ -427,9 +437,16 @@ const charCount = generatedContent?.length || 0;
       setStep("platform");
       setSelectedPlatform(null);
     } else if (step === "content") {
-      setStep("formula");
-      setSelectedFormula(null);
-      setFieldData({});
+      if (isGenerated && !editingBio) {
+        // Go back to fields mode
+        setIsGenerated(false);
+        setFieldData(prev => ({ ...prev, finalContent: undefined }));
+      } else {
+        setStep("formula");
+        setSelectedFormula(null);
+        setFieldData({});
+        setIsGenerated(false);
+      }
     }
   };
 
@@ -454,12 +471,15 @@ const charCount = generatedContent?.length || 0;
                 <CardTitle className="text-base">
                   {step === "platform" && "Select Platform"}
                   {step === "formula" && "Choose Bio Formula"}
-                  {step === "content" && "Build Your Bio"}
+                  {step === "content" && (isGenerated ? "Review Your Bio" : "Build Your Bio")}
                 </CardTitle>
                 <CardDescription className="text-sm">
                   {step === "platform" && "Choose the platform you're creating a bio for"}
                   {step === "formula" && "Select a formula to structure your bio"}
-                  {step === "content" && `Fill in the details for your ${platform?.name} bio`}
+                  {step === "content" && (isGenerated 
+                    ? `Review and edit your ${platform?.name} bio` 
+                    : `Fill in the details for your ${platform?.name} bio`
+                  )}
                 </CardDescription>
               </div>
             </div>
@@ -473,23 +493,41 @@ const charCount = generatedContent?.length || 0;
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {platforms.map((p) => {
                 const Icon = p.icon;
+                const existingBio = bios.find(b => b.platform === p.id);
+                const isDisabled = !!existingBio;
+                
                 return (
                   <button
                     key={p.id}
-                    onClick={() => handlePlatformSelect(p.id)}
+                    onClick={() => !isDisabled && handlePlatformSelect(p.id)}
+                    disabled={isDisabled}
                     className={cn(
-                      "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all",
-                      "hover:border-primary hover:bg-primary/5",
-                      selectedPlatform === p.id
+                      "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all relative",
+                      isDisabled 
+                        ? "opacity-50 cursor-not-allowed border-border bg-muted/30"
+                        : "hover:border-primary hover:bg-primary/5",
+                      selectedPlatform === p.id && !isDisabled
                         ? "border-primary bg-primary/10"
                         : "border-border"
                     )}
                   >
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                      <Icon className="w-5 h-5 text-foreground" />
+                    {isDisabled && (
+                      <div className="absolute top-2 right-2">
+                        <Lock className="w-3 h-3 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center",
+                      isDisabled ? "bg-muted/50" : "bg-muted"
+                    )}>
+                      <Icon className={cn("w-5 h-5", isDisabled ? "text-muted-foreground" : "text-foreground")} />
                     </div>
-                    <span className="text-sm font-medium text-foreground">{p.name}</span>
-                    <span className="text-xs text-muted-foreground">{p.maxChars} chars</span>
+                    <span className={cn("text-sm font-medium", isDisabled ? "text-muted-foreground" : "text-foreground")}>
+                      {p.name}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {isDisabled ? "Bio exists" : `${p.maxChars} chars`}
+                    </span>
                   </button>
                 );
               })}
@@ -520,8 +558,19 @@ const charCount = generatedContent?.length || 0;
 
           {step === "content" && (
             <div className="space-y-4">
+              {/* Formula Reference Card */}
+              {formula && (
+                <div className="p-3 rounded-lg border bg-muted/30">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Formula</span>
+                  </div>
+                  <p className="text-sm font-medium text-foreground">{formula.name}</p>
+                  <p className="text-xs text-muted-foreground italic mt-1">{formula.formula}</p>
+                </div>
+              )}
+
               {/* Transformation Reference */}
-              {transformationStatement && transformationLocked && (
+              {transformationStatement && transformationLocked && !isGenerated && (
                 <div className="p-4 rounded-lg border bg-muted/50">
                   <div className="flex items-center gap-2 mb-2">
                     <Lock className="w-4 h-4 text-primary" />
@@ -534,7 +583,6 @@ const charCount = generatedContent?.length || 0;
                     onClick={() => {
                       // Pre-fill fields based on transformation
                       if (formula?.id === "who-result" && transformationVersions?.one_liner) {
-                        // Try to extract who/result from transformation
                         setFieldData(prev => ({
                           ...prev,
                           who: "your target audience",
@@ -549,54 +597,69 @@ const charCount = generatedContent?.length || 0;
                 </div>
               )}
 
-              {editingBio ? (
-                <div className="space-y-2">
-                  <Label>Bio Content</Label>
-                  <Textarea
-                    value={fieldData.finalContent || ""}
-                    onChange={(e) =>
-                      setFieldData((prev) => ({ ...prev, finalContent: e.target.value }))
-                    }
-                    placeholder="Edit your bio content..."
-                    rows={4}
-                  />
-                </div>
-              ) : (
-                formula?.fields.map((field) => (
-                  <div key={field.key} className="space-y-2">
-                    <Label>{field.label}</Label>
-                    <Input
-                      value={fieldData[field.key] || ""}
-                      onChange={(e) =>
-                        setFieldData((prev) => ({ ...prev, [field.key]: e.target.value }))
-                      }
-                      placeholder={field.placeholder}
-                    />
-                  </div>
-                ))
+              {/* Fields mode - show when not yet generated */}
+              {!isGenerated && (
+                <>
+                  {formula?.fields.map((field) => (
+                    <div key={field.key} className="space-y-2">
+                      <Label>{field.label}</Label>
+                      <Input
+                        value={fieldData[field.key] || ""}
+                        onChange={(e) =>
+                          setFieldData((prev) => ({ ...prev, [field.key]: e.target.value }))
+                        }
+                        placeholder={field.placeholder}
+                      />
+                    </div>
+                  ))}
+                  
+                  <Button 
+                    onClick={() => setIsGenerated(true)} 
+                    disabled={!hasAllFields}
+                    className="w-full"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate Bio
+                  </Button>
+                </>
               )}
 
-              {generatedContent && (
-                <div className="space-y-2">
-                  <Label>Preview</Label>
-                  <div
-                    className={cn(
-                      "p-4 rounded-lg border whitespace-pre-line text-sm",
-                      isOverLimit ? "border-destructive bg-destructive/10" : "bg-muted/50"
-                    )}
-                  >
-                    {generatedContent}
+              {/* Preview mode - show when generated */}
+              {isGenerated && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Generated Bio</Label>
+                    <Textarea
+                      value={displayContent}
+                      onChange={(e) =>
+                        setFieldData((prev) => ({ ...prev, finalContent: e.target.value }))
+                      }
+                      placeholder="Your generated bio..."
+                      rows={4}
+                    />
                   </div>
-                  <p
-                    className={cn(
-                      "text-xs",
-                      isOverLimit ? "text-destructive" : "text-muted-foreground"
-                    )}
-                  >
-                    {charCount}/{maxChars} characters
-                    {isOverLimit && " - Over limit!"}
-                  </p>
-                </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <p className={cn("text-xs", isOverLimit ? "text-destructive" : "text-muted-foreground")}>
+                      {charCount}/{maxChars} characters
+                      {isOverLimit && " - Over limit!"}
+                    </p>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setFieldData(prev => {
+                          const { finalContent, ...rest } = prev;
+                          return rest;
+                        });
+                        setIsGenerated(false);
+                      }}
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Edit Fields
+                    </Button>
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -613,8 +676,8 @@ const charCount = generatedContent?.length || 0;
               <Button variant="outline" onClick={resetForm}>
                 Cancel
               </Button>
-              {step === "content" && (
-                <Button onClick={handleSave} disabled={isOverLimit}>
+              {step === "content" && isGenerated && (
+                <Button onClick={handleSave} disabled={isOverLimit || !displayContent.trim()}>
                   {editingBio ? "Save Changes" : "Create Bio"}
                 </Button>
               )}
@@ -629,12 +692,17 @@ const charCount = generatedContent?.length || 0;
     <div className="border border-border rounded-xl overflow-hidden bg-card">
       {/* Category Header */}
       <div className="p-4 flex items-center gap-3 border-b border-border">
-        <Users className="w-5 h-5 text-purple-500" />
+        <Users className="w-5 h-5 text-primary" />
         <span className="font-medium text-foreground flex-1">Bios</span>
         <span className="text-sm text-muted-foreground">
           {bios.length} bio{bios.length !== 1 ? 's' : ''}
         </span>
-        <Button size="sm" variant="outline" onClick={handleAdd}>
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={handleAdd}
+          disabled={bios.length >= platforms.length}
+        >
           <Plus className="w-4 h-4" />
           Add New
         </Button>
