@@ -269,6 +269,30 @@ export const OfferSlotSheet = ({
               placeholder="Briefly describe what this offer includes..."
               className="min-h-[80px] resize-none bg-muted/50 overflow-hidden"
             />
+            
+            {/* Generate Examples Button - shown after offer type is selected */}
+            {audienceData && data.offerType && (
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateTitleDescription}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3 h-3 mr-1.5" />
+                      Generate Examples
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Price & Price Type */}
@@ -308,49 +332,48 @@ export const OfferSlotSheet = ({
             </div>
           </div>
 
-          {/* AI Generate Button */}
-          {audienceData && (
-            <div className="flex justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleGenerateTitleDescription}
-                disabled={isGenerating || !data.offerType}
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-3 h-3 mr-1.5" />
-                    Generate with AI
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
-
-          {/* Generated Ideas */}
+          {/* Generated Ideas - shown above save button, below pricing */}
           <AnimatePresence>
             {showIdeas && generatedIdeas.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="space-y-2"
+                className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border"
               >
-                <Label>Select an idea (click to apply)</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Select an example (click to apply)</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleGenerateTitleDescription}
+                    disabled={isGenerating}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    {isGenerating ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        Generate More
+                      </>
+                    )}
+                  </Button>
+                </div>
                 <div className="grid gap-2">
                   {generatedIdeas.map((idea, index) => (
                     <button
                       key={index}
                       onClick={() => handleSelectIdea(idea)}
-                      className="p-3 border border-border rounded-lg text-left hover:border-primary hover:bg-primary/5 transition-all"
+                      className="p-3 border border-border rounded-lg text-left hover:border-primary hover:bg-primary/5 transition-all bg-background"
                     >
-                      <p className="font-medium text-sm text-foreground">{idea.title}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{idea.description}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <p className="font-medium text-sm text-foreground">{idea.title}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{idea.description}</p>
+                        </div>
+                        <Check className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                      </div>
                     </button>
                   ))}
                 </div>
