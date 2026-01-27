@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Check, Trash2, Loader2, SkipForward } from "lucide-react";
+import { Sparkles, Check, Trash2, Loader2, SkipForward, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AudienceData } from "@/types/audience";
 import { OfferSlotData } from "./OfferSlotCard";
+import { SLOT_TYPE_EDUCATION } from "@/data/offerSlotEducation";
 
 interface GeneratedIdea {
   title: string;
@@ -153,6 +154,9 @@ export const OfferSlotSheet = ({
     toast.success("Applied idea to your offer!");
   };
 
+  // Get education content for this slot type
+  const slotEducation = SLOT_TYPE_EDUCATION[slot.type];
+
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="sm:max-w-xl overflow-y-auto bg-background">
@@ -161,7 +165,32 @@ export const OfferSlotSheet = ({
         </SheetHeader>
 
         <div className="mt-6 space-y-5">
-          {/* Description */}
+          {/* Slot Type Education - What is this and how is it used */}
+          {slotEducation && (
+            <div className="p-4 rounded-lg bg-muted/50 border border-border space-y-3">
+              <div className="flex items-start gap-2">
+                <HelpCircle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground">
+                    What is a {slotEducation.term}?
+                  </p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {slotEducation.whatItIs}
+                  </p>
+                </div>
+              </div>
+              <div className="pl-6 space-y-2">
+                <p className="text-sm font-medium text-foreground">
+                  How it's used:
+                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {slotEducation.howItsUsed}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Brief description from config */}
           <p className="text-sm text-muted-foreground">
             {slot.description}
             {slot.priceRange && (

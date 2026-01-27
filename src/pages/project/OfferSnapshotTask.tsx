@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Info, Loader2, Check, Sparkles } from "lucide-react";
+import { ArrowLeft, Clock, Info, Loader2, Check, Sparkles, Eye } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +14,16 @@ import { AudienceData } from "@/types/audience";
 import { toast } from "sonner";
 import { PHASE_LABELS } from "@/types/tasks";
 import { getFunnelConfigKey, FUNNEL_TYPE_TO_CONFIG } from "@/lib/funnelUtils";
+import { VoiceSnippetButton } from "@/components/ui/voice-snippet-button";
+import { getOfferStackVoiceScript } from "@/data/offerSlotEducation";
+import { FunnelDiagram } from "@/components/funnel/FunnelDiagram";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 // Funnel type to friendly description mapping
 const FUNNEL_DESCRIPTIONS: Record<string, string> = {
@@ -436,14 +446,56 @@ export default function OfferSnapshotTask() {
         >
           <div className="flex items-start gap-3">
             <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-medium text-foreground mb-1">
                 Your selected path: {FUNNEL_DESCRIPTIONS[selectedFunnelType] || selectedFunnelType}
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground mb-3">
                 We've suggested offer slots based on this path. These are patterns, not requirements — 
                 customize them to fit your strategy.
               </p>
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Audio explanation button */}
+                <VoiceSnippetButton
+                  taskId={`offer_stack_${selectedFunnelType}`}
+                  script={getOfferStackVoiceScript(selectedFunnelType)}
+                  className="text-xs"
+                />
+                
+                {/* Funnel diagram popup */}
+                {funnelConfig && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+                        <Eye className="w-4 h-4" />
+                        View funnel diagram
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <span className={funnelConfig.color}>{funnelConfig.name}</span>
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="py-4">
+                        <p className="text-sm text-muted-foreground mb-4">
+                          {funnelConfig.description}
+                        </p>
+                        <FunnelDiagram
+                          steps={funnelConfig.steps}
+                          color={funnelConfig.color}
+                          bgColor={funnelConfig.bgColor}
+                        />
+                        <div className="mt-4 pt-4 border-t border-border">
+                          <p className="text-xs text-muted-foreground text-center">
+                            Your offer slots map to key stages in this funnel
+                          </p>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
             </div>
           </div>
         </motion.div>
