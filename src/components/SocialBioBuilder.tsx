@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Users, MoreHorizontal, Pencil, Trash2, Instagram, Facebook, AtSign, X, Lock, Sparkles, Check } from "lucide-react";
+import { Plus, Users, MoreHorizontal, Pencil, Trash2, Instagram, Facebook, AtSign, X, Lock, Sparkles, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -208,6 +208,7 @@ export const SocialBioBuilder = ({ projectId, onBiosChange }: SocialBioBuilderPr
   const [fieldData, setFieldData] = useState<Record<string, string>>({});
   const [editingBio, setEditingBio] = useState<SocialBio | null>(null);
   const [isGenerated, setIsGenerated] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Fetch bios from database - includes field_data
   const { data: bios = [], isLoading } = useQuery({
@@ -338,6 +339,7 @@ export const SocialBioBuilder = ({ projectId, onBiosChange }: SocialBioBuilderPr
     setFieldData({});
     setEditingBio(null);
     setIsGenerated(false);
+    setIsGenerating(false);
   };
 
   const handleAdd = () => {
@@ -383,8 +385,48 @@ export const SocialBioBuilder = ({ projectId, onBiosChange }: SocialBioBuilderPr
   // Check if all required fields are filled
   const hasAllFields = formula?.fields.every(field => fieldData[field.key]?.trim()) ?? false;
 
-  // Generate content from formula
+  // Generate content from formula (used as fallback)
   const generatedContent = formula?.build(fieldData) || "";
+
+  // AI-powered bio generation
+  const handleGenerateBio = async () => {
+    if (!selectedPlatform || !selectedFormula) return;
+    
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-social-bio', {
+        body: {
+          projectId,
+          platform: selectedPlatform,
+          formulaId: selectedFormula,
+          fieldData, // Any user-provided hints
+          maxChars: platform?.maxChars || 150,
+          userId: user?.id,
+        }
+      });
+      
+      if (error) throw error;
+      
+      // Set the generated content and switch to preview mode
+      setFieldData(prev => ({
+        ...prev,
+        ...data.fieldData,  // Fill in any field values AI determined
+        finalContent: data.bio,
+      }));
+      setIsGenerated(true);
+    } catch (error: any) {
+      console.error("Bio generation error:", error);
+      if (error?.message?.includes("429") || error?.status === 429) {
+        toast.error("Rate limit exceeded. Please try again in a moment.");
+      } else if (error?.message?.includes("402") || error?.status === 402) {
+        toast.error("AI credits exhausted. Please try again later.");
+      } else {
+        toast.error("Failed to generate bio. Please try again.");
+      }
+    } finally {
+      setIsGenerating(false);
+    }
+  };
   
   // Display content: use finalContent if edited, otherwise use generated
   const displayContent = fieldData.finalContent ?? generatedContent;
@@ -614,12 +656,21 @@ export const SocialBioBuilder = ({ projectId, onBiosChange }: SocialBioBuilderPr
                   ))}
                   
                   <Button 
-                    onClick={() => setIsGenerated(true)} 
-                    disabled={!hasAllFields}
+                    onClick={handleGenerateBio} 
+                    disabled={isGenerating}
                     className="w-full"
                   >
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Generate Bio
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Generate Bio
+                      </>
+                    )}
                   </Button>
                 </>
               )}

@@ -245,3 +245,6 @@ verify_jwt = false
 
 [functions.check-email-exists]
 verify_jwt = false
+
+[functions.generate-social-bio]
+verify_jwt = false
