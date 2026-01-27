@@ -573,6 +573,8 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
         { value: 'transformation_reviewed', label: 'Transformation statement written', description: 'The change feels clear and real' },
         { value: 'talking_points_reviewed', label: 'Talking points identified', description: 'I have 3+ ideas to repeat' },
         { value: 'objections_reviewed', label: 'Common objections listed', description: 'I know what might hold them back' },
+        { value: 'social_bio_reviewed', label: 'Social media bio created', description: 'My bio sets the right first impression' },
+        { value: 'visual_direction_reviewed', label: 'Visual direction set', description: 'I have a simple visual style for this launch' },
       ],
     },
     aiAssistModes: ['simplify'],
@@ -1206,7 +1208,9 @@ export function getPlanningTasks(): TaskTemplate[] {
 
 // Get messaging phase tasks specifically
 export function getMessagingTasks(): TaskTemplate[] {
-  return TASK_TEMPLATES.filter(task => task.phase === 'messaging');
+  return TASK_TEMPLATES
+    .filter(task => task.phase === 'messaging')
+    .sort((a, b) => a.order - b.order);
 }
 
 // Get build phase tasks specifically (universal only)

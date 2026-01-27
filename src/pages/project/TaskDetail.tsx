@@ -261,6 +261,16 @@ export default function TaskDetail() {
             </ul>
           );
         }
+        case 'social_bio_reviewed': {
+          const task = projectTasks.find(t => t.taskId === 'messaging_social_bio');
+          if (!task || task.status !== 'completed') return notDefinedText;
+          return 'Social bio configured';
+        }
+        case 'visual_direction_reviewed': {
+          const task = projectTasks.find(t => t.taskId === 'messaging_visual_direction');
+          if (!task || task.status !== 'completed') return notDefinedText;
+          return 'Visual direction configured';
+        }
       }
     }
 
