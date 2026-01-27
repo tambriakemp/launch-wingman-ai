@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { Plus, Info, GripVertical, ChevronRight, Check, SkipForward } from "lucide-react";
+import { Plus, Info, GripVertical, ChevronRight, Check, SkipForward, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/select";
 import { AudienceData } from "@/types/audience";
 import { cn } from "@/lib/utils";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 
 interface OfferStackBuilderProps {
   funnelType: string;
@@ -37,6 +39,9 @@ export const OfferStackBuilder = ({
 }: OfferStackBuilderProps) => {
   const [activeOfferIndex, setActiveOfferIndex] = useState<number | null>(null);
   const [showAddSlot, setShowAddSlot] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const { tier } = useFeatureAccess();
+  const isPro = tier === 'pro' || tier === 'admin';
 
   const funnelConfig = FUNNEL_CONFIGS[funnelType];
 
@@ -298,11 +303,21 @@ export const OfferStackBuilder = ({
         ) : (
           <Button
             variant="outline"
-            className="w-full border-dashed"
-            onClick={() => setShowAddSlot(true)}
+            className={cn(
+              "w-full border-dashed",
+              !isPro && "opacity-60 cursor-not-allowed"
+            )}
+            onClick={() => {
+              if (isPro) {
+                setShowAddSlot(true);
+              } else {
+                setShowUpgradeDialog(true);
+              }
+            }}
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Another Offer Slot
+            {!isPro && <Crown className="w-4 h-4 ml-2 text-yellow-500" />}
           </Button>
         )}
       </div>
@@ -325,6 +340,13 @@ export const OfferStackBuilder = ({
           onSave={handleSaveOffer}
         />
       )}
+
+      {/* Upgrade Dialog */}
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        feature="Adding custom offer slots"
+      />
     </div>
   );
 };
