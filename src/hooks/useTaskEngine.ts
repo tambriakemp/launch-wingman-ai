@@ -13,6 +13,148 @@ import {
   SkipReason,
 } from '@/types/tasks';
 import { TASK_TEMPLATES, getUniversalTasks } from '@/data/taskTemplates';
+
+// Niche options map for label lookup (extracted from task templates)
+const NICHE_OPTIONS_MAP: Record<string, string> = {
+  'business_entrepreneurship': 'Business / Entrepreneurship',
+  'money_finance': 'Money / Finance',
+  'investing': 'Investing / Wealth Building',
+  'real_estate': 'Real Estate',
+  'ecommerce': 'E-commerce / Online Business',
+  'freelancing': 'Freelancing / Consulting',
+  'coaching_mentorship': 'Coaching / Mentorship',
+  'sales': 'Sales / Closing',
+  'career': 'Career Development',
+  'leadership': 'Leadership / Management',
+  'productivity': 'Productivity / Time Management',
+  'remote_work': 'Remote Work / Digital Nomad',
+  'career_transition': 'Career Transition / Pivot',
+  'marketing': 'Marketing / Advertising',
+  'social_media': 'Social Media / Influencing',
+  'content_creation': 'Content Creation',
+  'copywriting': 'Copywriting / Writing',
+  'branding': 'Branding / Personal Brand',
+  'photography': 'Photography / Videography',
+  'design': 'Design / Creative Arts',
+  'podcasting': 'Podcasting / Audio',
+  'tech': 'Tech / Software',
+  'ai_automation': 'AI / Automation',
+  'web_development': 'Web Development',
+  'data_analytics': 'Data / Analytics',
+  'health_wellness': 'Health / Wellness',
+  'fitness': 'Fitness / Exercise',
+  'nutrition': 'Nutrition / Diet',
+  'weight_loss': 'Weight Loss',
+  'mental_health': 'Mental Health / Therapy',
+  'meditation': 'Meditation / Mindfulness',
+  'sleep': 'Sleep / Recovery',
+  'chronic_illness': 'Chronic Illness / Pain Management',
+  'womens_health': "Women's Health / Hormones",
+  'mens_health': "Men's Health / Performance",
+  'aging': 'Aging / Longevity',
+  'personal_growth': 'Personal Growth / Self-Improvement',
+  'confidence': 'Confidence / Self-Esteem',
+  'habits': 'Habits / Behavior Change',
+  'motivation': 'Motivation / Discipline',
+  'spirituality': 'Spirituality / Faith',
+  'manifestation': 'Manifestation / Law of Attraction',
+  'relationships': 'Relationships / Love',
+  'dating': 'Dating / Finding Love',
+  'marriage': 'Marriage / Couples',
+  'parenting': 'Parenting / Family',
+  'divorce': 'Divorce / Separation',
+  'communication': 'Communication / Conflict',
+  'lifestyle': 'Lifestyle Design',
+  'travel': 'Travel / Adventure',
+  'minimalism': 'Minimalism / Decluttering',
+  'home_organization': 'Home Organization',
+  'fashion_style': 'Fashion / Style',
+  'beauty': 'Beauty / Skincare',
+  'cooking': 'Cooking / Food',
+  'pets': 'Pets / Animals',
+  'gardening': 'Gardening / Plants',
+  'sustainability': 'Sustainability / Eco-Living',
+  'education': 'Education / Teaching',
+  'language_learning': 'Language Learning',
+  'music': 'Music / Instruments',
+  'art': 'Art / Creativity',
+  'hobbies': 'Hobbies / Crafts',
+  'gaming': 'Gaming / Esports',
+  'sports': 'Sports / Athletics',
+  'other': 'Other',
+};
+
+// Helper: Build funnel data from completed planning tasks
+function buildFunnelDataFromTasks(
+  projectTasks: ProjectTask[],
+  getTaskTemplate: (taskId: string) => TaskTemplate | undefined
+): Record<string, unknown> {
+  const funnelData: Record<string, unknown> = {};
+  
+  for (const task of projectTasks) {
+    const data = task.inputData as Record<string, unknown> | undefined;
+    if (!data || task.status !== 'completed') continue;
+    
+    switch (task.taskId) {
+      case 'planning_define_audience':
+        if (data.audience_description) {
+          funnelData.target_audience = data.audience_description;
+        }
+        if (data.niche_context) {
+          // Map niche_context key to its label, or use raw value
+          funnelData.niche = NICHE_OPTIONS_MAP[data.niche_context as string] || data.niche_context;
+        }
+        break;
+        
+      case 'planning_define_problem':
+        if (data.primary_problem) {
+          funnelData.primary_pain_point = data.primary_problem;
+        }
+        break;
+        
+      case 'planning_define_dream_outcome':
+        if (data.dream_outcome) {
+          funnelData.desired_outcome = data.dream_outcome;
+        }
+        break;
+        
+      case 'planning_time_effort_perception':
+        const timeEffortElements: Array<{ type: string; content: string }> = [];
+        if (data.quick_wins) {
+          timeEffortElements.push({ type: 'quick_win', content: String(data.quick_wins) });
+        }
+        if (data.friction_reducers) {
+          timeEffortElements.push({ type: 'friction_reducer', content: String(data.friction_reducers) });
+        }
+        if (data.effort_reframe) {
+          timeEffortElements.push({ type: 'effort_reframe', content: String(data.effort_reframe) });
+        }
+        if (timeEffortElements.length > 0) {
+          funnelData.time_effort_elements = timeEffortElements;
+        }
+        break;
+        
+      case 'planning_perceived_likelihood':
+        if (data.belief_blockers) {
+          funnelData.main_objections = data.belief_blockers;
+        }
+        const likelihoodElements: Array<{ type: string; content: string }> = [];
+        if (data.past_attempts) {
+          likelihoodElements.push({ type: 'past_attempts', content: String(data.past_attempts) });
+        }
+        if (data.belief_builders) {
+          likelihoodElements.push({ type: 'belief_builders', content: String(data.belief_builders) });
+        }
+        if (likelihoodElements.length > 0) {
+          funnelData.likelihood_elements = likelihoodElements;
+        }
+        break;
+    }
+  }
+  
+  return funnelData;
+}
+
 import { useFunnelTaskInjection } from './useFunnelTaskInjection';
 
 interface ProjectPhaseData {
@@ -385,13 +527,17 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
 
       const existingTask = projectTasks.find(pt => pt.taskId === taskId);
       const template = getTaskTemplate(taskId);
+      
+      // IMPORTANT: Merge inputData with existing data to preserve completedCriteria and other fields
+      const existingData = (existingTask?.inputData as Record<string, unknown>) || {};
+      const mergedInputData = { ...existingData, ...(inputData || {}) };
 
       if (existingTask) {
         await supabase
           .from('project_tasks')
           .update({
             status: 'completed',
-            input_data: JSON.parse(JSON.stringify(inputData || existingTask.inputData || {})),
+            input_data: JSON.parse(JSON.stringify(mergedInputData)),
             completed_at: new Date().toISOString(),
           })
           .eq('id', existingTask.id)
@@ -402,12 +548,12 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
           user_id: user.id,
           task_id: taskId,
           status: 'completed',
-          input_data: JSON.parse(JSON.stringify(inputData || {})),
+          input_data: JSON.parse(JSON.stringify(mergedInputData)),
           completed_at: new Date().toISOString(),
         }]);
       }
 
-      // If this is the "Choose how you'll sell" task, set the funnel type and inject tasks
+      // If this is the "Choose how you'll sell" task, set the funnel type, inject tasks, and backfill funnels row
       if (taskId === 'planning_choose_launch_path' && inputData?.selected) {
         const selectedType = normalizeFunnelType(inputData.selected as FunnelType) || (inputData.selected as FunnelType);
         
@@ -426,6 +572,18 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
         // Inject funnel-specific tasks
         await injectFunnelTasks(selectedType, projectTasks);
         setSelectedFunnelType(selectedType);
+        
+        // Backfill funnels row with planning task context
+        const funnelData = buildFunnelDataFromTasks(projectTasks, getTaskTemplate);
+        
+        await supabase
+          .from('funnels')
+          .upsert({
+            project_id: projectId,
+            user_id: user.id,
+            funnel_type: selectedType,
+            ...funnelData,
+          }, { onConflict: 'project_id' });
       }
 
       // === AUTO STATUS TRANSITIONS ===

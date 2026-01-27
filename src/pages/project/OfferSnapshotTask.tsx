@@ -24,6 +24,88 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ProjectTask } from "@/types/tasks";
+
+// Niche options map for label lookup (same as useTaskEngine)
+const NICHE_OPTIONS_MAP: Record<string, string> = {
+  'business_entrepreneurship': 'Business / Entrepreneurship',
+  'money_finance': 'Money / Finance',
+  'investing': 'Investing / Wealth Building',
+  'health_wellness': 'Health / Wellness',
+  'fitness': 'Fitness / Exercise',
+  'personal_growth': 'Personal Growth / Self-Improvement',
+  'relationships': 'Relationships / Love',
+  'coaching_mentorship': 'Coaching / Mentorship',
+  'marketing': 'Marketing / Advertising',
+  'content_creation': 'Content Creation',
+  // Add more as needed, or just use raw value as fallback
+};
+
+// Helper: Build funnel data from completed planning tasks
+function buildFunnelDataFromProjectTasks(
+  projectTasks: ProjectTask[]
+): Record<string, unknown> {
+  const funnelData: Record<string, unknown> = {};
+  
+  for (const task of projectTasks) {
+    const data = task.inputData as Record<string, unknown> | undefined;
+    if (!data || task.status !== 'completed') continue;
+    
+    switch (task.taskId) {
+      case 'planning_define_audience':
+        if (data.audience_description) {
+          funnelData.target_audience = data.audience_description;
+        }
+        if (data.niche_context) {
+          funnelData.niche = NICHE_OPTIONS_MAP[data.niche_context as string] || data.niche_context;
+        }
+        break;
+        
+      case 'planning_define_problem':
+        if (data.primary_problem) {
+          funnelData.primary_pain_point = data.primary_problem;
+        }
+        break;
+        
+      case 'planning_define_dream_outcome':
+        if (data.dream_outcome) {
+          funnelData.desired_outcome = data.dream_outcome;
+        }
+        break;
+        
+      case 'planning_time_effort_perception':
+        const timeEffortElements: Array<{ type: string; content: string }> = [];
+        if (data.quick_wins) {
+          timeEffortElements.push({ type: 'quick_win', content: String(data.quick_wins) });
+        }
+        if (data.friction_reducers) {
+          timeEffortElements.push({ type: 'friction_reducer', content: String(data.friction_reducers) });
+        }
+        if (timeEffortElements.length > 0) {
+          funnelData.time_effort_elements = timeEffortElements;
+        }
+        break;
+        
+      case 'planning_perceived_likelihood':
+        if (data.belief_blockers) {
+          funnelData.main_objections = data.belief_blockers;
+        }
+        const likelihoodElements: Array<{ type: string; content: string }> = [];
+        if (data.past_attempts) {
+          likelihoodElements.push({ type: 'past_attempts', content: String(data.past_attempts) });
+        }
+        if (data.belief_builders) {
+          likelihoodElements.push({ type: 'belief_builders', content: String(data.belief_builders) });
+        }
+        if (likelihoodElements.length > 0) {
+          funnelData.likelihood_elements = likelihoodElements;
+        }
+        break;
+    }
+  }
+  
+  return funnelData;
+}
 
 // Funnel type to friendly description mapping
 const FUNNEL_DESCRIPTIONS: Record<string, string> = {
@@ -97,7 +179,7 @@ export default function OfferSnapshotTask() {
   }, [projectId, refetchProject]);
 
   // Fetch funnel data for audience context
-  const { data: funnel } = useQuery({
+  const { data: funnel, refetch: refetchFunnel } = useQuery({
     queryKey: ["funnel", projectId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -138,6 +220,35 @@ export default function OfferSnapshotTask() {
   useEffect(() => {
     setIsInitialized(false);
   }, [selectedFunnelType]);
+
+  // Backfill funnel row if missing but funnel type exists
+  useEffect(() => {
+    const backfillFunnel = async () => {
+      if (!user || !projectId || !selectedFunnelType) return;
+      if (funnel) return; // Already exists
+      
+      // Build funnel data from planning tasks
+      const funnelData = buildFunnelDataFromProjectTasks(projectTasks);
+      
+      try {
+        await supabase
+          .from('funnels')
+          .upsert({
+            project_id: projectId,
+            user_id: user.id,
+            funnel_type: selectedFunnelType,
+            ...funnelData,
+          }, { onConflict: 'project_id' });
+        
+        // Refetch to update audienceData
+        refetchFunnel();
+      } catch (error) {
+        console.error('Failed to backfill funnel:', error);
+      }
+    };
+    
+    backfillFunnel();
+  }, [user, projectId, selectedFunnelType, funnel, projectTasks, refetchFunnel]);
 
   // Build audience data from funnel (memoized to avoid auto-save loops)
   const audienceData = useMemo<AudienceData | undefined>(() => {
