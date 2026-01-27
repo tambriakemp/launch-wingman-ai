@@ -32,6 +32,7 @@ import { LaunchIntro, LaunchComplete } from "@/components/launch";
 import { generateVoiceScript, hasVoiceSnippetSupport } from "@/lib/generateVoiceScript";
 import { trackTaskCompletion, trackTaskStart, trackAIAssist } from "@/lib/analytics";
 import { trackTaskComplete } from "@/lib/activityTracking";
+import { ExportPlanButton } from "@/components/planning/ExportPlanButton";
 
 export default function TaskDetail() {
   const { id: projectId, taskId } = useParams();
@@ -147,27 +148,27 @@ export default function TaskDetail() {
         const task = projectTasks.find(t => t.taskId === 'planning_define_audience');
         const inputData = task?.inputData as Record<string, unknown> | undefined;
         const value = inputData?.audience_description;
-        return value ? truncateText(String(value)) : notDefinedText;
+        return value ? String(value) : notDefinedText;
       }
       case 'problem_reviewed': {
         const task = projectTasks.find(t => t.taskId === 'planning_define_problem');
         const inputData = task?.inputData as Record<string, unknown> | undefined;
         const value = inputData?.primary_problem;
-        return value ? truncateText(String(value)) : notDefinedText;
+        return value ? String(value) : notDefinedText;
       }
       case 'outcome_reviewed': {
         const task = projectTasks.find(t => t.taskId === 'planning_define_dream_outcome');
         const inputData = task?.inputData as Record<string, unknown> | undefined;
         const value = inputData?.dream_outcome;
-        return value ? truncateText(String(value)) : notDefinedText;
+        return value ? String(value) : notDefinedText;
       }
       case 'time_effort_reviewed': {
         const task = projectTasks.find(t => t.taskId === 'planning_time_effort_perception');
         const inputData = task?.inputData as Record<string, unknown> | undefined;
         const items: string[] = [];
-        if (inputData?.quick_wins) items.push(`Quick wins: ${truncateText(String(inputData.quick_wins), 80)}`);
-        if (inputData?.friction_reducers) items.push(`Friction reducers: ${truncateText(String(inputData.friction_reducers), 80)}`);
-        if (inputData?.effort_reframe) items.push(`Effort reframe: ${truncateText(String(inputData.effort_reframe), 80)}`);
+        if (inputData?.quick_wins) items.push(`Quick wins: ${String(inputData.quick_wins)}`);
+        if (inputData?.friction_reducers) items.push(`Friction reducers: ${String(inputData.friction_reducers)}`);
+        if (inputData?.effort_reframe) items.push(`Effort reframe: ${String(inputData.effort_reframe)}`);
         
         if (items.length === 0) return notDefinedText;
         return (
@@ -180,9 +181,9 @@ export default function TaskDetail() {
         const task = projectTasks.find(t => t.taskId === 'planning_perceived_likelihood');
         const inputData = task?.inputData as Record<string, unknown> | undefined;
         const items: string[] = [];
-        if (inputData?.belief_blockers) items.push(`Belief blockers: ${truncateText(String(inputData.belief_blockers), 80)}`);
-        if (inputData?.belief_builders) items.push(`Belief builders: ${truncateText(String(inputData.belief_builders), 80)}`);
-        if (inputData?.past_attempts) items.push(`Past attempts: ${truncateText(String(inputData.past_attempts), 80)}`);
+        if (inputData?.belief_blockers) items.push(`Belief blockers: ${String(inputData.belief_blockers)}`);
+        if (inputData?.belief_builders) items.push(`Belief builders: ${String(inputData.belief_builders)}`);
+        if (inputData?.past_attempts) items.push(`Past attempts: ${String(inputData.past_attempts)}`);
         
         if (items.length === 0) return notDefinedText;
         return (
@@ -774,9 +775,19 @@ export default function TaskDetail() {
         {/* Task Input Area */}
         <section className="mb-10">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Your response
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Your response
+              </h2>
+              {taskId === 'planning_phase_review' && project && (
+                <ExportPlanButton 
+                  projectName={project.name}
+                  projectTasks={projectTasks}
+                  offers={projectOffers}
+                  selectedFunnelType={project.selected_funnel_type}
+                />
+              )}
+            </div>
             {/* Auto-save status indicator */}
             {autoSaveStatus !== 'idle' && (
               <span className="text-xs text-muted-foreground flex items-center gap-1">
