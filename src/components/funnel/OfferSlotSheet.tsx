@@ -270,27 +270,35 @@ export const OfferSlotSheet = ({
               className="min-h-[80px] resize-none bg-muted/50 overflow-hidden"
             />
             
-            {/* Generate Examples Button - shown after offer type is selected */}
-            {audienceData && data.offerType && (
-              <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerateTitleDescription}
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3 h-3 mr-1.5" />
-                      Generate Examples
-                    </>
-                  )}
-                </Button>
+            {/* Generate Examples Button - shown when offer type is selected */}
+            {data.offerType && (
+              <div className="space-y-1.5">
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateTitleDescription}
+                    disabled={isGenerating || !audienceData?.targetAudience}
+                    title={!audienceData?.targetAudience ? "Complete 'Define your target audience' task first" : undefined}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3 h-3 mr-1.5" />
+                        Generate Examples
+                      </>
+                    )}
+                  </Button>
+                </div>
+                {!audienceData?.targetAudience && (
+                  <p className="text-xs text-muted-foreground text-right">
+                    Complete "Define your target audience" to unlock examples
+                  </p>
+                )}
               </div>
             )}
           </div>

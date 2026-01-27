@@ -189,7 +189,7 @@ export default function TaskDetail() {
         break;
     }
 
-    // Check if there's meaningful data to save
+    // Check if there's meaningful data to save (excluding completedCriteria for this check)
     const hasData = Object.keys(inputData).some(key => {
       const value = inputData[key];
       if (Array.isArray(value)) return value.length > 0;
@@ -198,15 +198,22 @@ export default function TaskDetail() {
 
     if (!hasData) return;
 
+    // IMPORTANT: Always include completedCriteria in the saved data to prevent overwrites
+    inputData.completedCriteria = completedCriteria;
+
     try {
       const existingTask = projectTasks.find(pt => pt.taskId === taskId);
 
       if (existingTask) {
+        // Merge with existing data to avoid losing any fields
+        const existingData = (existingTask.inputData as Record<string, unknown>) || {};
+        const mergedData = { ...existingData, ...inputData };
+        
         // Update existing task - preserve status, just update input_data
         await supabase
           .from('project_tasks')
           .update({
-            input_data: JSON.parse(JSON.stringify(inputData)),
+            input_data: JSON.parse(JSON.stringify(mergedData)),
           })
           .eq('id', existingTask.id)
           .eq('user_id', user.id);
@@ -224,7 +231,7 @@ export default function TaskDetail() {
     } catch (error) {
       console.error('Auto-save error:', error);
     }
-  }, [user, projectId, taskId, taskTemplate, selectedOption, checklistItems, formData, projectTasks]);
+  }, [user, projectId, taskId, taskTemplate, selectedOption, checklistItems, formData, projectTasks, completedCriteria]);
 
   // Debounced auto-save effect
   useEffect(() => {
@@ -374,6 +381,9 @@ export default function TaskDetail() {
           inputData = { ...formData };
           break;
       }
+      
+      // IMPORTANT: Always include completedCriteria to persist checkboxes
+      inputData.completedCriteria = completedCriteria;
 
       await completeTask(taskId, inputData);
       
