@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
-import { ArrowLeft, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2, Check } from "lucide-react";
+import { ArrowLeft, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2, Check, Crown } from "lucide-react";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -36,6 +38,7 @@ export default function TaskDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { tier, hasAdminAccess } = useFeatureAccess();
   const { isAdmin } = useAdmin();
   
   const [formData, setFormData] = useState<Record<string, string>>({});
@@ -55,7 +58,12 @@ export default function TaskDetail() {
   const [showPreLaunchIntro, setShowPreLaunchIntro] = useState(false);
   const [showPreLaunchComplete, setShowPreLaunchComplete] = useState(false);
   const [mvlTransformationShown, setMvlTransformationShown] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const isInitialized = useRef(false);
+  
+  // Free funnel types - these are available to all users
+  const FREE_FUNNEL_TYPES = ['content_to_offer', 'freebie_email_offer'];
+  const isPro = tier === 'pro' || tier === 'admin' || hasAdminAccess;
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Use task engine
@@ -673,26 +681,55 @@ export default function TaskDetail() {
                 </p>
               )}
               
-              <RadioGroup value={selectedOption} onValueChange={setSelectedOption} className="space-y-3">
+              <RadioGroup value={selectedOption} onValueChange={(value) => {
+                // Check if this funnel type is locked
+                const isLocked = !isPro && !FREE_FUNNEL_TYPES.includes(value);
+                if (isLocked) {
+                  setShowUpgradeDialog(true);
+                  return;
+                }
+                setSelectedOption(value);
+              }} className="space-y-3">
                 {taskTemplate.inputSchema.options.map((option) => {
                   const funnelConfig = LAUNCH_PATH_FUNNEL_STEPS[option.value];
                   const isSelected = selectedOption === option.value;
+                  const isLocked = !isPro && !FREE_FUNNEL_TYPES.includes(option.value);
                   
                   return (
                     <div key={option.value}>
                       <Label
                         htmlFor={option.value}
-                        className={`flex flex-col p-4 rounded-lg border cursor-pointer transition-all ${
-                          isSelected
-                            ? "border-primary bg-primary/5 ring-1 ring-primary"
-                            : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
+                        className={`flex flex-col p-4 rounded-lg border transition-all ${
+                          isLocked 
+                            ? "cursor-not-allowed opacity-60 border-border bg-muted/20"
+                            : isSelected
+                              ? "border-primary bg-primary/5 ring-1 ring-primary cursor-pointer"
+                              : "border-border hover:border-muted-foreground/30 hover:bg-muted/30 cursor-pointer"
                         }`}
+                        onClick={(e) => {
+                          if (isLocked) {
+                            e.preventDefault();
+                            setShowUpgradeDialog(true);
+                          }
+                        }}
                       >
                         <div className="flex items-start gap-4">
-                          <RadioGroupItem value={option.value} id={option.value} className="mt-0.5" />
+                          <RadioGroupItem 
+                            value={option.value} 
+                            id={option.value} 
+                            className="mt-0.5" 
+                            disabled={isLocked}
+                          />
                           <div className="space-y-1 flex-1">
-                            <span className="font-medium text-foreground">{option.label}</span>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
+                            <div className="flex items-center gap-2">
+                              <span className={`font-medium ${isLocked ? "text-muted-foreground" : "text-foreground"}`}>
+                                {option.label}
+                              </span>
+                              {isLocked && (
+                                <Crown className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                              )}
+                            </div>
+                            <p className={`text-sm leading-relaxed ${isLocked ? "text-muted-foreground/70" : "text-muted-foreground"}`}>
                               {option.description}
                             </p>
                           </div>
@@ -700,7 +737,7 @@ export default function TaskDetail() {
                         
                         {/* Expandable Funnel Diagram */}
                         <AnimatePresence>
-                          {isSelected && funnelConfig && (
+                          {isSelected && funnelConfig && !isLocked && (
                             <motion.div
                               initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: 'auto' }}
@@ -1067,6 +1104,13 @@ export default function TaskDetail() {
           whyItMatters: taskTemplate.whyItMatters,
         }}
         projectContext={`Project: ${project?.name || 'My Project'}`}
+      />
+      
+      {/* Upgrade Dialog */}
+      <UpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        feature="Advanced funnel types"
       />
     </div>
   );
