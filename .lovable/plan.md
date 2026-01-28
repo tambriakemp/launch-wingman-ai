@@ -1,247 +1,88 @@
 
-# Block Scheduling Until Requirements Are Met
+# Fix: SimpleLaunchPageTask Cannot Be Completed
 
-## Overview
+## Problem Identified
 
-This change adds validation that prevents users from scheduling posts until all platform-specific requirements are fulfilled. Users can still save as drafts, but the Schedule and Post Now buttons will be disabled with clear messaging about what's missing.
+The SimpleLaunchPageTask has a **conflicting validation** issue:
 
----
+1. The task has `hasCustomCompletionUI = true`, which **hides** the standard "This step is complete when" checklist
+2. However, the `isTaskComplete` check in `handleSaveAndComplete` still requires `allCriteriaComplete` to be true
+3. Since the completion criteria checkboxes are hidden, users cannot check them
+4. Result: Users see "Please complete the required fields before continuing" but cannot see any fields to complete
 
-## The Problem
+### The Two Validation Layers
 
-Currently, users can click "Schedule" even when:
-- Pinterest is selected but no board is chosen
-- Instagram/Pinterest is selected but no media is uploaded
-- TikTok is selected but no privacy level is set
+| Validation | Visible to User? | Current State |
+|------------|------------------|---------------|
+| `checklistItems.length >= 3` (YOUR PROGRESS section) | YES | User checked all 3 |
+| `completedCriteria` (This step is complete when) | HIDDEN | Empty - users can't check it |
 
-The validation happens **after** they select a date/time in the ScheduleModal, causing frustration and missed scheduled posts.
+Both are required by `isTaskComplete`, but only one is visible.
 
 ---
 
 ## Solution
 
-Validate requirements **before** allowing users to open the schedule modal or post:
-1. Create a computed `getRequirementErrors()` function that returns missing requirements
-2. Disable Schedule and Post Now buttons when requirements aren't met
-3. Add tooltip feedback showing what's missing
-4. Keep Draft button enabled (drafts don't need all requirements)
+For `SimpleLaunchPageTask`, the internal checklist ("YOUR PROGRESS") serves the same purpose as the completion criteria. The fix is to skip the `allCriteriaComplete` requirement for this custom component.
 
----
+### File: `src/pages/project/TaskDetail.tsx`
 
-## What Will Change
+**Change the `isTaskComplete` logic (around lines 658-690)**
 
-| Current State | New State |
-|--------------|-----------|
-| Schedule button enabled with just platform selected | Schedule button disabled until requirements met |
-| Post Now button enabled with just platform selected | Post Now button disabled until requirements met |
-| Validation errors shown after clicking | Tooltip shows missing requirements before clicking |
-| Warning banner shown but not enforced | Requirements enforced at button level |
-
----
-
-## Implementation Details
-
-### 1. Add Requirements Validation Logic
-
-Create a new computed function that returns an array of missing requirements (without triggering toasts):
-
+Current logic:
 ```typescript
-// Returns array of missing requirement messages (empty = ready to schedule)
-const getRequirementErrors = (): string[] => {
-  const errors: string[] = [];
+const isTaskComplete = useMemo(() => {
+  // ... input checks ...
   
-  if (!formData.scheduled_platforms.length) {
-    errors.push("Select at least one platform");
-    return errors; // Return early - no point checking platform-specific reqs
+  // Task is only complete when both input is filled AND all criteria are checked
+  return inputComplete && allCriteriaComplete;  // ← Problem: always checks allCriteriaComplete
+}, [...]);
+```
+
+New logic:
+```typescript
+const isTaskComplete = useMemo(() => {
+  // ... input checks (unchanged) ...
+  
+  // For SimpleLaunchPageTask, the internal checklist IS the completion criteria
+  // so we skip the allCriteriaComplete check (those checkboxes are hidden anyway)
+  if (taskTemplate.inputType === 'custom' && 
+      taskTemplate.inputSchema?.customComponent === 'SimpleLaunchPageTask') {
+    return inputComplete; // Only need the 3 checklist items checked
   }
   
-  // Check each selected platform
-  for (const platform of formData.scheduled_platforms) {
-    // Content requirement (not for TikTok)
-    const isTikTok = platform === "tiktok" || platform === "tiktok_sandbox";
-    if (!isTikTok && !content?.trim()) {
-      errors.push("Post content is required");
-    }
-    
-    // Platform-specific
-    if (platform === "pinterest") {
-      if (!formData.media_url) errors.push("Pinterest: Image required");
-      if (!formData.pinterest_board_id) errors.push("Pinterest: Board required");
-    } else if (platform === "instagram") {
-      if (!formData.media_url) errors.push("Instagram: Media required");
-    } else if (platform === "tiktok" || platform === "tiktok_sandbox") {
-      const hasMedia = formData.tiktok_photo_urls.length > 0 || !!formData.media_url;
-      if (!hasMedia) errors.push("TikTok: Media required");
-      if (!formData.tiktok_privacy_level) errors.push("TikTok: Privacy level required");
-      // Commercial disclosure validation
-      if (formData.tiktok_disclose_content && 
-          !formData.tiktok_brand_organic && 
-          !formData.tiktok_brand_content) {
-        errors.push("TikTok: Select disclosure option");
-      }
-    }
-  }
-  
-  // Remove duplicates (e.g., "Post content is required" might appear multiple times)
-  return [...new Set(errors)];
-};
-```
-
-### 2. Create Computed Values
-
-Add computed values derived from the requirements check:
-
-```typescript
-const requirementErrors = getRequirementErrors();
-const canSchedule = requirementErrors.length === 0;
-const canPostNow = requirementErrors.length === 0;
-```
-
-### 3. Update Schedule Button
-
-Update the Schedule button to be disabled and show a tooltip when requirements aren't met:
-
-```tsx
-{/* Schedule button with requirements validation */}
-<TooltipProvider>
-  <Tooltip>
-    <TooltipTrigger asChild>
-      <span className="inline-block"> {/* Wrapper for disabled button tooltip */}
-        <Button
-          variant="outline"
-          onClick={() => {
-            setIsDraftScheduleMode(false);
-            setShowScheduleModal(true);
-          }}
-          disabled={!canSchedule}
-          className="rounded-r-none border-r-0"
-        >
-          <Clock className="w-4 h-4 mr-2" />
-          {isAlreadyScheduled && !isDraftContent ? "Reschedule" : "Schedule"}
-        </Button>
-      </span>
-    </TooltipTrigger>
-    {!canSchedule && requirementErrors.length > 0 && (
-      <TooltipContent side="top" className="max-w-xs">
-        <p className="font-medium mb-1">Missing requirements:</p>
-        <ul className="text-xs list-disc pl-3">
-          {requirementErrors.map((error, i) => (
-            <li key={i}>{error}</li>
-          ))}
-        </ul>
-      </TooltipContent>
-    )}
-  </Tooltip>
-</TooltipProvider>
-```
-
-### 4. Update Post Now Button
-
-Apply the same validation to the Post Now button:
-
-```tsx
-<TooltipProvider>
-  <Tooltip>
-    <TooltipTrigger asChild>
-      <span className="inline-block">
-        <Button
-          onClick={handlePostNow}
-          disabled={isPosting || !canPostNow}
-          className="bg-rose-500 hover:bg-rose-600 flex-1 md:flex-initial"
-        >
-          {isPosting ? (
-            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-          ) : (
-            <Send className="w-4 h-4 mr-2" />
-          )}
-          <span className="hidden sm:inline">Post Now</span>
-          <span className="sm:hidden">Post</span>
-        </Button>
-      </span>
-    </TooltipTrigger>
-    {!canPostNow && requirementErrors.length > 0 && (
-      <TooltipContent side="top" className="max-w-xs">
-        <p className="font-medium mb-1">Missing requirements:</p>
-        <ul className="text-xs list-disc pl-3">
-          {requirementErrors.map((error, i) => (
-            <li key={i}>{error}</li>
-          ))}
-        </ul>
-      </TooltipContent>
-    )}
-  </Tooltip>
-</TooltipProvider>
-```
-
-### 5. Add Tooltip Imports
-
-Add the Tooltip components to the imports:
-
-```typescript
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  // For all other tasks, require both input AND all criteria checked
+  return inputComplete && allCriteriaComplete;
+}, [...]);
 ```
 
 ---
 
-## Visual Appearance
+## Why This Is Correct
 
-When requirements aren't met:
+The `SimpleLaunchPageTask` component already has its own completion validation:
+- The internal `isComplete` checks `checklistItems.length === 3`
+- The "Save & mark complete" button is disabled until all 3 items are checked
+- The component confirmation dialog adds a final check
 
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│  Footer                                                          │
-│                                                                  │
-│  [Draft]     [Post Now (disabled)]  [Schedule (disabled)] [▼]   │
-│                      │                     │                     │
-│                      ▼                     ▼                     │
-│              ┌─────────────────────────────────────┐             │
-│              │ Missing requirements:               │             │
-│              │ • Pinterest: Board required         │             │
-│              │ • Pinterest: Image required         │             │
-│              └─────────────────────────────────────┘             │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-When requirements are met:
-
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│  Footer                                                          │
-│                                                                  │
-│  [Draft]     [Post Now]              [Schedule]          [▼]    │
-│               (enabled)               (enabled)                  │
-└──────────────────────────────────────────────────────────────────┘
-```
+The task template's `completionCriteria` array was designed for the standard completion UI, which this custom component intentionally replaces.
 
 ---
 
-## Behavior Summary
+## Technical Summary
 
-| Button | When Disabled | When Enabled |
-|--------|---------------|--------------|
-| Draft | Only when content is empty | Always (requirements not needed for drafts) |
-| Post Now | When any requirement is missing OR posting | When all requirements met AND not posting |
-| Schedule | When any requirement is missing | When all requirements met |
+| File | Change |
+|------|--------|
+| `src/pages/project/TaskDetail.tsx` | Modify `isTaskComplete` useMemo to skip `allCriteriaComplete` check for `SimpleLaunchPageTask` |
 
 ---
 
-## Files to Modify
+## Expected Behavior After Fix
 
-| File | Changes |
-|------|---------|
-| `src/components/content/PostEditorSheet.tsx` | Add `getRequirementErrors()`, add tooltip imports, update button disabled states and add tooltips |
+1. User checks all 3 items in "YOUR PROGRESS" section
+2. "Save & mark complete" button becomes enabled
+3. User clicks button → Confirmation dialog appears
+4. User confirms → Task saves and marks complete
+5. User navigates to dashboard
 
----
-
-## Technical Notes
-
-- Draft functionality remains unchanged - users can save drafts without meeting all requirements
-- The existing `validatePostRequirements()` function in `handleSchedule` serves as a backup validation
-- Tooltips use the existing shadcn/ui Tooltip component
-- Requirements are checked for all selected platforms (not just the first one)
-- Duplicate error messages are filtered out using `Set`
+No other validation changes needed.
