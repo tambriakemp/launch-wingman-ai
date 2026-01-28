@@ -685,7 +685,14 @@ export default function TaskDetail() {
         inputComplete = true;
     }
     
-    // Task is only complete when both input is filled AND all criteria are checked
+    // For SimpleLaunchPageTask, the internal checklist IS the completion criteria
+    // so we skip the allCriteriaComplete check (those checkboxes are hidden anyway)
+    if (taskTemplate.inputType === 'custom' && 
+        taskTemplate.inputSchema?.customComponent === 'SimpleLaunchPageTask') {
+      return inputComplete;
+    }
+    
+    // For all other tasks, require both input AND all criteria checked
     return inputComplete && allCriteriaComplete;
   }, [taskTemplate, selectedOption, checklistItems, formData, allCriteriaComplete]);
 
