@@ -413,6 +413,7 @@ const ContentVaultCategory = () => {
               {filteredResources.map((resource, index) => (
                 <ResourceCard
                   key={resource.id}
+                  id={resource.id}
                   title={resource.title}
                   description={resource.description}
                   coverImageUrl={resource.cover_image_url}

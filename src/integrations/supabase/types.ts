@@ -583,6 +583,7 @@ export type Database = {
           cover_image_url: string | null
           created_at: string
           description: string | null
+          download_count: number
           id: string
           position: number
           preview_url: string | null
@@ -596,6 +597,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          download_count?: number
           id?: string
           position?: number
           preview_url?: string | null
@@ -609,6 +611,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          download_count?: number
           id?: string
           position?: number
           preview_url?: string | null
@@ -2372,6 +2375,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_resource_download: {
+        Args: { resource_id: string }
+        Returns: undefined
       }
     }
     Enums: {

@@ -1,8 +1,10 @@
 import { FileText, ExternalLink, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { trackResourceAccess } from "./trackResourceAccess";
 
 interface PopularResourceItemProps {
+  id: string;
   title: string;
   categoryName: string;
   resourceType: string;
@@ -25,6 +27,7 @@ const getResourceTypeBadge = (type: string) => {
 };
 
 export const PopularResourceItem = ({ 
+  id,
   title, 
   categoryName, 
   resourceType, 
@@ -33,6 +36,8 @@ export const PopularResourceItem = ({
   const badge = getResourceTypeBadge(resourceType);
   
   const handleClick = () => {
+    // Track access for popularity
+    trackResourceAccess(id);
     window.open(resourceUrl, '_blank', 'noopener,noreferrer');
   };
 
