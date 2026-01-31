@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Copy, Check, Users, AlertCircle, Target, Clock, Shield, Route, MessageSquare, Sparkles, Palette, Layout, Mail, CreditCard, CheckCircle, Share2, Lightbulb, Calendar, BarChart3, Award, type LucideIcon } from "lucide-react";
+import { Copy, Check, Users, AlertCircle, Target, Clock, Shield, Route, MessageSquare, Sparkles, Palette, Layout, Mail, CreditCard, CheckCircle, Share2, Lightbulb, Calendar, BarChart3, Award, Package, FileText, ArrowRightCircle, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ViewMoreDialog } from "./ViewMoreDialog";
 import { cn } from "@/lib/utils";
@@ -36,6 +36,9 @@ const TASK_ICONS: Record<string, LucideIcon> = {
   messaging_phase_review: CheckCircle,
   messaging_social_bio: Share2,
   messaging_visual_direction: Palette,
+  build_choose_delivery_asset: Package,
+  build_create_asset: FileText,
+  build_define_access_moment: ArrowRightCircle,
   build_choose_platform: Layout,
   build_main_page_setup: Layout,
   build_email_platform: Mail,

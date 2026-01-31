@@ -21,7 +21,38 @@ export function ExportBuildButton({ projectName, projectTasks }: ExportBuildButt
     setIsExporting(true);
     
     try {
-      // Extract data from project tasks
+      // Extract data from project tasks - new delivery asset tasks
+      const deliveryAssetTask = projectTasks.find(t => t.taskId === 'build_choose_delivery_asset');
+      const deliveryAssetData = deliveryAssetTask?.inputData as Record<string, unknown> || {};
+      const deliveryType = deliveryAssetData.selectedOption as string || null;
+      
+      const deliveryLabels: Record<string, string> = {
+        'live_session': 'Live session or workshop',
+        'downloadable': 'Downloadable resource',
+        'access_page': 'Access page or portal',
+        'curated_bundle': 'Curated bundle',
+        'affiliate_product': 'Affiliate product',
+        'mrr_plr_product': 'MRR/PLR product',
+      };
+
+      const createAssetTask = projectTasks.find(t => t.taskId === 'build_create_asset');
+      const createAssetData = createAssetTask?.inputData as Record<string, unknown> || {};
+      const assetName = createAssetData.asset_name as string || null;
+      const assetDescription = createAssetData.asset_description as string || null;
+
+      const accessMomentTask = projectTasks.find(t => t.taskId === 'build_define_access_moment');
+      const accessMomentData = accessMomentTask?.inputData as Record<string, unknown> || {};
+      const accessMethod = accessMomentData.selectedOption as string || null;
+      
+      const accessLabels: Record<string, string> = {
+        'email_delivery': 'Email delivery',
+        'download_link': 'Download link',
+        'access_page': 'Access page',
+        'live_session_confirmation': 'Live session confirmation',
+        'affiliate_redirect': 'Affiliate redirect',
+      };
+
+      // Existing build tasks
       const launchPageTask = projectTasks.find(t => t.taskId === 'build_simple_launch_page');
       const launchPageStatus = launchPageTask?.status === 'completed' ? 'Completed' : 'In progress';
 
@@ -180,6 +211,15 @@ export function ExportBuildButton({ projectName, projectTasks }: ExportBuildButt
             <h2>Build Foundation</h2>
             <div class="date">Exported ${date}</div>
           </div>
+          
+          ${renderSection('Delivery Asset', deliveryType ? (deliveryLabels[deliveryType] || deliveryType) : null)}
+          
+          ${renderMultiSection('Asset Details', [
+            { sublabel: 'Name', content: assetName },
+            { sublabel: 'Description', content: assetDescription },
+          ])}
+          
+          ${renderSection('First Access Method', accessMethod ? (accessLabels[accessMethod] || accessMethod) : null)}
           
           ${renderSection('Launch Page', launchPageStatus)}
           

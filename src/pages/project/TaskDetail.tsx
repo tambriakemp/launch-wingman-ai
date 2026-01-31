@@ -364,6 +364,44 @@ export default function TaskDetail() {
     // Build phase review
     if (taskId === 'build_phase_review') {
       switch (optionValue) {
+        case 'delivery_asset_chosen': {
+          const task = projectTasks.find(t => t.taskId === 'build_choose_delivery_asset');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          const deliveryLabels: Record<string, string> = {
+            'live_session': 'Live session or workshop',
+            'downloadable': 'Downloadable resource',
+            'access_page': 'Access page or portal',
+            'curated_bundle': 'Curated bundle',
+            'affiliate_product': 'Affiliate product',
+            'mrr_plr_product': 'MRR/PLR product',
+          };
+          const selected = inputData?.selectedOption as string | undefined;
+          if (selected && deliveryLabels[selected]) return deliveryLabels[selected];
+          if (task?.status === 'completed') return 'Delivery format selected';
+          return notDefinedText;
+        }
+        case 'asset_ready': {
+          const task = projectTasks.find(t => t.taskId === 'build_create_asset');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          if (inputData?.asset_name) return String(inputData.asset_name);
+          if (task?.status === 'completed') return 'Asset ready';
+          return notDefinedText;
+        }
+        case 'access_defined': {
+          const task = projectTasks.find(t => t.taskId === 'build_define_access_moment');
+          const inputData = task?.inputData as Record<string, unknown> | undefined;
+          const accessLabels: Record<string, string> = {
+            'email_delivery': 'Email delivery',
+            'download_link': 'Download link',
+            'access_page': 'Access page',
+            'live_session_confirmation': 'Live session confirmation',
+            'affiliate_redirect': 'Affiliate redirect',
+          };
+          const selected = inputData?.selectedOption as string | undefined;
+          if (selected && accessLabels[selected]) return accessLabels[selected];
+          if (task?.status === 'completed') return 'Access method defined';
+          return notDefinedText;
+        }
         case 'platform_chosen': {
           const task = projectTasks.find(t => t.taskId === 'build_simple_launch_page');
           if (task?.status === 'completed') return 'Launch page completed';

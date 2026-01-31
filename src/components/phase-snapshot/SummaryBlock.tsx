@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRight, Users, AlertCircle, Target, Clock, Shield, Route, MessageSquare, Sparkles, Palette, Layout, Mail, CreditCard, CheckCircle, Share2, Lightbulb, Calendar, BarChart3, Award, type LucideIcon } from "lucide-react";
+import { ChevronRight, Users, AlertCircle, Target, Clock, Shield, Route, MessageSquare, Sparkles, Palette, Layout, Mail, CreditCard, CheckCircle, Share2, Lightbulb, Calendar, BarChart3, Award, Package, FileText, ArrowRightCircle, type LucideIcon } from "lucide-react";
 import { ViewMoreDialog } from "./ViewMoreDialog";
 import { cn } from "@/lib/utils";
 import type { Phase } from "@/types/tasks";
@@ -33,8 +33,12 @@ const TASK_ICONS: Record<string, LucideIcon> = {
   messaging_social_bio: Share2,
   messaging_visual_direction: Palette,
   // Build
+  build_choose_delivery_asset: Package,
+  build_create_asset: FileText,
+  build_define_access_moment: ArrowRightCircle,
   build_choose_platform: Layout,
   build_main_page_setup: Layout,
+  build_simple_launch_page: Layout,
   build_email_platform: Mail,
   build_payments_setup: CreditCard,
   build_phase_review: CheckCircle,
