@@ -241,18 +241,9 @@ const ContentVault = () => {
 
           {/* Popular Resources Section */}
           <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <FolderOpen className="w-5 h-5 text-amber-500" />
-                <span className="font-semibold text-foreground">Popular Resources</span>
-              </div>
-              <Button 
-                variant="link" 
-                className="text-muted-foreground hover:text-primary p-0 h-auto"
-                onClick={() => navigate('/content-vault/all')}
-              >
-                View all <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
+            <div className="flex items-center gap-2 mb-4">
+              <FolderOpen className="w-5 h-5 text-amber-500" />
+              <span className="font-semibold text-foreground">Popular Resources</span>
             </div>
             
             {popularLoading ? (
