@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const sanitizeId = (id: string) => id ? `${id.substring(0, 8)}...` : 'unknown';
@@ -13,9 +14,15 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[ADMIN-PLATFORM-STATS] ${step}${detailsStr}`);
 };
 
+const jsonResponse = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status,
+  });
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -29,19 +36,25 @@ serve(async (req) => {
 
     // Verify admin/manager access
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
 
     const token = authHeader.replace("Bearer ", "");
-    
-    // Use getClaims for JWT validation (works with ES256 signing in Lovable Cloud)
+
+    // Validate JWT (handles ES256 signing and detects expiration)
     const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
-      throw new Error(`Authentication error: ${claimsError?.message || 'Invalid token'}`);
+      // Important: token expiry should be a 401, not a 500 (prevents UI hard-crash)
+      logStep("Auth failed", { message: claimsError?.message || "Invalid token" });
+      return jsonResponse({ error: "Unauthorized" }, 401);
     }
-    
+
     const userId = claimsData.claims.sub as string;
     const userEmail = claimsData.claims.email as string;
-    if (!userId || !userEmail) throw new Error("User not authenticated");
+    if (!userId || !userEmail) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
     
     // Check if user is admin or manager
     const { data: roleData, error: roleError } = await supabaseClient
@@ -51,8 +64,13 @@ serve(async (req) => {
       .in('role', ['admin', 'manager'])
       .limit(1);
     
-    if (roleError || !roleData || roleData.length === 0) {
-      throw new Error("Unauthorized: Admin or Manager access required");
+    if (roleError) {
+      logStep("Error checking staff role", { error: roleError.message, userId: sanitizeId(userId) });
+      return jsonResponse({ error: "Internal error" }, 500);
+    }
+
+    if (!roleData || roleData.length === 0) {
+      return jsonResponse({ error: "Forbidden" }, 403);
     }
     logStep("Staff access verified", { userId: sanitizeId(userId), role: roleData[0].role });
 
@@ -363,16 +381,17 @@ serve(async (req) => {
       generatedAt: new Date().toISOString(),
     };
 
-    return new Response(JSON.stringify(response), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+     return jsonResponse(response, 200);
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: errorMessage.includes("Unauthorized") ? 403 : 500,
-    });
+    const msg = errorMessage.toLowerCase();
+    const status =
+      msg.includes("unauthorized") || msg.includes("authentication") || msg.includes("jwt")
+        ? 401
+        : msg.includes("forbidden")
+          ? 403
+          : 500;
+    return jsonResponse({ error: errorMessage }, status);
   }
 });
