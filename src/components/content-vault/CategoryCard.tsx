@@ -1,12 +1,11 @@
-import { ArrowRight, Image as ImageIcon, Pencil } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { ArrowRight, Pencil, LucideIcon } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 interface CategoryCardProps {
   name: string;
-  description: string | null;
-  coverImageUrl: string | null;
-  resourceCount?: number;
+  icon: LucideIcon;
+  iconColor: string;
   onClick: () => void;
   showEditButton?: boolean;
   onEditClick?: () => void;
@@ -14,9 +13,8 @@ interface CategoryCardProps {
 
 export const CategoryCard = ({ 
   name, 
-  description, 
-  coverImageUrl,
-  resourceCount,
+  icon: Icon,
+  iconColor,
   onClick,
   showEditButton,
   onEditClick,
@@ -28,7 +26,7 @@ export const CategoryCard = ({
 
   return (
     <Card 
-      className="group cursor-pointer overflow-hidden border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg relative"
+      className="group cursor-pointer border border-border hover:border-primary/30 transition-all duration-200 p-4 relative"
       onClick={onClick}
     >
       {/* Edit Button for Admin/Manager */}
@@ -36,46 +34,23 @@ export const CategoryCard = ({
         <Button
           variant="secondary"
           size="icon"
-          className="absolute top-2 right-2 z-10 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-2 right-2 z-10 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={handleEditClick}
         >
-          <Pencil className="h-4 w-4" />
+          <Pencil className="h-3.5 w-3.5" />
         </Button>
       )}
 
-      {/* Cover Image */}
-      <div className="aspect-[4/3] bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20 relative overflow-hidden">
-        {coverImageUrl ? (
-          <img 
-            src={coverImageUrl} 
-            alt={name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <ImageIcon className="w-16 h-16 text-amber-300 dark:text-amber-700" />
-          </div>
-        )}
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      </div>
-
-      {/* Content */}
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="font-semibold text-lg text-foreground">{name}</h3>
+      <div className="flex items-center gap-3 mb-2">
+        <div className={`p-2 rounded-lg bg-muted`}>
+          <Icon className={`w-5 h-5 ${iconColor}`} />
         </div>
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-          {description || "Resource Library"}
-        </p>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="p-0 h-auto text-primary hover:text-primary/80 group-hover:translate-x-1 transition-transform"
-        >
-          View Resources <ArrowRight className="w-4 h-4 ml-1" />
-        </Button>
-      </CardContent>
+        <span className="font-semibold text-foreground">{name}</span>
+      </div>
+      
+      <div className="text-sm text-muted-foreground flex items-center gap-1 pl-12 group-hover:text-primary transition-colors">
+        View Resources <ArrowRight className="w-4 h-4" />
+      </div>
     </Card>
   );
 };
