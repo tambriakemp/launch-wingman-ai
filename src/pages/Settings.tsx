@@ -80,6 +80,18 @@ const Settings = () => {
   const [sandboxTokenInput, setSandboxTokenInput] = useState("");
   const { hasAdminAccess, tier } = useFeatureAccess();
   const hasFullAccess = isSubscribed || hasAdminAccess;
+
+  // Platforms that are gated (not approved for production yet)
+  // Only admins can access these
+  const GATED_PLATFORMS = ['instagram', 'facebook', 'threads', 'tiktok'];
+
+  // Helper to check if a platform is accessible
+  const isPlatformAccessible = (platform: string): boolean => {
+    // Admins have full access to all platforms
+    if (hasAdminAccess) return true;
+    // Non-admins only have access to non-gated platforms (pinterest)
+    return !GATED_PLATFORMS.includes(platform);
+  };
   const navigate = useNavigate();
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [searchParams] = useSearchParams();
@@ -1127,7 +1139,7 @@ const Settings = () => {
                 )}
 
                 {/* Instagram Connection */}
-                <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                <div className={`flex items-center justify-between p-4 rounded-lg border bg-card ${!isPlatformAccessible('instagram') ? 'opacity-60' : ''}`}>
                   <div className="flex items-center gap-3">
                     {instagramConnection?.avatar_url ? (
                       <div className="w-10 h-10 rounded-lg overflow-hidden ring-2 ring-[#E4405F]/20">
@@ -1149,114 +1161,131 @@ const Settings = () => {
                       </div>
                     )}
                     <div>
-                      <p className="font-medium text-foreground">Instagram</p>
-                      {instagramConnection ? (
-                        <div className="flex flex-col gap-0.5">
-                          <p className="text-sm text-muted-foreground">
-                            Connected as @{instagramConnection.account_name || 'Instagram User'}
-                          </p>
-                          {instagramTokenStatus && (
-                            <p className={`text-xs flex items-center gap-1 ${
-                              instagramTokenStatus.status === 'expired' 
-                                ? 'text-destructive' 
-                                : instagramTokenStatus.status === 'expiring_soon'
-                                ? 'text-yellow-600 dark:text-yellow-500'
-                                : 'text-muted-foreground'
-                            }`}>
-                              {instagramTokenStatus.status === 'expired' && (
-                                <AlertTriangle className="w-3 h-3" />
-                              )}
-                              {instagramTokenStatus.message}
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-foreground">Instagram</p>
+                        {!isPlatformAccessible('instagram') && (
+                          <Badge variant="secondary" className="text-xs">
+                            Coming Soon
+                          </Badge>
+                        )}
+                      </div>
+                      {isPlatformAccessible('instagram') ? (
+                        instagramConnection ? (
+                          <div className="flex flex-col gap-0.5">
+                            <p className="text-sm text-muted-foreground">
+                              Connected as @{instagramConnection.account_name || 'Instagram User'}
                             </p>
-                          )}
-                        </div>
+                            {instagramTokenStatus && (
+                              <p className={`text-xs flex items-center gap-1 ${
+                                instagramTokenStatus.status === 'expired' 
+                                  ? 'text-destructive' 
+                                  : instagramTokenStatus.status === 'expiring_soon'
+                                  ? 'text-yellow-600 dark:text-yellow-500'
+                                  : 'text-muted-foreground'
+                              }`}>
+                                {instagramTokenStatus.status === 'expired' && (
+                                  <AlertTriangle className="w-3 h-3" />
+                                )}
+                                {instagramTokenStatus.message}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not connected</p>
+                        )
                       ) : (
                         <p className="text-sm text-muted-foreground">Not connected</p>
                       )}
                     </div>
                   </div>
-                  {instagramConnection ? (
-                    <div className="flex items-center gap-2">
-                      {/* Show Refresh button if token is expiring soon or Reconnect if expired */}
-                      {instagramTokenStatus?.status === 'expired' ? (
-                        <Button
-                          size="sm"
-                          onClick={handleConnectInstagram}
-                          disabled={isConnectingInstagram}
-                        >
-                          {isConnectingInstagram ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <>
-                              <Link2 className="w-4 h-4 mr-1" />
-                              Reconnect
-                            </>
-                          )}
-                        </Button>
-                      ) : instagramTokenStatus?.status === 'expiring_soon' ? (
+                  {isPlatformAccessible('instagram') ? (
+                    instagramConnection ? (
+                      <div className="flex items-center gap-2">
+                        {/* Show Refresh button if token is expiring soon or Reconnect if expired */}
+                        {instagramTokenStatus?.status === 'expired' ? (
+                          <Button
+                            size="sm"
+                            onClick={handleConnectInstagram}
+                            disabled={isConnectingInstagram}
+                          >
+                            {isConnectingInstagram ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Link2 className="w-4 h-4 mr-1" />
+                                Reconnect
+                              </>
+                            )}
+                          </Button>
+                        ) : instagramTokenStatus?.status === 'expiring_soon' ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleRefreshInstagram}
+                            disabled={isRefreshingInstagram}
+                          >
+                            {isRefreshingInstagram ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <RefreshCw className="w-4 h-4 mr-1" />
+                                Refresh
+                              </>
+                            )}
+                          </Button>
+                        ) : null}
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={handleRefreshInstagram}
-                          disabled={isRefreshingInstagram}
+                          onClick={handleDisconnectInstagram}
+                          disabled={isDisconnectingInstagram}
+                          className="text-destructive hover:text-destructive"
                         >
-                          {isRefreshingInstagram ? (
+                          {isDisconnectingInstagram ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             <>
-                              <RefreshCw className="w-4 h-4 mr-1" />
-                              Refresh
+                              <Unlink className="w-4 h-4 mr-1" />
+                              Disconnect
                             </>
                           )}
                         </Button>
-                      ) : null}
+                      </div>
+                    ) : isSubscribed ? (
                       <Button
-                        variant="outline"
                         size="sm"
-                        onClick={handleDisconnectInstagram}
-                        disabled={isDisconnectingInstagram}
-                        className="text-destructive hover:text-destructive"
+                        onClick={handleConnectInstagram}
+                        disabled={isConnectingInstagram}
                       >
-                        {isDisconnectingInstagram ? (
+                        {isConnectingInstagram ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <>
-                            <Unlink className="w-4 h-4 mr-1" />
-                            Disconnect
+                            <Link2 className="w-4 h-4 mr-1" />
+                            Connect
                           </>
                         )}
                       </Button>
-                    </div>
-                  ) : isSubscribed ? (
-                    <Button
-                      size="sm"
-                      onClick={handleConnectInstagram}
-                      disabled={isConnectingInstagram}
-                    >
-                      {isConnectingInstagram ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Link2 className="w-4 h-4 mr-1" />
-                          Connect
-                        </>
-                      )}
-                    </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowUpgradeDialog(true)}
+                        className="gap-1.5"
+                      >
+                        <Crown className="w-3.5 h-3.5 text-primary" />
+                        Pro
+                      </Button>
+                    )
                   ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowUpgradeDialog(true)}
-                      className="gap-1.5"
-                    >
-                      <Crown className="w-3.5 h-3.5 text-primary" />
-                      Pro
-                    </Button>
+                    <Badge variant="outline" className="text-muted-foreground">
+                      Coming Soon
+                    </Badge>
                   )}
                 </div>
 
                 {/* Facebook Connection */}
-                <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                <div className={`flex items-center justify-between p-4 rounded-lg border bg-card ${!isPlatformAccessible('facebook') ? 'opacity-60' : ''}`}>
                   <div className="flex items-center gap-3">
                     {facebookConnection?.avatar_url ? (
                       <div className="w-10 h-10 rounded-lg overflow-hidden ring-2 ring-[#1877F2]/20">
@@ -1278,65 +1307,175 @@ const Settings = () => {
                       </div>
                     )}
                     <div>
-                      <p className="font-medium text-foreground">Facebook Page</p>
-                      {facebookConnection ? (
-                        <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm text-muted-foreground">
-                              {facebookConnection.account_name || 'Your Page'}
-                            </p>
-                            <FacebookPageSelector 
-                              currentPageName={facebookConnection.account_name}
-                              currentPageId={facebookConnection.id}
-                              onPageChange={refetchConnections}
-                            />
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-foreground">Facebook Page</p>
+                        {!isPlatformAccessible('facebook') && (
+                          <Badge variant="secondary" className="text-xs">
+                            Coming Soon
+                          </Badge>
+                        )}
+                      </div>
+                      {isPlatformAccessible('facebook') ? (
+                        facebookConnection ? (
+                          <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm text-muted-foreground">
+                                {facebookConnection.account_name || 'Your Page'}
+                              </p>
+                              <FacebookPageSelector 
+                                currentPageName={facebookConnection.account_name}
+                                currentPageId={facebookConnection.id}
+                                onPageChange={refetchConnections}
+                              />
+                            </div>
+                            {facebookTokenStatus?.message && (
+                              <p className={`text-xs flex items-center gap-1 ${
+                                facebookTokenStatus.status === 'expired' 
+                                  ? 'text-destructive' 
+                                  : facebookTokenStatus.status === 'expiring_soon'
+                                  ? 'text-yellow-600 dark:text-yellow-500'
+                                  : 'text-muted-foreground'
+                              }`}>
+                                {facebookTokenStatus.status === 'expired' && (
+                                  <AlertTriangle className="w-3 h-3" />
+                                )}
+                                {facebookTokenStatus.message}
+                              </p>
+                            )}
                           </div>
-                          {facebookTokenStatus?.message && (
-                            <p className={`text-xs flex items-center gap-1 ${
-                              facebookTokenStatus.status === 'expired' 
-                                ? 'text-destructive' 
-                                : facebookTokenStatus.status === 'expiring_soon'
-                                ? 'text-yellow-600 dark:text-yellow-500'
-                                : 'text-muted-foreground'
-                            }`}>
-                              {facebookTokenStatus.status === 'expired' && (
-                                <AlertTriangle className="w-3 h-3" />
-                              )}
-                              {facebookTokenStatus.message}
-                            </p>
-                          )}
-                        </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not connected</p>
+                        )
                       ) : (
                         <p className="text-sm text-muted-foreground">Not connected</p>
                       )}
                     </div>
                   </div>
-                  {facebookConnection ? (
-                    <div className="flex items-center gap-2">
-                      {facebookTokenStatus?.status === 'expired' && (
+                  {isPlatformAccessible('facebook') ? (
+                    facebookConnection ? (
+                      <div className="flex items-center gap-2">
+                        {facebookTokenStatus?.status === 'expired' && (
+                          <Button
+                            size="sm"
+                            onClick={handleConnectFacebook}
+                            disabled={isConnectingFacebook}
+                          >
+                            {isConnectingFacebook ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Link2 className="w-4 h-4 mr-1" />
+                                Reconnect
+                              </>
+                            )}
+                          </Button>
+                        )}
                         <Button
+                          variant="outline"
                           size="sm"
-                          onClick={handleConnectFacebook}
-                          disabled={isConnectingFacebook}
+                          onClick={handleDisconnectFacebook}
+                          disabled={isDisconnectingFacebook}
+                          className="text-destructive hover:text-destructive"
                         >
-                          {isConnectingFacebook ? (
+                          {isDisconnectingFacebook ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             <>
-                              <Link2 className="w-4 h-4 mr-1" />
-                              Reconnect
+                              <Unlink className="w-4 h-4 mr-1" />
+                              Disconnect
                             </>
                           )}
                         </Button>
+                      </div>
+                    ) : isSubscribed ? (
+                      <Button
+                        size="sm"
+                        onClick={handleConnectFacebook}
+                        disabled={isConnectingFacebook}
+                      >
+                        {isConnectingFacebook ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Link2 className="w-4 h-4 mr-1" />
+                            Connect
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowUpgradeDialog(true)}
+                        className="gap-1.5"
+                      >
+                        <Crown className="w-3.5 h-3.5 text-primary" />
+                        Pro
+                      </Button>
+                    )
+                  ) : (
+                    <Badge variant="outline" className="text-muted-foreground">
+                      Coming Soon
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Threads Connection */}
+                <div className={`flex items-center justify-between p-4 rounded-lg border bg-card ${!isPlatformAccessible('threads') ? 'opacity-60' : ''}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center">
+                      <svg viewBox="0 0 192 192" className="w-5 h-5 text-white" fill="currentColor">
+                        <path d="M141.537 88.988a66.667 66.667 0 0 0-2.518-1.143c-1.482-27.307-16.403-42.94-41.457-43.1h-.34c-14.986 0-27.449 6.396-35.12 18.036l13.779 9.452c5.73-8.695 14.724-10.548 21.348-10.548h.229c8.249.053 14.474 2.452 18.503 7.129 2.932 3.405 4.893 8.111 5.864 14.05-7.314-1.243-15.224-1.626-23.68-1.14-23.82 1.371-39.134 15.265-38.105 34.568.522 9.792 5.4 18.216 13.735 23.719 7.047 4.652 16.124 6.927 25.557 6.412 12.458-.68 22.231-5.436 29.049-14.127 5.178-6.6 8.453-15.153 9.899-25.93 5.937 3.583 10.337 8.298 12.767 13.966 4.132 9.635 4.373 25.468-8.546 38.376-11.319 11.308-24.925 16.2-45.488 16.351-22.809-.169-40.06-7.484-51.275-21.742C35.236 139.966 29.808 120.682 29.605 96c.203-24.682 5.63-43.966 16.133-57.317C56.954 24.425 74.204 17.11 97.014 16.94c23.001.173 40.574 7.576 52.232 22.005 5.565 6.882 9.746 15.087 12.508 24.382l15.015-4.065c-3.271-11.017-8.327-20.907-15.171-29.362C146.97 11.794 125.597 3.146 97.064 2.94h-.085c-28.464.207-49.72 8.87-63.196 25.762-12.73 15.962-19.265 38.05-19.482 65.704v1.187c.217 27.654 6.752 49.742 19.482 65.704 13.475 16.892 34.732 25.555 63.196 25.763h.085c24.346-.163 41.608-6.497 55.918-20.531 18.79-18.418 18.362-41.087 12.118-55.65-4.481-10.45-12.896-18.99-24.563-25.091Zm-64.768 44.538c-10.455.57-21.327-4.108-21.872-14.329-.408-7.65 5.41-16.186 25.16-17.323 2.2-.127 4.35-.19 6.451-.19 6.274 0 12.15.513 17.519 1.493-1.994 24.134-15.667 29.764-27.258 30.349Z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-foreground">Threads</p>
+                        {!isPlatformAccessible('threads') && (
+                          <Badge variant="secondary" className="text-xs">
+                            Coming Soon
+                          </Badge>
+                        )}
+                      </div>
+                      {isPlatformAccessible('threads') ? (
+                        threadsConnection ? (
+                          <div className="flex flex-col gap-0.5">
+                            <p className="text-sm text-muted-foreground">
+                              Connected: @{threadsConnection.account_name || 'Your Account'}
+                            </p>
+                            {threadsTokenStatus?.message && (
+                              <p className={`text-xs flex items-center gap-1 ${
+                                threadsTokenStatus.status === 'expired' 
+                                  ? 'text-destructive' 
+                                  : threadsTokenStatus.status === 'expiring_soon'
+                                  ? 'text-yellow-600 dark:text-yellow-500'
+                                  : 'text-muted-foreground'
+                              }`}>
+                                {threadsTokenStatus.status === 'expired' && (
+                                  <AlertTriangle className="w-3 h-3" />
+                                )}
+                                {threadsTokenStatus.message}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not connected</p>
+                        )
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Not connected</p>
                       )}
+                    </div>
+                  </div>
+                  {isPlatformAccessible('threads') ? (
+                    threadsConnection ? (
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleDisconnectFacebook}
-                        disabled={isDisconnectingFacebook}
+                        onClick={handleDisconnectThreads}
+                        disabled={isDisconnectingThreads}
                         className="text-destructive hover:text-destructive"
                       >
-                        {isDisconnectingFacebook ? (
+                        {isDisconnectingThreads ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <>
@@ -1345,112 +1484,36 @@ const Settings = () => {
                           </>
                         )}
                       </Button>
-                    </div>
-                  ) : isSubscribed ? (
-                    <Button
-                      size="sm"
-                      onClick={handleConnectFacebook}
-                      disabled={isConnectingFacebook}
-                    >
-                      {isConnectingFacebook ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Link2 className="w-4 h-4 mr-1" />
-                          Connect
-                        </>
-                      )}
-                    </Button>
+                    ) : isSubscribed ? (
+                      <Button
+                        size="sm"
+                        onClick={handleConnectThreads}
+                        disabled={isConnectingThreads}
+                      >
+                        {isConnectingThreads ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Link2 className="w-4 h-4 mr-1" />
+                            Connect
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowUpgradeDialog(true)}
+                        className="gap-1.5"
+                      >
+                        <Crown className="w-3.5 h-3.5 text-primary" />
+                        Pro
+                      </Button>
+                    )
                   ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowUpgradeDialog(true)}
-                      className="gap-1.5"
-                    >
-                      <Crown className="w-3.5 h-3.5 text-primary" />
-                      Pro
-                    </Button>
-                  )}
-                </div>
-
-                {/* Threads Connection */}
-                <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center">
-                      <svg viewBox="0 0 192 192" className="w-5 h-5 text-white" fill="currentColor">
-                        <path d="M141.537 88.988a66.667 66.667 0 0 0-2.518-1.143c-1.482-27.307-16.403-42.94-41.457-43.1h-.34c-14.986 0-27.449 6.396-35.12 18.036l13.779 9.452c5.73-8.695 14.724-10.548 21.348-10.548h.229c8.249.053 14.474 2.452 18.503 7.129 2.932 3.405 4.893 8.111 5.864 14.05-7.314-1.243-15.224-1.626-23.68-1.14-23.82 1.371-39.134 15.265-38.105 34.568.522 9.792 5.4 18.216 13.735 23.719 7.047 4.652 16.124 6.927 25.557 6.412 12.458-.68 22.231-5.436 29.049-14.127 5.178-6.6 8.453-15.153 9.899-25.93 5.937 3.583 10.337 8.298 12.767 13.966 4.132 9.635 4.373 25.468-8.546 38.376-11.319 11.308-24.925 16.2-45.488 16.351-22.809-.169-40.06-7.484-51.275-21.742C35.236 139.966 29.808 120.682 29.605 96c.203-24.682 5.63-43.966 16.133-57.317C56.954 24.425 74.204 17.11 97.014 16.94c23.001.173 40.574 7.576 52.232 22.005 5.565 6.882 9.746 15.087 12.508 24.382l15.015-4.065c-3.271-11.017-8.327-20.907-15.171-29.362C146.97 11.794 125.597 3.146 97.064 2.94h-.085c-28.464.207-49.72 8.87-63.196 25.762-12.73 15.962-19.265 38.05-19.482 65.704v1.187c.217 27.654 6.752 49.742 19.482 65.704 13.475 16.892 34.732 25.555 63.196 25.763h.085c24.346-.163 41.608-6.497 55.918-20.531 18.79-18.418 18.362-41.087 12.118-55.65-4.481-10.45-12.896-18.99-24.563-25.091Zm-64.768 44.538c-10.455.57-21.327-4.108-21.872-14.329-.408-7.65 5.41-16.186 25.16-17.323 2.2-.127 4.35-.19 6.451-.19 6.274 0 12.15.513 17.519 1.493-1.994 24.134-15.667 29.764-27.258 30.349Z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">Threads</p>
-                      {threadsConnection ? (
-                        <div className="flex flex-col gap-0.5">
-                          <p className="text-sm text-muted-foreground">
-                            Connected: @{threadsConnection.account_name || 'Your Account'}
-                          </p>
-                          {threadsTokenStatus?.message && (
-                            <p className={`text-xs flex items-center gap-1 ${
-                              threadsTokenStatus.status === 'expired' 
-                                ? 'text-destructive' 
-                                : threadsTokenStatus.status === 'expiring_soon'
-                                ? 'text-yellow-600 dark:text-yellow-500'
-                                : 'text-muted-foreground'
-                            }`}>
-                              {threadsTokenStatus.status === 'expired' && (
-                                <AlertTriangle className="w-3 h-3" />
-                              )}
-                              {threadsTokenStatus.message}
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Not connected</p>
-                      )}
-                    </div>
-                  </div>
-                  {threadsConnection ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDisconnectThreads}
-                      disabled={isDisconnectingThreads}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      {isDisconnectingThreads ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Unlink className="w-4 h-4 mr-1" />
-                          Disconnect
-                        </>
-                      )}
-                    </Button>
-                  ) : isSubscribed ? (
-                    <Button
-                      size="sm"
-                      onClick={handleConnectThreads}
-                      disabled={isConnectingThreads}
-                    >
-                      {isConnectingThreads ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Link2 className="w-4 h-4 mr-1" />
-                          Connect
-                        </>
-                      )}
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowUpgradeDialog(true)}
-                      className="gap-1.5"
-                    >
-                      <Crown className="w-3.5 h-3.5 text-primary" />
-                      Pro
-                    </Button>
+                    <Badge variant="outline" className="text-muted-foreground">
+                      Coming Soon
+                    </Badge>
                   )}
                 </div>
 
@@ -1458,9 +1521,10 @@ const Settings = () => {
                 {(() => {
                   const isSandbox = tiktokEnvironment === "sandbox";
                   const activeConnection = isSandbox ? tiktokSandboxConnection : tiktokConnection;
+                  const platformAccessible = isPlatformAccessible('tiktok');
                   
                   return (
-                    <div className={`flex items-center justify-between p-4 rounded-lg border bg-card ${isSandbox ? 'border-dashed' : ''}`}>
+                    <div className={`flex items-center justify-between p-4 rounded-lg border bg-card ${isSandbox ? 'border-dashed' : ''} ${!platformAccessible ? 'opacity-60' : ''}`}>
                       <div className="flex items-center gap-3">
                         {activeConnection?.avatar_url ? (
                           <div className={`w-10 h-10 rounded-lg overflow-hidden ring-2 ${isSandbox ? 'ring-gray-400/20' : 'ring-black/20 dark:ring-white/20'}`}>
@@ -1484,7 +1548,12 @@ const Settings = () => {
                         <div>
                           <div className="flex items-center gap-2">
                             <p className="font-medium text-foreground">TikTok</p>
-                            {hasAdminAccess && (
+                            {!platformAccessible && (
+                              <Badge variant="secondary" className="text-xs">
+                                Coming Soon
+                              </Badge>
+                            )}
+                            {platformAccessible && hasAdminAccess && (
                               <Badge 
                                 variant={isSandbox ? "secondary" : "default"} 
                                 className="text-xs flex items-center gap-1"
@@ -1503,79 +1572,89 @@ const Settings = () => {
                               </Badge>
                             )}
                           </div>
-                          {activeConnection ? (
-                            <div className="flex flex-col gap-0.5">
+                          {platformAccessible ? (
+                            activeConnection ? (
+                              <div className="flex flex-col gap-0.5">
+                                <p className="text-sm text-muted-foreground">
+                                  Connected: @{activeConnection.account_name || (isSandbox ? 'Test Account' : 'Your Account')}
+                                </p>
+                                {(() => {
+                                  const tokenStatus = isSandbox ? tiktokSandboxTokenStatus : tiktokTokenStatus;
+                                  return tokenStatus?.message ? (
+                                    <p className={`text-xs flex items-center gap-1 ${
+                                      tokenStatus.status === 'expired' 
+                                        ? 'text-destructive' 
+                                        : tokenStatus.status === 'expiring_soon'
+                                        ? 'text-yellow-600 dark:text-yellow-500'
+                                        : 'text-muted-foreground'
+                                    }`}>
+                                      {tokenStatus.status === 'expired' && (
+                                        <AlertTriangle className="w-3 h-3" />
+                                      )}
+                                      {tokenStatus.message}
+                                    </p>
+                                  ) : null;
+                                })()}
+                              </div>
+                            ) : (
                               <p className="text-sm text-muted-foreground">
-                                Connected: @{activeConnection.account_name || (isSandbox ? 'Test Account' : 'Your Account')}
+                                {isSandbox ? 'For testing only' : 'Not connected (video only)'}
                               </p>
-                              {(() => {
-                                const tokenStatus = isSandbox ? tiktokSandboxTokenStatus : tiktokTokenStatus;
-                                return tokenStatus?.message ? (
-                                  <p className={`text-xs flex items-center gap-1 ${
-                                    tokenStatus.status === 'expired' 
-                                      ? 'text-destructive' 
-                                      : tokenStatus.status === 'expiring_soon'
-                                      ? 'text-yellow-600 dark:text-yellow-500'
-                                      : 'text-muted-foreground'
-                                  }`}>
-                                    {tokenStatus.status === 'expired' && (
-                                      <AlertTriangle className="w-3 h-3" />
-                                    )}
-                                    {tokenStatus.message}
-                                  </p>
-                                ) : null;
-                              })()}
-                            </div>
+                            )
                           ) : (
-                            <p className="text-sm text-muted-foreground">
-                              {isSandbox ? 'For testing only' : 'Not connected (video only)'}
-                            </p>
+                            <p className="text-sm text-muted-foreground">Not connected</p>
                           )}
                         </div>
                       </div>
-                      {activeConnection ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleDisconnectTikTok}
-                          disabled={isDisconnectingTikTok}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          {isDisconnectingTikTok ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <>
-                              <Unlink className="w-4 h-4 mr-1" />
-                              Disconnect
-                            </>
-                          )}
-                        </Button>
-                      ) : isSubscribed ? (
-                        <Button
-                          size="sm"
-                          variant={isSandbox ? "outline" : "default"}
-                          onClick={handleConnectTikTok}
-                          disabled={isConnectingTikTok}
-                        >
-                          {isConnectingTikTok ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <>
-                              <Link2 className="w-4 h-4 mr-1" />
-                              Connect
-                            </>
-                          )}
-                        </Button>
+                      {platformAccessible ? (
+                        activeConnection ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleDisconnectTikTok}
+                            disabled={isDisconnectingTikTok}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            {isDisconnectingTikTok ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Unlink className="w-4 h-4 mr-1" />
+                                Disconnect
+                              </>
+                            )}
+                          </Button>
+                        ) : isSubscribed ? (
+                          <Button
+                            size="sm"
+                            variant={isSandbox ? "outline" : "default"}
+                            onClick={handleConnectTikTok}
+                            disabled={isConnectingTikTok}
+                          >
+                            {isConnectingTikTok ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Link2 className="w-4 h-4 mr-1" />
+                                Connect
+                              </>
+                            )}
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowUpgradeDialog(true)}
+                            className="gap-1.5"
+                          >
+                            <Crown className="w-3.5 h-3.5 text-primary" />
+                            Pro
+                          </Button>
+                        )
                       ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setShowUpgradeDialog(true)}
-                          className="gap-1.5"
-                        >
-                          <Crown className="w-3.5 h-3.5 text-primary" />
-                          Pro
-                        </Button>
+                        <Badge variant="outline" className="text-muted-foreground">
+                          Coming Soon
+                        </Badge>
                       )}
                     </div>
                   );
