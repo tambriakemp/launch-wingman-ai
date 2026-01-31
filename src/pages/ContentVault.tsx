@@ -1,16 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { FolderOpen, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { CategoryCard } from "@/components/content-vault/CategoryCard";
+import { PopularResourceItem } from "@/components/content-vault/PopularResourceItem";
 import { CategoryEditDialog } from "@/components/content-vault/CategoryEditDialog";
 import { VaultHeader } from "@/components/content-vault/VaultHeader";
+import { getCategoryIcon } from "@/components/content-vault/categoryIcons";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useAdmin } from "@/hooks/useAdmin";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getVaultThumbnail } from "@/data/vaultThumbnails";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface Category {
   id: string;
@@ -19,8 +23,20 @@ interface Category {
   description: string | null;
   cover_image_url: string | null;
   position: number;
-  resource_count?: number;
-  first_resource_thumbnail?: string | null;
+}
+
+interface PopularResource {
+  id: string;
+  title: string;
+  resource_type: string;
+  resource_url: string;
+  subcategory: {
+    name: string;
+    category: {
+      name: string;
+      slug: string;
+    };
+  };
 }
 
 const ContentVault = () => {
@@ -31,60 +47,56 @@ const ContentVault = () => {
   
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
-  const { data: categories, isLoading } = useQuery({
-    queryKey: ['content-vault-categories-with-counts'],
+  // Fetch categories
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['content-vault-categories'],
     queryFn: async () => {
-      // Fetch categories
-      const { data: cats, error: catsError } = await supabase
+      const { data, error } = await supabase
         .from('content_vault_categories')
         .select('*')
         .order('position', { ascending: true });
       
-      if (catsError) throw catsError;
-      if (!cats || cats.length === 0) return [];
+      if (error) throw error;
+      return data as Category[];
+    },
+    enabled: canAccessVault,
+  });
 
-      // Fetch subcategories for all categories
-      const { data: subs, error: subsError } = await supabase
-        .from('content_vault_subcategories')
-        .select('id, category_id');
-      
-      if (subsError) throw subsError;
-
-      // Fetch resources with thumbnails (ordered by position to get first resource)
-      const { data: resources, error: rcError } = await supabase
+  // Fetch total resource count
+  const { data: totalResourceCount } = useQuery({
+    queryKey: ['content-vault-total-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
         .from('content_vault_resources')
-        .select('subcategory_id, cover_image_url, preview_url, position')
-        .order('position', { ascending: true });
+        .select('*', { count: 'exact', head: true });
       
-      if (rcError) throw rcError;
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: canAccessVault,
+  });
 
-      // Build subcategory to category mapping
-      const subToCat = new Map<string, string>();
-      subs?.forEach(s => subToCat.set(s.id, s.category_id));
-
-      // Count resources per category and find first resource thumbnail
-      const countMap = new Map<string, number>();
-      const firstThumbnailMap = new Map<string, string>();
+  // Fetch popular/recent resources
+  const { data: popularResources, isLoading: popularLoading } = useQuery({
+    queryKey: ['content-vault-popular-resources'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('content_vault_resources')
+        .select(`
+          id,
+          title,
+          resource_type,
+          resource_url,
+          subcategory:content_vault_subcategories!inner(
+            name,
+            category:content_vault_categories!inner(name, slug)
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5);
       
-      resources?.forEach(r => {
-        const catId = subToCat.get(r.subcategory_id);
-        if (catId) {
-          countMap.set(catId, (countMap.get(catId) || 0) + 1);
-          // Set first thumbnail if not already set (resources are ordered by position)
-          if (!firstThumbnailMap.has(catId)) {
-            const thumbnail = r.cover_image_url || r.preview_url;
-            if (thumbnail) {
-              firstThumbnailMap.set(catId, thumbnail);
-            }
-          }
-        }
-      });
-
-      return cats.map(cat => ({
-        ...cat,
-        resource_count: countMap.get(cat.id) || 0,
-        first_resource_thumbnail: firstThumbnailMap.get(cat.id) || null,
-      })) as Category[];
+      if (error) throw error;
+      return data as unknown as PopularResource[];
     },
     enabled: canAccessVault,
   });
@@ -100,11 +112,12 @@ const ContentVault = () => {
         <div className="min-h-screen bg-background">
           <div className="max-w-7xl mx-auto px-6 py-8">
             <VaultHeader />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               {[...Array(6)].map((_, i) => (
-                <Skeleton key={i} className="h-72 rounded-xl" />
+                <Skeleton key={i} className="h-24 rounded-xl" />
               ))}
             </div>
+            <Skeleton className="h-64 rounded-xl" />
           </div>
         </div>
       </ProjectLayout>
@@ -133,34 +146,78 @@ const ContentVault = () => {
     <ProjectLayout>
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <VaultHeader />
+          <VaultHeader totalResourceCount={totalResourceCount || undefined} />
           
-          {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Categories Grid */}
+          {categoriesLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               {[...Array(6)].map((_, i) => (
-                <Skeleton key={i} className="h-72 rounded-xl" />
+                <Skeleton key={i} className="h-24 rounded-xl" />
               ))}
             </div>
           ) : categories && categories.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {categories.map((category) => (
-                <CategoryCard
-                  key={category.id}
-                  name={category.name}
-                  description={category.description}
-                  coverImageUrl={category.cover_image_url || category.first_resource_thumbnail || getVaultThumbnail(category.slug)}
-                  resourceCount={category.resource_count}
-                  onClick={() => handleCategoryClick(category.slug)}
-                  showEditButton={hasAdminAccess}
-                  onEditClick={() => setEditingCategory(category)}
-                />
-              ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+              {categories.map((category) => {
+                const iconConfig = getCategoryIcon(category.slug);
+                return (
+                  <CategoryCard
+                    key={category.id}
+                    name={category.name}
+                    icon={iconConfig.icon}
+                    iconColor={iconConfig.color}
+                    onClick={() => handleCategoryClick(category.slug)}
+                    showEditButton={hasAdminAccess}
+                    onEditClick={() => setEditingCategory(category)}
+                  />
+                );
+              })}
             </div>
           ) : (
-            <div className="text-center py-16">
+            <div className="text-center py-16 mb-8">
               <p className="text-muted-foreground">No categories available yet.</p>
             </div>
           )}
+
+          {/* Popular Resources Section */}
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <FolderOpen className="w-5 h-5 text-amber-500" />
+                <span className="font-semibold text-foreground">Popular Resources</span>
+              </div>
+              <Button 
+                variant="link" 
+                className="text-muted-foreground hover:text-primary p-0 h-auto"
+                onClick={() => navigate('/content-vault/all')}
+              >
+                View all <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+            
+            {popularLoading ? (
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-14 rounded-lg" />
+                ))}
+              </div>
+            ) : popularResources && popularResources.length > 0 ? (
+              <div className="divide-y divide-border">
+                {popularResources.map((resource) => (
+                  <PopularResourceItem
+                    key={resource.id}
+                    title={resource.title}
+                    categoryName={resource.subcategory.category.name}
+                    resourceType={resource.resource_type}
+                    resourceUrl={resource.resource_url}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-8">
+                No resources available yet.
+              </p>
+            )}
+          </Card>
 
           {/* Edit Dialog */}
           {editingCategory && (
