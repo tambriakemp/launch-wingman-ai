@@ -229,6 +229,59 @@ function extractDisplayContent(taskId: string, inputData: Record<string, unknown
       break;
 
     // ==================== BUILD PHASE ====================
+    case "build_choose_delivery_asset":
+      contentType = "paragraph";
+      structuredContent.type = "paragraph";
+      const deliveryLabels: Record<string, string> = {
+        'live_session': 'Live session or workshop',
+        'downloadable': 'Downloadable resource',
+        'access_page': 'Access page or portal',
+        'curated_bundle': 'Curated bundle',
+        'affiliate_product': 'Affiliate product',
+        'mrr_plr_product': 'MRR/PLR product',
+      };
+      if (inputData.selectedOption) {
+        const label = deliveryLabels[String(inputData.selectedOption)] || String(inputData.selectedOption);
+        bullets.push(label);
+        fullContent = label;
+        structuredContent.items = [{ value: label }];
+      }
+      break;
+
+    case "build_create_asset":
+      contentType = "key-value";
+      structuredContent.type = "key-value";
+      if (inputData.asset_name) {
+        bullets.push(String(inputData.asset_name));
+        structuredContent.items.push({ label: "Asset", value: String(inputData.asset_name) });
+      }
+      if (inputData.asset_description) {
+        structuredContent.items.push({ label: "Description", value: String(inputData.asset_description) });
+      }
+      fullContent = [
+        inputData.asset_name && `Asset: ${inputData.asset_name}`,
+        inputData.asset_description && `Description: ${inputData.asset_description}`,
+      ].filter(Boolean).join("\n\n");
+      break;
+
+    case "build_define_access_moment":
+      contentType = "paragraph";
+      structuredContent.type = "paragraph";
+      const accessLabels: Record<string, string> = {
+        'email_delivery': 'Email delivery',
+        'download_link': 'Download link',
+        'access_page': 'Access page',
+        'live_session_confirmation': 'Live session confirmation',
+        'affiliate_redirect': 'Affiliate redirect',
+      };
+      if (inputData.selectedOption) {
+        const label = accessLabels[String(inputData.selectedOption)] || String(inputData.selectedOption);
+        bullets.push(label);
+        fullContent = label;
+        structuredContent.items = [{ value: label }];
+      }
+      break;
+
     case "build_choose_platform":
       contentType = "key-value";
       structuredContent.type = "key-value";
@@ -296,6 +349,9 @@ function extractDisplayContent(taskId: string, inputData: Record<string, unknown
       contentType = "checklist";
       structuredContent.type = "checklist";
       const buildChecks: ContentItem[] = [];
+      if (inputData.delivery_asset_chosen) buildChecks.push({ value: "Delivery asset chosen" });
+      if (inputData.asset_ready) buildChecks.push({ value: "Asset ready" });
+      if (inputData.access_defined) buildChecks.push({ value: "First access defined" });
       if (inputData.platform_chosen) buildChecks.push({ value: "Platform chosen" });
       if (inputData.page_ready) buildChecks.push({ value: "Main page ready" });
       if (inputData.ready_to_share) buildChecks.push({ value: "Ready to share" });
@@ -478,6 +534,9 @@ const TASK_LABELS: Record<string, string> = {
   messaging_social_bio: "Social Bio",
   messaging_visual_direction: "Visual Direction",
   // Build
+  build_choose_delivery_asset: "Delivery Asset",
+  build_create_asset: "Asset Details",
+  build_define_access_moment: "First Access",
   build_choose_platform: "Platform Choice",
   build_main_page_setup: "Main Page Setup",
   build_email_platform: "Email Platform",
