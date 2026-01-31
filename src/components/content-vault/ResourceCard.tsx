@@ -7,8 +7,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { trackResourceAccess } from "./trackResourceAccess";
 
 interface ResourceCardProps {
+  id: string;
   title: string;
   description: string | null;
   coverImageUrl: string | null;
@@ -46,6 +48,7 @@ const isMissingPreview = (resourceUrl: string, previewUrl: string | null | undef
 };
 
 export const ResourceCard = ({ 
+  id,
   title, 
   description, 
   coverImageUrl, 
@@ -112,6 +115,8 @@ export const ResourceCard = ({
 
   const handleCardClick = () => {
     if (isCanvaLink) {
+      // Track Canva link access for popularity
+      trackResourceAccess(id);
       window.open(resourceUrl, '_blank');
     } else {
       onClick();

@@ -32,7 +32,7 @@ serve(async (req) => {
 
     const { data: resource, error: dbError } = await supabase
       .from('content_vault_resources')
-      .select('id')
+      .select('id, download_count')
       .eq('resource_url', url)
       .maybeSingle();
 
@@ -51,6 +51,12 @@ serve(async (req) => {
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Increment download count for popularity tracking
+    await supabase
+      .from('content_vault_resources')
+      .update({ download_count: (resource.download_count || 0) + 1 })
+      .eq('id', resource.id);
 
     // Encode the URL to handle spaces and special characters
     const encodedUrl = encodeURI(url);

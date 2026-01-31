@@ -76,29 +76,90 @@ const ContentVault = () => {
     enabled: canAccessVault,
   });
 
-  // Fetch popular/recent resources
+  // Fetch popular/recent resources with fallback to first resource from each category
   const { data: popularResources, isLoading: popularLoading } = useQuery({
-    queryKey: ['content-vault-popular-resources'],
+    queryKey: ['content-vault-popular-resources', categories?.map(c => c.id)],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First, try to get resources sorted by download count
+      const { data: topDownloaded, error: topError } = await supabase
         .from('content_vault_resources')
         .select(`
           id,
           title,
           resource_type,
           resource_url,
+          download_count,
           subcategory:content_vault_subcategories!inner(
             name,
             category:content_vault_categories!inner(name, slug)
           )
         `)
-        .order('created_at', { ascending: false })
+        .gt('download_count', 0)
+        .order('download_count', { ascending: false })
         .limit(5);
       
-      if (error) throw error;
-      return data as unknown as PopularResource[];
+      if (topError) throw topError;
+      
+      // If we have 5 popular resources with downloads, use them
+      if (topDownloaded && topDownloaded.length >= 5) {
+        return topDownloaded;
+      }
+      
+      // Fallback: Get first resource from each of the first 5 categories
+      if (!categories || categories.length === 0) {
+        return topDownloaded || [];
+      }
+      
+      const first5Categories = categories.slice(0, 5);
+      const fallbackPromises = first5Categories.map(async (category) => {
+        // First get subcategories for this category
+        const { data: subcategories } = await supabase
+          .from('content_vault_subcategories')
+          .select('id')
+          .eq('category_id', category.id);
+        
+        if (!subcategories || subcategories.length === 0) return null;
+        
+        const subcategoryIds = subcategories.map(s => s.id);
+        
+        const { data: firstResource } = await supabase
+          .from('content_vault_resources')
+          .select(`
+            id,
+            title,
+            resource_type,
+            resource_url,
+            download_count,
+            subcategory:content_vault_subcategories!inner(
+              name,
+              category:content_vault_categories!inner(name, slug)
+            )
+          `)
+          .in('subcategory_id', subcategoryIds)
+          .order('position', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        
+        return firstResource;
+      });
+      
+      const fallbackResults = await Promise.all(fallbackPromises);
+      const fallbackResources = fallbackResults.filter(Boolean);
+      
+      // Combine any downloaded resources with fallback to reach 5
+      const combined = [...(topDownloaded || [])];
+      const existingIds = new Set(combined.map(r => r.id));
+      
+      for (const resource of fallbackResources) {
+        if (resource && !existingIds.has(resource.id) && combined.length < 5) {
+          combined.push(resource);
+          existingIds.add(resource.id);
+        }
+      }
+      
+      return combined;
     },
-    enabled: canAccessVault,
+    enabled: canAccessVault && !!categories,
   });
 
   const handleCategoryClick = (slug: string) => {
@@ -205,6 +266,7 @@ const ContentVault = () => {
                 {popularResources.map((resource) => (
                   <PopularResourceItem
                     key={resource.id}
+                    id={resource.id}
                     title={resource.title}
                     categoryName={resource.subcategory.category.name}
                     resourceType={resource.resource_type}

@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { PdfViewer } from "./PdfViewer";
+import { trackResourceAccess } from "./trackResourceAccess";
 
 interface Resource {
   id: string;
@@ -224,7 +225,7 @@ export const ResourceLightbox = ({
               <p className="text-slate-500 mb-6">
                 This document was uploaded before PDF preview was available.
               </p>
-              <div className="flex gap-3 justify-center">
+          <div className="flex gap-3 justify-center">
                 <Button onClick={handleDownload} disabled={isDownloading}>
                   {isDownloading ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -235,7 +236,10 @@ export const ResourceLightbox = ({
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => window.open(currentResource.resource_url, '_blank')}
+                  onClick={() => {
+                    trackResourceAccess(currentResource.id);
+                    window.open(currentResource.resource_url, '_blank');
+                  }}
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Open in Browser
