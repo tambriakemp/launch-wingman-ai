@@ -45,7 +45,6 @@ serve(async (req) => {
     // Validate JWT (handles ES256 signing and detects expiration)
     const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
-      // Important: token expiry should be a 401, not a 500 (prevents UI hard-crash)
       logStep("Auth failed", { message: claimsError?.message || "Invalid token" });
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
@@ -74,41 +73,111 @@ serve(async (req) => {
     }
     logStep("Staff access verified", { userId: sanitizeId(userId), role: roleData[0].role });
 
-    // Fetch project stats
-    const { data: projects, error: projectsError } = await supabaseClient
-      .from('projects')
-      .select('id, lifecycle_state, current_phase');
-    
-    if (projectsError) {
-      logStep("Error fetching projects", { error: projectsError.message });
+    // ========== PARALLEL QUERIES FOR PERFORMANCE ==========
+    // Run all independent queries in parallel using Promise.all
+    const [
+      projectsResult,
+      projectTasksResult,
+      scheduledPostsResult,
+      contentDraftsResult,
+      contentIdeasResult,
+      socialConnectionsResult,
+      offersResult,
+      offersWithPriceResult,
+      authUsersResult,
+      profilesWithNamesResult,
+      completedTasksResult,
+      usersWithOffersResult,
+      funnelsResult,
+      brandColorsResult,
+      brandFontsResult,
+      brandPhotosResult,
+      brandLogosResult,
+      socialBiosResult,
+      salesPageCopyResult,
+      launchSnapshotsResult,
+      metricUpdatesResult,
+      contentPlannerResult,
+      launchEventsResult,
+      checkInsResult,
+      relaunchProjectsResult,
+    ] = await Promise.all([
+      // Projects (using active_phase instead of current_phase)
+      supabaseClient.from('projects').select('id, status, active_phase, user_id'),
+      // Project tasks
+      supabaseClient.from('project_tasks').select('project_id, status, user_id'),
+      // Content stats
+      supabaseClient.from('scheduled_posts').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('content_drafts').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('content_ideas').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('social_connections').select('*', { count: 'exact', head: true }),
+      // Offers
+      supabaseClient.from('offers').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('offers').select('price').not('price', 'is', null),
+      // Auth users
+      supabaseClient.auth.admin.listUsers(),
+      // Profiles
+      supabaseClient.from('profiles').select('user_id, first_name, last_name').or('first_name.neq.,last_name.neq.'),
+      // Completed tasks
+      supabaseClient.from('project_tasks').select('user_id').eq('status', 'completed'),
+      // Users with offers
+      supabaseClient.from('offers').select('user_id'),
+      // Feature usage
+      supabaseClient.from('funnels').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('brand_colors').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('brand_fonts').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('brand_photos').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('brand_logos').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('social_bios').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('sales_page_copy').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('launch_snapshots').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('metric_updates').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('content_planner').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('launch_events').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('check_ins').select('*', { count: 'exact', head: true }),
+      // Relaunch projects
+      supabaseClient.from('projects').select('id, skip_memory, relaunch_kept_sections, relaunch_revisit_sections, status').eq('is_relaunch', true),
+    ]);
+
+    // Extract data from results
+    const projects = projectsResult.data;
+    const projectTasks = projectTasksResult.data;
+    const scheduledPostsCount = scheduledPostsResult.count;
+    const contentDraftsCount = contentDraftsResult.count;
+    const contentIdeasCount = contentIdeasResult.count;
+    const socialConnectionsCount = socialConnectionsResult.count;
+    const offersCount = offersResult.count;
+    const offersWithPrice = offersWithPriceResult.data;
+    const authUsers = authUsersResult.data;
+    const profilesWithNames = profilesWithNamesResult.data;
+    const completedTasks = completedTasksResult.data;
+    const usersWithOffers = usersWithOffersResult.data;
+    const relaunchProjects = relaunchProjectsResult.data;
+
+    if (projectsResult.error) {
+      logStep("Error fetching projects", { error: projectsResult.error.message });
+    }
+    if (projectTasksResult.error) {
+      logStep("Error fetching project tasks", { error: projectTasksResult.error.message });
     }
 
-    // Fetch project tasks for completion calculation
-    const { data: projectTasks, error: tasksError } = await supabaseClient
-      .from('project_tasks')
-      .select('project_id, status');
-    
-    if (tasksError) {
-      logStep("Error fetching project tasks", { error: tasksError.message });
-    }
-
-    // Calculate project stats
+    // Calculate project stats (using 'status' column, not 'lifecycle_state')
     const projectStats = {
       total: projects?.length || 0,
       byPhase: {
-        clarity: projects?.filter(p => p.current_phase === 'clarity').length || 0,
-        strategy: projects?.filter(p => p.current_phase === 'strategy').length || 0,
-        build: projects?.filter(p => p.current_phase === 'build').length || 0,
-        launch: projects?.filter(p => p.current_phase === 'launch').length || 0,
-        maintain: projects?.filter(p => p.current_phase === 'maintain').length || 0,
+        clarity: projects?.filter(p => p.active_phase === 'clarity').length || 0,
+        strategy: projects?.filter(p => p.active_phase === 'strategy').length || 0,
+        build: projects?.filter(p => p.active_phase === 'build').length || 0,
+        launch: projects?.filter(p => p.active_phase === 'launch').length || 0,
+        maintain: projects?.filter(p => p.active_phase === 'maintain').length || 0,
       },
       byState: {
-        draft: projects?.filter(p => p.lifecycle_state === 'draft').length || 0,
-        in_progress: projects?.filter(p => p.lifecycle_state === 'in_progress').length || 0,
-        launched: projects?.filter(p => p.lifecycle_state === 'launched').length || 0,
-        completed: projects?.filter(p => p.lifecycle_state === 'completed').length || 0,
-        paused: projects?.filter(p => p.lifecycle_state === 'paused').length || 0,
-        archived: projects?.filter(p => p.lifecycle_state === 'archived').length || 0,
+        draft: projects?.filter(p => p.status === 'draft').length || 0,
+        in_progress: projects?.filter(p => p.status === 'in_progress').length || 0,
+        launched: projects?.filter(p => p.status === 'launched').length || 0,
+        completed: projects?.filter(p => p.status === 'completed').length || 0,
+        paused: projects?.filter(p => p.status === 'paused').length || 0,
+        archived: projects?.filter(p => p.status === 'archived').length || 0,
       },
       avgCompletionPercent: 0,
     };
@@ -131,23 +200,6 @@ serve(async (req) => {
     }
     logStep("Project stats calculated", { total: projectStats.total });
 
-    // Fetch content stats
-    const { count: scheduledPostsCount } = await supabaseClient
-      .from('scheduled_posts')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: contentDraftsCount } = await supabaseClient
-      .from('content_drafts')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: contentIdeasCount } = await supabaseClient
-      .from('content_ideas')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: socialConnectionsCount } = await supabaseClient
-      .from('social_connections')
-      .select('*', { count: 'exact', head: true });
-
     const contentStats = {
       scheduledPosts: scheduledPostsCount || 0,
       contentDrafts: contentDraftsCount || 0,
@@ -156,13 +208,9 @@ serve(async (req) => {
     };
     logStep("Content stats calculated", contentStats);
 
-    // Fetch engagement stats - projects per user
-    const { data: userProjects } = await supabaseClient
-      .from('projects')
-      .select('user_id');
-
+    // Engagement stats - projects per user (already fetched projects with user_id)
     const projectsPerUser: Record<string, number> = {};
-    userProjects?.forEach(p => {
+    projects?.forEach(p => {
       projectsPerUser[p.user_id] = (projectsPerUser[p.user_id] || 0) + 1;
     });
 
@@ -173,19 +221,9 @@ serve(async (req) => {
         : 0,
       usersWithProjects: Object.keys(projectsPerUser).length,
       usersWithMultipleProjects: userProjectCounts.filter(c => c > 1).length,
-      projectsPerUser, // Map of user_id -> project count for admin list enhancement
+      projectsPerUser,
     };
     logStep("Engagement stats calculated");
-
-    // Fetch offers stats
-    const { count: offersCount } = await supabaseClient
-      .from('offers')
-      .select('*', { count: 'exact', head: true });
-
-    const { data: offersWithPrice } = await supabaseClient
-      .from('offers')
-      .select('price')
-      .not('price', 'is', null);
 
     const offerStats = {
       totalOffers: offersCount || 0,
@@ -195,34 +233,11 @@ serve(async (req) => {
     };
     logStep("Offer stats calculated");
 
-    // Fetch onboarding funnel stats
-    const { data: authUsers, error: authError } = await supabaseClient.auth.admin.listUsers();
+    // Onboarding funnel stats
     const totalUsers = authUsers?.users?.length || 0;
-
-    // Users with profile info (first_name or last_name filled)
-    const { data: profilesWithNames } = await supabaseClient
-      .from('profiles')
-      .select('user_id, first_name, last_name')
-      .or('first_name.neq.,last_name.neq.');
-    
     const usersWithProfile = profilesWithNames?.filter(p => p.first_name || p.last_name).length || 0;
-
-    // Users with at least one project
     const usersWithFirstProject = Object.keys(projectsPerUser).length;
-
-    // Users with at least one completed project task
-    const { data: completedTasks } = await supabaseClient
-      .from('project_tasks')
-      .select('user_id')
-      .eq('status', 'completed');
-    
     const uniqueUsersWithCompletedTask = new Set(completedTasks?.map(t => t.user_id) || []).size;
-
-    // Users with at least one offer created (as proxy for assessment completion)
-    const { data: usersWithOffers } = await supabaseClient
-      .from('offers')
-      .select('user_id');
-    
     const uniqueUsersWithOffer = new Set(usersWithOffers?.map(o => o.user_id) || []).size;
 
     const onboardingFunnel = {
@@ -238,68 +253,19 @@ serve(async (req) => {
     };
     logStep("Onboarding funnel stats calculated");
 
-    // Fetch feature usage stats
-    const { count: funnelsCount } = await supabaseClient
-      .from('funnels')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: brandColorsCount } = await supabaseClient
-      .from('brand_colors')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: brandFontsCount } = await supabaseClient
-      .from('brand_fonts')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: brandPhotosCount } = await supabaseClient
-      .from('brand_photos')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: brandLogosCount } = await supabaseClient
-      .from('brand_logos')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: socialBiosCount } = await supabaseClient
-      .from('social_bios')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: salesPageCopyCount } = await supabaseClient
-      .from('sales_page_copy')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: launchSnapshotsCount } = await supabaseClient
-      .from('launch_snapshots')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: metricUpdatesCount } = await supabaseClient
-      .from('metric_updates')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: contentPlannerCount } = await supabaseClient
-      .from('content_planner')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: launchEventsCount } = await supabaseClient
-      .from('launch_events')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: checkInsCount } = await supabaseClient
-      .from('check_ins')
-      .select('*', { count: 'exact', head: true });
-
     const featureUsage = {
-      funnelBuilder: funnelsCount || 0,
-      brandingColors: brandColorsCount || 0,
-      brandingFonts: brandFontsCount || 0,
-      brandingPhotos: brandPhotosCount || 0,
-      brandingLogos: brandLogosCount || 0,
-      socialBios: socialBiosCount || 0,
-      salesPageCopy: salesPageCopyCount || 0,
-      launchSnapshots: launchSnapshotsCount || 0,
-      metricUpdates: metricUpdatesCount || 0,
-      contentCalendar: contentPlannerCount || 0,
-      launchEvents: launchEventsCount || 0,
-      checkIns: checkInsCount || 0,
+      funnelBuilder: funnelsResult.count || 0,
+      brandingColors: brandColorsResult.count || 0,
+      brandingFonts: brandFontsResult.count || 0,
+      brandingPhotos: brandPhotosResult.count || 0,
+      brandingLogos: brandLogosResult.count || 0,
+      socialBios: socialBiosResult.count || 0,
+      salesPageCopy: salesPageCopyResult.count || 0,
+      launchSnapshots: launchSnapshotsResult.count || 0,
+      metricUpdates: metricUpdatesResult.count || 0,
+      contentCalendar: contentPlannerResult.count || 0,
+      launchEvents: launchEventsResult.count || 0,
+      checkIns: checkInsResult.count || 0,
       contentIdeas: contentIdeasCount || 0,
       contentDrafts: contentDraftsCount || 0,
       scheduledPosts: scheduledPostsCount || 0,
@@ -307,12 +273,7 @@ serve(async (req) => {
     };
     logStep("Feature usage stats calculated");
 
-    // Fetch relaunch stats
-    const { data: relaunchProjects } = await supabaseClient
-      .from('projects')
-      .select('id, skip_memory, relaunch_kept_sections, relaunch_revisit_sections')
-      .eq('is_relaunch', true);
-
+    // Relaunch stats
     const relaunchStats = {
       totalRelaunches: relaunchProjects?.length || 0,
       freshStarts: relaunchProjects?.filter(p => p.skip_memory === true).length || 0,
@@ -321,6 +282,7 @@ serve(async (req) => {
       avgRevisitSections: 0,
       mostKeptSections: {} as Record<string, number>,
       mostRevisitedSections: {} as Record<string, number>,
+      relaunchConversionRate: 0,
     };
 
     // Calculate section usage stats
@@ -360,8 +322,8 @@ serve(async (req) => {
     }
 
     // Calculate relaunch conversion rate (relaunches / completed projects)
-    const completedProjectsCount = projects?.filter(p => p.lifecycle_state === 'completed' || p.lifecycle_state === 'launched').length || 0;
-    const relaunchConversionRate = completedProjectsCount > 0 
+    const completedProjectsCount = projects?.filter(p => p.status === 'completed' || p.status === 'launched').length || 0;
+    relaunchStats.relaunchConversionRate = completedProjectsCount > 0 
       ? Math.round((relaunchStats.totalRelaunches / completedProjectsCount) * 100) 
       : 0;
 
@@ -374,14 +336,11 @@ serve(async (req) => {
       offerStats,
       onboardingFunnel,
       featureUsage,
-      relaunchStats: {
-        ...relaunchStats,
-        relaunchConversionRate,
-      },
+      relaunchStats,
       generatedAt: new Date().toISOString(),
     };
 
-     return jsonResponse(response, 200);
+    return jsonResponse(response, 200);
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });

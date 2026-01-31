@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,22 +33,50 @@ import { EditUserDialog } from '@/components/admin/EditUserDialog';
 import { MrrStatsCard } from '@/components/admin/AiUsageSection';
 import { AdminRoleToggle } from '@/components/admin/AdminRoleToggle';
 import { RevenueChurnChart } from '@/components/admin/RevenueChurnChart';
-import { ProjectStatsCard, ContentStatsCard, EngagementStatsCard, OfferStatsCard, OnboardingFunnelCard } from '@/components/admin/PlatformStatsSection';
-import { RelaunchStatsCard } from '@/components/admin/RelaunchStatsCard';
-import { FeatureUsageHeatmap } from '@/components/admin/FeatureUsageHeatmap';
-import { useAdminPlatformStats } from '@/hooks/useAdminPlatformStats';
 import { UserStatusToggle } from '@/components/admin/UserStatusToggle';
 import { DeleteUserDialog } from '@/components/admin/DeleteUserDialog';
 import { AdminActionLogs } from '@/components/admin/AdminActionLogs';
 import { UserProjectsDialog } from '@/components/admin/UserProjectsDialog';
 import { ExportUserDataDialog } from '@/components/admin/ExportUserDataDialog';
-import { MonitoringTab } from '@/components/admin/MonitoringTab';
-import { ConfigTab } from '@/components/admin/ConfigTab';
-import { SupportTicketsTab } from '@/components/admin/SupportTicketsTab';
-import { ActivityLogsTab } from '@/components/admin/ActivityLogsTab';
 import { CouponManagement } from '@/components/admin/CouponManagement';
-import { MarketingAssetsTab } from '@/components/admin/MarketingAssetsTab';
 import { SubscriptionTierToggle } from '@/components/admin/SubscriptionTierToggle';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Lazy load heavy tab components for better initial load
+const MonitoringTab = lazy(() => import('@/components/admin/MonitoringTab').then(m => ({ default: m.MonitoringTab })));
+const ConfigTab = lazy(() => import('@/components/admin/ConfigTab').then(m => ({ default: m.ConfigTab })));
+const SupportTicketsTab = lazy(() => import('@/components/admin/SupportTicketsTab').then(m => ({ default: m.SupportTicketsTab })));
+const ActivityLogsTab = lazy(() => import('@/components/admin/ActivityLogsTab').then(m => ({ default: m.ActivityLogsTab })));
+const MarketingAssetsTab = lazy(() => import('@/components/admin/MarketingAssetsTab').then(m => ({ default: m.MarketingAssetsTab })));
+
+// Lazy load platform stats components (they call the heavy edge function)
+const ProjectStatsCard = lazy(() => import('@/components/admin/PlatformStatsSection').then(m => ({ default: m.ProjectStatsCard })));
+const ContentStatsCard = lazy(() => import('@/components/admin/PlatformStatsSection').then(m => ({ default: m.ContentStatsCard })));
+const EngagementStatsCard = lazy(() => import('@/components/admin/PlatformStatsSection').then(m => ({ default: m.EngagementStatsCard })));
+const OfferStatsCard = lazy(() => import('@/components/admin/PlatformStatsSection').then(m => ({ default: m.OfferStatsCard })));
+const OnboardingFunnelCard = lazy(() => import('@/components/admin/PlatformStatsSection').then(m => ({ default: m.OnboardingFunnelCard })));
+const RelaunchStatsCard = lazy(() => import('@/components/admin/RelaunchStatsCard').then(m => ({ default: m.RelaunchStatsCard })));
+const FeatureUsageHeatmap = lazy(() => import('@/components/admin/FeatureUsageHeatmap').then(m => ({ default: m.FeatureUsageHeatmap })));
+
+// Loading fallback for lazy components
+const TabLoadingFallback = () => (
+  <div className="space-y-4">
+    <Skeleton className="h-32 w-full" />
+    <Skeleton className="h-48 w-full" />
+  </div>
+);
+
+const CardLoadingFallback = () => (
+  <Card>
+    <CardContent className="p-6">
+      <Skeleton className="h-8 w-20 mb-2" />
+      <Skeleton className="h-4 w-full" />
+    </CardContent>
+  </Card>
+);
+
+// Analytics tab content component that uses the hook
+const AnalyticsTabContent = lazy(() => import('@/components/admin/AnalyticsTabContent').then(m => ({ default: m.AnalyticsTabContent })));
 
 interface User {
   id: string;
@@ -69,17 +97,6 @@ interface User {
 }
 
 const USERS_PER_PAGE = 10;
-
-// Feature Usage Heatmap Wrapper
-function FeatureUsageHeatmapWrapper() {
-  const { data: platformStats } = useAdminPlatformStats();
-  
-  if (!platformStats?.featureUsage) {
-    return null;
-  }
-  
-  return <FeatureUsageHeatmap featureUsage={platformStats.featureUsage} />;
-}
 
 // Mobile user card component
 const MobileUserCard = ({ 
@@ -674,17 +691,29 @@ const AdminDashboard = () => {
 
             {/* Platform Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <ProjectStatsCard />
-              <ContentStatsCard />
-              <EngagementStatsCard />
-              <OfferStatsCard />
+              <Suspense fallback={<CardLoadingFallback />}>
+                <ProjectStatsCard />
+              </Suspense>
+              <Suspense fallback={<CardLoadingFallback />}>
+                <ContentStatsCard />
+              </Suspense>
+              <Suspense fallback={<CardLoadingFallback />}>
+                <EngagementStatsCard />
+              </Suspense>
+              <Suspense fallback={<CardLoadingFallback />}>
+                <OfferStatsCard />
+              </Suspense>
             </div>
 
             {/* Onboarding Funnel */}
-            <OnboardingFunnelCard />
+            <Suspense fallback={<CardLoadingFallback />}>
+              <OnboardingFunnelCard />
+            </Suspense>
 
             {/* Relaunch Analytics */}
-            <RelaunchStatsCard />
+            <Suspense fallback={<CardLoadingFallback />}>
+              <RelaunchStatsCard />
+            </Suspense>
           </TabsContent>
 
           {/* Users Tab */}
@@ -1064,27 +1093,37 @@ const AdminDashboard = () => {
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-4 md:space-y-8">
-            <FeatureUsageHeatmapWrapper />
+            <Suspense fallback={<TabLoadingFallback />}>
+              <AnalyticsTabContent />
+            </Suspense>
           </TabsContent>
 
           {/* Activity Logs Tab */}
           <TabsContent value="activity" className="space-y-4 md:space-y-8">
-            <ActivityLogsTab />
+            <Suspense fallback={<TabLoadingFallback />}>
+              <ActivityLogsTab />
+            </Suspense>
           </TabsContent>
 
           {/* Monitoring Tab */}
           <TabsContent value="monitoring" className="space-y-4 md:space-y-8">
-            <MonitoringTab users={users} />
+            <Suspense fallback={<TabLoadingFallback />}>
+              <MonitoringTab users={users} />
+            </Suspense>
           </TabsContent>
 
           {/* Config Tab */}
           <TabsContent value="config" className="space-y-4 md:space-y-8">
-            <ConfigTab />
+            <Suspense fallback={<TabLoadingFallback />}>
+              <ConfigTab />
+            </Suspense>
           </TabsContent>
 
           {/* Support Tab */}
           <TabsContent value="support" className="space-y-4 md:space-y-8">
-            <SupportTicketsTab />
+            <Suspense fallback={<TabLoadingFallback />}>
+              <SupportTicketsTab />
+            </Suspense>
           </TabsContent>
 
           {/* Coupons Tab */}
@@ -1094,7 +1133,9 @@ const AdminDashboard = () => {
 
           {/* Assets Tab */}
           <TabsContent value="assets" className="space-y-4 md:space-y-8">
-            <MarketingAssetsTab />
+            <Suspense fallback={<TabLoadingFallback />}>
+              <MarketingAssetsTab />
+            </Suspense>
           </TabsContent>
         </Tabs>
       </main>
