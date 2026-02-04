@@ -85,6 +85,33 @@ async function triggerSureContactOrderSync(orderData: OrderData) {
   }
 }
 
+// Notify admins about subscription events
+async function notifyAdmins(type: 'pro_signup' | 'pro_cancellation', email: string, userName?: string) {
+  const baseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  
+  try {
+    const response = await fetch(`${baseUrl}/functions/v1/admin-notify`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({
+        type,
+        user_email: email,
+        details: {
+          user_name: userName,
+        },
+      }),
+    });
+    
+    logStep("Admin notification sent", { type, email, status: response.status });
+  } catch (error) {
+    logStep("Admin notification error", { type, email, error: String(error) });
+  }
+}
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -160,8 +187,11 @@ serve(async (req) => {
         eventType = "subscription_started";
         logStep("Checkout completed", { customerEmail, mode: session.mode });
 
-        // Sync order to SureContact E-Commerce tab
+        // Sync order to SureContact E-Commerce tab and notify admins
         if (customerEmail) {
+          // Notify admins of new Pro signup
+          EdgeRuntime.waitUntil(notifyAdmins('pro_signup', customerEmail));
+          
           try {
             const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
             const orderData: OrderData = {
@@ -222,6 +252,11 @@ serve(async (req) => {
         }
         eventType = "subscription_cancelled";
         logStep("Subscription deleted", { customerEmail, subscriptionId: subscription.id });
+        
+        // Notify admins of Pro cancellation
+        if (customerEmail) {
+          EdgeRuntime.waitUntil(notifyAdmins('pro_cancellation', customerEmail));
+        }
         break;
       }
 
