@@ -1,59 +1,148 @@
 
+# Fix Scheduled Social Media Posts Not Publishing
 
-# Remove "See how it works" Link from Welcome Step
+## Problem Summary
 
-## Overview
+Scheduled posts on the content calendar are not being published automatically. The "Post Now" option works, but posts scheduled for future dates never get published.
 
-Remove the secondary "See how it works" link from the first onboarding screen to simplify the welcome step and focus users on the primary "Get started" action.
+## Root Cause
+
+**There is no background job to process scheduled posts.** The system correctly saves posts to the `scheduled_posts` table with a `scheduled_for` timestamp and `pending` status, but nothing ever picks them up and publishes them when the time comes.
+
+Currently in your database:
+- 10 pending posts waiting to be published
+- Some dating back to December 2025 that were never processed
+- Existing cron jobs only handle email notifications and token refresh - not post publishing
 
 ---
 
-## Current State
+## Solution
 
-The WelcomeStep component currently displays:
-- Primary button: "Get started"
-- Secondary link: "See how it works" (links to /how-it-works)
+Create a new edge function `process-scheduled-posts` that runs on a cron schedule to:
+1. Query pending posts whose `scheduled_for` time has passed
+2. Call the appropriate platform posting function for each
+3. Update the post status to `posted` or `failed`
+4. Update the linked `content_planner` item status
 
 ---
 
-## Change Required
+## Implementation Plan
 
-**File to modify:** `src/components/onboarding/WelcomeStep.tsx`
+### 1. Create New Edge Function
 
-Remove the anchor element containing the "See how it works" link and the `ExternalLink` icon import since it will no longer be needed.
+**File:** `supabase/functions/process-scheduled-posts/index.ts`
 
-**Before:**
-```tsx
-<div className="flex flex-col items-center gap-3">
-  <Button size="lg" onClick={onNext} className="min-w-48">
-    Get started
-    <ArrowRight className="w-4 h-4 ml-2" />
-  </Button>
-  <a
-    href="/how-it-works"
-    target="_blank"
-    rel="noopener noreferrer"
-    className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
-  >
-    See how it works
-    <ExternalLink className="w-3 h-3" />
-  </a>
-</div>
+This function will:
+- Query `scheduled_posts` where `status = 'pending'` and `scheduled_for <= NOW()`
+- For each post, call the appropriate posting function:
+  - Pinterest: `post-to-pinterest`
+  - Instagram: `post-to-instagram`
+  - TikTok: `post-to-tiktok` or `post-to-tiktok-photo`
+  - Facebook: `post-to-facebook`
+  - Threads: `post-to-threads`
+- Update `scheduled_posts.status` to `posted` or `failed`
+- Update `scheduled_posts.posted_at` and `result`
+- Update linked `content_planner.status` to `completed` or `failed`
+- Handle errors gracefully and continue processing other posts
+
+### 2. Add Cron Job
+
+Create a database migration to add a pg_cron job that runs every 5 minutes:
+
+```sql
+SELECT cron.schedule(
+  'process-scheduled-posts',
+  '*/5 * * * *',  -- Every 5 minutes
+  $$
+  SELECT net.http_post(
+    url := 'https://ydhagqgurqhlguxkkppb.supabase.co/functions/v1/process-scheduled-posts',
+    headers := '{"Content-Type": "application/json", "Authorization": "Bearer SERVICE_ROLE_KEY"}'::jsonb,
+    body := '{}'::jsonb
+  ) AS request_id;
+  $$
+);
 ```
 
-**After:**
-```tsx
-<Button size="lg" onClick={onNext} className="min-w-48">
-  Get started
-  <ArrowRight className="w-4 h-4 ml-2" />
-</Button>
+### 3. Update Config
+
+**File:** `supabase/config.toml`
+
+Add function configuration:
+```toml
+[functions.process-scheduled-posts]
+verify_jwt = false
 ```
 
 ---
 
-## Summary
+## Technical Details
 
-| File | Change |
-|------|--------|
-| `src/components/onboarding/WelcomeStep.tsx` | Remove "See how it works" link and ExternalLink import |
+### Edge Function Logic Flow
 
+```text
+process-scheduled-posts runs every 5 minutes
+         |
+         v
+Query: scheduled_posts WHERE status='pending' AND scheduled_for <= NOW()
+         |
+         v
+For each pending post:
+    |
+    +-- Get user's social connection for the platform
+    |
+    +-- Build request body based on platform
+    |
+    +-- Call platform-specific posting function internally
+    |
+    +-- On success:
+    |      Update scheduled_posts: status='posted', posted_at=NOW()
+    |      Update content_planner: status='completed'
+    |
+    +-- On failure:
+           Update scheduled_posts: status='failed', result={error}
+           Update content_planner: status='failed'
+```
+
+### Platform-Specific Handling
+
+| Platform | Function to Call | Required Data |
+|----------|------------------|---------------|
+| Pinterest | `post-to-pinterest` | board_id, title, description, media_url, link |
+| Instagram | `post-to-instagram` | caption, imageUrl/videoUrl, mediaType |
+| TikTok | `post-to-tiktok` or `post-to-tiktok-photo` | Based on media type |
+| Facebook | `post-to-facebook` | message, imageUrl |
+| Threads | `post-to-threads` | text, imageUrl |
+
+### Error Handling
+
+- Each post is processed independently; failures don't block other posts
+- Failed posts are marked with error details in the `result` column
+- Retry logic: Failed posts remain in the queue for manual retry or can be configured to auto-retry after a delay
+
+---
+
+## Files to Create/Modify
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `supabase/functions/process-scheduled-posts/index.ts` | Create | Main processing function |
+| `supabase/config.toml` | Modify | Add function config |
+| Database migration | Create | Add pg_cron job |
+
+---
+
+## Edge Cases
+
+| Scenario | Handling |
+|----------|----------|
+| Token expired during posting | Refresh token first, then retry |
+| User disconnected platform | Mark as failed with "Platform disconnected" error |
+| Media URL no longer valid | Mark as failed with error details |
+| Multiple posts due at same time | Process in order, one at a time |
+| Function timeout | Use `waitUntil` for background processing per the useful context |
+
+---
+
+## Cleanup
+
+After implementation, consider cleaning up the 10 stale pending posts from December/January that will never be relevant to post now.
