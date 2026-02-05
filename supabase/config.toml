@@ -1,5 +1,8 @@
 project_id = "ydhagqgurqhlguxkkppb"
 
+ [functions.process-scheduled-posts]
+ verify_jwt = false
+ 
 [functions.get-payment-config]
 verify_jwt = false
 
