@@ -69,6 +69,7 @@ import ContentVault from "./pages/ContentVault";
 import ContentVaultCategory from "./pages/ContentVaultCategory";
 import HelpSupport from "./pages/HelpSupport";
 import HelpSupportTicket from "./pages/HelpSupportTicket";
+import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -118,6 +119,16 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/checkout/success" element={<CheckoutSuccess />} />
+            
+            {/* Onboarding flow (shown once after registration) */}
+            <Route
+              path="/onboarding"
+              element={
+                <ProtectedRoute>
+                  <Onboarding />
+                </ProtectedRoute>
+              }
+            />
             
             {/* Feature pages */}
             <Route path="/features/assessments" element={<AssessmentsFeature />} />

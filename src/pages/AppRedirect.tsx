@@ -86,6 +86,7 @@ const AppRedirect = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [checking, setChecking] = useState(true);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -134,8 +135,44 @@ const AppRedirect = () => {
   }, [dates.prelaunchStart, programWeeks, restWeeks]);
 
   useEffect(() => {
-    const redirectToProject = async () => {
+    const checkOnboardingStatus = async () => {
       if (authLoading) return;
+      
+      if (!user) {
+        navigate('/auth', { replace: true });
+        return;
+      }
+
+      // Check if user has completed onboarding
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('onboarding_completed_at')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error checking onboarding status:', error);
+        }
+
+        // If onboarding not completed, redirect to onboarding
+        if (!profile?.onboarding_completed_at) {
+          navigate('/onboarding', { replace: true });
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking onboarding:', error);
+      } finally {
+        setCheckingOnboarding(false);
+      }
+    };
+
+    checkOnboardingStatus();
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    const redirectToProject = async () => {
+      if (authLoading || checkingOnboarding) return;
       
       if (!user) {
         navigate('/auth', { replace: true });
@@ -200,7 +237,7 @@ const AppRedirect = () => {
     };
 
     redirectToProject();
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, checkingOnboarding]);
 
   const handleNextStep = () => {
     if (!projectName.trim()) {
@@ -294,7 +331,7 @@ const AppRedirect = () => {
     handleCreateProject();
   };
 
-  if (authLoading || checking) {
+  if (authLoading || checking || checkingOnboarding) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
