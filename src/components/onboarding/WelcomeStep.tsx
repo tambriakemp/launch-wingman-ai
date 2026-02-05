@@ -1,5 +1,5 @@
  import { Button } from "@/components/ui/button";
- import { CheckCircle2, ArrowRight, ExternalLink } from "lucide-react";
+import { CheckCircle2, ArrowRight } from "lucide-react";
  
  interface WelcomeStepProps {
    onNext: () => void;
@@ -43,21 +43,10 @@
        </div>
  
        {/* Actions */}
-       <div className="flex flex-col items-center gap-3">
-         <Button size="lg" onClick={onNext} className="min-w-48">
-           Get started
-           <ArrowRight className="w-4 h-4 ml-2" />
-         </Button>
-         <a
-           href="/how-it-works"
-           target="_blank"
-           rel="noopener noreferrer"
-           className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
-         >
-           See how it works
-           <ExternalLink className="w-3 h-3" />
-         </a>
-       </div>
+      <Button size="lg" onClick={onNext} className="min-w-48">
+        Get started
+        <ArrowRight className="w-4 h-4 ml-2" />
+      </Button>
      </div>
    );
  };
