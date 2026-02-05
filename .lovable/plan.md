@@ -1,6 +1,10 @@
 
 # Fix Scheduled Social Media Posts Not Publishing
 
+ **STATUS: ✅ IMPLEMENTED**
+ 
+ ---
+ 
 ## Problem Summary
 
 Scheduled posts on the content calendar are not being published automatically. The "Post Now" option works, but posts scheduled for future dates never get published.
@@ -146,3 +150,22 @@ For each pending post:
 ## Cleanup
 
 After implementation, consider cleaning up the 10 stale pending posts from December/January that will never be relevant to post now.
+ 
+ ---
+ 
+ ## Implementation Complete
+ 
+ **Files Created:**
+ - `supabase/functions/process-scheduled-posts/index.ts` - Edge function that processes pending scheduled posts
+ 
+ **Files Modified:**
+ - `supabase/config.toml` - Added function configuration
+ 
+ **Database Changes:**
+ - Added pg_cron job `process-scheduled-posts` running every 5 minutes
+ 
+ **Tested:** The function successfully:
+ - Queries pending posts whose `scheduled_for` time has passed
+ - Posts to Instagram (confirmed 1 successful post)
+ - Handles errors gracefully (expired tokens, missing data)
+ - Updates `scheduled_posts` and `content_planner` status appropriately
