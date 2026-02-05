@@ -1,218 +1,235 @@
 
 
-# Implement Download Tracking for Popular Resources
+# Create Multi-Step Onboarding Flow
 
 ## Overview
 
-This change adds a download tracking system to make the "Popular Resources" section data-driven, showing resources based on actual user engagement. It also includes a fallback mechanism to display the first resource from each of the first 5 categories when there's insufficient download data.
+This plan implements a 7-screen onboarding experience that displays once after registration, helping new users understand Launchely's value proposition, workflow, and features before creating their first project. The design follows the CoSchedule-style reference: clean, centered layouts with minimal illustrations, professional SaaS aesthetic, and clear navigation.
 
 ---
 
-## Approach
+## Architecture
 
-There are two options for tracking downloads:
+### Data Model
 
-| Approach | Pros | Cons |
-|----------|------|------|
-| **A: Add download_count column to resources** | Simple queries, fast lookups, no join needed | Requires increment on every download, less granular data |
-| **B: Create separate tracking table** | Detailed analytics (who, when, which resource), can track trends over time | Requires joins, more storage, slightly more complex queries |
+Add an `onboarding_completed_at` column to the `profiles` table to track whether a user has completed onboarding:
 
-**Recommendation**: Option A (download_count column) is sufficient for the popularity feature while keeping things simple. If you need detailed analytics later, we can add Option B.
+```sql
+ALTER TABLE profiles 
+ADD COLUMN onboarding_completed_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;
+```
+
+### Flow Logic
+
+```text
+User signs up / signs in
+         |
+         v
+  Check profiles.onboarding_completed_at
+         |
+    +----+----+
+    |         |
+  NULL     Not NULL
+    |         |
+    v         v
+  Show      Go to
+Onboarding   /app
+```
 
 ---
 
 ## Implementation Plan
 
-### 1. Database Changes
+### 1. Database Migration
 
-Add a `download_count` column to the `content_vault_resources` table:
+Add `onboarding_completed_at` column to `profiles` table to track completion status.
 
-```sql
-ALTER TABLE content_vault_resources 
-ADD COLUMN download_count INTEGER NOT NULL DEFAULT 0;
-```
+### 2. Create Onboarding Components
 
-### 2. Update Download Tracking
+**New Files:**
 
-Modify the `vault-download` edge function to increment the download count when a resource is downloaded.
-
-**File: `supabase/functions/vault-download/index.ts`**
-
-After validating the resource exists (around line 53), add:
-
-```typescript
-// Increment download count
-await supabase
-  .from('content_vault_resources')
-  .update({ download_count: (resource.download_count || 0) + 1 })
-  .eq('id', resource.id);
-```
-
-Note: The query will need to select `id, download_count` instead of just `id`.
-
-### 3. Track Canva Link Opens
-
-Since Canva links open directly in a new tab without going through the edge function, we need to track those clicks in the frontend.
-
-**Files to update:**
-- `src/components/content-vault/ResourceCard.tsx` - Track when Canva cards are clicked
-- `src/components/content-vault/PopularResourceItem.tsx` - Track when items are clicked
-- `src/components/content-vault/ResourceLightbox.tsx` - Track external link clicks
-
-**Add a shared tracking function:**
-
-```typescript
-// Helper to track resource access
-const trackResourceAccess = async (resourceId: string) => {
-  try {
-    await supabase.rpc('increment_resource_download', { resource_id: resourceId });
-  } catch (error) {
-    console.error('Failed to track resource access:', error);
-  }
-};
-```
-
-**Create a database function for atomic increment:**
-
-```sql
-CREATE OR REPLACE FUNCTION increment_resource_download(resource_id UUID)
-RETURNS void AS $$
-BEGIN
-  UPDATE content_vault_resources 
-  SET download_count = download_count + 1 
-  WHERE id = resource_id;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-```
-
-### 4. Update Popular Resources Query
-
-**File: `src/pages/ContentVault.tsx`**
-
-Update the query to:
-1. First try to get resources with the highest download counts
-2. If no resources have downloads, fall back to first resource from each of the first 5 categories
-
-```typescript
-// Fetch popular/recent resources
-const { data: popularResources, isLoading: popularLoading } = useQuery({
-  queryKey: ['content-vault-popular-resources', categories],
-  queryFn: async () => {
-    // First, try to get resources sorted by download count
-    const { data: topDownloaded, error: topError } = await supabase
-      .from('content_vault_resources')
-      .select(`
-        id,
-        title,
-        resource_type,
-        resource_url,
-        download_count,
-        subcategory:content_vault_subcategories!inner(
-          name,
-          category:content_vault_categories!inner(name, slug)
-        )
-      `)
-      .gt('download_count', 0)
-      .order('download_count', { ascending: false })
-      .limit(5);
-    
-    if (topError) throw topError;
-    
-    // If we have popular resources with downloads, use them
-    if (topDownloaded && topDownloaded.length >= 5) {
-      return topDownloaded;
-    }
-    
-    // Fallback: Get first resource from each of the first 5 categories
-    if (!categories || categories.length === 0) {
-      return topDownloaded || [];
-    }
-    
-    const first5Categories = categories.slice(0, 5);
-    const fallbackResources = [];
-    
-    for (const category of first5Categories) {
-      const { data: firstResource } = await supabase
-        .from('content_vault_resources')
-        .select(`
-          id,
-          title,
-          resource_type,
-          resource_url,
-          download_count,
-          subcategory:content_vault_subcategories!inner(
-            name,
-            category:content_vault_categories!inner(name, slug)
-          )
-        `)
-        .eq('subcategory.category.id', category.id)
-        .order('position', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      
-      if (firstResource) {
-        fallbackResources.push(firstResource);
-      }
-    }
-    
-    // Combine any downloaded resources with fallback to reach 5
-    const combined = [...(topDownloaded || [])];
-    const existingIds = new Set(combined.map(r => r.id));
-    
-    for (const resource of fallbackResources) {
-      if (!existingIds.has(resource.id) && combined.length < 5) {
-        combined.push(resource);
-        existingIds.add(resource.id);
-      }
-    }
-    
-    return combined;
-  },
-  enabled: canAccessVault && !!categories,
-});
-```
-
----
-
-## Files to Modify
-
-| File | Changes |
+| File | Purpose |
 |------|---------|
-| Database Migration | Add `download_count` column and `increment_resource_download` function |
-| `supabase/functions/vault-download/index.ts` | Increment download count after successful download |
-| `src/pages/ContentVault.tsx` | Update popular resources query with fallback logic |
-| `src/components/content-vault/ResourceCard.tsx` | Add tracking for Canva link clicks |
-| `src/components/content-vault/PopularResourceItem.tsx` | Add tracking for item clicks |
-| `src/components/content-vault/ResourceLightbox.tsx` | Add tracking for external link clicks |
+| `src/pages/Onboarding.tsx` | Main onboarding page with step navigation |
+| `src/components/onboarding/OnboardingStep.tsx` | Reusable step wrapper component |
+| `src/components/onboarding/WelcomeStep.tsx` | Step 1: Hero introduction |
+| `src/components/onboarding/PhasesStep.tsx` | Step 2: Phase-based workflow |
+| `src/components/onboarding/TasksStep.tsx` | Step 3: Task guidance |
+| `src/components/onboarding/AIStep.tsx` | Step 4: AI assistance |
+| `src/components/onboarding/ResourcesStep.tsx` | Step 5: Content Vault resources |
+| `src/components/onboarding/CommunityStep.tsx` | Step 6: Skool community |
+| `src/components/onboarding/ReadyStep.tsx` | Step 7: Final CTA |
+
+### 3. Onboarding Page Layout
+
+Inspired by the CoSchedule screenshots:
+
+```text
++-----------------------------------------------+
+|                                               |
+|              [Launchely Logo]                 |
+|                                               |
+|   +---------------------------------------+   |
+|   |                                       |   |
+|   |           [Headline]                  |   |
+|   |           [Subtext]                   |   |
+|   |                                       |   |
+|   |    [Visual/Illustration/Timeline]     |   |
+|   |                                       |   |
+|   +---------------------------------------+   |
+|                                               |
+|      [Back]             [Step Dots]   [Next]  |
+|                                               |
++-----------------------------------------------+
+```
+
+### 4. Step Content Details
+
+**Step 1: Welcome**
+- Headline: "Stop buying courses. Start launching."
+- Subtext: "Launchely helps you plan, build, and launch a real offer using guided steps and AI support - without overwhelm."
+- Primary Button: "Get started"
+- Secondary Link: "See how it works" (opens /how-it-works in new tab)
+- Visual: Simple illustration with checkmarks
+
+**Step 2: Phases**
+- Headline: "Everything is organized into phases"
+- Subtext: "Each project walks you through Planning, Messaging, Build, and Launch - so you always know what to do next."
+- Visual: Horizontal phase timeline with icons (Planning -> Messaging -> Build -> Content -> Launch)
+
+**Step 3: Tasks**
+- Headline: "No guessing. Just next steps."
+- Subtext: "Each phase is broken into small, focused tasks with time estimates, guidance, and optional AI help."
+- Visual: Checklist-style bullets showing example tasks
+
+**Step 4: AI Support**
+- Headline: "AI support, when you need it"
+- Subtext: "Use AI to clarify, simplify, or get unstuck - without replacing your voice or decisions."
+- Visual: Feature callout cards (Listen to explanation, Generate examples, Simplify responses)
+
+**Step 5: Resources**
+- Headline: "Launch faster with built-in resources"
+- Subtext: "Pro users get access to templates, planners, Canva assets, and workbooks - so you don't start from scratch."
+- Note: "Free users can still launch with their own content."
+- Visual: Grid of resource type icons
+
+**Step 6: Community**
+- Headline: "Support when you get stuck"
+- Subtext: "Join the Skool community to ask questions, get feedback, and launch alongside others using Launchely."
+- CTA Button: "Join the community" (external link to Skool)
+- Visual: Community/users illustration
+
+**Step 7: Ready**
+- Headline: "Ready to launch something real?"
+- Subtext: "Create your first project and start with the Planning phase. One step at a time."
+- Primary Button: "Create my first project"
+- Visual: Rocket or launch illustration
+
+### 5. Navigation Logic
+
+- Step indicators (dots) showing progress
+- "Back" button (hidden on step 1)
+- "Next" button advances through steps
+- On final step, "Create my first project" marks onboarding complete and redirects to `/app`
+- Skip option available via keyboard shortcut or subtle link
+
+### 6. Update Auth Flow
+
+Modify `AuthContext.tsx` to check onboarding status after login/signup:
+
+```typescript
+// After successful sign in
+const { data: profile } = await supabase
+  .from('profiles')
+  .select('onboarding_completed_at')
+  .eq('user_id', user.id)
+  .single();
+
+if (!profile?.onboarding_completed_at) {
+  navigate('/onboarding');
+} else {
+  navigate('/app');
+}
+```
+
+### 7. Add Route
+
+Update `App.tsx` to include the onboarding route:
+
+```typescript
+<Route
+  path="/onboarding"
+  element={
+    <ProtectedRoute>
+      <Onboarding />
+    </ProtectedRoute>
+  }
+/>
+```
 
 ---
 
-## Tracking Points Summary
+## Visual Design Specifications
 
-| Action | Where Tracked |
-|--------|---------------|
-| Download via vault-download function | Edge function (increments on successful download) |
-| Canva link click from ResourceCard | Frontend before opening link |
-| Resource click from PopularResourceItem | Frontend before opening link |
-| External link click from Lightbox | Frontend before opening link |
-
----
-
-## Visual Behavior
-
-| Scenario | Popular Resources Shows |
-|----------|------------------------|
-| Resources have download data | Top 5 by download_count |
-| Some resources have downloads | Downloaded resources + fallback from categories |
-| No download data yet | First resource from each of first 5 categories |
+| Element | Style |
+|---------|-------|
+| Background | Light neutral (`bg-background`) |
+| Card/Container | White with subtle shadow, max-width 800px |
+| Headlines | text-2xl or text-3xl, font-bold, text-foreground |
+| Subtext | text-muted-foreground, max-width for readability |
+| Primary Button | Solid black (`bg-primary`), lg size |
+| Secondary/Skip | Ghost or link variant |
+| Step Dots | Small circles, filled for current/completed |
+| Icons | Lucide icons, consistent sizing |
+| Animations | Subtle framer-motion fade/slide transitions |
 
 ---
 
-## Future Considerations
+## Files to Create/Modify
 
-Once download tracking is in place, you could:
-- Show download counts on admin view
-- Add "trending" badges for resources with recent high activity
-- Create admin reports on most popular content
-- Track downloads by time period (weekly/monthly trending)
+| File | Action | Purpose |
+|------|--------|---------|
+| Database Migration | Create | Add `onboarding_completed_at` column |
+| `src/pages/Onboarding.tsx` | Create | Main onboarding flow container |
+| `src/components/onboarding/OnboardingStep.tsx` | Create | Reusable step wrapper |
+| `src/components/onboarding/WelcomeStep.tsx` | Create | Step 1 content |
+| `src/components/onboarding/PhasesStep.tsx` | Create | Step 2 content |
+| `src/components/onboarding/TasksStep.tsx` | Create | Step 3 content |
+| `src/components/onboarding/AIStep.tsx` | Create | Step 4 content |
+| `src/components/onboarding/ResourcesStep.tsx` | Create | Step 5 content |
+| `src/components/onboarding/CommunityStep.tsx` | Create | Step 6 content |
+| `src/components/onboarding/ReadyStep.tsx` | Create | Step 7 content |
+| `src/App.tsx` | Modify | Add `/onboarding` route |
+| `src/contexts/AuthContext.tsx` | Modify | Check onboarding status after auth |
+| `src/pages/AppRedirect.tsx` | Modify | Redirect new users to onboarding |
+
+---
+
+## Mobile Responsiveness
+
+- Stack layouts vertically on mobile
+- Full-width buttons
+- Reduce padding/margins for smaller screens
+- Timeline becomes vertical on mobile
+- Touch-friendly step navigation
+
+---
+
+## Edge Cases
+
+| Scenario | Handling |
+|----------|----------|
+| User refreshes during onboarding | Resume at current step (stored in state/URL) |
+| User directly navigates to /app | Check onboarding status, redirect if incomplete |
+| User skips onboarding | Allow skip, mark as completed |
+| Existing users (before feature) | Treat as completed (migration sets default) |
+
+---
+
+## Future Enhancements
+
+- Personalization based on assessment results
+- Video tutorials embedded in steps
+- A/B testing different onboarding flows
+- Analytics tracking for step completion rates
 
