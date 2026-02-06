@@ -60,7 +60,7 @@ const createNavSections = (projectId?: string): NavSection[] => [
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: projectId ? `/projects/${projectId}/dashboard` : "#", requiresProject: !projectId },
       { id: "tasks", label: "Tasks", icon: Kanban, href: projectId ? `/projects/${projectId}/tasks` : "#", requiresProject: !projectId },
-      { id: "content", label: "Content", icon: MessageSquareText, href: projectId ? `/projects/${projectId}/content` : "#", requiresProject: !projectId },
+      { id: "content", label: "Social Planner", icon: MessageSquareText, href: projectId ? `/projects/${projectId}/content` : "#", isProOnly: true, requiresProject: !projectId },
       { id: "playbook", label: "Playbook", icon: BookOpen, href: `/playbook` },
       { id: "insights", label: "Insights", icon: Lightbulb, href: projectId ? `/projects/${projectId}/insights` : "#", isProOnly: true, requiresProject: !projectId },
       { id: "library", label: "Library", icon: FolderOpen, href: projectId ? `/projects/${projectId}/library` : "#", requiresProject: !projectId },

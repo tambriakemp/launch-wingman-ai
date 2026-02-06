@@ -88,7 +88,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
     return (
       <div className="max-w-7xl mx-auto space-y-8 pb-12">
         <PlanPageHeader
-          title="Content"
+          title="Social Planner"
           description="Ideas for what to say next, based on where you are in your project."
           tipText="These are starting points, not requirements. Use what feels right for you."
         />
@@ -101,7 +101,7 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
       {/* Section A: Orientation Header */}
       <PlanPageHeader
-        title="Social Media Schedule"
+        title="Social Planner"
         description="View scheduled content on your calendar. Click any day to manage posts."
         tipText="These are starting points, not requirements. Use what feels right for you."
       />
