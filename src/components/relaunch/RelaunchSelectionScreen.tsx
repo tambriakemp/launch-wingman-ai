@@ -4,12 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { ArrowRight, ArrowLeft, Eye, EyeOff, CheckSquare, Square } from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { ArrowRight, ArrowLeft, CheckSquare, Square } from "lucide-react";
 
 export type RelaunchSection = 
   | "target_audience"
@@ -56,7 +51,7 @@ export function RelaunchSelectionScreen({
   const [revisitSections, setRevisitSections] = useState<RelaunchSection[]>([]);
   // Memory consent - defaults to ON
   const [skipMemory, setSkipMemory] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  
 
   const toggleKeep = (id: RelaunchSection) => {
     setKeptSections((prev) =>
@@ -109,13 +104,21 @@ export function RelaunchSelectionScreen({
       className="max-w-xl mx-auto py-12 px-4 space-y-6"
     >
       {/* Header */}
-      <div className="text-center space-y-2">
+      <div className="text-center space-y-3">
         <h1 className="text-2xl font-semibold text-foreground">
           What still feels true?
         </h1>
         <p className="text-muted-foreground">
           Choose what to keep and what to revisit
         </p>
+        <div className="text-sm text-muted-foreground max-w-md mx-auto space-y-1.5 pt-1">
+          <p>
+            A <span className="font-medium text-foreground">relaunch</span> lets you run your offer again — without starting from scratch. Keep what worked, refresh what didn't, and launch faster the second time around.
+          </p>
+          <p>
+            Select the sections you want to carry over, check off what needs a fresh look, and we'll set everything up for you.
+          </p>
+        </div>
       </div>
 
       {/* Keep by default section (Foundational Memory) */}
@@ -230,31 +233,21 @@ export function RelaunchSelectionScreen({
         </CardContent>
       </Card>
 
-      {/* Advanced option - subtle, no guilt */}
-      <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
-        <CollapsibleTrigger asChild>
-          <button className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors mx-auto">
-            {showAdvanced ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-            {showAdvanced ? "Hide options" : "More options"}
-          </button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="mt-4">
-          <Card className="border-border/30 bg-card/50">
-            <CardContent className="pt-4">
-              <label className="flex items-center justify-between cursor-pointer">
-                <div>
-                  <p className="text-sm text-foreground">Start without using past projects</p>
-                  <p className="text-xs text-muted-foreground">Begin fresh without any carried-over data</p>
-                </div>
-                <Switch
-                  checked={skipMemory}
-                  onCheckedChange={setSkipMemory}
-                />
-              </label>
-            </CardContent>
-          </Card>
-        </CollapsibleContent>
-      </Collapsible>
+      {/* Fresh start option - always visible */}
+      <Card className="border-border/30 bg-card/50">
+        <CardContent className="pt-4 pb-4">
+          <label className="flex items-center justify-between cursor-pointer">
+            <div>
+              <p className="text-sm text-foreground">Start without using past projects</p>
+              <p className="text-xs text-muted-foreground">Begin fresh without any carried-over data</p>
+            </div>
+            <Switch
+              checked={skipMemory}
+              onCheckedChange={setSkipMemory}
+            />
+          </label>
+        </CardContent>
+      </Card>
 
       {/* CTAs */}
       <div className="flex items-center justify-between pt-4">
