@@ -13,6 +13,7 @@ import {
   Layout,
   Palette,
   MessageSquare,
+  MessageSquareText,
   Rocket,
   Sparkles,
   X,
@@ -58,6 +59,12 @@ const features = [
     icon: Rocket,
     title: "Execute",
     description: "Manage tasks, schedule social posts, and track your launch timeline visually.",
+    href: "/features/execute",
+  },
+  {
+    icon: MessageSquareText,
+    title: "Social Planner",
+    description: "Plan, schedule, and publish your launch content directly to Pinterest, Instagram, and Facebook.",
     href: "/features/execute",
   },
   {
