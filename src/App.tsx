@@ -28,6 +28,7 @@ import AdminDocs from "./pages/AdminDocs";
 import AdminVideoInstructions from "./pages/AdminVideoInstructions";
 import AdminBrandKit from "./pages/AdminBrandKit";
 import NotFound from "./pages/NotFound";
+import SalesFunnel from "./pages/SalesFunnel";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 
@@ -118,6 +119,7 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/go" element={<SalesFunnel />} />
             <Route path="/checkout/success" element={<CheckoutSuccess />} />
             
             {/* Onboarding flow (shown once after registration) */}
