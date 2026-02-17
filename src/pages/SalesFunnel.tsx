@@ -211,10 +211,10 @@ const newWay = [
 ];
 
 const ComparisonSection = () => (
-  <section className="py-20 md:py-28 bg-card/30 border-t border-border/10">
+  <section className="py-20 md:py-28 bg-white border-t border-border/10">
     <div className="container mx-auto px-4">
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger} className="text-center mb-14">
-        <motion.h2 variants={fadeUp} className="text-3xl md:text-5xl font-extrabold text-primary-foreground mb-4">
+        <motion.h2 variants={fadeUp} className="text-3xl md:text-5xl font-extrabold text-primary mb-4">
           The Old Way vs{" "}
           <span className="text-accent">The Launchely Way</span>
         </motion.h2>
