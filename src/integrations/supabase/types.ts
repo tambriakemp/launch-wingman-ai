@@ -2284,6 +2284,127 @@ export type Database = {
         }
         Relationships: []
       }
+      utm_click_events: {
+        Row: {
+          clicked_at: string
+          id: string
+          ip_address: string | null
+          referrer: string | null
+          user_agent: string | null
+          utm_link_id: string
+        }
+        Insert: {
+          clicked_at?: string
+          id?: string
+          ip_address?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+          utm_link_id: string
+        }
+        Update: {
+          clicked_at?: string
+          id?: string
+          ip_address?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+          utm_link_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "utm_click_events_utm_link_id_fkey"
+            columns: ["utm_link_id"]
+            isOneToOne: false
+            referencedRelation: "utm_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      utm_folders: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      utm_links: {
+        Row: {
+          base_url: string
+          click_count: number
+          created_at: string
+          folder_id: string | null
+          full_url: string
+          id: string
+          label: string
+          short_code: string
+          updated_at: string
+          user_id: string
+          utm_campaign: string
+          utm_content: string | null
+          utm_medium: string
+          utm_source: string
+          utm_term: string | null
+        }
+        Insert: {
+          base_url: string
+          click_count?: number
+          created_at?: string
+          folder_id?: string | null
+          full_url: string
+          id?: string
+          label: string
+          short_code: string
+          updated_at?: string
+          user_id: string
+          utm_campaign: string
+          utm_content?: string | null
+          utm_medium: string
+          utm_source: string
+          utm_term?: string | null
+        }
+        Update: {
+          base_url?: string
+          click_count?: number
+          created_at?: string
+          folder_id?: string | null
+          full_url?: string
+          id?: string
+          label?: string
+          short_code?: string
+          updated_at?: string
+          user_id?: string
+          utm_campaign?: string
+          utm_content?: string | null
+          utm_medium?: string
+          utm_source?: string
+          utm_term?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "utm_links_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "utm_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_logs: {
         Row: {
           created_at: string
