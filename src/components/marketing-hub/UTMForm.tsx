@@ -44,13 +44,15 @@ const UTM_SOURCES = [
 ];
 
 const UTM_MEDIUMS = [
-  "cpc", "cpm", "cpa", "cpl", "cpv", "social", "organic",
-  "email", "referral", "display", "affiliate", "banner",
-  "retargeting", "video", "native", "content", "paid_social",
-  "organic_social", "paid_search", "organic_search", "influencer",
-  "partner", "pr", "direct_mail", "sms", "push", "podcast",
-  "webinar", "event", "print", "outdoor", "tv", "radio",
-  "qr_code", "story", "reel", "carousel", "feed_post",
+  "cost per click (cpc)", "cost per mille (cpm)", "cost per acquisition (cpa)",
+  "cost per lead (cpl)", "cost per view (cpv)", "social", "organic",
+  "email", "referral", "display", "affiliate", "banner", "video",
+  "retargeting", "native", "content", "paid social", "organic social",
+  "paid search", "organic search", "influencer", "partner",
+  "public relations (pr)", "direct mail", "short message service (sms)",
+  "push notification", "podcast", "webinar", "event", "print",
+  "outdoor", "television (tv)", "radio", "quick response code (qr_code)",
+  "story", "reel", "carousel", "feed post",
 ];
 
 const generateFullUrl = (data: UTMFormData): string => {
