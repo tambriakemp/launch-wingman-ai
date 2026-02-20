@@ -27,11 +27,7 @@ const UTMBuilder = () => {
   const { data: folders = [] } = useQuery({
     queryKey: ["utm-folders", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("utm_folders")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("name");
+      const { data, error } = await supabase.from("utm_folders").select("*").eq("user_id", user!.id).order("name");
       if (error) throw error;
       return data;
     },
@@ -42,16 +38,8 @@ const UTMBuilder = () => {
   const { data: links = [] } = useQuery({
     queryKey: ["utm-links", user?.id, selectedFolderId],
     queryFn: async () => {
-      let query = supabase
-        .from("utm_links")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false });
-
-      if (selectedFolderId) {
-        query = query.eq("folder_id", selectedFolderId);
-      }
-
+      let query = supabase.from("utm_links").select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
+      if (selectedFolderId) query = query.eq("folder_id", selectedFolderId);
       const { data, error } = await query;
       if (error) throw error;
       return data;
@@ -59,44 +47,37 @@ const UTMBuilder = () => {
     enabled: !!user,
   });
 
-  // Save link mutation
+  // Fetch saved base URLs
+  const { data: savedBaseUrls = [] } = useQuery({
+    queryKey: ["utm-base-urls", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("utm_base_urls").select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Save link
   const saveLinkMutation = useMutation({
     mutationFn: async ({ formData, fullUrl }: { formData: UTMFormData; fullUrl: string }) => {
       const shortCode = generateShortCode();
       const { error } = await supabase.from("utm_links").insert({
-        user_id: user!.id,
-        folder_id: formData.folderId || null,
-        base_url: formData.baseUrl,
-        utm_source: formData.utmSource,
-        utm_medium: formData.utmMedium,
-        utm_campaign: formData.utmCampaign,
-        utm_term: formData.utmTerm || null,
-        utm_content: formData.utmContent || null,
-        full_url: fullUrl,
-        short_code: shortCode,
-        label: formData.label,
+        user_id: user!.id, folder_id: formData.folderId || null, base_url: formData.baseUrl,
+        utm_source: formData.utmSource, utm_medium: formData.utmMedium, utm_campaign: formData.utmCampaign,
+        utm_term: formData.utmTerm || null, utm_content: formData.utmContent || null,
+        full_url: fullUrl, short_code: shortCode, label: formData.label,
       });
       if (error) {
-        // Retry once with a new code if unique constraint violated
         if (error.code === "23505") {
-          const retryCode = generateShortCode();
           const { error: retryError } = await supabase.from("utm_links").insert({
-            user_id: user!.id,
-            folder_id: formData.folderId || null,
-            base_url: formData.baseUrl,
-            utm_source: formData.utmSource,
-            utm_medium: formData.utmMedium,
-            utm_campaign: formData.utmCampaign,
-            utm_term: formData.utmTerm || null,
-            utm_content: formData.utmContent || null,
-            full_url: fullUrl,
-            short_code: retryCode,
-            label: formData.label,
+            user_id: user!.id, folder_id: formData.folderId || null, base_url: formData.baseUrl,
+            utm_source: formData.utmSource, utm_medium: formData.utmMedium, utm_campaign: formData.utmCampaign,
+            utm_term: formData.utmTerm || null, utm_content: formData.utmContent || null,
+            full_url: fullUrl, short_code: generateShortCode(), label: formData.label,
           });
           if (retryError) throw retryError;
-        } else {
-          throw error;
-        }
+        } else throw error;
       }
     },
     onSuccess: () => {
@@ -104,9 +85,7 @@ const UTMBuilder = () => {
       queryClient.invalidateQueries({ queryKey: ["utm-stats"] });
       toast({ title: "Link saved!", description: "Your UTM link has been created." });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to save link.", variant: "destructive" });
-    },
+    onError: () => toast({ title: "Error", description: "Failed to save link.", variant: "destructive" }),
   });
 
   // Delete link
@@ -144,17 +123,35 @@ const UTMBuilder = () => {
     },
   });
 
+  // Save base URL
+  const saveBaseUrlMutation = useMutation({
+    mutationFn: async ({ url, label }: { url: string; label?: string }) => {
+      const { error } = await supabase.from("utm_base_urls").insert({ user_id: user!.id, url, label: label || null });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["utm-base-urls"] });
+      toast({ title: "Base URL saved!" });
+    },
+  });
+
+  // Delete base URL
+  const deleteBaseUrlMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("utm_base_urls").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["utm-base-urls"] }),
+  });
+
   return (
     <ProjectLayout>
       <div className="max-w-6xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">UTM Campaign Builder</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Create UTM-tagged links, organize them into folders, and track clicks.
-          </p>
+          <p className="text-muted-foreground text-sm mt-1">Create UTM-tagged links, organize them into folders, and track clicks.</p>
         </div>
 
-        {/* Builder form */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Create New Link</CardTitle>
@@ -162,13 +159,15 @@ const UTMBuilder = () => {
           <CardContent>
             <UTMForm
               folders={folders}
+              savedBaseUrls={savedBaseUrls}
               onSave={(formData, fullUrl) => saveLinkMutation.mutate({ formData, fullUrl })}
+              onSaveBaseUrl={(url, label) => saveBaseUrlMutation.mutate({ url, label })}
+              onDeleteBaseUrl={(id) => deleteBaseUrlMutation.mutate(id)}
               saving={saveLinkMutation.isPending}
             />
           </CardContent>
         </Card>
 
-        {/* Links section with folder sidebar */}
         <div className="grid md:grid-cols-[200px_1fr] gap-4">
           <Card className="p-3">
             <UTMFolderList
@@ -183,17 +182,11 @@ const UTMBuilder = () => {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">
-                {selectedFolderId
-                  ? folders.find((f) => f.id === selectedFolderId)?.name || "Folder"
-                  : "All Saved Links"}
+                {selectedFolderId ? folders.find((f) => f.id === selectedFolderId)?.name || "Folder" : "All Saved Links"}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <UTMLinkTable
-                links={links}
-                onDelete={(id) => deleteLinkMutation.mutate(id)}
-                publishedUrl={PUBLISHED_URL}
-              />
+              <UTMLinkTable links={links} onDelete={(id) => deleteLinkMutation.mutate(id)} publishedUrl={PUBLISHED_URL} />
             </CardContent>
           </Card>
         </div>
