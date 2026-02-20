@@ -181,8 +181,8 @@ const UTMBuilder = () => {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">
-                {selectedFolderId ? folders.find((f) => f.id === selectedFolderId)?.name || "Folder" : "All Saved Links"}
+            <CardTitle className="text-base">
+                {selectedFolderId ? `${folders.find((f) => f.id === selectedFolderId)?.name || "Folder"} (${links.length})` : `All Saved Links (${links.length})`}
               </CardTitle>
             </CardHeader>
             <CardContent>

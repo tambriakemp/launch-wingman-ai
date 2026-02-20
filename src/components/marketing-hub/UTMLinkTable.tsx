@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Copy, ExternalLink, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Copy, ExternalLink, Trash2, ChevronLeft, ChevronRight, Search, MousePointerClick, Calendar, Link2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -26,12 +29,20 @@ const PAGE_SIZE = 10;
 
 export const UTMLinkTable = ({ links, onDelete, publishedUrl }: UTMLinkTableProps) => {
   const [page, setPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const totalPages = Math.max(1, Math.ceil(links.length / PAGE_SIZE));
-  const pagedLinks = links.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const filteredLinks = links.filter((l) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return [l.label, l.utm_campaign, l.utm_source, l.utm_medium, l.full_url]
+      .some((field) => field?.toLowerCase().includes(q));
+  });
 
-  // Reset to first page when links change
-  if (page >= totalPages && page > 0) setPage(0);
+  const totalPages = Math.max(1, Math.ceil(filteredLinks.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const pagedLinks = filteredLinks.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+
+  if (safePage !== page) setPage(safePage);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -39,6 +50,11 @@ export const UTMLinkTable = ({ links, onDelete, publishedUrl }: UTMLinkTableProp
   };
 
   const getShortUrl = (shortCode: string) => `${publishedUrl}/r/${shortCode}`;
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
+    setPage(0);
+  };
 
   if (links.length === 0) {
     return (
@@ -49,79 +65,115 @@ export const UTMLinkTable = ({ links, onDelete, publishedUrl }: UTMLinkTableProp
   }
 
   return (
-    <div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="text-left py-2 px-3 font-medium text-muted-foreground">Label</th>
-              <th className="text-left py-2 px-3 font-medium text-muted-foreground hidden md:table-cell">Source / Medium</th>
-              <th className="text-left py-2 px-3 font-medium text-muted-foreground hidden lg:table-cell">Campaign</th>
-              <th className="text-center py-2 px-3 font-medium text-muted-foreground">Clicks</th>
-              <th className="text-left py-2 px-3 font-medium text-muted-foreground hidden md:table-cell">Created</th>
-              <th className="text-right py-2 px-3 font-medium text-muted-foreground">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+    <div className="space-y-4">
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Search by label, campaign, source, medium, or URL…"
+          value={searchQuery}
+          onChange={(e) => handleSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
+      {filteredLinks.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground text-sm">
+          No links match your search.
+        </div>
+      ) : (
+        <>
+          {/* Cards */}
+          <div className="space-y-3">
             {pagedLinks.map((link) => (
-              <tr key={link.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                <td className="py-2.5 px-3">
-                  <p className="font-medium text-foreground">{link.label}</p>
-                  <p className="text-xs text-muted-foreground truncate max-w-[200px]">{link.full_url}</p>
-                </td>
-                <td className="py-2.5 px-3 hidden md:table-cell text-muted-foreground">
-                  {link.utm_source} / {link.utm_medium}
-                </td>
-                <td className="py-2.5 px-3 hidden lg:table-cell text-muted-foreground">{link.utm_campaign}</td>
-                <td className="py-2.5 px-3 text-center font-semibold text-foreground">{link.click_count}</td>
-                <td className="py-2.5 px-3 hidden md:table-cell text-muted-foreground">
-                  {format(new Date(link.created_at), "MMM d, yyyy")}
-                </td>
-                <td className="py-2.5 px-3">
-                  <div className="flex items-center justify-end gap-1">
+              <Card key={link.id} className="p-4 space-y-3">
+                {/* Title row */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-foreground truncate">{link.label}</p>
+                    <p className="text-xs text-muted-foreground">{link.utm_campaign}</p>
+                  </div>
+                  <Badge variant="secondary" className="shrink-0 text-xs">
+                    {link.utm_campaign}
+                  </Badge>
+                </div>
+
+                {/* Full URL block */}
+                <div className="rounded-md bg-muted/50 px-3 py-2 font-mono text-xs text-muted-foreground break-all">
+                  {link.full_url}
+                </div>
+
+                {/* Short link */}
+                <div className="flex items-center gap-1.5 text-xs text-primary">
+                  <Link2 className="w-3.5 h-3.5" />
+                  <span className="truncate">{getShortUrl(link.short_code)}</span>
+                </div>
+
+                {/* UTM tags */}
+                <div className="flex flex-wrap gap-1.5">
+                  <Badge variant="outline" className="text-xs">{link.utm_source}</Badge>
+                  <Badge variant="outline" className="text-xs">{link.utm_medium}</Badge>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <MousePointerClick className="w-3.5 h-3.5" />
+                      {link.click_count} clicks
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5" />
+                      {format(new Date(link.created_at), "MMM d, yyyy")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" className="h-7 w-7" title="Copy full URL" onClick={() => copyToClipboard(link.full_url, "Full URL")}>
                       <Copy className="w-3.5 h-3.5" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7" title="Copy short link" onClick={() => copyToClipboard(getShortUrl(link.short_code), "Short link")}>
+                      <Link2 className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" title="Open link" onClick={() => window.open(link.full_url, "_blank")}>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Delete" onClick={() => onDelete(link.id)}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>
-                </td>
-              </tr>
+                </div>
+              </Card>
             ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-3 border-t border-border mt-2">
-          <p className="text-xs text-muted-foreground">
-            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, links.length)} of {links.length}
-          </p>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7" disabled={page === 0} onClick={() => setPage(page - 1)}>
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            {Array.from({ length: totalPages }, (_, i) => (
-              <Button
-                key={i}
-                variant={i === page ? "default" : "ghost"}
-                size="icon"
-                className="h-7 w-7 text-xs"
-                onClick={() => setPage(i)}
-              >
-                {i + 1}
-              </Button>
-            ))}
-            <Button variant="ghost" size="icon" className="h-7 w-7" disabled={page === totalPages - 1} onClick={() => setPage(page + 1)}>
-              <ChevronRight className="w-4 h-4" />
-            </Button>
           </div>
-        </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-3 border-t border-border mt-2">
+              <p className="text-xs text-muted-foreground">
+                Showing {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filteredLinks.length)} of {filteredLinks.length}
+              </p>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={safePage === 0} onClick={() => setPage(safePage - 1)}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <Button
+                    key={i}
+                    variant={i === safePage ? "default" : "ghost"}
+                    size="icon"
+                    className="h-7 w-7 text-xs"
+                    onClick={() => setPage(i)}
+                  >
+                    {i + 1}
+                  </Button>
+                ))}
+                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={safePage === totalPages - 1} onClick={() => setPage(safePage + 1)}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
