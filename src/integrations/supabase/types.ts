@@ -2284,6 +2284,30 @@ export type Database = {
         }
         Relationships: []
       }
+      utm_base_urls: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       utm_click_events: {
         Row: {
           clicked_at: string
