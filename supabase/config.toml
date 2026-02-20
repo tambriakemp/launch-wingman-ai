@@ -251,3 +251,6 @@ verify_jwt = false
 
 [functions.generate-social-bio]
 verify_jwt = false
+
+[functions.utm-redirect]
+verify_jwt = false

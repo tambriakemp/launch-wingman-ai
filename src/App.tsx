@@ -31,6 +31,9 @@ import NotFound from "./pages/NotFound";
 import SalesFunnel from "./pages/SalesFunnel";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+import MarketingHub from "./pages/MarketingHub";
+import UTMBuilder from "./pages/UTMBuilder";
+import UTMRedirect from "./pages/UTMRedirect";
 
 // Feature pages
 import AssessmentsFeature from "./pages/features/AssessmentsFeature";
@@ -417,6 +420,27 @@ const App = () => (
                 </ProtectedAdminRoute>
               }
             />
+            {/* Marketing Hub routes (admin only) */}
+            <Route
+              path="/marketing-hub"
+              element={
+                <ProtectedAdminRoute>
+                  <MarketingHub />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/marketing-hub/utm-builder"
+              element={
+                <ProtectedAdminRoute>
+                  <UTMBuilder />
+                </ProtectedAdminRoute>
+              }
+            />
+
+            {/* Public short link redirect */}
+            <Route path="/r/:code" element={<UTMRedirect />} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
           </TikTokEnvironmentProvider>
