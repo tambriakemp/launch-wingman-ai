@@ -111,17 +111,6 @@ export default function CampaignDetailHeader({ campaign, onSwitchTab }: Props) {
             )}
           </div>
 
-          {/* Meta row */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-            <span className="flex items-center gap-1.5">
-              <span className="font-medium text-foreground">{goalLabels[campaign.goal]}</span>
-              goal
-            </span>
-            <span>
-              {campaign.start_date} → {campaign.end_date ?? "Ongoing"}
-            </span>
-            {campaign.budget && <span>Budget: ${campaign.budget.toLocaleString()}</span>}
-          </div>
 
           {/* Tags */}
           {campaign.tags.length > 0 && (
