@@ -88,6 +88,18 @@ const UTMBuilder = () => {
     onError: () => toast({ title: "Error", description: "Failed to save link.", variant: "destructive" }),
   });
 
+  // Move link to folder
+  const moveLinkMutation = useMutation({
+    mutationFn: async ({ linkId, folderId }: { linkId: string; folderId: string | null }) => {
+      const { error } = await supabase.from("utm_links").update({ folder_id: folderId }).eq("id", linkId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["utm-links"] });
+      toast({ title: "Moved", description: "Link moved to folder." });
+    },
+  });
+
   // Delete link
   const deleteLinkMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -186,7 +198,13 @@ const UTMBuilder = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <UTMLinkTable links={links} onDelete={(id) => deleteLinkMutation.mutate(id)} publishedUrl={PUBLISHED_URL} />
+              <UTMLinkTable
+                links={links}
+                folders={folders}
+                onDelete={(id) => deleteLinkMutation.mutate(id)}
+                onMoveToFolder={(linkId, folderId) => moveLinkMutation.mutate({ linkId, folderId })}
+                publishedUrl={PUBLISHED_URL}
+              />
             </CardContent>
           </Card>
         </div>
