@@ -34,6 +34,7 @@ import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import MarketingHub from "./pages/MarketingHub";
 import UTMBuilder from "./pages/UTMBuilder";
 import UTMRedirect from "./pages/UTMRedirect";
+import CampaignAnalytics from "./pages/CampaignAnalytics";
 
 // Feature pages
 import AssessmentsFeature from "./pages/features/AssessmentsFeature";
@@ -434,6 +435,14 @@ const App = () => (
               element={
                 <ProtectedAdminRoute>
                   <UTMBuilder />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/marketing-hub/analytics"
+              element={
+                <ProtectedAdminRoute>
+                  <CampaignAnalytics />
                 </ProtectedAdminRoute>
               }
             />

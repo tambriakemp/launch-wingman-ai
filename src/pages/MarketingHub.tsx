@@ -2,28 +2,8 @@ import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Link } from "react-router-dom";
 import { Link2, BarChart3, Megaphone, Globe } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 
 const MarketingHub = () => {
-  const { user } = useAuth();
-
-  const { data: stats } = useQuery({
-    queryKey: ["utm-stats", user?.id],
-    queryFn: async () => {
-      const { data: links, error } = await supabase
-        .from("utm_links")
-        .select("id, click_count")
-        .eq("user_id", user!.id);
-      if (error) throw error;
-      const totalLinks = links?.length || 0;
-      const totalClicks = links?.reduce((sum, l) => sum + (l.click_count || 0), 0) || 0;
-      return { totalLinks, totalClicks };
-    },
-    enabled: !!user,
-  });
-
   const tools = [
     {
       title: "UTM Campaign Builder",
@@ -36,8 +16,8 @@ const MarketingHub = () => {
       title: "Campaign Analytics",
       description: "View performance data across all your marketing campaigns.",
       icon: BarChart3,
-      href: "#",
-      available: false,
+      href: "/marketing-hub/analytics",
+      available: true,
     },
     {
       title: "Social Promotions",
@@ -63,22 +43,6 @@ const MarketingHub = () => {
           <p className="text-muted-foreground text-sm mt-1">
             Tools to build, track, and optimize your marketing campaigns.
           </p>
-        </div>
-
-        {/* Summary stats */}
-        <div className="grid grid-cols-2 gap-4 max-w-md">
-          <Card>
-            <CardContent className="pt-4 pb-3 px-4">
-              <p className="text-2xl font-bold text-foreground">{stats?.totalLinks ?? 0}</p>
-              <p className="text-xs text-muted-foreground">Saved Links</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 pb-3 px-4">
-              <p className="text-2xl font-bold text-foreground">{stats?.totalClicks ?? 0}</p>
-              <p className="text-xs text-muted-foreground">Total Clicks</p>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Tools grid */}
