@@ -11,7 +11,9 @@ const ProjectContent = () => {
 
   return (
     <ProjectLayout>
-      <ContentTab projectId={projectId} />
+      <div className="-m-4 md:-m-6 h-[calc(100vh-theme(spacing.16))]">
+        <ContentTab projectId={projectId} />
+      </div>
     </ProjectLayout>
   );
 };

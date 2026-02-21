@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Plus, Instagram, Facebook, Linkedin, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Instagram, Facebook, Linkedin, Clock } from "lucide-react";
 import {
   format,
   startOfWeek,
@@ -9,14 +9,12 @@ import {
   addWeeks,
   subWeeks,
   isSameDay,
+  isToday as isDateToday,
 } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { CONTENT_TYPE_COLORS } from "./contentTypeColors";
 
 // Custom platform icons
 const PinterestIcon = ({ className }: { className?: string }) => (
@@ -37,9 +35,8 @@ const ThreadsIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// Platform icon helper
 const getPlatformIcon = (platform: string) => {
-  const iconClass = "h-3.5 w-3.5";
+  const iconClass = "h-3 w-3";
   switch (platform.toLowerCase()) {
     case "instagram":
       return <Instagram className={iconClass} />;
@@ -58,6 +55,30 @@ const getPlatformIcon = (platform: string) => {
   }
 };
 
+const getPlatformColor = (platform: string): string => {
+  switch (platform.toLowerCase()) {
+    case "instagram": return "#E4405F";
+    case "facebook": return "#1877F2";
+    case "linkedin": return "#0A66C2";
+    case "pinterest": return "#E60023";
+    case "tiktok": return "#000000";
+    case "threads": return "#000000";
+    default: return "hsl(var(--muted-foreground))";
+  }
+};
+
+const getPlatformName = (platform: string): string => {
+  switch (platform.toLowerCase()) {
+    case "instagram": return "Instagram";
+    case "facebook": return "Facebook";
+    case "linkedin": return "LinkedIn";
+    case "pinterest": return "Pinterest";
+    case "tiktok": return "TikTok";
+    case "threads": return "Threads";
+    default: return platform;
+  }
+};
+
 interface ContentPlannerItem {
   id: string;
   title: string;
@@ -66,6 +87,7 @@ interface ContentPlannerItem {
   content_type: string;
   phase: string;
   day_number: number;
+  time_of_day: string;
   status: string;
   scheduled_at: string | null;
   scheduled_platforms: string[] | null;
@@ -80,7 +102,15 @@ interface ContentWeeklyViewProps {
   onSchedulePost: (item: ContentPlannerItem) => void;
 }
 
-const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const HOUR_HEIGHT = 60; // px per hour row
+
+const formatHour = (hour: number): string => {
+  if (hour === 0) return "12 AM";
+  if (hour < 12) return `${hour} AM`;
+  if (hour === 12) return "12 PM";
+  return `${hour - 12} PM`;
+};
 
 export const ContentWeeklyView = ({
   projectId,
@@ -88,9 +118,10 @@ export const ContentWeeklyView = ({
   onEditPost,
   onSchedulePost,
 }: ContentWeeklyViewProps) => {
-  const [currentWeekStart, setCurrentWeekStart] = useState(() => 
-    startOfWeek(new Date(), { weekStartsOn: 0 }) // Start week on Sunday
+  const [currentWeekStart, setCurrentWeekStart] = useState(() =>
+    startOfWeek(new Date(), { weekStartsOn: 0 })
   );
+  const scrollRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
   const { data: plannerItems = [] } = useQuery({
@@ -105,48 +136,33 @@ export const ContentWeeklyView = ({
     },
   });
 
-  // Get all days in the current week (Sun-Sat)
   const weekDays = useMemo(() => {
     const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 0 });
     return eachDayOfInterval({ start: currentWeekStart, end: weekEnd });
   }, [currentWeekStart]);
 
-  // Group scheduled items by date
-  const itemsByDate = useMemo(() => {
+  // Group items by date+hour
+  const itemsByDateHour = useMemo(() => {
     const map = new Map<string, ContentPlannerItem[]>();
-    
     plannerItems.forEach((item) => {
       if (item.scheduled_at) {
-        const dateKey = format(new Date(item.scheduled_at), "yyyy-MM-dd");
-        const existing = map.get(dateKey) || [];
-        map.set(dateKey, [...existing, item]);
+        const d = new Date(item.scheduled_at);
+        const dateKey = format(d, "yyyy-MM-dd");
+        const hour = d.getHours();
+        const key = `${dateKey}-${hour}`;
+        const existing = map.get(key) || [];
+        map.set(key, [...existing, item]);
       }
     });
-    
     return map;
   }, [plannerItems]);
 
-  const handleDeletePost = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("content_planner")
-        .delete()
-        .eq("id", id);
-      
-      if (error) throw error;
-      
-      queryClient.invalidateQueries({ queryKey: ["content-planner", projectId] });
-      toast.success("Post removed");
-    } catch (error) {
-      console.error("Error deleting:", error);
-      toast.error("Failed to remove post");
+  // Auto-scroll to 8 AM on mount
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 8 * HOUR_HEIGHT;
     }
-  };
-
-  const getItemsForDate = (date: Date): ContentPlannerItem[] => {
-    const dateKey = format(date, "yyyy-MM-dd");
-    return itemsByDate.get(dateKey) || [];
-  };
+  }, []);
 
   const navigateWeek = (direction: "prev" | "next") => {
     setCurrentWeekStart((prev) =>
@@ -158,208 +174,158 @@ export const ContentWeeklyView = ({
     setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 0 }));
   };
 
-  const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 0 });
-  const weekRangeLabel = `${format(currentWeekStart, "MMM d")} - ${format(weekEnd, "MMM d")}`;
+  const weekLabel = format(currentWeekStart, "MMMM yyyy");
 
   return (
-    <div className="space-y-4">
-      {/* Calendar Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="text-base md:text-lg font-semibold text-foreground">
-            {weekRangeLabel}
-          </span>
-        </div>
-        <div className="flex items-center gap-1 md:gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => navigateWeek("prev")}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={goToToday}
-            className="h-8 px-2 md:px-3"
-          >
-            Today
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => navigateWeek("next")}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+    <div className="flex flex-col h-full">
+      {/* Compact header bar */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card shrink-0">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-foreground">{weekLabel}</h2>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigateWeek("prev")}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={goToToday}>
+              Today
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigateWeek("next")}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Weekly Grid - Horizontal scroll on mobile */}
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <div className="grid grid-cols-7 min-w-[700px] md:min-w-0 min-h-[400px] md:min-h-[500px]">
-            {weekDays.map((day, idx) => {
-              const isToday = isSameDay(day, new Date());
-              const dayItems = getItemsForDate(day);
+      {/* Day headers row */}
+      <div className="flex border-b border-border bg-card shrink-0">
+        {/* Time column spacer */}
+        <div className="w-16 shrink-0 border-r border-border" />
+        {/* Day columns */}
+        {weekDays.map((day, idx) => {
+          const today = isDateToday(day);
+          return (
+            <div
+              key={idx}
+              className={cn(
+                "flex-1 min-w-[100px] text-center py-2 border-r border-border last:border-r-0"
+              )}
+            >
+              <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                {format(day, "EEE")}
+              </div>
+              <div
+                className={cn(
+                  "text-sm font-semibold mt-0.5 inline-flex items-center justify-center",
+                  today && "bg-primary text-primary-foreground rounded-full w-7 h-7"
+                )}
+              >
+                {format(day, "d")}
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-              return (
-                <div
-                  key={idx}
-                  className={cn(
-                    "flex flex-col border-r border-border last:border-r-0",
-                    isToday && "bg-accent/20"
-                  )}
-                >
-                  {/* Day Header */}
-                  <div className={cn(
-                    "px-2 md:px-3 py-1.5 md:py-2 border-b border-border text-center",
-                    isToday && "bg-primary/10"
-                  )}>
-                    <div className="text-[10px] md:text-xs font-medium text-muted-foreground">
-                      {WEEKDAYS[idx].slice(0, 3)}
-                    </div>
-                    <div className={cn(
-                      "text-xs md:text-sm font-semibold mt-0.5",
-                      isToday ? "text-primary" : "text-foreground"
-                    )}>
-                      {format(day, "MMM d")}
-                    </div>
-                  </div>
-
-                  {/* Day Content */}
-                  <ScrollArea className="flex-1 p-1.5 md:p-2">
-                    <div className="space-y-1.5 md:space-y-2">
-                      {dayItems.map((item) => (
-                        <WeeklyPostCard
-                          key={item.id}
-                          item={item}
-                          onEdit={() => onEditPost(item)}
-                          onDelete={() => handleDeletePost(item.id)}
-                        />
-                      ))}
-                    </div>
-                  </ScrollArea>
-
-                  {/* Add Post Button at bottom */}
-                  <div className="p-1.5 md:p-2 border-t border-border mt-auto">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full h-6 md:h-7 text-xs text-muted-foreground hover:text-foreground"
-                      onClick={onCreatePost}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
+      {/* Scrollable time grid */}
+      <div ref={scrollRef} className="flex-1 overflow-auto">
+        <div className="flex" style={{ height: HOURS.length * HOUR_HEIGHT }}>
+          {/* Time labels column */}
+          <div className="w-16 shrink-0 border-r border-border relative">
+            {HOURS.map((hour) => (
+              <div
+                key={hour}
+                className="absolute left-0 right-0 flex items-start justify-end pr-2 -mt-2"
+                style={{ top: hour * HOUR_HEIGHT }}
+              >
+                <span className="text-[10px] text-muted-foreground">{formatHour(hour)}</span>
+              </div>
+            ))}
           </div>
+
+          {/* Day columns grid */}
+          {weekDays.map((day, dayIdx) => {
+            const dateKey = format(day, "yyyy-MM-dd");
+            const today = isDateToday(day);
+
+            return (
+              <div
+                key={dayIdx}
+                className={cn(
+                  "flex-1 min-w-[100px] relative border-r border-border last:border-r-0",
+                  today && "bg-primary/5"
+                )}
+              >
+                {/* Hour grid lines */}
+                {HOURS.map((hour) => (
+                  <div
+                    key={hour}
+                    className="absolute left-0 right-0 border-t border-border/50"
+                    style={{ top: hour * HOUR_HEIGHT, height: HOUR_HEIGHT }}
+                  />
+                ))}
+
+                {/* Posts */}
+                {HOURS.map((hour) => {
+                  const key = `${dateKey}-${hour}`;
+                  const items = itemsByDateHour.get(key) || [];
+                  if (items.length === 0) return null;
+
+                  const maxShow = 2;
+                  const visible = items.slice(0, maxShow);
+                  const overflow = items.length - maxShow;
+
+                  return (
+                    <div
+                      key={hour}
+                      className="absolute left-0.5 right-0.5 flex flex-col gap-0.5 z-10"
+                      style={{ top: hour * HOUR_HEIGHT + 2 }}
+                    >
+                      {visible.map((item) => (
+                        <PostChip key={item.id} item={item} onClick={() => onEditPost(item)} />
+                      ))}
+                      {overflow > 0 && (
+                        <span className="text-[10px] text-muted-foreground pl-1">
+                          +{overflow} more
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
-      </Card>
+      </div>
     </div>
   );
 };
 
-// Post card component for weekly view
-interface WeeklyPostCardProps {
+// Compact post chip for time grid
+const PostChip = ({
+  item,
+  onClick,
+}: {
   item: ContentPlannerItem;
-  onEdit: () => void;
-  onDelete: () => void;
-}
-
-const WeeklyPostCard = ({ item, onEdit, onDelete }: WeeklyPostCardProps) => {
-  const scheduledTime = item.scheduled_at
-    ? format(new Date(item.scheduled_at), "h:mm a")
-    : null;
-
-  // Get excerpt from content
-  const getExcerpt = (text: string | null, maxLength = 60): string => {
-    if (!text) return "";
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength).trim() + "...";
-  };
-
-  // Get border color for content type
-  const borderColor = CONTENT_TYPE_COLORS[item.content_type] || "bg-slate-500";
+  onClick: () => void;
+}) => {
+  const platform = item.scheduled_platforms?.[0];
+  const color = platform ? getPlatformColor(platform) : "hsl(var(--muted-foreground))";
+  const label = item.title || (platform ? `${getPlatformName(platform)} Post` : "Post");
 
   return (
     <div
-      className={cn(
-        "bg-card border border-border rounded-lg p-2 hover:border-primary/50 cursor-pointer transition-colors group relative overflow-hidden",
-        "border-l-4"
-      )}
-      style={{}}
-      onClick={onEdit}
+      onClick={onClick}
+      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] cursor-pointer truncate hover:opacity-80 transition-opacity border"
+      style={{
+        backgroundColor: `${color}15`,
+        borderColor: `${color}40`,
+        color: color,
+      }}
     >
-      {/* Left border color indicator */}
-      <div className={cn("absolute left-0 top-0 bottom-0 w-1", borderColor)} />
-      {/* Platform icons + Time */}
-      <div className="flex items-center gap-1 text-muted-foreground mb-1">
-        {item.scheduled_platforms && item.scheduled_platforms.length > 0 && (
-          <div className="flex items-center gap-1">
-            {item.scheduled_platforms.slice(0, 3).map((platform) => (
-              <span key={platform}>{getPlatformIcon(platform)}</span>
-            ))}
-            {item.scheduled_platforms.length > 3 && (
-              <span className="text-[10px]">+{item.scheduled_platforms.length - 3}</span>
-            )}
-          </div>
-        )}
-        {scheduledTime && (
-          <div className="flex items-center gap-0.5 ml-auto text-[10px]">
-            <Clock className="h-2.5 w-2.5" />
-            {scheduledTime}
-          </div>
-        )}
-      </div>
-
-      {/* Media thumbnail */}
-      {item.media_url && (
-        <div className="mb-2 rounded overflow-hidden">
-          {item.media_type?.startsWith("video") ? (
-            <video
-              src={item.media_url}
-              className="w-full h-16 object-cover"
-              muted
-            />
-          ) : (
-            <img
-              src={item.media_url}
-              alt=""
-              className="w-full h-16 object-cover"
-            />
-          )}
-        </div>
-      )}
-
-      {/* Title/excerpt */}
-      <p className="text-xs text-foreground line-clamp-2">
-        {getExcerpt(item.content || item.description || item.title)}
-      </p>
-
-      {/* Status badge */}
-      {item.status === "draft" && (
-        <div className="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px]">
-          <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground" />
-          Draft
-        </div>
-      )}
-      {item.status === "scheduled" && (
-        <div className="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 text-[10px]">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-          Scheduled
-        </div>
-      )}
-      {(item.status === "posted" || item.status === "completed") && (
-        <div className="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 text-[10px]">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-          Posted
-        </div>
+      {platform && getPlatformIcon(platform)}
+      <span className="truncate font-medium">{label}</span>
+      {item.scheduled_platforms && item.scheduled_platforms.length > 1 && (
+        <span className="text-[9px] opacity-70">+{item.scheduled_platforms.length - 1}</span>
       )}
     </div>
   );

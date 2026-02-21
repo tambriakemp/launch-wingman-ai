@@ -79,6 +79,7 @@ interface ContentPlannerItem {
   content_type: string;
   phase: string;
   day_number: number;
+  time_of_day: string;
   status: string;
   scheduled_at: string | null;
   scheduled_platforms: string[] | null;
