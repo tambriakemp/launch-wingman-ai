@@ -19,6 +19,7 @@ import {
   HelpCircle,
   Megaphone,
   Link2,
+  BarChart3,
   ChevronDown,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
@@ -254,31 +255,45 @@ const SidebarContent = ({
               onClick={() => handleNavClick("/marketing-hub")}
               className={cn(
                 "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
-                (isActiveRoute("/marketing-hub") || isActiveRoute("/marketing-hub/utm-builder"))
+                (isActiveRoute("/marketing-hub") || isActiveRoute("/marketing-hub/utm-builder") || isActiveRoute("/marketing-hub/analytics"))
                   ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                   : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
               )}
             >
-              <Megaphone className={cn("w-4 h-4", (isActiveRoute("/marketing-hub") || isActiveRoute("/marketing-hub/utm-builder")) && "text-sidebar-primary")} />
+              <Megaphone className={cn("w-4 h-4", (isActiveRoute("/marketing-hub") || isActiveRoute("/marketing-hub/utm-builder") || isActiveRoute("/marketing-hub/analytics")) && "text-sidebar-primary")} />
               <span className="flex-1">Marketing Hub</span>
               <ChevronDown className={cn(
                 "w-3.5 h-3.5 transition-transform",
-                (isActiveRoute("/marketing-hub") || isActiveRoute("/marketing-hub/utm-builder")) ? "rotate-180" : ""
+                (isActiveRoute("/marketing-hub") || isActiveRoute("/marketing-hub/utm-builder") || isActiveRoute("/marketing-hub/analytics")) ? "rotate-180" : ""
               )} />
             </button>
-            {(isActiveRoute("/marketing-hub") || isActiveRoute("/marketing-hub/utm-builder")) && (
-              <button
-                onClick={() => handleNavClick("/marketing-hub/utm-builder")}
-                className={cn(
-                  "flex items-center gap-2 px-2 py-1.5 pl-8 rounded-md text-sm transition-colors w-full text-left",
-                  isActiveRoute("/marketing-hub/utm-builder")
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                )}
-              >
-                <Link2 className={cn("w-4 h-4", isActiveRoute("/marketing-hub/utm-builder") && "text-sidebar-primary")} />
-                <span>UTM Builder</span>
-              </button>
+            {(isActiveRoute("/marketing-hub") || isActiveRoute("/marketing-hub/utm-builder") || isActiveRoute("/marketing-hub/analytics")) && (
+              <>
+                <button
+                  onClick={() => handleNavClick("/marketing-hub/utm-builder")}
+                  className={cn(
+                    "flex items-center gap-2 px-2 py-1.5 pl-8 rounded-md text-sm transition-colors w-full text-left",
+                    isActiveRoute("/marketing-hub/utm-builder")
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  <Link2 className={cn("w-4 h-4", isActiveRoute("/marketing-hub/utm-builder") && "text-sidebar-primary")} />
+                  <span>UTM Builder</span>
+                </button>
+                <button
+                  onClick={() => handleNavClick("/marketing-hub/analytics")}
+                  className={cn(
+                    "flex items-center gap-2 px-2 py-1.5 pl-8 rounded-md text-sm transition-colors w-full text-left",
+                    isActiveRoute("/marketing-hub/analytics")
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  <BarChart3 className={cn("w-4 h-4", isActiveRoute("/marketing-hub/analytics") && "text-sidebar-primary")} />
+                  <span>Campaign Analytics</span>
+                </button>
+              </>
             )}
           </div>
         </div>

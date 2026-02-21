@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UTMForm, type UTMFormData } from "@/components/marketing-hub/UTMForm";
@@ -159,9 +161,17 @@ const UTMBuilder = () => {
   return (
     <ProjectLayout>
       <div className="max-w-6xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">UTM Campaign Builder</h1>
-          <p className="text-muted-foreground text-sm mt-1">Create UTM-tagged links, organize them into folders, and track clicks.</p>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/marketing-hub"
+            className="p-1.5 rounded-md hover:bg-muted transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">UTM Campaign Builder</h1>
+            <p className="text-muted-foreground text-sm mt-1">Create UTM-tagged links, organize them into folders, and track clicks.</p>
+          </div>
         </div>
 
         <Card>
