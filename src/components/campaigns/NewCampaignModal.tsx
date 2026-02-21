@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { slugify, buildFinalUrl, generateShortCode, CHANNEL_UTM_DEFAULTS } from "./links/utmHelpers";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,7 +91,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
     }
     setSaving(true);
     try {
-      const { error } = await supabase.from("campaigns").insert({
+      const { data: inserted, error } = await supabase.from("campaigns").insert({
         user_id: user.id,
         name,
         goal,
@@ -101,8 +102,41 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
         auto_utm: autoUtm,
         platforms: selectedPlatforms,
         funnel_id: selectedFunnelId || null,
-      });
+      }).select("id").single();
       if (error) throw error;
+
+      // Auto-generate UTM links if enabled
+      if (autoUtm && selectedPlatforms.length > 0 && inserted?.id) {
+        const campaignSlug = slugify(name);
+        const platformMap: Record<string, string> = {
+          Instagram: "instagram",
+          Facebook: "facebook",
+          Email: "email",
+          YouTube: "youtube",
+          Skool: "skool",
+          App: "other",
+        };
+        const utmRows = selectedPlatforms.map((p) => {
+          const ch = platformMap[p] ?? "other";
+          const defaults = CHANNEL_UTM_DEFAULTS[ch] ?? { source: ch, medium: "other" };
+          const baseUrl = "https://example.com"; // placeholder
+          return {
+            user_id: user.id,
+            campaign_id: inserted.id,
+            label: `${p} — link`,
+            base_url: baseUrl,
+            full_url: buildFinalUrl(baseUrl, { source: defaults.source, medium: defaults.medium, campaign: campaignSlug }),
+            utm_source: defaults.source,
+            utm_medium: defaults.medium,
+            utm_campaign: campaignSlug,
+            short_code: generateShortCode(),
+            channel: ch,
+            status: "active",
+          };
+        });
+        await supabase.from("utm_links").insert(utmRows);
+      }
+
       toast.success("Campaign created");
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
       onCreated?.();

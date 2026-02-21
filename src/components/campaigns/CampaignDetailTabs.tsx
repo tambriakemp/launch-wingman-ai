@@ -23,7 +23,7 @@ export default function CampaignDetailTabs({ campaign }: Props) {
         <TabsTrigger value="notes">Notes</TabsTrigger>
       </TabsList>
       <TabsContent value="summary"><SummaryTab campaign={campaign} /></TabsContent>
-      <TabsContent value="links"><LinksTab campaignId={campaign.id} /></TabsContent>
+      <TabsContent value="links"><LinksTab campaignId={campaign.id} campaignName={campaign.name} /></TabsContent>
       <TabsContent value="assets"><AssetsTab campaignId={campaign.id} /></TabsContent>
       <TabsContent value="funnel"><FunnelTab /></TabsContent>
       <TabsContent value="analytics"><AnalyticsTab campaign={campaign} /></TabsContent>

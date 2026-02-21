@@ -2429,6 +2429,8 @@ export type Database = {
       utm_links: {
         Row: {
           base_url: string
+          campaign_id: string | null
+          channel: string
           click_count: number
           created_at: string
           folder_id: string | null
@@ -2436,6 +2438,7 @@ export type Database = {
           id: string
           label: string
           short_code: string
+          status: string
           updated_at: string
           user_id: string
           utm_campaign: string
@@ -2446,6 +2449,8 @@ export type Database = {
         }
         Insert: {
           base_url: string
+          campaign_id?: string | null
+          channel?: string
           click_count?: number
           created_at?: string
           folder_id?: string | null
@@ -2453,6 +2458,7 @@ export type Database = {
           id?: string
           label: string
           short_code: string
+          status?: string
           updated_at?: string
           user_id: string
           utm_campaign: string
@@ -2463,6 +2469,8 @@ export type Database = {
         }
         Update: {
           base_url?: string
+          campaign_id?: string | null
+          channel?: string
           click_count?: number
           created_at?: string
           folder_id?: string | null
@@ -2470,6 +2478,7 @@ export type Database = {
           id?: string
           label?: string
           short_code?: string
+          status?: string
           updated_at?: string
           user_id?: string
           utm_campaign?: string
@@ -2479,6 +2488,13 @@ export type Database = {
           utm_term?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "utm_links_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "utm_links_folder_id_fkey"
             columns: ["folder_id"]
