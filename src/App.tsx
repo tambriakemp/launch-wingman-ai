@@ -35,6 +35,8 @@ import MarketingHub from "./pages/MarketingHub";
 import UTMBuilder from "./pages/UTMBuilder";
 import UTMRedirect from "./pages/UTMRedirect";
 import CampaignAnalytics from "./pages/CampaignAnalytics";
+import CampaignPlanner from "./pages/CampaignPlanner";
+import CampaignDetail from "./pages/CampaignDetail";
 
 // Feature pages
 import AssessmentsFeature from "./pages/features/AssessmentsFeature";
@@ -443,6 +445,24 @@ const App = () => (
               element={
                 <ProtectedAdminRoute>
                   <CampaignAnalytics />
+                </ProtectedAdminRoute>
+              }
+            />
+
+            {/* Campaign Planner routes (admin only) */}
+            <Route
+              path="/marketing-hub/campaigns"
+              element={
+                <ProtectedAdminRoute>
+                  <CampaignPlanner />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/marketing-hub/campaigns/:campaignId"
+              element={
+                <ProtectedAdminRoute>
+                  <CampaignDetail />
                 </ProtectedAdminRoute>
               }
             />
