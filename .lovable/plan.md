@@ -1,68 +1,58 @@
 
-# Campaign Analytics Dashboard
 
-## Overview
-Create a new Campaign Analytics page at `/marketing-hub/analytics` with UTM click data visualizations, and update the Marketing Hub landing page to remove the "Saved Links" and "Total Clicks" stat cards.
+# Fix UTM Click Tracking
 
-## Page Layout (matching the screenshot reference)
+## Problem
+Click tracking is completely broken -- zero click events have ever been recorded. There are two root causes:
 
-### Header
-- Back arrow linking to `/marketing-hub`
-- "Analytics Dashboard" title + subtitle
-- Date range selector dropdown (Last 7 days, Last 30 days, Last 90 days, All time)
+1. **Short link redirect page has a bug**: The `UTMRedirect` component makes a wasteful first call to `supabase.functions.invoke("utm-redirect")` without passing the `code` parameter, then makes a second call via `fetch`. The first call likely errors silently and may interfere.
+2. **Full/long URL clicks are never tracked**: When a user copies and shares the full URL (e.g. `https://launchely.com/?utm_source=...`), clicking it goes directly to the destination. There is no redirect through the tracking edge function, so no click is ever recorded.
 
-### Summary Cards (3 across)
-1. **Total Clicks** - total click count in selected period, with period label
-2. **Top Performing Link** - link label with most clicks, showing click count
-3. **Traffic Sources** - count of unique referrer domains
+## Solution
 
-### Clicks Over Time Chart
-- Area/line chart showing daily click counts for the selected period
-- Uses recharts via the existing `GrowthChart` component pattern (or a new reusable chart)
+### 1. Fix UTMRedirect.tsx (short link tracking)
+- Remove the broken `supabase.functions.invoke()` call (lines 17-20) that sends a request without the code parameter
+- Keep only the direct `fetch` call which correctly passes the code as a query param
+- This ensures short link clicks (`launchely.com/r/{code}`) are properly tracked via the edge function
 
-### Bottom Row (2 columns)
-1. **Top Performing Links** - horizontal bar chart showing top 10 links by click count
-2. **Traffic Sources** - donut/pie chart showing referrer breakdown (direct vs referrer domains)
+### 2. Track full URL clicks at copy time
+Since full URLs bypass the redirect system entirely, the only reliable tracking point is when the link is copied. We should:
+- When a user copies the **full URL**, immediately call the edge function to log a "copy" event (or increment a separate counter)
+- Alternatively, and more practically: **do not attempt to track full URL clicks** since they go directly to the destination and we have no middleware. Instead, make the short link the primary recommended link for sharing.
 
-### Additional Sections (below)
-3. **Clicks by Campaign** - bar chart grouping clicks by `utm_campaign`
-4. **Clicks by Source / Medium** - bar chart grouping by `utm_source` and `utm_medium`
-5. **Click Timing Patterns** - heatmap or bar chart showing best day of week and best hour of day
-6. **Device / Browser Breakdown** - pie chart parsing `user_agent` into device categories
+**Recommended approach**: Track short link clicks properly (fix #1), and for the full URL, add a note in the UI that only short links track clicks. This is the standard approach used by Bitly, UTM.io, etc.
 
-## Data Fetching Strategy
-- Fetch all `utm_links` for the user (label, campaign, source, medium, click_count)
-- Fetch `utm_click_events` joined with `utm_links` (via utm_link_id) to get timestamps, referrers, user_agents
-- Filter by date range client-side (or with `.gte`/`.lte` on `clicked_at`)
-- Parse `user_agent` strings client-side into broad categories (Mobile/Desktop/Tablet, Chrome/Safari/Firefox/Other)
+### 3. Immediate data refresh after redirect tracking
+- In the analytics hook, ensure queries refetch when navigating back to the analytics page (already handled by React Query's default stale behavior)
 
-## Marketing Hub Landing Page Changes
-- Remove the "Saved Links" and "Total Clicks" stat cards grid
-- Remove the `useQuery` for `utm-stats`
-- Update the "Campaign Analytics" tool card to link to `/marketing-hub/analytics` with `available: true`
+## Files to Change
+
+### `src/pages/UTMRedirect.tsx`
+- Remove the redundant `supabase.functions.invoke()` call
+- Keep only the clean `fetch` call with the code parameter
+- Add error logging for debugging
+
+### `src/components/marketing-hub/UTMLinkTable.tsx`
+- Add a small indicator or tooltip on the full URL block noting "Short links track clicks"
+- Ensure the short link is visually prioritized as the sharing link
 
 ## Technical Details
 
-### New Files
-- `src/pages/CampaignAnalytics.tsx` - main page component with data fetching, date range state, and layout
-- `src/components/marketing-hub/analytics/ClicksOverTimeChart.tsx` - time series area chart
-- `src/components/marketing-hub/analytics/TopLinksChart.tsx` - horizontal bar chart
-- `src/components/marketing-hub/analytics/TrafficSourcesChart.tsx` - donut chart
-- `src/components/marketing-hub/analytics/ClicksByCampaignChart.tsx` - bar chart
-- `src/components/marketing-hub/analytics/ClicksBySourceMediumChart.tsx` - bar chart
-- `src/components/marketing-hub/analytics/ClickTimingChart.tsx` - day-of-week / hour bar charts
-- `src/components/marketing-hub/analytics/DeviceBreakdownChart.tsx` - pie chart
-- `src/hooks/useCampaignAnalytics.ts` - custom hook fetching utm_links + utm_click_events with date filtering
+**Before (UTMRedirect.tsx):**
+```
+// Broken: calls without code param
+const { data, error: fnError } = await supabase.functions.invoke("utm-redirect", {
+  body: null,
+  method: "GET",
+});
 
-### Modified Files
-- `src/pages/MarketingHub.tsx` - remove stat cards, enable Campaign Analytics link
-- `src/App.tsx` - add route `/marketing-hub/analytics` wrapped in `ProtectedAdminRoute`
+// Then makes second call with code
+const response = await fetch(`https://${projectId}.supabase.co/functions/v1/utm-redirect?code=...`);
+```
 
-### Data Processing
-- **Referrer parsing**: Extract domain from referrer URL, group nulls as "Direct"
-- **User agent parsing**: Simple regex-based categorization (Mobile vs Desktop, browser name extraction)
-- **Time grouping**: Group `clicked_at` timestamps by day for the time series, by hour/day-of-week for timing patterns
+**After:**
+```
+// Single clean call with code param
+const response = await fetch(`https://${projectId}.supabase.co/functions/v1/utm-redirect?code=...`);
+```
 
-### Extensibility
-- The page structure uses a modular card-based layout so future data types (social post performance, landing page metrics, conversion tracking) can be added as new chart cards without restructuring
-- The date range filter will apply globally to all charts on the page
