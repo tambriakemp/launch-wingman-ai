@@ -3,7 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ExternalLink, Trash2, ChevronLeft, ChevronRight, Search, MousePointerClick, Calendar, Link2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ExternalLink, Trash2, ChevronLeft, ChevronRight, Search, MousePointerClick, Calendar, Link2, FolderInput } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -17,17 +23,25 @@ interface UTMLink {
   utm_source: string;
   utm_medium: string;
   utm_campaign: string;
+  folder_id?: string | null;
+}
+
+interface Folder {
+  id: string;
+  name: string;
 }
 
 interface UTMLinkTableProps {
   links: UTMLink[];
+  folders?: Folder[];
   onDelete: (id: string) => void;
+  onMoveToFolder?: (linkId: string, folderId: string | null) => void;
   publishedUrl: string;
 }
 
 const PAGE_SIZE = 10;
 
-export const UTMLinkTable = ({ links, onDelete, publishedUrl }: UTMLinkTableProps) => {
+export const UTMLinkTable = ({ links, folders = [], onDelete, onMoveToFolder, publishedUrl }: UTMLinkTableProps) => {
   const [page, setPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -107,17 +121,15 @@ export const UTMLinkTable = ({ links, onDelete, publishedUrl }: UTMLinkTableProp
                   {link.full_url}
                 </div>
 
-                {/* Short link */}
-                <div>
-                  <p className="text-[11px] font-medium text-muted-foreground mb-1">Short</p>
-                  <div
-                    className="rounded-md border px-3 py-2 flex items-center gap-1.5 text-xs text-primary cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => copyToClipboard(getShortUrl(link.short_code), "Short link")}
-                    title="Click to copy"
-                  >
-                    <Link2 className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">{getShortUrl(link.short_code)}</span>
-                  </div>
+                {/* Short link - inline label, compact width */}
+                <div
+                  className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs text-primary cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => copyToClipboard(getShortUrl(link.short_code), "Short link")}
+                  title="Click to copy"
+                >
+                  <Link2 className="w-3.5 h-3.5 shrink-0" />
+                  <span className="font-medium text-muted-foreground">Short:</span>
+                  <span className="truncate">/r/{link.short_code}</span>
                 </div>
 
                 {/* Footer */}
@@ -133,6 +145,29 @@ export const UTMLinkTable = ({ links, onDelete, publishedUrl }: UTMLinkTableProp
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
+                    {onMoveToFolder && folders.length > 0 && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Move to folder">
+                            <FolderInput className="w-3.5 h-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onMoveToFolder(link.id, null)}>
+                            No folder
+                          </DropdownMenuItem>
+                          {folders.map((folder) => (
+                            <DropdownMenuItem
+                              key={folder.id}
+                              onClick={() => onMoveToFolder(link.id, folder.id)}
+                              className={link.folder_id === folder.id ? "font-semibold" : ""}
+                            >
+                              {folder.name}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                     <Button variant="ghost" size="icon" className="h-7 w-7" title="Open link" onClick={() => window.open(link.full_url, "_blank")}>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </Button>
