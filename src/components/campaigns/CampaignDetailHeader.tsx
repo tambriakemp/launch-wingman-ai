@@ -25,8 +25,6 @@ export default function CampaignDetailHeader({ campaign }: Props) {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">{goalLabels[campaign.goal]}</span>
-          <span className="text-sm text-muted-foreground">·</span>
-          <span className="text-sm text-muted-foreground">{campaign.owner}</span>
           <Button variant="outline" size="sm" className="gap-1.5 ml-2">
             <Pencil className="w-3.5 h-3.5" /> Edit
           </Button>

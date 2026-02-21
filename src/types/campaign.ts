@@ -9,7 +9,6 @@ export interface Campaign {
   start_date: string;
   end_date: string | null;
   budget: number | null;
-  owner: string;
   tags: string[];
   leads: number;
   revenue: number;

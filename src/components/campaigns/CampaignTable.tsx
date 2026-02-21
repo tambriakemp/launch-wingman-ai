@@ -90,7 +90,6 @@ export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
               <th className="text-right p-3"><SortHeader label="Leads" k="leads" /></th>
               <th className="text-right p-3"><SortHeader label="Revenue" k="revenue" /></th>
               <th className="text-right p-3 hidden md:table-cell"><SortHeader label="ROI" k="roi" /></th>
-              <th className="text-left p-3 hidden xl:table-cell"><span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Owner</span></th>
               <th className="text-left p-3 hidden xl:table-cell"><SortHeader label="Updated" k="updated_at" /></th>
               <th className="w-10 p-3" />
             </tr>
@@ -106,7 +105,6 @@ export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
                 <td className="p-3 text-right">{c.leads.toLocaleString()}</td>
                 <td className="p-3 text-right">${c.revenue.toLocaleString()}</td>
                 <td className="p-3 text-right hidden md:table-cell">{c.roi > 0 ? c.roi + "%" : "—"}</td>
-                <td className="p-3 hidden xl:table-cell text-muted-foreground">{c.owner}</td>
                 <td className="p-3 hidden xl:table-cell text-muted-foreground">{format(new Date(c.updated_at), "MMM d")}</td>
                 <td className="p-3" onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
