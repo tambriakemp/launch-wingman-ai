@@ -32,6 +32,25 @@ export interface CampaignLink {
   conversion_rate: number;
 }
 
+export interface CampaignUTMLink {
+  id: string;
+  campaign_id: string | null;
+  label: string;
+  base_url: string;
+  full_url: string;
+  utm_source: string;
+  utm_medium: string;
+  utm_campaign: string;
+  utm_content: string | null;
+  utm_term: string | null;
+  short_code: string;
+  channel: string;
+  status: string;
+  click_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CampaignAsset {
   id: string;
   campaign_id: string;
