@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import CampaignDetailHeader from "@/components/campaigns/CampaignDetailHeader";
@@ -12,6 +13,7 @@ import { Loader2 } from "lucide-react";
 export default function CampaignDetail() {
   const { campaignId } = useParams();
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("summary");
 
   const { data: dbCampaign, isLoading } = useQuery({
     queryKey: ["campaign-detail", campaignId],
@@ -47,7 +49,6 @@ export default function CampaignDetail() {
     enabled: !!user?.id && !!campaignId,
   });
 
-  // Check demo data as fallback
   const demoCampaign = demoCampaigns.find((c) => c.id === campaignId);
   const campaign = dbCampaign ?? demoCampaign;
 
@@ -72,9 +73,9 @@ export default function CampaignDetail() {
 
   return (
     <ProjectLayout>
-      <div className="p-4 md:p-6">
-        <CampaignDetailHeader campaign={campaign} />
-        <CampaignDetailTabs campaign={campaign} />
+      <div className="p-4 md:p-6 max-w-7xl mx-auto">
+        <CampaignDetailHeader campaign={campaign} onSwitchTab={setActiveTab} />
+        <CampaignDetailTabs campaign={campaign} activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
     </ProjectLayout>
   );
