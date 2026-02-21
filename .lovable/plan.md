@@ -1,116 +1,144 @@
 
-
-# Modernize New Campaign Modal + Implement Funnel Selection
+# Attach UTM Links to Campaigns -- Implementation Plan
 
 ## Overview
-Three changes: (1) Clean up and modernize the 4-step campaign creation modal with more space and no owner field, (2) implement Step 3 with a real funnel selector pulling from the database, and (3) redesign Step 4 confirmation layout.
+Build a complete UTM link management experience for campaigns: create, auto-generate, attach existing links, and enforce a "Live gate" requiring at least 1 link before going live. This leverages the existing `utm_links` table by adding `campaign_id`, `channel`, and `status` columns.
 
 ---
 
-## 1. Modal UI Cleanup and Modernization
+## 1. Database Migration
 
-### Changes to `src/components/campaigns/NewCampaignModal.tsx`
+Add 3 new columns to the existing `utm_links` table:
 
-**Larger modal**: Change `sm:max-w-lg` to `sm:max-w-2xl` for more breathing room.
+```sql
+ALTER TABLE public.utm_links
+  ADD COLUMN campaign_id uuid REFERENCES public.campaigns(id) ON DELETE SET NULL,
+  ADD COLUMN channel text NOT NULL DEFAULT 'other',
+  ADD COLUMN status text NOT NULL DEFAULT 'active';
+```
 
-**Remove owner field** everywhere in the modal:
-- Remove `owner` state variable
-- Remove owner input from Step 1
-- Remove owner row from Step 4 review
-- Remove from `reset()` function
+- `campaign_id` is nullable (links can exist unassigned)
+- `channel` defaults to 'other' so existing rows aren't broken
+- `status` defaults to 'active' (values: active, paused, archived)
 
-**Step indicator redesign**: Replace the cramped numbered circles with a cleaner horizontal stepper using a progress line between steps, with completed steps showing a checkmark and current step highlighted with primary color.
-
-**Step 1 (Basics)**: 
-- Add proper spacing between form groups (`space-y-5` instead of `space-y-3`)
-- Add subtle section descriptions under labels
-- Budget field gets full width now that owner is removed
-- Cleaner label styling with `text-sm font-medium` and `mt-1` gap before inputs
-
-**Step 2 (Attribution)**:
-- Better spacing and layout
-- Platform selector chips get slightly larger with icons (using simple emoji/text icons for each platform)
-- Add a subtle description paragraph explaining UTM auto-generation
+No new RLS policies needed -- existing `utm_links` RLS already scopes to `user_id`.
 
 ---
 
-## 2. Implement Step 3 -- Funnel Selector
+## 2. Updated Types
 
-### Data Fetching
-- Import `useAuth` from AuthContext and `supabase` client
-- Import `useQuery` from TanStack Query
-- Query the `funnels` table joined with `projects` to get all funnels for the current user:
-  ```sql
-  SELECT f.id, f.funnel_type, f.niche, f.target_audience, p.name as project_name
-  FROM funnels f
-  JOIN projects p ON f.project_id = p.id
-  WHERE f.user_id = <current_user_id>
-  ```
-- Use `FUNNEL_TYPE_TO_CONFIG` mapping from `funnelUtils.ts` to get display names from `FUNNEL_CONFIGS`
+**`src/types/campaign.ts`** -- Add a `CampaignUTMLink` interface:
 
-### UI Layout
-- Show a list of available funnels as selectable cards (radio-style, single select)
-- Each card shows:
-  - Funnel type label (e.g., "Freebie Funnel") 
-  - Project name it belongs to (smaller text)
-  - Target audience snippet (truncated)
-  - Niche badge
-- A "Skip" option at the bottom for campaigns without a funnel
-- Selected funnel gets a primary border highlight
-- If no funnels exist, show an empty state message ("No funnels found. Create a project with a funnel first.")
-
-### State
-- Add `selectedFunnelId` state (string | null)
-- Store selected funnel data for display in Step 4
+```
+- id, campaign_id, label (name), base_url, full_url
+- utm_source, utm_medium, utm_campaign, utm_content, utm_term
+- short_code, channel, status, click_count
+- created_at, updated_at
+```
 
 ---
 
-## 3. Modernize Step 4 (Confirm)
+## 3. New Components
 
-### Redesign from grid to card-based review
-- Replace the plain 2-column grid with a clean card layout
-- Group related info into visual sections:
-  - **Campaign Details** section: Name, Goal, Dates, Budget in a bordered card
-  - **Attribution** section: UTM setting and selected platforms as badges
-  - **Funnel** section: Selected funnel name and type (or "None" if skipped)
-- Each section has a subtle header and clean key-value pairs with proper spacing
-- Add a subtle divider between sections
-- "Create Campaign" button is more prominent (full width, slightly larger)
+### `src/components/campaigns/links/AddUTMLinkModal.tsx`
+Manual link creation modal with:
+- Link Name, Channel dropdown, Destination URL
+- UTM Source (auto-suggested from channel), UTM Medium (auto-suggested), UTM Campaign (auto-filled from campaign name slug)
+- Optional: UTM Content, UTM Term, Notes
+- "Generate Link" validates URL, builds `final_url`, shows preview
+- "Save and Attach" inserts into `utm_links` with `campaign_id`
+- "Save and Create Another" resets form after save
+
+### `src/components/campaigns/links/AutoGeneratePanel.tsx`
+Expandable panel with:
+- Base destination URL input
+- Campaign slug (auto-filled, editable)
+- Channel checkboxes (Instagram, Facebook, TikTok, YouTube, Email, Skool, Other)
+- Variant count toggle: 1 per channel or 3 per channel
+- Auto-fill rules for utm_source/utm_medium/utm_content per the spec
+- "Preview Links" shows generated links in a table before saving
+- "Generate and Attach" bulk-inserts all links
+
+### `src/components/campaigns/links/AttachExistingModal.tsx`
+Modal to search and attach existing unassigned UTM links:
+- Search input filtering existing `utm_links` where `campaign_id IS NULL`
+- Filter by channel
+- Multi-select checkboxes
+- "Attach Selected" updates `campaign_id` on selected links
+- Warning if a link is already assigned to another campaign with options to Duplicate or Reassign
+
+### `src/components/campaigns/links/CampaignLinksToolbar.tsx`
+Top toolbar with:
+- "+ Add UTM Link" button (opens AddUTMLinkModal)
+- "Attach Existing" button (opens AttachExistingModal)
+- "Auto-Generate" toggle (shows/hides AutoGeneratePanel)
+- Search input for filtering links within campaign
+- Channel and Status filter chips
+
+### `src/components/campaigns/links/LiveGateModal.tsx`
+Warning modal shown when admin tries to set campaign status to "Live" with 0 UTM links:
+- Message: "Before you launch, attach at least 1 tracking link."
+- Buttons: "Create a UTM link now", "Attach existing link", "Cancel"
 
 ---
 
-## 4. Remove Owner from Other Campaign Components
+## 4. Rebuilt LinksTab
 
-### `src/types/campaign.ts`
-- Remove `owner` from the Campaign interface
-
-### `src/components/campaigns/campaignDemoData.ts`
-- Remove `owner` field from all 6 demo campaign objects
-
-### `src/components/campaigns/CampaignTable.tsx`
-- Remove the Owner column header and data cell from the table
-
-### `src/components/campaigns/CampaignDetailHeader.tsx`
-- Remove the owner display from the header
+**`src/components/campaigns/tabs/LinksTab.tsx`** -- Complete rewrite:
+- Uses `useQuery` to fetch `utm_links` where `campaign_id = campaignId`
+- Renders `CampaignLinksToolbar` at top
+- Conditionally shows `AutoGeneratePanel`
+- Displays links table with columns: Name, Channel, Destination URL (truncated + copy), UTM Preview, Clicks, Leads (placeholder), Revenue (placeholder), CVR (placeholder), Status badge, Actions menu
+- Each row has: Copy Final URL, Copy UTM Params, Open in new tab, Edit, Duplicate, Pause, Archive
+- Empty state with CTA to create first link
 
 ---
 
-## Files Changed Summary
+## 5. Campaign Detail Page Updates
+
+**`src/pages/CampaignDetail.tsx`**:
+- Also fetch campaign from DB (not just demo data) so real campaigns work on the detail page
+
+**`src/components/campaigns/CampaignDetailHeader.tsx`**:
+- When status badge dropdown changes to "Live", check UTM link count first
+- If 0 links, show LiveGateModal instead of updating status
+- If links exist, proceed with status update and show confirmation toast
+
+---
+
+## 6. New Campaign Modal (Step 2) Enhancement
+
+**`src/components/campaigns/NewCampaignModal.tsx`**:
+- After campaign creation, if `autoUtm` is enabled and platforms are selected, auto-generate UTM links for the new campaign using the same logic as AutoGeneratePanel
+- Uses the campaign name slugified as `utm_campaign`
+
+---
+
+## Files Summary
 
 | File | Action |
 |------|--------|
-| `src/components/campaigns/NewCampaignModal.tsx` | Major rewrite -- modernized UI, funnel selector, cleaned confirm step |
-| `src/types/campaign.ts` | Edit -- remove `owner` field |
-| `src/components/campaigns/campaignDemoData.ts` | Edit -- remove `owner` from demo data |
-| `src/components/campaigns/CampaignTable.tsx` | Edit -- remove Owner column |
-| `src/components/campaigns/CampaignDetailHeader.tsx` | Edit -- remove owner display |
+| Migration SQL | Create -- add columns to `utm_links` |
+| `src/types/campaign.ts` | Edit -- add `CampaignUTMLink` interface |
+| `src/components/campaigns/links/AddUTMLinkModal.tsx` | Create |
+| `src/components/campaigns/links/AutoGeneratePanel.tsx` | Create |
+| `src/components/campaigns/links/AttachExistingModal.tsx` | Create |
+| `src/components/campaigns/links/CampaignLinksToolbar.tsx` | Create |
+| `src/components/campaigns/links/LiveGateModal.tsx` | Create |
+| `src/components/campaigns/tabs/LinksTab.tsx` | Rewrite |
+| `src/pages/CampaignDetail.tsx` | Edit -- fetch from DB |
+| `src/components/campaigns/CampaignDetailHeader.tsx` | Edit -- live gate logic |
+| `src/components/campaigns/NewCampaignModal.tsx` | Edit -- auto-generate on create |
 
 ---
 
 ## Technical Notes
 
-- Funnel data is fetched via Supabase query using the authenticated user's ID
-- Uses existing `FUNNEL_CONFIGS` and `FUNNEL_TYPE_TO_CONFIG` for display labels
-- No new database tables or migrations needed
-- No new dependencies required
-- The funnel selector gracefully handles loading and empty states
+- Reuses existing `utm_links` table and RLS policies (already scoped to `user_id`)
+- Short codes for new links generated client-side (random 8-char alphanumeric)
+- `final_url` is built client-side by appending UTM params to `base_url`
+- Click tracking continues to work via existing `utm-redirect` edge function
+- Leads/Revenue/CVR columns show placeholder demo values for now, designed for real data later
+- Channel auto-fill mapping: Instagram/Facebook/TikTok/YouTube use "social" medium; Email uses "email"; Skool uses "community"
+- Duplicate action copies the link with "(Copy)" suffix and increments utm_content version
+- Pause sets status to "paused"; Archive sets to "archived" (hidden by default)
