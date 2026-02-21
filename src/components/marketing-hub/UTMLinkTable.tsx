@@ -112,26 +112,24 @@ export const UTMLinkTable = ({ links, folders = [], onDelete, onMoveToFolder, pu
                   </Badge>
                 </div>
 
-                {/* Short link (primary - tracks clicks) */}
-                <div
-                  className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs text-primary cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => copyToClipboard(getShortUrl(link.short_code), "Short link")}
-                  title="Click to copy — this link tracks clicks"
-                >
-                  <Link2 className="w-3.5 h-3.5 shrink-0" />
-                  <span className="font-medium">Share link:</span>
-                  <span className="truncate">{getShortUrl(link.short_code)}</span>
-                  <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 h-4 border-primary/30 text-primary">Tracked</Badge>
-                </div>
-
                 {/* Full URL block */}
                 <div
                   className="rounded-md border bg-muted/50 px-3 py-2 font-mono text-xs text-muted-foreground break-all cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={() => copyToClipboard(link.full_url, "Full URL")}
-                  title="Click to copy (not tracked — use short link for analytics)"
+                  title="Click to copy"
                 >
                   {link.full_url}
-                  <span className="block mt-1 text-[10px] italic opacity-60">Full URL — not tracked</span>
+                </div>
+
+                {/* Short link */}
+                <div
+                  className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs text-primary cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => copyToClipboard(getShortUrl(link.short_code), "Short link")}
+                  title="Click to copy"
+                >
+                  <Link2 className="w-3.5 h-3.5 shrink-0" />
+                  <span className="font-medium text-muted-foreground">Short:</span>
+                  <span className="truncate">/r/{link.short_code}</span>
                 </div>
 
                 {/* Footer */}
