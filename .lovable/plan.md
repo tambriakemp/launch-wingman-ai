@@ -1,38 +1,32 @@
 
-# Redesign UTM Link Cards with Search
+# UTM Link Card Updates
 
-## Overview
-Replace the current table-based link list with a card-based layout matching the reference screenshot, and add a search bar to filter links.
+## Changes to `src/components/marketing-hub/UTMLinkTable.tsx`
 
-## Card Layout (per link)
-Each card will display:
-- **Title row**: Link label (bold) + campaign badge (top-right)
-- **Subtitle**: UTM campaign name below the label
-- **Full URL**: Displayed in a dark/muted code-style block
-- **Short link**: Shown below the URL block with a link icon, formatted as `/r/{code}`
-- **UTM tags**: Source and medium shown as colored badges/chips
-- **Footer row**: Click count (with icon) + created date (with calendar icon) on the left; action buttons (copy full URL, copy short link, open link, delete) on the right
+### 1. Clickable links auto-copy to clipboard
+- Make the full URL block clickable -- clicking it copies the full URL and shows a toast
+- Make the short link clickable -- clicking it copies the short link and shows a toast
+- Add `cursor-pointer hover:opacity-80` styles to both for visual feedback
 
-## Search
-- A search input at the top of the links section, above the cards
-- Filters links by label, campaign, source, medium, or full URL (case-insensitive)
-- Resets pagination to page 1 when search query changes
+### 2. Remove UTM tag badges
+- Delete the entire "UTM tags" section (the `utm_source` and `utm_medium` badge row)
 
-## Header
-- Shows "All Saved Links" (or folder name) with a count in parentheses, e.g. "All Links (51)"
+### 3. Fix short link domain
+- Change the `getShortUrl` function to use `https://launchely.com/r/{code}` instead of the Lovable preview URL
+- This is a hardcoded domain swap (no longer uses `publishedUrl` prop for short links)
 
-## Pagination
-- Keeps the existing 10 per page limit
-- Pagination controls remain at the bottom
+### 4. Add "Short" label and bordered container for short link
+- Add a `"Short"` text label before the short link
+- Wrap the short link in a bordered container (`border rounded-md px-3 py-2`) matching the style of the full URL block above it
 
-## Technical Details
+### 5. Add border around the full URL block
+- The full URL block already has a background (`bg-muted/50`); add a visible `border` to match the screenshot style
 
-### File Modified: `src/components/marketing-hub/UTMLinkTable.tsx`
-- Replace the `<table>` markup with a vertical stack of `Card` components
-- Add a `searchQuery` state and a search `<Input>` with a search icon
-- Filter `links` by the search query before pagination
-- Each card uses the layout described above with existing data fields (`label`, `utm_campaign`, `full_url`, `short_code`, `utm_source`, `utm_medium`, `click_count`, `created_at`)
-- Action buttons: copy full URL, copy short link, open in new tab, delete
+## Changes to `src/pages/UTMBuilder.tsx`
+- Update `PUBLISHED_URL` constant to `https://launchely.com` so any other references also use the correct domain
 
-### File Modified: `src/pages/UTMBuilder.tsx`
-- Update the card header to show the link count: `All Saved Links (${links.length})`
+## Summary of visual result per card
+- **Title row**: Label + campaign badge (unchanged)
+- **Full URL**: Bordered block, clickable to copy
+- **Short link**: "Short" label + bordered block showing `launchely.com/r/{code}`, clickable to copy
+- **Footer**: Click count, date, open/delete buttons (copy buttons removed since clicking the links handles copying)
