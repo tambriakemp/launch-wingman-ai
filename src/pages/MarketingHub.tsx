@@ -46,12 +46,12 @@ const MarketingHub = () => {
         </div>
 
         {/* Tools grid */}
-        <div className="grid sm:grid-cols-2 gap-4">
+        <div className="grid sm:grid-cols-2 gap-4 items-stretch">
           {tools.map((tool) => {
             const content = (
               <Card
                 key={tool.title}
-                className={`transition-all ${tool.available ? "hover:shadow-md hover:border-primary/30 cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
+                className={`transition-all h-full flex flex-col ${tool.available ? "hover:shadow-md hover:border-primary/30 cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-3">
