@@ -21,6 +21,14 @@ import {
   Link2,
   BarChart3,
   ChevronDown,
+  Target,
+  Cog,
+  FlaskConical,
+  Zap,
+  Plug,
+  Library,
+  PenTool,
+  ShoppingBag,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
 import { LaunchelyLogo } from "@/components/ui/LaunchelyLogo";
@@ -104,6 +112,7 @@ const SidebarContent = ({
   onUpgradeClick: (feature: string) => void;
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Determine access levels based on tier
   const isPro = tier === 'pro' || tier === 'admin';
@@ -244,60 +253,75 @@ const SidebarContent = ({
       </nav>
 
       {/* Marketing section - Admin only */}
-      {isPro && (
-        <div className="px-3 py-2">
-          <Separator className="mb-3 bg-sidebar-border" />
-          <div className="mb-1.5 px-2">
-            <span className="text-[11px] font-semibold text-sidebar-foreground uppercase tracking-wider">Marketing</span>
+      {isPro && (() => {
+        const isMarketingActive = location.pathname.startsWith("/marketing-hub");
+        const marketingSubItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean }[] = [
+          { label: "Overview", href: "/marketing-hub", icon: LayoutDashboard },
+          { label: "Campaigns", href: "/marketing-hub/campaigns", icon: Target },
+          { label: "UTM Builder", href: "/marketing-hub/utm-builder", icon: Link2 },
+          { label: "Content Engine", href: "#", icon: PenTool, disabled: true },
+          { label: "Funnels & Offers", href: "#", icon: ShoppingBag, disabled: true },
+          { label: "Analytics", href: "/marketing-hub/analytics", icon: BarChart3 },
+          { label: "Experiments", href: "#", icon: FlaskConical, disabled: true },
+          { label: "Automations", href: "#", icon: Zap, disabled: true },
+          { label: "Integrations", href: "#", icon: Plug, disabled: true },
+          { label: "Library", href: "#", icon: Library, disabled: true },
+        ];
+        return (
+          <div className="px-3 py-2">
+            <Separator className="mb-3 bg-sidebar-border" />
+            <div className="mb-1.5 px-2">
+              <span className="text-[11px] font-semibold text-sidebar-foreground uppercase tracking-wider">Marketing</span>
+            </div>
+            <div className="space-y-0.5">
+              <button
+                onClick={() => handleNavClick("/marketing-hub")}
+                className={cn(
+                  "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
+                  isMarketingActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                )}
+              >
+                <Megaphone className={cn("w-4 h-4", isMarketingActive && "text-sidebar-primary")} />
+                <span className="flex-1">Marketing Hub</span>
+                <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", isMarketingActive ? "rotate-180" : "")} />
+              </button>
+              {isMarketingActive && marketingSubItems.map((item) => {
+                if (item.disabled) {
+                  return (
+                    <Tooltip key={item.label}>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-2 px-2 py-1.5 pl-8 rounded-md text-sm text-sidebar-foreground/40 cursor-not-allowed w-full">
+                          <item.icon className="w-4 h-4" />
+                          <span>{item.label}</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right"><p>Coming soon</p></TooltipContent>
+                    </Tooltip>
+                  );
+                }
+                const isSubActive = location.pathname === item.href || (item.href !== "/marketing-hub" && location.pathname.startsWith(item.href));
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => handleNavClick(item.href)}
+                    className={cn(
+                      "flex items-center gap-2 px-2 py-1.5 pl-8 rounded-md text-sm transition-colors w-full text-left",
+                      isSubActive
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                    )}
+                  >
+                    <item.icon className={cn("w-4 h-4", isSubActive && "text-sidebar-primary")} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <div className="space-y-0.5">
-            <button
-              onClick={() => handleNavClick("/marketing-hub")}
-              className={cn(
-                "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
-                (isActiveRoute("/marketing-hub") || isActiveRoute("/marketing-hub/utm-builder") || isActiveRoute("/marketing-hub/analytics"))
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-              )}
-            >
-              <Megaphone className={cn("w-4 h-4", (isActiveRoute("/marketing-hub") || isActiveRoute("/marketing-hub/utm-builder") || isActiveRoute("/marketing-hub/analytics")) && "text-sidebar-primary")} />
-              <span className="flex-1">Marketing Hub</span>
-              <ChevronDown className={cn(
-                "w-3.5 h-3.5 transition-transform",
-                (isActiveRoute("/marketing-hub") || isActiveRoute("/marketing-hub/utm-builder") || isActiveRoute("/marketing-hub/analytics")) ? "rotate-180" : ""
-              )} />
-            </button>
-            {(isActiveRoute("/marketing-hub") || isActiveRoute("/marketing-hub/utm-builder") || isActiveRoute("/marketing-hub/analytics")) && (
-              <>
-                <button
-                  onClick={() => handleNavClick("/marketing-hub/utm-builder")}
-                  className={cn(
-                    "flex items-center gap-2 px-2 py-1.5 pl-8 rounded-md text-sm transition-colors w-full text-left",
-                    isActiveRoute("/marketing-hub/utm-builder")
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                  )}
-                >
-                  <Link2 className={cn("w-4 h-4", isActiveRoute("/marketing-hub/utm-builder") && "text-sidebar-primary")} />
-                  <span>UTM Builder</span>
-                </button>
-                <button
-                  onClick={() => handleNavClick("/marketing-hub/analytics")}
-                  className={cn(
-                    "flex items-center gap-2 px-2 py-1.5 pl-8 rounded-md text-sm transition-colors w-full text-left",
-                    isActiveRoute("/marketing-hub/analytics")
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                  )}
-                >
-                  <BarChart3 className={cn("w-4 h-4", isActiveRoute("/marketing-hub/analytics") && "text-sidebar-primary")} />
-                  <span>Campaign Analytics</span>
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Sticky footer links */}
       <div className="mt-auto px-3 py-3 border-t border-sidebar-border space-y-0.5">
