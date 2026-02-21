@@ -307,6 +307,65 @@ export type Database = {
         }
         Relationships: []
       }
+      campaigns: {
+        Row: {
+          auto_utm: boolean
+          budget: number | null
+          created_at: string
+          end_date: string | null
+          funnel_id: string | null
+          goal: string
+          id: string
+          name: string
+          platforms: string[] | null
+          start_date: string
+          status: string
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_utm?: boolean
+          budget?: number | null
+          created_at?: string
+          end_date?: string | null
+          funnel_id?: string | null
+          goal: string
+          id?: string
+          name: string
+          platforms?: string[] | null
+          start_date: string
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_utm?: boolean
+          budget?: number | null
+          created_at?: string
+          end_date?: string | null
+          funnel_id?: string | null
+          goal?: string
+          id?: string
+          name?: string
+          platforms?: string[] | null
+          start_date?: string
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_funnel_id_fkey"
+            columns: ["funnel_id"]
+            isOneToOne: false
+            referencedRelation: "funnels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       check_in_preferences: {
         Row: {
           cadence: string
