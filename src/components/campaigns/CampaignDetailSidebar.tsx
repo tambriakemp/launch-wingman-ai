@@ -20,35 +20,9 @@ const navItems = [
 
 export default function CampaignDetailSidebar({ campaign, activeTab, onTabChange }: Props) {
   const links = demoLinks.filter((l) => l.campaign_id === campaign.id);
-  const totalTraffic = links.reduce((s, l) => s + l.clicks, 0);
-  const totalLeads = campaign.leads || links.reduce((s, l) => s + l.leads, 0);
-  const totalRevenue = campaign.revenue || links.reduce((s, l) => s + l.revenue, 0);
-  const cvr = totalTraffic > 0 ? ((totalLeads / totalTraffic) * 100).toFixed(1) : "0";
 
   return (
     <aside className="hidden lg:flex flex-col w-60 shrink-0 border-r border-border/50 pr-4 space-y-6">
-      {/* Navigation */}
-      <nav className="space-y-0.5">
-        {navItems.map((item) => {
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onTabChange(item.id)}
-              className={cn(
-                "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-md text-[15px] transition-colors text-left",
-                isActive
-                  ? "bg-primary/10 text-primary font-medium border-l-2 border-primary -ml-px"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              )}
-            >
-              <item.icon className="w-[18px] h-[18px] shrink-0" />
-              {item.label}
-            </button>
-          );
-        })}
-      </nav>
-
       {/* Campaign Info Cards */}
       <div className="space-y-2 px-1">
         <p className="text-xs text-muted-foreground uppercase tracking-wider px-2 mb-2 font-medium">Campaign Info</p>
@@ -79,28 +53,27 @@ export default function CampaignDetailSidebar({ campaign, activeTab, onTabChange
         )}
       </div>
 
-      {/* Quick Stats */}
-      <div className="space-y-1">
-        <p className="text-xs text-muted-foreground uppercase tracking-wider px-3 mb-2 font-medium">Quick Stats</p>
-        <div className="grid grid-cols-2 gap-2 px-1">
-          <div className="rounded-lg bg-muted/40 p-3">
-            <p className="text-xs text-muted-foreground">Traffic</p>
-            <p className="text-base font-bold">{totalTraffic.toLocaleString()}</p>
-          </div>
-          <div className="rounded-lg bg-muted/40 p-3">
-            <p className="text-xs text-muted-foreground">Leads</p>
-            <p className="text-base font-bold">{totalLeads.toLocaleString()}</p>
-          </div>
-          <div className="rounded-lg bg-muted/40 p-3">
-            <p className="text-xs text-muted-foreground">Revenue</p>
-            <p className="text-base font-bold">${totalRevenue.toLocaleString()}</p>
-          </div>
-          <div className="rounded-lg bg-muted/40 p-3">
-            <p className="text-xs text-muted-foreground">CVR</p>
-            <p className="text-base font-bold">{cvr}%</p>
-          </div>
-        </div>
-      </div>
+      {/* Navigation */}
+      <nav className="space-y-0.5">
+        {navItems.map((item) => {
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onTabChange(item.id)}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-md text-[15px] transition-colors text-left",
+                isActive
+                  ? "bg-primary/10 text-primary font-medium border-l-2 border-primary -ml-px"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
+            >
+              <item.icon className="w-[18px] h-[18px] shrink-0" />
+              {item.label}
+            </button>
+          );
+        })}
+      </nav>
 
       {/* Health Indicators */}
       <div className="space-y-2 px-1">
@@ -108,22 +81,22 @@ export default function CampaignDetailSidebar({ campaign, activeTab, onTabChange
         <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-muted/30">
           <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
           <div>
-            <p className="text-xs text-muted-foreground">Link Health</p>
-            <p className="text-[13px] font-medium">{links.length} Active · 0 Broken</p>
+            <p className="text-[13px] text-muted-foreground">Link Health</p>
+            <p className="text-sm font-medium">{links.length} Active · 0 Broken</p>
           </div>
         </div>
         <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-muted/30">
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
           <div>
-            <p className="text-xs text-muted-foreground">Funnel Drop-Off</p>
-            <p className="text-[13px] font-medium">72% at Lead Capture</p>
+            <p className="text-[13px] text-muted-foreground">Funnel Drop-Off</p>
+            <p className="text-sm font-medium">72% at Lead Capture</p>
           </div>
         </div>
         <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-muted/30">
           <Activity className="w-4 h-4 text-blue-600 shrink-0" />
           <div>
-            <p className="text-xs text-muted-foreground">Tracking</p>
-            <p className="text-[13px] font-medium">92% confidence</p>
+            <p className="text-[13px] text-muted-foreground">Tracking</p>
+            <p className="text-sm font-medium">92% confidence</p>
           </div>
         </div>
       </div>
