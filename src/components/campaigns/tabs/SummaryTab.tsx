@@ -2,9 +2,13 @@ import { Campaign } from "@/types/campaign";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
-import { demoLinks, demoAssets, goalLabels } from "../campaignDemoData";
-import { TrendingUp, TrendingDown, Users, DollarSign, MousePointerClick, Target, Activity } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { demoAssets, goalLabels } from "../campaignDemoData";
+import { TrendingUp, TrendingDown, Users, DollarSign, MousePointerClick, Target, Activity, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface Props {
   campaign: Campaign;
@@ -25,11 +29,35 @@ const leadsByChannel = [
   { channel: "YouTube", leads: 156 },
 ];
 
-function KPICard({ label, value, change, positive, icon: Icon }: { label: string; value: string; change: string; positive: boolean; icon: any }) {
+const SOURCE_COLORS = [
+  "hsl(210, 60%, 55%)",
+  "hsl(330, 70%, 55%)",
+  "hsl(220, 80%, 55%)",
+  "hsl(0, 75%, 55%)",
+  "hsl(220, 9%, 46%)",
+  "hsl(168, 76%, 42%)",
+  "hsl(45, 80%, 55%)",
+];
+
+function KPICard({ label, value, change, positive, icon: Icon, tooltip }: { label: string; value: string; change: string; positive: boolean; icon: any; tooltip?: string }) {
   return (
     <Card className="p-4">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
+        <div className="flex items-center gap-1">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
+          {tooltip && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[200px] text-xs">
+                  {tooltip}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
         <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
           <Icon className="w-4 h-4 text-muted-foreground" />
         </div>
@@ -45,32 +73,73 @@ function KPICard({ label, value, change, positive, icon: Icon }: { label: string
 }
 
 export default function SummaryTab({ campaign }: Props) {
-  const links = demoLinks.filter((l) => l.campaign_id === campaign.id);
+  const { user } = useAuth();
   const assets = demoAssets.filter((a) => a.campaign_id === campaign.id);
 
-  const totalTraffic = links.reduce((s, l) => s + l.clicks, 0);
-  const totalLeads = campaign.leads || links.reduce((s, l) => s + l.leads, 0);
-  const totalRevenue = campaign.revenue || links.reduce((s, l) => s + l.revenue, 0);
+  // Fetch real UTM links for this campaign from the database
+  const { data: dbLinks } = useQuery({
+    queryKey: ["campaign-utm-links-summary", campaign.id, user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("utm_links")
+        .select("id, label, utm_source, utm_medium, utm_campaign, click_count, status")
+        .eq("campaign_id", campaign.id)
+        .eq("user_id", user!.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id && !!campaign.id,
+  });
+
+  const links = dbLinks || [];
+  const totalTraffic = links.reduce((s, l) => s + (l.click_count || 0), 0);
+  const totalLeads = campaign.leads || 0;
+  const totalRevenue = campaign.revenue || 0;
   const cpl = campaign.budget && totalLeads > 0 ? (campaign.budget / totalLeads).toFixed(2) : null;
 
   const goalTarget = campaign.goal === "revenue" ? 50000 : campaign.goal === "leads" ? 5000 : 2000;
   const goalCurrent = campaign.goal === "revenue" ? totalRevenue : totalLeads;
   const goalPct = Math.min(100, (goalCurrent / goalTarget) * 100);
 
+  // Source breakdown from real link data
+  const sourceCounts: Record<string, number> = {};
+  links.forEach((l) => {
+    sourceCounts[l.utm_source] = (sourceCounts[l.utm_source] || 0) + (l.click_count || 0);
+  });
+  const trafficBySource = Object.entries(sourceCounts)
+    .map(([name, value], i) => ({
+      name,
+      value,
+      color: SOURCE_COLORS[i % SOURCE_COLORS.length],
+    }))
+    .sort((a, b) => b.value - a.value);
+
+  // Leads by channel (use source as proxy)
+  const leadsByChannel = trafficBySource.slice(0, 5).map((s) => ({
+    channel: s.name,
+    leads: Math.round(s.value * (campaign.conversion_rate || 7.2) / 100),
+  }));
+
   // Source table from links
-  const sourceTable = links.map((l) => ({
-    source: l.utm_source,
-    clicks: l.clicks,
-    leads: l.leads,
-    conversion: l.conversion_rate,
-    revenue: l.revenue,
+  const sourceTable = trafficBySource.map((s) => ({
+    source: s.name,
+    clicks: s.value,
+    leads: Math.round(s.value * (campaign.conversion_rate || 7.2) / 100),
+    conversion: campaign.conversion_rate || 7.2,
   }));
 
   return (
     <div className="space-y-6 mt-4">
-      {/* KPI Cards — 4 primary, 2 secondary */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard label="Total Traffic" value={totalTraffic.toLocaleString()} change="+12.4%" positive icon={MousePointerClick} />
+        <KPICard
+          label="Total Traffic"
+          value={totalTraffic.toLocaleString()}
+          change="+12.4%"
+          positive
+          icon={MousePointerClick}
+          tooltip="Total tracked UTM link clicks across all links in this campaign"
+        />
         <KPICard label="Total Leads" value={totalLeads.toLocaleString()} change="+8.2%" positive icon={Users} />
         <KPICard label="Revenue" value={`$${totalRevenue.toLocaleString()}`} change="+15.7%" positive icon={DollarSign} />
         <KPICard label="Conversion" value={`${campaign.conversion_rate || 7.2}%`} change="+0.8%" positive icon={Target} />
@@ -110,7 +179,7 @@ export default function SummaryTab({ campaign }: Props) {
                 <Pie data={trafficBySource} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} innerRadius={40}>
                   {trafficBySource.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Pie>
-                <Tooltip formatter={(value: number) => value.toLocaleString()} />
+                <RechartsTooltip formatter={(value: number) => value.toLocaleString()} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -136,7 +205,7 @@ export default function SummaryTab({ campaign }: Props) {
                 <CartesianGrid strokeDasharray="3 3" className="opacity-20" horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 11 }} />
                 <YAxis dataKey="channel" type="category" tick={{ fontSize: 11 }} width={70} />
-                <Tooltip />
+                <RechartsTooltip />
                 <Bar dataKey="leads" fill="hsl(168, 76%, 42%)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
