@@ -4,7 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { demoLinks, demoAssets, goalLabels } from "../campaignDemoData";
-import { TrendingUp, TrendingDown, Users, DollarSign, MousePointerClick, Target, Activity, ShieldCheck, AlertTriangle } from "lucide-react";
+import { TrendingUp, TrendingDown, Users, DollarSign, MousePointerClick, Target, Activity } from "lucide-react";
 
 interface Props {
   campaign: Campaign;
@@ -68,15 +68,19 @@ export default function SummaryTab({ campaign }: Props) {
 
   return (
     <div className="space-y-6 mt-4">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      {/* KPI Cards — 4 primary, 2 secondary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard label="Total Traffic" value={totalTraffic.toLocaleString()} change="+12.4%" positive icon={MousePointerClick} />
         <KPICard label="Total Leads" value={totalLeads.toLocaleString()} change="+8.2%" positive icon={Users} />
         <KPICard label="Revenue" value={`$${totalRevenue.toLocaleString()}`} change="+15.7%" positive icon={DollarSign} />
         <KPICard label="Conversion" value={`${campaign.conversion_rate || 7.2}%`} change="+0.8%" positive icon={Target} />
-        {cpl && <KPICard label="Cost / Lead" value={`$${cpl}`} change="-5.3%" positive icon={Activity} />}
-        <KPICard label="ROI" value={campaign.roi > 0 ? `${campaign.roi}%` : "590%"} change="+42%" positive icon={TrendingUp} />
       </div>
+      {(cpl || campaign.roi > 0) && (
+        <div className="grid grid-cols-2 gap-3">
+          {cpl && <KPICard label="Cost / Lead" value={`$${cpl}`} change="-5.3%" positive icon={Activity} />}
+          <KPICard label="ROI" value={campaign.roi > 0 ? `${campaign.roi}%` : "590%"} change="+42%" positive icon={TrendingUp} />
+        </div>
+      )}
 
       {/* Goal Progress */}
       <Card className="p-5">
@@ -96,7 +100,7 @@ export default function SummaryTab({ campaign }: Props) {
       </Card>
 
       {/* Traffic breakdown row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {/* Pie chart */}
         <Card className="p-5">
           <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">Traffic by Source</p>
@@ -188,36 +192,6 @@ export default function SummaryTab({ campaign }: Props) {
         </div>
       )}
 
-      {/* Health Indicators */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Card className="p-4 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Link Health</p>
-            <p className="text-sm font-semibold">{links.length} Active · 0 Broken</p>
-          </div>
-        </Card>
-        <Card className="p-4 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-            <AlertTriangle className="w-4 h-4 text-amber-600" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Funnel Drop-Off</p>
-            <p className="text-sm font-semibold">Lead Capture: 72% drop</p>
-          </div>
-        </Card>
-        <Card className="p-4 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-            <Activity className="w-4 h-4 text-blue-600" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Tracking Confidence</p>
-            <p className="text-sm font-semibold">92%</p>
-          </div>
-        </Card>
-      </div>
     </div>
   );
 }

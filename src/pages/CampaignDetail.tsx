@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import CampaignDetailHeader from "@/components/campaigns/CampaignDetailHeader";
 import CampaignDetailTabs from "@/components/campaigns/CampaignDetailTabs";
+import CampaignDetailSidebar from "@/components/campaigns/CampaignDetailSidebar";
 import { demoCampaigns } from "@/components/campaigns/campaignDemoData";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,7 +76,14 @@ export default function CampaignDetail() {
     <ProjectLayout>
       <div className="p-4 md:p-6 max-w-7xl mx-auto">
         <CampaignDetailHeader campaign={campaign} onSwitchTab={setActiveTab} />
-        <CampaignDetailTabs campaign={campaign} activeTab={activeTab} onTabChange={setActiveTab} />
+
+        {/* Two-zone layout: sidebar + content */}
+        <div className="flex flex-col lg:flex-row gap-6 mt-6">
+          <CampaignDetailSidebar campaign={campaign} activeTab={activeTab} onTabChange={setActiveTab} />
+          <div className="flex-1 min-w-0">
+            <CampaignDetailTabs campaign={campaign} activeTab={activeTab} onTabChange={setActiveTab} />
+          </div>
+        </div>
       </div>
     </ProjectLayout>
   );

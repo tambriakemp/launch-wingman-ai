@@ -1,7 +1,7 @@
 import { demoFunnelSteps } from "../campaignDemoData";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Link2, AlertTriangle } from "lucide-react";
+import { ArrowRight, ArrowDown, Link2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function FunnelTab() {
@@ -21,7 +21,8 @@ export default function FunnelTab() {
       {/* Horizontal funnel flow */}
       <Card className="p-6">
         <p className="text-xs text-muted-foreground uppercase tracking-wide mb-5">Funnel Flow</p>
-        <div className="flex items-stretch gap-0 overflow-x-auto pb-2">
+        {/* Desktop: horizontal flow */}
+        <div className="hidden md:flex items-stretch gap-0 overflow-x-auto pb-2">
           {demoFunnelSteps.map((step, i) => {
             const isLowConversion = step.conversion_pct < 30;
             return (
@@ -44,6 +45,33 @@ export default function FunnelTab() {
                   <div className="flex items-center px-2">
                     <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
                   </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {/* Mobile: vertical flow */}
+        <div className="md:hidden flex flex-col gap-0">
+          {demoFunnelSteps.map((step, i) => {
+            const isLowConversion = step.conversion_pct < 30;
+            return (
+              <div key={step.name} className="flex flex-col items-center">
+                <div className={cn(
+                  "border rounded-lg p-4 w-full transition-all",
+                  isLowConversion ? "border-amber-300 bg-amber-50/50 dark:bg-amber-950/10 dark:border-amber-800" : "border-border"
+                )}>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    {isLowConversion && <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />}
+                    <p className="text-sm font-semibold">{step.name}</p>
+                  </div>
+                  <p className="text-2xl font-bold">{step.visitors.toLocaleString()}</p>
+                  <div className="flex items-center gap-3 mt-2 text-xs">
+                    <span className="text-emerald-600 font-medium">{step.conversion_pct}% conv</span>
+                    <span className="text-red-500">{step.dropoff_pct}% drop</span>
+                  </div>
+                </div>
+                {i < demoFunnelSteps.length - 1 && (
+                  <ArrowDown className="w-4 h-4 text-muted-foreground my-2" />
                 )}
               </div>
             );
