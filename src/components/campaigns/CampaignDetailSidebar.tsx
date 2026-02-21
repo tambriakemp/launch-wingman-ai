@@ -1,7 +1,7 @@
 import { Campaign } from "@/types/campaign";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Link2, Image, GitBranch, BarChart3, StickyNote, ShieldCheck, AlertTriangle, Activity } from "lucide-react";
-import { demoLinks } from "./campaignDemoData";
+import { LayoutDashboard, Link2, Image, GitBranch, BarChart3, StickyNote, ShieldCheck, AlertTriangle, Activity, Target, Calendar, DollarSign } from "lucide-react";
+import { demoLinks, goalLabels } from "./campaignDemoData";
 
 interface Props {
   campaign: Campaign;
@@ -26,7 +26,7 @@ export default function CampaignDetailSidebar({ campaign, activeTab, onTabChange
   const cvr = totalTraffic > 0 ? ((totalLeads / totalTraffic) * 100).toFixed(1) : "0";
 
   return (
-    <aside className="hidden lg:flex flex-col w-56 shrink-0 border-r border-border/50 pr-4 space-y-6">
+    <aside className="hidden lg:flex flex-col w-60 shrink-0 border-r border-border/50 pr-4 space-y-6">
       {/* Navigation */}
       <nav className="space-y-0.5">
         {navItems.map((item) => {
@@ -36,64 +36,94 @@ export default function CampaignDetailSidebar({ campaign, activeTab, onTabChange
               key={item.id}
               onClick={() => onTabChange(item.id)}
               className={cn(
-                "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors text-left",
+                "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-md text-[15px] transition-colors text-left",
                 isActive
                   ? "bg-primary/10 text-primary font-medium border-l-2 border-primary -ml-px"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
-              <item.icon className="w-4 h-4 shrink-0" />
+              <item.icon className="w-[18px] h-[18px] shrink-0" />
               {item.label}
             </button>
           );
         })}
       </nav>
 
+      {/* Campaign Info Cards */}
+      <div className="space-y-2 px-1">
+        <p className="text-xs text-muted-foreground uppercase tracking-wider px-2 mb-2 font-medium">Campaign Info</p>
+        <div className="rounded-lg border border-border/60 bg-card p-3 space-y-1">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Target className="w-4 h-4 shrink-0" />
+            <span className="text-xs">Goal</span>
+          </div>
+          <p className="text-sm font-semibold pl-6">{goalLabels[campaign.goal]}</p>
+        </div>
+        <div className="rounded-lg border border-border/60 bg-card p-3 space-y-1">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Calendar className="w-4 h-4 shrink-0" />
+            <span className="text-xs">Date Range</span>
+          </div>
+          <p className="text-sm font-semibold pl-6">
+            {campaign.start_date} → {campaign.end_date ?? "Ongoing"}
+          </p>
+        </div>
+        {campaign.budget && (
+          <div className="rounded-lg border border-border/60 bg-card p-3 space-y-1">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <DollarSign className="w-4 h-4 shrink-0" />
+              <span className="text-xs">Budget</span>
+            </div>
+            <p className="text-sm font-semibold pl-6">${campaign.budget.toLocaleString()}</p>
+          </div>
+        )}
+      </div>
+
       {/* Quick Stats */}
       <div className="space-y-1">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wider px-3 mb-2">Quick Stats</p>
+        <p className="text-xs text-muted-foreground uppercase tracking-wider px-3 mb-2 font-medium">Quick Stats</p>
         <div className="grid grid-cols-2 gap-2 px-1">
-          <div className="rounded-md bg-muted/40 p-2.5">
-            <p className="text-[10px] text-muted-foreground">Traffic</p>
-            <p className="text-sm font-bold">{totalTraffic.toLocaleString()}</p>
+          <div className="rounded-lg bg-muted/40 p-3">
+            <p className="text-xs text-muted-foreground">Traffic</p>
+            <p className="text-base font-bold">{totalTraffic.toLocaleString()}</p>
           </div>
-          <div className="rounded-md bg-muted/40 p-2.5">
-            <p className="text-[10px] text-muted-foreground">Leads</p>
-            <p className="text-sm font-bold">{totalLeads.toLocaleString()}</p>
+          <div className="rounded-lg bg-muted/40 p-3">
+            <p className="text-xs text-muted-foreground">Leads</p>
+            <p className="text-base font-bold">{totalLeads.toLocaleString()}</p>
           </div>
-          <div className="rounded-md bg-muted/40 p-2.5">
-            <p className="text-[10px] text-muted-foreground">Revenue</p>
-            <p className="text-sm font-bold">${totalRevenue.toLocaleString()}</p>
+          <div className="rounded-lg bg-muted/40 p-3">
+            <p className="text-xs text-muted-foreground">Revenue</p>
+            <p className="text-base font-bold">${totalRevenue.toLocaleString()}</p>
           </div>
-          <div className="rounded-md bg-muted/40 p-2.5">
-            <p className="text-[10px] text-muted-foreground">CVR</p>
-            <p className="text-sm font-bold">{cvr}%</p>
+          <div className="rounded-lg bg-muted/40 p-3">
+            <p className="text-xs text-muted-foreground">CVR</p>
+            <p className="text-base font-bold">{cvr}%</p>
           </div>
         </div>
       </div>
 
       {/* Health Indicators */}
       <div className="space-y-2 px-1">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wider px-2 mb-1">Health</p>
-        <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/30">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+        <p className="text-xs text-muted-foreground uppercase tracking-wider px-2 mb-1 font-medium">Health</p>
+        <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-muted/30">
+          <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
           <div>
-            <p className="text-[11px] text-muted-foreground">Link Health</p>
-            <p className="text-xs font-medium">{links.length} Active · 0 Broken</p>
+            <p className="text-xs text-muted-foreground">Link Health</p>
+            <p className="text-[13px] font-medium">{links.length} Active · 0 Broken</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/30">
-          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+        <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-muted/30">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
           <div>
-            <p className="text-[11px] text-muted-foreground">Funnel Drop-Off</p>
-            <p className="text-xs font-medium">72% at Lead Capture</p>
+            <p className="text-xs text-muted-foreground">Funnel Drop-Off</p>
+            <p className="text-[13px] font-medium">72% at Lead Capture</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/30">
-          <Activity className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+        <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-muted/30">
+          <Activity className="w-4 h-4 text-blue-600 shrink-0" />
           <div>
-            <p className="text-[11px] text-muted-foreground">Tracking</p>
-            <p className="text-xs font-medium">92% confidence</p>
+            <p className="text-xs text-muted-foreground">Tracking</p>
+            <p className="text-[13px] font-medium">92% confidence</p>
           </div>
         </div>
       </div>
