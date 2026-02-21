@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { statusColors, goalLabels } from "./campaignDemoData";
-import { ArrowLeft, Pencil, Copy, Archive, AlertTriangle, Link2, Check, X } from "lucide-react";
+import { ArrowLeft, Pencil, Copy, Archive, AlertTriangle, Link2, Check, X, MoreHorizontal } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -132,14 +133,27 @@ export default function CampaignDetailHeader({ campaign, onSwitchTab }: Props) {
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2 shrink-0">
+      {/* Actions — buttons on desktop, dropdown on mobile */}
+        <div className="hidden md:flex items-center gap-2 shrink-0">
           <Button variant="outline" size="sm" className="gap-1.5">
             <Copy className="w-3.5 h-3.5" /> Duplicate
           </Button>
           <Button variant="ghost" size="sm" className="gap-1.5 text-destructive hover:text-destructive">
             <Archive className="w-3.5 h-3.5" /> Archive
           </Button>
+        </div>
+        <div className="md:hidden shrink-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem><Copy className="w-3.5 h-3.5 mr-2" /> Duplicate</DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive"><Archive className="w-3.5 h-3.5 mr-2" /> Archive</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

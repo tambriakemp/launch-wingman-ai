@@ -6,6 +6,7 @@ import AssetsTab from "./tabs/AssetsTab";
 import FunnelTab from "./tabs/FunnelTab";
 import AnalyticsTab from "./tabs/AnalyticsTab";
 import NotesTab from "./tabs/NotesTab";
+import { LayoutDashboard, Link2, Image, GitBranch, BarChart3, StickyNote } from "lucide-react";
 
 interface Props {
   campaign: Campaign;
@@ -13,22 +14,38 @@ interface Props {
   onTabChange: (tab: string) => void;
 }
 
+const tabItems = [
+  { id: "summary", label: "Summary", icon: LayoutDashboard },
+  { id: "links", label: "Links", icon: Link2 },
+  { id: "assets", label: "Assets", icon: Image },
+  { id: "funnel", label: "Funnel", icon: GitBranch },
+  { id: "analytics", label: "Analytics", icon: BarChart3 },
+  { id: "notes", label: "Notes", icon: StickyNote },
+];
+
 export default function CampaignDetailTabs({ campaign, activeTab, onTabChange }: Props) {
   return (
-    <Tabs value={activeTab} onValueChange={onTabChange} className="mt-6">
-      <TabsList className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b w-full justify-start rounded-none px-0 h-auto gap-0">
-        {["summary", "links", "assets", "funnel", "analytics", "notes"].map((t) => (
-          <TabsTrigger key={t} value={t} className="capitalize rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none px-4 py-2.5 text-sm">
-            {t}
+    <Tabs value={activeTab} onValueChange={onTabChange}>
+      {/* Mobile/Tablet: scrollable tab pills — hidden on lg where sidebar takes over */}
+      <TabsList className="lg:hidden flex overflow-x-auto w-full justify-start rounded-none px-0 h-auto gap-1 bg-transparent border-b pb-2 mb-2">
+        {tabItems.map((t) => (
+          <TabsTrigger
+            key={t.id}
+            value={t.id}
+            className="shrink-0 rounded-full border border-border/50 px-3 py-1.5 text-xs gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary data-[state=active]:shadow-none"
+          >
+            <t.icon className="w-3.5 h-3.5" />
+            {t.label}
           </TabsTrigger>
         ))}
       </TabsList>
-      <TabsContent value="summary"><SummaryTab campaign={campaign} /></TabsContent>
-      <TabsContent value="links"><LinksTab campaignId={campaign.id} campaignName={campaign.name} /></TabsContent>
-      <TabsContent value="assets"><AssetsTab campaignId={campaign.id} /></TabsContent>
-      <TabsContent value="funnel"><FunnelTab /></TabsContent>
-      <TabsContent value="analytics"><AnalyticsTab campaign={campaign} /></TabsContent>
-      <TabsContent value="notes"><NotesTab campaignId={campaign.id} /></TabsContent>
+
+      <TabsContent value="summary" className="mt-0"><SummaryTab campaign={campaign} /></TabsContent>
+      <TabsContent value="links" className="mt-0"><LinksTab campaignId={campaign.id} campaignName={campaign.name} /></TabsContent>
+      <TabsContent value="assets" className="mt-0"><AssetsTab campaignId={campaign.id} /></TabsContent>
+      <TabsContent value="funnel" className="mt-0"><FunnelTab /></TabsContent>
+      <TabsContent value="analytics" className="mt-0"><AnalyticsTab campaign={campaign} /></TabsContent>
+      <TabsContent value="notes" className="mt-0"><NotesTab campaignId={campaign.id} /></TabsContent>
     </Tabs>
   );
 }

@@ -88,6 +88,38 @@ export default function LinksTab({ campaignId, campaignName }: Props) {
     queryClient.invalidateQueries({ queryKey: ["campaign-utm-links", campaignId] });
   };
 
+  const LinkActionsMenu = ({ link, onDuplicate, onUpdateStatus }: { link: any; onDuplicate: (l: any) => void; onUpdateStatus: (id: string, s: string) => void }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-7 w-7">
+          <MoreHorizontal className="w-4 h-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => { navigator.clipboard.writeText(link.full_url); toast.success("URL copied"); }}>
+          <Copy className="w-3.5 h-3.5 mr-2" /> Copy URL
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => window.open(link.full_url, "_blank")}>
+          <ExternalLink className="w-3.5 h-3.5 mr-2" /> Open
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onDuplicate(link)}>Duplicate</DropdownMenuItem>
+        {link.status === "active" && (
+          <DropdownMenuItem onClick={() => onUpdateStatus(link.id, "paused")}>
+            <Pause className="w-3.5 h-3.5 mr-2" /> Pause
+          </DropdownMenuItem>
+        )}
+        {link.status === "paused" && (
+          <DropdownMenuItem onClick={() => onUpdateStatus(link.id, "active")}>Resume</DropdownMenuItem>
+        )}
+        {link.status !== "archived" && (
+          <DropdownMenuItem onClick={() => onUpdateStatus(link.id, "archived")}>
+            <Archive className="w-3.5 h-3.5 mr-2" /> Archive
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <div className="mt-4 space-y-4">
       {/* Toolbar */}
@@ -129,7 +161,7 @@ export default function LinksTab({ campaignId, campaignName }: Props) {
       {/* Auto-Generate Panel */}
       {showAutoGen && <AutoGeneratePanel campaignId={campaignId} campaignName={campaignName} />}
 
-      {/* Links Table */}
+      {/* Links Table / Cards */}
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
       ) : filtered.length === 0 ? (
@@ -141,77 +173,73 @@ export default function LinksTab({ campaignId, campaignName }: Props) {
           </Button>
         </div>
       ) : (
-        <div className="border rounded-lg overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/30">
-                <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Name</th>
-                <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Channel</th>
-                <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide hidden md:table-cell">UTM Preview</th>
-                <th className="text-right p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Clicks</th>
-                <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Status</th>
-                <th className="w-10 p-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((l: any) => (
-                <tr key={l.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
-                  <td className="p-3">
-                    <p className="font-medium text-sm">{l.label}</p>
-                    <p className="text-[11px] text-muted-foreground truncate max-w-[200px]">{l.base_url}</p>
-                  </td>
-                  <td className="p-3">
-                    <Badge variant="outline" className="text-[10px] capitalize">
-                      {CHANNELS.find((c) => c.value === l.channel)?.icon ?? "🔗"} {l.channel}
-                    </Badge>
-                  </td>
-                  <td className="p-3 hidden md:table-cell">
-                    <span className="text-xs text-muted-foreground font-mono">{l.utm_source}/{l.utm_medium}/{l.utm_campaign}</span>
-                  </td>
-                  <td className="p-3 text-right">{(l.click_count ?? 0).toLocaleString()}</td>
-                  <td className="p-3">
-                    <Badge className={`text-[10px] capitalize ${statusColors[l.status] ?? ""}`} variant="secondary">{l.status}</Badge>
-                  </td>
-                  <td className="p-3">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => { navigator.clipboard.writeText(l.full_url); toast.success("URL copied"); }}>
-                          <Copy className="w-3.5 h-3.5 mr-2" /> Copy URL
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => window.open(l.full_url, "_blank")}>
-                          <ExternalLink className="w-3.5 h-3.5 mr-2" /> Open
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => duplicateLink(l)}>
-                          Duplicate
-                        </DropdownMenuItem>
-                        {l.status === "active" && (
-                          <DropdownMenuItem onClick={() => updateStatus(l.id, "paused")}>
-                            <Pause className="w-3.5 h-3.5 mr-2" /> Pause
-                          </DropdownMenuItem>
-                        )}
-                        {l.status === "paused" && (
-                          <DropdownMenuItem onClick={() => updateStatus(l.id, "active")}>
-                            Resume
-                          </DropdownMenuItem>
-                        )}
-                        {l.status !== "archived" && (
-                          <DropdownMenuItem onClick={() => updateStatus(l.id, "archived")}>
-                            <Archive className="w-3.5 h-3.5 mr-2" /> Archive
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
+        <>
+          {/* Desktop: Table */}
+          <div className="hidden md:block border rounded-lg overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/30">
+                  <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Name</th>
+                  <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Channel</th>
+                  <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">UTM Preview</th>
+                  <th className="text-right p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Clicks</th>
+                  <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Status</th>
+                  <th className="w-10 p-3" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filtered.map((l: any) => (
+                  <tr key={l.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                    <td className="p-3">
+                      <p className="font-medium text-sm">{l.label}</p>
+                      <p className="text-[11px] text-muted-foreground truncate max-w-[200px]">{l.base_url}</p>
+                    </td>
+                    <td className="p-3">
+                      <Badge variant="outline" className="text-[10px] capitalize">
+                        {CHANNELS.find((c) => c.value === l.channel)?.icon ?? "🔗"} {l.channel}
+                      </Badge>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-xs text-muted-foreground font-mono">{l.utm_source}/{l.utm_medium}/{l.utm_campaign}</span>
+                    </td>
+                    <td className="p-3 text-right">{(l.click_count ?? 0).toLocaleString()}</td>
+                    <td className="p-3">
+                      <Badge className={`text-[10px] capitalize ${statusColors[l.status] ?? ""}`} variant="secondary">{l.status}</Badge>
+                    </td>
+                    <td className="p-3">
+                      <LinkActionsMenu link={l} onDuplicate={duplicateLink} onUpdateStatus={updateStatus} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile: Cards */}
+          <div className="md:hidden space-y-3">
+            {filtered.map((l: any) => (
+              <div key={l.id} className="border rounded-lg p-4 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">{l.label}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{l.base_url}</p>
+                  </div>
+                  <LinkActionsMenu link={l} onDuplicate={duplicateLink} onUpdateStatus={updateStatus} />
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline" className="text-[10px] capitalize">
+                    {CHANNELS.find((c) => c.value === l.channel)?.icon ?? "🔗"} {l.channel}
+                  </Badge>
+                  <Badge className={`text-[10px] capitalize ${statusColors[l.status] ?? ""}`} variant="secondary">{l.status}</Badge>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
+                  <span className="font-mono text-[10px]">{l.utm_source}/{l.utm_medium}</span>
+                  <span className="font-medium text-foreground">{(l.click_count ?? 0).toLocaleString()} clicks</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       <AddUTMLinkModal open={showAddModal} onOpenChange={setShowAddModal} campaignId={campaignId} campaignName={campaignName} />

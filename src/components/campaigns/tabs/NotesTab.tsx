@@ -16,7 +16,7 @@ export default function NotesTab({ campaignId }: Props) {
   const notes = demoNotes.filter((n) => n.campaign_id === campaignId);
 
   return (
-    <div className="mt-4 space-y-6 max-w-3xl">
+    <div className="mt-4 space-y-6">
       {/* Add note */}
       <Card className="p-5">
         <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">Add Note</p>
