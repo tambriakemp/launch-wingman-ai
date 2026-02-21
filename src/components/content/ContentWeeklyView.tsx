@@ -234,10 +234,10 @@ export const ContentWeeklyView = ({
             {HOURS.map((hour) => (
               <div
                 key={hour}
-                className="absolute left-0 right-0 flex items-start justify-end pr-2 -mt-2"
-                style={{ top: hour * HOUR_HEIGHT }}
+                className="absolute left-0 right-0 flex items-start justify-end pr-2"
+                style={{ top: hour * HOUR_HEIGHT + 2 }}
               >
-                <span className="text-[10px] text-muted-foreground">{formatHour(hour)}</span>
+                <span className="text-xs text-muted-foreground">{formatHour(hour)}</span>
               </div>
             ))}
           </div>

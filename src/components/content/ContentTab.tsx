@@ -116,30 +116,6 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background shrink-0">
         <div className="flex items-center gap-2">
           <h1 className="text-lg font-semibold text-foreground">Social Planner</h1>
-          {/* View toggle */}
-          <div className="flex items-center border border-border rounded-md overflow-hidden ml-2">
-            <button
-              onClick={() => setCalendarView("weekly")}
-              className={`px-2.5 py-1 text-xs font-medium transition-colors ${
-                calendarView === "weekly"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Week
-            </button>
-            <button
-              onClick={() => setCalendarView("monthly")}
-              className={`px-2.5 py-1 text-xs font-medium transition-colors ${
-                calendarView === "monthly"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Calendar className="w-3 h-3 inline mr-1" />
-              Month
-            </button>
-          </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center">
