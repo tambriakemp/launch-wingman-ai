@@ -123,13 +123,14 @@ export const UTMLinkTable = ({ links, folders = [], onDelete, onMoveToFolder, pu
 
                 {/* Short link */}
                 <div
-                  className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs text-primary cursor-pointer hover:opacity-80 transition-opacity"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs text-primary cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={() => copyToClipboard(getShortUrl(link.short_code), "Short link")}
-                  title="Click to copy"
+                  title="Click to copy — this link tracks clicks"
                 >
                   <Link2 className="w-3.5 h-3.5 shrink-0" />
-                  <span className="font-medium text-muted-foreground">Short:</span>
-                  <span className="truncate">/r/{link.short_code}</span>
+                  <span className="font-medium">Share:</span>
+                  <span className="truncate">{getShortUrl(link.short_code)}</span>
+                  <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 h-4 border-primary/30 text-primary">Tracked</Badge>
                 </div>
 
                 {/* Footer */}
