@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Copy, ExternalLink, Trash2, ChevronLeft, ChevronRight, Search, MousePointerClick, Calendar, Link2 } from "lucide-react";
+import { ExternalLink, Trash2, ChevronLeft, ChevronRight, Search, MousePointerClick, Calendar, Link2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -49,7 +49,7 @@ export const UTMLinkTable = ({ links, onDelete, publishedUrl }: UTMLinkTableProp
     toast({ title: "Copied!", description: `${label} copied to clipboard.` });
   };
 
-  const getShortUrl = (shortCode: string) => `${publishedUrl}/r/${shortCode}`;
+  const getShortUrl = (shortCode: string) => `https://launchely.com/r/${shortCode}`;
 
   const handleSearch = (value: string) => {
     setSearchQuery(value);
@@ -99,20 +99,25 @@ export const UTMLinkTable = ({ links, onDelete, publishedUrl }: UTMLinkTableProp
                 </div>
 
                 {/* Full URL block */}
-                <div className="rounded-md bg-muted/50 px-3 py-2 font-mono text-xs text-muted-foreground break-all">
+                <div
+                  className="rounded-md border bg-muted/50 px-3 py-2 font-mono text-xs text-muted-foreground break-all cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => copyToClipboard(link.full_url, "Full URL")}
+                  title="Click to copy"
+                >
                   {link.full_url}
                 </div>
 
                 {/* Short link */}
-                <div className="flex items-center gap-1.5 text-xs text-primary">
-                  <Link2 className="w-3.5 h-3.5" />
-                  <span className="truncate">{getShortUrl(link.short_code)}</span>
-                </div>
-
-                {/* UTM tags */}
-                <div className="flex flex-wrap gap-1.5">
-                  <Badge variant="outline" className="text-xs">{link.utm_source}</Badge>
-                  <Badge variant="outline" className="text-xs">{link.utm_medium}</Badge>
+                <div>
+                  <p className="text-[11px] font-medium text-muted-foreground mb-1">Short</p>
+                  <div
+                    className="rounded-md border px-3 py-2 flex items-center gap-1.5 text-xs text-primary cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => copyToClipboard(getShortUrl(link.short_code), "Short link")}
+                    title="Click to copy"
+                  >
+                    <Link2 className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{getShortUrl(link.short_code)}</span>
+                  </div>
                 </div>
 
                 {/* Footer */}
@@ -128,12 +133,6 @@ export const UTMLinkTable = ({ links, onDelete, publishedUrl }: UTMLinkTableProp
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" title="Copy full URL" onClick={() => copyToClipboard(link.full_url, "Full URL")}>
-                      <Copy className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" title="Copy short link" onClick={() => copyToClipboard(getShortUrl(link.short_code), "Short link")}>
-                      <Link2 className="w-3.5 h-3.5" />
-                    </Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7" title="Open link" onClick={() => window.open(link.full_url, "_blank")}>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </Button>
