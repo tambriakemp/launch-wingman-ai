@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
-const PUBLISHED_URL = "https://launch-wingman-ai.lovable.app";
+const PUBLISHED_URL = "https://launchely.com";
 
 const generateShortCode = (): string => {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
