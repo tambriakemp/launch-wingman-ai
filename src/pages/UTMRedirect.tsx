@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 
 const UTMRedirect = () => {
   const { code } = useParams<{ code: string }>();
@@ -14,12 +13,6 @@ const UTMRedirect = () => {
 
     const redirect = async () => {
       try {
-        const { data, error: fnError } = await supabase.functions.invoke("utm-redirect", {
-          body: null,
-          method: "GET",
-        });
-
-        // Use fetch directly since functions.invoke doesn't support query params well
         const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/utm-redirect?code=${encodeURIComponent(code)}`,
@@ -27,6 +20,7 @@ const UTMRedirect = () => {
         );
 
         if (!response.ok) {
+          console.error("utm-redirect failed:", response.status);
           setError(true);
           return;
         }
@@ -37,7 +31,8 @@ const UTMRedirect = () => {
         } else {
           setError(true);
         }
-      } catch {
+      } catch (err) {
+        console.error("utm-redirect error:", err);
         setError(true);
       }
     };
