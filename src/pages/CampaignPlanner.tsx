@@ -8,10 +8,48 @@ import { demoCampaigns } from "@/components/campaigns/campaignDemoData";
 import { Button } from "@/components/ui/button";
 import { LayoutList, GanttChart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { Campaign } from "@/types/campaign";
 
 export default function CampaignPlanner() {
+  const { user } = useAuth();
   const [view, setView] = useState<"table" | "timeline">("table");
   const [showModal, setShowModal] = useState(false);
+
+  const { data: dbCampaigns } = useQuery({
+    queryKey: ["campaigns", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("campaigns")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []).map((c: any): Campaign => ({
+        id: c.id,
+        name: c.name,
+        goal: c.goal,
+        status: c.status,
+        start_date: c.start_date,
+        end_date: c.end_date,
+        budget: c.budget,
+        tags: c.tags ?? [],
+        leads: 0,
+        revenue: 0,
+        roi: 0,
+        conversion_rate: 0,
+        created_at: c.created_at,
+        updated_at: c.updated_at,
+        sparkline_data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      }));
+    },
+    enabled: !!user?.id,
+  });
+
+  const allCampaigns = [...(dbCampaigns ?? []), ...demoCampaigns];
 
   return (
     <ProjectLayout>
@@ -36,9 +74,9 @@ export default function CampaignPlanner() {
         </div>
 
         {view === "table" ? (
-          <CampaignTable campaigns={demoCampaigns} onNewCampaign={() => setShowModal(true)} />
+          <CampaignTable campaigns={allCampaigns} onNewCampaign={() => setShowModal(true)} />
         ) : (
-          <CampaignTimelineView campaigns={demoCampaigns} />
+          <CampaignTimelineView campaigns={allCampaigns} />
         )}
 
         <NewCampaignModal open={showModal} onOpenChange={setShowModal} />

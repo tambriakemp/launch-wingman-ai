@@ -10,13 +10,15 @@ import { cn } from "@/lib/utils";
 import { Check, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FUNNEL_TYPE_TO_CONFIG } from "@/lib/funnelUtils";
 import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
+import { toast } from "sonner";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCreated?: () => void;
 }
 
 const steps = ["Basics", "Attribution", "Funnel", "Confirm"];
@@ -36,8 +38,9 @@ const goalLabels: Record<string, string> = {
   challenge_signups: "Challenge Signups",
 };
 
-export default function NewCampaignModal({ open, onOpenChange }: Props) {
+export default function NewCampaignModal({ open, onOpenChange, onCreated }: Props) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [goal, setGoal] = useState("");
@@ -47,6 +50,7 @@ export default function NewCampaignModal({ open, onOpenChange }: Props) {
   const [autoUtm, setAutoUtm] = useState(true);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [selectedFunnelId, setSelectedFunnelId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const { data: funnels, isLoading: funnelsLoading } = useQuery({
     queryKey: ["campaign-funnels", user?.id],
@@ -76,7 +80,39 @@ export default function NewCampaignModal({ open, onOpenChange }: Props) {
 
   const reset = () => {
     setStep(0); setName(""); setGoal(""); setStartDate(""); setEndDate("");
-    setBudget(""); setAutoUtm(true); setSelectedPlatforms([]); setSelectedFunnelId(null);
+    setBudget(""); setAutoUtm(true); setSelectedPlatforms([]); setSelectedFunnelId(null); setSaving(false);
+  };
+
+  const handleCreate = async () => {
+    if (!user?.id || !name || !goal || !startDate) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("campaigns").insert({
+        user_id: user.id,
+        name,
+        goal,
+        status: "draft",
+        start_date: startDate,
+        end_date: endDate || null,
+        budget: budget ? parseFloat(budget) : null,
+        auto_utm: autoUtm,
+        platforms: selectedPlatforms,
+        funnel_id: selectedFunnelId || null,
+      });
+      if (error) throw error;
+      toast.success("Campaign created");
+      queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+      onCreated?.();
+      reset();
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create campaign");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -302,11 +338,11 @@ export default function NewCampaignModal({ open, onOpenChange }: Props) {
         )}
 
         <div className="flex justify-between pt-4 border-t">
-          <Button variant="ghost" onClick={() => step > 0 ? setStep(step - 1) : onOpenChange(false)}>
+          <Button variant="ghost" onClick={() => step > 0 ? setStep(step - 1) : onOpenChange(false)} disabled={saving}>
             {step > 0 ? "Back" : "Cancel"}
           </Button>
-          <Button onClick={() => step < 3 ? setStep(step + 1) : onOpenChange(false)}>
-            {step < 3 ? "Next" : "Create Campaign"}
+          <Button onClick={() => step < 3 ? setStep(step + 1) : handleCreate()} disabled={saving}>
+            {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Creating...</> : step < 3 ? "Next" : "Create Campaign"}
           </Button>
         </div>
       </DialogContent>
