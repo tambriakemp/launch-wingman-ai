@@ -1,58 +1,66 @@
 
+# Redesign Social Planner to Time-Based Weekly Calendar
 
-# Fix UTM Click Tracking
+## Overview
+Transform the Social Planner weekly view from vertical day columns into a full-page, time-based calendar grid matching the reference screenshot -- with hourly time slots on the left axis (12:00 AM through 11:00 PM) and days of the week across the top.
 
-## Problem
-Click tracking is completely broken -- zero click events have ever been recorded. There are two root causes:
+## Layout Changes
 
-1. **Short link redirect page has a bug**: The `UTMRedirect` component makes a wasteful first call to `supabase.functions.invoke("utm-redirect")` without passing the `code` parameter, then makes a second call via `fetch`. The first call likely errors silently and may interfere.
-2. **Full/long URL clicks are never tracked**: When a user copies and shares the full URL (e.g. `https://launchely.com/?utm_source=...`), clicking it goes directly to the destination. There is no redirect through the tracking edge function, so no click is ever recorded.
+### Header (merged into one bar)
+- Move the week navigation (arrows + "Today" button) and the month/year label into a single top bar alongside the action buttons ("Generate Launch Content", "Create Post")
+- Remove the separate `PlanPageHeader` component to reclaim vertical space
+- Remove the weekly/monthly toggle (keep only the new time-based weekly view; monthly view stays as-is but is accessed differently if needed)
 
-## Solution
+### Time-Based Grid
+- **Left column**: Hourly labels from 12:00 AM to 11:00 PM (24 rows), each row ~60px tall
+- **Top header row**: Day names (Monday-Sunday) with date numbers; today's date gets a highlighted circle (like the screenshot)
+- **Grid cells**: 7 columns x 24 rows, with light alternating row backgrounds and vertical/horizontal grid lines
+- **Scrollable**: The grid scrolls vertically; on load, auto-scroll to ~8:00 AM so the user sees a useful time range
+- Posts are positioned at their `scheduled_at` hour in the correct day column, displayed as compact chips showing platform icon + title
 
-### 1. Fix UTMRedirect.tsx (short link tracking)
-- Remove the broken `supabase.functions.invoke()` call (lines 17-20) that sends a request without the code parameter
-- Keep only the direct `fetch` call which correctly passes the code as a query param
-- This ensures short link clicks (`launchely.com/r/{code}`) are properly tracked via the edge function
+### Post Chips (in time slots)
+- Compact pill/chip style matching the screenshot (platform icon + label like "Facebook Posts", "LinkedIn Posts")
+- Platform-colored border or background tint
+- If multiple posts overlap the same hour, stack them horizontally or show a "+N" overflow indicator
+- Clicking a chip opens the post editor
 
-### 2. Track full URL clicks at copy time
-Since full URLs bypass the redirect system entirely, the only reliable tracking point is when the link is copied. We should:
-- When a user copies the **full URL**, immediately call the edge function to log a "copy" event (or increment a separate counter)
-- Alternatively, and more practically: **do not attempt to track full URL clicks** since they go directly to the destination and we have no middleware. Instead, make the short link the primary recommended link for sharing.
-
-**Recommended approach**: Track short link clicks properly (fix #1), and for the full URL, add a note in the UI that only short links track clicks. This is the standard approach used by Bitly, UTM.io, etc.
-
-### 3. Immediate data refresh after redirect tracking
-- In the analytics hook, ensure queries refetch when navigating back to the analytics page (already handled by React Query's default stale behavior)
+### Full-Page Feel
+- Remove the `max-w-7xl` container constraint from `ContentTab` so the calendar stretches edge-to-edge within the sidebar layout
+- The calendar grid should fill the available viewport height (using `calc(100vh - header)` or flex-grow)
 
 ## Files to Change
 
-### `src/pages/UTMRedirect.tsx`
-- Remove the redundant `supabase.functions.invoke()` call
-- Keep only the clean `fetch` call with the code parameter
-- Add error logging for debugging
+### `src/components/content/ContentWeeklyView.tsx` -- Full rewrite
+- Replace the current 7-column day layout with a time-based grid
+- Add 24 hourly rows with time labels on the left
+- Position posts in the correct hour/day cell based on `scheduled_at`
+- Auto-scroll to current hour on mount
+- Keep existing data fetching and event handlers
 
-### `src/components/marketing-hub/UTMLinkTable.tsx`
-- Add a small indicator or tooltip on the full URL block noting "Short links track clicks"
-- Ensure the short link is visually prioritized as the sharing link
+### `src/components/content/ContentTab.tsx` -- Simplify layout
+- Remove `PlanPageHeader` for a more compact header
+- Merge week nav + action buttons into one row
+- Remove `max-w-7xl` constraint for full-width layout
+- Keep the monthly view toggle but make weekly the default
+
+### `src/pages/project/ProjectContent.tsx` -- Minor padding adjustment
+- Ensure `ProjectLayout` doesn't add extra padding that constrains the calendar
 
 ## Technical Details
 
-**Before (UTMRedirect.tsx):**
-```
-// Broken: calls without code param
-const { data, error: fnError } = await supabase.functions.invoke("utm-redirect", {
-  body: null,
-  method: "GET",
-});
+### Time slot positioning
+- Parse `scheduled_at` to extract the hour (0-23) and map posts to the correct row
+- Posts without a `scheduled_at` time won't appear on the time grid (only scheduled posts show)
+- Each hour row is a fixed height (~60px), making the full grid ~1440px tall (scrollable)
 
-// Then makes second call with code
-const response = await fetch(`https://${projectId}.supabase.co/functions/v1/utm-redirect?code=...`);
-```
+### Auto-scroll to current time
+- On mount, use a `useEffect` with `scrollIntoView` or `scrollTop` to center roughly on the current hour or 8:00 AM, whichever is more useful
 
-**After:**
-```
-// Single clean call with code param
-const response = await fetch(`https://${projectId}.supabase.co/functions/v1/utm-redirect?code=...`);
-```
+### Post chip rendering
+- Show platform icon (reuse existing `getPlatformIcon`) + truncated title
+- If a post spans no specific duration, render as a single-row chip
+- Multiple posts in same hour/day: render side-by-side within the cell, with "+N" if more than 2-3
 
+### Responsive behavior
+- On mobile, the grid scrolls horizontally (same pattern as current)
+- Time labels column stays fixed/sticky on the left during horizontal scroll
