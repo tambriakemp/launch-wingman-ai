@@ -16,7 +16,8 @@ const ClickTimingChart = ({ dayData, hourData }: Props) => (
         {dayData.every((d) => d.clicks === 0) ? (
           <p className="text-xs text-muted-foreground py-8 text-center">No timing data yet</p>
         ) : (
-          <ResponsiveContainer width="100%" height={200}>
+          <div className="h-[160px] sm:h-[200px]">
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart data={dayData}>
               <XAxis dataKey="day" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
@@ -30,6 +31,7 @@ const ClickTimingChart = ({ dayData, hourData }: Props) => (
               <Bar dataKey="clicks" fill="hsl(var(--secondary))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -41,7 +43,8 @@ const ClickTimingChart = ({ dayData, hourData }: Props) => (
         {hourData.every((d) => d.clicks === 0) ? (
           <p className="text-xs text-muted-foreground py-8 text-center">No timing data yet</p>
         ) : (
-          <ResponsiveContainer width="100%" height={200}>
+          <div className="h-[160px] sm:h-[200px]">
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart data={hourData}>
               <XAxis dataKey="hour" tick={{ fontSize: 9 }} tickLine={false} axisLine={false} interval={2} />
               <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
@@ -55,6 +58,7 @@ const ClickTimingChart = ({ dayData, hourData }: Props) => (
               <Bar dataKey="clicks" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          </div>
         )}
       </CardContent>
     </Card>

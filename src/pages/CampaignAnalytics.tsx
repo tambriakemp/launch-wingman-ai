@@ -37,14 +37,14 @@ const CampaignAnalytics = () => {
               <ArrowLeft className="w-4 h-4 text-muted-foreground" />
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Analytics Dashboard</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Analytics Dashboard</h1>
               <p className="text-muted-foreground text-sm mt-0.5">
                 Track performance across your UTM campaigns and links.
               </p>
             </div>
           </div>
           <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full sm:w-[160px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

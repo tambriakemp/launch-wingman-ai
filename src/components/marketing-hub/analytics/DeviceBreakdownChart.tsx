@@ -26,9 +26,10 @@ const DeviceBreakdownChart = ({ deviceData, browserData }: Props) => (
         {deviceData.length === 0 ? (
           <p className="text-xs text-muted-foreground py-8 text-center">No device data yet</p>
         ) : (
-          <ResponsiveContainer width="100%" height={220}>
+          <div className="h-[180px] sm:h-[220px]">
+          <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={deviceData} dataKey="clicks" nameKey="device" cx="50%" cy="50%" outerRadius={70} paddingAngle={2}>
+              <Pie data={deviceData} dataKey="clicks" nameKey="device" cx="50%" cy="50%" outerRadius={60} paddingAngle={2}>
                 {deviceData.map((_, i) => (
                   <Cell key={i} fill={DEVICE_COLORS[i % DEVICE_COLORS.length]} />
                 ))}
@@ -37,6 +38,7 @@ const DeviceBreakdownChart = ({ deviceData, browserData }: Props) => (
               <Legend wrapperStyle={{ fontSize: "11px" }} />
             </PieChart>
           </ResponsiveContainer>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -48,9 +50,10 @@ const DeviceBreakdownChart = ({ deviceData, browserData }: Props) => (
         {browserData.length === 0 ? (
           <p className="text-xs text-muted-foreground py-8 text-center">No browser data yet</p>
         ) : (
-          <ResponsiveContainer width="100%" height={220}>
+          <div className="h-[180px] sm:h-[220px]">
+          <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={browserData} dataKey="clicks" nameKey="browser" cx="50%" cy="50%" outerRadius={70} paddingAngle={2}>
+              <Pie data={browserData} dataKey="clicks" nameKey="browser" cx="50%" cy="50%" outerRadius={60} paddingAngle={2}>
                 {browserData.map((_, i) => (
                   <Cell key={i} fill={BROWSER_COLORS[i % BROWSER_COLORS.length]} />
                 ))}
@@ -59,6 +62,7 @@ const DeviceBreakdownChart = ({ deviceData, browserData }: Props) => (
               <Legend wrapperStyle={{ fontSize: "11px" }} />
             </PieChart>
           </ResponsiveContainer>
+          </div>
         )}
       </CardContent>
     </Card>

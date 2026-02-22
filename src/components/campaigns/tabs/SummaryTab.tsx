@@ -41,7 +41,7 @@ const SOURCE_COLORS = [
 
 function KPICard({ label, value, change, lastPeriod, positive, icon: Icon, tooltip }: { label: string; value: string; change: string; lastPeriod: string; positive: boolean; icon: any; tooltip?: string }) {
   return (
-    <Card className="p-4">
+  <Card className="p-3 sm:p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1">
           <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
@@ -62,8 +62,8 @@ function KPICard({ label, value, change, lastPeriod, positive, icon: Icon, toolt
           <Icon className="w-4 h-4 text-muted-foreground" />
         </div>
       </div>
-      <div className="flex items-center gap-2.5">
-        <p className="text-2xl font-bold">{value}</p>
+      <div className="flex items-center gap-2.5 flex-wrap">
+        <p className="text-xl sm:text-2xl font-bold">{value}</p>
         <span className={`inline-flex items-center gap-0.5 text-xs font-medium px-2 py-0.5 rounded ${positive ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" : "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400"}`}>
           {positive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
           {change}
@@ -168,7 +168,7 @@ export default function SummaryTab({ campaign }: Props) {
   return (
     <div className="space-y-6 mt-4">
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard
           label="Total Traffic"
           value={totalTraffic.toLocaleString()}
@@ -281,7 +281,8 @@ export default function SummaryTab({ campaign }: Props) {
           {sourceTable.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">No link data yet.</p>
           ) : (
-            <div className="space-y-0">
+            <div className="overflow-x-auto">
+            <div className="space-y-0 min-w-[280px]">
               <div className="grid grid-cols-4 gap-2 text-[10px] text-muted-foreground uppercase tracking-wider pb-2 border-b">
                 <span>Source</span><span className="text-right">Clicks</span><span className="text-right">Leads</span><span className="text-right">CVR</span>
               </div>
@@ -293,6 +294,7 @@ export default function SummaryTab({ campaign }: Props) {
                   <span className="text-right font-medium">{row.conversion}%</span>
                 </div>
               ))}
+            </div>
             </div>
           )}
         </Card>

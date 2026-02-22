@@ -21,7 +21,8 @@ const ClicksOverTimeChart = ({ data }: Props) => {
         {data.length === 0 ? (
           <p className="text-xs text-muted-foreground py-8 text-center">No click data yet</p>
         ) : (
-          <ResponsiveContainer width="100%" height={260}>
+          <div className="h-[200px] sm:h-[260px]">
+          <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={formatted}>
               <defs>
                 <linearGradient id="clickGradient" x1="0" y1="0" x2="0" y2="1">
@@ -47,6 +48,7 @@ const ClicksOverTimeChart = ({ data }: Props) => {
               />
             </AreaChart>
           </ResponsiveContainer>
+          </div>
         )}
       </CardContent>
     </Card>
