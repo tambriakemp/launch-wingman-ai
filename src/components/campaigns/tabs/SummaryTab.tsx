@@ -39,7 +39,7 @@ const SOURCE_COLORS = [
   "hsl(45, 80%, 55%)",
 ];
 
-function KPICard({ label, value, change, lastPeriod, positive, icon: Icon, tooltip }: { label: string; value: string; change: string; lastPeriod: string; positive: boolean; icon: any; tooltip?: string }) {
+function KPICard({ label, value, change, lastPeriod, positive, icon: Icon, tooltip, secondaryText }: { label: string; value: string; change: string; lastPeriod: string; positive: boolean; icon: any; tooltip?: string; secondaryText?: string }) {
   return (
   <Card className="p-3 sm:p-4">
       <div className="flex items-center justify-between mb-3">
@@ -70,6 +70,9 @@ function KPICard({ label, value, change, lastPeriod, positive, icon: Icon, toolt
         </span>
       </div>
       <p className="text-xs text-muted-foreground mt-1.5">vs. {lastPeriod} last period</p>
+      {secondaryText && (
+        <p className="text-[10px] text-muted-foreground mt-1">{secondaryText}</p>
+      )}
     </Card>
   );
 }
@@ -115,7 +118,16 @@ export default function SummaryTab({ campaign }: Props) {
   const totalRevenue = conversions.reduce((s, c) => s + (Number(c.revenue) || 0), 0);
   const cpl = campaign.budget && totalLeads > 0 ? (campaign.budget / totalLeads).toFixed(2) : null;
 
-  const conversionRate = totalTraffic > 0 ? ((totalLeads / totalTraffic) * 100) : 0;
+  const paidConversions = conversions.filter(c => (Number(c.revenue) || 0) > 0).length;
+  const clickToLeadRate = totalTraffic > 0 ? ((totalLeads / totalTraffic) * 100) : 0;
+  const leadToSaleRate = totalLeads > 0 ? ((paidConversions / totalLeads) * 100) : 0;
+
+  const isRevenueGoal = campaign.goal === "revenue";
+  const primaryConversionRate = isRevenueGoal ? leadToSaleRate : clickToLeadRate;
+  const primaryConversionLabel = isRevenueGoal ? "Lead-to-Sale" : "Click-to-Lead";
+  const secondaryConversionRate = isRevenueGoal ? clickToLeadRate : leadToSaleRate;
+  const secondaryConversionLabel = isRevenueGoal ? "Click-to-Lead" : "Lead-to-Sale";
+
   const roi = campaign.budget && campaign.budget > 0 ? (((totalRevenue - campaign.budget) / campaign.budget) * 100) : 0;
 
   const goalTarget = campaign.goal_target > 0 ? campaign.goal_target : (campaign.goal === "revenue" ? 50000 : campaign.goal === "leads" ? 5000 : 2000);
@@ -197,13 +209,16 @@ export default function SummaryTab({ campaign }: Props) {
           tooltip={`Sum of revenue values passed via the tracking pixel across all ${totalLeads} conversion${totalLeads !== 1 ? "s" : ""}.`}
         />
         <KPICard
-          label="Conversion"
-          value={`${conversionRate.toFixed(1)}%`}
-          change={conversionRate > 0 ? `+${conversionRate.toFixed(1)}%` : "0%"}
+          label={primaryConversionLabel}
+          value={`${primaryConversionRate.toFixed(1)}%`}
+          change={primaryConversionRate > 0 ? `+${primaryConversionRate.toFixed(1)}%` : "0%"}
           lastPeriod="0%"
-          positive={conversionRate > 0}
+          positive={primaryConversionRate > 0}
           icon={Target}
-          tooltip={`Leads ÷ Traffic × 100. ${totalLeads} lead${totalLeads !== 1 ? "s" : ""} ÷ ${totalTraffic.toLocaleString()} click${totalTraffic !== 1 ? "s" : ""} = ${conversionRate.toFixed(1)}%.`}
+          tooltip={isRevenueGoal
+            ? `Paid conversions ÷ Leads × 100. ${paidConversions} paid ÷ ${totalLeads} lead${totalLeads !== 1 ? "s" : ""} = ${leadToSaleRate.toFixed(1)}%.`
+            : `Leads ÷ Traffic × 100. ${totalLeads} lead${totalLeads !== 1 ? "s" : ""} ÷ ${totalTraffic.toLocaleString()} click${totalTraffic !== 1 ? "s" : ""} = ${clickToLeadRate.toFixed(1)}%.`}
+          secondaryText={`${secondaryConversionLabel}: ${secondaryConversionRate.toFixed(1)}%`}
         />
       </div>
       {(cpl || roi !== 0) && (
