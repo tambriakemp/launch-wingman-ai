@@ -31,6 +31,7 @@ interface UTMFormProps {
   onSaveBaseUrl: (url: string, label?: string) => void;
   onDeleteBaseUrl: (id: string) => void;
   saving: boolean;
+  campaignId?: string;
 }
 
 const UTM_SOURCES = [
@@ -55,7 +56,7 @@ const UTM_MEDIUMS = [
   "story", "reel", "carousel", "feed post",
 ];
 
-const generateFullUrl = (data: UTMFormData): string => {
+const generateFullUrl = (data: UTMFormData, campaignId?: string): string => {
   if (!data.baseUrl) return "";
   try {
     const url = new URL(data.baseUrl.startsWith("http") ? data.baseUrl : `https://${data.baseUrl}`);
@@ -64,6 +65,7 @@ const generateFullUrl = (data: UTMFormData): string => {
     if (data.utmCampaign) url.searchParams.set("utm_campaign", data.utmCampaign);
     if (data.utmTerm) url.searchParams.set("utm_term", data.utmTerm);
     if (data.utmContent) url.searchParams.set("utm_content", data.utmContent);
+    if (campaignId) url.searchParams.set("c", campaignId);
     return url.toString();
   } catch {
     return "";
@@ -165,7 +167,7 @@ const SearchableSelect = ({
   );
 };
 
-export const UTMForm = ({ folders, savedBaseUrls, onSave, onSaveBaseUrl, onDeleteBaseUrl, saving }: UTMFormProps) => {
+export const UTMForm = ({ folders, savedBaseUrls, onSave, onSaveBaseUrl, onDeleteBaseUrl, saving, campaignId }: UTMFormProps) => {
   const [form, setForm] = useState<UTMFormData>({
     label: "",
     baseUrl: "",
@@ -182,8 +184,8 @@ export const UTMForm = ({ folders, savedBaseUrls, onSave, onSaveBaseUrl, onDelet
   const [baseUrlLabel, setBaseUrlLabel] = useState("");
 
   useEffect(() => {
-    setFullUrl(generateFullUrl(form));
-  }, [form]);
+    setFullUrl(generateFullUrl(form, campaignId));
+  }, [form, campaignId]);
 
   const update = (key: keyof UTMFormData, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
