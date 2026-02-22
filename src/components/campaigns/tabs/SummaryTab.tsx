@@ -176,16 +176,58 @@ export default function SummaryTab({ campaign }: Props) {
           lastPeriod="0"
           positive
           icon={MousePointerClick}
-          tooltip="Total tracked UTM link clicks across all links in this campaign"
+          tooltip={`Sum of all UTM link clicks across ${links.length} tracked link${links.length !== 1 ? "s" : ""} in this campaign.`}
         />
-        <KPICard label="Total Leads" value={totalLeads.toLocaleString()} change={totalLeads > 0 ? `+${totalLeads}` : "0%"} lastPeriod="0" positive={totalLeads > 0} icon={Users} />
-        <KPICard label="Revenue" value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`} change={totalRevenue > 0 ? `+$${totalRevenue.toLocaleString()}` : "↓ 100%"} lastPeriod="$0.00" positive={totalRevenue > 0} icon={DollarSign} />
-        <KPICard label="Conversion" value={`${conversionRate.toFixed(1)}%`} change={conversionRate > 0 ? `+${conversionRate.toFixed(1)}%` : "0%"} lastPeriod="0%" positive={conversionRate > 0} icon={Target} />
+        <KPICard
+          label="Total Leads"
+          value={totalLeads.toLocaleString()}
+          change={totalLeads > 0 ? `+${totalLeads}` : "0%"}
+          lastPeriod="0"
+          positive={totalLeads > 0}
+          icon={Users}
+          tooltip={`Count of conversion events recorded by the tracking pixel. Each pixel hit = 1 lead. Currently ${totalLeads} conversion${totalLeads !== 1 ? "s" : ""}.`}
+        />
+        <KPICard
+          label="Revenue"
+          value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+          change={totalRevenue > 0 ? `+$${totalRevenue.toLocaleString()}` : "↓ 100%"}
+          lastPeriod="$0.00"
+          positive={totalRevenue > 0}
+          icon={DollarSign}
+          tooltip={`Sum of revenue values passed via the tracking pixel across all ${totalLeads} conversion${totalLeads !== 1 ? "s" : ""}.`}
+        />
+        <KPICard
+          label="Conversion"
+          value={`${conversionRate.toFixed(1)}%`}
+          change={conversionRate > 0 ? `+${conversionRate.toFixed(1)}%` : "0%"}
+          lastPeriod="0%"
+          positive={conversionRate > 0}
+          icon={Target}
+          tooltip={`Leads ÷ Traffic × 100. ${totalLeads} lead${totalLeads !== 1 ? "s" : ""} ÷ ${totalTraffic.toLocaleString()} click${totalTraffic !== 1 ? "s" : ""} = ${conversionRate.toFixed(1)}%.`}
+        />
       </div>
       {(cpl || roi !== 0) && (
         <div className="grid grid-cols-2 gap-3">
-          {cpl && <KPICard label="Cost / Lead" value={`$${cpl}`} change="—" lastPeriod="$0.00" positive icon={Activity} />}
-          <KPICard label="ROI" value={`${roi.toFixed(0)}%`} change={roi > 0 ? `+${roi.toFixed(0)}%` : "0%"} lastPeriod="0%" positive={roi > 0} icon={TrendingUp} />
+          {cpl && (
+            <KPICard
+              label="Cost / Lead"
+              value={`$${cpl}`}
+              change="—"
+              lastPeriod="$0.00"
+              positive
+              icon={Activity}
+              tooltip={`Campaign budget ÷ Total leads. $${campaign.budget?.toLocaleString() ?? "0"} ÷ ${totalLeads} = $${cpl}/lead.`}
+            />
+          )}
+          <KPICard
+            label="ROI"
+            value={`${roi.toFixed(0)}%`}
+            change={roi > 0 ? `+${roi.toFixed(0)}%` : "0%"}
+            lastPeriod="0%"
+            positive={roi > 0}
+            icon={TrendingUp}
+            tooltip={`(Revenue − Budget) ÷ Budget × 100. ($${totalRevenue.toLocaleString()} − $${campaign.budget?.toLocaleString() ?? "0"}) ÷ $${campaign.budget?.toLocaleString() ?? "0"} = ${roi.toFixed(0)}%.`}
+          />
         </div>
       )}
 
