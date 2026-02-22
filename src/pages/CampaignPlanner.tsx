@@ -44,6 +44,7 @@ export default function CampaignPlanner() {
         created_at: c.created_at,
         updated_at: c.updated_at,
         sparkline_data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        goal_target: Number(c.goal_target) || 0,
       }));
     },
     enabled: !!user?.id,

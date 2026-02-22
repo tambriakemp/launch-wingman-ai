@@ -365,6 +365,7 @@ export type Database = {
           end_date: string | null
           funnel_id: string | null
           goal: string
+          goal_target: number
           id: string
           name: string
           platforms: string[] | null
@@ -381,6 +382,7 @@ export type Database = {
           end_date?: string | null
           funnel_id?: string | null
           goal: string
+          goal_target?: number
           id?: string
           name: string
           platforms?: string[] | null
@@ -397,6 +399,7 @@ export type Database = {
           end_date?: string | null
           funnel_id?: string | null
           goal?: string
+          goal_target?: number
           id?: string
           name?: string
           platforms?: string[] | null

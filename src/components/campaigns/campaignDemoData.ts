@@ -17,6 +17,7 @@ export const demoCampaigns: Campaign[] = [
     created_at: "2026-02-15T10:00:00Z",
     updated_at: "2026-02-20T14:30:00Z",
     sparkline_data: [12, 19, 25, 32, 28, 35, 42, 38, 45, 50, 48, 55],
+    goal_target: 50000,
   },
   {
     id: "camp-2",
@@ -34,6 +35,7 @@ export const demoCampaigns: Campaign[] = [
     created_at: "2025-12-20T09:00:00Z",
     updated_at: "2026-02-19T11:00:00Z",
     sparkline_data: [50, 55, 60, 58, 65, 70, 75, 80, 78, 85, 90, 95],
+    goal_target: 5000,
   },
   {
     id: "camp-3",
@@ -51,6 +53,7 @@ export const demoCampaigns: Campaign[] = [
     created_at: "2026-02-18T08:00:00Z",
     updated_at: "2026-02-18T08:00:00Z",
     sparkline_data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    goal_target: 3000,
   },
   {
     id: "camp-4",
@@ -68,6 +71,7 @@ export const demoCampaigns: Campaign[] = [
     created_at: "2025-11-01T10:00:00Z",
     updated_at: "2025-12-05T16:00:00Z",
     sparkline_data: [20, 35, 80, 120, 95, 60, 45, 30, 25, 20, 15, 10],
+    goal_target: 25000,
   },
   {
     id: "camp-5",
@@ -85,6 +89,7 @@ export const demoCampaigns: Campaign[] = [
     created_at: "2026-01-25T12:00:00Z",
     updated_at: "2026-02-20T09:15:00Z",
     sparkline_data: [5, 10, 18, 22, 28, 35, 30, 38, 42, 40, 45, 48],
+    goal_target: 2000,
   },
   {
     id: "camp-6",
@@ -102,6 +107,7 @@ export const demoCampaigns: Campaign[] = [
     created_at: "2026-02-20T14:00:00Z",
     updated_at: "2026-02-20T14:00:00Z",
     sparkline_data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    goal_target: 1000,
   },
 ];
 

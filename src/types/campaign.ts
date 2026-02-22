@@ -17,6 +17,7 @@ export interface Campaign {
   created_at: string;
   updated_at: string;
   sparkline_data: number[];
+  goal_target: number;
 }
 
 export interface CampaignLink {

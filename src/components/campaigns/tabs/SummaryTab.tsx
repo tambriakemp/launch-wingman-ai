@@ -116,7 +116,7 @@ export default function SummaryTab({ campaign }: Props) {
   const conversionRate = totalTraffic > 0 ? ((totalLeads / totalTraffic) * 100) : 0;
   const roi = campaign.budget && campaign.budget > 0 ? (((totalRevenue - campaign.budget) / campaign.budget) * 100) : 0;
 
-  const goalTarget = campaign.goal === "revenue" ? 50000 : campaign.goal === "leads" ? 5000 : 2000;
+  const goalTarget = campaign.goal_target > 0 ? campaign.goal_target : (campaign.goal === "revenue" ? 50000 : campaign.goal === "leads" ? 5000 : 2000);
   const goalCurrent = campaign.goal === "revenue" ? totalRevenue : totalLeads;
   const goalPct = Math.min(100, (goalCurrent / goalTarget) * 100);
 
