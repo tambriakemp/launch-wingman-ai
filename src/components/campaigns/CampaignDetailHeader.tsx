@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { statusColors, goalLabels } from "./campaignDemoData";
-import { ArrowLeft, Pencil, Copy, Archive, AlertTriangle, Link2, Check, X, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Pencil, Copy, Archive, AlertTriangle, Link2, Check, X, MoreHorizontal, Calendar } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -113,15 +113,34 @@ export default function CampaignDetailHeader({ campaign, onSwitchTab }: Props) {
 
 
           {/* Campaign Period */}
-          <p className="text-sm text-muted-foreground">
-            Campaign Period: {(() => {
-              const fmt = (d: string) => {
-                const [y, m, day] = d.split("-");
-                return `${m}-${day}-${y}`;
-              };
-              return `${fmt(campaign.start_date)} → ${campaign.end_date ? fmt(campaign.end_date) : "Ongoing"}`;
-            })()}
-          </p>
+          <div className="flex items-center gap-2 text-sm">
+            <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Campaign Period</span>
+            <span className="text-muted-foreground">·</span>
+            <span className="font-medium text-foreground">
+              {(() => {
+                const fmt = (d: string) => {
+                  const [y, m, day] = d.split("-");
+                  return `${m}-${day}-${y}`;
+                };
+                const start = fmt(campaign.start_date);
+                const end = campaign.end_date ? fmt(campaign.end_date) : null;
+                return end ? `${start} → ${end}` : start;
+              })()}
+              {!campaign.end_date && (
+                <>
+                  <span className="mx-1">→</span>
+                  <span className="inline-flex items-center gap-1.5">
+                    Ongoing
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                    </span>
+                  </span>
+                </>
+              )}
+            </span>
+          </div>
 
           {/* Tags */}
           {campaign.tags.length > 0 && (
