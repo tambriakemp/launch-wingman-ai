@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
+import { LabelWithTooltip } from "@/components/ui/info-tooltip";
 
 interface Props {
   dayData: { day: string; clicks: number }[];
@@ -10,7 +11,9 @@ const ClickTimingChart = ({ dayData, hourData }: Props) => (
   <div className="grid md:grid-cols-2 gap-4">
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Clicks by Day of Week</CardTitle>
+        <CardTitle className="text-sm font-medium">
+          <LabelWithTooltip termKey="click-timing">Clicks by Day of Week</LabelWithTooltip>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {dayData.every((d) => d.clicks === 0) ? (
@@ -37,7 +40,9 @@ const ClickTimingChart = ({ dayData, hourData }: Props) => (
     </Card>
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Clicks by Hour of Day</CardTitle>
+        <CardTitle className="text-sm font-medium">
+          <LabelWithTooltip termKey="click-timing">Clicks by Hour of Day</LabelWithTooltip>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {hourData.every((d) => d.clicks === 0) ? (

@@ -24,6 +24,17 @@ export interface ClickEvent {
   user_agent: string | null;
 }
 
+export interface ConversionEvent {
+  id: string;
+  campaign_id: string;
+  created_at: string;
+  revenue: number | null;
+  referrer: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+}
+
 // ── Parsing helpers ──
 
 export function parseDevice(ua: string | null): string {
@@ -122,12 +133,41 @@ export function useCampaignAnalytics(dateRange: DateRange, campaignId?: string |
     enabled: !!user && !!linksQuery.data,
   });
 
+  // ── Conversion data ──
+  const conversionsQuery = useQuery({
+    queryKey: ["campaign-conversions-analytics", user?.id, dateRange, campaignId],
+    queryFn: async () => {
+      const rangeStart = getRangeStart(dateRange);
+      const campaignIds = campaignId
+        ? [campaignId]
+        : (campaignsQuery.data || []).map((c) => c.id);
+
+      if (campaignIds.length === 0) return [] as ConversionEvent[];
+
+      let query = supabase
+        .from("campaign_conversions")
+        .select("id, campaign_id, created_at, revenue, referrer, utm_source, utm_medium, utm_campaign")
+        .in("campaign_id", campaignIds)
+        .order("created_at", { ascending: true });
+
+      if (rangeStart) {
+        query = query.gte("created_at", rangeStart.toISOString());
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as ConversionEvent[];
+    },
+    enabled: !!user && !!campaignsQuery.data,
+  });
+
   const links = filteredLinks;
   const filteredLinkIds = new Set(links.map((l) => l.id));
   const allEvents = eventsQuery.data || [];
   const events = allEvents.filter((e) => filteredLinkIds.has(e.utm_link_id));
+  const conversions = conversionsQuery.data || [];
 
-  // ── Derived data ──
+  // ── Derived click data ──
 
   const totalClicks = events.length;
 
@@ -142,7 +182,7 @@ export function useCampaignAnalytics(dateRange: DateRange, campaignId?: string |
 
   const topLink = clicksByLink[0] || null;
 
-  // Clicks over time (by day) - supports optional link filter
+  // Clicks over time (by day)
   const clicksByDay: Record<string, number> = {};
   events.forEach((e) => {
     const day = format(new Date(e.clicked_at), "yyyy-MM-dd");
@@ -240,8 +280,26 @@ export function useCampaignAnalytics(dateRange: DateRange, campaignId?: string |
     .map(([browser, clicks]) => ({ browser, clicks }))
     .sort((a, b) => b.clicks - a.clicks);
 
+  // ── Derived conversion data ──
+
+  const totalConversions = conversions.length;
+  const totalRevenue = conversions.reduce((sum, c) => sum + (c.revenue || 0), 0);
+  const conversionRate = totalClicks > 0 ? (totalConversions / totalClicks) * 100 : 0;
+
+  // Conversions over time (by day)
+  const conversionsByDay: Record<string, { conversions: number; revenue: number }> = {};
+  conversions.forEach((c) => {
+    const day = format(new Date(c.created_at), "yyyy-MM-dd");
+    if (!conversionsByDay[day]) conversionsByDay[day] = { conversions: 0, revenue: 0 };
+    conversionsByDay[day].conversions++;
+    conversionsByDay[day].revenue += c.revenue || 0;
+  });
+  const conversionsOverTime = Object.entries(conversionsByDay)
+    .map(([date, vals]) => ({ date, conversions: vals.conversions, revenue: vals.revenue }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
   return {
-    isLoading: linksQuery.isLoading || eventsQuery.isLoading,
+    isLoading: linksQuery.isLoading || eventsQuery.isLoading || conversionsQuery.isLoading,
     totalClicks,
     topLink,
     uniqueSourceCount,
@@ -257,5 +315,10 @@ export function useCampaignAnalytics(dateRange: DateRange, campaignId?: string |
     campaigns: campaignsQuery.data || [],
     availableLinks: clicksByLink,
     buildClicksOverTimeForLink,
+    // Conversion metrics
+    totalConversions,
+    totalRevenue,
+    conversionRate,
+    conversionsOverTime,
   };
 }

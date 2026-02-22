@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Link } from "react-router-dom";
-import { ArrowLeft, MousePointerClick, Link2, Globe, Loader2 } from "lucide-react";
+import { ArrowLeft, MousePointerClick, Link2, Globe, Loader2, Target, Percent, DollarSign } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCampaignAnalytics, DateRange } from "@/hooks/useCampaignAnalytics";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import ClicksOverTimeChart from "@/components/marketing-hub/analytics/ClicksOverTimeChart";
 import TopLinksChart from "@/components/marketing-hub/analytics/TopLinksChart";
 import TrafficSourcesChart from "@/components/marketing-hub/analytics/TrafficSourcesChart";
@@ -12,6 +13,7 @@ import ClicksByCampaignChart from "@/components/marketing-hub/analytics/ClicksBy
 import ClicksBySourceMediumChart from "@/components/marketing-hub/analytics/ClicksBySourceMediumChart";
 import ClickTimingChart from "@/components/marketing-hub/analytics/ClickTimingChart";
 import DeviceBreakdownChart from "@/components/marketing-hub/analytics/DeviceBreakdownChart";
+import ConversionsOverTimeChart from "@/components/marketing-hub/analytics/ConversionsOverTimeChart";
 
 const RANGE_LABELS: Record<DateRange, string> = {
   "7d": "Last 7 days",
@@ -84,13 +86,15 @@ const CampaignAnalytics = () => {
           </div>
         ) : (
           <>
-            {/* Summary Cards */}
+            {/* Summary Cards - Row 1: Clicks */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Card>
                 <CardContent className="pt-4 pb-3 px-4">
                   <div className="flex items-center gap-2 mb-1">
                     <MousePointerClick className="w-4 h-4 text-secondary" />
-                    <span className="text-xs text-muted-foreground">Total Clicks</span>
+                    <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                      Total Clicks <InfoTooltip termKey="total-clicks" size="sm" />
+                    </span>
                   </div>
                   <p className="text-2xl font-bold text-foreground">{analytics.totalClicks}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">{RANGE_LABELS[dateRange]}</p>
@@ -100,7 +104,9 @@ const CampaignAnalytics = () => {
                 <CardContent className="pt-4 pb-3 px-4">
                   <div className="flex items-center gap-2 mb-1">
                     <Link2 className="w-4 h-4 text-secondary" />
-                    <span className="text-xs text-muted-foreground">Top Performing Link</span>
+                    <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                      Top Performing Link <InfoTooltip termKey="top-link" size="sm" />
+                    </span>
                   </div>
                   <p className="text-lg font-bold text-foreground truncate">
                     {analytics.topLink?.label || "—"}
@@ -114,10 +120,54 @@ const CampaignAnalytics = () => {
                 <CardContent className="pt-4 pb-3 px-4">
                   <div className="flex items-center gap-2 mb-1">
                     <Globe className="w-4 h-4 text-secondary" />
-                    <span className="text-xs text-muted-foreground">Traffic Sources</span>
+                    <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                      Traffic Sources <InfoTooltip termKey="traffic-sources" size="sm" />
+                    </span>
                   </div>
                   <p className="text-2xl font-bold text-foreground">{analytics.uniqueSourceCount}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">Unique referrer domains</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Summary Cards - Row 2: Conversions */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="pt-4 pb-3 px-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Target className="w-4 h-4 text-secondary" />
+                    <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                      Total Conversions <InfoTooltip termKey="total-conversions" size="sm" />
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">{analytics.totalConversions}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">From Smart Pixel</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4 pb-3 px-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Percent className="w-4 h-4 text-secondary" />
+                    <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                      Conversion Rate <InfoTooltip termKey="conversion-rate" size="sm" />
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">{analytics.conversionRate.toFixed(1)}%</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Clicks → Conversions</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4 pb-3 px-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <DollarSign className="w-4 h-4 text-secondary" />
+                    <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                      Total Revenue <InfoTooltip termKey="total-revenue" size="sm" />
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">
+                    ${analytics.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{RANGE_LABELS[dateRange]}</p>
                 </CardContent>
               </Card>
             </div>
@@ -130,6 +180,9 @@ const CampaignAnalytics = () => {
                 linkId ? analytics.buildClicksOverTimeForLink(linkId) : analytics.clicksOverTime
               }
             />
+
+            {/* Conversions Over Time */}
+            <ConversionsOverTimeChart data={analytics.conversionsOverTime} />
 
             {/* Top Links + Traffic Sources */}
             <div className="grid md:grid-cols-2 gap-4">
