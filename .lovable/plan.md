@@ -1,46 +1,19 @@
 
 
-## Goal-Aware Conversion Calculation
+## Fix Goal Progress Bar Color
 
-### Current Problem
-The "Conversion" KPI always shows `leads / clicks x 100`, which is misleading for revenue-focused campaigns -- it goes up when leads come in even if zero revenue has been earned.
+### Problem
+The progress bar at 0% still appears green because `bg-primary/70` is just a slightly transparent version of the primary color (teal/green), which still looks green and gives the impression the goal is complete.
 
-### New Logic
+### Solution
+Change the "in-progress" color to a neutral tone that clearly communicates work-in-progress, and only switch to green when complete.
 
-The conversion KPI card will adapt based on the campaign's goal:
+### Changes
 
-| Campaign Goal | Label | Formula | What it means |
-|---|---|---|---|
-| leads | Click-to-Lead | leads / clicks x 100 | % of visitors who became leads |
-| app_installs | Click-to-Lead | leads / clicks x 100 | Same as above |
-| challenge_signups | Click-to-Lead | leads / clicks x 100 | Same as above |
-| revenue | Lead-to-Sale | paid_conversions / leads x 100 | % of leads that generated revenue |
+**File:** `src/components/campaigns/CampaignDetailSidebar.tsx` (line 121)
 
-Where `paid_conversions` = count of records in `campaign_conversions` where `revenue > 0`.
+- Change `bg-primary/70` to `bg-muted-foreground/30` (a neutral gray) for the in-progress state
+- Keep `bg-emerald-500` for the completed state (>= 100%)
 
-### Secondary Metric
-Regardless of goal, a small secondary line will show the "other" conversion rate beneath the primary one:
-- Revenue campaigns: secondary shows "Click-to-Lead: X%"
-- Lead campaigns: secondary shows "Lead-to-Sale: X%" (if any conversions with revenue exist)
-
-This gives full context without cluttering the UI.
-
-### Tooltip Updates
-The tooltip text on the Conversion KPI card will also adapt to explain the formula being used for the current goal.
-
-### Technical Details
-
-**File:** `src/components/campaigns/tabs/SummaryTab.tsx`
-
-Changes:
-1. Compute `paidConversions` = count of conversions where `revenue > 0`
-2. Compute `clickToLeadRate` = `totalLeads / totalTraffic * 100`
-3. Compute `leadToSaleRate` = `paidConversions / totalLeads * 100` (guard against divide-by-zero)
-4. Set primary conversion value based on `campaign.goal`:
-   - `"revenue"` -> use `leadToSaleRate`, label "Lead-to-Sale"
-   - all others -> use `clickToLeadRate`, label "Click-to-Lead"
-5. Update the Conversion KPI card to use the dynamic label, value, and tooltip
-6. Add a secondary line of text below the "vs. last period" showing the alternate metric
-
-No database changes required -- all data is already available from existing queries.
+This ensures the bar looks neutral/gray while in progress and only turns green upon goal completion, eliminating the false "complete" impression.
 
