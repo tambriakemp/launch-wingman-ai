@@ -1,23 +1,35 @@
 
-# Add Conversion Pixel to /go Landing Page
 
-## What This Does
-Adds the UTM-tracking conversion pixel to the `/go` sales funnel page so every visit is tracked as a conversion event for campaign `777b05de-3810-45d0-a317-c107e883b2f9`. UTM parameters from the URL are automatically captured for attribution.
+# Fix "Demo campaigns cannot be deleted" Error
+
+## Problem
+The campaigns page merges hardcoded demo campaigns (IDs like `camp-1`, `camp-2`) with your real database campaigns. When you try to delete one of these demo entries, the code detects it's not a real database record and shows the confusing error.
+
+## Solution
+Hide the dropdown actions (Edit, Duplicate, Archive, Delete) for demo campaigns so you never see options that won't work. Additionally, once you have real campaigns in the database, stop showing the demo data entirely so there's no confusion.
 
 ## Changes
 
-**File: `src/pages/SalesFunnel.tsx`**
-- Convert the `SalesFunnel` component from an arrow-function expression to include a `useEffect` hook
-- On mount, fire the pixel fetch with campaign ID `777b05de-3810-45d0-a317-c107e883b2f9` and pass through any `utm_source`, `utm_medium`, `utm_campaign` query params from the current URL
-- Revenue is set to `0` since this tracks page visits (leads), not purchases
+**File: `src/pages/CampaignPlanner.tsx`**
+- Only include demo campaigns when there are zero real campaigns from the database, so they serve as placeholder/example data only
+
+**File: `src/components/campaigns/CampaignTable.tsx`**
+- Hide the actions dropdown (three-dot menu) for demo campaigns so Edit/Duplicate/Archive/Delete buttons are not shown for non-database entries
+- Make demo campaign rows non-clickable (or show a subtle "demo" indicator) so users know these are example data
 
 ## Technical Detail
 
 ```text
-useEffect (runs once on mount)
-  --> Read UTM params from window.location.search
-  --> Build pixel URL with campaign ID + UTMs
-  --> fetch(url) silently in background
+CampaignPlanner.tsx:
+  const allCampaigns = (dbCampaigns?.length ?? 0) > 0
+    ? dbCampaigns
+    : demoCampaigns;   // only show demos when no real data
+
+CampaignTable.tsx:
+  // Hide actions column for demo entries
+  {isDbCampaign(c) && (
+    <DropdownMenu>...</DropdownMenu>
+  )}
 ```
 
-The pixel will fire once per page load. No visible UI changes -- the tracking is invisible to visitors.
+This eliminates the confusing error entirely -- demo campaigns won't have action buttons, and once you create real campaigns the demos disappear.
