@@ -39,10 +39,10 @@ const SOURCE_COLORS = [
   "hsl(45, 80%, 55%)",
 ];
 
-function KPICard({ label, value, change, positive, icon: Icon, tooltip }: { label: string; value: string; change: string; positive: boolean; icon: any; tooltip?: string }) {
+function KPICard({ label, value, change, lastPeriod, positive, icon: Icon, tooltip }: { label: string; value: string; change: string; lastPeriod: string; positive: boolean; icon: any; tooltip?: string }) {
   return (
     <Card className="p-4">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1">
           <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
           {tooltip && (
@@ -62,12 +62,14 @@ function KPICard({ label, value, change, positive, icon: Icon, tooltip }: { labe
           <Icon className="w-4 h-4 text-muted-foreground" />
         </div>
       </div>
-      <p className="text-2xl font-bold">{value}</p>
-      <div className="flex items-center gap-1 mt-1">
-        {positive ? <TrendingUp className="w-3 h-3 text-emerald-600" /> : <TrendingDown className="w-3 h-3 text-red-500" />}
-        <span className={`text-xs font-medium ${positive ? "text-emerald-600" : "text-red-500"}`}>{change}</span>
-        <span className="text-xs text-muted-foreground">vs last period</span>
+      <div className="flex items-center gap-2.5">
+        <p className="text-2xl font-bold">{value}</p>
+        <span className={`inline-flex items-center gap-0.5 text-xs font-medium px-2 py-0.5 rounded ${positive ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" : "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400"}`}>
+          {positive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+          {change}
+        </span>
       </div>
+      <p className="text-xs text-muted-foreground mt-1.5">vs. {lastPeriod} last period</p>
     </Card>
   );
 }
@@ -171,18 +173,19 @@ export default function SummaryTab({ campaign }: Props) {
           label="Total Traffic"
           value={totalTraffic.toLocaleString()}
           change="+12.4%"
+          lastPeriod="0"
           positive
           icon={MousePointerClick}
           tooltip="Total tracked UTM link clicks across all links in this campaign"
         />
-        <KPICard label="Total Leads" value={totalLeads.toLocaleString()} change={totalLeads > 0 ? `${totalLeads} conversions` : "No data yet"} positive={totalLeads > 0} icon={Users} />
-        <KPICard label="Revenue" value={`$${totalRevenue.toLocaleString()}`} change={totalRevenue > 0 ? `$${totalRevenue.toLocaleString()} tracked` : "No data yet"} positive={totalRevenue > 0} icon={DollarSign} />
-        <KPICard label="Conversion" value={`${conversionRate.toFixed(1)}%`} change={conversionRate > 0 ? "From pixel data" : "No data yet"} positive={conversionRate > 0} icon={Target} />
+        <KPICard label="Total Leads" value={totalLeads.toLocaleString()} change={totalLeads > 0 ? `+${totalLeads}` : "0%"} lastPeriod="0" positive={totalLeads > 0} icon={Users} />
+        <KPICard label="Revenue" value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`} change={totalRevenue > 0 ? `+$${totalRevenue.toLocaleString()}` : "↓ 100%"} lastPeriod="$0.00" positive={totalRevenue > 0} icon={DollarSign} />
+        <KPICard label="Conversion" value={`${conversionRate.toFixed(1)}%`} change={conversionRate > 0 ? `+${conversionRate.toFixed(1)}%` : "0%"} lastPeriod="0%" positive={conversionRate > 0} icon={Target} />
       </div>
       {(cpl || roi !== 0) && (
         <div className="grid grid-cols-2 gap-3">
-          {cpl && <KPICard label="Cost / Lead" value={`$${cpl}`} change="From budget ÷ leads" positive icon={Activity} />}
-          <KPICard label="ROI" value={`${roi.toFixed(0)}%`} change={roi > 0 ? "Positive return" : "No data yet"} positive={roi > 0} icon={TrendingUp} />
+          {cpl && <KPICard label="Cost / Lead" value={`$${cpl}`} change="—" lastPeriod="$0.00" positive icon={Activity} />}
+          <KPICard label="ROI" value={`${roi.toFixed(0)}%`} change={roi > 0 ? `+${roi.toFixed(0)}%` : "0%"} lastPeriod="0%" positive={roi > 0} icon={TrendingUp} />
         </div>
       )}
 
