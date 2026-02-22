@@ -58,7 +58,8 @@ export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
     else { setSortKey(key); setSortAsc(false); }
   };
 
-  const isDbCampaign = (c: Campaign) => !!user?.id;
+  const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const isDbCampaign = (c: Campaign) => !!user?.id && isUuid(c.id);
 
   const handleEdit = (c: Campaign) => {
     navigate(`/marketing-hub/campaigns/${c.id}`);
@@ -66,6 +67,7 @@ export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
 
   const handleDuplicate = async (c: Campaign) => {
     if (!user?.id) return;
+    if (!isUuid(c.id)) { toast.error("Demo campaigns cannot be duplicated"); return; }
     const { error } = await supabase.from("campaigns").insert({
       user_id: user.id,
       name: `${c.name} (Copy)`,
@@ -86,6 +88,7 @@ export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
 
   const handleArchive = async (c: Campaign) => {
     if (!user?.id) return;
+    if (!isUuid(c.id)) { toast.error("Demo campaigns cannot be archived"); return; }
     const { error } = await supabase
       .from("campaigns")
       .update({ status: "ended" })
@@ -101,6 +104,7 @@ export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
 
   const handleDelete = async () => {
     if (!deleteTarget || !user?.id) return;
+    if (!isUuid(deleteTarget.id)) { toast.error("Demo campaigns cannot be deleted"); setDeleteTarget(null); return; }
     setIsDeleting(true);
     const { error } = await supabase
       .from("campaigns")
