@@ -251,11 +251,9 @@ const SidebarContent = ({
           </div>
         ))}
 
-        {/* Marketing section - Admin only */}
+        {/* Marketing Hub section - Admin only */}
         {isPro && (() => {
-          const isMarketingActive = location.pathname.startsWith("/marketing-hub");
-          const marketingSubItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean }[] = [
-            { label: "Overview", href: "/marketing-hub", icon: LayoutDashboard },
+          const marketingItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean }[] = [
             { label: "Campaigns", href: "/marketing-hub/campaigns", icon: Target },
             { label: "Content Engine", href: "#", icon: PenTool, disabled: true },
             { label: "Funnels & Offers", href: "#", icon: ShoppingBag, disabled: true },
@@ -269,28 +267,15 @@ const SidebarContent = ({
             <div>
               <Separator className="mb-3 bg-sidebar-border" />
               <div className="mb-1.5 px-2">
-                <span className="text-[11px] font-semibold text-sidebar-foreground uppercase tracking-wider">Marketing</span>
+                <span className="text-[11px] font-semibold text-sidebar-foreground uppercase tracking-wider">Marketing Hub</span>
               </div>
               <div className="space-y-0.5">
-                <button
-                  onClick={() => handleNavClick("/marketing-hub")}
-                  className={cn(
-                    "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
-                    isMarketingActive
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                  )}
-                >
-                  <Megaphone className={cn("w-4 h-4", isMarketingActive && "text-sidebar-primary")} />
-                  <span className="flex-1">Marketing Hub</span>
-                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", isMarketingActive ? "rotate-180" : "")} />
-                </button>
-                {isMarketingActive && marketingSubItems.map((item) => {
+                {marketingItems.map((item) => {
                   if (item.disabled) {
                     return (
                       <Tooltip key={item.label}>
                         <TooltipTrigger asChild>
-                          <div className="flex items-center gap-2 px-2 py-1.5 pl-8 rounded-md text-sm text-sidebar-foreground/40 cursor-not-allowed w-full">
+                          <div className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground/40 cursor-not-allowed w-full">
                             <item.icon className="w-4 h-4" />
                             <span>{item.label}</span>
                           </div>
@@ -299,19 +284,19 @@ const SidebarContent = ({
                       </Tooltip>
                     );
                   }
-                  const isSubActive = location.pathname === item.href || (item.href !== "/marketing-hub" && location.pathname.startsWith(item.href));
+                  const isActive = location.pathname === item.href || location.pathname.startsWith(item.href);
                   return (
                     <button
                       key={item.label}
                       onClick={() => handleNavClick(item.href)}
                       className={cn(
-                        "flex items-center gap-2 px-2 py-1.5 pl-8 rounded-md text-sm transition-colors w-full text-left",
-                        isSubActive
+                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
+                        isActive
                           ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                           : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
                       )}
                     >
-                      <item.icon className={cn("w-4 h-4", isSubActive && "text-sidebar-primary")} />
+                      <item.icon className={cn("w-4 h-4", isActive && "text-sidebar-primary")} />
                       <span>{item.label}</span>
                     </button>
                   );
