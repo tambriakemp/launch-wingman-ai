@@ -125,7 +125,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
             campaign_id: inserted.id,
             label: `${p} — link`,
             base_url: baseUrl,
-            full_url: buildFinalUrl(baseUrl, { source: defaults.source, medium: defaults.medium, campaign: campaignSlug }),
+            full_url: buildFinalUrl(baseUrl, { source: defaults.source, medium: defaults.medium, campaign: campaignSlug }, inserted.id),
             utm_source: defaults.source,
             utm_medium: defaults.medium,
             utm_campaign: campaignSlug,

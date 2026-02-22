@@ -17,30 +17,30 @@ export default function PixelTab({ campaign }: Props) {
   const snippets = [
     {
       id: "js",
-      title: "JavaScript Pixel",
+      title: "Universal JavaScript Pixel",
       recommended: true,
-      bestFor: "Most users — tracks leads + revenue",
-      description: "Paste this on your thank-you page. Replace AMOUNT with your purchase value (e.g. 49.99). If you don't need revenue tracking, just remove the &revenue=AMOUNT part.",
+      bestFor: "Most users — tracks leads + revenue for any campaign",
+      description: "Paste this once on your thank-you page. It automatically detects which campaign sent the visitor via the URL. Replace AMOUNT with your purchase value (e.g. 49.99). If you don't need revenue tracking, remove the &revenue=AMOUNT part.",
       icon: Code,
-      code: `<script>\nfetch("${baseUrl}?c=${campaign.id}&revenue=AMOUNT")\n</script>`,
+      code: `<script>\nconst p = new URLSearchParams(location.search);\nconst cid = p.get("c") || "${campaign.id}";\nfetch("${baseUrl}?c=" + cid + "&revenue=AMOUNT");\n</script>`,
     },
     {
       id: "img",
-      title: "Image Pixel",
+      title: "Image Pixel (Single Campaign)",
       recommended: false,
-      bestFor: "Simple lead counting only — no revenue",
-      description: "A tiny invisible image. Works on any platform, even those that don't allow JavaScript. Only counts leads — it can't track revenue.",
+      bestFor: "Simple lead counting — this campaign only",
+      description: "A tiny invisible image. Works on any platform, even those that don't allow JavaScript. Only counts leads for this specific campaign — it can't detect other campaigns or track revenue.",
       icon: ImageIcon,
       code: `<img src="${baseUrl}?c=${campaign.id}" width="1" height="1" style="display:none" alt="" />`,
     },
     {
       id: "js-utm",
-      title: "JavaScript + UTM Passthrough",
+      title: "Universal JS + UTM Passthrough",
       recommended: false,
-      bestFor: "Advanced — tracks revenue & preserves UTM attribution",
-      description: "Automatically captures UTM parameters from the current page URL and passes them along. Use this if you want to see which traffic source drove each conversion.",
+      bestFor: "Advanced — tracks revenue & preserves UTM attribution for any campaign",
+      description: "Automatically detects the campaign from the URL and captures UTM parameters for source attribution. Use this if you want to see which traffic source drove each conversion across all campaigns.",
       icon: Zap,
-      code: `<script>\nconst p = new URLSearchParams(location.search);\nconst u = new URL("${baseUrl}");\nu.searchParams.set("c", "${campaign.id}");\n["utm_source","utm_medium","utm_campaign"].forEach(k => { if(p.get(k)) u.searchParams.set(k, p.get(k)) });\nconst rev = /* your revenue variable */ 0;\nif(rev) u.searchParams.set("revenue", rev);\nfetch(u);\n</script>`,
+      code: `<script>\nconst p = new URLSearchParams(location.search);\nconst u = new URL("${baseUrl}");\nu.searchParams.set("c", p.get("c") || "${campaign.id}");\n["utm_source","utm_medium","utm_campaign"].forEach(k => { if(p.get(k)) u.searchParams.set(k, p.get(k)) });\nconst rev = /* your revenue variable */ 0;\nif(rev) u.searchParams.set("revenue", rev);\nfetch(u);\n</script>`,
     },
   ];
 
@@ -72,18 +72,18 @@ export default function PixelTab({ campaign }: Props) {
             <ul className="text-xs text-muted-foreground space-y-1.5">
               <li className="flex items-start gap-1.5">
                 <Star className="w-3 h-3 text-primary shrink-0 mt-0.5 fill-primary" />
-                <span><strong>JavaScript Pixel</strong> — Best for most users. Tracks leads and revenue with a single line of code.</span>
+                <span><strong>Universal JS Pixel</strong> — Best for most users. Paste once and it tracks leads + revenue for any campaign automatically.</span>
               </li>
               <li className="flex items-start gap-1.5">
                 <ImageIcon className="w-3 h-3 text-muted-foreground shrink-0 mt-0.5" />
-                <span><strong>Image Pixel</strong> — Use this only if your platform doesn't allow JavaScript (e.g. some email providers). Tracks leads but not revenue.</span>
+                <span><strong>Image Pixel</strong> — Use this only if your platform doesn't allow JavaScript. Tracks leads for this campaign only.</span>
               </li>
               <li className="flex items-start gap-1.5">
                 <Zap className="w-3 h-3 text-muted-foreground shrink-0 mt-0.5" />
-                <span><strong>JS + UTM Passthrough</strong> — For advanced users who want to track which traffic source drove each sale. Requires UTM links.</span>
+                <span><strong>Universal JS + UTM</strong> — For advanced users who want campaign auto-detection plus source attribution. Requires UTM links.</span>
               </li>
             </ul>
-            <p className="text-xs text-muted-foreground/80 italic">You only need one pixel per page — don't combine them.</p>
+            <p className="text-xs text-muted-foreground/80 italic">The JS pixels auto-detect the campaign from the URL. Make sure your UTM links include the campaign ID (they do by default).</p>
           </div>
         </div>
       </Card>

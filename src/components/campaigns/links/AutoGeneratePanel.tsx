@@ -83,7 +83,7 @@ export default function AutoGeneratePanel({ campaignId, campaignName }: Props) {
             medium: defaults.medium,
             campaign: campaignSlug,
             content: placement,
-          }),
+          }, campaignId),
         });
       }
     }
