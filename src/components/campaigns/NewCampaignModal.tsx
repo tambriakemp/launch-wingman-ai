@@ -137,6 +137,16 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
         await supabase.from("utm_links").insert(utmRows);
       }
 
+      // Create campaign tag in SureContact for lead tracking (fire and forget)
+      if (inserted?.id) {
+        supabase.functions.invoke("surecontact-webhook", {
+          body: {
+            action: "create_campaign_tag",
+            campaign_name: name,
+          },
+        }).catch((err) => console.error("Failed to create campaign tag:", err));
+      }
+
       toast.success("Campaign created");
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
       onCreated?.();
