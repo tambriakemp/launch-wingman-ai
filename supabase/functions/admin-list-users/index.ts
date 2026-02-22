@@ -48,17 +48,23 @@ serve(async (req) => {
     if (!authHeader) throw new Error("No authorization header provided");
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
     
-    const adminUser = userData.user;
-    if (!adminUser?.email) throw new Error("User not authenticated");
+    // Use getClaims for Lovable Cloud ES256 compatibility
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      logStep("Auth failed", { message: claimsError?.message || "Invalid token" });
+      throw new Error("Unauthorized: Invalid authentication token");
+    }
+    
+    const adminUserId = claimsData.claims.sub as string;
+    const adminEmail = claimsData.claims.email as string;
+    if (!adminUserId || !adminEmail) throw new Error("Unauthorized: User not authenticated");
     
     // Check if user is admin or manager
     const { data: roleData, error: roleError } = await supabaseClient
       .from('user_roles')
       .select('role')
-      .eq('user_id', adminUser.id)
+      .eq('user_id', adminUserId)
       .in('role', ['admin', 'manager'])
       .limit(1);
     
@@ -66,7 +72,7 @@ serve(async (req) => {
       throw new Error("Unauthorized: Admin or Manager access required");
     }
     const userRole = roleData[0].role;
-    logStep("Staff access verified", { userId: sanitizeId(adminUser.id), role: userRole });
+    logStep("Staff access verified", { userId: sanitizeId(adminUserId), role: userRole });
 
     // Get all users from auth.users
     const { data: authUsers, error: authError } = await supabaseClient.auth.admin.listUsers();
