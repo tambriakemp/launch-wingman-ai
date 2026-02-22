@@ -17,7 +17,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import AddUTMLinkModal from "../links/AddUTMLinkModal";
-import AttachExistingModal from "../links/AttachExistingModal";
+
 import AutoGeneratePanel from "../links/AutoGeneratePanel";
 import { CHANNELS } from "../links/utmHelpers";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -42,7 +42,7 @@ export default function LinksTab({ campaignId, campaignName }: Props) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showAttachModal, setShowAttachModal] = useState(false);
+  
   const [showAutoGen, setShowAutoGen] = useState(false);
   const [page, setPage] = useState(0);
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -164,9 +164,6 @@ export default function LinksTab({ campaignId, campaignName }: Props) {
           <Button size="sm" onClick={() => setShowAddModal(true)}>
             <Plus className="w-3.5 h-3.5 mr-1.5" /> Add UTM Link
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowAttachModal(true)}>
-            <Link2 className="w-3.5 h-3.5 mr-1.5" /> Attach Existing
-          </Button>
           <Button
             variant={showAutoGen ? "secondary" : "outline"}
             size="sm"
@@ -260,12 +257,12 @@ export default function LinksTab({ campaignId, campaignName }: Props) {
                     <p className="font-semibold text-foreground truncate">{link.label}</p>
                     <p className="text-xs text-muted-foreground">{link.utm_campaign}</p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                   <div className="flex items-center gap-2 shrink-0">
                     <Badge className={`text-[10px] capitalize ${statusColors[link.status] ?? ""}`} variant="secondary">
                       {link.status}
                     </Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      {link.utm_campaign}
+                    <Badge className="text-[10px] bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 border-transparent">
+                      {link.utm_source || "unknown"}
                     </Badge>
                   </div>
                 </div>
@@ -396,7 +393,7 @@ export default function LinksTab({ campaignId, campaignName }: Props) {
       )}
 
       <AddUTMLinkModal open={showAddModal} onOpenChange={setShowAddModal} campaignId={campaignId} campaignName={campaignName} />
-      <AttachExistingModal open={showAttachModal} onOpenChange={setShowAttachModal} campaignId={campaignId} />
+      
     </div>
   );
 }
