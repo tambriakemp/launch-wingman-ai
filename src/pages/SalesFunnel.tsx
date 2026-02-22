@@ -462,11 +462,10 @@ const SalesFunnel = () => {
     try {
       const p = new URLSearchParams(window.location.search);
       const u = new URL("https://ydhagqgurqhlguxkkppb.supabase.co/functions/v1/campaign-pixel");
-      u.searchParams.set("c", "777b05de-3810-45d0-a317-c107e883b2f9");
-      ["utm_source", "utm_medium", "utm_campaign"].forEach(k => {
-        const v = p.get(k);
-        if (v) u.searchParams.set(k, v);
-      });
+      u.searchParams.set("c", p.get("c") || "d56f0330-1875-4f2f-9670-e1ae6fabc085");
+      ["utm_source", "utm_medium", "utm_campaign"].forEach(k => { if (p.get(k)) u.searchParams.set(k, p.get(k)!) });
+      const rev = 0;
+      if (rev) u.searchParams.set("revenue", String(rev));
       fetch(u.toString()).catch(() => {});
     } catch {}
   }, []);
