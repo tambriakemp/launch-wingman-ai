@@ -9,6 +9,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import ClickTimingChart from "@/components/marketing-hub/analytics/ClickTimingChart";
 
 interface Props {
   campaign: Campaign;
@@ -347,6 +349,12 @@ export default function SummaryTab({ campaign }: Props) {
         </div>
       </Card>
 
+      {/* Attribution Table */}
+      <AttributionTable links={links} conversions={conversions} />
+
+      {/* Click Timing */}
+      <ClickTimingSection campaignLinkIds={links.map(l => l.id)} />
+
       {/* Top assets */}
       {assets.length > 0 && (
         <div>
@@ -375,4 +383,104 @@ export default function SummaryTab({ campaign }: Props) {
 
     </div>
   );
+}
+
+/* ── Attribution Table ── */
+function AttributionTable({ links, conversions }: { links: any[]; conversions: any[] }) {
+  const rows = useMemo(() => {
+    const map: Record<string, { clicks: number; leads: number; revenue: number }> = {};
+
+    links.forEach((l) => {
+      const key = `${l.utm_source}||${l.utm_medium}`;
+      if (!map[key]) map[key] = { clicks: 0, leads: 0, revenue: 0 };
+      map[key].clicks += l.click_count || 0;
+    });
+
+    conversions.forEach((c) => {
+      const key = `${c.utm_source || "direct"}||${c.utm_medium || "none"}`;
+      if (!map[key]) map[key] = { clicks: 0, leads: 0, revenue: 0 };
+      map[key].leads += 1;
+      map[key].revenue += Number(c.revenue) || 0;
+    });
+
+    return Object.entries(map)
+      .map(([key, v]) => {
+        const [source, medium] = key.split("||");
+        return { source, medium, ...v, cvr: v.clicks > 0 ? ((v.leads / v.clicks) * 100).toFixed(1) : "0.0" };
+      })
+      .sort((a, b) => b.clicks - a.clicks);
+  }, [links, conversions]);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <Card className="p-5">
+      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">Attribution Table</p>
+      <div className="border rounded-lg overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-muted/30">
+              <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Source</th>
+              <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Medium</th>
+              <th className="text-right p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Clicks</th>
+              <th className="text-right p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Leads</th>
+              <th className="text-right p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Revenue</th>
+              <th className="text-right p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">CVR</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={`${row.source}-${row.medium}`} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                <td className="p-3 capitalize font-medium">{row.source}</td>
+                <td className="p-3 text-muted-foreground">{row.medium}</td>
+                <td className="p-3 text-right">{row.clicks.toLocaleString()}</td>
+                <td className="p-3 text-right">{row.leads.toLocaleString()}</td>
+                <td className="p-3 text-right font-medium">${row.revenue.toLocaleString()}</td>
+                <td className="p-3 text-right"><span className="text-emerald-600 font-medium">{row.cvr}%</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
+/* ── Click Timing Section ── */
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const HOURS = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, "0")}:00`);
+
+function ClickTimingSection({ campaignLinkIds }: { campaignLinkIds: string[] }) {
+  const { data: clickEvents } = useQuery({
+    queryKey: ["campaign-click-timing", campaignLinkIds],
+    queryFn: async (): Promise<{ clicked_at: string }[]> => {
+      if (campaignLinkIds.length === 0) return [];
+      const query = supabase
+        .from("utm_click_events")
+        .select("clicked_at") as any;
+      const { data, error } = await query.in("link_id", campaignLinkIds);
+      if (error) throw error;
+      return (data as { clicked_at: string }[]) || [];
+    },
+    enabled: campaignLinkIds.length > 0,
+    staleTime: 60_000,
+  });
+
+  const { dayData, hourData } = useMemo(() => {
+    const dayCounts = DAYS.map((day) => ({ day, clicks: 0 }));
+    const hourCounts = HOURS.map((hour) => ({ hour, clicks: 0 }));
+
+    (clickEvents || []).forEach((e) => {
+      const d = new Date(e.clicked_at);
+      const dayIdx = (d.getUTCDay() + 6) % 7; // Mon=0
+      dayCounts[dayIdx].clicks += 1;
+      hourCounts[d.getUTCHours()].clicks += 1;
+    });
+
+    return { dayData: dayCounts, hourData: hourCounts };
+  }, [clickEvents]);
+
+  if (!clickEvents || clickEvents.length === 0) return null;
+
+  return <ClickTimingChart dayData={dayData} hourData={hourData} />;
 }
