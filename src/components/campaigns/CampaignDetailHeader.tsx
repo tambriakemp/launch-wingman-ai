@@ -112,6 +112,17 @@ export default function CampaignDetailHeader({ campaign, onSwitchTab }: Props) {
           </div>
 
 
+          {/* Campaign Period */}
+          <p className="text-sm text-muted-foreground">
+            Campaign Period: {(() => {
+              const fmt = (d: string) => {
+                const [y, m, day] = d.split("-");
+                return `${m}-${day}-${y}`;
+              };
+              return `${fmt(campaign.start_date)} → ${campaign.end_date ? fmt(campaign.end_date) : "Ongoing"}`;
+            })()}
+          </p>
+
           {/* Tags */}
           {campaign.tags.length > 0 && (
             <div className="flex gap-1.5">
