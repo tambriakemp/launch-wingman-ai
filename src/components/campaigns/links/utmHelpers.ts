@@ -29,7 +29,8 @@ export function slugify(text: string): string {
 
 export function buildFinalUrl(
   baseUrl: string,
-  params: { source: string; medium: string; campaign: string; content?: string; term?: string }
+  params: { source: string; medium: string; campaign: string; content?: string; term?: string },
+  campaignId?: string
 ): string {
   try {
     const url = new URL(baseUrl);
@@ -38,6 +39,7 @@ export function buildFinalUrl(
     if (params.campaign) url.searchParams.set("utm_campaign", params.campaign);
     if (params.content) url.searchParams.set("utm_content", params.content);
     if (params.term) url.searchParams.set("utm_term", params.term);
+    if (campaignId) url.searchParams.set("c", campaignId);
     return url.toString();
   } catch {
     // fallback for invalid URLs
@@ -47,6 +49,7 @@ export function buildFinalUrl(
     if (params.campaign) qs.set("utm_campaign", params.campaign);
     if (params.content) qs.set("utm_content", params.content);
     if (params.term) qs.set("utm_term", params.term);
+    if (campaignId) qs.set("c", campaignId);
     return `${baseUrl}?${qs.toString()}`;
   }
 }
