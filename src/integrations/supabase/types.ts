@@ -313,6 +313,7 @@ export type Database = {
           created_at: string
           id: string
           ip_hash: string | null
+          product: string | null
           referrer: string | null
           revenue: number | null
           user_agent: string | null
@@ -325,6 +326,7 @@ export type Database = {
           created_at?: string
           id?: string
           ip_hash?: string | null
+          product?: string | null
           referrer?: string | null
           revenue?: number | null
           user_agent?: string | null
@@ -337,6 +339,7 @@ export type Database = {
           created_at?: string
           id?: string
           ip_hash?: string | null
+          product?: string | null
           referrer?: string | null
           revenue?: number | null
           user_agent?: string | null

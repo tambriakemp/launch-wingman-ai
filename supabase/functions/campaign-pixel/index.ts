@@ -39,6 +39,7 @@ Deno.serve(async (req) => {
     const utmSource = (url.searchParams.get("utm_source") || "").slice(0, 200);
     const utmMedium = (url.searchParams.get("utm_medium") || "").slice(0, 200);
     const utmCampaign = (url.searchParams.get("utm_campaign") || "").slice(0, 200);
+    const product = (url.searchParams.get("product") || "").slice(0, 200) || null;
     const revenueRaw = url.searchParams.get("revenue");
     const revenue = revenueRaw ? Math.max(0, Math.min(parseFloat(revenueRaw) || 0, 999999999)) : 0;
 
@@ -63,6 +64,7 @@ Deno.serve(async (req) => {
       utm_source: utmSource || null,
       utm_medium: utmMedium || null,
       utm_campaign: utmCampaign || null,
+      product,
       revenue,
       ip_hash: ipHash,
       user_agent: userAgent,
