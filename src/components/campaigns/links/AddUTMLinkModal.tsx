@@ -100,6 +100,7 @@ export default function AddUTMLinkModal({ open, onOpenChange, campaignId, campai
           onSaveBaseUrl={handleSaveBaseUrl}
           onDeleteBaseUrl={handleDeleteBaseUrl}
           saving={saving}
+          campaignId={campaignId}
         />
       </DialogContent>
     </Dialog>
