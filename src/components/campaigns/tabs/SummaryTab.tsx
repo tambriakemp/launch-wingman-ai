@@ -296,20 +296,18 @@ export default function SummaryTab({ campaign }: Props) {
           {sourceTable.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">No link data yet.</p>
           ) : (
-            <div className="overflow-x-auto">
-            <div className="space-y-0 min-w-[280px]">
-              <div className="grid grid-cols-4 gap-2 text-[10px] text-muted-foreground uppercase tracking-wider pb-2 border-b">
+            <div className="space-y-0">
+              <div className="grid grid-cols-4 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider pb-1.5 border-b">
                 <span>Source</span><span className="text-right">Clicks</span><span className="text-right">Leads</span><span className="text-right">CVR</span>
               </div>
               {sourceTable.map((row) => (
-                <div key={row.source} className="grid grid-cols-4 gap-2 text-sm py-2 border-b border-border/50 last:border-0">
-                  <span className="capitalize font-medium">{row.source}</span>
+                <div key={row.source} className="grid grid-cols-4 gap-1 text-xs py-1.5 border-b border-border/50 last:border-0">
+                  <span className="capitalize font-medium truncate">{row.source}</span>
                   <span className="text-right text-muted-foreground">{row.clicks.toLocaleString()}</span>
                   <span className="text-right text-muted-foreground">{row.leads.toLocaleString()}</span>
                   <span className="text-right font-medium">{row.conversion}%</span>
                 </div>
               ))}
-            </div>
             </div>
           )}
         </Card>
