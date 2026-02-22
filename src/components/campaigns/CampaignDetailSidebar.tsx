@@ -125,15 +125,6 @@ export default function CampaignDetailSidebar({ campaign, activeTab, onTabChange
             </>
           )}
         </div>
-        <div className="rounded-lg border border-border/60 bg-card p-3 space-y-1">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="w-4 h-4 shrink-0" />
-            <span className="text-xs">Date Range</span>
-          </div>
-          <p className="text-sm font-semibold pl-6">
-            {campaign.start_date} → {campaign.end_date ?? "Ongoing"}
-          </p>
-        </div>
         {campaign.budget && (
           <div className="rounded-lg border border-border/60 bg-card p-3 space-y-1">
             <div className="flex items-center gap-2 text-muted-foreground">
