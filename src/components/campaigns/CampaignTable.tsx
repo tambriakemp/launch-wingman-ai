@@ -169,8 +169,11 @@ export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
           </thead>
           <tbody>
             {paginated.map((c) => (
-              <tr key={c.id} className="border-b hover:bg-muted/20 cursor-pointer transition-colors" onClick={() => navigate(`/marketing-hub/campaigns/${c.id}`)}>
-                <td className="p-3 font-medium">{c.name}</td>
+              <tr key={c.id} className={cn("border-b transition-colors", isDbCampaign(c) ? "hover:bg-muted/20 cursor-pointer" : "opacity-70")} onClick={() => isDbCampaign(c) && navigate(`/marketing-hub/campaigns/${c.id}`)}>
+                <td className="p-3 font-medium">
+                  {c.name}
+                  {!isDbCampaign(c) && <Badge variant="outline" className="ml-2 text-[10px] text-muted-foreground">Demo</Badge>}
+                </td>
                 <td className="p-3"><Badge className={cn("text-[11px] capitalize", statusColors[c.status])} variant="secondary">{c.status}</Badge></td>
                 <td className="p-3 hidden md:table-cell text-muted-foreground">{goalLabels[c.goal]}</td>
                 <td className="p-3 hidden lg:table-cell text-muted-foreground">{format(new Date(c.start_date), "MMM d, yyyy")}</td>
@@ -180,24 +183,26 @@ export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
                 <td className="p-3 text-right hidden md:table-cell">{c.roi > 0 ? c.roi + "%" : "—"}</td>
                 <td className="p-3 hidden xl:table-cell text-muted-foreground">{format(new Date(c.updated_at), "MMM d")}</td>
                 <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="w-4 h-4" /></Button></DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(c)}>
-                        <Pencil className="w-3.5 h-3.5 mr-2" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDuplicate(c)}>
-                        <Copy className="w-3.5 h-3.5 mr-2" /> Duplicate
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleArchive(c)}>
-                        <Archive className="w-3.5 h-3.5 mr-2" /> Archive
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteTarget(c)}>
-                        <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  {isDbCampaign(c) && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="w-4 h-4" /></Button></DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(c)}>
+                          <Pencil className="w-3.5 h-3.5 mr-2" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDuplicate(c)}>
+                          <Copy className="w-3.5 h-3.5 mr-2" /> Duplicate
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleArchive(c)}>
+                          <Archive className="w-3.5 h-3.5 mr-2" /> Archive
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteTarget(c)}>
+                          <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </td>
               </tr>
             ))}

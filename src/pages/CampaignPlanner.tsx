@@ -49,7 +49,7 @@ export default function CampaignPlanner() {
     enabled: !!user?.id,
   });
 
-  const allCampaigns = [...(dbCampaigns ?? []), ...demoCampaigns];
+  const allCampaigns = (dbCampaigns?.length ?? 0) > 0 ? dbCampaigns! : demoCampaigns;
 
   return (
     <ProjectLayout>
