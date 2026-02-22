@@ -24,7 +24,7 @@ export const ProjectProgress = ({ steps }: ProjectProgressProps) => {
           {completedCount} of {steps.length} complete
         </span>
       </div>
-      <Progress value={progressPercent} className="h-2" />
+      <Progress value={progressPercent} className="h-2" indicatorClassName="bg-primary" />
       <div className="flex flex-wrap gap-3">
         {steps.map((step) => (
           <div
