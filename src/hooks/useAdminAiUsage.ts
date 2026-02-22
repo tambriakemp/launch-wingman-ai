@@ -59,11 +59,7 @@ export function useAdminAiUsage() {
       let topUsers: AdminAiUsageStats["topUsers"] = [];
       if (topUserIds.length > 0 && session?.access_token) {
         try {
-          const { data: usersData } = await supabase.functions.invoke('admin-list-users', {
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-            },
-          });
+          const { data: usersData } = await supabase.functions.invoke('admin-list-users');
           
           const usersMap = new Map(
             usersData?.users?.map((u: any) => [
