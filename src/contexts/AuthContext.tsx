@@ -325,6 +325,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Capture UTM params from URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const utmCampaign = params.get('utm_campaign');
+    if (utmCampaign) {
+      localStorage.setItem('launchely_utm_campaign', utmCampaign);
+    }
+  }, []);
+
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string, skipNavigation?: boolean) => {
     const redirectUrl = `${window.location.origin}/projects`;
     
@@ -355,6 +364,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           user_id: signUpData.user.id,
         },
       }).catch((err) => console.error("Failed to send welcome email:", err));
+
+      // Forward stored UTM campaign to surecontact-webhook for lead attribution
+      const storedUtmCampaign = localStorage.getItem('launchely_utm_campaign');
+      if (storedUtmCampaign) {
+        supabase.functions.invoke("surecontact-webhook", {
+          body: {
+            action: "sync_new_signup",
+            email,
+            first_name: firstName || '',
+            last_name: lastName || '',
+            utm_campaign: storedUtmCampaign,
+          },
+        }).catch((err) => console.error("Failed to sync UTM campaign tag:", err));
+        localStorage.removeItem('launchely_utm_campaign');
+      }
 
       
       // Only navigate if not explicitly skipped (e.g., for Pro checkout flow)

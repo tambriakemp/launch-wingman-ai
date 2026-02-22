@@ -91,9 +91,29 @@ export default function SummaryTab({ campaign }: Props) {
     enabled: !!user?.id && !!campaign.id,
   });
 
+  // Fetch real lead count from SureContact via campaign-leads function
+  const { data: leadData } = useQuery({
+    queryKey: ["campaign-leads", campaign.id],
+    queryFn: async () => {
+      const session = (await supabase.auth.getSession()).data.session;
+      if (!session) throw new Error("No session");
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/campaign-leads?campaign_id=${campaign.id}`;
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch leads");
+      return await response.json();
+    },
+    enabled: !!campaign.id,
+    staleTime: 60_000,
+  });
+
   const links = dbLinks || [];
   const totalTraffic = links.reduce((s, l) => s + (l.click_count || 0), 0);
-  const totalLeads = campaign.leads || 0;
+  const totalLeads = leadData?.leads ?? campaign.leads ?? 0;
   const totalRevenue = campaign.revenue || 0;
   const cpl = campaign.budget && totalLeads > 0 ? (campaign.budget / totalLeads).toFixed(2) : null;
 

@@ -437,7 +437,9 @@ Deno.serve(async (req) => {
     const { 
       action, user_id, email, first_name, last_name, event_type,
       // Order sync fields
-      order_id, total, currency, status, products, created_at 
+      order_id, total, currency, status, products, created_at,
+      // UTM campaign tracking
+      utm_campaign,
     } = body;
     console.log('SureContact sync called with action:', action);
 
@@ -498,6 +500,57 @@ Deno.serve(async (req) => {
       };
 
       const result = await syncContact(sureContactApiKey, payload, config);
+
+      // If utm_campaign is provided, tag the contact with a campaign-specific tag
+      if (utm_campaign && result.success) {
+        const campaignTagName = `campaign:${utm_campaign}`;
+        let campaignTagConfig = config.get(`tag:${campaignTagName}`);
+
+        // If tag doesn't exist in config, create it in SureContact first
+        if (!campaignTagConfig) {
+          console.log(`Creating campaign tag: ${campaignTagName}`);
+          const createTagResult = await sureContactRequest('/tags', 'POST', sureContactApiKey, {
+            name: campaignTagName,
+          });
+
+          if (createTagResult.success && createTagResult.data?.data?.uuid) {
+            const tagUuid = createTagResult.data.data.uuid;
+            // Store in surecontact_config for future lookups
+            await supabase.from('surecontact_config').insert({
+              config_type: 'tag',
+              name: campaignTagName,
+              surecontact_uuid: tagUuid,
+            });
+            campaignTagConfig = { config_type: 'tag', name: campaignTagName, surecontact_uuid: tagUuid };
+            console.log(`Created and stored campaign tag: ${campaignTagName} -> ${tagUuid}`);
+          } else {
+            console.error(`Failed to create campaign tag: ${campaignTagName}`, createTagResult.error);
+          }
+        }
+
+        // Attach the campaign tag to the contact
+        if (campaignTagConfig) {
+          // We need the contact UUID - find it
+          const searchResult = await sureContactRequest(
+            `/contacts?email=${encodeURIComponent(email)}`,
+            'GET',
+            sureContactApiKey
+          );
+          const contact = searchResult.data?.data?.find(
+            (c: { email: string }) => c.email.toLowerCase() === email.toLowerCase()
+          );
+          if (contact?.uuid) {
+            await sureContactRequest(
+              `/contacts/${contact.uuid}/tags/attach`,
+              'POST',
+              sureContactApiKey,
+              { tag_uuids: [campaignTagConfig.surecontact_uuid] }
+            );
+            console.log(`Attached campaign tag ${campaignTagName} to contact ${contact.uuid}`);
+          }
+        }
+      }
+
       await logWebhookResult(supabase, {
         email,
         event_type: 'signup',
@@ -777,9 +830,46 @@ Deno.serve(async (req) => {
         });
       }
 
+    } else if (action === 'create_campaign_tag') {
+      // Create a campaign tag in SureContact and store its UUID
+      const campaignName = body.campaign_name;
+      if (!campaignName) {
+        return new Response(
+          JSON.stringify({ error: 'campaign_name required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const tagName = `campaign:${campaignName}`;
+      
+      // Check if tag already exists in config
+      const { data: existing } = await supabase
+        .from('surecontact_config')
+        .select('surecontact_uuid')
+        .eq('config_type', 'tag')
+        .eq('name', tagName)
+        .single();
+
+      if (existing) {
+        results.push({ email: '', success: true });
+      } else {
+        // Create tag in SureContact
+        const createResult = await sureContactRequest('/tags', 'POST', sureContactApiKey, { name: tagName });
+        if (createResult.success && createResult.data?.data?.uuid) {
+          await supabase.from('surecontact_config').insert({
+            config_type: 'tag',
+            name: tagName,
+            surecontact_uuid: createResult.data.data.uuid,
+          });
+          results.push({ email: '', success: true });
+        } else {
+          results.push({ email: '', success: false, error: createResult.error });
+        }
+      }
+
     } else {
       return new Response(
-        JSON.stringify({ error: 'Invalid action. Use: sync_new_signup, sync_user, sync_all, or sync_order' }),
+        JSON.stringify({ error: 'Invalid action. Use: sync_new_signup, sync_user, sync_all, sync_order, or create_campaign_tag' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
