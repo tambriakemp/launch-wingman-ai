@@ -1,0 +1,1 @@
+ALTER TABLE public.campaign_conversions ADD COLUMN product text;
