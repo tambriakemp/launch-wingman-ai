@@ -91,31 +91,30 @@ export default function SummaryTab({ campaign }: Props) {
     enabled: !!user?.id && !!campaign.id,
   });
 
-  // Fetch real lead count from SureContact via campaign-leads function
-  const { data: leadData } = useQuery({
-    queryKey: ["campaign-leads", campaign.id],
+  // Fetch real conversion data from campaign_conversions table
+  const { data: conversionData } = useQuery({
+    queryKey: ["campaign-conversions-summary", campaign.id],
     queryFn: async () => {
-      const session = (await supabase.auth.getSession()).data.session;
-      if (!session) throw new Error("No session");
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/campaign-leads?campaign_id=${campaign.id}`;
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-      });
-      if (!response.ok) throw new Error("Failed to fetch leads");
-      return await response.json();
+      const { data, error } = await supabase
+        .from("campaign_conversions")
+        .select("id, utm_source, utm_medium, revenue, created_at")
+        .eq("campaign_id", campaign.id);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!campaign.id,
-    staleTime: 60_000,
+    staleTime: 30_000,
   });
 
   const links = dbLinks || [];
+  const conversions = conversionData || [];
   const totalTraffic = links.reduce((s, l) => s + (l.click_count || 0), 0);
-  const totalLeads = leadData?.leads ?? campaign.leads ?? 0;
-  const totalRevenue = campaign.revenue || 0;
+  const totalLeads = conversions.length;
+  const totalRevenue = conversions.reduce((s, c) => s + (Number(c.revenue) || 0), 0);
   const cpl = campaign.budget && totalLeads > 0 ? (campaign.budget / totalLeads).toFixed(2) : null;
+
+  const conversionRate = totalTraffic > 0 ? ((totalLeads / totalTraffic) * 100) : 0;
+  const roi = campaign.budget && campaign.budget > 0 ? (((totalRevenue - campaign.budget) / campaign.budget) * 100) : 0;
 
   const goalTarget = campaign.goal === "revenue" ? 50000 : campaign.goal === "leads" ? 5000 : 2000;
   const goalCurrent = campaign.goal === "revenue" ? totalRevenue : totalLeads;
@@ -134,19 +133,35 @@ export default function SummaryTab({ campaign }: Props) {
     }))
     .sort((a, b) => b.value - a.value);
 
-  // Leads by channel (use source as proxy)
-  const leadsByChannel = trafficBySource.slice(0, 5).map((s) => ({
-    channel: s.name,
-    leads: Math.round(s.value * (campaign.conversion_rate || 7.2) / 100),
-  }));
+  // Leads by channel from actual conversion data
+  const leadsBySourceMap: Record<string, number> = {};
+  conversions.forEach((c) => {
+    const src = c.utm_source || "direct";
+    leadsBySourceMap[src] = (leadsBySourceMap[src] || 0) + 1;
+  });
+  const leadsByChannel = Object.entries(leadsBySourceMap)
+    .map(([channel, leads]) => ({ channel, leads }))
+    .sort((a, b) => b.leads - a.leads)
+    .slice(0, 5);
 
-  // Source table from links
-  const sourceTable = trafficBySource.map((s) => ({
-    source: s.name,
-    clicks: s.value,
-    leads: Math.round(s.value * (campaign.conversion_rate || 7.2) / 100),
-    conversion: campaign.conversion_rate || 7.2,
-  }));
+  // Revenue by channel from actual conversion data
+  const revBySourceMap: Record<string, number> = {};
+  conversions.forEach((c) => {
+    const src = c.utm_source || "direct";
+    revBySourceMap[src] = (revBySourceMap[src] || 0) + (Number(c.revenue) || 0);
+  });
+
+  // Source table from links + conversion data
+  const sourceTable = trafficBySource.map((s) => {
+    const leads = leadsBySourceMap[s.name] || 0;
+    const cvr = s.value > 0 ? ((leads / s.value) * 100).toFixed(1) : "0.0";
+    return {
+      source: s.name,
+      clicks: s.value,
+      leads,
+      conversion: cvr,
+    };
+  });
 
   return (
     <div className="space-y-6 mt-4">
@@ -160,14 +175,14 @@ export default function SummaryTab({ campaign }: Props) {
           icon={MousePointerClick}
           tooltip="Total tracked UTM link clicks across all links in this campaign"
         />
-        <KPICard label="Total Leads" value={totalLeads.toLocaleString()} change="+8.2%" positive icon={Users} />
-        <KPICard label="Revenue" value={`$${totalRevenue.toLocaleString()}`} change="+15.7%" positive icon={DollarSign} />
-        <KPICard label="Conversion" value={`${campaign.conversion_rate || 7.2}%`} change="+0.8%" positive icon={Target} />
+        <KPICard label="Total Leads" value={totalLeads.toLocaleString()} change={totalLeads > 0 ? `${totalLeads} conversions` : "No data yet"} positive={totalLeads > 0} icon={Users} />
+        <KPICard label="Revenue" value={`$${totalRevenue.toLocaleString()}`} change={totalRevenue > 0 ? `$${totalRevenue.toLocaleString()} tracked` : "No data yet"} positive={totalRevenue > 0} icon={DollarSign} />
+        <KPICard label="Conversion" value={`${conversionRate.toFixed(1)}%`} change={conversionRate > 0 ? "From pixel data" : "No data yet"} positive={conversionRate > 0} icon={Target} />
       </div>
-      {(cpl || campaign.roi > 0) && (
+      {(cpl || roi !== 0) && (
         <div className="grid grid-cols-2 gap-3">
-          {cpl && <KPICard label="Cost / Lead" value={`$${cpl}`} change="-5.3%" positive icon={Activity} />}
-          <KPICard label="ROI" value={campaign.roi > 0 ? `${campaign.roi}%` : "590%"} change="+42%" positive icon={TrendingUp} />
+          {cpl && <KPICard label="Cost / Lead" value={`$${cpl}`} change="From budget ÷ leads" positive icon={Activity} />}
+          <KPICard label="ROI" value={`${roi.toFixed(0)}%`} change={roi > 0 ? "Positive return" : "No data yet"} positive={roi > 0} icon={TrendingUp} />
         </div>
       )}
 
