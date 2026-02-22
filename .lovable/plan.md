@@ -1,74 +1,46 @@
 
 
-## Make Analytics Layouts More Responsive on Smaller Screens
+## Goal-Aware Conversion Calculation
 
-Based on the screenshot and code review, several analytics components overflow or feel cramped on mobile/tablet. Here are the targeted fixes:
+### Current Problem
+The "Conversion" KPI always shows `leads / clicks x 100`, which is misleading for revenue-focused campaigns -- it goes up when leads come in even if zero revenue has been earned.
 
-### 1. Campaign Detail Summary Tab (SummaryTab.tsx)
+### New Logic
 
-**KPI Cards grid**: Currently `grid-cols-2 md:grid-cols-4`. On small screens, 4 KPI cards in 2 columns can overflow text (especially "Revenue" and "Conversion" labels with trend badges). Fix:
-- Change to `grid-cols-1 sm:grid-cols-2 md:grid-cols-4` so cards stack single-column on very small screens
-- Make the KPI card value + trend badge wrap more gracefully with `flex-wrap`
+The conversion KPI card will adapt based on the campaign's goal:
 
-**Traffic breakdown row**: Currently `grid-cols-1 md:grid-cols-2 xl:grid-cols-3`. This is OK but the charts inside have fixed heights that can feel tight. Minor tweaks to ensure pie chart legends don't overflow.
+| Campaign Goal | Label | Formula | What it means |
+|---|---|---|---|
+| leads | Click-to-Lead | leads / clicks x 100 | % of visitors who became leads |
+| app_installs | Click-to-Lead | leads / clicks x 100 | Same as above |
+| challenge_signups | Click-to-Lead | leads / clicks x 100 | Same as above |
+| revenue | Lead-to-Sale | paid_conversions / leads x 100 | % of leads that generated revenue |
 
-**Source Performance table**: The 4-column grid can be tight on mobile. Add horizontal scroll wrapper for very small screens.
+Where `paid_conversions` = count of records in `campaign_conversions` where `revenue > 0`.
 
-### 2. Campaign Analytics Dashboard (CampaignAnalytics.tsx)
+### Secondary Metric
+Regardless of goal, a small secondary line will show the "other" conversion rate beneath the primary one:
+- Revenue campaigns: secondary shows "Click-to-Lead: X%"
+- Lead campaigns: secondary shows "Lead-to-Sale: X%" (if any conversions with revenue exist)
 
-**Summary cards**: Currently `grid-cols-1 sm:grid-cols-3`. This works but the header layout could be tighter on mobile.
-- Stack the header title and date range selector vertically on mobile
+This gives full context without cluttering the UI.
 
-### 3. Analytics Chart Components
-
-**ClickTimingChart**: Already uses `md:grid-cols-2` -- this is fine.
-
-**DeviceBreakdownChart**: Already uses `md:grid-cols-2` -- this is fine.
-
-**All chart cards**: Reduce minimum chart heights on small screens so they don't force excessive scrolling.
-
-### 4. Campaign Overview Cards (CampaignOverviewCards.tsx)
-
-Already responsive with `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4` -- no changes needed.
-
-### 5. KPICard Component in SummaryTab
-
-- Reduce padding on mobile
-- Allow value text to scale down slightly on small screens (`text-xl` on mobile, `text-2xl` on desktop)
-- Ensure the trend badge doesn't overflow next to the value
-
----
+### Tooltip Updates
+The tooltip text on the Conversion KPI card will also adapt to explain the formula being used for the current goal.
 
 ### Technical Details
 
-**Files to modify:**
+**File:** `src/components/campaigns/tabs/SummaryTab.tsx`
 
-- **`src/components/campaigns/tabs/SummaryTab.tsx`**
-  - KPI grid: `grid-cols-1 sm:grid-cols-2 md:grid-cols-4`
-  - KPICard: Add `flex-wrap` to value row, responsive text sizing (`text-xl sm:text-2xl`), reduce card padding on mobile (`p-3 sm:p-4`)
-  - Traffic breakdown: Ensure charts use responsive heights
-  - Source table: Add `overflow-x-auto` wrapper
+Changes:
+1. Compute `paidConversions` = count of conversions where `revenue > 0`
+2. Compute `clickToLeadRate` = `totalLeads / totalTraffic * 100`
+3. Compute `leadToSaleRate` = `paidConversions / totalLeads * 100` (guard against divide-by-zero)
+4. Set primary conversion value based on `campaign.goal`:
+   - `"revenue"` -> use `leadToSaleRate`, label "Lead-to-Sale"
+   - all others -> use `clickToLeadRate`, label "Click-to-Lead"
+5. Update the Conversion KPI card to use the dynamic label, value, and tooltip
+6. Add a secondary line of text below the "vs. last period" showing the alternate metric
 
-- **`src/pages/CampaignAnalytics.tsx`**
-  - Header: ensure title text is `text-xl sm:text-2xl` 
-  - Date range selector: full width on mobile with `w-full sm:w-[160px]`
+No database changes required -- all data is already available from existing queries.
 
-- **`src/components/marketing-hub/analytics/ClicksOverTimeChart.tsx`**
-  - Reduce chart height on mobile: `h-[200px] sm:h-[260px]` via responsive container
-
-- **`src/components/marketing-hub/analytics/TopLinksChart.tsx`**
-  - Reduce left margin on mobile, smaller chart height
-
-- **`src/components/marketing-hub/analytics/ClickTimingChart.tsx`**
-  - Reduce chart height on mobile
-
-- **`src/components/marketing-hub/analytics/DeviceBreakdownChart.tsx`**
-  - Reduce chart height on mobile
-
-- **`src/components/marketing-hub/analytics/TrafficSourcesChart.tsx`**
-  - Reduce chart height on mobile
-
-- **`src/components/marketing-hub/analytics/ClicksByCampaignChart.tsx`** and **`ClicksBySourceMediumChart.tsx`**
-  - Reduce chart height on mobile
-
-No database changes needed. All changes are CSS/layout adjustments using Tailwind responsive prefixes.
