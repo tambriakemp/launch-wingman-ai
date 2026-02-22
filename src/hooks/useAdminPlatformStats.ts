@@ -104,11 +104,7 @@ export function useAdminPlatformStats() {
         throw new Error('No session available');
       }
 
-      const { data, error } = await supabase.functions.invoke('admin-platform-stats', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      const { data, error } = await supabase.functions.invoke('admin-platform-stats');
 
       if (error) throw error;
       return data;

@@ -37,11 +37,7 @@ export function useAdminSystemHealth() {
         throw new Error('No session');
       }
 
-      const { data, error } = await supabase.functions.invoke('admin-system-health', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      const { data, error } = await supabase.functions.invoke('admin-system-health');
 
       if (error) throw error;
       return data;

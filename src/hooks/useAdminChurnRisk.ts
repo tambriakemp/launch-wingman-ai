@@ -36,11 +36,7 @@ export function useAdminChurnRisk() {
         throw new Error('No session');
       }
 
-      const { data, error } = await supabase.functions.invoke('admin-churn-risk', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      const { data, error } = await supabase.functions.invoke('admin-churn-risk');
 
       if (error) throw error;
       return data;
