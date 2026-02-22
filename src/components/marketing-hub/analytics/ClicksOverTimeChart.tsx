@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { format } from "date-fns";
+import { LabelWithTooltip } from "@/components/ui/info-tooltip";
 
 interface LinkOption {
   id: string;
@@ -31,7 +32,9 @@ const ClicksOverTimeChart = ({ data, availableLinks = [], onLinkFilter }: Props)
   return (
     <Card>
       <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
-        <CardTitle className="text-sm font-medium">Clicks Over Time</CardTitle>
+        <CardTitle className="text-sm font-medium">
+          <LabelWithTooltip termKey="clicks-over-time">Clicks Over Time</LabelWithTooltip>
+        </CardTitle>
         {availableLinks.length > 0 && (
           <Select value={selectedLink} onValueChange={setSelectedLink}>
             <SelectTrigger className="w-[180px] h-8 text-xs">

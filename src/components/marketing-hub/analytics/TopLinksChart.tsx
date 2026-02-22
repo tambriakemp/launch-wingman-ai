@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
+import { LabelWithTooltip } from "@/components/ui/info-tooltip";
 
 interface Props {
   data: { label: string; clicks: number }[];
@@ -8,7 +9,9 @@ interface Props {
 const TopLinksChart = ({ data }: Props) => (
   <Card>
     <CardHeader className="pb-2">
-      <CardTitle className="text-sm font-medium">Top Performing Links</CardTitle>
+      <CardTitle className="text-sm font-medium">
+        <LabelWithTooltip termKey="top-link">Top Performing Links</LabelWithTooltip>
+      </CardTitle>
     </CardHeader>
     <CardContent>
       {data.length === 0 ? (

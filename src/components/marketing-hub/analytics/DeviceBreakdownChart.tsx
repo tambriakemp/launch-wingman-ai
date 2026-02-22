@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { LabelWithTooltip } from "@/components/ui/info-tooltip";
 
 interface Props {
   deviceData: { device: string; clicks: number }[];
@@ -20,7 +21,9 @@ const DeviceBreakdownChart = ({ deviceData, browserData }: Props) => (
   <div className="grid md:grid-cols-2 gap-4">
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Device Breakdown</CardTitle>
+        <CardTitle className="text-sm font-medium">
+          <LabelWithTooltip termKey="device-breakdown">Device Breakdown</LabelWithTooltip>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {deviceData.length === 0 ? (
@@ -44,7 +47,9 @@ const DeviceBreakdownChart = ({ deviceData, browserData }: Props) => (
     </Card>
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Browser Breakdown</CardTitle>
+        <CardTitle className="text-sm font-medium">
+          <LabelWithTooltip termKey="device-breakdown">Browser Breakdown</LabelWithTooltip>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {browserData.length === 0 ? (

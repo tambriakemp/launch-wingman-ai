@@ -116,6 +116,56 @@ export const MARKETING_GLOSSARY: Record<string, GlossaryTerm> = {
     definition: 'A place where your customers or members can interact, ask questions, and get support.',
     example: 'Circle, Mighty Networks, Slack, or Facebook Groups.',
   },
+
+  // Analytics Terms
+  'total-clicks': {
+    term: 'Total Clicks',
+    definition: 'Total number of times your UTM links were clicked. Tracked via the UTM link shortener redirect.',
+  },
+  'top-link': {
+    term: 'Top Performing Link',
+    definition: 'The UTM link with the most clicks in the selected time period.',
+  },
+  'traffic-sources': {
+    term: 'Traffic Sources',
+    definition: 'Websites or platforms that referred visitors to your links. Parsed from the HTTP referrer header on each click.',
+  },
+  'total-conversions': {
+    term: 'Total Conversions',
+    definition: 'Actions tracked by your Smart Pixel snippet placed on landing or thank-you pages. Each pixel fire counts as one conversion.',
+  },
+  'conversion-rate': {
+    term: 'Conversion Rate',
+    definition: 'Percentage of clicks that resulted in a conversion. Formula: (Conversions ÷ Clicks) × 100.',
+  },
+  'total-revenue': {
+    term: 'Total Revenue',
+    definition: 'Sum of all revenue values passed via the Smart Pixel\'s data-revenue attribute on conversion events.',
+  },
+  'clicks-over-time': {
+    term: 'Clicks Over Time',
+    definition: 'Daily click counts from UTM click events, filtered by the selected date range and campaign.',
+  },
+  'conversions-over-time': {
+    term: 'Conversions Over Time',
+    definition: 'Daily conversion and revenue totals from Smart Pixel tracking, filtered by date range and campaign.',
+  },
+  'clicks-by-campaign': {
+    term: 'Clicks by Campaign',
+    definition: 'Click totals grouped by the UTM campaign parameter assigned to each link.',
+  },
+  'clicks-by-source-medium': {
+    term: 'Clicks by Source / Medium',
+    definition: 'Click totals grouped by the UTM source and medium parameters of each link.',
+  },
+  'click-timing': {
+    term: 'Click Timing',
+    definition: 'Distribution of clicks by day of week and hour of day, helping you find the best times to promote.',
+  },
+  'device-breakdown': {
+    term: 'Device & Browser',
+    definition: 'Breakdown of clicks by device type and browser, parsed from the user agent string on each click.',
+  },
 };
 
 // Helper function to get a term definition

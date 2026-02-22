@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
+import { LabelWithTooltip } from "@/components/ui/info-tooltip";
 
 interface Props {
   data: { campaign: string; clicks: number }[];
@@ -8,7 +9,9 @@ interface Props {
 const ClicksByCampaignChart = ({ data }: Props) => (
   <Card>
     <CardHeader className="pb-2">
-      <CardTitle className="text-sm font-medium">Clicks by Campaign</CardTitle>
+      <CardTitle className="text-sm font-medium">
+        <LabelWithTooltip termKey="clicks-by-campaign">Clicks by Campaign</LabelWithTooltip>
+      </CardTitle>
     </CardHeader>
     <CardContent>
       {data.length === 0 ? (

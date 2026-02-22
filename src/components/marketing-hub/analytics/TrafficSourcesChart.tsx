@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { LabelWithTooltip } from "@/components/ui/info-tooltip";
 
 interface Props {
   data: { source: string; clicks: number }[];
@@ -19,7 +20,9 @@ const COLORS = [
 const TrafficSourcesChart = ({ data }: Props) => (
   <Card>
     <CardHeader className="pb-2">
-      <CardTitle className="text-sm font-medium">Traffic Sources</CardTitle>
+      <CardTitle className="text-sm font-medium">
+        <LabelWithTooltip termKey="traffic-sources">Traffic Sources</LabelWithTooltip>
+      </CardTitle>
     </CardHeader>
     <CardContent>
       {data.length === 0 ? (
