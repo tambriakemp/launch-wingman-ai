@@ -1,61 +1,23 @@
 
 
-# Universal Smart Pixel — Auto-Detect Campaign from URL
+# Fix: Add Campaign ID to Manually Created UTM Links
 
-## What Changes
+## Problem
+When you create a UTM link from within a campaign using the "Add UTM Link" modal, the generated URL is missing the `&c=CAMPAIGN_ID` parameter. This is because `UTMForm.tsx` has its own internal URL builder (`generateFullUrl`) that does not include the campaign ID.
 
-Right now, every pixel snippet hardcodes `c=CAMPAIGN_ID`. This means users need a different pixel per campaign, and it breaks on shared landing pages.
+The auto-generate panel was updated to use the shared `buildFinalUrl` helper (which supports campaign IDs), but the manual link creation form was missed.
 
-The fix: make the pixel snippets read the campaign ID dynamically from the page URL at runtime. Users paste one snippet and it works for all campaigns automatically.
-
-## How It Works
-
-1. When a user creates a UTM link for a campaign, the link already contains the campaign's UUID (we will add `&c=CAMPAIGN_UUID` to UTM links automatically).
-2. When a visitor lands on the page via that link, the URL contains `?c=...`.
-3. The pixel snippet on the thank-you/landing page reads `c` from the URL and passes it to the tracking endpoint.
-4. If no `c` param is found in the URL, it falls back to the current campaign's ID (so per-campaign pixels still work).
+## Solution
+Pass the `campaignId` into `UTMForm` as an optional prop, and use it when building the URL so the `&c=` parameter is appended automatically.
 
 ## Changes
 
-### 1. Pixel Snippets — `src/components/campaigns/tabs/PixelTab.tsx`
+**File: `src/components/marketing-hub/UTMForm.tsx`**
+- Add an optional `campaignId?: string` prop
+- Update the internal `generateFullUrl` function to append `&c=campaignId` when provided
 
-Update all three snippet templates:
+**File: `src/components/campaigns/links/AddUTMLinkModal.tsx`**
+- Pass `campaignId={campaignId}` to the `UTMForm` component
 
-- **JS Pixel (Recommended)**: Instead of hardcoding `c=CAMPAIGN_ID`, the script reads `c` from `location.search` and falls back to the current campaign ID.
-- **Image Pixel**: Since `<img>` can't run JS, keep the hardcoded campaign ID but add a note that it only tracks this specific campaign.
-- **JS + UTM Passthrough**: Already reads URL params — extend it to also grab `c` from the URL, falling back to the campaign ID.
-- Update descriptions to explain the "universal" behavior.
+No changes needed to the standalone UTM Builder page (`/marketing-hub/utm-builder`) since links created there are not tied to a campaign.
 
-### 2. UTM Link Builder — `src/components/campaigns/links/utmHelpers.ts`
-
-Update `buildFinalUrl` to automatically append `c=CAMPAIGN_ID` as an extra query param when a campaign ID is provided. This ensures every UTM link carries the campaign identifier to the destination page.
-
-### 3. UTM Link Creation UI
-
-Where UTM links are created for a campaign, pass the `campaign_id` into `buildFinalUrl` so the `c` parameter is included in every generated link.
-
-## Technical Detail
-
-**Updated JS Pixel snippet (example):**
-```text
-<script>
-const p = new URLSearchParams(location.search);
-const cid = p.get("c") || "FALLBACK_CAMPAIGN_ID";
-fetch("BASE_URL?c=" + cid + "&revenue=AMOUNT");
-</script>
-```
-
-**Updated `buildFinalUrl` signature:**
-```text
-buildFinalUrl(baseUrl, params, campaignId?)
-  -> if campaignId, appends &c=campaignId to the URL
-```
-
-**Image pixel stays per-campaign** (no JS available), with a note explaining this limitation.
-
-## Result
-
-- Users paste one JS pixel on their landing page and it tracks conversions for any campaign automatically.
-- UTM links automatically carry the campaign ID to the destination.
-- Existing per-campaign pixels continue to work as a fallback.
-- No backend changes needed — the edge function already accepts `c` from query params.
