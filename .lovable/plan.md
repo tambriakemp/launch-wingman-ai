@@ -1,126 +1,106 @@
 
 
-# Campaign Detail Page -- Layout and Design Overhaul
+# Making "Total Leads" Functional via SureContact
 
-## Problem
-The current page is a long single-column scroll with a dense header, followed by 6 horizontal tabs. On desktop it underuses horizontal space, on mobile the tabs overflow and tables are cramped. The header mixes too many concerns (title, status, meta, warnings, actions) in a single vertical stack.
+## Current State
 
-## Proposed Layout
+Right now, **Total Leads** is hardcoded to `0` for all real campaigns. The `campaigns` table has no `leads` column -- the number only exists in the TypeScript `Campaign` interface for demo data.
 
-### Desktop (lg and above): Two-Zone Layout
+Your SureContact integration already syncs **every Launchely signup** as a contact and tags them (e.g., `free-user`, `pro-subscriber`, `new-signup`). However, there's currently no link between SureContact contacts and specific **campaigns**.
+
+## How It Will Work
+
+The idea: when someone clicks a tracked UTM link for a campaign, lands on your page, and then signs up or opts in, SureContact captures them. We tag that contact with the **campaign name** so we can count leads per campaign.
 
 ```text
-+-------------------------------------------------------+
-| < Campaigns    [Duplicate] [Archive]                   |
-+-------------------------------------------------------+
-| Campaign Name (editable)          Status | Goal | Tags |
-| Mar 1 - Apr 15 · Budget: $5,000                       |
-+-------------------+-----------------------------------+
-|                   |                                   |
-|  SIDEBAR          |  MAIN CONTENT AREA                |
-|  (220px fixed)    |  (flex-1)                         |
-|                   |                                   |
-|  Navigation       |  Tab content renders here         |
-|  - Summary        |                                   |
-|  - Links          |                                   |
-|  - Assets         |                                   |
-|  - Funnel         |                                   |
-|  - Analytics      |                                   |
-|  - Notes          |                                   |
-|                   |                                   |
-|  Quick Stats      |                                   |
-|  (mini KPIs)      |                                   |
-|                   |                                   |
-+-------------------+-----------------------------------+
+UTM Link Click --> Landing Page --> User Signs Up/Opts In
+                                        |
+                                        v
+                              SureContact Contact Created
+                              Tagged with "campaign:{campaign_name}"
 ```
 
-- Left sidebar contains: vertical nav tabs, quick-glance KPIs (traffic, leads, revenue, CVR as compact stats), and health indicators
-- Main content area gets full width for charts, tables, and grids
-- Warning banners (no links, ended campaign) appear as a slim bar between header and content zones
+## Implementation Steps
 
-### Tablet (md): Collapsed sidebar
-- Sidebar becomes a horizontal scrollable tab bar (same as current but refined)
-- Quick stats move to a compact row above tab content
+### 1. Pass UTM campaign data into SureContact on signup
 
-### Mobile (below md): Stacked
-- Header compresses: name + status on one line, meta below, actions in a dropdown menu (three-dot)
-- Tabs become horizontally scrollable pills
-- All grids collapse to single column
-- Tables switch to card-based layouts
+**File:** `supabase/functions/surecontact-webhook/index.ts`
 
-## Detailed Changes
+- Extend the `ContactPayload` interface to accept an optional `utm_campaign` field
+- When syncing a contact (especially on `sync_new_signup`), if a `utm_campaign` value is provided, create/attach a tag named `campaign:{utm_campaign}` to the contact
+- This connects the lead to the specific campaign
 
-### 1. CampaignDetail.tsx -- New two-zone layout
-- Wrap content in a flex container: `flex flex-col lg:flex-row`
-- Left zone: `w-full lg:w-56 lg:shrink-0` for the sidebar nav
-- Right zone: `flex-1 min-w-0` for the content
+### 2. Capture UTM params from the landing page URL
 
-### 2. New Component: CampaignDetailSidebar.tsx
-- Vertical nav list with icons for each tab (LayoutDashboard, Link2, Image, GitBranch, BarChart3, StickyNote)
-- Active tab highlighted with left border accent + bg tint
-- Below nav: compact stat cards showing 4 key metrics as small number + label pairs
-- Below stats: health indicators (link health, tracking confidence)
-- Only visible on `lg:` breakpoint; hidden on smaller screens
+**File:** `src/contexts/AuthContext.tsx` (or signup flow)
 
-### 3. CampaignDetailHeader.tsx -- Simplified
-- Compact single-row layout: back button, name, status badge, goal badge, tags inline
-- Actions (Duplicate, Archive) move into a `DropdownMenu` on mobile, stay as buttons on desktop
-- Meta row (dates, budget) as subtle text below the title
-- Warning banners remain below header but get a slimmer profile
+- On app load or signup page load, read `utm_campaign` from the URL query string and store it in `localStorage`
+- When the user completes signup, pass the stored `utm_campaign` value to the `surecontact-webhook` function
 
-### 4. CampaignDetailTabs.tsx -- Responsive tab bar
-- On `lg:` screens: tabs hidden (navigation is in sidebar)
-- On smaller screens: horizontal scrollable tab pills with `overflow-x-auto`
-- Each pill uses the same icon from the sidebar for visual consistency
+### 3. Create a backend function to count leads per campaign
 
-### 5. SummaryTab.tsx -- Modernized grid
-- KPI cards: `grid-cols-2 md:grid-cols-4` (reduced from 6 to 4 primary KPIs; CPL and ROI become secondary)
-- Cards get a subtle left-border color accent based on metric type
-- Charts section: 2-column grid on desktop, stacked on mobile
-- Source performance table: responsive with horizontal scroll on mobile
-- Health indicators removed from Summary (moved to sidebar)
+**File:** `supabase/functions/campaign-leads/index.ts` (new)
 
-### 6. LinksTab.tsx -- Mobile cards
-- Desktop: keep table layout
-- Mobile (below md): each link renders as a card with stacked fields instead of table row
-- Toolbar buttons stack vertically on mobile with full-width
+- Accepts a `campaign_name` (or campaign ID mapped to its `utm_campaign` value)
+- Calls the SureContact API: `GET /contacts?tag={campaign_tag_uuid}` to count contacts tagged with that campaign
+- Returns the lead count
+- This avoids needing a separate leads table -- SureContact is the source of truth
 
-### 7. AssetsTab.tsx -- Consistent grid
-- `grid-cols-1 sm:grid-cols-2 xl:grid-cols-3` (unchanged but ensure cards don't overflow)
+### 4. Update the Summary Tab to fetch real lead counts
 
-### 8. FunnelTab.tsx -- Responsive funnel
-- Desktop: horizontal flow (current)
-- Mobile: vertical flow with downward arrows instead of right arrows
-- Step cards get full width on mobile
+**File:** `src/components/campaigns/tabs/SummaryTab.tsx`
 
-### 9. AnalyticsTab.tsx -- Better chart layout
-- Charts: `grid-cols-1 lg:grid-cols-2` (already correct)
-- ROI summary: horizontal on desktop, 2x2 grid on mobile
-- Attribution table: horizontal scroll wrapper on mobile
+- Add a `useQuery` call to the new `campaign-leads` backend function
+- Replace the hardcoded `campaign.leads || 0` with the live count from SureContact
+- The "Leads by Channel" chart can be derived from UTM source data combined with the conversion rate
 
-### 10. NotesTab.tsx -- Full width
-- Remove `max-w-3xl` constraint so it uses available space in the new layout
+### 5. Store UTM campaign tags in SureContact config
 
-## Files to Create
-| File | Purpose |
-|------|---------|
-| `src/components/campaigns/CampaignDetailSidebar.tsx` | Vertical nav + quick stats for desktop |
+**Database:** `surecontact_config` table
 
-## Files to Modify
-| File | Changes |
-|------|---------|
-| `src/pages/CampaignDetail.tsx` | Two-zone flex layout, integrate sidebar |
-| `src/components/campaigns/CampaignDetailHeader.tsx` | Compact single-row, mobile dropdown actions |
-| `src/components/campaigns/CampaignDetailTabs.tsx` | Hide on lg, scrollable pills on mobile |
-| `src/components/campaigns/tabs/SummaryTab.tsx` | Remove health indicators (moved to sidebar), 4-col KPIs |
-| `src/components/campaigns/tabs/LinksTab.tsx` | Card layout on mobile |
-| `src/components/campaigns/tabs/FunnelTab.tsx` | Vertical flow on mobile |
-| `src/components/campaigns/tabs/NotesTab.tsx` | Remove max-w constraint |
+- When a campaign is created with `auto_utm = true`, automatically create a corresponding tag in SureContact via the API
+- Store the tag UUID in `surecontact_config` with `config_type: 'tag'` and `name: 'campaign:{campaign_name}'`
 
-## Technical Notes
-- No new dependencies needed
-- Sidebar nav uses the same `activeTab` / `onTabChange` state already in CampaignDetail
-- `useIsMobile` hook available but not required -- all responsive behavior via Tailwind breakpoints
-- No data model changes, no database migrations
-- Demo data and real data paths remain unchanged
+## Technical Details
+
+### SureContact API Calls Needed
+
+| Purpose | Endpoint | Method |
+|---------|----------|--------|
+| Create campaign tag | `/tags` | POST |
+| Attach tag to contact | `/contacts/{uuid}/tags/attach` | POST |
+| List contacts by tag | `/contacts?tag={tag_uuid}` | GET |
+
+### New Backend Function: `campaign-leads`
+
+```text
+Request:  GET /functions/v1/campaign-leads?campaign_id=xxx
+Response: { "leads": 42 }
+
+Flow:
+1. Look up campaign name from campaigns table
+2. Find matching tag UUID from surecontact_config
+3. Query SureContact API for contacts with that tag
+4. Return the count
+```
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `supabase/functions/campaign-leads/index.ts` | New -- counts leads from SureContact by campaign tag |
+| `supabase/functions/surecontact-webhook/index.ts` | Modify -- accept and apply `utm_campaign` tag on signup |
+| `src/components/campaigns/tabs/SummaryTab.tsx` | Modify -- fetch live lead count |
+| `src/contexts/AuthContext.tsx` or signup flow | Modify -- capture and forward UTM params |
+| `supabase/config.toml` | Add `campaign-leads` function config |
+
+### No new database tables needed
+
+SureContact acts as the lead database. Campaign tags in SureContact link contacts to campaigns. The `surecontact_config` table already supports storing tag UUIDs.
+
+## What You Need
+
+- **No new API keys** -- SureContact API key (`SURECONTACT_API_KEY`) is already configured
+- **No new external services** -- everything uses your existing SureContact account
+- Your landing pages need to preserve UTM params through to the signup/opt-in form so they can be forwarded to SureContact
 
