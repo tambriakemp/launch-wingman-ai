@@ -4,10 +4,8 @@ import CampaignOverviewCards from "@/components/campaigns/CampaignOverviewCards"
 import CampaignTable from "@/components/campaigns/CampaignTable";
 import CampaignTimelineView from "@/components/campaigns/CampaignTimelineView";
 import NewCampaignModal from "@/components/campaigns/NewCampaignModal";
-import { demoCampaigns } from "@/components/campaigns/campaignDemoData";
 import { Button } from "@/components/ui/button";
 import { LayoutList, GanttChart } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -28,29 +26,60 @@ export default function CampaignPlanner() {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []).map((c: any): Campaign => ({
-        id: c.id,
-        name: c.name,
-        goal: c.goal,
-        status: c.status,
-        start_date: c.start_date,
-        end_date: c.end_date,
-        budget: c.budget,
-        tags: c.tags ?? [],
-        leads: 0,
-        revenue: 0,
-        roi: 0,
-        conversion_rate: 0,
-        created_at: c.created_at,
-        updated_at: c.updated_at,
-        sparkline_data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        goal_target: Number(c.goal_target) || 0,
-      }));
+      return data ?? [];
     },
     enabled: !!user?.id,
   });
 
-  const allCampaigns = (dbCampaigns?.length ?? 0) > 0 ? dbCampaigns! : demoCampaigns;
+  // Fetch conversions for all user campaigns
+  const campaignIds = (dbCampaigns ?? []).map((c) => c.id);
+  const { data: conversions } = useQuery({
+    queryKey: ["campaign_conversions", campaignIds],
+    queryFn: async () => {
+      if (campaignIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("campaign_conversions")
+        .select("campaign_id, revenue")
+        .in("campaign_id", campaignIds);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: campaignIds.length > 0,
+  });
+
+  // Aggregate conversions by campaign_id
+  const conversionMap = new Map<string, { leads: number; revenue: number }>();
+  (conversions ?? []).forEach((c) => {
+    const existing = conversionMap.get(c.campaign_id) ?? { leads: 0, revenue: 0 };
+    existing.leads += 1;
+    existing.revenue += Number(c.revenue ?? 0);
+    conversionMap.set(c.campaign_id, existing);
+  });
+
+  // Build enriched campaigns
+  const allCampaigns: Campaign[] = (dbCampaigns ?? []).map((c: any): Campaign => {
+    const conv = conversionMap.get(c.id) ?? { leads: 0, revenue: 0 };
+    const budget = Number(c.budget) || 0;
+    const roi = budget > 0 ? Math.round((conv.revenue / budget) * 100) : 0;
+    return {
+      id: c.id,
+      name: c.name,
+      goal: c.goal,
+      status: c.status,
+      start_date: c.start_date,
+      end_date: c.end_date,
+      budget: c.budget,
+      tags: c.tags ?? [],
+      leads: conv.leads,
+      revenue: conv.revenue,
+      roi,
+      conversion_rate: 0,
+      created_at: c.created_at,
+      updated_at: c.updated_at,
+      sparkline_data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      goal_target: Number(c.goal_target) || 0,
+    };
+  });
 
   return (
     <ProjectLayout>
@@ -62,7 +91,7 @@ export default function CampaignPlanner() {
           </div>
         </div>
 
-        <CampaignOverviewCards />
+        <CampaignOverviewCards campaigns={allCampaigns} />
 
         {/* View toggle */}
         <div className="flex items-center gap-1 border rounded-md w-fit p-0.5">
