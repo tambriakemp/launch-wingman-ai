@@ -80,36 +80,11 @@ export default function CampaignDetailSidebar({ campaign, activeTab, onTabChange
       {/* Campaign Info Cards */}
       <div className="space-y-2 px-1">
         <p className="text-xs text-muted-foreground uppercase tracking-wider px-2 mb-2 font-medium">Campaign Info</p>
-        <div className="rounded-lg border border-border/60 bg-card p-3 space-y-1">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Target className="w-4 h-4 shrink-0" />
-            <span className="text-xs">Goal</span>
-          </div>
-          <p className="text-sm font-semibold pl-6">{goalLabels[campaign.goal]}</p>
-        </div>
-        <div className="rounded-lg border border-border/60 bg-card p-3 space-y-1">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="w-4 h-4 shrink-0" />
-            <span className="text-xs">Date Range</span>
-          </div>
-          <p className="text-sm font-semibold pl-6">
-            {campaign.start_date} → {campaign.end_date ?? "Ongoing"}
-          </p>
-        </div>
-        {campaign.budget && (
-          <div className="rounded-lg border border-border/60 bg-card p-3 space-y-1">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <DollarSign className="w-4 h-4 shrink-0" />
-              <span className="text-xs">Budget</span>
-            </div>
-            <p className="text-sm font-semibold pl-6">${campaign.budget.toLocaleString()}</p>
-          </div>
-        )}
         <div className="rounded-lg border border-border/60 bg-card p-3 space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Target className="w-4 h-4 shrink-0" />
-              <span className="text-xs">Goal Target</span>
+              <span className="text-xs">Goal</span>
             </div>
             {!editingGoalTarget && (
               <button onClick={() => { setGoalTargetValue(String(campaign.goal_target || "")); setEditingGoalTarget(true); }} className="text-muted-foreground hover:text-foreground">
@@ -117,6 +92,7 @@ export default function CampaignDetailSidebar({ campaign, activeTab, onTabChange
               </button>
             )}
           </div>
+          <p className="text-sm font-semibold pl-6">{goalLabels[campaign.goal]}</p>
           {editingGoalTarget ? (
             <div className="flex items-center gap-1.5 pl-6">
               <Input
@@ -149,6 +125,24 @@ export default function CampaignDetailSidebar({ campaign, activeTab, onTabChange
             </>
           )}
         </div>
+        <div className="rounded-lg border border-border/60 bg-card p-3 space-y-1">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Calendar className="w-4 h-4 shrink-0" />
+            <span className="text-xs">Date Range</span>
+          </div>
+          <p className="text-sm font-semibold pl-6">
+            {campaign.start_date} → {campaign.end_date ?? "Ongoing"}
+          </p>
+        </div>
+        {campaign.budget && (
+          <div className="rounded-lg border border-border/60 bg-card p-3 space-y-1">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <DollarSign className="w-4 h-4 shrink-0" />
+              <span className="text-xs">Budget</span>
+            </div>
+            <p className="text-sm font-semibold pl-6">${campaign.budget.toLocaleString()}</p>
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
