@@ -218,7 +218,7 @@ export default function SummaryTab({ campaign }: Props) {
           tooltip={isRevenueGoal
             ? `Paid conversions ÷ Leads × 100. ${paidConversions} paid ÷ ${totalLeads} lead${totalLeads !== 1 ? "s" : ""} = ${leadToSaleRate.toFixed(1)}%.`
             : `Leads ÷ Traffic × 100. ${totalLeads} lead${totalLeads !== 1 ? "s" : ""} ÷ ${totalTraffic.toLocaleString()} click${totalTraffic !== 1 ? "s" : ""} = ${clickToLeadRate.toFixed(1)}%.`}
-          secondaryText={`${secondaryConversionLabel}: ${secondaryConversionRate.toFixed(1)}%`}
+          
         />
       </div>
       {(cpl || roi !== 0) && (
