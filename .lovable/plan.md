@@ -1,19 +1,22 @@
 
 
-## Fix Goal Progress Bar Color
+## Fix: Progress Bar Still Showing Green
 
-### Problem
-The progress bar at 0% still appears green because `bg-primary/70` is just a slightly transparent version of the primary color (teal/green), which still looks green and gives the impression the goal is complete.
-
-### Solution
-Change the "in-progress" color to a neutral tone that clearly communicates work-in-progress, and only switch to green when complete.
+### Root Cause
+The `Progress` component has a hardcoded `bg-primary` class on its indicator. When `indicatorClassName` passes `bg-muted-foreground/30`, Tailwind Merge should override it, but the teal/green color is still bleeding through. The fix is to remove the default `bg-primary` from the Progress component and let the caller always control the color via `indicatorClassName`.
 
 ### Changes
 
-**File:** `src/components/campaigns/CampaignDetailSidebar.tsx` (line 121)
+**File: `src/components/ui/progress.tsx` (line ~21)**
 
-- Change `bg-primary/70` to `bg-muted-foreground/30` (a neutral gray) for the in-progress state
-- Keep `bg-emerald-500` for the completed state (>= 100%)
+Remove `bg-primary` from the indicator's default classes so it becomes:
+```
+className={cn("h-full w-full flex-1 transition-all", indicatorClassName)}
+```
 
-This ensures the bar looks neutral/gray while in progress and only turns green upon goal completion, eliminating the false "complete" impression.
+This ensures no default green/teal color is applied -- the color is fully controlled by the `indicatorClassName` prop passed from the parent.
+
+**File: All other usages of `<Progress />`**
+
+Search for any other `<Progress />` usage that relies on the default `bg-primary` color and add an explicit `indicatorClassName="bg-primary"` to those instances so they keep working as before.
 
