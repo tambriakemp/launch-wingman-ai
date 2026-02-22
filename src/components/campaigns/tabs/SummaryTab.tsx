@@ -189,40 +189,6 @@ export default function SummaryTab({ campaign }: Props) {
         </div>
       )}
 
-      {/* Campaign Health */}
-      <Card className="p-4">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">Campaign Health</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Link Health</p>
-              <p className="text-sm font-semibold">{links.length} Active · 0 Broken</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center">
-              <AlertTriangle className="w-4 h-4 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Funnel Drop-Off</p>
-              <p className="text-sm font-semibold">72% at Lead Capture</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center">
-              <Activity className="w-4 h-4 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Tracking Confidence</p>
-              <p className="text-sm font-semibold">92%</p>
-            </div>
-          </div>
-        </div>
-      </Card>
-
       {/* Traffic breakdown row */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {/* Pie chart */}
@@ -289,6 +255,40 @@ export default function SummaryTab({ campaign }: Props) {
           )}
         </Card>
       </div>
+
+      {/* Campaign Health */}
+      <Card className="p-4">
+        <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">Campaign Health</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Link Health</p>
+              <p className="text-sm font-semibold">{links.length} Active · 0 Broken</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Funnel Drop-Off</p>
+              <p className="text-sm font-semibold">72% at Lead Capture</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center">
+              <Activity className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Tracking Confidence</p>
+              <p className="text-sm font-semibold">92%</p>
+            </div>
+          </div>
+        </div>
+      </Card>
 
       {/* Top assets */}
       {assets.length > 0 && (
