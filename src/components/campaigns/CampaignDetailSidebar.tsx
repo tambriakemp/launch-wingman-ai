@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Campaign } from "@/types/campaign";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Link2, Image, GitBranch, BarChart3, StickyNote, Target, Calendar, DollarSign, Crosshair, Pencil, Check, X } from "lucide-react";
+import { LayoutDashboard, Link2, Image, GitBranch, StickyNote, Target, Calendar, DollarSign, Crosshair, Pencil, Check, X } from "lucide-react";
 import { demoLinks, goalLabels } from "./campaignDemoData";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -22,7 +22,6 @@ const navItems = [
   { id: "pixel", label: "Pixel", icon: Crosshair },
   { id: "assets", label: "Assets", icon: Image },
   { id: "funnel", label: "Funnel", icon: GitBranch },
-  { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "notes", label: "Notes", icon: StickyNote },
 ];
 
