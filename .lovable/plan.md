@@ -1,22 +1,29 @@
 
 
-## Fix: Progress Bar Still Showing Green
+## Fix: Progress Bar Track is Green (Root Cause Found)
 
 ### Root Cause
-The `Progress` component has a hardcoded `bg-primary` class on its indicator. When `indicatorClassName` passes `bg-muted-foreground/30`, Tailwind Merge should override it, but the teal/green color is still bleeding through. The fix is to remove the default `bg-primary` from the Progress component and let the caller always control the color via `indicatorClassName`.
 
-### Changes
+The green color is **not** coming from the indicator -- it's from the **track** (the container/background of the progress bar).
 
-**File: `src/components/ui/progress.tsx` (line ~21)**
+In `src/components/ui/progress.tsx`, the progress bar root has class `bg-secondary`. In your theme, `--secondary` is defined as `168 76% 42%` which is a **teal/green** color. So the progress bar background itself is green, making the whole bar appear green regardless of the indicator color.
 
-Remove `bg-primary` from the indicator's default classes so it becomes:
+### Solution
+
+Override the track color on the Goal card's `<Progress>` by passing a neutral background via the `className` prop:
+
+**File: `src/components/campaigns/CampaignDetailSidebar.tsx` (line 121)**
+
+Change from:
+```tsx
+<Progress value={goalPct} className="h-1.5" indicatorClassName={...} />
 ```
-className={cn("h-full w-full flex-1 transition-all", indicatorClassName)}
+
+To:
+```tsx
+<Progress value={goalPct} className="h-1.5 bg-muted" indicatorClassName={...} />
 ```
 
-This ensures no default green/teal color is applied -- the color is fully controlled by the `indicatorClassName` prop passed from the parent.
+This overrides the `bg-secondary` track with `bg-muted` (a neutral gray), so the track is gray and the indicator fills with color only when progress occurs. The `bg-emerald-500` indicator at 100% will still pop on the neutral track.
 
-**File: All other usages of `<Progress />`**
-
-Search for any other `<Progress />` usage that relies on the default `bg-primary` color and add an explicit `indicatorClassName="bg-primary"` to those instances so they keep working as before.
-
+No other files need changes -- this is a single-line fix targeting the specific Progress instance in the Goal card.
