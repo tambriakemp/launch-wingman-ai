@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
@@ -456,7 +457,21 @@ const StickyHeader = () => (
 );
 
 /* ───────────────────── PAGE ───────────────────── */
-const SalesFunnel = () => (
+const SalesFunnel = () => {
+  useEffect(() => {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      const u = new URL("https://ydhagqgurqhlguxkkppb.supabase.co/functions/v1/campaign-pixel");
+      u.searchParams.set("c", "777b05de-3810-45d0-a317-c107e883b2f9");
+      ["utm_source", "utm_medium", "utm_campaign"].forEach(k => {
+        const v = p.get(k);
+        if (v) u.searchParams.set(k, v);
+      });
+      fetch(u.toString()).catch(() => {});
+    } catch {}
+  }, []);
+
+  return (
   <div className="min-h-screen bg-primary">
     <StickyHeader />
     <HeroSection />
@@ -497,6 +512,7 @@ const SalesFunnel = () => (
       </div>
     </footer>
   </div>
-);
+  );
+};
 
 export default SalesFunnel;
