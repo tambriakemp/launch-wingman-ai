@@ -2539,13 +2539,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "utm_links_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "campaigns"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "utm_links_folder_id_fkey"
             columns: ["folder_id"]
             isOneToOne: false
