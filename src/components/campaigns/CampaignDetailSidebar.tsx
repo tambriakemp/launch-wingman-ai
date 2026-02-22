@@ -118,7 +118,7 @@ export default function CampaignDetailSidebar({ campaign, activeTab, onTabChange
               </div>
               {goalTarget > 0 && (
                 <div className="pl-6 space-y-1">
-                  <Progress value={goalPct} className="h-1.5" />
+                  <Progress value={goalPct} className="h-1.5" indicatorClassName={goalPct >= 100 ? "bg-emerald-500" : "bg-primary/70"} />
                   <p className="text-[10px] text-muted-foreground text-right">{goalPct.toFixed(0)}%</p>
                 </div>
               )}
