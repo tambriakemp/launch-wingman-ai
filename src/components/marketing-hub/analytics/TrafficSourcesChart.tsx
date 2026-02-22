@@ -25,7 +25,8 @@ const TrafficSourcesChart = ({ data }: Props) => (
       {data.length === 0 ? (
         <p className="text-xs text-muted-foreground py-8 text-center">No referrer data yet</p>
       ) : (
-        <ResponsiveContainer width="100%" height={280}>
+        <div className="h-[220px] sm:h-[280px]">
+        <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
@@ -51,6 +52,7 @@ const TrafficSourcesChart = ({ data }: Props) => (
             <Legend wrapperStyle={{ fontSize: "11px" }} />
           </PieChart>
         </ResponsiveContainer>
+        </div>
       )}
     </CardContent>
   </Card>

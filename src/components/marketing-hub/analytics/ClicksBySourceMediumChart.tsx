@@ -14,7 +14,8 @@ const ClicksBySourceMediumChart = ({ data }: Props) => (
       {data.length === 0 ? (
         <p className="text-xs text-muted-foreground py-8 text-center">No source/medium data yet</p>
       ) : (
-        <ResponsiveContainer width="100%" height={260}>
+        <div className="h-[200px] sm:h-[260px]">
+        <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
             <XAxis dataKey="label" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
             <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
@@ -28,6 +29,7 @@ const ClicksBySourceMediumChart = ({ data }: Props) => (
             <Bar dataKey="clicks" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
+        </div>
       )}
     </CardContent>
   </Card>

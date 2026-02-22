@@ -14,8 +14,9 @@ const TopLinksChart = ({ data }: Props) => (
       {data.length === 0 ? (
         <p className="text-xs text-muted-foreground py-8 text-center">No link data yet</p>
       ) : (
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={data} layout="vertical" margin={{ left: 80 }}>
+        <div className="h-[220px] sm:h-[280px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} layout="vertical" margin={{ left: 40 }}>
             <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
             <YAxis
               type="category"
@@ -35,6 +36,7 @@ const TopLinksChart = ({ data }: Props) => (
             <Bar dataKey="clicks" fill="hsl(var(--secondary))" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
+        </div>
       )}
     </CardContent>
   </Card>
