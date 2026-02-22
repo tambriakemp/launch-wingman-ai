@@ -22,7 +22,8 @@ const RANGE_LABELS: Record<DateRange, string> = {
 
 const CampaignAnalytics = () => {
   const [dateRange, setDateRange] = useState<DateRange>("30d");
-  const analytics = useCampaignAnalytics(dateRange);
+  const [campaignId, setCampaignId] = useState<string | null>(null);
+  const analytics = useCampaignAnalytics(dateRange, campaignId);
 
   return (
     <ProjectLayout>
@@ -43,18 +44,38 @@ const CampaignAnalytics = () => {
               </p>
             </div>
           </div>
-          <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
-            <SelectTrigger className="w-full sm:w-[160px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(RANGE_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Campaign Filter */}
+            <Select
+              value={campaignId ?? "all"}
+              onValueChange={(v) => setCampaignId(v === "all" ? null : v)}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="All Campaigns" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Campaigns</SelectItem>
+                {analytics.campaigns.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {/* Date Range Filter */}
+            <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
+              <SelectTrigger className="w-full sm:w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(RANGE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {analytics.isLoading ? (
@@ -102,7 +123,13 @@ const CampaignAnalytics = () => {
             </div>
 
             {/* Clicks Over Time */}
-            <ClicksOverTimeChart data={analytics.clicksOverTime} />
+            <ClicksOverTimeChart
+              data={analytics.clicksOverTime}
+              availableLinks={analytics.availableLinks}
+              onLinkFilter={(linkId) =>
+                linkId ? analytics.buildClicksOverTimeForLink(linkId) : analytics.clicksOverTime
+              }
+            />
 
             {/* Top Links + Traffic Sources */}
             <div className="grid md:grid-cols-2 gap-4">

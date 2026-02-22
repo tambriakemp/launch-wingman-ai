@@ -61,7 +61,7 @@ function getRangeStart(range: DateRange): Date | null {
   return startOfDay(subDays(new Date(), days));
 }
 
-export function useCampaignAnalytics(dateRange: DateRange) {
+export function useCampaignAnalytics(dateRange: DateRange, campaignId?: string | null) {
   const { user } = useAuth();
 
   const linksQuery = useQuery({
@@ -69,20 +69,40 @@ export function useCampaignAnalytics(dateRange: DateRange) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("utm_links")
-        .select("id, label, utm_source, utm_medium, utm_campaign, click_count, short_code, base_url")
+        .select("id, label, utm_source, utm_medium, utm_campaign, click_count, short_code, base_url, campaign_id")
         .eq("user_id", user!.id);
       if (error) throw error;
-      return (data || []) as UtmLink[];
+      return (data || []) as (UtmLink & { campaign_id: string | null })[];
     },
     enabled: !!user,
   });
+
+  // Fetch campaigns for the filter dropdown
+  const campaignsQuery = useQuery({
+    queryKey: ["campaigns-for-analytics", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("campaigns")
+        .select("id, name")
+        .eq("user_id", user!.id)
+        .order("name");
+      if (error) throw error;
+      return (data || []) as { id: string; name: string }[];
+    },
+    enabled: !!user,
+  });
+
+  // Filter links by campaign if selected
+  const allLinks = linksQuery.data || [];
+  const filteredLinks = campaignId
+    ? allLinks.filter((l) => l.campaign_id === campaignId)
+    : allLinks;
 
   const eventsQuery = useQuery({
     queryKey: ["utm-click-events", user?.id, dateRange],
     queryFn: async () => {
       const rangeStart = getRangeStart(dateRange);
-      // Fetch events for user's links
-      const linkIds = linksQuery.data?.map((l) => l.id) || [];
+      const linkIds = allLinks.map((l) => l.id);
       if (linkIds.length === 0) return [] as ClickEvent[];
 
       let query = supabase
@@ -102,8 +122,10 @@ export function useCampaignAnalytics(dateRange: DateRange) {
     enabled: !!user && !!linksQuery.data,
   });
 
-  const links = linksQuery.data || [];
-  const events = eventsQuery.data || [];
+  const links = filteredLinks;
+  const filteredLinkIds = new Set(links.map((l) => l.id));
+  const allEvents = eventsQuery.data || [];
+  const events = allEvents.filter((e) => filteredLinkIds.has(e.utm_link_id));
 
   // ── Derived data ──
 
@@ -112,6 +134,7 @@ export function useCampaignAnalytics(dateRange: DateRange) {
   // Clicks per link
   const clicksByLink = links
     .map((link) => ({
+      id: link.id,
       label: link.label,
       clicks: events.filter((e) => e.utm_link_id === link.id).length,
     }))
@@ -119,7 +142,7 @@ export function useCampaignAnalytics(dateRange: DateRange) {
 
   const topLink = clicksByLink[0] || null;
 
-  // Clicks over time (by day)
+  // Clicks over time (by day) - supports optional link filter
   const clicksByDay: Record<string, number> = {};
   events.forEach((e) => {
     const day = format(new Date(e.clicked_at), "yyyy-MM-dd");
@@ -128,6 +151,20 @@ export function useCampaignAnalytics(dateRange: DateRange) {
   const clicksOverTime = Object.entries(clicksByDay)
     .map(([date, clicks]) => ({ date, clicks }))
     .sort((a, b) => a.date.localeCompare(b.date));
+
+  // Build per-link clicks over time for link filter
+  const buildClicksOverTimeForLink = (linkId: string) => {
+    const byDay: Record<string, number> = {};
+    allEvents
+      .filter((e) => e.utm_link_id === linkId)
+      .forEach((e) => {
+        const day = format(new Date(e.clicked_at), "yyyy-MM-dd");
+        byDay[day] = (byDay[day] || 0) + 1;
+      });
+    return Object.entries(byDay)
+      .map(([date, clicks]) => ({ date, clicks }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  };
 
   // Traffic sources
   const referrerCounts: Record<string, number> = {};
@@ -144,7 +181,7 @@ export function useCampaignAnalytics(dateRange: DateRange) {
   // Clicks by campaign
   const campaignCounts: Record<string, number> = {};
   events.forEach((e) => {
-    const link = links.find((l) => l.id === e.utm_link_id);
+    const link = allLinks.find((l) => l.id === e.utm_link_id);
     if (link) {
       campaignCounts[link.utm_campaign] = (campaignCounts[link.utm_campaign] || 0) + 1;
     }
@@ -156,7 +193,7 @@ export function useCampaignAnalytics(dateRange: DateRange) {
   // Clicks by source/medium
   const sourceMediumCounts: Record<string, number> = {};
   events.forEach((e) => {
-    const link = links.find((l) => l.id === e.utm_link_id);
+    const link = allLinks.find((l) => l.id === e.utm_link_id);
     if (link) {
       const key = `${link.utm_source} / ${link.utm_medium}`;
       sourceMediumCounts[key] = (sourceMediumCounts[key] || 0) + 1;
@@ -217,5 +254,8 @@ export function useCampaignAnalytics(dateRange: DateRange) {
     clicksByHour,
     deviceBreakdown,
     browserBreakdown,
+    campaigns: campaignsQuery.data || [],
+    availableLinks: clicksByLink,
+    buildClicksOverTimeForLink,
   };
 }
