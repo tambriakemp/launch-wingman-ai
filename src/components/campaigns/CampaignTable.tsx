@@ -6,10 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Search, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, Search, ArrowUpDown, ChevronLeft, ChevronRight, Pencil, Copy, Archive, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Props {
   campaigns: Campaign[];
@@ -20,12 +25,17 @@ type SortKey = "name" | "status" | "leads" | "revenue" | "roi" | "start_date" | 
 
 export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("updated_at");
   const [sortAsc, setSortAsc] = useState(false);
   const [page, setPage] = useState(0);
   const perPage = 10;
+
+  const [deleteTarget, setDeleteTarget] = useState<Campaign | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const filtered = useMemo(() => {
     let list = campaigns;
@@ -46,6 +56,65 @@ export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
     else { setSortKey(key); setSortAsc(false); }
+  };
+
+  const isDbCampaign = (c: Campaign) => !!user?.id;
+
+  const handleEdit = (c: Campaign) => {
+    navigate(`/marketing-hub/campaigns/${c.id}`);
+  };
+
+  const handleDuplicate = async (c: Campaign) => {
+    if (!user?.id) return;
+    const { error } = await supabase.from("campaigns").insert({
+      user_id: user.id,
+      name: `${c.name} (Copy)`,
+      goal: c.goal,
+      status: "draft",
+      start_date: c.start_date,
+      end_date: c.end_date,
+      budget: c.budget,
+      tags: c.tags,
+    });
+    if (error) {
+      toast.error("Failed to duplicate campaign");
+      return;
+    }
+    toast.success("Campaign duplicated");
+    queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+  };
+
+  const handleArchive = async (c: Campaign) => {
+    if (!user?.id) return;
+    const { error } = await supabase
+      .from("campaigns")
+      .update({ status: "ended" })
+      .eq("id", c.id)
+      .eq("user_id", user.id);
+    if (error) {
+      toast.error("Failed to archive campaign");
+      return;
+    }
+    toast.success("Campaign archived");
+    queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget || !user?.id) return;
+    setIsDeleting(true);
+    const { error } = await supabase
+      .from("campaigns")
+      .delete()
+      .eq("id", deleteTarget.id)
+      .eq("user_id", user.id);
+    setIsDeleting(false);
+    if (error) {
+      toast.error("Failed to delete campaign");
+      return;
+    }
+    toast.success("Campaign deleted");
+    setDeleteTarget(null);
+    queryClient.invalidateQueries({ queryKey: ["campaigns"] });
   };
 
   const SortHeader = ({ label, k }: { label: string; k: SortKey }) => (
@@ -110,9 +179,19 @@ export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="w-4 h-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>Edit</DropdownMenuItem>
-                      <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                      <DropdownMenuItem>Archive</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEdit(c)}>
+                        <Pencil className="w-3.5 h-3.5 mr-2" /> Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDuplicate(c)}>
+                        <Copy className="w-3.5 h-3.5 mr-2" /> Duplicate
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleArchive(c)}>
+                        <Archive className="w-3.5 h-3.5 mr-2" /> Archive
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteTarget(c)}>
+                        <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </td>
@@ -132,6 +211,15 @@ export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
           </div>
         </div>
       )}
+
+      <DeleteConfirmationDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        onConfirm={handleDelete}
+        title="Delete Campaign"
+        description={`This will permanently delete "${deleteTarget?.name}" and all associated data. This action cannot be undone.`}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }
