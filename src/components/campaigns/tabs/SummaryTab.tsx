@@ -186,22 +186,7 @@ export default function SummaryTab({ campaign }: Props) {
         </div>
       )}
 
-      {/* Goal Progress */}
-      <Card className="p-5">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-xs text-muted-foreground uppercase tracking-wide">Goal Progress — {goalLabels[campaign.goal]}</p>
-          <span className="text-xs text-muted-foreground">{goalPct.toFixed(0)}%</span>
-        </div>
-        <div className="flex items-end justify-between mb-2">
-          <span className="text-2xl font-bold">
-            {campaign.goal === "revenue" ? `$${goalCurrent.toLocaleString()}` : goalCurrent.toLocaleString()}
-          </span>
-          <span className="text-sm text-muted-foreground">
-            / {campaign.goal === "revenue" ? `$${goalTarget.toLocaleString()}` : goalTarget.toLocaleString()}
-          </span>
-        </div>
-        <Progress value={goalPct} className="h-2.5" />
-      </Card>
+
 
       {/* Traffic breakdown row */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
