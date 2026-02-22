@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Campaign } from "@/types/campaign";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Link2, Image, GitBranch, BarChart3, StickyNote, ShieldCheck, AlertTriangle, Activity, Target, Calendar, DollarSign, Crosshair, Pencil, Check, X } from "lucide-react";
+import { LayoutDashboard, Link2, Image, GitBranch, BarChart3, StickyNote, Target, Calendar, DollarSign, Crosshair, Pencil, Check, X } from "lucide-react";
 import { demoLinks, goalLabels } from "./campaignDemoData";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -158,31 +158,6 @@ export default function CampaignDetailSidebar({ campaign, activeTab, onTabChange
         })}
       </nav>
 
-      {/* Health Indicators */}
-      <div className="space-y-2 px-1">
-        <p className="text-xs text-muted-foreground uppercase tracking-wider px-2 mb-1 font-medium">Health</p>
-        <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-muted/30">
-          <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-          <div>
-            <p className="text-[13px] text-muted-foreground">Link Health</p>
-            <p className="text-sm font-medium">{links.length} Active · 0 Broken</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-muted/30">
-          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-          <div>
-            <p className="text-[13px] text-muted-foreground">Funnel Drop-Off</p>
-            <p className="text-sm font-medium">72% at Lead Capture</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-muted/30">
-          <Activity className="w-4 h-4 text-blue-600 shrink-0" />
-          <div>
-            <p className="text-[13px] text-muted-foreground">Tracking</p>
-            <p className="text-sm font-medium">92% confidence</p>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }
