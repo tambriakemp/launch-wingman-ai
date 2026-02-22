@@ -1,23 +1,37 @@
 
 
-# Fix: Add Campaign ID to Manually Created UTM Links
+## Improve Campaign Period Display
 
-## Problem
-When you create a UTM link from within a campaign using the "Add UTM Link" modal, the generated URL is missing the `&c=CAMPAIGN_ID` parameter. This is because `UTMForm.tsx` has its own internal URL builder (`generateFullUrl`) that does not include the campaign ID.
+The current "Campaign Period" line is plain muted text that blends into the background. Here's how to make it feel more intentional and integrated with the header design:
 
-The auto-generate panel was updated to use the shared `buildFinalUrl` helper (which supports campaign IDs), but the manual link creation form was missed.
+### Changes (single file: `CampaignDetailHeader.tsx`)
 
-## Solution
-Pass the `campaignId` into `UTMForm` as an optional prop, and use it when building the URL so the `&c=` parameter is appended automatically.
+**Replace the plain text line with a styled inline element:**
 
-## Changes
+- Add a `Calendar` icon (from lucide-react) before the label for visual consistency with the sidebar cards
+- Use a subtle separator dot between the label and the dates
+- Style the dates themselves with `font-medium text-foreground` so they stand out from the "Campaign Period" label, which stays muted
+- Display "Ongoing" with a small green dot indicator instead of plain text, to signal an active/open-ended campaign
+- Wrap the whole thing in a `flex items-center gap-2` row so it sits cleanly on one line beneath the title
 
-**File: `src/components/marketing-hub/UTMForm.tsx`**
-- Add an optional `campaignId?: string` prop
-- Update the internal `generateFullUrl` function to append `&c=campaignId` when provided
+**Before:**
+```
+Campaign Period: 02-22-2026 → Ongoing
+```
 
-**File: `src/components/campaigns/links/AddUTMLinkModal.tsx`**
-- Pass `campaignId={campaignId}` to the `UTMForm` component
+**After (visually):**
+```
+[calendar icon]  Campaign Period  ·  02-22-2026 → Ongoing [green dot]
+```
 
-No changes needed to the standalone UTM Builder page (`/marketing-hub/utm-builder`) since links created there are not tied to a campaign.
+### Technical Details
+
+- Import `Calendar` from `lucide-react`
+- Replace lines 115-124 with a flex row containing:
+  - `Calendar` icon (`w-3.5 h-3.5 text-muted-foreground`)
+  - "Campaign Period" label (`text-xs text-muted-foreground uppercase tracking-wide font-medium`)
+  - A middle-dot separator
+  - The formatted date range (`text-sm font-medium text-foreground`)
+  - If end date is null, render "Ongoing" with a small pulsing green dot beside it
+- No other files change
 
