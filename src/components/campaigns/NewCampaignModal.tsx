@@ -48,6 +48,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [budget, setBudget] = useState("");
+  const [goalTarget, setGoalTarget] = useState("");
   const [autoUtm, setAutoUtm] = useState(true);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [selectedFunnelId, setSelectedFunnelId] = useState<string | null>(null);
@@ -81,11 +82,11 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
 
   const reset = () => {
     setStep(0); setName(""); setGoal(""); setStartDate(""); setEndDate("");
-    setBudget(""); setAutoUtm(true); setSelectedPlatforms([]); setSelectedFunnelId(null); setSaving(false);
+    setBudget(""); setGoalTarget(""); setAutoUtm(true); setSelectedPlatforms([]); setSelectedFunnelId(null); setSaving(false);
   };
 
   const handleCreate = async () => {
-    if (!user?.id || !name || !goal || !startDate) {
+    if (!user?.id || !name || !goal || !startDate || !goalTarget) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -99,6 +100,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
         start_date: startDate,
         end_date: endDate || null,
         budget: budget ? parseFloat(budget) : null,
+        goal_target: parseFloat(goalTarget),
         auto_utm: autoUtm,
         platforms: selectedPlatforms,
         funnel_id: selectedFunnelId || null,
@@ -227,6 +229,21 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
               <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">Set a spending limit for this campaign</p>
               <Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="$0" />
             </div>
+            {goal && (
+              <div>
+                <Label className="text-sm font-medium">Goal Target *</Label>
+                <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">
+                  {goal === "revenue" ? "Target revenue for this campaign" : `Target number of ${goalLabels[goal]?.toLowerCase() || "conversions"}`}
+                </p>
+                <Input
+                  type="number"
+                  value={goalTarget}
+                  onChange={(e) => setGoalTarget(e.target.value)}
+                  placeholder={goal === "revenue" ? "$0" : "0"}
+                  min="1"
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -343,6 +360,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
                 <div className="flex justify-between"><span className="text-muted-foreground">Goal</span><span className="font-medium capitalize">{goal ? goalLabels[goal] || goal : "—"}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Dates</span><span className="font-medium">{startDate || "—"} → {endDate || "—"}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Budget</span><span className="font-medium">{budget ? `$${budget}` : "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Goal Target</span><span className="font-medium">{goalTarget ? (goal === "revenue" ? `$${Number(goalTarget).toLocaleString()}` : Number(goalTarget).toLocaleString()) : "—"}</span></div>
               </div>
             </div>
 
@@ -385,7 +403,13 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
           <Button variant="ghost" onClick={() => step > 0 ? setStep(step - 1) : onOpenChange(false)} disabled={saving}>
             {step > 0 ? "Back" : "Cancel"}
           </Button>
-          <Button onClick={() => step < 3 ? setStep(step + 1) : handleCreate()} disabled={saving}>
+          <Button onClick={() => {
+            if (step === 0 && (!name || !goal || !startDate || !goalTarget)) {
+              toast.error("Please fill in all required fields including goal target");
+              return;
+            }
+            step < 3 ? setStep(step + 1) : handleCreate();
+          }} disabled={saving}>
             {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Creating...</> : step < 3 ? "Next" : "Create Campaign"}
           </Button>
         </div>

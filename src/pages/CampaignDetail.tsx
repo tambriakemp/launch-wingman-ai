@@ -44,6 +44,7 @@ export default function CampaignDetail() {
         created_at: data.created_at,
         updated_at: data.updated_at,
         sparkline_data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        goal_target: Number(data.goal_target) || 0,
       };
       return c;
     },
