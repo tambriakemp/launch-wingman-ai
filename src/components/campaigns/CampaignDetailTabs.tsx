@@ -6,7 +6,8 @@ import AssetsTab from "./tabs/AssetsTab";
 import FunnelTab from "./tabs/FunnelTab";
 import AnalyticsTab from "./tabs/AnalyticsTab";
 import NotesTab from "./tabs/NotesTab";
-import { LayoutDashboard, Link2, Image, GitBranch, BarChart3, StickyNote } from "lucide-react";
+import PixelTab from "./tabs/PixelTab";
+import { LayoutDashboard, Link2, Image, GitBranch, BarChart3, StickyNote, Crosshair } from "lucide-react";
 
 interface Props {
   campaign: Campaign;
@@ -17,6 +18,7 @@ interface Props {
 const tabItems = [
   { id: "summary", label: "Summary", icon: LayoutDashboard },
   { id: "links", label: "Links", icon: Link2 },
+  { id: "pixel", label: "Pixel", icon: Crosshair },
   { id: "assets", label: "Assets", icon: Image },
   { id: "funnel", label: "Funnel", icon: GitBranch },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
@@ -42,6 +44,7 @@ export default function CampaignDetailTabs({ campaign, activeTab, onTabChange }:
 
       <TabsContent value="summary" className="mt-0"><SummaryTab campaign={campaign} /></TabsContent>
       <TabsContent value="links" className="mt-0"><LinksTab campaignId={campaign.id} campaignName={campaign.name} /></TabsContent>
+      <TabsContent value="pixel" className="mt-0"><PixelTab campaign={campaign} /></TabsContent>
       <TabsContent value="assets" className="mt-0"><AssetsTab campaignId={campaign.id} /></TabsContent>
       <TabsContent value="funnel" className="mt-0"><FunnelTab /></TabsContent>
       <TabsContent value="analytics" className="mt-0"><AnalyticsTab campaign={campaign} /></TabsContent>

@@ -1,6 +1,6 @@
 import { Campaign } from "@/types/campaign";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Link2, Image, GitBranch, BarChart3, StickyNote, ShieldCheck, AlertTriangle, Activity, Target, Calendar, DollarSign } from "lucide-react";
+import { LayoutDashboard, Link2, Image, GitBranch, BarChart3, StickyNote, ShieldCheck, AlertTriangle, Activity, Target, Calendar, DollarSign, Crosshair } from "lucide-react";
 import { demoLinks, goalLabels } from "./campaignDemoData";
 
 interface Props {
@@ -12,6 +12,7 @@ interface Props {
 const navItems = [
   { id: "summary", label: "Summary", icon: LayoutDashboard },
   { id: "links", label: "Links", icon: Link2 },
+  { id: "pixel", label: "Pixel", icon: Crosshair },
   { id: "assets", label: "Assets", icon: Image },
   { id: "funnel", label: "Funnel", icon: GitBranch },
   { id: "analytics", label: "Analytics", icon: BarChart3 },

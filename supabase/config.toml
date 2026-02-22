@@ -257,3 +257,6 @@ verify_jwt = false
 
 [functions.campaign-leads]
 verify_jwt = false
+
+[functions.campaign-pixel]
+verify_jwt = false

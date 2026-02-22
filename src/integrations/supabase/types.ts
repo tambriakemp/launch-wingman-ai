@@ -307,6 +307,53 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_conversions: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          ip_hash: string | null
+          referrer: string | null
+          revenue: number | null
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          referrer?: string | null
+          revenue?: number | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          referrer?: string | null
+          revenue?: number | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_conversions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           auto_utm: boolean
