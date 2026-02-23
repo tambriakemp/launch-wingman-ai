@@ -44,7 +44,7 @@ export default function CampaignDetailTabs({ campaign, activeTab, onTabChange }:
       <TabsContent value="links" className="mt-0"><LinksTab campaignId={campaign.id} campaignName={campaign.name} /></TabsContent>
       <TabsContent value="pixel" className="mt-0"><PixelTab campaign={campaign} /></TabsContent>
       <TabsContent value="assets" className="mt-0"><AssetsTab campaignId={campaign.id} /></TabsContent>
-      <TabsContent value="funnel" className="mt-0"><FunnelTab /></TabsContent>
+      <TabsContent value="funnel" className="mt-0"><FunnelTab campaignId={campaign.id} /></TabsContent>
       <TabsContent value="notes" className="mt-0"><NotesTab campaignId={campaign.id} /></TabsContent>
     </Tabs>
   );
