@@ -316,6 +316,7 @@ export type Database = {
           product: string | null
           referrer: string | null
           revenue: number | null
+          step: string | null
           user_agent: string | null
           utm_campaign: string | null
           utm_medium: string | null
@@ -329,6 +330,7 @@ export type Database = {
           product?: string | null
           referrer?: string | null
           revenue?: number | null
+          step?: string | null
           user_agent?: string | null
           utm_campaign?: string | null
           utm_medium?: string | null
@@ -342,6 +344,7 @@ export type Database = {
           product?: string | null
           referrer?: string | null
           revenue?: number | null
+          step?: string | null
           user_agent?: string | null
           utm_campaign?: string | null
           utm_medium?: string | null

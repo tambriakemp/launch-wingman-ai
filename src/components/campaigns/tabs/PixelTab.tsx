@@ -1,7 +1,7 @@
 import { Campaign } from "@/types/campaign";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, Code, Image as ImageIcon, Zap, Star, Info } from "lucide-react";
+import { Copy, Check, Code, Image as ImageIcon, Zap, Star, Info, GitBranch } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,13 @@ import { cn } from "@/lib/utils";
 interface Props {
   campaign: Campaign;
 }
+
+const FUNNEL_STEPS = [
+  { step: "landing", label: "Landing Page", description: "Paste on your landing page — fires when someone visits." },
+  { step: "lead", label: "Opt-In / Lead Capture", description: "Paste on your thank-you page after email opt-in." },
+  { step: "checkout", label: "Checkout Page", description: "Paste on your checkout or payment page." },
+  { step: "purchase", label: "Purchase Confirmation", description: "Paste on your order confirmation / thank-you page. Include revenue." },
+];
 
 export default function PixelTab({ campaign }: Props) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -138,12 +145,54 @@ export default function PixelTab({ campaign }: Props) {
         ))}
       </div>
 
+      {/* Funnel Step Tracking */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <GitBranch className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-semibold">Funnel Step Tracking</h3>
+        </div>
+        <p className="text-xs text-muted-foreground mb-4">
+          Place a pixel on each page of your funnel to track drop-off between steps. Each snippet includes a <code className="bg-muted px-1 rounded">step</code> parameter that categorizes the conversion.
+          Data appears in your <strong>Funnel</strong> tab.
+        </p>
+        <div className="space-y-3">
+          {FUNNEL_STEPS.map((fs) => {
+            const isPurchase = fs.step === "purchase";
+            const jsCode = `<script>\nfetch("${baseUrl}?c=${campaign.id}&step=${fs.step}${isPurchase ? "&revenue=AMOUNT" : ""}");\n</script>`;
+            const imgCode = `<img src="${baseUrl}?c=${campaign.id}&step=${fs.step}" width="1" height="1" style="display:none" alt="" />`;
+            return (
+              <Card key={fs.step} className="p-3">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div>
+                    <p className="text-sm font-medium">{fs.label}</p>
+                    <p className="text-xs text-muted-foreground">{fs.description}</p>
+                  </div>
+                  <div className="flex gap-1.5 shrink-0">
+                    <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => handleCopy(jsCode, `step-js-${fs.step}`)}>
+                      {copiedId === `step-js-${fs.step}` ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      JS
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => handleCopy(imgCode, `step-img-${fs.step}`)}>
+                      {copiedId === `step-img-${fs.step}` ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      IMG
+                    </Button>
+                  </div>
+                </div>
+                <pre className="bg-muted rounded-lg p-2 text-[11px] overflow-x-auto font-mono text-foreground/80">
+                  {jsCode}
+                </pre>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
       {/* How it works */}
       <Card className="p-4 border-dashed">
         <p className="text-xs text-muted-foreground">
           <strong>How it works:</strong> When someone visits your thank-you page, the pixel fires a request to Launchely's tracking endpoint. 
           The visit is recorded as a conversion for this campaign. If you include a <code className="bg-muted px-1 rounded">revenue</code> value, 
-          it's tracked alongside the lead. All data appears in your Summary and Analytics tabs in real time.
+          it's tracked alongside the lead. Add a <code className="bg-muted px-1 rounded">step</code> parameter to categorize by funnel stage. All data appears in your Summary, Analytics, and Funnel tabs in real time.
         </p>
       </Card>
     </div>

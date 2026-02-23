@@ -43,6 +43,11 @@ Deno.serve(async (req) => {
     const revenueRaw = url.searchParams.get("revenue");
     const revenue = revenueRaw ? Math.max(0, Math.min(parseFloat(revenueRaw) || 0, 999999999)) : 0;
 
+    // Parse step parameter for funnel tracking
+    const stepRaw = url.searchParams.get("step") || url.searchParams.get("s") || null;
+    const stepRegex = /^[a-zA-Z0-9_-]{1,50}$/;
+    const step = stepRaw && stepRegex.test(stepRaw) ? stepRaw.toLowerCase() : null;
+
     // Hash IP for dedup without storing PII
     const forwarded = req.headers.get("x-forwarded-for");
     const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
@@ -69,6 +74,7 @@ Deno.serve(async (req) => {
       ip_hash: ipHash,
       user_agent: userAgent,
       referrer,
+      step,
     });
 
     // Return 1x1 GIF for <img> pixel, or 200 for fetch/JS calls

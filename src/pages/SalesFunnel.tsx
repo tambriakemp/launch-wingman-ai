@@ -34,7 +34,7 @@ const CTA_LINK = "/auth?tab=signup";
 
 const CTAButton = ({ size = "lg", className = "" }: { size?: "lg" | "default"; className?: string }) => (
   <Button asChild size={size} className={`bg-accent text-accent-foreground hover:bg-accent/90 font-bold text-base px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all ${className}`}>
-    <Link to={CTA_LINK}>
+    <Link to={CTA_LINK} onClick={() => firePixel("lead")}>
       Start Free Today <ArrowRight className="ml-2 h-5 w-5" />
     </Link>
   </Button>
@@ -457,17 +457,39 @@ const StickyHeader = () => (
 );
 
 /* ───────────────────── PAGE ───────────────────── */
+const PIXEL_BASE = "https://ydhagqgurqhlguxkkppb.supabase.co/functions/v1/campaign-pixel";
+const DEFAULT_CAMPAIGN = "d56f0330-1875-4f2f-9670-e1ae6fabc085";
+
+const firePixel = (step: string, extraParams?: Record<string, string>) => {
+  try {
+    const p = new URLSearchParams(window.location.search);
+    const u = new URL(PIXEL_BASE);
+    u.searchParams.set("c", p.get("c") || DEFAULT_CAMPAIGN);
+    u.searchParams.set("step", step);
+    ["utm_source", "utm_medium", "utm_campaign"].forEach(k => { if (p.get(k)) u.searchParams.set(k, p.get(k)!) });
+    if (extraParams) Object.entries(extraParams).forEach(([k, v]) => u.searchParams.set(k, v));
+    fetch(u.toString()).catch(() => {});
+  } catch {}
+};
+
 const SalesFunnel = () => {
+  // Fire landing step on page load
   useEffect(() => {
-    try {
-      const p = new URLSearchParams(window.location.search);
-      const u = new URL("https://ydhagqgurqhlguxkkppb.supabase.co/functions/v1/campaign-pixel");
-      u.searchParams.set("c", p.get("c") || "d56f0330-1875-4f2f-9670-e1ae6fabc085");
-      ["utm_source", "utm_medium", "utm_campaign"].forEach(k => { if (p.get(k)) u.searchParams.set(k, p.get(k)!) });
-      const rev = 0;
-      if (rev) u.searchParams.set("revenue", String(rev));
-      fetch(u.toString()).catch(() => {});
-    } catch {}
+    firePixel("landing");
+
+    // Fire engage step when user scrolls past 50% of the page
+    let engageFired = false;
+    const handleScroll = () => {
+      if (engageFired) return;
+      const scrollPct = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
+      if (scrollPct > 0.5) {
+        engageFired = true;
+        firePixel("engage");
+        window.removeEventListener("scroll", handleScroll);
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (

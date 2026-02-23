@@ -256,7 +256,7 @@ const SidebarContent = ({
           const marketingItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean }[] = [
             { label: "Campaigns", href: "/marketing-hub/campaigns", icon: Target },
             { label: "Content Engine", href: "#", icon: PenTool, disabled: true },
-            { label: "Funnels & Offers", href: "#", icon: ShoppingBag, disabled: true },
+            
             { label: "Analytics", href: "/marketing-hub/analytics", icon: BarChart3 },
             { label: "Experiments", href: "#", icon: FlaskConical, disabled: true },
             { label: "Automations", href: "#", icon: Zap, disabled: true },
