@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { TikTokEnvironmentProvider } from "@/contexts/TikTokEnvironmentContext";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import ScrollToTop from "@/components/ScrollToTop";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { initGA, trackPageView } from "@/lib/analytics";
 import Landing from "./pages/Landing";
 import HowItWorks from "./pages/HowItWorks";
@@ -102,6 +103,7 @@ const PageViewTracker = () => {
 };
 
 const App = () => (
+  <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -477,6 +479,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
