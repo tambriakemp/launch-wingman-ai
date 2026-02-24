@@ -35,10 +35,18 @@ const Contact = () => {
     subject: "",
     message: "",
   });
+  const [honeypot, setHoneypot] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Bot detection: if honeypot field is filled, silently reject
+    if (honeypot) {
+      toast.success("Message sent! We'll get back to you within 24-48 hours.");
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
@@ -133,6 +141,19 @@ const Contact = () => {
                           required
                         />
                       </div>
+                    </div>
+                    {/* Honeypot field - hidden from real users */}
+                    <div className="absolute opacity-0 -z-10" aria-hidden="true" tabIndex={-1}>
+                      <label htmlFor="website">Website</label>
+                      <input
+                        id="website"
+                        type="text"
+                        name="website"
+                        value={honeypot}
+                        onChange={(e) => setHoneypot(e.target.value)}
+                        tabIndex={-1}
+                        autoComplete="off"
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-2">Subject</label>

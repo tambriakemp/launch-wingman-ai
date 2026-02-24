@@ -99,7 +99,8 @@ const SidebarContent = ({
   isActiveRoute,
   onNavigate,
   tier,
-  onUpgradeClick
+  onUpgradeClick,
+  hasAdminAccess
 }: {
   projectId?: string;
   navSections: NavSection[];
@@ -110,6 +111,7 @@ const SidebarContent = ({
   onNavigate?: () => void;
   tier: SubscriptionTier;
   onUpgradeClick: (feature: string) => void;
+  hasAdminAccess: boolean;
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -252,16 +254,10 @@ const SidebarContent = ({
         ))}
 
         {/* Marketing Hub section - Admin only */}
-        {isPro && (() => {
+        {hasAdminAccess && (() => {
           const marketingItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean }[] = [
             { label: "Campaigns", href: "/marketing-hub/campaigns", icon: Target },
-            { label: "Content Engine", href: "#", icon: PenTool, disabled: true },
-            
             { label: "Analytics", href: "/marketing-hub/analytics", icon: BarChart3 },
-            { label: "Experiments", href: "#", icon: FlaskConical, disabled: true },
-            { label: "Automations", href: "#", icon: Zap, disabled: true },
-            { label: "Integrations", href: "#", icon: Plug, disabled: true },
-            { label: "Library", href: "#", icon: Library, disabled: true },
           ];
           return (
             <div>
@@ -444,6 +440,7 @@ export const ProjectSidebar = () => {
     tier,
     isActiveRoute,
     onUpgradeClick: handleUpgradeClick,
+    hasAdminAccess,
   };
 
   // Mobile: render as Sheet

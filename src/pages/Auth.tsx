@@ -53,7 +53,7 @@ const Auth = () => {
     lastName?: string;
   }>({});
   
-  const { signIn, user } = useAuth();
+  const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const checkoutSuccess = searchParams.get("checkout") === "success";
@@ -141,36 +141,15 @@ const Auth = () => {
 
     setSignUpLoading(true);
     
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { data, error } = await supabase.auth.signUp({
-      email: signUpEmail,
-      password: signUpPassword,
-      options: {
-        emailRedirectTo: redirectUrl,
-      },
-    });
+    const { error } = await signUp(signUpEmail, signUpPassword, firstName, lastName);
+
+    setSignUpLoading(false);
 
     if (error) {
-      setSignUpLoading(false);
       toast.error(error.message || "Failed to create account");
       return;
     }
 
-    // Create profile with first and last name
-    if (data.user) {
-      const { error: profileError } = await supabase.from("profiles").insert({
-        user_id: data.user.id,
-        first_name: firstName,
-        last_name: lastName,
-      });
-
-      if (profileError) {
-        console.error("Profile creation error:", profileError);
-      }
-    }
-
-    setSignUpLoading(false);
     toast.success("Account created successfully!");
   };
 
