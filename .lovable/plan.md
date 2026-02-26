@@ -1,58 +1,65 @@
 
 
-## Track `?ref=` Referral Parameter
+## Add Referral Source Tracking to Analytics Dashboard
 
-### Problem
-The landing page doesn't capture or store the `?ref=` query parameter. Visitors arriving from `https://launchely.com/?ref=producthunt` are indistinguishable from direct traffic.
+### What it does
+Adds a new "Signups by Referral Source" chart to the `/marketing-hub/analytics` page that shows how many users signed up from each `?ref=` parameter (e.g., `producthunt`, `twitter`, `newsletter`). This gives you visibility into which referral links are actually converting into signups.
 
-### Solution
-Capture the `ref` parameter on landing, persist it through signup, and store it on the user's profile so you can see which users came from Product Hunt (or any other referral source).
+### What you'll see
+- A new summary card in the conversions row showing **Total Referral Signups** (count of profiles with a `ref_source`)
+- A new horizontal bar chart titled **Signups by Referral Source** showing each `ref_source` value and its signup count, placed alongside the existing Device/Browser breakdown
 
 ### Changes
 
-#### 1. Capture `ref` param alongside UTM params (AuthContext.tsx)
-Extend the existing `useEffect` that already captures `utm_campaign` from the URL to also capture `ref`:
+#### 1. Update the analytics hook (`src/hooks/useCampaignAnalytics.ts`)
+Add a new query that fetches `ref_source` counts from the `profiles` table:
+- Query all profiles where `ref_source IS NOT NULL`
+- Group and count by `ref_source` value
+- Apply date range filter using `created_at`
+- Return `referralSignups` array (e.g., `[{ source: "producthunt", count: 5 }, ...]`) and `totalReferralSignups` count
 
+#### 2. Create a new chart component (`src/components/marketing-hub/analytics/ReferralSourcesChart.tsx`)
+A horizontal bar chart (matching the existing style of TopLinksChart/TrafficSourcesChart) that displays each referral source and its signup count. Shows an empty state message when no referral data exists yet.
+
+#### 3. Update the analytics page (`src/pages/CampaignAnalytics.tsx`)
+- Add a "Referral Signups" summary card with a Users icon showing the total count
+- Add the ReferralSourcesChart in a new row at the bottom of the dashboard
+
+### Technical details
+
+**Hook query (profiles table):**
 ```typescript
-useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const utmCampaign = params.get('utm_campaign');
-  const refSource = params.get('ref');
-  if (utmCampaign) localStorage.setItem('launchely_utm_campaign', utmCampaign);
-  if (refSource) localStorage.setItem('launchely_ref_source', refSource);
-}, []);
+const referralsQuery = useQuery({
+  queryKey: ["referral-sources-analytics", user?.id, dateRange],
+  queryFn: async () => {
+    const rangeStart = getRangeStart(dateRange);
+    let query = supabase
+      .from("profiles")
+      .select("ref_source, created_at")
+      .not("ref_source", "is", null);
+    if (rangeStart) {
+      query = query.gte("created_at", rangeStart.toISOString());
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  },
+  enabled: !!user,
+});
 ```
 
-#### 2. Add `ref_source` column to profiles table
-Store the referral source on the user's profile for admin reporting:
+Note: This query only works for admin users since profiles RLS only allows viewing your own profile. We'll need to add an RLS policy so admins can read all profiles for this aggregation.
 
+**Database change:**
+Add an RLS SELECT policy on `profiles` for admins:
 ```sql
-ALTER TABLE profiles ADD COLUMN ref_source text DEFAULT NULL;
+CREATE POLICY "Admins can view all profiles"
+  ON public.profiles FOR SELECT
+  USING (has_role(auth.uid(), 'admin'::app_role));
 ```
-
-#### 3. Save ref_source on signup (AuthContext.tsx)
-In the `signUp` function, after successful registration, read the stored ref and save it to the profile:
-
-```typescript
-const storedRef = localStorage.getItem('launchely_ref_source');
-if (storedRef) {
-  await supabase.from('profiles')
-    .update({ ref_source: storedRef })
-    .eq('user_id', newUser.id);
-  localStorage.removeItem('launchely_ref_source');
-}
-```
-
-Also forward it to the SureContact webhook alongside `utm_campaign` for lead attribution.
-
-#### 4. Forward to SureContact webhook (AuthContext.tsx)
-Include `ref_source` in the existing SureContact sync call so the referral source is tagged on the contact record too.
 
 ### Files to modify
-1. `src/contexts/AuthContext.tsx` -- capture `ref` param, save to profile on signup, forward to SureContact
-2. Database migration -- add `ref_source` column to `profiles` table
-
-### How to use
-Simply share the link `https://launchely.com/?ref=producthunt` on Product Hunt. When someone clicks it, lands on the site, and eventually signs up, their profile will have `ref_source = "producthunt"`. You'll be able to query or filter users by referral source in the admin dashboard.
-
-You can use any value: `?ref=twitter`, `?ref=friend`, `?ref=newsletter`, etc.
+1. Database migration -- add admin SELECT policy on profiles
+2. `src/hooks/useCampaignAnalytics.ts` -- add referral source query and aggregation
+3. `src/components/marketing-hub/analytics/ReferralSourcesChart.tsx` -- new chart component
+4. `src/pages/CampaignAnalytics.tsx` -- add summary card and chart to the page
