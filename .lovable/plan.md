@@ -1,36 +1,58 @@
 
 
-## Generate OG Image and Fix Social Handles
+## Track `?ref=` Referral Parameter
 
-### 1. Generate OG Image (1200x630px)
-Use the Lovable AI image generation API to create a professional OG image for social sharing. The image will follow Launchely's brand identity:
-- **Dark background** matching the primary color (near-black, warm tone)
-- **Gold accent** elements matching the brand accent color
-- **Launchely logo and tagline**: "Launch Planning for Coaches and Marketers"
-- **Clean SaaS aesthetic** with the Plus Jakarta Sans font feel
-- Dimensions: 1200x630px (standard OG image size)
+### Problem
+The landing page doesn't capture or store the `?ref=` query parameter. Visitors arriving from `https://launchely.com/?ref=producthunt` are indistinguishable from direct traffic.
 
-The generated image will be saved to `public/og-image.png`.
+### Solution
+Capture the `ref` parameter on landing, persist it through signup, and store it on the user's profile so you can see which users came from Product Hunt (or any other referral source).
 
-### 2. Fix Social Handles in `index.html`
-Update the Twitter/X handle from `@laaboratory` to `@launchely`:
+### Changes
+
+#### 1. Capture `ref` param alongside UTM params (AuthContext.tsx)
+Extend the existing `useEffect` that already captures `utm_campaign` from the URL to also capture `ref`:
+
+```typescript
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const utmCampaign = params.get('utm_campaign');
+  const refSource = params.get('ref');
+  if (utmCampaign) localStorage.setItem('launchely_utm_campaign', utmCampaign);
+  if (refSource) localStorage.setItem('launchely_ref_source', refSource);
+}, []);
 ```
-<meta name="twitter:site" content="@launchely" />
+
+#### 2. Add `ref_source` column to profiles table
+Store the referral source on the user's profile for admin reporting:
+
+```sql
+ALTER TABLE profiles ADD COLUMN ref_source text DEFAULT NULL;
 ```
 
-### 3. Fix Social Links in `LandingFooter.tsx`
-Update all three social media links from mixed handles to `@launchely`:
-- Instagram: `https://instagram.com/launchely` (already correct)
-- Facebook: `https://facebook.com/launchely` (already correct)
-- TikTok: `https://tiktok.com/@launchely` (already correct)
+#### 3. Save ref_source on signup (AuthContext.tsx)
+In the `signUp` function, after successful registration, read the stored ref and save it to the profile:
 
-After reviewing the footer, the social links are already pointing to `launchely`. The only fix needed is the Twitter meta tag in `index.html`.
+```typescript
+const storedRef = localStorage.getItem('launchely_ref_source');
+if (storedRef) {
+  await supabase.from('profiles')
+    .update({ ref_source: storedRef })
+    .eq('user_id', newUser.id);
+  localStorage.removeItem('launchely_ref_source');
+}
+```
+
+Also forward it to the SureContact webhook alongside `utm_campaign` for lead attribution.
+
+#### 4. Forward to SureContact webhook (AuthContext.tsx)
+Include `ref_source` in the existing SureContact sync call so the referral source is tagged on the contact record too.
 
 ### Files to modify
-1. `public/og-image.png` -- new file (AI-generated image)
-2. `index.html` -- update Twitter handle meta tag
+1. `src/contexts/AuthContext.tsx` -- capture `ref` param, save to profile on signup, forward to SureContact
+2. Database migration -- add `ref_source` column to `profiles` table
 
-### Technical Details
-- The OG image will be generated using the Lovable AI image generation model (`google/gemini-2.5-flash-image`)
-- The image will be saved as a PNG in the `public/` directory so it's served at `/og-image.png`
-- The existing `og:image` and `twitter:image` meta tags already point to `https://launchely.com/og-image.png`, which will resolve correctly once hosted
+### How to use
+Simply share the link `https://launchely.com/?ref=producthunt` on Product Hunt. When someone clicks it, lands on the site, and eventually signs up, their profile will have `ref_source = "producthunt"`. You'll be able to query or filter users by referral source in the admin dashboard.
+
+You can use any value: `?ref=twitter`, `?ref=friend`, `?ref=newsletter`, etc.
