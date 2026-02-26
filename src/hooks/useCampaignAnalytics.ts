@@ -133,6 +133,25 @@ export function useCampaignAnalytics(dateRange: DateRange, campaignId?: string |
     enabled: !!user && !!linksQuery.data,
   });
 
+  // ── Referral source data ──
+  const referralsQuery = useQuery({
+    queryKey: ["referral-sources-analytics", user?.id, dateRange],
+    queryFn: async () => {
+      const rangeStart = getRangeStart(dateRange);
+      let query = supabase
+        .from("profiles")
+        .select("ref_source, created_at")
+        .not("ref_source", "is", null);
+      if (rangeStart) {
+        query = query.gte("created_at", rangeStart.toISOString());
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as { ref_source: string; created_at: string }[];
+    },
+    enabled: !!user,
+  });
+
   // ── Conversion data ──
   const conversionsQuery = useQuery({
     queryKey: ["campaign-conversions-analytics", user?.id, dateRange, campaignId],
@@ -280,6 +299,17 @@ export function useCampaignAnalytics(dateRange: DateRange, campaignId?: string |
     .map(([browser, clicks]) => ({ browser, clicks }))
     .sort((a, b) => b.clicks - a.clicks);
 
+  // ── Derived referral data ──
+  const referralProfiles = referralsQuery.data || [];
+  const referralCounts: Record<string, number> = {};
+  referralProfiles.forEach((p) => {
+    referralCounts[p.ref_source] = (referralCounts[p.ref_source] || 0) + 1;
+  });
+  const referralSignups = Object.entries(referralCounts)
+    .map(([source, count]) => ({ source, count }))
+    .sort((a, b) => b.count - a.count);
+  const totalReferralSignups = referralProfiles.length;
+
   // ── Derived conversion data ──
 
   const totalConversions = conversions.length;
@@ -299,7 +329,7 @@ export function useCampaignAnalytics(dateRange: DateRange, campaignId?: string |
     .sort((a, b) => a.date.localeCompare(b.date));
 
   return {
-    isLoading: linksQuery.isLoading || eventsQuery.isLoading || conversionsQuery.isLoading,
+    isLoading: linksQuery.isLoading || eventsQuery.isLoading || conversionsQuery.isLoading || referralsQuery.isLoading,
     totalClicks,
     topLink,
     uniqueSourceCount,
@@ -320,5 +350,8 @@ export function useCampaignAnalytics(dateRange: DateRange, campaignId?: string |
     totalRevenue,
     conversionRate,
     conversionsOverTime,
+    // Referral metrics
+    referralSignups,
+    totalReferralSignups,
   };
 }
