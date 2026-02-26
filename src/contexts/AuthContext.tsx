@@ -329,8 +329,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const utmCampaign = params.get('utm_campaign');
+    const refSource = params.get('ref');
     if (utmCampaign) {
       localStorage.setItem('launchely_utm_campaign', utmCampaign);
+    }
+    if (refSource) {
+      localStorage.setItem('launchely_ref_source', refSource);
     }
   }, []);
 
@@ -365,19 +369,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       }).catch((err) => console.error("Failed to send welcome email:", err));
 
-      // Forward stored UTM campaign to surecontact-webhook for lead attribution
+      // Save ref_source to profile if present
+      const storedRef = localStorage.getItem('launchely_ref_source');
+      if (storedRef && signUpData.user) {
+        supabase.from('profiles')
+          .update({ ref_source: storedRef } as any)
+          .eq('user_id', signUpData.user.id)
+          .then(() => { localStorage.removeItem('launchely_ref_source'); });
+      }
+
+      // Forward stored UTM campaign and ref to surecontact-webhook for lead attribution
       const storedUtmCampaign = localStorage.getItem('launchely_utm_campaign');
-      if (storedUtmCampaign) {
+      if (storedUtmCampaign || storedRef) {
         supabase.functions.invoke("surecontact-webhook", {
           body: {
             action: "sync_new_signup",
             email,
             first_name: firstName || '',
             last_name: lastName || '',
-            utm_campaign: storedUtmCampaign,
+            ...(storedUtmCampaign && { utm_campaign: storedUtmCampaign }),
+            ...(storedRef && { ref_source: storedRef }),
           },
-        }).catch((err) => console.error("Failed to sync UTM campaign tag:", err));
-        localStorage.removeItem('launchely_utm_campaign');
+        }).catch((err) => console.error("Failed to sync signup attribution:", err));
+        if (storedUtmCampaign) localStorage.removeItem('launchely_utm_campaign');
       }
 
       

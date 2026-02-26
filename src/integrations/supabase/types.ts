@@ -1547,6 +1547,7 @@ export type Database = {
           last_active: string | null
           last_name: string | null
           onboarding_completed_at: string | null
+          ref_source: string | null
           updated_at: string
           user_id: string
         }
@@ -1558,6 +1559,7 @@ export type Database = {
           last_active?: string | null
           last_name?: string | null
           onboarding_completed_at?: string | null
+          ref_source?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1569,6 +1571,7 @@ export type Database = {
           last_active?: string | null
           last_name?: string | null
           onboarding_completed_at?: string | null
+          ref_source?: string | null
           updated_at?: string
           user_id?: string
         }
