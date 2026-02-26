@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Link } from "react-router-dom";
-import { ArrowLeft, MousePointerClick, Link2, Globe, Loader2, Target, Percent, DollarSign } from "lucide-react";
+import { ArrowLeft, MousePointerClick, Link2, Globe, Loader2, Target, Percent, DollarSign, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCampaignAnalytics, DateRange } from "@/hooks/useCampaignAnalytics";
@@ -14,6 +14,7 @@ import ClicksBySourceMediumChart from "@/components/marketing-hub/analytics/Clic
 import ClickTimingChart from "@/components/marketing-hub/analytics/ClickTimingChart";
 import DeviceBreakdownChart from "@/components/marketing-hub/analytics/DeviceBreakdownChart";
 import ConversionsOverTimeChart from "@/components/marketing-hub/analytics/ConversionsOverTimeChart";
+import ReferralSourcesChart from "@/components/marketing-hub/analytics/ReferralSourcesChart";
 
 const RANGE_LABELS: Record<DateRange, string> = {
   "7d": "Last 7 days",
@@ -131,7 +132,7 @@ const CampaignAnalytics = () => {
             </div>
 
             {/* Summary Cards - Row 2: Conversions */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="pt-4 pb-3 px-4">
                   <div className="flex items-center gap-2 mb-1">
@@ -170,6 +171,18 @@ const CampaignAnalytics = () => {
                   <p className="text-[10px] text-muted-foreground mt-0.5">{RANGE_LABELS[dateRange]}</p>
                 </CardContent>
               </Card>
+              <Card>
+                <CardContent className="pt-4 pb-3 px-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Users className="w-4 h-4 text-secondary" />
+                    <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                      Referral Signups
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">{analytics.totalReferralSignups}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">From ?ref= links</p>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Clicks Over Time */}
@@ -199,11 +212,14 @@ const CampaignAnalytics = () => {
             {/* Click Timing */}
             <ClickTimingChart dayData={analytics.clicksByDayOfWeek} hourData={analytics.clicksByHour} />
 
-            {/* Device / Browser */}
-            <DeviceBreakdownChart
-              deviceData={analytics.deviceBreakdown}
-              browserData={analytics.browserBreakdown}
-            />
+            {/* Device / Browser + Referral Sources */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <DeviceBreakdownChart
+                deviceData={analytics.deviceBreakdown}
+                browserData={analytics.browserBreakdown}
+              />
+              <ReferralSourcesChart data={analytics.referralSignups} />
+            </div>
           </>
         )}
       </div>
