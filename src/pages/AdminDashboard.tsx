@@ -13,7 +13,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Package, Pencil, BookOpen, BarChart3, FileText, Bell, Headphones, Video, Tag, Palette, Settings, Image as ImageIcon } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Shield, Users, CreditCard, Crown, X, RefreshCw, LogOut, Eye, Search, Download, CalendarIcon, ChevronLeft, ChevronRight, CheckSquare, Activity, Package, Pencil, BookOpen, BarChart3, FileText, Bell, Headphones, Video, Tag, Palette, Settings, Image as ImageIcon, Wallet } from 'lucide-react';
 import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -89,12 +90,48 @@ interface User {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   subscription_amount_cents: number;
+  payment_source: 'card' | 'coupon_full' | 'coupon_partial' | 'manual' | 'none';
+  coupon_name: string | null;
+  net_amount_cents: number;
   last_active: string | null;
   is_admin: boolean;
   is_manager: boolean;
   project_count: number;
   banned_until: string | null;
 }
+
+// Payment source badge component
+const PaymentSourceBadge = ({ paymentSource, couponName }: { paymentSource: User['payment_source']; couponName: string | null }) => {
+  if (paymentSource === 'none') return null;
+  
+  const config = {
+    card: { label: 'Card', className: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30' },
+    coupon_full: { label: '100% Coupon', className: 'bg-orange-500/15 text-orange-700 border-orange-500/30' },
+    coupon_partial: { label: 'Coupon', className: 'bg-orange-500/15 text-orange-700 border-orange-500/30' },
+    manual: { label: 'Manual', className: 'bg-sky-500/15 text-sky-700 border-sky-500/30' },
+  }[paymentSource];
+
+  if (!config) return null;
+
+  const badge = (
+    <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0', config.className)}>
+      {config.label}
+    </Badge>
+  );
+
+  if (couponName) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>{badge}</TooltipTrigger>
+          <TooltipContent><p>Coupon: {couponName}</p></TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return badge;
+};
 
 const USERS_PER_PAGE = 10;
 
@@ -146,12 +183,15 @@ const MobileUserCard = ({
               <p className="text-sm text-muted-foreground truncate max-w-[180px]">{user.email}</p>
             </div>
           </div>
-          <Badge
-            variant={user.is_admin || user.is_manager ? 'default' : user.subscription_status === 'pro' ? 'default' : user.subscription_status === 'content_vault' ? 'default' : 'secondary'}
-            className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : user.subscription_status === 'content_vault' ? 'bg-green-500 hover:bg-green-600' : ''}
-          >
-            {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : user.subscription_status === 'content_vault' ? 'Vault' : 'Free'}
-          </Badge>
+          <div className="flex flex-col items-end gap-1">
+            <Badge
+              variant={user.is_admin || user.is_manager ? 'default' : user.subscription_status === 'pro' ? 'default' : user.subscription_status === 'content_vault' ? 'default' : 'secondary'}
+              className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : user.subscription_status === 'content_vault' ? 'bg-green-500 hover:bg-green-600' : ''}
+            >
+              {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : user.subscription_status === 'content_vault' ? 'Vault' : 'Free'}
+            </Badge>
+            <PaymentSourceBadge paymentSource={user.payment_source} couponName={user.coupon_name} />
+          </div>
         </div>
         <div className="grid grid-cols-3 gap-2 text-sm mb-3">
           <div>
@@ -259,6 +299,7 @@ const AdminDashboard = () => {
   const [userDateFrom, setUserDateFrom] = useState<Date | undefined>(undefined);
   const [userDateTo, setUserDateTo] = useState<Date | undefined>(undefined);
   const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'free' | 'content_vault' | 'pro' | 'admin' | 'manager'>('all');
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState<'all' | 'card' | 'coupon_full' | 'manual'>('all');
   const [userCurrentPage, setUserCurrentPage] = useState(1);
 
   // Bulk selection state
@@ -306,6 +347,10 @@ const AdminDashboard = () => {
         result = result.filter(user => user.subscription_status === userStatusFilter);
       }
     }
+
+    if (paymentTypeFilter !== 'all') {
+      result = result.filter(user => user.payment_source === paymentTypeFilter);
+    }
     
     if (userDateFrom || userDateTo) {
       result = result.filter(user => {
@@ -322,7 +367,7 @@ const AdminDashboard = () => {
     }
     
     return result;
-  }, [users, userSearchQuery, userStatusFilter, userDateFrom, userDateTo]);
+  }, [users, userSearchQuery, userStatusFilter, paymentTypeFilter, userDateFrom, userDateTo]);
 
   const userTotalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
   const paginatedUsers = useMemo(() => {
@@ -332,7 +377,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     setUserCurrentPage(1);
-  }, [userSearchQuery, userDateFrom, userDateTo, userStatusFilter]);
+  }, [userSearchQuery, userDateFrom, userDateTo, userStatusFilter, paymentTypeFilter]);
 
   const clearUserDateFilters = () => {
     setUserDateFrom(undefined);
@@ -542,6 +587,7 @@ const AdminDashboard = () => {
     vaultUsers: users.filter(u => u.subscription_status === 'content_vault').length,
     freeUsers: users.filter(u => u.subscription_status === 'free').length,
     mrrCents: users.reduce((sum, u) => sum + (u.subscription_amount_cents || 0), 0),
+    payingCustomers: users.filter(u => u.payment_source === 'card').length,
   };
 
   return (
@@ -649,7 +695,7 @@ const AdminDashboard = () => {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-4 md:space-y-8">
             {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
               <Card>
                 <CardContent className="p-3 md:pt-6 md:p-6">
                   <div className="flex items-center gap-2 md:gap-3">
@@ -679,6 +725,17 @@ const AdminDashboard = () => {
                     <div>
                       <p className="text-xs md:text-sm text-muted-foreground">Free Users</p>
                       <p className="text-xl md:text-2xl font-bold">{stats.freeUsers}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-3 md:pt-6 md:p-6">
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <Wallet className="h-5 w-5 md:h-8 md:w-8 text-emerald-500" />
+                    <div>
+                      <p className="text-xs md:text-sm text-muted-foreground">Paying (Card)</p>
+                      <p className="text-xl md:text-2xl font-bold">{stats.payingCustomers}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -752,6 +809,21 @@ const AdminDashboard = () => {
                         <SelectItem value="pro">Pro</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                         <SelectItem value="manager">Manager</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Payment</Label>
+                    <Select value={paymentTypeFilter} onValueChange={(v: any) => setPaymentTypeFilter(v)}>
+                      <SelectTrigger className="w-[140px] h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="card">Card on File</SelectItem>
+                        <SelectItem value="coupon_full">100% Coupon</SelectItem>
+                        <SelectItem value="manual">Manual/Granted</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -939,23 +1011,26 @@ const AdminDashboard = () => {
                                   </div>
                                 </TableCell>
                                 <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <Badge
-                                      variant={user.is_admin || user.is_manager || user.subscription_status !== 'free' ? 'default' : 'secondary'}
-                                      className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : user.subscription_status === 'content_vault' ? 'bg-green-500 hover:bg-green-600' : ''}
-                                    >
-                                      {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : user.subscription_status === 'content_vault' ? 'Vault' : 'Free'}
-                                    </Badge>
-                                    {isAdmin && !user.is_admin && (
-                                      <AdminRoleToggle
-                                        isAdmin={isAdmin}
-                                        userId={user.id}
-                                        userEmail={user.email}
-                                        isManager={user.is_manager}
-                                        accessToken={session?.access_token || ''}
-                                        onRoleChanged={fetchUsers}
-                                      />
-                                    )}
+                                  <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2">
+                                      <Badge
+                                        variant={user.is_admin || user.is_manager || user.subscription_status !== 'free' ? 'default' : 'secondary'}
+                                        className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : user.subscription_status === 'content_vault' ? 'bg-green-500 hover:bg-green-600' : ''}
+                                      >
+                                        {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : user.subscription_status === 'content_vault' ? 'Vault' : 'Free'}
+                                      </Badge>
+                                      {isAdmin && !user.is_admin && (
+                                        <AdminRoleToggle
+                                          isAdmin={isAdmin}
+                                          userId={user.id}
+                                          userEmail={user.email}
+                                          isManager={user.is_manager}
+                                          accessToken={session?.access_token || ''}
+                                          onRoleChanged={fetchUsers}
+                                        />
+                                      )}
+                                    </div>
+                                    <PaymentSourceBadge paymentSource={user.payment_source} couponName={user.coupon_name} />
                                   </div>
                                 </TableCell>
                                 <TableCell>

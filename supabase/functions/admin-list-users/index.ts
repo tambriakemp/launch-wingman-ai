@@ -118,6 +118,9 @@ serve(async (req) => {
         let stripeCustomerId = null;
         let stripeSubscriptionId = null;
         let subscriptionAmountCents = 0;
+        let paymentSource: 'card' | 'coupon_full' | 'coupon_partial' | 'manual' | 'none' = 'none';
+        let couponName: string | null = null;
+        let netAmountCents = 0;
 
         if (user.email) {
           try {
@@ -127,11 +130,11 @@ serve(async (req) => {
               const subscriptions = await stripe.subscriptions.list({
                 customer: stripeCustomerId,
                 status: "active",
-                limit: 10, // Get all to find highest tier
+                limit: 10,
+                expand: ['data.discount.coupon'],
               });
               
               if (subscriptions.data.length > 0) {
-                // Find highest tier subscription
                 for (const subscription of subscriptions.data) {
                   const priceId = subscription.items.data[0]?.price?.id;
                   const tier = getTierFromPriceId(priceId);
@@ -143,14 +146,43 @@ serve(async (req) => {
                     
                     const priceAmount = subscription.items.data[0]?.price?.unit_amount || 0;
                     subscriptionAmountCents = priceAmount;
+
+                    // Calculate net amount after discounts
+                    const discount = subscription.discount;
+                    const couponPercentOff = discount?.coupon?.percent_off;
+                    const couponAmountOff = discount?.coupon?.amount_off;
                     
-                    if (tier === 'pro') break; // Pro is highest
+                    let computedNet = priceAmount;
+                    if (couponPercentOff === 100) {
+                      computedNet = 0;
+                    } else if (couponPercentOff) {
+                      computedNet = Math.round(priceAmount * (1 - couponPercentOff / 100));
+                    } else if (couponAmountOff) {
+                      computedNet = Math.max(0, priceAmount - couponAmountOff);
+                    }
+                    netAmountCents = computedNet;
+
+                    if (discount?.coupon?.name) {
+                      couponName = discount.coupon.name;
+                    }
+
+                    // Determine payment source
+                    if (computedNet === 0 && discount?.coupon) {
+                      paymentSource = 'coupon_full';
+                    } else if (computedNet === 0) {
+                      paymentSource = 'manual';
+                    } else if (discount?.coupon) {
+                      paymentSource = 'coupon_partial';
+                    } else {
+                      paymentSource = 'card';
+                    }
+                    
+                    if (tier === 'pro') break;
                   }
                 }
               }
             }
           } catch (err: unknown) {
-            // Log error without user-identifying information
             logStep("Error fetching Stripe data for user", { userId: sanitizeId(user.id) });
           }
         }
@@ -166,6 +198,9 @@ serve(async (req) => {
           stripe_customer_id: stripeCustomerId,
           stripe_subscription_id: stripeSubscriptionId,
           subscription_amount_cents: subscriptionAmountCents,
+          payment_source: paymentSource,
+          coupon_name: couponName,
+          net_amount_cents: netAmountCents,
           last_active: profile?.last_active || null,
           is_admin: isAdmin,
           is_manager: isManager,
