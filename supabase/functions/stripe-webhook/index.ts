@@ -253,9 +253,25 @@ serve(async (req) => {
         eventType = "subscription_cancelled";
         logStep("Subscription deleted", { customerEmail, subscriptionId: subscription.id });
         
-        // Notify admins of Pro cancellation
+        // Notify admins of Pro cancellation and log activity
         if (customerEmail) {
           EdgeRuntime.waitUntil(notifyAdmins('pro_cancellation', customerEmail));
+          
+          // Log plan_cancelled activity for the user
+          try {
+            const { data: authUsers } = await supabaseClient.auth.admin.listUsers();
+            const matchedUser = authUsers?.users?.find(u => u.email === customerEmail);
+            if (matchedUser) {
+              await supabaseClient.from('user_activity').insert({
+                user_id: matchedUser.id,
+                event_type: 'plan_cancelled',
+                metadata: { subscription_id: subscription.id },
+              });
+              logStep("Plan cancelled activity logged", { userId: matchedUser.id });
+            }
+          } catch (activityError) {
+            logStep("Failed to log cancellation activity", { error: String(activityError) });
+          }
         }
         break;
       }
