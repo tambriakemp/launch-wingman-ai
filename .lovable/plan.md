@@ -1,65 +1,86 @@
 
 
-## Add Referral Source Tracking to Analytics Dashboard
+## Show "Paying with Card" vs "Coupon/Manual" in Admin Users
 
-### What it does
-Adds a new "Signups by Referral Source" chart to the `/marketing-hub/analytics` page that shows how many users signed up from each `?ref=` parameter (e.g., `producthunt`, `twitter`, `newsletter`). This gives you visibility into which referral links are actually converting into signups.
+### Problem
+All Pro users look the same in the admin panel. You can't tell who is actually being charged on a real credit card vs. who got access via a 100% coupon or manual upgrade. This makes it hard to know your real paying customer count and actual revenue.
 
-### What you'll see
-- A new summary card in the conversions row showing **Total Referral Signups** (count of profiles with a `ref_source`)
-- A new horizontal bar chart titled **Signups by Referral Source** showing each `ref_source` value and its signup count, placed alongside the existing Device/Browser breakdown
+### Solution
+Add a "payment source" indicator to each user in the admin dashboard that shows one of:
+- **Card on file** (green badge) -- user has an active subscription with actual charges (discount < 100%)
+- **100% Coupon** (orange badge) -- user has an active subscription but pays $0 due to a full discount coupon
+- **Manual/Granted** (blue badge) -- user was manually upgraded (subscription created via admin action, identifiable by metadata or $0 amount with no coupon)
+- **Free** -- no active subscription
+
+Also add a new filter option in the Users tab so you can quickly filter to see only "Card on file" users.
 
 ### Changes
 
-#### 1. Update the analytics hook (`src/hooks/useCampaignAnalytics.ts`)
-Add a new query that fetches `ref_source` counts from the `profiles` table:
-- Query all profiles where `ref_source IS NOT NULL`
-- Group and count by `ref_source` value
-- Apply date range filter using `created_at`
-- Return `referralSignups` array (e.g., `[{ source: "producthunt", count: 5 }, ...]`) and `totalReferralSignups` count
+#### 1. Update the `admin-list-users` edge function
+For each user with an active Stripe subscription, fetch additional data:
+- **`subscription.discount`** -- check if a coupon is applied and whether it's 100% off
+- **`subscription.default_payment_method`** or check if the customer has a payment method on file
+- **Net amount being charged** -- the actual amount after discounts
 
-#### 2. Create a new chart component (`src/components/marketing-hub/analytics/ReferralSourcesChart.tsx`)
-A horizontal bar chart (matching the existing style of TopLinksChart/TrafficSourcesChart) that displays each referral source and its signup count. Shows an empty state message when no referral data exists yet.
+Return two new fields per user:
+- `payment_source`: `'card'` | `'coupon_full'` | `'coupon_partial'` | `'manual'` | `'none'`
+- `has_payment_method`: boolean (whether the Stripe customer has a card on file)
+- `coupon_name`: string or null (the coupon name if one is applied)
+- `net_amount_cents`: number (actual amount charged after discounts)
 
-#### 3. Update the analytics page (`src/pages/CampaignAnalytics.tsx`)
-- Add a "Referral Signups" summary card with a Users icon showing the total count
-- Add the ReferralSourcesChart in a new row at the bottom of the dashboard
+#### 2. Update the `User` interface in AdminDashboard.tsx
+Add the new fields to the TypeScript interface.
 
-### Technical details
+#### 3. Add payment source badge to the user table and mobile cards
+Display a small colored badge next to the subscription status:
+- Green "Card" badge for real paying customers
+- Orange "Coupon" badge for 100% coupon users
+- Blue "Manual" badge for admin-granted access
+- Show the coupon name on hover/tooltip
 
-**Hook query (profiles table):**
+#### 4. Add a "Payment Type" filter
+Add a new dropdown filter alongside the existing Status filter with options:
+- All
+- Card on File (real paying customers)
+- Coupon (100% discount)
+- Manual/Granted
+
+#### 5. Update stats in the Overview tab
+Add a "Paying Customers" stat card that only counts users with `payment_source === 'card'`, giving you the real number of paying customers at a glance.
+
+### Technical Details
+
+**Edge function changes (`admin-list-users/index.ts`):**
 ```typescript
-const referralsQuery = useQuery({
-  queryKey: ["referral-sources-analytics", user?.id, dateRange],
-  queryFn: async () => {
-    const rangeStart = getRangeStart(dateRange);
-    let query = supabase
-      .from("profiles")
-      .select("ref_source, created_at")
-      .not("ref_source", "is", null);
-    if (rangeStart) {
-      query = query.gte("created_at", rangeStart.toISOString());
-    }
-    const { data, error } = await query;
-    if (error) throw error;
-    return data || [];
-  },
-  enabled: !!user,
-});
+// For each active subscription, check discount and payment method
+const discount = subscription.discount;
+const couponPercentOff = discount?.coupon?.percent_off;
+const couponAmountOff = discount?.coupon?.amount_off;
+
+const priceAmount = subscription.items.data[0]?.price?.unit_amount || 0;
+let netAmount = priceAmount;
+if (couponPercentOff === 100) {
+  netAmount = 0;
+} else if (couponPercentOff) {
+  netAmount = Math.round(priceAmount * (1 - couponPercentOff / 100));
+} else if (couponAmountOff) {
+  netAmount = Math.max(0, priceAmount - couponAmountOff);
+}
+
+// Determine payment source
+let paymentSource = 'none';
+if (subscriptionStatus !== 'free') {
+  if (netAmount === 0 && discount?.coupon) {
+    paymentSource = 'coupon_full';
+  } else if (netAmount === 0) {
+    paymentSource = 'manual';
+  } else {
+    paymentSource = discount?.coupon ? 'coupon_partial' : 'card';
+  }
+}
 ```
 
-Note: This query only works for admin users since profiles RLS only allows viewing your own profile. We'll need to add an RLS policy so admins can read all profiles for this aggregation.
+**Files to modify:**
+1. `supabase/functions/admin-list-users/index.ts` -- add discount/payment method detection
+2. `src/pages/AdminDashboard.tsx` -- add `payment_source` to User interface, add badge rendering, add filter dropdown, update stats
 
-**Database change:**
-Add an RLS SELECT policy on `profiles` for admins:
-```sql
-CREATE POLICY "Admins can view all profiles"
-  ON public.profiles FOR SELECT
-  USING (has_role(auth.uid(), 'admin'::app_role));
-```
-
-### Files to modify
-1. Database migration -- add admin SELECT policy on profiles
-2. `src/hooks/useCampaignAnalytics.ts` -- add referral source query and aggregation
-3. `src/components/marketing-hub/analytics/ReferralSourcesChart.tsx` -- new chart component
-4. `src/pages/CampaignAnalytics.tsx` -- add summary card and chart to the page
