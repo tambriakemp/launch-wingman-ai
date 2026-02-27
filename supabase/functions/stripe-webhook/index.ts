@@ -85,6 +85,47 @@ async function triggerSureContactOrderSync(orderData: OrderData) {
   }
 }
 
+// Fire SureContact incoming webhooks for a given trigger event
+async function fireIncomingWebhooks(
+  supabaseClient: ReturnType<typeof createClient>,
+  triggerEvent: string,
+  email: string,
+  firstName: string,
+  lastName: string
+) {
+  try {
+    const { data: webhooks } = await supabaseClient
+      .from('surecontact_incoming_webhooks')
+      .select('id, name, webhook_url, webhook_secret')
+      .eq('trigger_event', triggerEvent)
+      .eq('is_active', true);
+
+    if (!webhooks || webhooks.length === 0) {
+      logStep(`No active incoming webhooks for ${triggerEvent}`);
+      return;
+    }
+
+    for (const wh of webhooks) {
+      try {
+        const whHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (wh.webhook_secret) {
+          whHeaders['Authorization'] = `Bearer ${wh.webhook_secret}`;
+        }
+        const resp = await fetch(wh.webhook_url, {
+          method: 'POST',
+          headers: whHeaders,
+          body: JSON.stringify({ email, first_name: firstName, last_name: lastName }),
+        });
+        logStep(`Incoming webhook fired`, { name: wh.name, triggerEvent, status: resp.status });
+      } catch (err) {
+        logStep(`Incoming webhook error`, { name: wh.name, error: String(err) });
+      }
+    }
+  } catch (error) {
+    logStep(`fireIncomingWebhooks error`, { triggerEvent, error: String(error) });
+  }
+}
+
 // Notify admins about subscription events
 async function notifyAdmins(type: 'pro_signup' | 'pro_cancellation', email: string, userName?: string) {
   const baseUrl = Deno.env.get("SUPABASE_URL");
@@ -192,6 +233,20 @@ serve(async (req) => {
           // Notify admins of new Pro signup
           EdgeRuntime.waitUntil(notifyAdmins('pro_signup', customerEmail));
           
+          // Fire pro_signup incoming webhooks for SureContact sequences
+          let firstName = '';
+          let lastName = '';
+          if (session.customer) {
+            try {
+              const cust = await stripe.customers.retrieve(session.customer as string);
+              if (cust && !cust.deleted && cust.name) {
+                const parts = cust.name.split(' ');
+                firstName = parts[0] || '';
+                lastName = parts.slice(1).join(' ') || '';
+              }
+            } catch (_) { /* ignore */ }
+          }
+          EdgeRuntime.waitUntil(fireIncomingWebhooks(supabaseClient, 'pro_signup', customerEmail, firstName, lastName));
           try {
             const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
             const orderData: OrderData = {

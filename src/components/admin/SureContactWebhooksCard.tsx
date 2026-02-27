@@ -49,6 +49,7 @@ interface WebhookFormData {
 const TRIGGER_EVENTS = [
   { value: 'manual', label: 'Manual' },
   { value: 'free_signup', label: 'Free Signup' },
+  { value: 'pro_signup', label: 'Pro Signup (Direct)' },
   { value: 'pro_upgrade', label: 'Pro Upgrade' },
   { value: 'plan_cancelled', label: 'Plan Cancelled' },
   { value: 'reactivated', label: 'Reactivated' },
