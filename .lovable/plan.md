@@ -1,55 +1,33 @@
 
 
-## Fix: SureContact Incoming Webhook Authentication and Deployment
+## Add "Pro Signup" Trigger Event for Direct Pro Purchases
 
 ### Problem
-Two issues are preventing the webhook from firing:
-1. The `surecontact-webhook` edge function shows zero logs, indicating it was never called during the test signup -- it needs to be redeployed.
-2. The incoming webhook POST does not include the webhook secret key for authentication. SureContact provides both a URL and a secret key -- the secret must be sent as an authorization header.
+When a user signs up and purchases Pro directly (without first being a free user), the Stripe webhook handles the payment but never triggers a SureContact incoming webhook. There's no `pro_signup` trigger event available, so you can't set up a dedicated email sequence for direct Pro customers.
 
 ### Changes
 
-#### 1. Add webhook secret key storage to the database
-Update the `surecontact_incoming_webhooks` table to include a `webhook_secret` column so each webhook can store its own secret key.
-
-```sql
-ALTER TABLE public.surecontact_incoming_webhooks
-ADD COLUMN webhook_secret text;
+#### 1. Add `pro_signup` to the trigger events list in the UI
+Update `SureContactWebhooksCard.tsx` to include a new "Pro Signup" option in the `TRIGGER_EVENTS` array:
+```
+{ value: 'pro_signup', label: 'Pro Signup (Direct)' }
 ```
 
-#### 2. Update the admin UI to accept the secret key
-In `SureContactWebhooksCard.tsx`, add a "Webhook Secret" input field to the add/edit form so you can paste the secret key from SureContact.
+#### 2. Fire matching incoming webhooks from the Stripe webhook
+In `supabase/functions/stripe-webhook/index.ts`, after the `checkout.session.completed` event is processed (where admin notifications already fire), add logic to:
+- Query `surecontact_incoming_webhooks` for active webhooks with `trigger_event = 'pro_signup'`
+- POST the customer's email and name to each matching webhook URL (with the secret as Bearer token)
 
-#### 3. Update the edge function to include authentication
-Modify the incoming webhook POST in `surecontact-webhook/index.ts` to:
-- Query the `webhook_secret` column alongside the URL
-- Include the secret as an `Authorization: Bearer <secret>` header (or whichever format SureContact expects) when POSTing to the incoming webhook URL
-
-```typescript
-const { data: incomingWebhooks } = await supabase
-  .from('surecontact_incoming_webhooks')
-  .select('id, name, webhook_url, webhook_secret')
-  .eq('trigger_event', 'free_signup')
-  .eq('is_active', true);
-
-for (const wh of incomingWebhooks) {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (wh.webhook_secret) {
-    headers['Authorization'] = `Bearer ${wh.webhook_secret}`;
-  }
-  await fetch(wh.webhook_url, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ email, first_name, last_name }),
-  });
-}
-```
-
-#### 4. Redeploy the edge function
-Ensure the `surecontact-webhook` edge function is redeployed so all changes take effect.
+This mirrors the same pattern already used for `free_signup` in the `surecontact-webhook` edge function, but triggered from the Stripe webhook instead.
 
 ### Files to modify
-1. Database migration -- add `webhook_secret` column
-2. `src/components/admin/SureContactWebhooksCard.tsx` -- add secret input field
-3. `supabase/functions/surecontact-webhook/index.ts` -- include secret in webhook POST headers
+1. `src/components/admin/SureContactWebhooksCard.tsx` -- add `pro_signup` to TRIGGER_EVENTS
+2. `supabase/functions/stripe-webhook/index.ts` -- fire `pro_signup` incoming webhooks on checkout completion
+
+### Technical detail
+The Stripe webhook already has access to the Supabase client (service role). The new code will:
+- Fetch the customer's name from Stripe (if available)
+- Query `surecontact_incoming_webhooks` for `trigger_event = 'pro_signup'` and `is_active = true`
+- POST `{ email, first_name, last_name }` to each webhook URL with the `Authorization: Bearer <secret>` header
+- Use `EdgeRuntime.waitUntil()` so it doesn't block the webhook response
 
