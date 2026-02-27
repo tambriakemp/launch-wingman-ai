@@ -1,86 +1,66 @@
 
 
-## Show "Paying with Card" vs "Coupon/Manual" in Admin Users
+## Fix Signup Activity Tracking + Add Cancellation Events
 
-### Problem
-All Pro users look the same in the admin panel. You can't tell who is actually being charged on a real credit card vs. who got access via a 100% coupon or manual upgrade. This makes it hard to know your real paying customer count and actual revenue.
+### Problem 1: Signup tracking is broken for checkout users
+Users who sign up through the checkout page (which is most new signups) are created server-side by the `complete-subscription-checkout` backend function using `admin.createUser()`. They never go through the frontend `signUp()` function, so the `trackActivity('signup')` call never fires. This is why no signup events have been recorded since January 21.
+
+### Problem 2: No cancellation event in activity logs
+When a user cancels their plan (via Stripe portal or admin action), the `stripe-webhook` function processes the `customer.subscription.deleted` event but only sends admin notifications and SureContact syncs -- it never writes a record to the `user_activity` table.
 
 ### Solution
-Add a "payment source" indicator to each user in the admin dashboard that shows one of:
-- **Card on file** (green badge) -- user has an active subscription with actual charges (discount < 100%)
-- **100% Coupon** (orange badge) -- user has an active subscription but pays $0 due to a full discount coupon
-- **Manual/Granted** (blue badge) -- user was manually upgraded (subscription created via admin action, identifiable by metadata or $0 amount with no coupon)
-- **Free** -- no active subscription
 
-Also add a new filter option in the Users tab so you can quickly filter to see only "Card on file" users.
+#### 1. Track signup activity from `complete-subscription-checkout`
+After successfully creating a new user account in the backend function, insert a `signup` event directly into the `user_activity` table using the service role client. This catches all checkout-based signups that bypass the frontend.
 
-### Changes
-
-#### 1. Update the `admin-list-users` edge function
-For each user with an active Stripe subscription, fetch additional data:
-- **`subscription.discount`** -- check if a coupon is applied and whether it's 100% off
-- **`subscription.default_payment_method`** or check if the customer has a payment method on file
-- **Net amount being charged** -- the actual amount after discounts
-
-Return two new fields per user:
-- `payment_source`: `'card'` | `'coupon_full'` | `'coupon_partial'` | `'manual'` | `'none'`
-- `has_payment_method`: boolean (whether the Stripe customer has a card on file)
-- `coupon_name`: string or null (the coupon name if one is applied)
-- `net_amount_cents`: number (actual amount charged after discounts)
-
-#### 2. Update the `User` interface in AdminDashboard.tsx
-Add the new fields to the TypeScript interface.
-
-#### 3. Add payment source badge to the user table and mobile cards
-Display a small colored badge next to the subscription status:
-- Green "Card" badge for real paying customers
-- Orange "Coupon" badge for 100% coupon users
-- Blue "Manual" badge for admin-granted access
-- Show the coupon name on hover/tooltip
-
-#### 4. Add a "Payment Type" filter
-Add a new dropdown filter alongside the existing Status filter with options:
-- All
-- Card on File (real paying customers)
-- Coupon (100% discount)
-- Manual/Granted
-
-#### 5. Update stats in the Overview tab
-Add a "Paying Customers" stat card that only counts users with `payment_source === 'card'`, giving you the real number of paying customers at a glance.
-
-### Technical Details
-
-**Edge function changes (`admin-list-users/index.ts`):**
+**File:** `supabase/functions/complete-subscription-checkout/index.ts`
+- After the user is created (around line 101), insert into `user_activity`:
 ```typescript
-// For each active subscription, check discount and payment method
-const discount = subscription.discount;
-const couponPercentOff = discount?.coupon?.percent_off;
-const couponAmountOff = discount?.coupon?.amount_off;
+await supabaseClient.from('user_activity').insert({
+  user_id: supabaseUserId,
+  event_type: 'signup',
+  metadata: { source: 'checkout', is_upgrade: false },
+});
+```
 
-const priceAmount = subscription.items.data[0]?.price?.unit_amount || 0;
-let netAmount = priceAmount;
-if (couponPercentOff === 100) {
-  netAmount = 0;
-} else if (couponPercentOff) {
-  netAmount = Math.round(priceAmount * (1 - couponPercentOff / 100));
-} else if (couponAmountOff) {
-  netAmount = Math.max(0, priceAmount - couponAmountOff);
-}
+#### 2. Track cancellation events from `stripe-webhook`
+When the webhook receives a `customer.subscription.deleted` event, look up the user by email and insert a `plan_cancelled` event into `user_activity`.
 
-// Determine payment source
-let paymentSource = 'none';
-if (subscriptionStatus !== 'free') {
-  if (netAmount === 0 && discount?.coupon) {
-    paymentSource = 'coupon_full';
-  } else if (netAmount === 0) {
-    paymentSource = 'manual';
-  } else {
-    paymentSource = discount?.coupon ? 'coupon_partial' : 'card';
+**File:** `supabase/functions/stripe-webhook/index.ts`
+- In the `customer.subscription.deleted` case (around line 260), after getting the customer email:
+```typescript
+// Find the Supabase user by email and log cancellation activity
+if (customerEmail) {
+  const { data: userData } = await supabaseClient.auth.admin.listUsers();
+  const matchedUser = userData?.users?.find(u => u.email === customerEmail);
+  if (matchedUser) {
+    await supabaseClient.from('user_activity').insert({
+      user_id: matchedUser.id,
+      event_type: 'plan_cancelled',
+      metadata: { subscription_id: subscription.id },
+    });
   }
 }
 ```
 
-**Files to modify:**
-1. `supabase/functions/admin-list-users/index.ts` -- add discount/payment method detection
-2. `src/pages/AdminDashboard.tsx` -- add `payment_source` to User interface, add badge rendering, add filter dropdown, update stats
+#### 3. Also track admin-initiated cancellations
+When an admin cancels a user's subscription through the dashboard, the `admin-manage-subscription` function handles it. Add an activity log entry there as well for the target user.
+
+**File:** `supabase/functions/admin-manage-subscription/index.ts`
+- After a successful cancel action, insert a `plan_cancelled` event for the target user.
+
+#### 4. Update the `AdminActionLogs` component to show the new event type
+Add a label/badge mapping for `plan_cancelled` so it renders nicely in the Activity Logs tab.
+
+**File:** `src/components/admin/AdminActionLogs.tsx`
+- Add to the action config map:
+```typescript
+plan_cancelled: { label: 'Plan Cancelled', variant: 'destructive', category: 'subscriptions' },
+```
+
+### Files to modify
+1. `supabase/functions/complete-subscription-checkout/index.ts` -- add signup activity insert
+2. `supabase/functions/stripe-webhook/index.ts` -- add plan_cancelled activity insert on subscription deletion
+3. `supabase/functions/admin-manage-subscription/index.ts` -- add plan_cancelled activity on admin cancel
+4. `src/components/admin/AdminActionLogs.tsx` -- add plan_cancelled badge mapping
 
