@@ -1,41 +1,55 @@
 
 
-## Fix: Make SureContact Sync Fire for ALL Free Signups
+## Fix: SureContact Incoming Webhook Authentication and Deployment
 
 ### Problem
-The `surecontact-webhook` call in `AuthContext.tsx` (line 383) is gated by:
-```
-if (storedUtmCampaign || storedRef) { ... }
-```
-If a user signs up without UTM or referral params (which is most users), the webhook is never called, so the incoming webhook for the free user email sequence never fires.
-
-### Fix
-Move the `surecontact-webhook` invocation **outside** the conditional so it always runs on signup. UTM/ref data will still be passed when available, but the call won't be skipped when they're absent.
+Two issues are preventing the webhook from firing:
+1. The `surecontact-webhook` edge function shows zero logs, indicating it was never called during the test signup -- it needs to be redeployed.
+2. The incoming webhook POST does not include the webhook secret key for authentication. SureContact provides both a URL and a secret key -- the secret must be sent as an authorization header.
 
 ### Changes
 
-**File:** `src/contexts/AuthContext.tsx` (lines 381-395)
+#### 1. Add webhook secret key storage to the database
+Update the `surecontact_incoming_webhooks` table to include a `webhook_secret` column so each webhook can store its own secret key.
 
-Replace the conditional block with an unconditional call:
-
-```typescript
-// Always sync new signup to SureContact (triggers incoming webhooks like free user sequence)
-const storedUtmCampaign = localStorage.getItem('launchely_utm_campaign');
-supabase.functions.invoke("surecontact-webhook", {
-  body: {
-    action: "sync_new_signup",
-    email,
-    first_name: firstName || '',
-    last_name: lastName || '',
-    ...(storedUtmCampaign && { utm_campaign: storedUtmCampaign }),
-    ...(storedRef && { ref_source: storedRef }),
-  },
-}).catch((err) => console.error("Failed to sync signup to SureContact:", err));
-if (storedUtmCampaign) localStorage.removeItem('launchely_utm_campaign');
+```sql
+ALTER TABLE public.surecontact_incoming_webhooks
+ADD COLUMN webhook_secret text;
 ```
 
-The `storedRef` variable is already declared on line 373, so it remains available. The only change is removing the `if (storedUtmCampaign || storedRef)` guard.
+#### 2. Update the admin UI to accept the secret key
+In `SureContactWebhooksCard.tsx`, add a "Webhook Secret" input field to the add/edit form so you can paste the secret key from SureContact.
+
+#### 3. Update the edge function to include authentication
+Modify the incoming webhook POST in `surecontact-webhook/index.ts` to:
+- Query the `webhook_secret` column alongside the URL
+- Include the secret as an `Authorization: Bearer <secret>` header (or whichever format SureContact expects) when POSTing to the incoming webhook URL
+
+```typescript
+const { data: incomingWebhooks } = await supabase
+  .from('surecontact_incoming_webhooks')
+  .select('id, name, webhook_url, webhook_secret')
+  .eq('trigger_event', 'free_signup')
+  .eq('is_active', true);
+
+for (const wh of incomingWebhooks) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (wh.webhook_secret) {
+    headers['Authorization'] = `Bearer ${wh.webhook_secret}`;
+  }
+  await fetch(wh.webhook_url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ email, first_name, last_name }),
+  });
+}
+```
+
+#### 4. Redeploy the edge function
+Ensure the `surecontact-webhook` edge function is redeployed so all changes take effect.
 
 ### Files to modify
-1. `src/contexts/AuthContext.tsx` -- remove the conditional gate around the surecontact-webhook call
+1. Database migration -- add `webhook_secret` column
+2. `src/components/admin/SureContactWebhooksCard.tsx` -- add secret input field
+3. `supabase/functions/surecontact-webhook/index.ts` -- include secret in webhook POST headers
 
