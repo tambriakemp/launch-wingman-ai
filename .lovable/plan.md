@@ -1,66 +1,80 @@
 
 
-## Fix Signup Activity Tracking + Add Cancellation Events
+## SureContact Incoming Webhooks Manager
 
-### Problem 1: Signup tracking is broken for checkout users
-Users who sign up through the checkout page (which is most new signups) are created server-side by the `complete-subscription-checkout` backend function using `admin.createUser()`. They never go through the frontend `signUp()` function, so the `trackActivity('signup')` call never fires. This is why no signup events have been recorded since January 21.
+### What you'll get
+A new card on the Config tab where you can:
+- Add a SureContact incoming webhook URL with a friendly name (e.g., "Free User Sequence", "Pro Onboarding")
+- Assign a list from your synced SureContact lists
+- Assign one or more tags from your synced SureContact tags
+- Edit or delete existing webhook configurations
+- See all configured webhooks at a glance
 
-### Problem 2: No cancellation event in activity logs
-When a user cancels their plan (via Stripe portal or admin action), the `stripe-webhook` function processes the `customer.subscription.deleted` event but only sends admin notifications and SureContact syncs -- it never writes a record to the `user_activity` table.
+Then, when the code needs to trigger a webhook (e.g., on free signup), it looks up the webhook config by name from the database instead of having a hardcoded URL.
 
-### Solution
+### Changes
 
-#### 1. Track signup activity from `complete-subscription-checkout`
-After successfully creating a new user account in the backend function, insert a `signup` event directly into the `user_activity` table using the service role client. This catches all checkout-based signups that bypass the frontend.
+#### 1. New database table: `surecontact_incoming_webhooks`
+Stores each webhook configuration with columns:
+- `id` (uuid, primary key)
+- `name` (text) -- friendly label like "Free User Sequence"
+- `webhook_url` (text) -- the full SureContact incoming webhook URL
+- `list_id` (text, nullable) -- the surecontact_uuid of the assigned list
+- `tag_ids` (text array) -- array of surecontact_uuid values for assigned tags
+- `is_active` (boolean, default true)
+- `created_at`, `updated_at` (timestamps)
 
-**File:** `supabase/functions/complete-subscription-checkout/index.ts`
-- After the user is created (around line 101), insert into `user_activity`:
-```typescript
-await supabaseClient.from('user_activity').insert({
-  user_id: supabaseUserId,
-  event_type: 'signup',
-  metadata: { source: 'checkout', is_upgrade: false },
-});
+RLS: admin-only for all operations.
+
+#### 2. New UI component: `SureContactWebhooksCard`
+A card on the Config tab with:
+- A table/list showing all configured webhooks (name, URL truncated, assigned list name, tag badges, active toggle)
+- "Add Webhook" button that opens a dialog/form with:
+  - Name input
+  - Webhook URL input
+  - List dropdown (populated from `surecontact_config` where `config_type = 'list'`)
+  - Tag multi-select (populated from `surecontact_config` where `config_type = 'tag'`)
+- Edit and delete buttons on each row
+- Active/inactive toggle
+
+#### 3. Update `ConfigTab.tsx`
+Import and render the new `SureContactWebhooksCard` component between the existing SureContact Configuration and Sync cards.
+
+#### 4. Update edge functions to use webhook configs
+Modify the `surecontact-webhook` edge function's `sync_new_signup` handler to:
+- Query `surecontact_incoming_webhooks` for active webhooks that should fire on signup (can match by name convention or add a `trigger_event` column)
+- POST to each matching webhook URL with the user's name and email
+- This replaces the need to hardcode webhook URLs
+
+### Technical details
+
+**Table migration:**
+```sql
+CREATE TABLE public.surecontact_incoming_webhooks (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  webhook_url text NOT NULL,
+  list_id text,
+  tag_ids text[] DEFAULT '{}',
+  trigger_event text NOT NULL DEFAULT 'manual',
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.surecontact_incoming_webhooks ENABLE ROW LEVEL SECURITY;
+
+-- Admin-only policies
+CREATE POLICY "Admins can manage webhooks" ON public.surecontact_incoming_webhooks
+  FOR ALL USING (has_role(auth.uid(), 'admin'));
 ```
 
-#### 2. Track cancellation events from `stripe-webhook`
-When the webhook receives a `customer.subscription.deleted` event, look up the user by email and insert a `plan_cancelled` event into `user_activity`.
+The `trigger_event` column lets you tag webhooks with when they should fire: `free_signup`, `pro_upgrade`, `plan_cancelled`, `manual`, etc. The edge function queries for active webhooks matching the event and fires them automatically.
 
-**File:** `supabase/functions/stripe-webhook/index.ts`
-- In the `customer.subscription.deleted` case (around line 260), after getting the customer email:
-```typescript
-// Find the Supabase user by email and log cancellation activity
-if (customerEmail) {
-  const { data: userData } = await supabaseClient.auth.admin.listUsers();
-  const matchedUser = userData?.users?.find(u => u.email === customerEmail);
-  if (matchedUser) {
-    await supabaseClient.from('user_activity').insert({
-      user_id: matchedUser.id,
-      event_type: 'plan_cancelled',
-      metadata: { subscription_id: subscription.id },
-    });
-  }
-}
-```
+**Files to create:**
+1. `src/components/admin/SureContactWebhooksCard.tsx` -- the UI card component
 
-#### 3. Also track admin-initiated cancellations
-When an admin cancels a user's subscription through the dashboard, the `admin-manage-subscription` function handles it. Add an activity log entry there as well for the target user.
-
-**File:** `supabase/functions/admin-manage-subscription/index.ts`
-- After a successful cancel action, insert a `plan_cancelled` event for the target user.
-
-#### 4. Update the `AdminActionLogs` component to show the new event type
-Add a label/badge mapping for `plan_cancelled` so it renders nicely in the Activity Logs tab.
-
-**File:** `src/components/admin/AdminActionLogs.tsx`
-- Add to the action config map:
-```typescript
-plan_cancelled: { label: 'Plan Cancelled', variant: 'destructive', category: 'subscriptions' },
-```
-
-### Files to modify
-1. `supabase/functions/complete-subscription-checkout/index.ts` -- add signup activity insert
-2. `supabase/functions/stripe-webhook/index.ts` -- add plan_cancelled activity insert on subscription deletion
-3. `supabase/functions/admin-manage-subscription/index.ts` -- add plan_cancelled activity on admin cancel
-4. `src/components/admin/AdminActionLogs.tsx` -- add plan_cancelled badge mapping
+**Files to modify:**
+1. `src/components/admin/ConfigTab.tsx` -- add the new card
+2. `supabase/functions/surecontact-webhook/index.ts` -- query webhook configs and POST to matching URLs on signup
 
