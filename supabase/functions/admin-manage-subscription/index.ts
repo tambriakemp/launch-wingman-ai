@@ -107,9 +107,17 @@ serve(async (req) => {
         action_details: { stripe_subscription_id: subIdToCancel }
       });
 
-      // Trigger marketing and surecontact webhooks to update tags
+      // Log plan_cancelled activity for the target user
       const { data: authUsers } = await supabaseClient.auth.admin.listUsers();
       const targetUser = authUsers?.users?.find(u => u.email === user_email);
+      if (targetUser) {
+        await supabaseClient.from('user_activity').insert({
+          user_id: targetUser.id,
+          event_type: 'plan_cancelled',
+          metadata: { subscription_id: subIdToCancel, cancelled_by: 'admin', admin_email: adminUser.email },
+        });
+        logStep("Plan cancelled activity logged", { userId: targetUser.id });
+      }
       if (targetUser) {
         const baseUrl = Deno.env.get("SUPABASE_URL");
         const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");

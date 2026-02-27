@@ -100,6 +100,14 @@ serve(async (req) => {
       supabaseUserId = newUser.user.id;
       logStep("Created Supabase user", { userId: supabaseUserId });
 
+      // Track signup activity
+      await supabaseClient.from('user_activity').insert({
+        user_id: supabaseUserId,
+        event_type: 'signup',
+        metadata: { source: 'checkout', is_upgrade: false },
+      });
+      logStep("Signup activity tracked", { userId: supabaseUserId });
+
       // Create profile
       const { error: profileError } = await supabaseClient
         .from('profiles')
