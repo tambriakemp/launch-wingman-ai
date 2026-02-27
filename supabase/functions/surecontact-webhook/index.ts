@@ -568,16 +568,20 @@ Deno.serve(async (req) => {
       try {
         const { data: incomingWebhooks } = await supabase
           .from('surecontact_incoming_webhooks')
-          .select('id, name, webhook_url')
+          .select('id, name, webhook_url, webhook_secret')
           .eq('trigger_event', 'free_signup')
           .eq('is_active', true);
 
         if (incomingWebhooks && incomingWebhooks.length > 0) {
           for (const wh of incomingWebhooks) {
             try {
+              const whHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+              if (wh.webhook_secret) {
+                whHeaders['Authorization'] = `Bearer ${wh.webhook_secret}`;
+              }
               const whResp = await fetch(wh.webhook_url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: whHeaders,
                 body: JSON.stringify({
                   email,
                   first_name: first_name || '',
