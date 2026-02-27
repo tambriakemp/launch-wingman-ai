@@ -2101,6 +2101,42 @@ export type Database = {
         }
         Relationships: []
       }
+      surecontact_incoming_webhooks: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          list_id: string | null
+          name: string
+          tag_ids: string[] | null
+          trigger_event: string
+          updated_at: string
+          webhook_url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          list_id?: string | null
+          name: string
+          tag_ids?: string[] | null
+          trigger_event?: string
+          updated_at?: string
+          webhook_url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          list_id?: string | null
+          name?: string
+          tag_ids?: string[] | null
+          trigger_event?: string
+          updated_at?: string
+          webhook_url?: string
+        }
+        Relationships: []
+      }
       surecontact_webhook_logs: {
         Row: {
           created_at: string

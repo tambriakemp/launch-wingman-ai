@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { TikTokEnvironmentToggle } from './TikTokEnvironmentToggle';
 import { PinterestEnvironmentToggle } from './PinterestEnvironmentToggle';
+import { SureContactWebhooksCard } from './SureContactWebhooksCard';
 
 interface SureContactConfigItem {
   config_type: string;
@@ -262,6 +263,9 @@ export function ConfigTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* SureContact Incoming Webhooks */}
+      <SureContactWebhooksCard sureContactConfig={sureContactConfig} />
 
       {/* SureContact Sync Card */}
       <Card>
