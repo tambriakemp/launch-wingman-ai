@@ -39,6 +39,7 @@ interface WebhookConfig {
 interface WebhookFormData {
   name: string;
   webhook_url: string;
+  webhook_secret: string;
   list_id: string;
   tag_ids: string[];
   trigger_event: string;
@@ -56,6 +57,7 @@ const TRIGGER_EVENTS = [
 const emptyForm: WebhookFormData = {
   name: '',
   webhook_url: '',
+  webhook_secret: '',
   list_id: '',
   tag_ids: [],
   trigger_event: 'manual',
@@ -107,6 +109,7 @@ export function SureContactWebhooksCard({ sureContactConfig }: Props) {
     setForm({
       name: wh.name,
       webhook_url: wh.webhook_url,
+      webhook_secret: (wh as any).webhook_secret || '',
       list_id: wh.list_id || '',
       tag_ids: wh.tag_ids || [],
       trigger_event: wh.trigger_event,
@@ -125,6 +128,7 @@ export function SureContactWebhooksCard({ sureContactConfig }: Props) {
       const payload = {
         name: form.name,
         webhook_url: form.webhook_url,
+        webhook_secret: form.webhook_secret || null,
         list_id: form.list_id || null,
         tag_ids: form.tag_ids,
         trigger_event: form.trigger_event,
@@ -320,6 +324,17 @@ export function SureContactWebhooksCard({ sureContactConfig }: Props) {
                 placeholder="https://api.surecontact.com/incoming-webhooks/..."
                 value={form.webhook_url}
                 onChange={e => setForm(prev => ({ ...prev, webhook_url: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="wh-secret">Webhook Secret</Label>
+              <Input
+                id="wh-secret"
+                type="password"
+                placeholder="Paste the webhook secret key from SureContact"
+                value={form.webhook_secret}
+                onChange={e => setForm(prev => ({ ...prev, webhook_secret: e.target.value }))}
               />
             </div>
 

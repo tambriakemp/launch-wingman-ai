@@ -2111,6 +2111,7 @@ export type Database = {
           tag_ids: string[] | null
           trigger_event: string
           updated_at: string
+          webhook_secret: string | null
           webhook_url: string
         }
         Insert: {
@@ -2122,6 +2123,7 @@ export type Database = {
           tag_ids?: string[] | null
           trigger_event?: string
           updated_at?: string
+          webhook_secret?: string | null
           webhook_url: string
         }
         Update: {
@@ -2133,6 +2135,7 @@ export type Database = {
           tag_ids?: string[] | null
           trigger_event?: string
           updated_at?: string
+          webhook_secret?: string | null
           webhook_url?: string
         }
         Relationships: []

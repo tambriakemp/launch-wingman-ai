@@ -1,0 +1,1 @@
+ALTER TABLE public.surecontact_incoming_webhooks ADD COLUMN webhook_secret text;
