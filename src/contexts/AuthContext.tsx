@@ -378,21 +378,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .then(() => { localStorage.removeItem('launchely_ref_source'); });
       }
 
-      // Forward stored UTM campaign and ref to surecontact-webhook for lead attribution
+      // Always sync new signup to SureContact (triggers incoming webhooks like free user sequence)
       const storedUtmCampaign = localStorage.getItem('launchely_utm_campaign');
-      if (storedUtmCampaign || storedRef) {
-        supabase.functions.invoke("surecontact-webhook", {
-          body: {
-            action: "sync_new_signup",
-            email,
-            first_name: firstName || '',
-            last_name: lastName || '',
-            ...(storedUtmCampaign && { utm_campaign: storedUtmCampaign }),
-            ...(storedRef && { ref_source: storedRef }),
-          },
-        }).catch((err) => console.error("Failed to sync signup attribution:", err));
-        if (storedUtmCampaign) localStorage.removeItem('launchely_utm_campaign');
-      }
+      supabase.functions.invoke("surecontact-webhook", {
+        body: {
+          action: "sync_new_signup",
+          email,
+          first_name: firstName || '',
+          last_name: lastName || '',
+          ...(storedUtmCampaign && { utm_campaign: storedUtmCampaign }),
+          ...(storedRef && { ref_source: storedRef }),
+        },
+      }).catch((err) => console.error("Failed to sync signup to SureContact:", err));
+      if (storedUtmCampaign) localStorage.removeItem('launchely_utm_campaign');
 
       
       // Only navigate if not explicitly skipped (e.g., for Pro checkout flow)
