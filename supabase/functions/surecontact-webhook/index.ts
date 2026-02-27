@@ -564,6 +564,36 @@ Deno.serve(async (req) => {
 
       results.push({ email, ...result });
 
+      // Fire any incoming webhooks configured for 'free_signup' trigger
+      try {
+        const { data: incomingWebhooks } = await supabase
+          .from('surecontact_incoming_webhooks')
+          .select('id, name, webhook_url')
+          .eq('trigger_event', 'free_signup')
+          .eq('is_active', true);
+
+        if (incomingWebhooks && incomingWebhooks.length > 0) {
+          for (const wh of incomingWebhooks) {
+            try {
+              const whResp = await fetch(wh.webhook_url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  email,
+                  first_name: first_name || '',
+                  last_name: last_name || '',
+                }),
+              });
+              console.log(`Incoming webhook "${wh.name}" fired: ${whResp.status}`);
+            } catch (whErr) {
+              console.error(`Failed to fire incoming webhook "${wh.name}":`, whErr);
+            }
+          }
+        }
+      } catch (whQueryErr) {
+        console.error('Failed to query incoming webhooks:', whQueryErr);
+      }
+
     } else if (action === 'sync_user') {
       // Sync single user by ID
       if (!user_id) {
