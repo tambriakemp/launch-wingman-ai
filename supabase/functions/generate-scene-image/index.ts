@@ -6,6 +6,40 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function extractImageFromResponse(data: any): string | null {
+  // Format 1: images array on message
+  const images = data?.choices?.[0]?.message?.images;
+  if (Array.isArray(images) && images.length > 0) {
+    const img = images[0];
+    if (img?.image_url?.url) return img.image_url.url;
+    if (img?.url) return img.url;
+    if (img?.b64_json) return `data:image/png;base64,${img.b64_json}`;
+  }
+
+  // Format 2: content array with image parts
+  const content = data?.choices?.[0]?.message?.content;
+  if (Array.isArray(content)) {
+    for (const part of content) {
+      if (part.type === "image_url" && part.image_url?.url) return part.image_url.url;
+      if (part.type === "image" && part.image_url?.url) return part.image_url.url;
+    }
+  }
+
+  // Format 3: inline_data in parts
+  const parts = data?.choices?.[0]?.message?.parts;
+  if (Array.isArray(parts)) {
+    for (const part of parts) {
+      if (part.inline_data?.data) return `data:${part.inline_data.mime_type || 'image/png'};base64,${part.inline_data.data}`;
+    }
+  }
+
+  // Format 4: DALL-E style
+  if (data?.data?.[0]?.b64_json) return `data:image/png;base64,${data.data[0].b64_json}`;
+  if (data?.data?.[0]?.url) return data.data[0].url;
+
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -103,25 +137,18 @@ ${config.creationMode === 'ugc' ? 'Feature the product prominently.' : ''}`;
     }
 
     const data = await response.json();
+
+    // Check for safety filter block
+    const finishReason = data.choices?.[0]?.native_finish_reason || data.choices?.[0]?.finish_reason;
+    if (finishReason === "IMAGE_SAFETY") {
+      console.warn("Image blocked by safety filter");
+      return new Response(JSON.stringify({ error: "Image blocked by safety filter. Try a different prompt or scene description." }), {
+        status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
     
     // Extract image from multiple possible response formats
-    let imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    if (!imageUrl) {
-      // Try images array with different structure
-      const images = data.choices?.[0]?.message?.images;
-      if (Array.isArray(images) && images.length > 0) {
-        imageUrl = images[0]?.url || images[0]?.image_url?.url || (images[0]?.b64_json ? `data:image/png;base64,${images[0].b64_json}` : null);
-      }
-    }
-    if (!imageUrl) {
-      // Try content array
-      const content = data.choices?.[0]?.message?.content;
-      if (Array.isArray(content)) {
-        for (const part of content) {
-          if (part.type === "image_url" && part.image_url?.url) { imageUrl = part.image_url.url; break; }
-        }
-      }
-    }
+    let imageUrl = extractImageFromResponse(data);
     if (!imageUrl) {
       console.error("No image in response:", JSON.stringify(data).substring(0, 500));
       throw new Error("No image generated");
@@ -141,12 +168,19 @@ ${config.creationMode === 'ugc' ? 'Feature the product prominently.' : ''}`;
       if (user) userId = user.id;
     }
 
-    // Convert base64 to blob and upload
-    const base64Data = imageUrl.split(",")[1];
-    const binaryString = atob(base64Data);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
+    // Handle both base64 data URLs and regular URLs
+    let bytes: Uint8Array;
+    if (imageUrl.startsWith("data:")) {
+      const base64Data = imageUrl.split(",")[1];
+      const binaryString = atob(base64Data);
+      bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+    } else {
+      // It's a URL - fetch and get bytes
+      const imgResp = await fetch(imageUrl);
+      bytes = new Uint8Array(await imgResp.arrayBuffer());
     }
 
     const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
