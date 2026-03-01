@@ -58,46 +58,43 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
         <p className="text-muted-foreground">Configure your faceless influencer look and style.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Left: Uploads & Mode */}
-        <div className="space-y-6">
-          <section className="bg-card p-6 rounded-2xl border border-border">
-            <Label label="1. Creation Mode" />
-            <div className="grid grid-cols-2 gap-2 bg-muted p-1 rounded-lg mb-6">
-              <button onClick={() => setConfig(c => ({ ...c, creationMode: 'vlog' }))}
-                className={`py-2 text-sm font-medium rounded-md transition-all ${config.creationMode === 'vlog' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
-                VLOG MODE
-              </button>
-              <button onClick={() => setConfig(c => ({ ...c, creationMode: 'ugc' }))}
-                className={`py-2 text-sm font-medium rounded-md transition-all ${config.creationMode === 'ugc' ? 'bg-accent text-accent-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
-                UGC / INFLUENCER
-              </button>
-            </div>
+      <div className="space-y-6">
+        {/* Creation Mode & Uploads */}
+        <section className="bg-card p-6 rounded-2xl border border-border">
+          <Label label="1. Creation Mode" />
+          <div className="grid grid-cols-2 gap-2 bg-muted p-1 rounded-lg mb-6">
+            <button onClick={() => setConfig(c => ({ ...c, creationMode: 'vlog' }))}
+              className={`py-2 text-sm font-medium rounded-md transition-all ${config.creationMode === 'vlog' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
+              VLOG MODE
+            </button>
+            <button onClick={() => setConfig(c => ({ ...c, creationMode: 'ugc' }))}
+              className={`py-2 text-sm font-medium rounded-md transition-all ${config.creationMode === 'ugc' ? 'bg-accent text-accent-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
+              UGC / INFLUENCER
+            </button>
+          </div>
 
-            <div className="space-y-6">
-              <SavedCharacter onSelect={setReferenceImage} onSelectMultiple={setReferenceImages} />
-              <div>
-                <Label label="Character Reference" />
-                <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing} title="Upload Selfie / Avatar" subtext="One-time use. Used to maintain facial consistency." />
-              </div>
-              <div>
-                <Label label="Environment / Setting (Optional)" />
-                <SavedEnvironments onSelect={setEnvironmentImage} onSelectMultiple={setEnvironmentImages} />
-                <UploadZone onImageSelected={setEnvironmentImage} isProcessing={isProcessing} title="Background Reference" subtext="One-time use. Upload a room or location." />
-              </div>
-              {config.creationMode === 'ugc' && (
-                <div>
-                  <Label label="Product Reference" />
-                  <UploadZone onImageSelected={setProductImage} isProcessing={isProcessing} title="Product Image" subtext="Required for UGC mode. The item you are promoting." />
-                </div>
-              )}
+          <div className="space-y-6">
+            <SavedCharacter onSelect={setReferenceImage} onSelectMultiple={setReferenceImages} />
+            <div>
+              <Label label="Character Reference" />
+              <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing} title="Upload Selfie / Avatar" subtext="One-time use. Used to maintain facial consistency." />
             </div>
-          </section>
-        </div>
+            <div>
+              <Label label="Environment / Setting (Optional)" />
+              <SavedEnvironments onSelect={setEnvironmentImage} onSelectMultiple={setEnvironmentImages} />
+              <UploadZone onImageSelected={setEnvironmentImage} isProcessing={isProcessing} title="Background Reference" subtext="One-time use. Upload a room or location." />
+            </div>
+            {config.creationMode === 'ugc' && (
+              <div>
+                <Label label="Product Reference" />
+                <UploadZone onImageSelected={setProductImage} isProcessing={isProcessing} title="Product Image" subtext="Required for UGC mode. The item you are promoting." />
+              </div>
+            )}
+          </div>
+        </section>
 
-        {/* Right: Configuration */}
-        <div className="space-y-6">
-          <section className="bg-card p-6 rounded-2xl border border-border">
+        {/* Aesthetic & Style */}
+        <section className="bg-card p-6 rounded-2xl border border-border">
             <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
               <span className="w-1 h-6 bg-primary rounded-full"></span>
               Aesthetic & Style
@@ -334,7 +331,6 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
               <><span>Generate Character Preview</span> <ArrowRight className="h-5 w-5 ml-2" /></>
             )}
           </Button>
-        </div>
       </div>
     </div>
   );
