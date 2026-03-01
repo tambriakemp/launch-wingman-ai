@@ -7,12 +7,16 @@ import { Save, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const LOOK_KEYS = [
-  'exactMatch', 'aspectRatio', 'cameraMovement',
+  'vlogCategory', 'vlogTopic', 'creationMode',
+  'useOwnScript', 'userScript', 'ugcPrompt',
+  'avatarDescription', 'productDescription', 'useProductAsHair',
+  'exactMatch', 'matchFace', 'matchSkin',
+  'aspectRatio', 'cameraMovement',
   'outfitType', 'outfitDetails', 'outfitAdditionalInfo',
   'finalLookType', 'finalLook', 'finalLookAdditionalInfo',
   'hairstyle', 'customHairstyle',
   'makeup', 'customMakeup',
-  'skinComplexion', 'skinUndertone',
+  'skinComplexion', 'customSkinComplexion', 'skinUndertone',
   'nailStyle', 'customNailStyle',
 ] as const;
 
