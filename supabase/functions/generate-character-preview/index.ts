@@ -5,6 +5,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function getSceneBehaviorPrompt(sceneDescription: string): string {
+  const d = sceneDescription.toLowerCase();
+  if (/\b(bathroom|vanity|mirror|restroom|powder room)\b/.test(d)) {
+    return "The subject is facing the mirror, viewing their own reflection. Camera captures from behind or to the side. Natural bathroom behavior — adjusting hair, examining reflection, applying product while looking in the mirror, NOT at the camera.";
+  }
+  if (/\b(kitchen|cooking|stove|counter|baking)\b/.test(d)) {
+    return "The subject is naturally engaged with the kitchen environment — looking at what they're doing, interacting with surfaces/appliances. NOT posing for the camera.";
+  }
+  if (/\b(closet|wardrobe|dressing room)\b/.test(d)) {
+    return "The subject is browsing or selecting clothing, looking at garments or their reflection in a closet/dressing mirror. Natural getting-ready behavior.";
+  }
+  if (/\b(gym|workout|fitness|exercise)\b/.test(d)) {
+    return "The subject is mid-activity or naturally resting between sets. Engaged with equipment or their form, not posing at the camera.";
+  }
+  if (/\b(office|desk|workspace|study)\b/.test(d)) {
+    return "The subject is naturally engaged with their work environment — looking at a screen, writing, or in thought. Candid, not posed.";
+  }
+  return "";
+}
+
 function extractImageFromResponse(data: any): string | null {
   // Try multiple known response formats
   
@@ -108,6 +128,15 @@ Style details:
 
     if (config.exactMatch) {
       prompt += `\nIMPORTANT: Closely match the person's facial features and appearance from the reference photo.`;
+    }
+
+    // Add natural behavior guardrails based on environment context
+    const envContext = (environmentImages?.length > 0 || environmentImage) ? prompt : "";
+    const behaviorPrompt = getSceneBehaviorPrompt(envContext);
+    if (behaviorPrompt) {
+      prompt += `\n${behaviorPrompt}`;
+    } else if (environmentImages?.length > 0 || environmentImage) {
+      prompt += `\nThe subject should interact naturally with the environment. Pose and gaze should reflect realistic behavior for the setting, not direct-to-camera posing.`;
     }
 
     contentParts.push({ type: "text", text: prompt });
