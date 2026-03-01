@@ -47,12 +47,19 @@ serve(async (req) => {
 
     const { referenceImage, environmentImage, config, isFinalLook } = await req.json();
 
+    // Strip data URI prefix if present so we send raw base64 only
+    const stripBase64Prefix = (img: string): string => {
+      if (img.includes(',')) return img.split(',')[1];
+      return img;
+    };
+
+    const refBase64 = stripBase64Prefix(referenceImage);
     const contentParts: any[] = [
-      { type: "image_url", image_url: { url: `data:image/jpeg;base64,${referenceImage}` } }
+      { type: "image_url", image_url: { url: `data:image/jpeg;base64,${refBase64}` } }
     ];
 
     if (environmentImage) {
-      const envBase64 = environmentImage.includes(',') ? environmentImage.split(',')[1] : environmentImage;
+      const envBase64 = stripBase64Prefix(environmentImage);
       contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${envBase64}` } });
     }
 
