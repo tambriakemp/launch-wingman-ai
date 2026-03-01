@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppConfig, VlogStoryboard, GeneratedMedia, QueueItem, AppPhase } from '@/components/ai-studio/types';
+import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem, AppPhase } from '@/components/ai-studio/types';
 import { INITIAL_CONFIG, DEFAULT_MEDIA, getUserFriendlyErrorMessage } from '@/components/ai-studio/constants';
 import StudioSetup from '@/components/ai-studio/StudioSetup';
 import StudioPreview from '@/components/ai-studio/StudioPreview';
@@ -636,7 +636,7 @@ const AIStudio = () => {
 
           {appPhase === 'storyboard' && storyboard && (
             <StudioStoryboard
-              config={config} storyboard={storyboard} generatedMedia={generatedMedia}
+              config={config} setConfig={setConfig} storyboard={storyboard} generatedMedia={generatedMedia}
               onToggleSelect={handleToggleSelect}
               onToggleLock={handleToggleLock}
               onEnlarge={(i) => setEnlargedImageIndex(i)}
@@ -650,9 +650,25 @@ const AIStudio = () => {
               onDownloadScript={handleDownloadScript}
               onDownloadAll={handleDownloadAll}
               onSaveProject={handleSaveProject}
+              onAddBlankScene={() => {
+                if (!storyboard) return;
+                const newStep: VlogStep = {
+                  step_number: storyboard.steps.length + 1,
+                  step_name: 'New Scene',
+                  a_roll: '', b_roll: '', close_up_details: '', camera_direction: '',
+                  image_prompt: '', video_prompt: '', script: ''
+                };
+                setStoryboard({ ...storyboard, steps: [...storyboard.steps, newStep] });
+                setGeneratedMedia(prev => ({
+                  ...prev,
+                  [storyboard.steps.length]: { ...DEFAULT_MEDIA }
+                }));
+              }}
               selectionCount={getSelectionCount()}
               currentProjectName={currentProjectName}
               isSaving={isSaving}
+              isGeneratingTopic={isGeneratingTopic}
+              onGenerateTopicIdeas={handleGenerateTopicIdeas}
             />
           )}
         </main>

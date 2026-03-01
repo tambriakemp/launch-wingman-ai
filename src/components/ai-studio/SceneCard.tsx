@@ -52,7 +52,6 @@ const SceneCard: React.FC<SceneCardProps> = ({
         document.body.removeChild(link);
         URL.revokeObjectURL(blobUrl);
       } catch {
-        // Fallback: open in same tab
         window.location.href = media.imageUrl;
       }
     }
@@ -63,159 +62,158 @@ const SceneCard: React.FC<SceneCardProps> = ({
   const cssAspectRatio = aspectRatio.replace(':', '/');
 
   return (
-    <div className={`bg-card border rounded-xl overflow-hidden shadow-lg flex flex-col lg:flex-row transition-all duration-300 w-full ${media.isSelected ? 'border-primary ring-1 ring-primary' : 'border-border hover:border-primary/50'}`}>
-      {/* Image Side */}
-      <div className="flex-1 p-4 border-b lg:border-b-0 lg:border-r border-border flex flex-col">
-        <div className="flex justify-between items-center mb-3">
-          <h4 className="text-sm font-bold text-muted-foreground">Image Reference</h4>
-          <label className="relative flex items-center justify-center p-1.5 rounded bg-muted cursor-pointer border border-border">
-            <input type="checkbox" checked={media.isSelected || false} onChange={onToggleSelect} className="w-4 h-4 rounded border-border text-primary focus:ring-primary bg-muted cursor-pointer" />
-          </label>
-        </div>
-        <div
-          className="relative w-full bg-black group cursor-zoom-in overflow-hidden rounded-lg border border-border flex-1 min-h-[200px]"
-          style={{ aspectRatio: cssAspectRatio }}
-          onClick={onEnlarge}
-        >
-          {/* Lock Controls */}
-          {media.imageUrl && !isLoading && (
-            <div className="absolute top-2 right-2 flex flex-col gap-2 z-[60]" onClick={(e) => e.stopPropagation()}>
-              <button onClick={(e) => { e.stopPropagation(); onToggleLock('character'); }} title="Character Lock"
-                className={`p-1.5 rounded-full border shadow-xl transition-all active:scale-95 ${media.lockedCharacter ? 'bg-primary border-primary text-primary-foreground' : 'bg-black/70 border-border text-muted-foreground hover:text-primary'}`}>
-                <User className="w-4 h-4" />
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); onToggleLock('outfit'); }} title="Outfit Lock"
-                className={`p-1.5 rounded-full border shadow-xl transition-all active:scale-95 ${media.lockedOutfit ? 'bg-accent border-accent text-accent-foreground' : 'bg-black/70 border-border text-muted-foreground hover:text-accent-foreground'}`}>
-                <ShoppingBag className="w-4 h-4" />
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); onToggleLock('environment'); }} title="Environment Lock"
-                className={`p-1.5 rounded-full border shadow-xl transition-all active:scale-95 ${media.lockedEnvironment ? 'bg-green-600 border-green-400 text-white' : 'bg-black/70 border-border text-muted-foreground hover:text-green-400'}`}>
-                <Landmark className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-
-          {media.imageUrl ? (
-            <img src={media.imageUrl} alt={step.step_name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-              {!isLoading && !media.error && (
-                <>
-                  <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
-                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onGenerateImage(); }}>
-                    Generate Image
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-
-          {isLoading && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-30 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
-              <Loader2 className="h-6 w-6 text-primary animate-spin" />
-              <p className="mt-2 text-xs text-primary animate-pulse uppercase font-bold tracking-wider">
-                {media.isUpscaling ? 'Upscaling...' : 'Rendering...'}
-              </p>
-            </div>
-          )}
-
-          {media.error && !isLoading && !media.imageUrl && (
-            <div className="absolute inset-0 bg-destructive/80 flex flex-col items-center justify-center p-3 text-center z-30 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
-              <AlertCircle className="h-6 w-6 text-destructive-foreground mb-1" />
-              <p className="text-xs font-bold text-destructive-foreground mb-1">Failed</p>
-              <Button size="sm" variant="destructive" onClick={(e) => { e.stopPropagation(); onGenerateImage(); }}>Retry</Button>
-            </div>
-          )}
-
-          {media.imageUrl && !isLoading && (
-            <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 z-40 px-2 pointer-events-none">
-              <button onClick={downloadImage} title="Download" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
-                <Download className="h-3 w-3" />
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); onGenerateImage(); }} title="Regenerate" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-primary text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
-                <RefreshCw className="h-3 w-3" />
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); onUpscale(); }} title="Upscale" className="pointer-events-auto px-2 py-1 bg-gradient-to-r from-primary/90 to-accent/90 hover:from-primary hover:to-accent text-white text-[9px] font-bold uppercase rounded-full backdrop-blur-md border border-white/20 shadow-lg active:scale-95">
-                Upscale
-              </button>
-            </div>
-          )}
-        </div>
+    <div className="flex flex-col gap-6 w-full">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold text-foreground flex items-center gap-3">
+          <span className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground text-xs font-bold shadow-lg">
+            {step.step_number}
+          </span>
+          <span className="truncate text-base">{step.step_name}</span>
+        </h3>
+        <label className="relative flex items-center justify-center p-1.5 rounded bg-muted cursor-pointer border border-border">
+          <input type="checkbox" checked={media.isSelected || false} onChange={onToggleSelect} className="w-4 h-4 rounded border-border text-primary focus:ring-primary bg-muted cursor-pointer" />
+        </label>
       </div>
 
-      {/* Video Side */}
-      <div className="flex-1 p-4 border-b lg:border-b-0 lg:border-r border-border flex flex-col">
-        <h4 className="text-sm font-bold text-muted-foreground mb-3">Generated Video</h4>
-        <div className="relative w-full bg-black overflow-hidden rounded-lg border border-border flex-1 min-h-[200px]" style={{ aspectRatio: cssAspectRatio }}>
-          {media.videoUrl ? (
-            <video src={media.videoUrl} controls autoPlay loop muted className="w-full h-full object-cover" />
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-              {!isVideoLoading && !media.videoError && (
-                <>
-                  <Video className="h-8 w-8 text-muted-foreground mb-2" />
-                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onGenerateVideo(); }} disabled={!media.imageUrl}>
-                    Generate Video
-                  </Button>
-                  {!media.imageUrl && <p className="text-[9px] text-muted-foreground mt-2">Requires image first</p>}
-                </>
-              )}
-            </div>
-          )}
-          {isVideoLoading && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-30 backdrop-blur-sm">
-              <Loader2 className="h-6 w-6 text-primary animate-spin" />
-              <p className="mt-2 text-xs text-primary animate-pulse uppercase font-bold tracking-wider">Generating Video...</p>
-            </div>
-          )}
-          {media.videoError && !isVideoLoading && !media.videoUrl && (
-            <div className="absolute inset-0 bg-destructive/80 flex flex-col items-center justify-center p-3 text-center z-30 backdrop-blur-sm">
-              <AlertCircle className="h-6 w-6 text-destructive-foreground mb-1" />
-              <p className="text-xs font-bold text-destructive-foreground mb-1">Video Failed</p>
-              <Button size="sm" variant="destructive" onClick={(e) => { e.stopPropagation(); onGenerateVideo(); }}>Retry</Button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Content Side */}
-      <div className="p-4 flex-1 flex flex-col justify-between">
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-foreground flex items-center gap-3">
-              <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground text-xs shadow-lg">
-                {step.step_number}
-              </span>
-              <span className="truncate leading-tight text-base">{step.step_name}</span>
-            </h3>
-          </div>
-
-          {step.script && (
-            <div className="mb-4 bg-primary/5 border border-primary/20 rounded-lg p-3">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[10px] uppercase text-primary font-bold">Script / Voiceover</span>
-                <button onClick={() => copyPrompt(step.script)} className="text-[10px] text-muted-foreground hover:text-foreground uppercase font-bold flex items-center gap-1">
-                  <Copy className="h-3 w-3" /> Copy
+      {/* Image + Video Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Image Panel */}
+        <div className="flex flex-col gap-2">
+          <h4 className="text-xs font-bold text-muted-foreground uppercase">Image Reference</h4>
+          <div
+            className="relative w-full bg-black group cursor-zoom-in overflow-hidden rounded-lg border border-border"
+            style={{ aspectRatio: cssAspectRatio }}
+            onClick={onEnlarge}
+          >
+            {media.imageUrl && !isLoading && (
+              <div className="absolute top-2 right-2 flex flex-col gap-2 z-[60]" onClick={(e) => e.stopPropagation()}>
+                <button onClick={(e) => { e.stopPropagation(); onToggleLock('character'); }} title="Character Lock"
+                  className={`p-1.5 rounded-full border shadow-xl transition-all active:scale-95 ${media.lockedCharacter ? 'bg-primary border-primary text-primary-foreground' : 'bg-black/70 border-border text-muted-foreground hover:text-primary'}`}>
+                  <User className="w-4 h-4" />
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); onToggleLock('outfit'); }} title="Outfit Lock"
+                  className={`p-1.5 rounded-full border shadow-xl transition-all active:scale-95 ${media.lockedOutfit ? 'bg-accent border-accent text-accent-foreground' : 'bg-black/70 border-border text-muted-foreground hover:text-accent-foreground'}`}>
+                  <ShoppingBag className="w-4 h-4" />
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); onToggleLock('environment'); }} title="Environment Lock"
+                  className={`p-1.5 rounded-full border shadow-xl transition-all active:scale-95 ${media.lockedEnvironment ? 'bg-green-600 border-green-400 text-white' : 'bg-black/70 border-border text-muted-foreground hover:text-green-400'}`}>
+                  <Landmark className="w-4 h-4" />
                 </button>
               </div>
-              <p className="text-sm text-foreground/80 italic leading-relaxed">"{step.script}"</p>
-            </div>
-          )}
+            )}
 
-          <div className="space-y-3">
-            <p className="text-muted-foreground text-sm leading-relaxed border-l-2 border-primary pl-3">
-              <span className="text-[10px] uppercase text-primary font-bold block mb-0.5">Action</span>
-              {step.a_roll}
-            </p>
-            <p className="text-muted-foreground text-xs">
-              <span className="text-[10px] uppercase text-muted-foreground font-bold block mb-0.5">Detail</span>
-              {step.close_up_details}
-            </p>
+            {media.imageUrl ? (
+              <img src={media.imageUrl} alt={step.step_name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                {!isLoading && !media.error && (
+                  <>
+                    <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
+                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onGenerateImage(); }}>
+                      Generate Image
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {isLoading && (
+              <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-30 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
+                <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                <p className="mt-2 text-xs text-primary animate-pulse uppercase font-bold tracking-wider">
+                  {media.isUpscaling ? 'Upscaling...' : 'Rendering...'}
+                </p>
+              </div>
+            )}
+
+            {media.error && !isLoading && !media.imageUrl && (
+              <div className="absolute inset-0 bg-destructive/80 flex flex-col items-center justify-center p-3 text-center z-30 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
+                <AlertCircle className="h-6 w-6 text-destructive-foreground mb-1" />
+                <p className="text-xs font-bold text-destructive-foreground mb-1">Failed</p>
+                <Button size="sm" variant="destructive" onClick={(e) => { e.stopPropagation(); onGenerateImage(); }}>Retry</Button>
+              </div>
+            )}
+
+            {media.imageUrl && !isLoading && (
+              <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 z-40 px-2 pointer-events-none">
+                <button onClick={downloadImage} title="Download" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                  <Download className="h-3 w-3" />
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); onGenerateImage(); }} title="Regenerate" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-primary text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                  <RefreshCw className="h-3 w-3" />
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); onUpscale(); }} title="Upscale" className="pointer-events-auto px-2 py-1 bg-gradient-to-r from-primary/90 to-accent/90 hover:from-primary hover:to-accent text-white text-[9px] font-bold uppercase rounded-full backdrop-blur-md border border-white/20 shadow-lg active:scale-95">
+                  Upscale
+                </button>
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* Video Panel */}
+        <div className="flex flex-col gap-2">
+          <h4 className="text-xs font-bold text-muted-foreground uppercase">Generated Video</h4>
+          <div className="relative w-full bg-black overflow-hidden rounded-lg border border-border" style={{ aspectRatio: cssAspectRatio }}>
+            {media.videoUrl ? (
+              <video src={media.videoUrl} controls autoPlay loop muted className="w-full h-full object-cover" />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                {!isVideoLoading && !media.videoError && (
+                  <>
+                    <Video className="h-8 w-8 text-muted-foreground mb-2" />
+                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onGenerateVideo(); }} disabled={!media.imageUrl}>
+                      Generate Video
+                    </Button>
+                    {!media.imageUrl && <p className="text-[9px] text-muted-foreground mt-2">Requires image first</p>}
+                  </>
+                )}
+              </div>
+            )}
+            {isVideoLoading && (
+              <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-30 backdrop-blur-sm">
+                <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                <p className="mt-2 text-xs text-primary animate-pulse uppercase font-bold tracking-wider">Generating Video...</p>
+              </div>
+            )}
+            {media.videoError && !isVideoLoading && !media.videoUrl && (
+              <div className="absolute inset-0 bg-destructive/80 flex flex-col items-center justify-center p-3 text-center z-30 backdrop-blur-sm">
+                <AlertCircle className="h-6 w-6 text-destructive-foreground mb-1" />
+                <p className="text-xs font-bold text-destructive-foreground mb-1">Video Failed</p>
+                <Button size="sm" variant="destructive" onClick={(e) => { e.stopPropagation(); onGenerateVideo(); }}>Retry</Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Script & Details */}
+      <div className="space-y-4">
+        {step.script && (
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-[10px] uppercase text-primary font-bold">Script / Voiceover</span>
+              <button onClick={() => copyPrompt(step.script)} className="text-[10px] text-muted-foreground hover:text-foreground uppercase font-bold flex items-center gap-1">
+                <Copy className="h-3 w-3" /> Copy
+              </button>
+            </div>
+            <p className="text-sm text-foreground/80 italic leading-relaxed">"{step.script}"</p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <p className="text-muted-foreground text-sm leading-relaxed border-l-2 border-primary pl-3">
+            <span className="text-[10px] uppercase text-primary font-bold block mb-0.5">Action</span>
+            {step.a_roll}
+          </p>
+          <p className="text-muted-foreground text-xs">
+            <span className="text-[10px] uppercase text-muted-foreground font-bold block mb-0.5">Detail</span>
+            {step.close_up_details}
+          </p>
         </div>
 
         {/* Prompts Dropdown */}
-        <div className="mt-6 pt-4 border-t border-border">
+        <div className="border-t border-border pt-3">
           <button onClick={() => setIsPromptOpen(!isPromptOpen)} className="w-full flex items-center justify-between text-[10px] uppercase font-bold tracking-wider text-muted-foreground hover:text-foreground transition-colors bg-muted p-2 rounded">
             <span>View AI Prompts</span>
             <ChevronDown className={`w-4 h-4 transform transition-transform ${isPromptOpen ? 'rotate-180' : ''}`} />
