@@ -5,6 +5,39 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function extractImageFromResponse(data: any): string | null {
+  // Try multiple known response formats
+  
+  // Format 1: images array on message
+  const img1 = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+  if (img1) return img1;
+
+  // Format 2: content array with image parts
+  const content = data?.choices?.[0]?.message?.content;
+  if (Array.isArray(content)) {
+    for (const part of content) {
+      if (part.type === "image_url" && part.image_url?.url) return part.image_url.url;
+      if (part.type === "image" && part.image_url?.url) return part.image_url.url;
+      // base64 inline
+      if (part.type === "image_url" && typeof part.image_url === "string") return part.image_url;
+    }
+  }
+
+  // Format 3: inline_data in parts
+  const parts = data?.choices?.[0]?.message?.parts;
+  if (Array.isArray(parts)) {
+    for (const part of parts) {
+      if (part.inline_data?.data) return `data:${part.inline_data.mime_type || 'image/png'};base64,${part.inline_data.data}`;
+    }
+  }
+
+  // Format 4: direct b64_json in data array (DALL-E style)
+  if (data?.data?.[0]?.b64_json) return `data:image/png;base64,${data.data[0].b64_json}`;
+  if (data?.data?.[0]?.url) return data.data[0].url;
+
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -23,7 +56,6 @@ serve(async (req) => {
       contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${envBase64}` } });
     }
 
-    // Determine outfit
     let targetOutfit = config.outfitType === 'Custom Outfit' ? config.outfitDetails : config.outfitType;
     if (config.outfitAdditionalInfo && !isFinalLook) targetOutfit += ` (${config.outfitAdditionalInfo})`;
     if (isFinalLook) {
@@ -77,15 +109,29 @@ Aspect Ratio: 9:16`;
 
     if (!response.ok) {
       const t = await response.text();
-      console.error("Character preview error:", response.status, t);
+      console.error("Character preview API error:", response.status, t);
       if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       if (response.status === 402) return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error(`Preview generation failed: ${response.status}`);
+      throw new Error(`Preview generation failed: ${response.status} - ${t.substring(0, 200)}`);
     }
 
     const data = await response.json();
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    if (!imageUrl) throw new Error("Character preview generation failed");
+    console.log("Character preview response keys:", JSON.stringify(Object.keys(data)));
+    if (data.choices?.[0]) {
+      console.log("Message keys:", JSON.stringify(Object.keys(data.choices[0].message || {})));
+      const content = data.choices[0].message?.content;
+      if (Array.isArray(content)) {
+        console.log("Content parts types:", JSON.stringify(content.map((p: any) => p.type)));
+      } else if (typeof content === "string") {
+        console.log("Content is string, length:", content.length);
+      }
+    }
+
+    const imageUrl = extractImageFromResponse(data);
+    if (!imageUrl) {
+      console.error("Could not extract image. Full response:", JSON.stringify(data).substring(0, 1000));
+      throw new Error("Character preview generation failed - no image in response");
+    }
 
     return new Response(JSON.stringify({ imageUrl }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
