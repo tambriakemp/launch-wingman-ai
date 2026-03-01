@@ -84,19 +84,6 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
         <section className="bg-card p-6 rounded-2xl border border-border">
           <SectionHeading title="Look" />
 
-          {/* Creation Mode Toggle */}
-          <Label label="Creation Mode" />
-          <div className="grid grid-cols-2 gap-2 bg-muted p-1 rounded-lg mb-6">
-            <button onClick={() => setConfig(c => ({ ...c, creationMode: 'vlog' }))}
-              className={`py-2 text-sm font-medium rounded-md transition-all ${config.creationMode === 'vlog' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
-              VLOG MODE
-            </button>
-            <button onClick={() => setConfig(c => ({ ...c, creationMode: 'ugc' }))}
-              className={`py-2 text-sm font-medium rounded-md transition-all ${config.creationMode === 'ugc' ? 'bg-accent text-accent-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
-              UGC / INFLUENCER
-            </button>
-          </div>
-
           {/* Product Upload (UGC only) */}
           {config.creationMode === 'ugc' && (
             <div className="mb-6">
@@ -238,7 +225,19 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
         <section className="bg-card p-6 rounded-2xl border border-border">
           <SectionHeading title="Vlog Settings" />
 
-          {/* Aspect Ratio */}
+          {/* Creation Mode Toggle */}
+          <Label label="Creation Mode" />
+          <div className="grid grid-cols-2 gap-2 bg-muted p-1 rounded-lg mb-6">
+            <button onClick={() => setConfig(c => ({ ...c, creationMode: 'vlog' }))}
+              className={`py-2 text-sm font-medium rounded-md transition-all ${config.creationMode === 'vlog' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
+              VLOG MODE
+            </button>
+            <button onClick={() => setConfig(c => ({ ...c, creationMode: 'ugc' }))}
+              className={`py-2 text-sm font-medium rounded-md transition-all ${config.creationMode === 'ugc' ? 'bg-accent text-accent-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'}`}>
+              UGC / INFLUENCER
+            </button>
+          </div>
+
           <div className="mb-6">
             <Label label="Aspect Ratio" />
             <div className="grid grid-cols-3 gap-2">
