@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
-import { Trash2, Upload, CheckCircle, Loader2, Plus, Image, ChevronDown, ChevronRight, Images } from 'lucide-react';
+import { Trash2, Upload, Loader2, Plus, Image, ChevronDown, ChevronRight, Images, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SavedEnvironmentsProps {
@@ -29,7 +29,6 @@ interface EnvironmentGroup {
 
 const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelectMultiple }) => {
   const [groups, setGroups] = useState<EnvironmentGroup[]>([]);
-  const [standaloneEntries, setStandaloneEntries] = useState<EnvironmentEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -46,7 +45,6 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
 
   // Selecting / loading
   const [selectingGroupId, setSelectingGroupId] = useState<string | null>(null);
-  const [selectingEntryId, setSelectingEntryId] = useState<string | null>(null);
 
   // Expanded groups
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -60,14 +58,12 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
     if (!user) { setLoading(false); return; }
     setUserId(user.id);
 
-    // Load groups
     const { data: groupRows } = await supabase
       .from('ai_studio_environment_groups')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: true });
 
-    // Load all environment entries
     const { data: envRows } = await supabase
       .from('ai_studio_environments')
       .select('*')
@@ -85,7 +81,6 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
       };
     });
 
-    // Build groups
     const builtGroups: EnvironmentGroup[] = (groupRows || []).map(g => ({
       id: g.id,
       name: g.name,
@@ -93,7 +88,6 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
     }));
 
     setGroups(builtGroups);
-    setStandaloneEntries(entries.filter(e => !e.group_id));
     setLoading(false);
   };
 
@@ -121,7 +115,6 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
     }
     setSavingGroup(true);
 
-    // Create group
     const { data: groupRow, error: groupErr } = await supabase
       .from('ai_studio_environment_groups')
       .insert({ user_id: userId, name: newGroupName.trim() })
@@ -134,7 +127,6 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
       return;
     }
 
-    // Upload images
     const uploadedEntries: EnvironmentEntry[] = [];
     for (const file of newGroupFiles) {
       const fileId = crypto.randomUUID();
@@ -170,21 +162,33 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
   };
 
   const handleDeleteGroup = async (group: EnvironmentGroup) => {
-    // Delete all storage files
     const paths = group.images.map(e => e.file_path);
     if (paths.length > 0) await supabase.storage.from(BUCKET).remove(paths);
-
-    // Delete group (cascade deletes environment entries)
     await supabase.from('ai_studio_environment_groups').delete().eq('id', group.id);
-
     setGroups(prev => prev.filter(g => g.id !== group.id));
     toast.success(`"${group.name}" removed.`);
   };
 
   const handleUseGroup = async (group: EnvironmentGroup) => {
     if (!onSelectMultiple) {
-      // Fallback: use first image
-      if (group.images.length > 0) handleUseEntry(group.images[0]);
+      if (group.images.length > 0) {
+        setSelectingGroupId(group.id);
+        try {
+          const res = await fetch(group.images[0].thumbnailUrl);
+          const blob = await res.blob();
+          const b64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+          onSelect(b64);
+          toast.success(`"${group.name}" applied!`);
+        } catch {
+          toast.error('Failed to load image.');
+        } finally {
+          setSelectingGroupId(null);
+        }
+      }
       return;
     }
 
@@ -202,7 +206,6 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
         base64Array.push(b64);
       }
       onSelectMultiple(base64Array);
-      // Also set first as primary environmentImage for backward compat
       if (base64Array.length > 0) onSelect(base64Array[0]);
       toast.success(`"${group.name}" applied (${base64Array.length} reference images)!`);
     } catch {
@@ -251,32 +254,6 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
     setGroups(prev => prev.map(g => g.id === groupId ? { ...g, images: g.images.filter(e => e.id !== entry.id) } : g));
   };
 
-  // Standalone entry handlers (backward compat)
-  const handleUseEntry = async (entry: EnvironmentEntry) => {
-    setSelectingEntryId(entry.id);
-    try {
-      const res = await fetch(entry.thumbnailUrl);
-      const blob = await res.blob();
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        onSelect(reader.result as string);
-        setSelectingEntryId(null);
-        toast.success(`"${entry.label}" applied!`);
-      };
-      reader.readAsDataURL(blob);
-    } catch {
-      toast.error('Failed to load image.');
-      setSelectingEntryId(null);
-    }
-  };
-
-  const handleDeleteEntry = async (entry: EnvironmentEntry) => {
-    await supabase.storage.from(BUCKET).remove([entry.file_path]);
-    await supabase.from('ai_studio_environments').delete().eq('id', entry.id);
-    setStandaloneEntries(prev => prev.filter(e => e.id !== entry.id));
-    toast.success(`"${entry.label}" removed.`);
-  };
-
   const toggleExpanded = (id: string) => {
     setExpandedGroups(prev => {
       const next = new Set(prev);
@@ -297,8 +274,6 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
 
   return (
     <div className="space-y-3">
-      <label className="block text-xs font-bold uppercase text-muted-foreground">Saved Environments</label>
-
       {/* Environment Groups */}
       {groups.map(group => (
         <Collapsible key={group.id} open={expandedGroups.has(group.id)} onOpenChange={() => toggleExpanded(group.id)}>
@@ -370,26 +345,6 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
         }}
       />
 
-      {/* Standalone entries (backward compat) */}
-      {standaloneEntries.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1">
-          {standaloneEntries.map(entry => (
-            <div key={entry.id} className="bg-muted/50 border border-border rounded-lg p-2 space-y-1.5">
-              <img src={entry.thumbnailUrl} alt={entry.label} className="w-full h-16 rounded object-cover border border-border" />
-              <p className="text-[11px] font-medium text-foreground truncate">{entry.label}</p>
-              <div className="flex gap-1">
-                <Button size="sm" variant="default" onClick={() => handleUseEntry(entry)} disabled={selectingEntryId === entry.id} className="text-[10px] h-6 px-2 flex-1">
-                  {selectingEntryId === entry.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><CheckCircle className="h-3 w-3 mr-0.5" /> Use</>}
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => handleDeleteEntry(entry)} className="text-[10px] h-6 px-2 text-destructive hover:text-destructive">
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Create Group Form */}
       {creatingGroup ? (
         <div className="border border-border rounded-xl p-3 space-y-2 bg-muted/30">
@@ -444,12 +399,6 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
           <Plus className="h-4 w-4" /> Add Environment Group
         </button>
       )}
-
-      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-        <div className="flex-1 h-px bg-border" />
-        <span>OR upload a single image below</span>
-        <div className="flex-1 h-px bg-border" />
-      </div>
     </div>
   );
 };
