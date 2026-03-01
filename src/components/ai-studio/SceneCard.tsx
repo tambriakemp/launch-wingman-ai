@@ -37,15 +37,24 @@ const SceneCard: React.FC<SceneCardProps> = ({
   const handleSavePrompt = () => { onUpdatePrompt(editedPrompt); setIsEditing(false); };
   const handleSaveVideoPrompt = () => { onUpdateVideoPrompt(editedVideoPrompt); setIsEditingVideo(false); };
 
-  const downloadImage = (e: React.MouseEvent) => {
+  const downloadImage = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (media.imageUrl) {
-      const link = document.createElement('a');
-      link.href = media.imageUrl;
-      link.download = `scene-${step.step_number}-${step.step_name.replace(/\s+/g, '-').toLowerCase()}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      try {
+        const response = await fetch(media.imageUrl);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `scene-${step.step_number}-${step.step_name.replace(/\s+/g, '-').toLowerCase()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      } catch {
+        // Fallback: open in same tab
+        window.location.href = media.imageUrl;
+      }
     }
   };
 
