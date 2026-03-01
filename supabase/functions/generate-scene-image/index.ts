@@ -6,6 +6,33 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// --- Scene/Environment mismatch detection ---
+const LOCATION_KEYWORDS: Record<string, RegExp> = {
+  bathroom: /\b(bathroom|vanity|mirror|restroom|powder room|shower|bathtub)\b/i,
+  kitchen: /\b(kitchen|cooking|stove|counter|baking|oven|fridge)\b/i,
+  bedroom: /\b(bedroom|bed|nightstand|pillow|duvet|sleeping)\b/i,
+  office: /\b(office|desk|workspace|study|computer)\b/i,
+  gym: /\b(gym|workout|fitness|exercise|treadmill|weights)\b/i,
+  outdoor: /\b(outdoor|park|garden|street|sidewalk|beach|lake|mountain)\b/i,
+  entryway: /\b(front door|entryway|hallway|foyer|doorstep|porch|entrance)\b/i,
+  closet: /\b(closet|wardrobe|dressing room)\b/i,
+  livingroom: /\b(living room|couch|sofa|tv|television|lounge)\b/i,
+};
+
+function detectSceneLocationMismatch(scenePrompt: string, envLabel?: string): string {
+  const sceneLocation = Object.entries(LOCATION_KEYWORDS).find(([, re]) => re.test(scenePrompt));
+  if (!sceneLocation) return "";
+
+  // If we have an environment label/context, check for mismatch
+  if (envLabel) {
+    const envLocation = Object.entries(LOCATION_KEYWORDS).find(([, re]) => re.test(envLabel));
+    if (envLocation && envLocation[0] !== sceneLocation[0]) {
+      return `IMPORTANT: The scene description specifies a "${sceneLocation[0]}" setting, but the environment reference image shows a different location. For this scene, IGNORE the background reference image and create the setting described in the scene prompt instead. Use the described "${sceneLocation[0]}" environment.`;
+    }
+  }
+  return "";
+}
+
 function getSceneBehaviorPrompt(sceneDescription: string): string {
   const d = sceneDescription.toLowerCase();
   if (/\b(bathroom|vanity|mirror|restroom|powder room)\b/.test(d)) {
@@ -27,7 +54,6 @@ function getSceneBehaviorPrompt(sceneDescription: string): string {
 }
 
 function extractImageFromResponse(data: any): string | null {
-  // Format 1: images array on message
   const images = data?.choices?.[0]?.message?.images;
   if (Array.isArray(images) && images.length > 0) {
     const img = images[0];
@@ -35,8 +61,6 @@ function extractImageFromResponse(data: any): string | null {
     if (img?.url) return img.url;
     if (img?.b64_json) return `data:image/png;base64,${img.b64_json}`;
   }
-
-  // Format 2: content array with image parts
   const content = data?.choices?.[0]?.message?.content;
   if (Array.isArray(content)) {
     for (const part of content) {
@@ -44,19 +68,14 @@ function extractImageFromResponse(data: any): string | null {
       if (part.type === "image" && part.image_url?.url) return part.image_url.url;
     }
   }
-
-  // Format 3: inline_data in parts
   const parts = data?.choices?.[0]?.message?.parts;
   if (Array.isArray(parts)) {
     for (const part of parts) {
       if (part.inline_data?.data) return `data:${part.inline_data.mime_type || 'image/png'};base64,${part.inline_data.data}`;
     }
   }
-
-  // Format 4: DALL-E style
   if (data?.data?.[0]?.b64_json) return `data:image/png;base64,${data.data[0].b64_json}`;
   if (data?.data?.[0]?.url) return data.data[0].url;
-
   return null;
 }
 
@@ -67,7 +86,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, outfitAnchorUrl } = await req.json();
+    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel } = await req.json();
 
     const stripPrefix = (img: string): string => {
       if (!img) return "";
@@ -76,7 +95,6 @@ serve(async (req) => {
       return c.replace(/\s/g, "");
     };
 
-    // Build content parts
     const contentParts: any[] = [];
 
     if (isUpscale && baseImageUrl) {
@@ -91,19 +109,29 @@ serve(async (req) => {
         }
       }
 
-      // Add outfit anchor image
+      // Add anchor image (previously generated scene = strongest identity reference)
       const hasOutfitLock = lockedRefs?.find((r: any) => r.type === 'outfit');
-      if (!hasOutfitLock && outfitAnchorUrl) {
-        contentParts.push({ type: "image_url", image_url: { url: outfitAnchorUrl } });
+      const hasCharacterLock = lockedRefs?.find((r: any) => r.type === 'character');
+      if (anchorImageUrl && !hasCharacterLock) {
+        contentParts.push({ type: "image_url", image_url: { url: anchorImageUrl } });
       }
 
-      // Add preview character or reference
-      if (previewCharacter && !lockedRefs?.find((r: any) => r.type === 'character')) {
-        const clean = stripPrefix(previewCharacter);
-        contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
-      } else if (referenceImage && !lockedRefs?.find((r: any) => r.type === 'character')) {
-        const clean = stripPrefix(referenceImage);
-        contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
+      // Add character reference: prefer previewCharacter (styled) over raw referenceImage
+      // Only send ONE character reference to avoid confusing the model
+      if (!hasCharacterLock) {
+        if (previewCharacter) {
+          const clean = stripPrefix(previewCharacter);
+          contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
+        } else if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
+          // Multi-photo references (face, profile, full body)
+          for (const refImg of referenceImages) {
+            const clean = stripPrefix(refImg);
+            contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
+          }
+        } else if (referenceImage) {
+          const clean = stripPrefix(referenceImage);
+          contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
+        }
       }
 
       if (productImage && config.creationMode === 'ugc') {
@@ -111,7 +139,7 @@ serve(async (req) => {
         contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
       }
 
-      // Add environment images (multi-angle group takes priority)
+      // Add environment images
       if (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 0 && !lockedRefs?.find((r: any) => r.type === 'environment')) {
         for (const envImg of environmentImages) {
           const clean = stripPrefix(envImg);
@@ -138,20 +166,36 @@ serve(async (req) => {
       // Build lock instructions
       let lockInstructions = "";
       if (lockedRefs?.find((r: any) => r.type === 'outfit')) lockInstructions += "Use the exact outfit shown in the outfit reference image. ";
-      if (lockedRefs?.find((r: any) => r.type === 'character')) lockInstructions += "Match the face and appearance from the character reference image closely. ";
+      if (hasCharacterLock) lockInstructions += "Match the face and appearance from the character reference image closely. ";
       if (lockedRefs?.find((r: any) => r.type === 'environment')) lockInstructions += "Use the provided background reference as the setting. ";
       if (environmentImages && environmentImages.length > 1) lockInstructions += "Multiple reference images of the same environment are provided showing different angles. Maintain exact spatial consistency — keep all fixtures, appliances, and furniture in their original positions. ";
 
-      let outfitAnchorInstruction = "";
-      if (!hasOutfitLock && outfitAnchorUrl) {
-        outfitAnchorInstruction = "One reference image shows the outfit from a previous scene. Please replicate this outfit consistently — same clothing, colors, and accessories.";
+      // Anchor image instruction (character + outfit identity)
+      let anchorInstruction = "";
+      if (anchorImageUrl && !hasCharacterLock) {
+        anchorInstruction = `CRITICAL IDENTITY REFERENCE: One of the provided images is a previously generated scene of this SAME character. The person in that image IS the character — replicate their EXACT face, body type, skin tone, hair texture, and proportions. Only change the pose, setting, and outfit as described below.`;
       }
+
+      // Multi-photo reference instruction
+      let multiRefInstruction = "";
+      if (!previewCharacter && referenceImages && referenceImages.length > 1 && !hasCharacterLock) {
+        multiRefInstruction = `Multiple reference photos of the SAME person are provided from different angles (face, profile, full body). Use ALL of them to accurately reproduce this person's exact appearance — facial structure, skin tone, body proportions, and features.`;
+      }
+
+      // Scene/environment mismatch guard
+      const mismatchGuard = detectSceneLocationMismatch(prompt, environmentLabel);
 
       const fullPrompt = `Create a high-quality, editorial-style fashion photograph.
 
+IDENTITY PRESERVATION (CRITICAL):
+- This is the SAME person across all images. Match their EXACT facial structure, bone structure, skin tone, body proportions, hair texture, and age.
+- Do NOT change the character's appearance, age, ethnicity, or body type between scenes.
+- Do NOT add or remove facial features, freckles, beauty marks, or other distinguishing characteristics.
+${anchorInstruction}
+${multiRefInstruction}
+
 Outfit: ${currentOutfit}
-${previewCharacter ? 'A reference image is provided showing the outfit to use. Replicate it consistently.' : ''}
-${outfitAnchorInstruction}
+${previewCharacter && !anchorImageUrl ? 'A reference image is provided showing the character with their styled look. Replicate the outfit consistently.' : ''}
 
 Scene: ${prompt}
 
@@ -163,8 +207,10 @@ Style details:
 
 ${lockInstructions}
 
-${config.exactMatch ? 'Closely match the facial features from the reference photo.' : 'Maintain visual consistency with reference images.'}
+${config.exactMatch ? 'STRICT MODE: Closely match the EXACT facial features, skin tone, and proportions from the reference photo. This person must be immediately recognizable as the same individual.' : ''}
 ${config.creationMode === 'ugc' ? 'Feature the product prominently in the scene.' : ''}
+
+${mismatchGuard}
 
 Style: editorial fashion photography, professional lighting, tasteful, fully clothed.
 
@@ -193,16 +239,13 @@ ${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmen
 
     const data = await response.json();
 
-    // Check for safety filter block
     const finishReason = data.choices?.[0]?.native_finish_reason || data.choices?.[0]?.finish_reason;
     if (finishReason === "IMAGE_SAFETY") {
-      console.warn("Image blocked by safety filter");
       return new Response(JSON.stringify({ error: "Image blocked by safety filter. Try a different prompt or scene description." }), {
         status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
-    
-    // Extract image from multiple possible response formats
+
     let imageUrl = extractImageFromResponse(data);
     if (!imageUrl) {
       console.error("No image in response:", JSON.stringify(data).substring(0, 500));
@@ -213,7 +256,6 @@ ${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmen
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Extract user ID from auth header
     const authHeader = req.headers.get("Authorization");
     let userId = "anonymous";
     if (authHeader) {
@@ -223,7 +265,6 @@ ${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmen
       if (user) userId = user.id;
     }
 
-    // Handle both base64 data URLs and regular URLs
     let bytes: Uint8Array;
     if (imageUrl.startsWith("data:")) {
       const base64Data = imageUrl.split(",")[1];
@@ -233,7 +274,6 @@ ${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmen
         bytes[i] = binaryString.charCodeAt(i);
       }
     } else {
-      // It's a URL - fetch and get bytes
       const imgResp = await fetch(imageUrl);
       bytes = new Uint8Array(await imgResp.arrayBuffer());
     }
@@ -247,7 +287,6 @@ ${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmen
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
-      // Return base64 as fallback
       return new Response(JSON.stringify({ imageUrl }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 

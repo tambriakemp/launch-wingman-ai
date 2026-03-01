@@ -17,6 +17,7 @@ const AIStudio = () => {
   const [appPhase, setAppPhase] = useState<AppPhase>('setup');
   const [config, setConfig] = useState<AppConfig>({ ...INITIAL_CONFIG });
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [productImage, setProductImage] = useState<string | null>(null);
   const [environmentImage, setEnvironmentImage] = useState<string | null>(null);
   const [environmentImages, setEnvironmentImages] = useState<string[]>([]);
@@ -72,15 +73,16 @@ const AIStudio = () => {
                 }
               });
 
-              // Find first available generated image as outfit anchor (if no explicit outfit lock)
-              let outfitAnchorUrl: string | undefined;
+              // Find first available generated image as anchor (character + outfit identity)
+              let anchorImageUrl: string | undefined;
               const hasOutfitLock = lockedRefs.some(r => r.type === 'outfit');
-              if (!hasOutfitLock) {
+              const hasCharacterLock = lockedRefs.some(r => r.type === 'character');
+              if (!hasOutfitLock || !hasCharacterLock) {
                 const firstGenerated = Object.values(generatedMedia).find(
                   m => m.imageUrl && !m.imageUrl.startsWith('data:')
                 );
                 if (firstGenerated?.imageUrl) {
-                  outfitAnchorUrl = firstGenerated.imageUrl;
+                  anchorImageUrl = firstGenerated.imageUrl;
                 }
               }
 
@@ -91,6 +93,7 @@ const AIStudio = () => {
                 body: {
                   prompt: task.step.image_prompt,
                   referenceImage,
+                  referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
                   productImage,
                   environmentImage,
                   environmentImages: environmentImages.length > 0 ? environmentImages : undefined,
@@ -100,7 +103,7 @@ const AIStudio = () => {
                   isFinalLook: task.step.is_final_look,
                   isUpscale: task.type === 'upscale',
                   baseImageUrl: task.baseImageUrl,
-                  outfitAnchorUrl
+                  anchorImageUrl
                 }
               });
 
@@ -175,11 +178,19 @@ const AIStudio = () => {
     if (!referenceImage) { toast({ title: "Upload Required", description: "Please upload a reference avatar first.", variant: "destructive" }); return; }
     setIsPreviewGenerating(true);
     try {
+      const previewBody = {
+        referenceImage,
+        referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
+        environmentImage,
+        environmentImages: environmentImages.length > 0 ? environmentImages : undefined,
+        config,
+        isFinalLook: false
+      };
       const promises = [
-        supabase.functions.invoke('generate-character-preview', { body: { referenceImage, environmentImage, environmentImages: environmentImages.length > 0 ? environmentImages : undefined, config, isFinalLook: false } })
+        supabase.functions.invoke('generate-character-preview', { body: previewBody })
       ];
       if (config.vlogCategory === 'Get Ready With Me' && config.creationMode === 'vlog') {
-        promises.push(supabase.functions.invoke('generate-character-preview', { body: { referenceImage, environmentImage, environmentImages: environmentImages.length > 0 ? environmentImages : undefined, config, isFinalLook: true } }));
+        promises.push(supabase.functions.invoke('generate-character-preview', { body: { ...previewBody, isFinalLook: true } }));
       }
       const results = await Promise.all(promises);
       if (results[0].error) throw results[0].error;
@@ -358,6 +369,7 @@ const AIStudio = () => {
   const confirmNewProject = () => {
     setConfig({ ...INITIAL_CONFIG });
     setReferenceImage(null);
+    setReferenceImages([]);
     setProductImage(null);
     setEnvironmentImage(null);
     setEnvironmentImages([]);
@@ -428,6 +440,7 @@ const AIStudio = () => {
             <StudioSetup
               config={config} setConfig={setConfig}
               referenceImage={referenceImage} setReferenceImage={setReferenceImage}
+              setReferenceImages={setReferenceImages}
               environmentImage={environmentImage} setEnvironmentImage={setEnvironmentImage}
               setEnvironmentImages={setEnvironmentImages}
               productImage={productImage} setProductImage={setProductImage}
