@@ -29,6 +29,7 @@ import {
   Library,
   PenTool,
   ShoppingBag,
+  Wand2,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
 import { LaunchelyLogo } from "@/components/ui/LaunchelyLogo";
@@ -76,6 +77,12 @@ const createNavSections = (projectId?: string): NavSection[] => [
       { id: "playbook", label: "Playbook", icon: BookOpen, href: `/playbook` },
       { id: "insights", label: "Insights", icon: Lightbulb, href: projectId ? `/projects/${projectId}/insights` : "#", isProOnly: true, requiresProject: !projectId },
       { id: "library", label: "Library", icon: FolderOpen, href: projectId ? `/projects/${projectId}/library` : "#", requiresProject: !projectId },
+    ],
+  },
+  {
+    heading: "Create",
+    items: [
+      { id: "ai-studio", label: "AI Studio", icon: Wand2, href: "/app/ai-studio", isProOnly: true },
     ],
   },
   {

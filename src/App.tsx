@@ -78,6 +78,7 @@ import ContentVaultCategory from "./pages/ContentVaultCategory";
 import HelpSupport from "./pages/HelpSupport";
 import HelpSupportTicket from "./pages/HelpSupportTicket";
 import Onboarding from "./pages/Onboarding";
+import AIStudio from "./pages/AIStudio";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -466,6 +467,16 @@ const App = () => (
                 <ProtectedAdminRoute>
                   <CampaignDetail />
                 </ProtectedAdminRoute>
+              }
+            />
+
+            {/* AI Studio */}
+            <Route
+              path="/app/ai-studio"
+              element={
+                <ProtectedRoute>
+                  <AIStudio />
+                </ProtectedRoute>
               }
             />
 
