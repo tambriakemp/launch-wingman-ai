@@ -1,66 +1,107 @@
 
 
-## Strict Character Identity Gates
+## Deep Analysis: Why the Character Is Not Staying Consistent
 
-### Problem
+### Root Causes Found
 
-The saved character photos (raw selfies) and the "Default Look" preview are visually different people because the AI re-interprets the face during preview generation. There's no enforcement that the generated preview character becomes THE canonical identity for all subsequent scenes. Raw reference photos can still leak through and compete with the preview.
+**Bug 1: Stale Closure -- `previewCharacterImage` is NULL when scenes generate**
 
-### Solution
+This is the PRIMARY cause. The queue processor `useEffect` (line 40) depends only on `[queue]`. It reads `previewCharacterImage` from a closure, but that value is captured from the render when the effect was created -- NOT from the latest state.
 
-Add strict identity gating at three levels:
+The flow:
+1. User generates preview -- `previewCharacterImage` is set to a base64 data URL
+2. User clicks "Generate Storyboard" -- storyboard generates, then `addToQueue(tasks)` is called
+3. The `useEffect` fires because `queue` changed, but it captured `previewCharacterImage` from a render BEFORE or DURING the queue update
+4. `activePreview` evaluates to `null`, so `previewCharacter: null` is sent
+5. Since `activePreview` is falsy, `referenceImage` and `referenceImages` are ALSO sent (the raw selfies) -- defeating the identity gate entirely
 
-### 1. Lock the Preview as the Canonical Identity
+**Evidence**: The network request bodies in the logs show NO `previewCharacter` field -- confirming it's `null`/`undefined` at execution time. Meanwhile `environmentImage` IS present, confirming other state vars are captured but the preview specifically is missing (set later in the flow).
 
-Once the "Default Look" preview is generated and the user advances to storyboard, that generated image becomes the ONLY character reference sent to `generate-scene-image`. Stop sending raw `referenceImage`/`referenceImages` alongside it.
+**Bug 2: `generatedMedia` is also stale in the closure**
 
-**File**: `src/pages/AIStudio.tsx`
-- In the queue processor, when `previewCharacterImage` exists, do NOT pass `referenceImage` or `referenceImages` to the edge function
-- Only fall back to raw references if no preview has been generated
+Line 69 reads `generatedMedia` from the closure for locked refs. During the first storyboard run, `generatedMedia` was just initialized to empty defaults (line 258-260), but the closure may capture the pre-initialization state.
 
-```
-// Current: sends both previewCharacter AND referenceImage
-body: { referenceImage, referenceImages, previewCharacter: activePreview, ... }
+**Bug 3: Preview not uploaded to storage**
 
-// Fixed: if preview exists, don't send raw refs
-body: {
-  referenceImage: activePreview ? undefined : referenceImage,
-  referenceImages: activePreview ? undefined : (referenceImages.length > 0 ? referenceImages : undefined),
-  previewCharacter: activePreview,
-  ...
-}
-```
+`generate-character-preview` returns the raw base64 image directly (line 184). Unlike `generate-scene-image` which uploads to Supabase storage and returns a public URL, the preview stays as a massive base64 string. This means:
+- Sending it in the request body makes payloads enormous
+- If it does get sent, `stripPrefix` on the edge function works correctly (strips `data:image/png;base64,` prefix), but the payload size could cause issues
 
-### 2. Block Storyboard Generation Without a Preview
+### Fix Plan
 
-Add a gate that prevents "Generate Full Storyboard" from being called unless a `previewCharacterImage` exists. This ensures the user has always validated the character look before proceeding.
+#### 1. Use refs instead of stale closures for critical identity state
+
+Store `previewCharacterImage`, `previewFinalLookImage`, `referenceImage`, `referenceImages`, `environmentImage`, `environmentImages`, and `generatedMedia` in refs that are always current. The `useEffect` will read from refs instead of closures.
 
 **File**: `src/pages/AIStudio.tsx`
-- In `handleGenerateStoryboard`, add a check: if `!previewCharacterImage`, show a toast error and return early
-- This already partially exists (the flow goes setup -> preview -> storyboard) but there's no hard gate preventing direct storyboard generation
+- Add `useRef` mirrors for the critical state variables
+- Update refs in `useEffect` syncs whenever state changes
+- Read from refs inside the queue processor
 
-### 3. Strengthen Edge Function to Reject Ambiguous Identity
+#### 2. Upload preview to storage for smaller payloads
 
-When `previewCharacter` is provided, explicitly tell the model to IGNORE any raw reference photos and use ONLY the preview as the identity source.
-
-**File**: `supabase/functions/generate-scene-image/index.ts`
-- When `previewCharacter` is present, skip adding `referenceImage`/`referenceImages` to `contentParts` entirely (server-side gate matching the client-side one)
-- Update the prompt to say: "A GENERATED CHARACTER PREVIEW is provided. This is the CANONICAL identity. Do NOT deviate from this person's appearance."
-
-### 4. Improve Preview-to-Scene Prompt Consistency
+Modify `generate-character-preview` to upload the generated image to the `ai-studio` storage bucket (same pattern as `generate-scene-image`) and return a public URL instead of raw base64.
 
 **File**: `supabase/functions/generate-character-preview/index.ts`
-- Add stronger identity anchoring language: "This generated image will serve as the canonical identity reference for all future scenes. Accuracy to the reference photo is paramount."
+- Add Supabase client import
+- After generating the image, upload to storage
+- Return the public URL
+
+#### 3. Handle URL-based previews in the scene generator
+
+Update `generate-scene-image` to handle the `previewCharacter` being a URL (not just base64). If it starts with `https://`, pass it directly as an `image_url` without base64 wrapping.
+
+**File**: `supabase/functions/generate-scene-image/index.ts`
+- In the `previewCharacter` handling block, check if it's a URL or base64
+- If URL, pass directly: `{ type: "image_url", image_url: { url: previewCharacter } }`
+- If base64, strip prefix and wrap as before
+
+### Technical Details
+
+#### Ref-based state access pattern:
+```text
+// Add refs that mirror critical state
+const previewCharacterRef = useRef(previewCharacterImage);
+const referenceImageRef = useRef(referenceImage);
+// ... etc
+
+// Sync refs whenever state changes
+useEffect(() => { previewCharacterRef.current = previewCharacterImage; }, [previewCharacterImage]);
+useEffect(() => { referenceImageRef.current = referenceImage; }, [referenceImage]);
+
+// In queue processor, read from refs:
+const activePreview = task.step.is_final_look && previewFinalLookRef.current
+  ? previewFinalLookRef.current : previewCharacterRef.current;
+```
+
+#### Preview upload pattern (matching scene generator):
+```text
+// In generate-character-preview, after getting imageUrl:
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+// Convert base64 to bytes, upload, return public URL
+```
+
+#### URL detection in scene generator:
+```text
+if (previewCharacter) {
+  if (previewCharacter.startsWith('http')) {
+    contentParts.push({ type: "image_url", image_url: { url: previewCharacter } });
+  } else {
+    const clean = stripPrefix(previewCharacter);
+    contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
+  }
+}
+```
 
 ### Files Changed
 
 | File | Change |
 |------|--------|
-| `src/pages/AIStudio.tsx` | Stop sending raw refs when preview exists; add storyboard gate requiring preview |
-| `supabase/functions/generate-scene-image/index.ts` | Server-side gate: skip raw refs when previewCharacter present; stronger canonical identity prompt |
-| `supabase/functions/generate-character-preview/index.ts` | Strengthen canonical identity language in preview generation prompt |
+| `src/pages/AIStudio.tsx` | Add refs for critical state; read from refs in queue processor to fix stale closure |
+| `supabase/functions/generate-character-preview/index.ts` | Upload preview image to storage; return public URL instead of raw base64 |
+| `supabase/functions/generate-scene-image/index.ts` | Handle URL-based `previewCharacter` (not just base64) |
 
-### Why This Works
+### Why This Will Work
 
-Currently the model receives multiple competing identity signals (raw selfie + AI preview + anchor image). By eliminating the raw photos once a preview exists, the model gets ONE clear identity to replicate. The preview becomes the single source of truth, and every scene references that same generated face.
+The stale closure is the smoking gun. The network logs prove `previewCharacter` is not being sent. By using refs, the queue processor will always access the CURRENT value of `previewCharacterImage`, which is set before the storyboard generation even starts. Combined with uploading the preview to storage (smaller payloads, reliable URLs), the identity gate will finally function as designed.
 
