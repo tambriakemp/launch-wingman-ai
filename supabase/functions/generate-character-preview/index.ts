@@ -64,7 +64,30 @@ serve(async (req) => {
 
     const contentParts: any[] = [];
 
-    // Add reference images: support multi-photo references
+    // Add identity anchor image FIRST (highest priority for vision models)
+    // This is a previously generated look used to enforce character consistency
+    let hasIdentityAnchor = false;
+    if (identityAnchorUrl) {
+      try {
+        const anchorResp = await fetch(identityAnchorUrl);
+        if (anchorResp.ok) {
+          const anchorBytes = new Uint8Array(await anchorResp.arrayBuffer());
+          let binary = '';
+          const chunkSize = 8192;
+          for (let i = 0; i < anchorBytes.length; i += chunkSize) {
+            binary += String.fromCharCode(...anchorBytes.subarray(i, i + chunkSize));
+          }
+          const anchorBase64 = btoa(binary);
+          contentParts.push({ type: "image_url", image_url: { url: `data:image/png;base64,${anchorBase64}` } });
+          hasIdentityAnchor = true;
+          console.log("Identity anchor placed FIRST in content array");
+        }
+      } catch (e) {
+        console.error("Failed to fetch identity anchor:", e);
+      }
+    }
+
+    // Add reference images AFTER identity anchor
     if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
       for (const refImg of referenceImages) {
         const refBase64 = stripBase64Prefix(refImg);
@@ -84,27 +107,6 @@ serve(async (req) => {
     } else if (environmentImage) {
       const envBase64 = stripBase64Prefix(environmentImage);
       contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${envBase64}` } });
-    }
-
-    // Add identity anchor image (generated final look used to anchor default look identity)
-    let hasIdentityAnchor = false;
-    if (identityAnchorUrl && !isFinalLook) {
-      try {
-        const anchorResp = await fetch(identityAnchorUrl);
-        if (anchorResp.ok) {
-          const anchorBytes = new Uint8Array(await anchorResp.arrayBuffer());
-          let binary = '';
-          const chunkSize = 8192;
-          for (let i = 0; i < anchorBytes.length; i += chunkSize) {
-            binary += String.fromCharCode(...anchorBytes.subarray(i, i + chunkSize));
-          }
-          const anchorBase64 = btoa(binary);
-          contentParts.push({ type: "image_url", image_url: { url: `data:image/png;base64,${anchorBase64}` } });
-          hasIdentityAnchor = true;
-        }
-      } catch (e) {
-        console.error("Failed to fetch identity anchor:", e);
-      }
     }
 
     // Sanitize outfit descriptions to avoid safety filter triggers
@@ -144,7 +146,7 @@ serve(async (req) => {
       : '';
 
     const identityAnchorNote = hasIdentityAnchor
-      ? `An already-generated canonical identity image of this EXACT person is also provided. The default look MUST depict the SAME individual — match their face shape, jawline, nose, lips, eyes, eyebrows, skin tone, and body proportions EXACTLY. This identity anchor is the ground truth for how this person looks.`
+      ? `CRITICAL: The FIRST image provided is an already-generated canonical identity of this EXACT person. It is the GROUND TRUTH. You MUST match this person's face shape, jawline, nose, lips, eyes, eyebrows, skin tone, and body proportions EXACTLY. The subsequent reference photos provide supplementary angles — use them for additional detail but defer to the first image for identity.`
       : '';
 
     let prompt = `Create a stylish fashion portrait based on the reference photo(s).
