@@ -1,50 +1,54 @@
 
 
-## Fix Identity Anchor Stack Overflow in Edge Function
+## Fix GRWM Character Consistency: Root Cause and Solution
 
-### Root Cause
+### Deep Analysis
 
-The edge function logs show:
-```
-Failed to fetch identity anchor: RangeError: Maximum call stack size exceeded
-```
+The stack overflow is fixed -- logs confirm the identity anchor image IS being fetched and included. But the character still doesn't match. Here's why:
 
-This occurs at line 96 of `generate-character-preview/index.ts`:
-```typescript
-const anchorBase64 = btoa(String.fromCharCode(...anchorBytes));
-```
+### Root Cause: Image Ordering + Prompt Priority
 
-The spread operator expands every byte of the image (often 200K+ bytes) as individual arguments to `String.fromCharCode()`. JavaScript engines have a call stack limit of roughly 50K-100K arguments, so this crashes silently. The `catch` block logs the error but continues without the anchor, so the default look generates without any identity reference from the final look -- producing an inconsistent character.
+The `contentParts` array sent to the AI model currently orders images like this:
 
-### Fix
-
-Replace the single spread-based `btoa` call with a chunked conversion that processes the byte array in safe batches (e.g., 8192 bytes at a time):
-
-**File: `supabase/functions/generate-character-preview/index.ts` (line 96)**
-
-Replace:
-```typescript
-const anchorBase64 = btoa(String.fromCharCode(...anchorBytes));
+```text
+1. Raw selfie reference photo(s)     <-- model treats these as primary
+2. Environment images
+3. Identity anchor (final look)       <-- buried as 3rd/4th image
+4. Text prompt
 ```
 
-With:
-```typescript
-let binary = '';
-const chunkSize = 8192;
-for (let i = 0; i < anchorBytes.length; i += chunkSize) {
-  binary += String.fromCharCode(...anchorBytes.subarray(i, i + chunkSize));
-}
-const anchorBase64 = btoa(binary);
+Vision models give **highest weight to the first images** in the content array. The raw selfie is a casual phone photo while the identity anchor is a polished AI render. The model sees the selfie first, interprets it loosely, and generates a "new" person inspired by it -- ignoring the more accurate anchor image that appears later.
+
+Additionally, the current approach generates the **final look first** and uses it to anchor the **default look**. This is backwards for GRWM:
+- The "default/before" look should establish canonical identity (simpler outfit, closer to the selfie)
+- The "final/after" look should preserve that identity while changing the styling
+
+### Solution: Two Changes
+
+**1. Reverse GRWM generation order (AIStudio.tsx)**
+
+Generate the default look FIRST (it's simpler, closer to the selfie, more likely to preserve identity). Then use that result as the identity anchor for the final look.
+
+```text
+Current:  Final Look -> anchor -> Default Look (wrong direction)
+Fixed:    Default Look -> anchor -> Final Look (correct direction)
 ```
 
-This processes the bytes in safe 8KB chunks, avoiding the stack overflow while producing identical base64 output.
+**2. Place identity anchor FIRST in contentParts (edge function)**
 
-### Files Changed
+When an identity anchor is provided, push it to the FRONT of the content array, before any selfie references. Add explicit prompt instructions telling the model: "The first image is the canonical identity -- match this person exactly. Subsequent reference photos provide supplementary detail."
+
+### File Changes
 
 | File | Change |
 |------|--------|
-| `supabase/functions/generate-character-preview/index.ts` | Replace line 96 with chunked base64 conversion to fix stack overflow |
+| `src/pages/AIStudio.tsx` | Reverse GRWM flow: generate default look first, then final look with `identityAnchorUrl` pointing to the default look result |
+| `supabase/functions/generate-character-preview/index.ts` | Move identity anchor to the FRONT of `contentParts` (before selfie refs); update prompt to explicitly state "first image is ground truth identity" |
 
-### Expected Result
+### Why This Works
 
-After this fix, the identity anchor image will be successfully fetched and included as a reference when generating the default look. The AI model will receive both the original selfie references AND the already-generated final look image, producing a default look that matches the same person.
+- The default look (casual outfit, minimal styling) is the closest representation to the raw selfie, so the AI model preserves identity most accurately
+- The final look then receives BOTH the selfie references AND the already-accurate default look as anchor
+- By placing the anchor image first in the content array, the model prioritizes it over the raw selfie
+- The prompt reinforces this ordering with explicit instructions
+
