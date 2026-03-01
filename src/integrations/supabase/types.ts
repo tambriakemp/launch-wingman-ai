@@ -47,6 +47,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_studio_environments: {
+        Row: {
+          created_at: string
+          file_path: string
+          id: string
+          label: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_path: string
+          id?: string
+          label: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_path?: string
+          id?: string
+          label?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_studio_projects: {
         Row: {
           character_preview_url: string | null
