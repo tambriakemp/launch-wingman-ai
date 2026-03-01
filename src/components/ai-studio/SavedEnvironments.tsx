@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 interface SavedEnvironmentsProps {
   onSelect: (base64: string) => void;
   onSelectMultiple?: (base64Images: string[]) => void;
+  activeGroupId?: string | null;
 }
 
 const BUCKET = 'ai-studio';
@@ -27,7 +28,7 @@ interface EnvironmentGroup {
   images: EnvironmentEntry[];
 }
 
-const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelectMultiple }) => {
+const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelectMultiple, activeGroupId }) => {
   const [groups, setGroups] = useState<EnvironmentGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -45,7 +46,7 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
 
   // Selecting / loading
   const [selectingGroupId, setSelectingGroupId] = useState<string | null>(null);
-
+  const [internalActiveGroupId, setInternalActiveGroupId] = useState<string | null>(activeGroupId ?? null);
   // Expanded groups
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
@@ -182,6 +183,7 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
             reader.readAsDataURL(blob);
           });
           onSelect(b64);
+          setInternalActiveGroupId(group.id);
           toast.success(`"${group.name}" applied!`);
         } catch {
           toast.error('Failed to load image.');
@@ -207,6 +209,7 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
       }
       onSelectMultiple(base64Array);
       if (base64Array.length > 0) onSelect(base64Array[0]);
+      setInternalActiveGroupId(group.id);
       toast.success(`"${group.name}" applied (${base64Array.length} reference images)!`);
     } catch {
       toast.error('Failed to load images.');
@@ -277,14 +280,19 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
       {/* Environment Groups */}
       {groups.map(group => (
         <Collapsible key={group.id} open={expandedGroups.has(group.id)} onOpenChange={() => toggleExpanded(group.id)}>
-          <div className="bg-muted/50 border border-border rounded-lg overflow-hidden">
+          <div className={`bg-muted/50 border-2 rounded-lg overflow-hidden ${internalActiveGroupId === group.id ? 'border-primary ring-2 ring-primary/20' : 'border-border'}`}>
             <CollapsibleTrigger asChild>
               <button className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted/80 transition-colors">
                 <div className="flex items-center gap-2">
                   {expandedGroups.has(group.id) ? <ChevronDown className="h-3 w-3 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 text-muted-foreground" />}
                   <Images className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-xs font-medium text-foreground">{group.name}</span>
-                  <span className="text-[10px] text-muted-foreground">({group.images.length} photos)</span>
+                   <span className="text-xs font-medium text-foreground">{group.name}</span>
+                   <span className="text-[10px] text-muted-foreground">({group.images.length} photos)</span>
+                   {internalActiveGroupId === group.id && (
+                     <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase text-primary bg-primary/10 border border-primary/30 rounded-full px-1.5 py-0.5">
+                       <CheckCircle className="h-2.5 w-2.5" /> In Use
+                     </span>
+                   )}
                 </div>
                 <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                   <Button size="sm" variant="default" onClick={() => handleUseGroup(group)} disabled={selectingGroupId === group.id || group.images.length === 0} className="text-[10px] h-6 px-2">
