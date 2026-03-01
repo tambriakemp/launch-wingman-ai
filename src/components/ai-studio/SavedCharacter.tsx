@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 interface SavedCharacterProps {
   onSelect: (base64: string) => void;
   onSelectMultiple?: (base64s: string[]) => void;
+  isActive?: boolean;
 }
 
 const BUCKET = 'ai-studio';
@@ -14,8 +15,9 @@ const MAX_REFS = 3;
 const REF_LABELS = ['Face (Front)', 'Profile (Side)', 'Full Body'];
 const getPath = (userId: string, index: number) => `characters/${userId}/saved-reference-${index}.png`;
 
-const SavedCharacter: React.FC<SavedCharacterProps> = ({ onSelect, onSelectMultiple }) => {
+const SavedCharacter: React.FC<SavedCharacterProps> = ({ onSelect, onSelectMultiple, isActive }) => {
   const [thumbnails, setThumbnails] = useState<(string | null)[]>([null, null, null]);
+  const [internalActive, setInternalActive] = useState(isActive ?? false);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<number | null>(null);
   const [selecting, setSelecting] = useState(false);
@@ -111,6 +113,7 @@ const SavedCharacter: React.FC<SavedCharacterProps> = ({ onSelect, onSelectMulti
         onSelectMultiple(base64s);
       }
       setSelecting(false);
+      setInternalActive(true);
       toast.success('Character photo(s) applied!');
     } catch {
       toast.error('Failed to load image.');
@@ -133,9 +136,16 @@ const SavedCharacter: React.FC<SavedCharacterProps> = ({ onSelect, onSelectMulti
 
   return (
     <div className="space-y-3">
-      <label className="block text-xs font-bold uppercase text-muted-foreground">
-        Saved Character {filledCount > 0 && <span className="text-primary">({filledCount}/{MAX_REFS})</span>}
-      </label>
+      <div className="flex items-center justify-between">
+        <label className="block text-xs font-bold uppercase text-muted-foreground">
+          Saved Character {filledCount > 0 && <span className="text-primary">({filledCount}/{MAX_REFS})</span>}
+        </label>
+        {internalActive && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase text-primary bg-primary/10 border border-primary/30 rounded-full px-2 py-0.5">
+            <CheckCircle className="h-3 w-3" /> In Use
+          </span>
+        )}
+      </div>
 
       {hasAnyPhoto ? (
         <div className="space-y-3">
@@ -147,7 +157,7 @@ const SavedCharacter: React.FC<SavedCharacterProps> = ({ onSelect, onSelectMulti
                     <img
                       src={url}
                       alt={REF_LABELS[i]}
-                      className="w-full aspect-square rounded-lg object-cover border border-border"
+                      className={`w-full aspect-square rounded-lg object-cover border-2 ${internalActive ? 'border-primary ring-2 ring-primary/20' : 'border-border'}`}
                     />
                     <button
                       onClick={() => handleDelete(i)}
