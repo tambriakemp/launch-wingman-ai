@@ -93,7 +93,12 @@ serve(async (req) => {
         const anchorResp = await fetch(identityAnchorUrl);
         if (anchorResp.ok) {
           const anchorBytes = new Uint8Array(await anchorResp.arrayBuffer());
-          const anchorBase64 = btoa(String.fromCharCode(...anchorBytes));
+          let binary = '';
+          const chunkSize = 8192;
+          for (let i = 0; i < anchorBytes.length; i += chunkSize) {
+            binary += String.fromCharCode(...anchorBytes.subarray(i, i + chunkSize));
+          }
+          const anchorBase64 = btoa(binary);
           contentParts.push({ type: "image_url", image_url: { url: `data:image/png;base64,${anchorBase64}` } });
           hasIdentityAnchor = true;
         }
