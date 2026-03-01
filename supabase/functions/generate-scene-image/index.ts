@@ -49,42 +49,51 @@ serve(async (req) => {
 
     const { prompt, referenceImage, productImage, environmentImage, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, outfitAnchorUrl } = await req.json();
 
+    const stripPrefix = (img: string): string => {
+      if (!img) return "";
+      let c = img.trim();
+      if (c.startsWith("data:") && c.includes(",")) c = c.split(",")[1];
+      return c.replace(/\s/g, "");
+    };
+
     // Build content parts
     const contentParts: any[] = [];
 
     if (isUpscale && baseImageUrl) {
-      // Upscale mode
       contentParts.push({ type: "image_url", image_url: { url: baseImageUrl } });
       contentParts.push({ type: "text", text: "Enhance this image to high quality. Maintain exact details, just increase clarity and resolution." });
     } else {
       // Add locked references first (high priority)
       if (lockedRefs && lockedRefs.length > 0) {
         for (const ref of lockedRefs) {
-          contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${ref.base64}` } });
+          const clean = stripPrefix(ref.base64);
+          contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
         }
       }
 
-      // Add outfit anchor image (auto-passed from first generated scene)
+      // Add outfit anchor image
       const hasOutfitLock = lockedRefs?.find((r: any) => r.type === 'outfit');
       if (!hasOutfitLock && outfitAnchorUrl) {
         contentParts.push({ type: "image_url", image_url: { url: outfitAnchorUrl } });
       }
 
-      // Add preview character (medium priority)
+      // Add preview character or reference
       if (previewCharacter && !lockedRefs?.find((r: any) => r.type === 'character')) {
-        const base64 = previewCharacter.includes(',') ? previewCharacter.split(',')[1] : previewCharacter;
-        contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64}` } });
+        const clean = stripPrefix(previewCharacter);
+        contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
       } else if (referenceImage && !lockedRefs?.find((r: any) => r.type === 'character')) {
-        contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${referenceImage}` } });
+        const clean = stripPrefix(referenceImage);
+        contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
       }
 
       if (productImage && config.creationMode === 'ugc') {
-        contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${productImage}` } });
+        const clean = stripPrefix(productImage);
+        contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
       }
 
       if (environmentImage && !lockedRefs?.find((r: any) => r.type === 'environment')) {
-        const envBase64 = environmentImage.includes(',') ? environmentImage.split(',')[1] : environmentImage;
-        contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${envBase64}` } });
+        const clean = stripPrefix(environmentImage);
+        contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
       }
 
       // Build style description
@@ -102,38 +111,35 @@ serve(async (req) => {
 
       // Build lock instructions
       let lockInstructions = "";
-      if (lockedRefs?.find((r: any) => r.type === 'outfit')) lockInstructions += "LOCKED OUTFIT: STRICTLY COPY the outfit from the reference image. ";
-      if (lockedRefs?.find((r: any) => r.type === 'character')) lockInstructions += "LOCKED CHARACTER: STRICTLY CLONE the face from the reference image. ";
-      if (lockedRefs?.find((r: any) => r.type === 'environment')) lockInstructions += "LOCKED ENVIRONMENT: USE the provided background reference. ";
+      if (lockedRefs?.find((r: any) => r.type === 'outfit')) lockInstructions += "Use the exact outfit shown in the outfit reference image. ";
+      if (lockedRefs?.find((r: any) => r.type === 'character')) lockInstructions += "Match the face and appearance from the character reference image closely. ";
+      if (lockedRefs?.find((r: any) => r.type === 'environment')) lockInstructions += "Use the provided background reference as the setting. ";
 
-      // Build outfit anchor instruction
       let outfitAnchorInstruction = "";
       if (!hasOutfitLock && outfitAnchorUrl) {
-        outfitAnchorInstruction = "OUTFIT ANCHOR IMAGE PROVIDED: One of the reference images shows the EXACT outfit from a previous scene. You MUST replicate this outfit IDENTICALLY - same clothing, colors, accessories, styling. Any deviation is unacceptable.";
+        outfitAnchorInstruction = "One reference image shows the outfit from a previous scene. Please replicate this outfit consistently — same clothing, colors, and accessories.";
       }
 
-      const fullPrompt = `Generate a photorealistic, high-quality image.
+      const fullPrompt = `Create a high-quality, editorial-style fashion photograph.
 
-CRITICAL - OUTFIT CONSISTENCY (HIGHEST PRIORITY):
-You MUST dress the character in EXACTLY this outfit: ${currentOutfit}
-- Do NOT change, modify, add to, remove from, or reinterpret ANY part of the clothing.
-- Do NOT change colors, patterns, or layering of the outfit.
-- The outfit must remain IDENTICAL across all scenes.
-${previewCharacter ? '- A reference image is provided showing the EXACT outfit to use. COPY it precisely.' : ''}
+Outfit: ${currentOutfit}
+${previewCharacter ? 'A reference image is provided showing the outfit to use. Replicate it consistently.' : ''}
 ${outfitAnchorInstruction}
 
-Scene to depict: ${prompt}
+Scene: ${prompt}
 
-STYLE REQUIREMENTS:
-- Hairstyle: ${hair}
+Style details:
+- Hair: ${hair}
 - Makeup: ${makeup}
-- Skin: ${skin}
+- Skin tone: ${skin}
 - Nails: ${nails}
 
 ${lockInstructions}
 
-${config.exactMatch ? 'CRITICAL: Clone the EXACT face, skin tone, and body from the reference image.' : 'Ensure consistency with reference images.'}
-${config.creationMode === 'ugc' ? 'Feature the product prominently.' : ''}`;
+${config.exactMatch ? 'Closely match the facial features from the reference photo.' : 'Maintain visual consistency with reference images.'}
+${config.creationMode === 'ugc' ? 'Feature the product prominently in the scene.' : ''}
+
+Style: editorial fashion photography, professional lighting, tasteful, fully clothed.`;
 
       contentParts.push({ type: "text", text: fullPrompt });
     }
