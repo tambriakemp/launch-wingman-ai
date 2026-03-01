@@ -36,6 +36,26 @@ const AIStudio = () => {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const processingRef = useRef(false);
 
+  // Refs to avoid stale closures in the queue processor
+  const previewCharacterRef = useRef(previewCharacterImage);
+  const previewFinalLookRef = useRef(previewFinalLookImage);
+  const referenceImageRef = useRef(referenceImage);
+  const referenceImagesRef = useRef(referenceImages);
+  const environmentImageRef = useRef(environmentImage);
+  const environmentImagesRef = useRef(environmentImages);
+  const generatedMediaRef = useRef(generatedMedia);
+  const storyboardRef = useRef(storyboard);
+
+  // Keep refs synced with state
+  useEffect(() => { previewCharacterRef.current = previewCharacterImage; }, [previewCharacterImage]);
+  useEffect(() => { previewFinalLookRef.current = previewFinalLookImage; }, [previewFinalLookImage]);
+  useEffect(() => { referenceImageRef.current = referenceImage; }, [referenceImage]);
+  useEffect(() => { referenceImagesRef.current = referenceImages; }, [referenceImages]);
+  useEffect(() => { environmentImageRef.current = environmentImage; }, [environmentImage]);
+  useEffect(() => { environmentImagesRef.current = environmentImages; }, [environmentImages]);
+  useEffect(() => { generatedMediaRef.current = generatedMedia; }, [generatedMedia]);
+  useEffect(() => { storyboardRef.current = storyboard; }, [storyboard]);
+
   // Queue processor
   useEffect(() => {
     const processQueue = async () => {
@@ -65,8 +85,18 @@ const AIStudio = () => {
         for (const task of currentBatch) {
           try {
             if (task.type === 'generate' || task.type === 'upscale') {
+              // Read from refs to get CURRENT values (not stale closure values)
+              const currentGeneratedMedia = generatedMediaRef.current;
+              const currentPreviewCharacter = previewCharacterRef.current;
+              const currentPreviewFinalLook = previewFinalLookRef.current;
+              const currentReferenceImage = referenceImageRef.current;
+              const currentReferenceImages = referenceImagesRef.current;
+              const currentEnvironmentImage = environmentImageRef.current;
+              const currentEnvironmentImages = environmentImagesRef.current;
+              const currentStoryboard = storyboardRef.current;
+
               const lockedRefs: { type: string; base64: string }[] = [];
-              Object.values(generatedMedia).forEach((m) => {
+              Object.values(currentGeneratedMedia).forEach((m) => {
                 if (m.imageUrl) {
                   const base64 = m.imageUrl.includes(',') ? m.imageUrl.split(',')[1] : m.imageUrl;
                   if (m.lockedCharacter) lockedRefs.push({ type: 'character', base64 });
@@ -81,7 +111,7 @@ const AIStudio = () => {
                 const hasOutfitLock = lockedRefs.some(r => r.type === 'outfit');
                 const hasCharacterLock = lockedRefs.some(r => r.type === 'character');
                 if (!hasOutfitLock || !hasCharacterLock) {
-                  const firstGenerated = Object.values(generatedMedia).find(
+                  const firstGenerated = Object.values(currentGeneratedMedia).find(
                     m => m.imageUrl && !m.imageUrl.startsWith('data:')
                   );
                   if (firstGenerated?.imageUrl) {
@@ -90,27 +120,29 @@ const AIStudio = () => {
                 }
               }
 
-              const activePreview = task.step.is_final_look && previewFinalLookImage
-                ? previewFinalLookImage : previewCharacterImage;
+              const activePreview = task.step.is_final_look && currentPreviewFinalLook
+                ? currentPreviewFinalLook : currentPreviewCharacter;
 
               // Build scene context from storyboard for continuity
               let previousScenePrompt: string | undefined;
               let nextScenePrompt: string | undefined;
-              if (storyboard) {
-                if (task.index > 0) previousScenePrompt = storyboard.steps[task.index - 1]?.image_prompt;
-                if (task.index < storyboard.steps.length - 1) nextScenePrompt = storyboard.steps[task.index + 1]?.image_prompt;
+              if (currentStoryboard) {
+                if (task.index > 0) previousScenePrompt = currentStoryboard.steps[task.index - 1]?.image_prompt;
+                if (task.index < currentStoryboard.steps.length - 1) nextScenePrompt = currentStoryboard.steps[task.index + 1]?.image_prompt;
               }
+
+              console.log(`[Identity Gate] Scene ${task.index + 1}: activePreview=${activePreview ? 'SET (' + activePreview.substring(0, 50) + '...)' : 'NULL'}`);
 
               // STRICT IDENTITY GATE: If preview exists, it is the ONLY character reference.
               // Raw selfies are NOT sent to avoid competing identity signals.
               const { data, error } = await supabase.functions.invoke('generate-scene-image', {
                 body: {
                   prompt: task.step.image_prompt,
-                  referenceImage: activePreview ? undefined : referenceImage,
-                  referenceImages: activePreview ? undefined : (referenceImages.length > 0 ? referenceImages : undefined),
+                  referenceImage: activePreview ? undefined : currentReferenceImage,
+                  referenceImages: activePreview ? undefined : (currentReferenceImages.length > 0 ? currentReferenceImages : undefined),
                   productImage,
-                  environmentImage,
-                  environmentImages: environmentImages.length > 0 ? environmentImages : undefined,
+                  environmentImage: currentEnvironmentImage,
+                  environmentImages: currentEnvironmentImages.length > 0 ? currentEnvironmentImages : undefined,
                   previewCharacter: activePreview,
                   config: task.config,
                   lockedRefs,
@@ -121,7 +153,7 @@ const AIStudio = () => {
                   previousScenePrompt,
                   nextScenePrompt,
                   sceneNumber: task.index + 1,
-                  totalScenes: storyboard?.steps.length
+                  totalScenes: currentStoryboard?.steps.length
                 }
               });
 
