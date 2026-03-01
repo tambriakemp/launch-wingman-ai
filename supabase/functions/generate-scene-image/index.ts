@@ -103,8 +103,29 @@ ${config.creationMode === 'ugc' ? 'Feature the product prominently.' : ''}`;
     }
 
     const data = await response.json();
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    if (!imageUrl) throw new Error("No image generated");
+    
+    // Extract image from multiple possible response formats
+    let imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    if (!imageUrl) {
+      // Try images array with different structure
+      const images = data.choices?.[0]?.message?.images;
+      if (Array.isArray(images) && images.length > 0) {
+        imageUrl = images[0]?.url || images[0]?.image_url?.url || (images[0]?.b64_json ? `data:image/png;base64,${images[0].b64_json}` : null);
+      }
+    }
+    if (!imageUrl) {
+      // Try content array
+      const content = data.choices?.[0]?.message?.content;
+      if (Array.isArray(content)) {
+        for (const part of content) {
+          if (part.type === "image_url" && part.image_url?.url) { imageUrl = part.image_url.url; break; }
+        }
+      }
+    }
+    if (!imageUrl) {
+      console.error("No image in response:", JSON.stringify(data).substring(0, 500));
+      throw new Error("No image generated");
+    }
 
     // Upload to storage
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
