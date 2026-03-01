@@ -86,7 +86,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel } = await req.json();
+    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel, previousScenePrompt, nextScenePrompt, sceneNumber, totalScenes } = await req.json();
 
     const stripPrefix = (img: string): string => {
       if (!img) return "";
@@ -185,6 +185,18 @@ serve(async (req) => {
       // Scene/environment mismatch guard
       const mismatchGuard = detectSceneLocationMismatch(prompt, environmentLabel);
 
+      // Scene continuity context
+      let sceneContextInstruction = "";
+      if (sceneNumber && totalScenes) {
+        sceneContextInstruction += `\nSCENE CONTEXT: This is scene ${sceneNumber} of ${totalScenes}.`;
+      }
+      if (previousScenePrompt) {
+        sceneContextInstruction += `\nPREVIOUS SCENE: "${previousScenePrompt}"\nMaintain visual continuity from the previous scene — same lighting, time of day, and spatial context. The character's position and action should naturally follow from the previous scene.`;
+      }
+      if (nextScenePrompt) {
+        sceneContextInstruction += `\nNEXT SCENE: "${nextScenePrompt}"\nAnticipate the transition — the character's pose and position should naturally lead into the next scene.`;
+      }
+
       const fullPrompt = `Create a high-quality, editorial-style fashion photograph.
 
 IDENTITY PRESERVATION (CRITICAL):
@@ -211,6 +223,7 @@ ${config.exactMatch ? 'STRICT MODE: Closely match the EXACT facial features, ski
 ${config.creationMode === 'ugc' ? 'Feature the product prominently in the scene.' : ''}
 
 ${mismatchGuard}
+${sceneContextInstruction}
 
 Style: editorial fashion photography, professional lighting, tasteful, fully clothed.
 

@@ -87,6 +87,13 @@ ${config.productDescription ? `- Product: ${config.productDescription}` : ''}
 ${narrativeContext}
 ${scriptInstruction}
 
+VISUAL CONTINUITY RULES (CRITICAL):
+- Each image_prompt MUST reference the previous scene's ending state and create a natural transition to the next scene.
+- Include lighting progression throughout the storyboard (e.g., morning light → afternoon → golden hour → evening, if applicable).
+- Ensure spatial continuity: if the character leaves one room, the next scene should show them entering the connected space. Include transition cues (e.g., "continuing from the hallway into the kitchen").
+- Maintain consistent time-of-day, weather, and ambient lighting across consecutive scenes unless a deliberate time skip is part of the narrative.
+- Each scene's image_prompt should describe the character's pose or action in a way that naturally follows from the previous scene's action.
+
 Generate 13 to 15 steps. For each step provide: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction, image_prompt, video_prompt, script, is_final_look (boolean).
 Also provide an analysis object with: face_structure, hair, skin_tone, makeup_accessories, clothing_vibe.`;
 

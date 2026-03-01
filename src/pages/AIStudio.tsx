@@ -60,7 +60,9 @@ const AIStudio = () => {
       });
 
       try {
-        await Promise.all(currentBatch.map(async (task) => {
+        // Process sequentially so each scene can use the previous as anchor
+        let lastGeneratedUrl: string | undefined;
+        for (const task of currentBatch) {
           try {
             if (task.type === 'generate' || task.type === 'upscale') {
               const lockedRefs: { type: string; base64: string }[] = [];
@@ -73,21 +75,31 @@ const AIStudio = () => {
                 }
               });
 
-              // Find first available generated image as anchor (character + outfit identity)
-              let anchorImageUrl: string | undefined;
-              const hasOutfitLock = lockedRefs.some(r => r.type === 'outfit');
-              const hasCharacterLock = lockedRefs.some(r => r.type === 'character');
-              if (!hasOutfitLock || !hasCharacterLock) {
-                const firstGenerated = Object.values(generatedMedia).find(
-                  m => m.imageUrl && !m.imageUrl.startsWith('data:')
-                );
-                if (firstGenerated?.imageUrl) {
-                  anchorImageUrl = firstGenerated.imageUrl;
+              // Use the last sequentially generated image as anchor, or fall back to first available
+              let anchorImageUrl: string | undefined = lastGeneratedUrl;
+              if (!anchorImageUrl) {
+                const hasOutfitLock = lockedRefs.some(r => r.type === 'outfit');
+                const hasCharacterLock = lockedRefs.some(r => r.type === 'character');
+                if (!hasOutfitLock || !hasCharacterLock) {
+                  const firstGenerated = Object.values(generatedMedia).find(
+                    m => m.imageUrl && !m.imageUrl.startsWith('data:')
+                  );
+                  if (firstGenerated?.imageUrl) {
+                    anchorImageUrl = firstGenerated.imageUrl;
+                  }
                 }
               }
 
               const activePreview = task.step.is_final_look && previewFinalLookImage
                 ? previewFinalLookImage : previewCharacterImage;
+
+              // Build scene context from storyboard for continuity
+              let previousScenePrompt: string | undefined;
+              let nextScenePrompt: string | undefined;
+              if (storyboard) {
+                if (task.index > 0) previousScenePrompt = storyboard.steps[task.index - 1]?.image_prompt;
+                if (task.index < storyboard.steps.length - 1) nextScenePrompt = storyboard.steps[task.index + 1]?.image_prompt;
+              }
 
               const { data, error } = await supabase.functions.invoke('generate-scene-image', {
                 body: {
@@ -103,12 +115,19 @@ const AIStudio = () => {
                   isFinalLook: task.step.is_final_look,
                   isUpscale: task.type === 'upscale',
                   baseImageUrl: task.baseImageUrl,
-                  anchorImageUrl
+                  anchorImageUrl,
+                  previousScenePrompt,
+                  nextScenePrompt,
+                  sceneNumber: task.index + 1,
+                  totalScenes: storyboard?.steps.length
                 }
               });
 
               if (error) throw error;
               if (data?.error) throw new Error(data.error);
+
+              // Track for next scene's anchor
+              if (data.imageUrl) lastGeneratedUrl = data.imageUrl;
 
               setGeneratedMedia(prev => ({
                 ...prev,
@@ -130,7 +149,7 @@ const AIStudio = () => {
               }
             }));
           }
-        }));
+        }
       } finally {
         processingRef.current = false;
         setIsProcessing(false);
