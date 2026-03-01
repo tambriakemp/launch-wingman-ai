@@ -71,6 +71,18 @@ const AIStudio = () => {
                 }
               });
 
+              // Find first available generated image as outfit anchor (if no explicit outfit lock)
+              let outfitAnchorUrl: string | undefined;
+              const hasOutfitLock = lockedRefs.some(r => r.type === 'outfit');
+              if (!hasOutfitLock) {
+                const firstGenerated = Object.values(generatedMedia).find(
+                  m => m.imageUrl && !m.imageUrl.startsWith('data:')
+                );
+                if (firstGenerated?.imageUrl) {
+                  outfitAnchorUrl = firstGenerated.imageUrl;
+                }
+              }
+
               const activePreview = task.step.is_final_look && previewFinalLookImage
                 ? previewFinalLookImage : previewCharacterImage;
 
@@ -85,7 +97,8 @@ const AIStudio = () => {
                   lockedRefs,
                   isFinalLook: task.step.is_final_look,
                   isUpscale: task.type === 'upscale',
-                  baseImageUrl: task.baseImageUrl
+                  baseImageUrl: task.baseImageUrl,
+                  outfitAnchorUrl
                 }
               });
 
