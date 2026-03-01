@@ -47,6 +47,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_studio_projects: {
+        Row: {
+          character_preview_url: string | null
+          config: Json
+          created_at: string
+          final_look_preview_url: string | null
+          id: string
+          mode: string
+          name: string
+          status: string
+          storyboard: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          character_preview_url?: string | null
+          config?: Json
+          created_at?: string
+          final_look_preview_url?: string | null
+          id?: string
+          mode?: string
+          name?: string
+          status?: string
+          storyboard?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          character_preview_url?: string | null
+          config?: Json
+          created_at?: string
+          final_look_preview_url?: string | null
+          id?: string
+          mode?: string
+          name?: string
+          status?: string
+          storyboard?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_usage_logs: {
         Row: {
           created_at: string
