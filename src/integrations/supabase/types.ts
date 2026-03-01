@@ -47,10 +47,32 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_studio_environment_groups: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_studio_environments: {
         Row: {
           created_at: string
           file_path: string
+          group_id: string | null
           id: string
           label: string
           user_id: string
@@ -58,6 +80,7 @@ export type Database = {
         Insert: {
           created_at?: string
           file_path: string
+          group_id?: string | null
           id?: string
           label: string
           user_id: string
@@ -65,11 +88,20 @@ export type Database = {
         Update: {
           created_at?: string
           file_path?: string
+          group_id?: string | null
           id?: string
           label?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_studio_environments_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "ai_studio_environment_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_studio_projects: {
         Row: {

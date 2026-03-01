@@ -19,6 +19,7 @@ interface StudioSetupProps {
   setReferenceImage: (img: string | null) => void;
   environmentImage: string | null;
   setEnvironmentImage: (img: string | null) => void;
+  setEnvironmentImages?: (imgs: string[]) => void;
   productImage: string | null;
   setProductImage: (img: string | null) => void;
   isProcessing: boolean;
@@ -38,6 +39,7 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
   config, setConfig,
   referenceImage, setReferenceImage,
   environmentImage, setEnvironmentImage,
+  setEnvironmentImages,
   productImage, setProductImage,
   isProcessing, isPreviewGenerating,
   showSafetyTerms, setShowSafetyTerms,
@@ -79,7 +81,7 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
               </div>
               <div>
                 <Label label="Environment / Setting (Optional)" />
-                <SavedEnvironments onSelect={setEnvironmentImage} />
+                <SavedEnvironments onSelect={setEnvironmentImage} onSelectMultiple={setEnvironmentImages} />
                 <UploadZone onImageSelected={setEnvironmentImage} isProcessing={isProcessing} title="Background Reference" subtext="One-time use. Upload a room or location." />
               </div>
               {config.creationMode === 'ugc' && (
