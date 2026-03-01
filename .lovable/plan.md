@@ -1,65 +1,86 @@
 
 
-## Add Saved Environment Photos (Multiple, Labeled)
+## Save Aesthetic Look Presets
 
-Allow users to save multiple labeled environment/setting photos (e.g., "Kitchen", "Office", "Living Room") and select one to use as the environment reference.
+Add a "Save This Look" button at the bottom of the Aesthetic & Style section that lets users name and save all current style settings, then load them later to pre-populate all fields.
 
-### Storage
+### What Gets Saved
 
-Use the existing `ai-studio` bucket. Files stored at:
-```
-environments/{user_id}/{uuid}.png
-```
+All fields within the Aesthetic & Style section:
+- Exact Match toggle
+- Aspect Ratio
+- Camera Movement
+- Outfit (type, details, additional info)
+- Final Look (type, details, additional info)
+- Hairstyle (+ custom)
+- Makeup (+ custom)
+- Skin (complexion, undertone)
+- Nails (style, custom)
 
 ### Database
 
-A new table `ai_studio_environments` is needed to store metadata (label, file path) since we need multiple labeled entries per user:
+New table `ai_studio_saved_looks`:
 
 | Column | Type | Notes |
 |--------|------|-------|
-| id | uuid | PK, default gen_random_uuid() |
+| id | uuid | PK |
 | user_id | uuid | NOT NULL |
-| label | text | NOT NULL (e.g., "Kitchen") |
-| file_path | text | NOT NULL (storage path) |
+| name | text | NOT NULL (e.g., "Glam Night Out") |
+| settings | jsonb | NOT NULL -- stores all aesthetic field values |
 | created_at | timestamptz | default now() |
 
-RLS policies: Users can SELECT, INSERT, DELETE their own rows (matched on `auth.uid() = user_id`).
+RLS: Users can SELECT, INSERT, DELETE their own rows.
 
-### New Component: `SavedEnvironments.tsx`
+The `settings` jsonb will store a subset of AppConfig fields:
+```json
+{
+  "exactMatch": true,
+  "aspectRatio": "9:16",
+  "cameraMovement": "...",
+  "outfitType": "...",
+  "outfitDetails": "...",
+  "outfitAdditionalInfo": "...",
+  "finalLookType": "...",
+  "finalLook": "...",
+  "finalLookAdditionalInfo": "...",
+  "hairstyle": "...",
+  "customHairstyle": "...",
+  "makeup": "...",
+  "customMakeup": "...",
+  "skinComplexion": "...",
+  "skinUndertone": "...",
+  "nailStyle": "...",
+  "customNailStyle": "..."
+}
+```
 
-Similar pattern to `SavedCharacter.tsx` but supports multiple entries:
+### New Component: `SavedLooks.tsx`
 
-- On mount, queries `ai_studio_environments` for the current user
-- Displays a grid/list of saved environments as labeled thumbnails
-- Each entry shows: thumbnail, label text, **[Use]** and **[Delete]** buttons
-- A **[+ Add Environment]** button opens a small form: file upload + text input for label
-- Clicking **Use** converts the image to base64 and calls `onSelect(base64)` (sets `environmentImage`)
-- Clicking **Delete** removes the storage file and the database row
-- No limit enforced, but UI keeps it compact (scrollable if many)
+Placed at the bottom of the Aesthetic & Style card (before the Terms section):
 
-### Integration in `StudioSetup.tsx`
+- Shows a horizontal scrollable list of saved looks as small chips/cards with the name
+- Each chip has a **Load** action (applies settings to config) and a **Delete** (x) button
+- A **"Save This Look"** button that opens an inline form asking for a name, then saves
+- On load: merges the saved settings into the current `config` via `setConfig`
 
-Insert `SavedEnvironments` above the existing Environment `UploadZone` (same pattern as SavedCharacter):
+### UI Flow
 
 ```
-Environment / Setting (Optional):
-  [Saved: Kitchen] [Saved: Office] [+ Add]
-  --- OR upload a new one below ---
-  [Upload Zone - one-time use]
+[Nails section]
+...
+--- divider ---
+Saved Looks:
+[Glam Night Out] [x]  [Casual Day] [x]  [+ Save This Look]
+
+When "Save This Look" clicked:
+[Name input] [Save] [Cancel]
 ```
 
 ### Files Changed
 
 | File | Change |
 |------|--------|
-| Database migration | Create `ai_studio_environments` table with RLS |
-| `src/components/ai-studio/SavedEnvironments.tsx` | New component |
-| `src/components/ai-studio/StudioSetup.tsx` | Import and render `SavedEnvironments` above environment UploadZone |
-
-### Technical Details
-
-- Upload flow: user clicks "+ Add", picks a file, types a label, clicks Save. File goes to storage at `environments/{userId}/{crypto.randomUUID()}.png`, row inserted into `ai_studio_environments`.
-- Delete flow: removes storage file via `supabase.storage.from('ai-studio').remove([filePath])`, then deletes the DB row.
-- "Use" flow: fetches public URL, converts to base64 via FileReader, calls `onSelect()` which sets `environmentImage` state in AIStudio.
-- Thumbnails use `supabase.storage.from('ai-studio').getPublicUrl(filePath)`.
+| Database migration | Create `ai_studio_saved_looks` table with RLS |
+| `src/components/ai-studio/SavedLooks.tsx` | New component |
+| `src/components/ai-studio/StudioSetup.tsx` | Import and render SavedLooks at bottom of Aesthetic & Style section, pass `config` and `setConfig` |
 
