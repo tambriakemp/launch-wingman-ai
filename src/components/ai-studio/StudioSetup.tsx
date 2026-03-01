@@ -7,6 +7,7 @@ import {
 import UploadZone from './UploadZone';
 import SavedCharacter from './SavedCharacter';
 import SavedEnvironments from './SavedEnvironments';
+import SavedLooks from './SavedLooks';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Loader2, ArrowRight, Sparkles } from 'lucide-react';
@@ -288,6 +289,8 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
                 </div>
               </div>
             </div>
+
+            <SavedLooks config={config} setConfig={setConfig} />
           </section>
 
           {/* Terms & Safety */}
