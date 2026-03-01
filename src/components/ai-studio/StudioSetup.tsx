@@ -8,6 +8,7 @@ import UploadZone from './UploadZone';
 import SavedCharacter from './SavedCharacter';
 import SavedEnvironments from './SavedEnvironments';
 import SavedLooks from './SavedLooks';
+import SavedProjectsGrid from './SavedProjectsGrid';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Loader2, ArrowRight, Sparkles } from 'lucide-react';
@@ -30,6 +31,7 @@ interface StudioSetupProps {
   isGeneratingTopic: boolean;
   onGeneratePreview: () => void;
   onGenerateTopicIdeas: () => void;
+  onLoadProject?: (projectId: string) => void;
 }
 
 const SectionHeading: React.FC<{ title: string }> = ({ title }) => (
@@ -52,10 +54,14 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
   isProcessing, isPreviewGenerating,
   showSafetyTerms, setShowSafetyTerms,
   isGeneratingTopic,
-  onGeneratePreview, onGenerateTopicIdeas
+  onGeneratePreview, onGenerateTopicIdeas,
+  onLoadProject
 }) => {
   return (
     <div className="max-w-3xl mx-auto space-y-8">
+      {/* Saved Projects */}
+      {onLoadProject && <SavedProjectsGrid onLoad={onLoadProject} />}
+
       <div className="text-center space-y-2 mb-10">
         <h2 className="text-3xl font-bold text-foreground">Project Setup</h2>
         <p className="text-muted-foreground">Configure your faceless influencer look and style.</p>

@@ -109,6 +109,7 @@ export type Database = {
           config: Json
           created_at: string
           final_look_preview_url: string | null
+          generated_media: Json | null
           id: string
           mode: string
           name: string
@@ -122,6 +123,7 @@ export type Database = {
           config?: Json
           created_at?: string
           final_look_preview_url?: string | null
+          generated_media?: Json | null
           id?: string
           mode?: string
           name?: string
@@ -135,6 +137,7 @@ export type Database = {
           config?: Json
           created_at?: string
           final_look_preview_url?: string | null
+          generated_media?: Json | null
           id?: string
           mode?: string
           name?: string

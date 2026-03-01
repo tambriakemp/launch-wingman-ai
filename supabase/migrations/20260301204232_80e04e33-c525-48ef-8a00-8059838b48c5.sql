@@ -1,0 +1,1 @@
+ALTER TABLE ai_studio_projects ADD COLUMN generated_media jsonb DEFAULT '{}'::jsonb;
