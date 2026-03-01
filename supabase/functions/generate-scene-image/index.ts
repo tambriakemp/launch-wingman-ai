@@ -116,14 +116,14 @@ serve(async (req) => {
         contentParts.push({ type: "image_url", image_url: { url: anchorImageUrl } });
       }
 
-      // Add character reference: prefer previewCharacter (styled) over raw referenceImage
-      // Only send ONE character reference to avoid confusing the model
+      // STRICT IDENTITY GATE: When previewCharacter exists, it is the CANONICAL identity.
+      // Raw referenceImage/referenceImages are IGNORED to prevent competing identity signals.
       if (!hasCharacterLock) {
         if (previewCharacter) {
           const clean = stripPrefix(previewCharacter);
           contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
+          // DO NOT add raw references — preview is the single source of truth
         } else if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
-          // Multi-photo references (face, profile, full body)
           for (const refImg of referenceImages) {
             const clean = stripPrefix(refImg);
             contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
@@ -176,6 +176,12 @@ serve(async (req) => {
         anchorInstruction = `CRITICAL IDENTITY REFERENCE: One of the provided images is a previously generated scene of this SAME character. The person in that image IS the character — replicate their EXACT face, body type, skin tone, hair texture, and proportions. Only change the pose, setting, and outfit as described below.`;
       }
 
+      // CANONICAL IDENTITY instruction when preview exists
+      let canonicalIdentityInstruction = "";
+      if (previewCharacter) {
+        canonicalIdentityInstruction = `CANONICAL IDENTITY (CRITICAL): A GENERATED CHARACTER PREVIEW image is provided. This is the DEFINITIVE, CANONICAL identity for this character. You MUST replicate this EXACT person — same face, bone structure, skin tone, body type, hair, and all distinguishing features. Do NOT deviate from this person's appearance under any circumstances. This preview is the SINGLE SOURCE OF TRUTH for the character's identity.`;
+      }
+
       // Multi-photo reference instruction
       let multiRefInstruction = "";
       if (!previewCharacter && referenceImages && referenceImages.length > 1 && !hasCharacterLock) {
@@ -203,6 +209,7 @@ IDENTITY PRESERVATION (CRITICAL):
 - This is the SAME person across all images. Match their EXACT facial structure, bone structure, skin tone, body proportions, hair texture, and age.
 - Do NOT change the character's appearance, age, ethnicity, or body type between scenes.
 - Do NOT add or remove facial features, freckles, beauty marks, or other distinguishing characteristics.
+${canonicalIdentityInstruction}
 ${anchorInstruction}
 ${multiRefInstruction}
 
