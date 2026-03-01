@@ -1,20 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem, AppPhase } from '@/components/ai-studio/types';
+import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem } from '@/components/ai-studio/types';
 import { INITIAL_CONFIG, DEFAULT_MEDIA, getUserFriendlyErrorMessage } from '@/components/ai-studio/constants';
-import StudioSetup from '@/components/ai-studio/StudioSetup';
-import StudioPreview from '@/components/ai-studio/StudioPreview';
 import StudioStoryboard from '@/components/ai-studio/StudioStoryboard';
+import StoryboardToolbar from '@/components/ai-studio/StoryboardToolbar';
 import StudioHelp from '@/components/ai-studio/StudioHelp';
 import ImageLightbox from '@/components/ai-studio/ImageLightbox';
+import SavedProjectsGrid from '@/components/ai-studio/SavedProjectsGrid';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Loader2, HelpCircle, RotateCcw, X } from 'lucide-react';
+import { Loader2, HelpCircle, RotateCcw, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, Check, ArrowRight } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
 import { ProjectLayout } from '@/components/layout/ProjectLayout';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
 const AIStudio = () => {
-  const [appPhase, setAppPhase] = useState<AppPhase>('setup');
   const [config, setConfig] = useState<AppConfig>({ ...INITIAL_CONFIG });
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
@@ -40,6 +43,9 @@ const AIStudio = () => {
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [currentProjectName, setCurrentProjectName] = useState<string | undefined>(undefined);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [projectName, setProjectName] = useState('');
+  const [showProjectsDialog, setShowProjectsDialog] = useState(false);
 
   // Refs to avoid stale closures in the queue processor
   const previewCharacterRef = useRef(previewCharacterImage);
@@ -85,12 +91,10 @@ const AIStudio = () => {
       });
 
       try {
-        // Process sequentially so each scene can use the previous as anchor
         let lastGeneratedUrl: string | undefined;
         for (const task of currentBatch) {
           try {
             if (task.type === 'generate' || task.type === 'upscale') {
-              // Read from refs to get CURRENT values (not stale closure values)
               const currentGeneratedMedia = generatedMediaRef.current;
               const currentPreviewCharacter = previewCharacterRef.current;
               const currentPreviewFinalLook = previewFinalLookRef.current;
@@ -110,7 +114,6 @@ const AIStudio = () => {
                 }
               });
 
-              // Use the last sequentially generated image as anchor, or fall back to first available
               let anchorImageUrl: string | undefined = lastGeneratedUrl;
               if (!anchorImageUrl) {
                 const hasOutfitLock = lockedRefs.some(r => r.type === 'outfit');
@@ -119,16 +122,13 @@ const AIStudio = () => {
                   const firstGenerated = Object.values(currentGeneratedMedia).find(
                     m => m.imageUrl && !m.imageUrl.startsWith('data:')
                   );
-                  if (firstGenerated?.imageUrl) {
-                    anchorImageUrl = firstGenerated.imageUrl;
-                  }
+                  if (firstGenerated?.imageUrl) anchorImageUrl = firstGenerated.imageUrl;
                 }
               }
 
               const activePreview = task.step.is_final_look && currentPreviewFinalLook
                 ? currentPreviewFinalLook : currentPreviewCharacter;
 
-              // Build scene context from storyboard for continuity
               let previousScenePrompt: string | undefined;
               let nextScenePrompt: string | undefined;
               if (currentStoryboard) {
@@ -138,8 +138,6 @@ const AIStudio = () => {
 
               console.log(`[Identity Gate] Scene ${task.index + 1}: activePreview=${activePreview ? 'SET (' + activePreview.substring(0, 50) + '...)' : 'NULL'}`);
 
-              // STRICT IDENTITY GATE: If preview exists, it is the ONLY character reference.
-              // Raw selfies are NOT sent to avoid competing identity signals.
               const { data, error } = await supabase.functions.invoke('generate-scene-image', {
                 body: {
                   prompt: task.step.image_prompt,
@@ -164,8 +162,6 @@ const AIStudio = () => {
 
               if (error) throw error;
               if (data?.error) throw new Error(data.error);
-
-              // Track for next scene's anchor
               if (data.imageUrl) lastGeneratedUrl = data.imageUrl;
 
               setGeneratedMedia(prev => ({
@@ -173,7 +169,6 @@ const AIStudio = () => {
                 [task.index]: { ...prev[task.index], imageUrl: data.imageUrl, isGeneratingImage: false, isUpscaling: false, error: undefined }
               }));
             } else if (task.type === 'generate_video') {
-              // Video generation placeholder - mark as coming soon
               throw new Error("Video generation coming soon");
             }
           } catch (error: any) {
@@ -234,6 +229,7 @@ const AIStudio = () => {
 
   const handleGeneratePreview = async () => {
     if (!referenceImage) { toast({ title: "Upload Required", description: "Please upload a reference avatar first.", variant: "destructive" }); return; }
+    if (!showSafetyTerms) { toast({ title: "Terms Required", description: "Please accept the safety terms in Settings.", variant: "destructive" }); return; }
     setIsPreviewGenerating(true);
     try {
       const previewBody = {
@@ -255,7 +251,6 @@ const AIStudio = () => {
       if (results[0].data?.error) throw new Error(results[0].data.error);
       setPreviewCharacterImage(results[0].data.imageUrl);
       if (results[1]?.data?.imageUrl) setPreviewFinalLookImage(results[1].data.imageUrl);
-      setAppPhase('preview');
     } catch (e: any) {
       toast({ title: "Error", description: getUserFriendlyErrorMessage(e), variant: "destructive" });
     } finally {
@@ -265,14 +260,12 @@ const AIStudio = () => {
 
   const handleGenerateStoryboard = async () => {
     if (!referenceImage) return;
-    // STRICT GATE: Require a validated character preview before storyboard generation
     if (!previewCharacterImage) {
-      toast({ title: "Character Preview Required", description: "Please generate and review the character preview before creating the storyboard.", variant: "destructive" });
+      toast({ title: "Character Preview Required", description: "Please generate and review the character preview first.", variant: "destructive" });
       return;
     }
     setIsGeneratingStoryboard(true);
     try {
-      // Safety check
       const { data: safetyData } = await supabase.functions.invoke('generate-storyboard', {
         body: { action: 'validate_safety', referenceImage }
       });
@@ -290,13 +283,11 @@ const AIStudio = () => {
 
       const board = data.storyboard as VlogStoryboard;
       setStoryboard(board);
-      setAppPhase('storyboard');
 
       const initialMedia: Record<number, GeneratedMedia> = {};
       board.steps.forEach((_, idx) => { initialMedia[idx] = { ...DEFAULT_MEDIA }; });
       setGeneratedMedia(initialMedia);
 
-      // Start generating all scenes
       const tasks: QueueItem[] = board.steps.map((step, index) => ({
         id: Math.random().toString(36).slice(2, 9),
         type: 'generate',
@@ -446,54 +437,37 @@ const AIStudio = () => {
     setShowSafetyTerms(false);
     setCurrentProjectId(null);
     setCurrentProjectName(undefined);
-    setAppPhase('setup');
     setShowResetConfirmation(false);
   };
 
-  // --- Save Project ---
   const handleSaveProject = async (name: string) => {
     setIsSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Strip transient flags from generatedMedia for persistence
       const persistMedia: Record<string, any> = {};
       Object.entries(generatedMedia).forEach(([idx, m]) => {
         persistMedia[idx] = {
-          imageUrl: m.imageUrl,
-          videoUrl: m.videoUrl,
-          lockedCharacter: m.lockedCharacter,
-          lockedOutfit: m.lockedOutfit,
-          lockedEnvironment: m.lockedEnvironment,
+          imageUrl: m.imageUrl, videoUrl: m.videoUrl,
+          lockedCharacter: m.lockedCharacter, lockedOutfit: m.lockedOutfit, lockedEnvironment: m.lockedEnvironment,
         };
       });
 
       const row = {
-        user_id: user.id,
-        name,
-        mode: config.creationMode,
-        config: config as any,
-        storyboard: storyboard as any,
+        user_id: user.id, name, mode: config.creationMode,
+        config: config as any, storyboard: storyboard as any,
         generated_media: persistMedia as any,
         character_preview_url: previewCharacterImage,
         final_look_preview_url: previewFinalLookImage,
-        status: 'saved',
-        updated_at: new Date().toISOString(),
+        status: 'saved', updated_at: new Date().toISOString(),
       };
 
       if (currentProjectId) {
-        const { error } = await supabase
-          .from('ai_studio_projects')
-          .update(row)
-          .eq('id', currentProjectId);
+        const { error } = await supabase.from('ai_studio_projects').update(row).eq('id', currentProjectId);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase
-          .from('ai_studio_projects')
-          .insert(row)
-          .select('id')
-          .single();
+        const { data, error } = await supabase.from('ai_studio_projects').insert(row).select('id').single();
         if (error) throw error;
         setCurrentProjectId(data.id);
       }
@@ -506,14 +480,9 @@ const AIStudio = () => {
     }
   };
 
-  // --- Load Project ---
   const handleLoadProject = async (projectId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('ai_studio_projects')
-        .select('*')
-        .eq('id', projectId)
-        .single();
+      const { data, error } = await supabase.from('ai_studio_projects').select('*').eq('id', projectId).single();
       if (error) throw error;
 
       const loadedConfig = data.config as unknown as AppConfig;
@@ -526,33 +495,42 @@ const AIStudio = () => {
       setPreviewFinalLookImage(data.final_look_preview_url || null);
       setCurrentProjectId(data.id);
       setCurrentProjectName(data.name);
+      setShowSafetyTerms(true);
 
-      // Rebuild generatedMedia with default transient flags
       const restoredMedia: Record<number, GeneratedMedia> = {};
       if (loadedStoryboard?.steps) {
         loadedStoryboard.steps.forEach((_, idx) => {
           const saved = loadedMedia[String(idx)] || {};
           restoredMedia[idx] = {
-            imageUrl: saved.imageUrl,
-            videoUrl: saved.videoUrl,
-            error: undefined,
-            videoError: undefined,
-            isGeneratingImage: false,
-            isGeneratingVideo: false,
-            isUpscaling: false,
-            lockedCharacter: saved.lockedCharacter || false,
-            lockedOutfit: saved.lockedOutfit || false,
-            lockedEnvironment: saved.lockedEnvironment || false,
-            isSelected: false,
+            imageUrl: saved.imageUrl, videoUrl: saved.videoUrl,
+            error: undefined, videoError: undefined,
+            isGeneratingImage: false, isGeneratingVideo: false, isUpscaling: false,
+            lockedCharacter: saved.lockedCharacter || false, lockedOutfit: saved.lockedOutfit || false,
+            lockedEnvironment: saved.lockedEnvironment || false, isSelected: false,
           };
         });
       }
       setGeneratedMedia(restoredMedia);
-      setAppPhase('storyboard');
+      setShowProjectsDialog(false);
       toast({ title: "Project loaded", description: `"${data.name}" restored.` });
     } catch (e: any) {
       toast({ title: "Load failed", description: e.message, variant: "destructive" });
     }
+  };
+
+  const handleSaveClick = () => {
+    if (currentProjectName) {
+      handleSaveProject(currentProjectName);
+    } else {
+      setProjectName('');
+      setShowSaveDialog(true);
+    }
+  };
+
+  const handleSaveDialogConfirm = async () => {
+    const name = projectName.trim() || 'Untitled Project';
+    await handleSaveProject(name);
+    setShowSaveDialog(false);
   };
 
   const queueStatusText = () => {
@@ -564,9 +542,12 @@ const AIStudio = () => {
       : `Generating scenes: ${completed}/${total}`;
   };
 
+  const imagesGenerated = storyboard ? Object.values(generatedMedia).filter(m => !!m.imageUrl).length : 0;
+  const totalScenes = storyboard?.steps.length || 0;
+
   return (
     <ProjectLayout>
-      <div className="min-h-screen pb-20 relative">
+      <div className="min-h-screen pb-24 relative">
         {/* Header */}
         <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-border py-3 px-6 flex justify-between items-center">
           <div className="flex items-center gap-4">
@@ -580,11 +561,31 @@ const AIStudio = () => {
                 <button onClick={clearQueue} className="text-xs text-destructive hover:text-destructive/80 underline uppercase font-bold ml-2">Cancel</button>
               </div>
             )}
+            {storyboard && (
+              <span className="text-xs text-muted-foreground">{imagesGenerated}/{totalScenes} images</span>
+            )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setShowProjectsDialog(true)}>
+              <FolderOpen className="h-4 w-4 mr-1" /> Projects
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleSaveClick} disabled={isSaving}>
+              {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+              {currentProjectName ? 'Save' : 'Save'}
+            </Button>
+            {storyboard && (
+              <>
+                <Button variant="outline" size="sm" onClick={handleDownloadScript}>
+                  <FileText className="h-3.5 w-3.5 mr-1" /> Script
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleDownloadAll}>
+                  <Download className="h-3.5 w-3.5 mr-1" /> All
+                </Button>
+              </>
+            )}
             <Button variant="ghost" size="icon" onClick={() => setShowHelp(true)}><HelpCircle className="h-5 w-5" /></Button>
             <Button variant="outline" size="sm" onClick={() => setShowResetConfirmation(true)}>
-              <RotateCcw className="h-4 w-4 mr-1" /> New Project
+              <RotateCcw className="h-4 w-4 mr-1" /> New
             </Button>
           </div>
         </header>
@@ -605,38 +606,119 @@ const AIStudio = () => {
           </div>
         )}
 
-        <main className="max-w-7xl mx-auto px-4 py-8">
-          {appPhase === 'setup' && (
-            <StudioSetup
-              config={config} setConfig={setConfig}
-              referenceImage={referenceImage} setReferenceImage={setReferenceImage}
-              setReferenceImages={setReferenceImages}
-              environmentImage={environmentImage} setEnvironmentImage={setEnvironmentImage}
-              setEnvironmentImages={setEnvironmentImages}
-              productImage={productImage} setProductImage={setProductImage}
-              isProcessing={isProcessing} isPreviewGenerating={isPreviewGenerating}
-              showSafetyTerms={showSafetyTerms} setShowSafetyTerms={setShowSafetyTerms}
-              isGeneratingTopic={isGeneratingTopic}
-              onGeneratePreview={handleGeneratePreview}
-              onGenerateTopicIdeas={handleGenerateTopicIdeas}
-              onLoadProject={handleLoadProject}
+        {/* Save Dialog */}
+        <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Save Project</DialogTitle>
+              <DialogDescription>Give your storyboard a name so you can find it later.</DialogDescription>
+            </DialogHeader>
+            <Input
+              placeholder="e.g. Morning Routine GRWM"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveDialogConfirm(); }}
+              autoFocus
             />
-          )}
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setShowSaveDialog(false)}>Cancel</Button>
+              <Button onClick={handleSaveDialogConfirm} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                Save
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-          {appPhase === 'preview' && (
-            <StudioPreview
-              config={config}
-              previewCharacterImage={previewCharacterImage}
-              previewFinalLookImage={previewFinalLookImage}
-              isGeneratingStoryboard={isGeneratingStoryboard}
-              onBack={() => setAppPhase('setup')}
-              onGenerateStoryboard={handleGenerateStoryboard}
-            />
-          )}
+        {/* Saved Projects Dialog */}
+        <Dialog open={showProjectsDialog} onOpenChange={setShowProjectsDialog}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Saved Projects</DialogTitle>
+              <DialogDescription>Load a previously saved project.</DialogDescription>
+            </DialogHeader>
+            <SavedProjectsGrid onLoad={handleLoadProject} />
+          </DialogContent>
+        </Dialog>
 
-          {appPhase === 'storyboard' && storyboard && (
+        <main className="max-w-7xl mx-auto px-4 py-4">
+          {/* Toolbar */}
+          <StoryboardToolbar
+            config={config}
+            setConfig={setConfig}
+            isGeneratingTopic={isGeneratingTopic}
+            onGenerateTopicIdeas={handleGenerateTopicIdeas}
+            referenceImage={referenceImage}
+            setReferenceImage={setReferenceImage}
+            setReferenceImages={setReferenceImages}
+            environmentImage={environmentImage}
+            setEnvironmentImage={setEnvironmentImage}
+            setEnvironmentImages={setEnvironmentImages}
+            productImage={productImage}
+            setProductImage={setProductImage}
+            showSafetyTerms={showSafetyTerms}
+            setShowSafetyTerms={setShowSafetyTerms}
+            isProcessing={isProcessing}
+          />
+
+          {/* Inline Character Preview Bar */}
+          <div className="my-4">
+            {!previewCharacterImage ? (
+              <div className="bg-card border border-border rounded-xl p-6 text-center">
+                <p className="text-sm text-muted-foreground mb-3">
+                  {!referenceImage
+                    ? "Upload a character photo in the Character tab to get started."
+                    : !showSafetyTerms
+                    ? "Accept the safety terms in Settings to continue."
+                    : "Generate a character preview to start building your storyboard."}
+                </p>
+                <Button
+                  onClick={handleGeneratePreview}
+                  disabled={!showSafetyTerms || !referenceImage || isPreviewGenerating}
+                >
+                  {isPreviewGenerating ? (
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating Preview...</>
+                  ) : (
+                    <><Sparkles className="h-4 w-4 mr-2" /> Generate Character Preview</>
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
+                <div className="flex gap-3">
+                  <div className="relative">
+                    <img src={previewCharacterImage} alt="Character Preview" className="w-16 h-24 rounded-lg object-cover border border-border" />
+                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[8px] px-1.5 py-0.5 rounded-full font-bold">
+                      <Check className="h-2.5 w-2.5" />
+                    </span>
+                  </div>
+                  {previewFinalLookImage && (
+                    <div className="relative">
+                      <img src={previewFinalLookImage} alt="Final Look" className="w-16 h-24 rounded-lg object-cover border border-accent/30" />
+                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground text-[7px] px-1.5 py-0.5 rounded-full font-bold whitespace-nowrap">
+                        Final Look
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">Character Ready</p>
+                  <p className="text-xs text-muted-foreground">{config.outfitType} · {config.hairstyle} · {config.makeup}</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleGeneratePreview} disabled={isPreviewGenerating}>
+                  {isPreviewGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RotateCcw className="h-3.5 w-3.5 mr-1" />}
+                  Regenerate
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Scene Workspace */}
+          {storyboard ? (
             <StudioStoryboard
-              config={config} setConfig={setConfig} storyboard={storyboard} generatedMedia={generatedMedia}
+              config={config}
+              storyboard={storyboard}
+              generatedMedia={generatedMedia}
               onToggleSelect={handleToggleSelect}
               onToggleLock={handleToggleLock}
               onEnlarge={(i) => setEnlargedImageIndex(i)}
@@ -647,9 +729,6 @@ const AIStudio = () => {
               onBatchUpscale={() => handleBatchAction('upscale')}
               onBatchGenerateVideo={() => handleBatchAction('video')}
               onBatchDelete={() => handleBatchAction('delete')}
-              onDownloadScript={handleDownloadScript}
-              onDownloadAll={handleDownloadAll}
-              onSaveProject={handleSaveProject}
               onAddBlankScene={() => {
                 if (!storyboard) return;
                 const newStep: VlogStep = {
@@ -659,19 +738,53 @@ const AIStudio = () => {
                   image_prompt: '', video_prompt: '', script: ''
                 };
                 setStoryboard({ ...storyboard, steps: [...storyboard.steps, newStep] });
-                setGeneratedMedia(prev => ({
-                  ...prev,
-                  [storyboard.steps.length]: { ...DEFAULT_MEDIA }
-                }));
+                setGeneratedMedia(prev => ({ ...prev, [storyboard.steps.length]: { ...DEFAULT_MEDIA } }));
               }}
               selectionCount={getSelectionCount()}
-              currentProjectName={currentProjectName}
-              isSaving={isSaving}
-              isGeneratingTopic={isGeneratingTopic}
-              onGenerateTopicIdeas={handleGenerateTopicIdeas}
             />
+          ) : (
+            <div className="bg-card border border-border rounded-xl p-12 text-center">
+              <p className="text-muted-foreground text-sm mb-2">No storyboard yet</p>
+              <p className="text-xs text-muted-foreground">Generate a character preview, then create your storyboard below.</p>
+            </div>
           )}
         </main>
+
+        {/* Bottom Action Bar */}
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border p-3 flex justify-center gap-3">
+          {!storyboard ? (
+            <Button
+              onClick={handleGenerateStoryboard}
+              disabled={!previewCharacterImage || isGeneratingStoryboard}
+              className="px-8"
+            >
+              {isGeneratingStoryboard ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating Storyboard...</>
+              ) : (
+                <><ArrowRight className="h-4 w-4 mr-2" /> Generate Storyboard</>
+              )}
+            </Button>
+          ) : (
+            <>
+              <Button size="sm" variant="outline" onClick={() => {
+                const tasks: QueueItem[] = storyboard.steps
+                  .map((s, idx) => ({ id: Math.random().toString(), type: 'generate' as const, index: idx, step: s, config: { ...config } }))
+                  .filter(t => !generatedMedia[t.index]?.imageUrl);
+                if (tasks.length > 0) addToQueue(tasks);
+              }}>
+                <ImageIcon className="h-3.5 w-3.5 mr-1.5" /> Generate All Images
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => {
+                const tasks: QueueItem[] = storyboard.steps
+                  .map((s, idx) => ({ id: Math.random().toString(), type: 'generate_video' as const, index: idx, step: s, config: { ...config }, baseImageUrl: generatedMedia[idx]?.imageUrl }))
+                  .filter(t => t.baseImageUrl && !generatedMedia[t.index]?.videoUrl);
+                if (tasks.length > 0) addToQueue(tasks);
+              }}>
+                <Video className="h-3.5 w-3.5 mr-1.5" /> Generate All Videos
+              </Button>
+            </>
+          )}
+        </div>
 
         {enlargedImageIndex !== null && (
           <ImageLightbox
