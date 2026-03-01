@@ -47,7 +47,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { prompt, referenceImage, productImage, environmentImage, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl } = await req.json();
+    const { prompt, referenceImage, productImage, environmentImage, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, outfitAnchorUrl } = await req.json();
 
     // Build content parts
     const contentParts: any[] = [];
@@ -62,6 +62,12 @@ serve(async (req) => {
         for (const ref of lockedRefs) {
           contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${ref.base64}` } });
         }
+      }
+
+      // Add outfit anchor image (auto-passed from first generated scene)
+      const hasOutfitLock = lockedRefs?.find((r: any) => r.type === 'outfit');
+      if (!hasOutfitLock && outfitAnchorUrl) {
+        contentParts.push({ type: "image_url", image_url: { url: outfitAnchorUrl } });
       }
 
       // Add preview character (medium priority)
@@ -100,11 +106,25 @@ serve(async (req) => {
       if (lockedRefs?.find((r: any) => r.type === 'character')) lockInstructions += "LOCKED CHARACTER: STRICTLY CLONE the face from the reference image. ";
       if (lockedRefs?.find((r: any) => r.type === 'environment')) lockInstructions += "LOCKED ENVIRONMENT: USE the provided background reference. ";
 
-      const fullPrompt = `Generate a photorealistic, high-quality image.
-Scene Description: ${prompt}
+      // Build outfit anchor instruction
+      let outfitAnchorInstruction = "";
+      if (!hasOutfitLock && outfitAnchorUrl) {
+        outfitAnchorInstruction = "OUTFIT ANCHOR IMAGE PROVIDED: One of the reference images shows the EXACT outfit from a previous scene. You MUST replicate this outfit IDENTICALLY - same clothing, colors, accessories, styling. Any deviation is unacceptable.";
+      }
 
-MANDATORY STYLE REQUIREMENTS:
-- Outfit: ${currentOutfit} (MUST be clearly visible)
+      const fullPrompt = `Generate a photorealistic, high-quality image.
+
+CRITICAL - OUTFIT CONSISTENCY (HIGHEST PRIORITY):
+You MUST dress the character in EXACTLY this outfit: ${currentOutfit}
+- Do NOT change, modify, add to, remove from, or reinterpret ANY part of the clothing.
+- Do NOT change colors, patterns, or layering of the outfit.
+- The outfit must remain IDENTICAL across all scenes.
+${previewCharacter ? '- A reference image is provided showing the EXACT outfit to use. COPY it precisely.' : ''}
+${outfitAnchorInstruction}
+
+Scene to depict: ${prompt}
+
+STYLE REQUIREMENTS:
 - Hairstyle: ${hair}
 - Makeup: ${makeup}
 - Skin: ${skin}
