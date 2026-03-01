@@ -6,6 +6,7 @@ import {
 } from './constants';
 import UploadZone from './UploadZone';
 import SavedCharacter from './SavedCharacter';
+import SavedEnvironments from './SavedEnvironments';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Loader2, ArrowRight, Sparkles } from 'lucide-react';
@@ -77,7 +78,8 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
               </div>
               <div>
                 <Label label="Environment / Setting (Optional)" />
-                <UploadZone onImageSelected={setEnvironmentImage} isProcessing={isProcessing} title="Background Reference" subtext="Upload a room or location for consistent setting." />
+                <SavedEnvironments onSelect={setEnvironmentImage} />
+                <UploadZone onImageSelected={setEnvironmentImage} isProcessing={isProcessing} title="Background Reference" subtext="One-time use. Upload a room or location." />
               </div>
               {config.creationMode === 'ugc' && (
                 <div>
