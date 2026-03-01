@@ -26,35 +26,24 @@ function getSceneBehaviorPrompt(sceneDescription: string): string {
 }
 
 function extractImageFromResponse(data: any): string | null {
-  // Try multiple known response formats
-  
-  // Format 1: images array on message
   const img1 = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
   if (img1) return img1;
-
-  // Format 2: content array with image parts
   const content = data?.choices?.[0]?.message?.content;
   if (Array.isArray(content)) {
     for (const part of content) {
       if (part.type === "image_url" && part.image_url?.url) return part.image_url.url;
       if (part.type === "image" && part.image_url?.url) return part.image_url.url;
-      // base64 inline
       if (part.type === "image_url" && typeof part.image_url === "string") return part.image_url;
     }
   }
-
-  // Format 3: inline_data in parts
   const parts = data?.choices?.[0]?.message?.parts;
   if (Array.isArray(parts)) {
     for (const part of parts) {
       if (part.inline_data?.data) return `data:${part.inline_data.mime_type || 'image/png'};base64,${part.inline_data.data}`;
     }
   }
-
-  // Format 4: direct b64_json in data array (DALL-E style)
   if (data?.data?.[0]?.b64_json) return `data:image/png;base64,${data.data[0].b64_json}`;
   if (data?.data?.[0]?.url) return data.data[0].url;
-
   return null;
 }
 
@@ -65,20 +54,27 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { referenceImage, environmentImage, environmentImages, config, isFinalLook } = await req.json();
+    const { referenceImage, referenceImages, environmentImage, environmentImages, config, isFinalLook } = await req.json();
 
-    // Strip data URI prefix if present so we send raw base64 only
     const stripBase64Prefix = (img: string): string => {
       if (img.includes(',')) return img.split(',')[1];
       return img;
     };
 
-    const refBase64 = stripBase64Prefix(referenceImage);
-    const contentParts: any[] = [
-      { type: "image_url", image_url: { url: `data:image/jpeg;base64,${refBase64}` } }
-    ];
+    const contentParts: any[] = [];
 
-    // Add environment images (multi-angle group takes priority)
+    // Add reference images: support multi-photo references
+    if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
+      for (const refImg of referenceImages) {
+        const refBase64 = stripBase64Prefix(refImg);
+        contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${refBase64}` } });
+      }
+    } else if (referenceImage) {
+      const refBase64 = stripBase64Prefix(referenceImage);
+      contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${refBase64}` } });
+    }
+
+    // Add environment images
     if (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 0) {
       for (const envImg of environmentImages) {
         const envBase64 = stripBase64Prefix(envImg);
@@ -101,10 +97,23 @@ serve(async (req) => {
     const skin = config.skinComplexion === 'Custom' ? config.customSkinComplexion : `${config.skinComplexion} ${config.skinUndertone}`;
     const nails = config.nailStyle === 'Custom' ? config.customNailStyle : config.nailStyle;
 
-    let prompt = `Create a stylish fashion portrait inspired by the reference photo. The subject should resemble the person in the reference. Full-length view, studio-quality lighting, editorial fashion photography style.`;
+    // Multi-photo instruction
+    const multiRefNote = (referenceImages && referenceImages.length > 1)
+      ? `Multiple reference photos of the SAME person are provided from different angles (face, profile, full body). Use ALL of them to accurately reproduce this person's exact appearance — facial structure, skin tone, body proportions, and features.`
+      : '';
+
+    let prompt = `Create a stylish fashion portrait based on the reference photo(s).
+
+IDENTITY PRESERVATION (CRITICAL):
+- The subject MUST closely match the person in the reference photo(s) — same facial structure, bone structure, skin tone, body proportions, hair texture, and age.
+- Do NOT alter their appearance, ethnicity, age, or body type.
+- This portrait will be used as the canonical identity for all future scenes, so accuracy is paramount.
+${multiRefNote}
+
+Full-length view, studio-quality lighting, editorial fashion photography style.`;
 
     if (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 1) {
-      prompt += ` Multiple reference images of the same environment are provided showing different angles. Use these as the setting/backdrop. Maintain exact spatial consistency — keep all fixtures, appliances, and furniture in their original positions.`;
+      prompt += ` Multiple reference images of the same environment are provided showing different angles. Use these as the setting/backdrop. Maintain exact spatial consistency.`;
     } else if (environmentImage || (environmentImages && environmentImages.length === 1)) {
       prompt += ` Use the provided environment image as the setting/backdrop.`;
     } else {
@@ -127,10 +136,9 @@ Style details:
 - Style: editorial fashion photography, tasteful, fully clothed`;
 
     if (config.exactMatch) {
-      prompt += `\nIMPORTANT: Closely match the person's facial features and appearance from the reference photo.`;
+      prompt += `\nSTRICT MODE: Match the EXACT facial features, skin tone, and proportions from the reference photo. This person must be immediately recognizable as the same individual.`;
     }
 
-    // Add natural behavior guardrails based on environment context
     const envContext = (environmentImages?.length > 0 || environmentImage) ? prompt : "";
     const behaviorPrompt = getSceneBehaviorPrompt(envContext);
     if (behaviorPrompt) {
@@ -160,22 +168,10 @@ Style details:
     }
 
     const data = await response.json();
-    console.log("Character preview response keys:", JSON.stringify(Object.keys(data)));
-    if (data.choices?.[0]) {
-      console.log("Message keys:", JSON.stringify(Object.keys(data.choices[0].message || {})));
-      const content = data.choices[0].message?.content;
-      if (Array.isArray(content)) {
-        console.log("Content parts types:", JSON.stringify(content.map((p: any) => p.type)));
-      } else if (typeof content === "string") {
-        console.log("Content is string, length:", content.length);
-      }
-    }
 
-    // Check for safety block
     const finishReason = data.choices?.[0]?.finish_reason;
     const nativeReason = data.choices?.[0]?.native_finish_reason;
     if (nativeReason === "IMAGE_SAFETY" || finishReason === "content_filter") {
-      console.error("Image blocked by safety filter:", nativeReason);
       throw new Error("The image was blocked by safety filters. Try adjusting the style settings or using a different reference photo.");
     }
 

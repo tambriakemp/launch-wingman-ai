@@ -17,6 +17,7 @@ interface StudioSetupProps {
   setConfig: React.Dispatch<React.SetStateAction<AppConfig>>;
   referenceImage: string | null;
   setReferenceImage: (img: string | null) => void;
+  setReferenceImages?: (imgs: string[]) => void;
   environmentImage: string | null;
   setEnvironmentImage: (img: string | null) => void;
   setEnvironmentImages?: (imgs: string[]) => void;
@@ -37,7 +38,7 @@ const Label: React.FC<{ label: string; tooltip?: string }> = ({ label }) => (
 
 const StudioSetup: React.FC<StudioSetupProps> = ({
   config, setConfig,
-  referenceImage, setReferenceImage,
+  referenceImage, setReferenceImage, setReferenceImages,
   environmentImage, setEnvironmentImage,
   setEnvironmentImages,
   productImage, setProductImage,
@@ -74,7 +75,7 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
             </div>
 
             <div className="space-y-6">
-              <SavedCharacter onSelect={setReferenceImage} />
+              <SavedCharacter onSelect={setReferenceImage} onSelectMultiple={setReferenceImages} />
               <div>
                 <Label label="Character Reference" />
                 <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing} title="Upload Selfie / Avatar" subtext="One-time use. Used to maintain facial consistency." />
