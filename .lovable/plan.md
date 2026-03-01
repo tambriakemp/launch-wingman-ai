@@ -1,91 +1,102 @@
 
 
-## Redesign Storyboard to OpenArt-Style Single-Page Layout
+## Redesign AI Studio to Single-Page Layout
 
 ### Overview
 
-Restructure the AI Studio storyboard view from a vertically-scrolling list of all scenes to a single-page layout inspired by OpenArt, where settings live in a compact toolbar and scenes are viewed one at a time.
+Transform the AI Studio from a 3-phase flow (Setup -> Preview -> Storyboard) into a single-page layout where all configuration lives in dropdown tabs at the top and the scene workspace is always visible below -- matching the OpenArt reference screenshots.
 
-### Layout Changes
+### New Layout
 
 ```text
 +---------------------------------------------------------------+
-| AI Studio    [Save] [Undo] [Redo]   Storyboard   [Download] |  <- Header
+| AI Studio        [Save] [New Project]   [Script] [Download]   |  <- Header
 +---------------------------------------------------------------+
-| 16:9 | Visual Style v | Character v | Settings v |            |  <- Settings Toolbar (dropdowns)
+| 16:9 | Character v | Environment v | Look v | Settings v      |  <- Toolbar Tabs
 +---------------------------------------------------------------+
-|                                                               |
-|  +---------------------------+  +---------------------------+ |
-|  |  Image Panel              |  |  Video Panel              | |
-|  |  [generated image]        |  |  [generated video]        | |
-|  |                           |  |                           | |
-|  |  [Edit] [Upscale] [DL]   |> |  [Generate Video]         | |
-|  +---------------------------+  +---------------------------+ |
-|  Scene 3 of 15                  Script / Prompt below         |
-|  [< Prev]  [Next >]                                          |
+|                                                                |
+|  [Generate Character Preview]  or  [Preview Image]             |  <- Preview bar (inline)
+|                                                                |
+|  +---------------------------+  +---------------------------+  |
+|  |  Image Panel              |  |  Video Panel              |  |
+|  |  [generated image]        |  |  [generated video]        |  |
+|  |  [Edit] [Upscale] [DL]   |  |  [Generate Video]         |  |
+|  +---------------------------+  +---------------------------+  |
+|  Scene 3 of 15   [< Prev] [Next >]                            |
+|                                                                |
+|  [Script / Prompts collapsed below]                            |
 +---------------------------------------------------------------+
-|              + Add Blank Shot                                 |
+|              + Add Blank Shot                                  |
 +---------------------------------------------------------------+
-|  [Generate All Images]              [Generate All Videos]     |  <- Bottom Bar
+| [Generate Storyboard]  [Generate All Images]  [Gen All Videos] |  <- Bottom Bar
 +---------------------------------------------------------------+
 ```
 
 ### What Changes
 
-**1. New Component: `StoryboardToolbar.tsx`**
-- Horizontal bar below the header with dropdown popovers for:
-  - **Aspect Ratio**: Click to show 16:9, 9:16, 1:1 options (like the OpenArt screenshot)
-  - **Visual Style**: Shows outfit, hairstyle, makeup settings from the current "Look" card
-  - **Character**: Shows the character reference / saved character selector
-  - **Settings**: Shows vlog category, topic, camera movement, creation mode
-- Each dropdown opens a popover panel with the relevant form fields (pulled from the current `StudioSetup.tsx` sections)
-- Environment settings fold into the Visual Style or a separate dropdown
+**1. Enhanced `StoryboardToolbar.tsx`**
+Add two new dropdown tabs to the existing toolbar:
+- **Character**: Contains `SavedCharacter` component + `UploadZone` for selfie (everything from the Character card in StudioSetup)
+- **Environment**: Contains `SavedEnvironments` component (everything from the Environment card in StudioSetup)
+- **Look** (rename current "Visual Style"): Keeps outfit, hairstyle, makeup, skin, nails + adds `SavedLooks`, exact match toggle, UGC product upload, and marketing goal fields
+- **Settings** (existing): Keeps creation mode, vlog category, topic, camera movement, script options, safety terms checkbox
 
-**2. Refactored `StudioStoryboard.tsx`**
-- Remove the vertical scene list
-- Show only ONE scene at a time with prev/next navigation
-- Add a scene counter: "Scene 3 of 15"
-- Arrow buttons (or keyboard left/right) to navigate between scenes
-- The scene view shows Image (left) + Video (right) side by side, with script/prompt details below
-- Keep all existing functionality: generate, upscale, regenerate, lock, select, download, prompt editing
+**2. Refactored `AIStudio.tsx`**
+- Remove the `appPhase` state machine (`setup` / `preview` / `storyboard`)
+- Always render the toolbar + scene workspace
+- Add an inline preview section: if no character preview exists yet, show a "Generate Character Preview" button; once generated, show a small thumbnail of the preview
+- "Generate Storyboard" button moves to the bottom action bar (enabled only after preview exists)
+- The `StudioSetup.tsx` component is no longer rendered as a separate page
+- The `StudioPreview.tsx` component is replaced by inline preview display
 
-**3. "Add Blank Shot" Button**
-- Below the current scene, a button to append a new empty scene to the storyboard
-- Creates a new `VlogStep` with empty prompts that the user can fill in
-- Increments `step_number` and adds to `storyboard.steps` and `generatedMedia`
+**3. Inline Character Preview**
+- Between the toolbar and the scene card, show a compact preview bar:
+  - Before preview: "Upload a character photo and generate preview to start" with a button
+  - After preview: Small thumbnail(s) of the character/final look preview with a "Regenerate Preview" option
+- This replaces the full-page `StudioPreview` component
 
-**4. Bottom Action Bar (optional, inspired by OpenArt)**
-- Fixed bar at the bottom with "Generate All Images" and "Generate All Videos" batch buttons
-- Replaces the floating batch toolbar that currently appears on selection
+**4. Scene Workspace (always visible)**
+- When no storyboard exists yet, the scene area shows a placeholder: "Generate a storyboard to start creating scenes"
+- When a storyboard exists, shows the current single-scene view with prev/next navigation (same as current `StudioStoryboard`)
+- "Add Blank Shot" remains below the scene
 
-**5. Merge Setup + Storyboard Phases**
-- The setup phase is no longer a separate full-page view
-- When a storyboard exists, settings are accessible from the toolbar dropdowns
-- The "Generate Character Preview" flow remains: user must still go through preview before first storyboard generation
-- After storyboard is generated, users can tweak settings from the toolbar and regenerate individual scenes
+**5. Bottom Action Bar**
+- Always visible (fixed at bottom)
+- Shows contextually relevant actions:
+  - "Generate Storyboard" (when no storyboard exists, requires preview)
+  - "Generate All Images" + "Generate All Videos" (when storyboard exists)
+- Saved Projects button/grid moves to a dialog accessible from the header
+
+**6. Saved Projects**
+- Move from the StudioSetup page to a dialog/drawer triggered by a "Load Project" button in the header
+- Same `SavedProjectsGrid` component, just wrapped in a Dialog
 
 ### Files Changed
 
 | File | Change |
 |------|--------|
-| `src/components/ai-studio/StoryboardToolbar.tsx` | **New** -- dropdown toolbar with Aspect Ratio, Visual Style, Character, Settings popovers |
-| `src/components/ai-studio/StudioStoryboard.tsx` | Refactor to single-scene view with prev/next navigation, bottom action bar, "Add Blank Shot" |
-| `src/components/ai-studio/SceneCard.tsx` | Simplify to work as a standalone full-width view (remove the 3-column layout, go to image left + video right with content below) |
-| `src/pages/AIStudio.tsx` | Pass config + setConfig to StudioStoryboard so toolbar dropdowns can modify settings; add handler to append new blank scenes |
-| `src/components/ai-studio/StudioSetup.tsx` | No structural changes -- still used for initial project setup before first storyboard generation |
+| `src/components/ai-studio/StoryboardToolbar.tsx` | Add Character, Environment dropdown tabs; expand Look tab with SavedLooks + product upload; expand Settings with creation mode, safety terms |
+| `src/pages/AIStudio.tsx` | Remove `appPhase` state machine; always render toolbar + scene workspace; add inline preview bar; move "Generate Storyboard" to bottom bar; wrap saved projects in dialog |
+| `src/components/ai-studio/StudioStoryboard.tsx` | Extract scene display into reusable section (remove its own toolbar since parent now handles it); simplify to just scene card + navigation + add blank shot |
+| `src/components/ai-studio/StudioSetup.tsx` | No longer rendered -- all its content moves into toolbar dropdowns |
+| `src/components/ai-studio/StudioPreview.tsx` | No longer rendered -- replaced by inline preview bar in AIStudio |
 
 ### What Stays the Same
 
 - All generation logic (queue processor, edge functions, identity gate)
-- Save/load project functionality
+- Save/load project functionality (just moved to a dialog)
 - Image/video generation, upscale, regenerate, lock, prompt editing
-- Character preview flow (setup -> preview -> storyboard)
-- The setup phase for first-time configuration
+- Character preview generation flow (still required before storyboard)
+- SceneCard component internals
+- SavedCharacter, SavedEnvironments, SavedLooks, UploadZone components (reused inside toolbar dropdowns)
 
 ### Technical Notes
 
-- Scene navigation state: `const [currentSceneIndex, setCurrentSceneIndex] = useState(0)`
-- Toolbar dropdowns use Radix `Popover` components for consistency
-- Keyboard navigation: left/right arrow keys to switch scenes
-- "Add Blank Shot" creates a step like: `{ step_number: N+1, step_name: "New Scene", a_roll: "", b_roll: "", close_up_details: "", camera_direction: "", image_prompt: "", video_prompt: "", script: "" }`
-- Bottom bar shows scene generation progress: "5 of 15 images generated"
+- The toolbar popover for Character and Environment will need wider panels (`w-96` or larger) to fit the upload zones and saved items
+- Character tab passes `referenceImage`, `setReferenceImage`, `setReferenceImages` props
+- Environment tab passes `environmentImage`, `setEnvironmentImage`, `setEnvironmentImages` props
+- Look tab passes all outfit/hair/makeup/skin/nail config fields plus `productImage`/`setProductImage` for UGC mode
+- The preview bar checks `previewCharacterImage` -- if null and `referenceImage` exists, shows "Generate Preview" button; if preview exists, shows thumbnail
+- Bottom bar "Generate Storyboard" is disabled until `previewCharacterImage` is truthy
+- Keyboard left/right navigation for scenes remains unchanged
+
