@@ -8,7 +8,7 @@ import ImageLightbox from '@/components/ai-studio/ImageLightbox';
 import SavedProjectsGrid from '@/components/ai-studio/SavedProjectsGrid';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Loader2, HelpCircle, RotateCcw, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, Check, ArrowRight } from 'lucide-react';
+import { Loader2, HelpCircle, RotateCcw, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, Check, ArrowRight, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
 import { ProjectLayout } from '@/components/layout/ProjectLayout';
@@ -36,6 +36,7 @@ const AIStudio = () => {
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [isGeneratingTopic, setIsGeneratingTopic] = useState(false);
   const [enlargedImageIndex, setEnlargedImageIndex] = useState<number | null>(null);
+  const [previewLightbox, setPreviewLightbox] = useState<string | null>(null);
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const processingRef = useRef(false);
 
@@ -683,18 +684,18 @@ const AIStudio = () => {
                   )}
                 </Button>
               </div>
-            ) : (
+           ) : (
               <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
                 <div className="flex gap-3">
-                  <div className="relative">
-                    <img src={previewCharacterImage} alt="Character Preview" className="w-16 h-24 rounded-lg object-cover border border-border" />
+                  <div className="relative cursor-pointer" onClick={() => setPreviewLightbox(previewCharacterImage)}>
+                    <img src={previewCharacterImage} alt="Character Preview" className="w-16 h-24 rounded-lg object-cover border border-border hover:opacity-80 transition-opacity" />
                     <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[8px] px-1.5 py-0.5 rounded-full font-bold">
                       <Check className="h-2.5 w-2.5" />
                     </span>
                   </div>
                   {previewFinalLookImage && (
-                    <div className="relative">
-                      <img src={previewFinalLookImage} alt="Final Look" className="w-16 h-24 rounded-lg object-cover border border-accent/30" />
+                    <div className="relative cursor-pointer" onClick={() => setPreviewLightbox(previewFinalLookImage)}>
+                      <img src={previewFinalLookImage} alt="Final Look" className="w-16 h-24 rounded-lg object-cover border border-accent/30 hover:opacity-80 transition-opacity" />
                       <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground text-[7px] px-1.5 py-0.5 rounded-full font-bold whitespace-nowrap">
                         Final Look
                       </span>
@@ -793,6 +794,24 @@ const AIStudio = () => {
             onClose={() => setEnlargedImageIndex(null)}
             onNavigate={(i) => setEnlargedImageIndex(i)}
           />
+        )}
+
+        {/* Preview Image Lightbox */}
+        {previewLightbox && (
+          <div
+            className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md cursor-pointer"
+            onClick={() => setPreviewLightbox(null)}
+          >
+            <button className="absolute top-4 right-4 text-white hover:text-muted-foreground z-[110]">
+              <X className="h-8 w-8" />
+            </button>
+            <img
+              src={previewLightbox}
+              alt="Preview"
+              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         )}
       </div>
     </ProjectLayout>
