@@ -244,18 +244,18 @@ const AIStudio = () => {
       const isGRWM = config.vlogCategory === 'Get Ready With Me' && config.creationMode === 'vlog';
 
       if (isGRWM) {
-        // Sequential: generate final look first (more accurate identity), then use it as anchor for default look
-        const finalResult = await supabase.functions.invoke('generate-character-preview', { body: { ...previewBody, isFinalLook: true } });
-        if (finalResult.error) throw finalResult.error;
-        if (finalResult.data?.error) throw new Error(finalResult.data.error);
-        const finalLookUrl = finalResult.data.imageUrl;
-        setPreviewFinalLookImage(finalLookUrl);
-
-        // Generate default look with the final look as identity anchor
-        const defaultResult = await supabase.functions.invoke('generate-character-preview', { body: { ...previewBody, identityAnchorUrl: finalLookUrl } });
+        // Sequential: generate default look first (closer to selfie, best identity match), then use it as anchor for final look
+        const defaultResult = await supabase.functions.invoke('generate-character-preview', { body: previewBody });
         if (defaultResult.error) throw defaultResult.error;
         if (defaultResult.data?.error) throw new Error(defaultResult.data.error);
-        setPreviewCharacterImage(defaultResult.data.imageUrl);
+        const defaultLookUrl = defaultResult.data.imageUrl;
+        setPreviewCharacterImage(defaultLookUrl);
+
+        // Generate final look with the default look as identity anchor
+        const finalResult = await supabase.functions.invoke('generate-character-preview', { body: { ...previewBody, isFinalLook: true, identityAnchorUrl: defaultLookUrl } });
+        if (finalResult.error) throw finalResult.error;
+        if (finalResult.data?.error) throw new Error(finalResult.data.error);
+        setPreviewFinalLookImage(finalResult.data.imageUrl);
       } else {
         const result = await supabase.functions.invoke('generate-character-preview', { body: previewBody });
         if (result.error) throw result.error;
