@@ -75,31 +75,31 @@ serve(async (req) => {
     const skin = config.skinComplexion === 'Custom' ? config.customSkinComplexion : `${config.skinComplexion} ${config.skinUndertone}`;
     const nails = config.nailStyle === 'Custom' ? config.customNailStyle : config.nailStyle;
 
-    let prompt = `Generate a photorealistic character portrait based on the reference image. Ensure the character matches the reference face/identity. Full body shot, professional lighting.`;
+    let prompt = `Create a stylish fashion portrait inspired by the reference photo. The subject should resemble the person in the reference. Full-length view, studio-quality lighting, editorial fashion photography style.`;
 
     if (environmentImage) {
-      prompt += ` BACKGROUND: STRICTLY USE the provided environment reference image as the background.`;
+      prompt += ` Use the provided environment image as the setting/backdrop.`;
     } else {
-      prompt += ` BACKGROUND: Create a high-quality aesthetic background suitable for a ${config.creationMode === 'vlog' ? config.vlogCategory : 'Influencer'} setting.`;
+      prompt += ` Setting: a clean, modern backdrop suitable for fashion or lifestyle content.`;
     }
 
     if (isFinalLook) {
-      prompt += ` IMPORTANT: This is the "Final Look" reveal. OUTFIT MUST BE: ${targetOutfit}. The character should look glamorous. Do NOT use the starting outfit.`;
+      prompt += ` This is the final styled look. Outfit: ${targetOutfit}. The subject should look polished and put-together.`;
     } else {
       prompt += ` Outfit: ${targetOutfit}.`;
     }
 
     prompt += `
-MANDATORY STYLE DETAILS:
-- Hairstyle: ${hair}
+Style details:
+- Hair: ${hair}
 - Makeup: ${makeup}
-- Skin: ${skin}
+- Skin tone: ${skin}
 - Nails: ${nails}
-
-Aspect Ratio: 9:16`;
+- Aspect ratio: 9:16
+- Style: editorial fashion photography, tasteful, fully clothed`;
 
     if (config.exactMatch) {
-      prompt += `\nCRITICAL: STRICT FACIAL & BODY CLONING. Generate the EXACT SAME person from the reference. Match face, skin tone, and body shape precisely.`;
+      prompt += `\nIMPORTANT: Closely match the person's facial features and appearance from the reference photo.`;
     }
 
     contentParts.push({ type: "text", text: prompt });
@@ -134,10 +134,18 @@ Aspect Ratio: 9:16`;
       }
     }
 
+    // Check for safety block
+    const finishReason = data.choices?.[0]?.finish_reason;
+    const nativeReason = data.choices?.[0]?.native_finish_reason;
+    if (nativeReason === "IMAGE_SAFETY" || finishReason === "content_filter") {
+      console.error("Image blocked by safety filter:", nativeReason);
+      throw new Error("The image was blocked by safety filters. Try adjusting the style settings or using a different reference photo.");
+    }
+
     const imageUrl = extractImageFromResponse(data);
     if (!imageUrl) {
       console.error("Could not extract image. Full response:", JSON.stringify(data).substring(0, 1000));
-      throw new Error("Character preview generation failed - no image in response");
+      throw new Error("Character preview generation failed - no image in response. Please try again.");
     }
 
     return new Response(JSON.stringify({ imageUrl }), {
