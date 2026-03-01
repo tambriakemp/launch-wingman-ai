@@ -114,68 +114,6 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
             <Switch checked={config.exactMatch} onCheckedChange={(v) => setConfig(c => ({ ...c, exactMatch: v }))} />
           </div>
 
-          {/* Aspect Ratio */}
-          <div className="mb-6">
-            <Label label="Aspect Ratio" />
-            <div className="grid grid-cols-3 gap-2">
-              {(['9:16', '16:9', '1:1'] as const).map(ratio => (
-                <button key={ratio} onClick={() => setConfig(c => ({ ...c, aspectRatio: ratio }))}
-                  className={`py-2 text-xs border rounded transition-all ${config.aspectRatio === ratio ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:border-muted-foreground'}`}>
-                  {ratio}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Camera Movement */}
-          <div className="mb-6">
-            <Label label="Camera Movement / Video Style" />
-            <select value={config.cameraMovement} onChange={(e) => setConfig(c => ({ ...c, cameraMovement: e.target.value }))}
-              className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
-              {CAMERA_MOVEMENTS.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </div>
-
-          {/* Category & Topic (Vlog) */}
-          {config.creationMode === 'vlog' && (
-            <div className="mb-6 space-y-3">
-              <div>
-                <Label label="Vlog Category" />
-                <select value={config.vlogCategory} onChange={(e) => setConfig(c => ({ ...c, vlogCategory: e.target.value }))}
-                  className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none">
-                  {VLOG_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <Label label="Vlog Topic" />
-                  <button onClick={onGenerateTopicIdeas} disabled={isGeneratingTopic}
-                    className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1 transition-colors disabled:opacity-50">
-                    {isGeneratingTopic ? <span className="animate-pulse">Thinking...</span> : <><Sparkles className="h-3 w-3" /> Brainstorm</>}
-                  </button>
-                </div>
-                <textarea placeholder={TOPIC_PLACEHOLDERS[config.vlogCategory] || "Describe your video concept..."}
-                  value={config.vlogTopic} onChange={(e) => setConfig(c => ({ ...c, vlogTopic: e.target.value }))}
-                  className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none min-h-[80px]" />
-              </div>
-              <div className="mt-4 pt-4 border-t border-border">
-                <label className="flex items-center gap-2 cursor-pointer mb-2">
-                  <input type="checkbox" checked={config.useOwnScript} onChange={(e) => setConfig(c => ({ ...c, useOwnScript: e.target.checked }))}
-                    className="rounded border-border text-primary focus:ring-primary bg-muted" />
-                  <span className="text-sm font-bold text-foreground">I want to use my own script ✍️</span>
-                </label>
-                {config.useOwnScript && (
-                  <div>
-                    <textarea placeholder="Paste your script here... (Max 5000 characters)"
-                      value={config.userScript} onChange={(e) => setConfig(c => ({ ...c, userScript: e.target.value.slice(0, 5000) }))}
-                      className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none min-h-[100px]" />
-                    <p className="text-right text-[10px] text-muted-foreground mt-1">{config.userScript.length}/5000</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* UGC Context */}
           {config.creationMode === 'ugc' && (
             <div className="mb-6 space-y-3">
@@ -294,6 +232,73 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
           </div>
 
           <SavedLooks config={config} setConfig={setConfig} />
+        </section>
+
+        {/* Card 4: Vlog Settings */}
+        <section className="bg-card p-6 rounded-2xl border border-border">
+          <SectionHeading title="Vlog Settings" />
+
+          {/* Aspect Ratio */}
+          <div className="mb-6">
+            <Label label="Aspect Ratio" />
+            <div className="grid grid-cols-3 gap-2">
+              {(['9:16', '16:9', '1:1'] as const).map(ratio => (
+                <button key={ratio} onClick={() => setConfig(c => ({ ...c, aspectRatio: ratio }))}
+                  className={`py-2 text-xs border rounded transition-all ${config.aspectRatio === ratio ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground hover:border-muted-foreground'}`}>
+                  {ratio}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Camera Movement */}
+          <div className="mb-6">
+            <Label label="Camera Movement / Video Style" />
+            <select value={config.cameraMovement} onChange={(e) => setConfig(c => ({ ...c, cameraMovement: e.target.value }))}
+              className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+              {CAMERA_MOVEMENTS.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+
+          {/* Category & Topic (Vlog) */}
+          {config.creationMode === 'vlog' && (
+            <div className="mb-6 space-y-3">
+              <div>
+                <Label label="Vlog Category" />
+                <select value={config.vlogCategory} onChange={(e) => setConfig(c => ({ ...c, vlogCategory: e.target.value }))}
+                  className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none">
+                  {VLOG_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <Label label="Vlog Topic" />
+                  <button onClick={onGenerateTopicIdeas} disabled={isGeneratingTopic}
+                    className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1 transition-colors disabled:opacity-50">
+                    {isGeneratingTopic ? <span className="animate-pulse">Thinking...</span> : <><Sparkles className="h-3 w-3" /> Brainstorm</>}
+                  </button>
+                </div>
+                <textarea placeholder={TOPIC_PLACEHOLDERS[config.vlogCategory] || "Describe your video concept..."}
+                  value={config.vlogTopic} onChange={(e) => setConfig(c => ({ ...c, vlogTopic: e.target.value }))}
+                  className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none min-h-[80px]" />
+              </div>
+              <div className="mt-4 pt-4 border-t border-border">
+                <label className="flex items-center gap-2 cursor-pointer mb-2">
+                  <input type="checkbox" checked={config.useOwnScript} onChange={(e) => setConfig(c => ({ ...c, useOwnScript: e.target.checked }))}
+                    className="rounded border-border text-primary focus:ring-primary bg-muted" />
+                  <span className="text-sm font-bold text-foreground">I want to use my own script ✍️</span>
+                </label>
+                {config.useOwnScript && (
+                  <div>
+                    <textarea placeholder="Paste your script here... (Max 5000 characters)"
+                      value={config.userScript} onChange={(e) => setConfig(c => ({ ...c, userScript: e.target.value.slice(0, 5000) }))}
+                      className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none min-h-[100px]" />
+                    <p className="text-right text-[10px] text-muted-foreground mt-1">{config.userScript.length}/5000</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Terms & Safety */}
