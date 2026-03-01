@@ -1,59 +1,65 @@
 
 
-## Add Saved Character Reference Photo
+## Add Saved Environment Photos (Multiple, Labeled)
 
-Allow users to upload and save one character reference photo to their account, then select it for reuse across AI Studio sessions instead of re-uploading every time.
+Allow users to save multiple labeled environment/setting photos (e.g., "Kitchen", "Office", "Living Room") and select one to use as the environment reference.
 
-### How It Works
+### Storage
 
-1. Below the "Character Reference" upload zone, a new "Saved Character" section appears
-2. If no saved character exists, a small upload button lets the user save one photo (stored in cloud storage)
-3. If a saved character exists, it shows as a thumbnail with a "Use This" button and a "Delete" option
-4. Clicking "Use This" sets it as the active reference image (same as uploading manually)
-5. Only one saved character photo per user is allowed
-
-### Database & Storage Changes
-
-- **Storage**: Use the existing `ai-studio` bucket. Save files at path `characters/{user_id}/saved-reference.png`
-- **No new table needed** -- we can simply check if a file exists at the known path in storage. The storage bucket already exists and is public.
-
-### Frontend Changes
-
-**`src/components/ai-studio/SavedCharacter.tsx`** (new component)
-- Queries storage for `characters/{userId}/saved-reference.png` on mount
-- If found, displays thumbnail with "Use This" and "Delete" buttons
-- If not found, shows a small upload area to save a reference
-- On upload: saves to storage, displays thumbnail
-- On "Use This": calls `onSelect(base64)` which sets the reference image
-- On delete: removes from storage
-
-**`src/components/ai-studio/StudioSetup.tsx`**
-- Import and render `SavedCharacter` component between the Creation Mode selector and the Character Reference upload zone
-- Pass `onSelect` callback that sets the reference image (same as `setReferenceImage`)
-- Add a divider with "OR upload a new one" text between saved character and the upload zone
-
-**`src/pages/AIStudio.tsx`**
-- No changes needed -- `setReferenceImage` already handles base64 input from any source
-
-### User Flow
-
-```text
-Creation Mode: [VLOG] [UGC]
-
-Saved Character:
-  [thumbnail]  [Use This]  [Delete]
-  -- OR --
-  [+ Save a character photo]
-
-Character Reference:
-  [Upload Zone - for one-time use]
+Use the existing `ai-studio` bucket. Files stored at:
 ```
+environments/{user_id}/{uuid}.png
+```
+
+### Database
+
+A new table `ai_studio_environments` is needed to store metadata (label, file path) since we need multiple labeled entries per user:
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK, default gen_random_uuid() |
+| user_id | uuid | NOT NULL |
+| label | text | NOT NULL (e.g., "Kitchen") |
+| file_path | text | NOT NULL (storage path) |
+| created_at | timestamptz | default now() |
+
+RLS policies: Users can SELECT, INSERT, DELETE their own rows (matched on `auth.uid() = user_id`).
+
+### New Component: `SavedEnvironments.tsx`
+
+Similar pattern to `SavedCharacter.tsx` but supports multiple entries:
+
+- On mount, queries `ai_studio_environments` for the current user
+- Displays a grid/list of saved environments as labeled thumbnails
+- Each entry shows: thumbnail, label text, **[Use]** and **[Delete]** buttons
+- A **[+ Add Environment]** button opens a small form: file upload + text input for label
+- Clicking **Use** converts the image to base64 and calls `onSelect(base64)` (sets `environmentImage`)
+- Clicking **Delete** removes the storage file and the database row
+- No limit enforced, but UI keeps it compact (scrollable if many)
+
+### Integration in `StudioSetup.tsx`
+
+Insert `SavedEnvironments` above the existing Environment `UploadZone` (same pattern as SavedCharacter):
+
+```
+Environment / Setting (Optional):
+  [Saved: Kitchen] [Saved: Office] [+ Add]
+  --- OR upload a new one below ---
+  [Upload Zone - one-time use]
+```
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| Database migration | Create `ai_studio_environments` table with RLS |
+| `src/components/ai-studio/SavedEnvironments.tsx` | New component |
+| `src/components/ai-studio/StudioSetup.tsx` | Import and render `SavedEnvironments` above environment UploadZone |
 
 ### Technical Details
 
-- Uses `supabase.storage.from('ai-studio')` for upload/download/delete
-- File path convention: `characters/{user_id}/saved-reference.png` (overwritten on re-save)
-- Fetches the public URL on load, converts to base64 when "Use This" is clicked
-- The existing `ai-studio` bucket is already public, so we can use `getPublicUrl` for the thumbnail
-- Auth check via `supabase.auth.getUser()` to get the user ID
+- Upload flow: user clicks "+ Add", picks a file, types a label, clicks Save. File goes to storage at `environments/{userId}/{crypto.randomUUID()}.png`, row inserted into `ai_studio_environments`.
+- Delete flow: removes storage file via `supabase.storage.from('ai-studio').remove([filePath])`, then deletes the DB row.
+- "Use" flow: fetches public URL, converts to base64 via FileReader, calls `onSelect()` which sets `environmentImage` state in AIStudio.
+- Thumbnails use `supabase.storage.from('ai-studio').getPublicUrl(filePath)`.
 
