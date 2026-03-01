@@ -5,6 +5,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const stripBase64Prefix = (img: string): string => {
+  if (!img) return "";
+  let cleaned = img.trim();
+  if (cleaned.includes(",") && cleaned.startsWith("data:")) {
+    cleaned = cleaned.split(",")[1];
+  }
+  cleaned = cleaned.replace(/\s/g, "");
+  return cleaned;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -13,6 +23,9 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const { action, referenceImage, productImage, environmentImage, config } = await req.json();
+    const refClean = referenceImage ? stripBase64Prefix(referenceImage) : null;
+    const prodClean = productImage ? stripBase64Prefix(productImage) : null;
+    const envClean = environmentImage ? stripBase64Prefix(environmentImage) : null;
 
     // Topic brainstorming
     if (action === "brainstorm") {
@@ -79,9 +92,9 @@ Also provide an analysis object with: face_structure, hair, skin_tone, makeup_ac
 
       // Build messages with images
       const contentParts: any[] = [];
-      if (referenceImage) contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${referenceImage}` } });
-      if (productImage) contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${productImage}` } });
-      if (environmentImage) contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${environmentImage}` } });
+      if (refClean) contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${refClean}` } });
+      if (prodClean) contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${prodClean}` } });
+      if (envClean) contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${envClean}` } });
       contentParts.push({ type: "text", text: "Generate the storyboard based on these reference images and the system instructions." });
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -178,7 +191,7 @@ Also provide an analysis object with: face_structure, hair, skin_tone, makeup_ac
           messages: [{
             role: "user",
             content: [
-              { type: "image_url", image_url: { url: `data:image/jpeg;base64,${referenceImage}` } },
+              { type: "image_url", image_url: { url: `data:image/jpeg;base64,${refClean}` } },
               { type: "text", text: 'Analyze this image for safety. Check for: 1. Children/minors (under 18). 2. Explicit content. Respond with JSON: { "isSafe": boolean, "reason": string }.' }
             ]
           }]
