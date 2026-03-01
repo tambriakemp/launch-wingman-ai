@@ -5,6 +5,7 @@ import {
   NAIL_STYLES, OUTFIT_TYPES, HAIRSTYLE_GROUPS, CAMERA_MOVEMENTS, TOPIC_PLACEHOLDERS
 } from './constants';
 import UploadZone from './UploadZone';
+import SavedCharacter from './SavedCharacter';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Loader2, ArrowRight, Sparkles } from 'lucide-react';
@@ -69,9 +70,10 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
             </div>
 
             <div className="space-y-6">
+              <SavedCharacter onSelect={setReferenceImage} />
               <div>
                 <Label label="Character Reference" />
-                <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing} title="Upload Selfie / Avatar" subtext="Required. Used to maintain facial consistency." />
+                <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing} title="Upload Selfie / Avatar" subtext="One-time use. Used to maintain facial consistency." />
               </div>
               <div>
                 <Label label="Environment / Setting (Optional)" />
