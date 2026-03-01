@@ -6,17 +6,36 @@ import {
   VLOG_CATEGORIES, TOPIC_PLACEHOLDERS
 } from './constants';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ChevronDown, Palette, User, Settings2, Sparkles } from 'lucide-react';
+import { ChevronDown, Palette, User, Settings2, Sparkles, MapPin, ShoppingBag } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import SavedCharacter from './SavedCharacter';
+import SavedEnvironments from './SavedEnvironments';
+import SavedLooks from './SavedLooks';
+import UploadZone from './UploadZone';
 
 interface StoryboardToolbarProps {
   config: AppConfig;
   setConfig: React.Dispatch<React.SetStateAction<AppConfig>>;
   isGeneratingTopic?: boolean;
   onGenerateTopicIdeas?: () => void;
+  // Character props
+  referenceImage?: string | null;
+  setReferenceImage?: (img: string | null) => void;
+  setReferenceImages?: (imgs: string[]) => void;
+  // Environment props
+  environmentImage?: string | null;
+  setEnvironmentImage?: (img: string | null) => void;
+  setEnvironmentImages?: (imgs: string[]) => void;
+  // Product props
+  productImage?: string | null;
+  setProductImage?: (img: string | null) => void;
+  // Safety
+  showSafetyTerms?: boolean;
+  setShowSafetyTerms?: (v: boolean) => void;
+  isProcessing?: boolean;
 }
 
-const ToolbarButton: React.FC<{ label: string; icon: React.ReactNode; children: React.ReactNode }> = ({ label, icon, children }) => (
+const ToolbarButton: React.FC<{ label: string; icon: React.ReactNode; children: React.ReactNode; wide?: boolean }> = ({ label, icon, children, wide }) => (
   <Popover>
     <PopoverTrigger asChild>
       <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted hover:bg-muted/80 border border-border rounded-lg transition-colors">
@@ -25,7 +44,7 @@ const ToolbarButton: React.FC<{ label: string; icon: React.ReactNode; children: 
         <ChevronDown className="h-3 w-3" />
       </button>
     </PopoverTrigger>
-    <PopoverContent className="w-80 max-h-[70vh] overflow-y-auto p-4" align="start">
+    <PopoverContent className={`${wide ? 'w-96' : 'w-80'} max-h-[70vh] overflow-y-auto p-4`} align="start">
       {children}
     </PopoverContent>
   </Popover>
@@ -47,7 +66,12 @@ const SelectField: React.FC<{ value: string; onChange: (v: string) => void; opti
 );
 
 const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
-  config, setConfig, isGeneratingTopic, onGenerateTopicIdeas
+  config, setConfig, isGeneratingTopic, onGenerateTopicIdeas,
+  referenceImage, setReferenceImage, setReferenceImages,
+  environmentImage, setEnvironmentImage, setEnvironmentImages,
+  productImage, setProductImage,
+  showSafetyTerms, setShowSafetyTerms,
+  isProcessing
 }) => {
   return (
     <div className="flex items-center gap-2 flex-wrap py-3 px-1">
@@ -61,9 +85,58 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
         ))}
       </div>
 
-      {/* Visual Style */}
-      <ToolbarButton label="Visual Style" icon={<Palette className="h-3.5 w-3.5" />}>
+      {/* Character */}
+      <ToolbarButton label="Character" icon={<User className="h-3.5 w-3.5" />} wide>
+        <div className="space-y-4">
+          {setReferenceImage && (
+            <>
+              <SavedCharacter onSelect={setReferenceImage} onSelectMultiple={setReferenceImages} />
+              <div>
+                <Label label="Upload Reference" />
+                <UploadZone onImageSelected={setReferenceImage} isProcessing={isProcessing || false} title="Upload Selfie / Avatar" subtext="Used to maintain facial consistency." />
+              </div>
+            </>
+          )}
+        </div>
+      </ToolbarButton>
+
+      {/* Environment */}
+      <ToolbarButton label="Environment" icon={<MapPin className="h-3.5 w-3.5" />} wide>
         <div className="space-y-3">
+          {setEnvironmentImage && (
+            <SavedEnvironments onSelect={setEnvironmentImage} onSelectMultiple={setEnvironmentImages} />
+          )}
+        </div>
+      </ToolbarButton>
+
+      {/* Look */}
+      <ToolbarButton label="Look" icon={<Palette className="h-3.5 w-3.5" />}>
+        <div className="space-y-3">
+          {/* Exact Match */}
+          <div className="flex justify-between items-center pb-2 border-b border-border">
+            <span className="text-xs font-medium text-foreground">Exact Face & Skin Tone</span>
+            <Switch checked={config.exactMatch} onCheckedChange={(v) => setConfig(c => ({ ...c, exactMatch: v }))} />
+          </div>
+
+          {/* Product Upload (UGC only) */}
+          {config.creationMode === 'ugc' && setProductImage && (
+            <div>
+              <Label label="Product Reference" />
+              <UploadZone onImageSelected={setProductImage} isProcessing={isProcessing || false} title="Product Image" subtext="Required for UGC mode." />
+            </div>
+          )}
+
+          {/* UGC Marketing Goal */}
+          {config.creationMode === 'ugc' && (
+            <div>
+              <Label label="Marketing Goal" />
+              <textarea placeholder="e.g. Promoting a new matte lipstick..."
+                value={config.ugcPrompt} onChange={(e) => setConfig(c => ({ ...c, ugcPrompt: e.target.value }))}
+                className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px]" />
+            </div>
+          )}
+
+          {/* Outfit */}
           <div>
             <Label label="Outfit" />
             <SelectField value={config.outfitType} onChange={(v) => setConfig(c => ({ ...c, outfitType: v }))} options={OUTFIT_TYPES} />
@@ -76,6 +149,24 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               onChange={(e) => setConfig(c => ({ ...c, outfitAdditionalInfo: e.target.value }))}
               className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground mt-1.5 outline-none" />
           </div>
+
+          {/* GRWM Final Look */}
+          {config.vlogCategory === 'Get Ready With Me' && config.creationMode === 'vlog' && (
+            <div className="pt-2 border-t border-border">
+              <Label label="Final Look (Reveal Outfit)" />
+              <SelectField value={config.finalLookType} onChange={(v) => setConfig(c => ({ ...c, finalLookType: v }))} options={OUTFIT_TYPES} />
+              {config.finalLookType === 'Custom Outfit' && (
+                <input type="text" placeholder="Describe final look outfit..." value={config.finalLook}
+                  onChange={(e) => setConfig(c => ({ ...c, finalLook: e.target.value }))}
+                  className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground mt-1.5 outline-none" />
+              )}
+              <input type="text" placeholder="Additional final look details (optional)" value={config.finalLookAdditionalInfo}
+                onChange={(e) => setConfig(c => ({ ...c, finalLookAdditionalInfo: e.target.value }))}
+                className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground mt-1.5 outline-none" />
+            </div>
+          )}
+
+          {/* Hairstyle */}
           <div>
             <Label label="Hairstyle" />
             <SelectField value={config.hairstyle} onChange={(v) => setConfig(c => ({ ...c, hairstyle: v }))} options={[]} groups={HAIRSTYLE_GROUPS} />
@@ -85,6 +176,8 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground mt-1.5 outline-none" />
             )}
           </div>
+
+          {/* Makeup */}
           <div>
             <Label label="Makeup" />
             <SelectField value={config.makeup} onChange={(v) => setConfig(c => ({ ...c, makeup: v }))} options={MAKEUP_STYLES} />
@@ -94,6 +187,8 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground mt-1.5 outline-none" />
             )}
           </div>
+
+          {/* Skin + Nails */}
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label label="Skin" />
@@ -112,47 +207,38 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               )}
             </div>
           </div>
-          <div className="pt-2 border-t border-border">
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-medium text-foreground">Exact Face & Skin Tone</span>
-              <Switch checked={config.exactMatch} onCheckedChange={(v) => setConfig(c => ({ ...c, exactMatch: v }))} />
-            </div>
-          </div>
-        </div>
-      </ToolbarButton>
 
-      {/* Character (placeholder - just shows current mode) */}
-      <ToolbarButton label="Character" icon={<User className="h-3.5 w-3.5" />}>
-        <div className="space-y-3">
-          <Label label="Creation Mode" />
-          <div className="grid grid-cols-2 gap-1 bg-muted p-0.5 rounded-md">
-            <button onClick={() => setConfig(c => ({ ...c, creationMode: 'vlog' }))}
-              className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'vlog' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}>
-              VLOG
-            </button>
-            <button onClick={() => setConfig(c => ({ ...c, creationMode: 'ugc' }))}
-              className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'ugc' ? 'bg-accent text-accent-foreground shadow' : 'text-muted-foreground'}`}>
-              UGC
-            </button>
+          {/* Saved Looks */}
+          <div className="pt-2 border-t border-border">
+            <SavedLooks config={config} setConfig={setConfig} />
           </div>
-          {config.creationMode === 'ugc' && (
-            <div>
-              <Label label="Marketing Goal" />
-              <textarea placeholder="e.g. Promoting a new matte lipstick..."
-                value={config.ugcPrompt} onChange={(e) => setConfig(c => ({ ...c, ugcPrompt: e.target.value }))}
-                className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px]" />
-            </div>
-          )}
         </div>
       </ToolbarButton>
 
       {/* Settings */}
       <ToolbarButton label="Settings" icon={<Settings2 className="h-3.5 w-3.5" />}>
         <div className="space-y-3">
+          {/* Creation Mode */}
+          <div>
+            <Label label="Creation Mode" />
+            <div className="grid grid-cols-2 gap-1 bg-muted p-0.5 rounded-md">
+              <button onClick={() => setConfig(c => ({ ...c, creationMode: 'vlog' }))}
+                className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'vlog' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}>
+                VLOG
+              </button>
+              <button onClick={() => setConfig(c => ({ ...c, creationMode: 'ugc' }))}
+                className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'ugc' ? 'bg-accent text-accent-foreground shadow' : 'text-muted-foreground'}`}>
+                UGC
+              </button>
+            </div>
+          </div>
+
+          {/* Camera Movement */}
           <div>
             <Label label="Camera Movement" />
             <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
           </div>
+
           {config.creationMode === 'vlog' && (
             <>
               <div>
@@ -175,6 +261,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               </div>
             </>
           )}
+
           {config.vlogCategory === 'Get Ready With Me' && config.creationMode === 'vlog' && (
             <div className="pt-2 border-t border-border">
               <Label label="Final Look (Reveal Outfit)" />
@@ -186,6 +273,8 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               )}
             </div>
           )}
+
+          {/* Script */}
           <div className="pt-2 border-t border-border">
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={config.useOwnScript} onChange={(e) => setConfig(c => ({ ...c, useOwnScript: e.target.checked }))}
@@ -198,6 +287,19 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] mt-2" />
             )}
           </div>
+
+          {/* Safety Terms */}
+          {setShowSafetyTerms && (
+            <div className="pt-2 border-t border-border">
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input type="checkbox" checked={showSafetyTerms || false} onChange={(e) => setShowSafetyTerms(e.target.checked)}
+                  className="mt-0.5 rounded border-border text-primary focus:ring-primary bg-muted" />
+                <span className="text-[10px] text-foreground leading-tight">
+                  I confirm that I own the rights to these images, no children are shown, and images are not explicit. <span className="text-primary font-bold">*Required</span>
+                </span>
+              </label>
+            </div>
+          )}
         </div>
       </ToolbarButton>
     </div>
