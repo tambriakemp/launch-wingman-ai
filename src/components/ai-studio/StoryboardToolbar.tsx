@@ -239,28 +239,8 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
           </div>
 
-          {config.creationMode === 'vlog' && (
-            <>
-              <div>
-                <Label label="Vlog Category" />
-                <SelectField value={config.vlogCategory} onChange={(v) => setConfig(c => ({ ...c, vlogCategory: v }))} options={VLOG_CATEGORIES} />
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <Label label="Vlog Topic" />
-                  {onGenerateTopicIdeas && (
-                    <button onClick={onGenerateTopicIdeas} disabled={isGeneratingTopic}
-                      className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1 disabled:opacity-50">
-                      {isGeneratingTopic ? <span className="animate-pulse">Thinking...</span> : <><Sparkles className="h-3 w-3" /> Brainstorm</>}
-                    </button>
-                  )}
-                </div>
-                <textarea placeholder={TOPIC_PLACEHOLDERS[config.vlogCategory] || "Describe your video concept..."}
-                  value={config.vlogTopic} onChange={(e) => setConfig(c => ({ ...c, vlogTopic: e.target.value }))}
-                  className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px]" />
-              </div>
-            </>
-          )}
+
+
 
           {/* Script */}
           <div className="pt-2 border-t border-border">
