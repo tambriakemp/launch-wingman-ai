@@ -101,11 +101,13 @@ const AIStudio = () => {
                 if (task.index < storyboard.steps.length - 1) nextScenePrompt = storyboard.steps[task.index + 1]?.image_prompt;
               }
 
+              // STRICT IDENTITY GATE: If preview exists, it is the ONLY character reference.
+              // Raw selfies are NOT sent to avoid competing identity signals.
               const { data, error } = await supabase.functions.invoke('generate-scene-image', {
                 body: {
                   prompt: task.step.image_prompt,
-                  referenceImage,
-                  referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
+                  referenceImage: activePreview ? undefined : referenceImage,
+                  referenceImages: activePreview ? undefined : (referenceImages.length > 0 ? referenceImages : undefined),
                   productImage,
                   environmentImage,
                   environmentImages: environmentImages.length > 0 ? environmentImages : undefined,
@@ -226,6 +228,11 @@ const AIStudio = () => {
 
   const handleGenerateStoryboard = async () => {
     if (!referenceImage) return;
+    // STRICT GATE: Require a validated character preview before storyboard generation
+    if (!previewCharacterImage) {
+      toast({ title: "Character Preview Required", description: "Please generate and review the character preview before creating the storyboard.", variant: "destructive" });
+      return;
+    }
     setIsGeneratingStoryboard(true);
     try {
       // Safety check

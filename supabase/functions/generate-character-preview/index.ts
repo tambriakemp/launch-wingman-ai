@@ -107,7 +107,7 @@ serve(async (req) => {
 IDENTITY PRESERVATION (CRITICAL):
 - The subject MUST closely match the person in the reference photo(s) — same facial structure, bone structure, skin tone, body proportions, hair texture, and age.
 - Do NOT alter their appearance, ethnicity, age, or body type.
-- This portrait will be used as the canonical identity for all future scenes, so accuracy is paramount.
+- IMPORTANT: This generated image will serve as the CANONICAL IDENTITY REFERENCE for ALL future scenes. Every subsequent scene will use THIS image as the single source of truth for the character's appearance. Accuracy to the reference photo is PARAMOUNT — the generated character must be immediately recognizable as the same person in every future scene.
 ${multiRefNote}
 
 Full-length view, studio-quality lighting, editorial fashion photography style.`;
