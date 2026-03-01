@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -181,7 +182,52 @@ Style details:
       throw new Error("Character preview generation failed - no image in response. Please try again.");
     }
 
-    return new Response(JSON.stringify({ imageUrl }), {
+    // Upload preview to storage instead of returning raw base64
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const authHeader = req.headers.get("Authorization");
+    let userId = "anonymous";
+    if (authHeader) {
+      const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user } } = await supabaseAuth.auth.getUser(token);
+      if (user) userId = user.id;
+    }
+
+    let bytes: Uint8Array;
+    if (imageUrl.startsWith("data:")) {
+      const base64Data = imageUrl.split(",")[1];
+      const binaryString = atob(base64Data);
+      bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+    } else {
+      const imgResp = await fetch(imageUrl);
+      bytes = new Uint8Array(await imgResp.arrayBuffer());
+    }
+
+    const previewType = isFinalLook ? 'final-look' : 'character-preview';
+    const fileName = `${userId}/${previewType}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    const { error: uploadError } = await supabase.storage
+      .from("ai-studio")
+      .upload(fileName, bytes, { contentType: "image/png", upsert: true });
+
+    if (uploadError) {
+      console.error("Preview upload error:", uploadError);
+      // Fallback: return the raw image if upload fails
+      return new Response(JSON.stringify({ imageUrl }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    const { data: publicUrlData } = supabase.storage.from("ai-studio").getPublicUrl(fileName);
+    console.log(`Preview uploaded to storage: ${publicUrlData.publicUrl}`);
+
+    return new Response(JSON.stringify({ imageUrl: publicUrlData.publicUrl }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   } catch (e) {

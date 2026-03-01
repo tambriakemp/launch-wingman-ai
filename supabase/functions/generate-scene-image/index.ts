@@ -120,8 +120,14 @@ serve(async (req) => {
       // Raw referenceImage/referenceImages are IGNORED to prevent competing identity signals.
       if (!hasCharacterLock) {
         if (previewCharacter) {
-          const clean = stripPrefix(previewCharacter);
-          contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
+          // Handle both URL-based (from storage) and base64 previews
+          if (previewCharacter.startsWith('http')) {
+            contentParts.push({ type: "image_url", image_url: { url: previewCharacter } });
+          } else {
+            const clean = stripPrefix(previewCharacter);
+            contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
+          }
+          console.log(`[Identity Gate] Using canonical preview as identity source (${previewCharacter.startsWith('http') ? 'URL' : 'base64'})`);
           // DO NOT add raw references — preview is the single source of truth
         } else if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
           for (const refImg of referenceImages) {
