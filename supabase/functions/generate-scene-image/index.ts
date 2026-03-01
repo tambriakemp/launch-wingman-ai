@@ -47,7 +47,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { prompt, referenceImage, productImage, environmentImage, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, outfitAnchorUrl } = await req.json();
+    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, outfitAnchorUrl } = await req.json();
 
     const stripPrefix = (img: string): string => {
       if (!img) return "";
@@ -91,7 +91,13 @@ serve(async (req) => {
         contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
       }
 
-      if (environmentImage && !lockedRefs?.find((r: any) => r.type === 'environment')) {
+      // Add environment images (multi-angle group takes priority)
+      if (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 0 && !lockedRefs?.find((r: any) => r.type === 'environment')) {
+        for (const envImg of environmentImages) {
+          const clean = stripPrefix(envImg);
+          contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
+        }
+      } else if (environmentImage && !lockedRefs?.find((r: any) => r.type === 'environment')) {
         const clean = stripPrefix(environmentImage);
         contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
       }
@@ -114,6 +120,7 @@ serve(async (req) => {
       if (lockedRefs?.find((r: any) => r.type === 'outfit')) lockInstructions += "Use the exact outfit shown in the outfit reference image. ";
       if (lockedRefs?.find((r: any) => r.type === 'character')) lockInstructions += "Match the face and appearance from the character reference image closely. ";
       if (lockedRefs?.find((r: any) => r.type === 'environment')) lockInstructions += "Use the provided background reference as the setting. ";
+      if (environmentImages && environmentImages.length > 1) lockInstructions += "Multiple reference images of the same environment are provided showing different angles. Maintain exact spatial consistency — keep all fixtures, appliances, and furniture in their original positions. ";
 
       let outfitAnchorInstruction = "";
       if (!hasOutfitLock && outfitAnchorUrl) {

@@ -19,6 +19,7 @@ const AIStudio = () => {
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [productImage, setProductImage] = useState<string | null>(null);
   const [environmentImage, setEnvironmentImage] = useState<string | null>(null);
+  const [environmentImages, setEnvironmentImages] = useState<string[]>([]);
   const [previewCharacterImage, setPreviewCharacterImage] = useState<string | null>(null);
   const [previewFinalLookImage, setPreviewFinalLookImage] = useState<string | null>(null);
   const [isPreviewGenerating, setIsPreviewGenerating] = useState(false);
@@ -92,6 +93,7 @@ const AIStudio = () => {
                   referenceImage,
                   productImage,
                   environmentImage,
+                  environmentImages: environmentImages.length > 0 ? environmentImages : undefined,
                   previewCharacter: activePreview,
                   config: task.config,
                   lockedRefs,
@@ -174,10 +176,10 @@ const AIStudio = () => {
     setIsPreviewGenerating(true);
     try {
       const promises = [
-        supabase.functions.invoke('generate-character-preview', { body: { referenceImage, environmentImage, config, isFinalLook: false } })
+        supabase.functions.invoke('generate-character-preview', { body: { referenceImage, environmentImage, environmentImages: environmentImages.length > 0 ? environmentImages : undefined, config, isFinalLook: false } })
       ];
       if (config.vlogCategory === 'Get Ready With Me' && config.creationMode === 'vlog') {
-        promises.push(supabase.functions.invoke('generate-character-preview', { body: { referenceImage, environmentImage, config, isFinalLook: true } }));
+        promises.push(supabase.functions.invoke('generate-character-preview', { body: { referenceImage, environmentImage, environmentImages: environmentImages.length > 0 ? environmentImages : undefined, config, isFinalLook: true } }));
       }
       const results = await Promise.all(promises);
       if (results[0].error) throw results[0].error;
@@ -207,7 +209,7 @@ const AIStudio = () => {
       }
 
       const { data, error } = await supabase.functions.invoke('generate-storyboard', {
-        body: { action: 'generate', referenceImage, productImage, environmentImage, config }
+        body: { action: 'generate', referenceImage, productImage, environmentImage, environmentImages: environmentImages.length > 0 ? environmentImages : undefined, config }
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -358,6 +360,7 @@ const AIStudio = () => {
     setReferenceImage(null);
     setProductImage(null);
     setEnvironmentImage(null);
+    setEnvironmentImages([]);
     setPreviewCharacterImage(null);
     setPreviewFinalLookImage(null);
     setStoryboard(null);
@@ -426,6 +429,7 @@ const AIStudio = () => {
               config={config} setConfig={setConfig}
               referenceImage={referenceImage} setReferenceImage={setReferenceImage}
               environmentImage={environmentImage} setEnvironmentImage={setEnvironmentImage}
+              setEnvironmentImages={setEnvironmentImages}
               productImage={productImage} setProductImage={setProductImage}
               isProcessing={isProcessing} isPreviewGenerating={isPreviewGenerating}
               showSafetyTerms={showSafetyTerms} setShowSafetyTerms={setShowSafetyTerms}

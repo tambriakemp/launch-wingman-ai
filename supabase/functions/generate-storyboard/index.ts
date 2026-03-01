@@ -22,7 +22,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { action, referenceImage, productImage, environmentImage, config } = await req.json();
+    const { action, referenceImage, productImage, environmentImage, environmentImages, config } = await req.json();
     const refClean = referenceImage ? stripBase64Prefix(referenceImage) : null;
     const prodClean = productImage ? stripBase64Prefix(productImage) : null;
     const envClean = environmentImage ? stripBase64Prefix(environmentImage) : null;
@@ -94,7 +94,15 @@ Also provide an analysis object with: face_structure, hair, skin_tone, makeup_ac
       const contentParts: any[] = [];
       if (refClean) contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${refClean}` } });
       if (prodClean) contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${prodClean}` } });
-      if (envClean) contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${envClean}` } });
+      // Add environment images (multi-angle group takes priority)
+      if (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 0) {
+        for (const envImg of environmentImages) {
+          const clean = stripBase64Prefix(envImg);
+          contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
+        }
+      } else if (envClean) {
+        contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${envClean}` } });
+      }
       contentParts.push({ type: "text", text: "Generate the storyboard based on these reference images and the system instructions." });
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

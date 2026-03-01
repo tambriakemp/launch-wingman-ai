@@ -45,7 +45,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { referenceImage, environmentImage, config, isFinalLook } = await req.json();
+    const { referenceImage, environmentImage, environmentImages, config, isFinalLook } = await req.json();
 
     // Strip data URI prefix if present so we send raw base64 only
     const stripBase64Prefix = (img: string): string => {
@@ -58,7 +58,13 @@ serve(async (req) => {
       { type: "image_url", image_url: { url: `data:image/jpeg;base64,${refBase64}` } }
     ];
 
-    if (environmentImage) {
+    // Add environment images (multi-angle group takes priority)
+    if (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 0) {
+      for (const envImg of environmentImages) {
+        const envBase64 = stripBase64Prefix(envImg);
+        contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${envBase64}` } });
+      }
+    } else if (environmentImage) {
       const envBase64 = stripBase64Prefix(environmentImage);
       contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${envBase64}` } });
     }
@@ -77,7 +83,9 @@ serve(async (req) => {
 
     let prompt = `Create a stylish fashion portrait inspired by the reference photo. The subject should resemble the person in the reference. Full-length view, studio-quality lighting, editorial fashion photography style.`;
 
-    if (environmentImage) {
+    if (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 1) {
+      prompt += ` Multiple reference images of the same environment are provided showing different angles. Use these as the setting/backdrop. Maintain exact spatial consistency — keep all fixtures, appliances, and furniture in their original positions.`;
+    } else if (environmentImage || (environmentImages && environmentImages.length === 1)) {
       prompt += ` Use the provided environment image as the setting/backdrop.`;
     } else {
       prompt += ` Setting: a clean, modern backdrop suitable for fashion or lifestyle content.`;
