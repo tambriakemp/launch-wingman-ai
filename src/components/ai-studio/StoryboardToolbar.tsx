@@ -262,18 +262,6 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             </>
           )}
 
-          {config.vlogCategory === 'Get Ready With Me' && config.creationMode === 'vlog' && (
-            <div className="pt-2 border-t border-border">
-              <Label label="Final Look (Reveal Outfit)" />
-              <SelectField value={config.finalLookType} onChange={(v) => setConfig(c => ({ ...c, finalLookType: v }))} options={OUTFIT_TYPES} />
-              {config.finalLookType === 'Custom Outfit' && (
-                <input type="text" placeholder="Describe final look outfit..." value={config.finalLook}
-                  onChange={(e) => setConfig(c => ({ ...c, finalLook: e.target.value }))}
-                  className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground mt-1.5 outline-none" />
-              )}
-            </div>
-          )}
-
           {/* Script */}
           <div className="pt-2 border-t border-border">
             <label className="flex items-center gap-2 cursor-pointer">
