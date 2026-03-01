@@ -36,6 +36,11 @@ const AIStudio = () => {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const processingRef = useRef(false);
 
+  // Save/load project state
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [currentProjectName, setCurrentProjectName] = useState<string | undefined>(undefined);
+  const [isSaving, setIsSaving] = useState(false);
+
   // Refs to avoid stale closures in the queue processor
   const previewCharacterRef = useRef(previewCharacterImage);
   const previewFinalLookRef = useRef(previewFinalLookImage);
@@ -439,8 +444,115 @@ const AIStudio = () => {
     setEnlargedImageIndex(null);
     setIsProcessing(false);
     setShowSafetyTerms(false);
+    setCurrentProjectId(null);
+    setCurrentProjectName(undefined);
     setAppPhase('setup');
     setShowResetConfirmation(false);
+  };
+
+  // --- Save Project ---
+  const handleSaveProject = async (name: string) => {
+    setIsSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Strip transient flags from generatedMedia for persistence
+      const persistMedia: Record<string, any> = {};
+      Object.entries(generatedMedia).forEach(([idx, m]) => {
+        persistMedia[idx] = {
+          imageUrl: m.imageUrl,
+          videoUrl: m.videoUrl,
+          lockedCharacter: m.lockedCharacter,
+          lockedOutfit: m.lockedOutfit,
+          lockedEnvironment: m.lockedEnvironment,
+        };
+      });
+
+      const row = {
+        user_id: user.id,
+        name,
+        mode: config.creationMode,
+        config: config as any,
+        storyboard: storyboard as any,
+        generated_media: persistMedia as any,
+        character_preview_url: previewCharacterImage,
+        final_look_preview_url: previewFinalLookImage,
+        status: 'saved',
+        updated_at: new Date().toISOString(),
+      };
+
+      if (currentProjectId) {
+        const { error } = await supabase
+          .from('ai_studio_projects')
+          .update(row)
+          .eq('id', currentProjectId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from('ai_studio_projects')
+          .insert(row)
+          .select('id')
+          .single();
+        if (error) throw error;
+        setCurrentProjectId(data.id);
+      }
+      setCurrentProjectName(name);
+      toast({ title: "Project saved", description: `"${name}" has been saved.` });
+    } catch (e: any) {
+      toast({ title: "Save failed", description: e.message, variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // --- Load Project ---
+  const handleLoadProject = async (projectId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('ai_studio_projects')
+        .select('*')
+        .eq('id', projectId)
+        .single();
+      if (error) throw error;
+
+      const loadedConfig = data.config as unknown as AppConfig;
+      const loadedStoryboard = data.storyboard as unknown as VlogStoryboard;
+      const loadedMedia = (data.generated_media || {}) as Record<string, any>;
+
+      setConfig(loadedConfig);
+      setStoryboard(loadedStoryboard);
+      setPreviewCharacterImage(data.character_preview_url || null);
+      setPreviewFinalLookImage(data.final_look_preview_url || null);
+      setCurrentProjectId(data.id);
+      setCurrentProjectName(data.name);
+
+      // Rebuild generatedMedia with default transient flags
+      const restoredMedia: Record<number, GeneratedMedia> = {};
+      if (loadedStoryboard?.steps) {
+        loadedStoryboard.steps.forEach((_, idx) => {
+          const saved = loadedMedia[String(idx)] || {};
+          restoredMedia[idx] = {
+            imageUrl: saved.imageUrl,
+            videoUrl: saved.videoUrl,
+            error: undefined,
+            videoError: undefined,
+            isGeneratingImage: false,
+            isGeneratingVideo: false,
+            isUpscaling: false,
+            lockedCharacter: saved.lockedCharacter || false,
+            lockedOutfit: saved.lockedOutfit || false,
+            lockedEnvironment: saved.lockedEnvironment || false,
+            isSelected: false,
+          };
+        });
+      }
+      setGeneratedMedia(restoredMedia);
+      setAppPhase('storyboard');
+      toast({ title: "Project loaded", description: `"${data.name}" restored.` });
+    } catch (e: any) {
+      toast({ title: "Load failed", description: e.message, variant: "destructive" });
+    }
   };
 
   const queueStatusText = () => {
@@ -507,6 +619,7 @@ const AIStudio = () => {
               isGeneratingTopic={isGeneratingTopic}
               onGeneratePreview={handleGeneratePreview}
               onGenerateTopicIdeas={handleGenerateTopicIdeas}
+              onLoadProject={handleLoadProject}
             />
           )}
 
@@ -536,7 +649,10 @@ const AIStudio = () => {
               onBatchDelete={() => handleBatchAction('delete')}
               onDownloadScript={handleDownloadScript}
               onDownloadAll={handleDownloadAll}
+              onSaveProject={handleSaveProject}
               selectionCount={getSelectionCount()}
+              currentProjectName={currentProjectName}
+              isSaving={isSaving}
             />
           )}
         </main>

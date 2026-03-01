@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AppConfig, VlogStoryboard, GeneratedMedia, QueueItem } from './types';
 import SceneCard from './SceneCard';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, RefreshCw, ZapIcon, Trash2 } from 'lucide-react';
+import { Download, FileText, RefreshCw, ZapIcon, Trash2, Save, Loader2 } from 'lucide-react';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
 interface StudioStoryboardProps {
   config: AppConfig;
@@ -20,7 +24,10 @@ interface StudioStoryboardProps {
   onBatchDelete: () => void;
   onDownloadScript: () => void;
   onDownloadAll: () => void;
+  onSaveProject: (name: string) => Promise<void>;
   selectionCount: number;
+  currentProjectName?: string;
+  isSaving?: boolean;
 }
 
 const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
@@ -28,9 +35,28 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
   onToggleSelect, onToggleLock, onEnlarge,
   onAddToQueue, onUpdatePrompt, onUpdateVideoPrompt,
   onBatchRegenerate, onBatchUpscale, onBatchGenerateVideo, onBatchDelete,
-  onDownloadScript, onDownloadAll,
-  selectionCount
+  onDownloadScript, onDownloadAll, onSaveProject,
+  selectionCount, currentProjectName, isSaving
 }) => {
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [projectName, setProjectName] = useState(currentProjectName || '');
+
+  const handleSave = async () => {
+    const name = projectName.trim() || currentProjectName || 'Untitled Project';
+    await onSaveProject(name);
+    setShowSaveDialog(false);
+  };
+
+  const handleSaveClick = () => {
+    if (currentProjectName) {
+      // Already saved before — just re-save silently
+      onSaveProject(currentProjectName);
+    } else {
+      setProjectName('');
+      setShowSaveDialog(true);
+    }
+  };
+
   return (
     <div className="space-y-8 pb-24">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 border-b border-border pb-6">
@@ -46,6 +72,10 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
           </p>
         </div>
         <div className="flex gap-3">
+          <Button variant="outline" size="sm" onClick={handleSaveClick} disabled={isSaving}>
+            {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+            {currentProjectName ? 'Save' : 'Save Project'}
+          </Button>
           <Button variant="outline" size="sm" onClick={onDownloadScript}>
             <FileText className="h-4 w-4 mr-2" /> Download Script
           </Button>
@@ -54,6 +84,30 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
           </Button>
         </div>
       </div>
+
+      {/* Save Dialog */}
+      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Project</DialogTitle>
+            <DialogDescription>Give your storyboard a name so you can find it later.</DialogDescription>
+          </DialogHeader>
+          <Input
+            placeholder="e.g. Morning Routine GRWM"
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowSaveDialog(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Batch Toolbar */}
       {selectionCount > 0 && (
