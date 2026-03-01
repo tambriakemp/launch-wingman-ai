@@ -241,17 +241,27 @@ const AIStudio = () => {
         config,
         isFinalLook: false
       };
-      const promises = [
-        supabase.functions.invoke('generate-character-preview', { body: previewBody })
-      ];
-      if (config.vlogCategory === 'Get Ready With Me' && config.creationMode === 'vlog') {
-        promises.push(supabase.functions.invoke('generate-character-preview', { body: { ...previewBody, isFinalLook: true } }));
+      const isGRWM = config.vlogCategory === 'Get Ready With Me' && config.creationMode === 'vlog';
+
+      if (isGRWM) {
+        // Sequential: generate final look first (more accurate identity), then use it as anchor for default look
+        const finalResult = await supabase.functions.invoke('generate-character-preview', { body: { ...previewBody, isFinalLook: true } });
+        if (finalResult.error) throw finalResult.error;
+        if (finalResult.data?.error) throw new Error(finalResult.data.error);
+        const finalLookUrl = finalResult.data.imageUrl;
+        setPreviewFinalLookImage(finalLookUrl);
+
+        // Generate default look with the final look as identity anchor
+        const defaultResult = await supabase.functions.invoke('generate-character-preview', { body: { ...previewBody, identityAnchorUrl: finalLookUrl } });
+        if (defaultResult.error) throw defaultResult.error;
+        if (defaultResult.data?.error) throw new Error(defaultResult.data.error);
+        setPreviewCharacterImage(defaultResult.data.imageUrl);
+      } else {
+        const result = await supabase.functions.invoke('generate-character-preview', { body: previewBody });
+        if (result.error) throw result.error;
+        if (result.data?.error) throw new Error(result.data.error);
+        setPreviewCharacterImage(result.data.imageUrl);
       }
-      const results = await Promise.all(promises);
-      if (results[0].error) throw results[0].error;
-      if (results[0].data?.error) throw new Error(results[0].data.error);
-      setPreviewCharacterImage(results[0].data.imageUrl);
-      if (results[1]?.data?.imageUrl) setPreviewFinalLookImage(results[1].data.imageUrl);
     } catch (e: any) {
       toast({ title: "Error", description: getUserFriendlyErrorMessage(e), variant: "destructive" });
     } finally {

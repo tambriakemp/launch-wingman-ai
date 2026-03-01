@@ -55,7 +55,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { referenceImage, referenceImages, environmentImage, environmentImages, config, isFinalLook } = await req.json();
+    const { referenceImage, referenceImages, environmentImage, environmentImages, config, isFinalLook, identityAnchorUrl } = await req.json();
 
     const stripBase64Prefix = (img: string): string => {
       if (img.includes(',')) return img.split(',')[1];
@@ -84,6 +84,22 @@ serve(async (req) => {
     } else if (environmentImage) {
       const envBase64 = stripBase64Prefix(environmentImage);
       contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${envBase64}` } });
+    }
+
+    // Add identity anchor image (generated final look used to anchor default look identity)
+    let hasIdentityAnchor = false;
+    if (identityAnchorUrl && !isFinalLook) {
+      try {
+        const anchorResp = await fetch(identityAnchorUrl);
+        if (anchorResp.ok) {
+          const anchorBytes = new Uint8Array(await anchorResp.arrayBuffer());
+          const anchorBase64 = btoa(String.fromCharCode(...anchorBytes));
+          contentParts.push({ type: "image_url", image_url: { url: `data:image/png;base64,${anchorBase64}` } });
+          hasIdentityAnchor = true;
+        }
+      } catch (e) {
+        console.error("Failed to fetch identity anchor:", e);
+      }
     }
 
     // Sanitize outfit descriptions to avoid safety filter triggers
@@ -122,6 +138,10 @@ serve(async (req) => {
       ? `Multiple reference photos of the SAME person are provided from different angles (face, profile, full body). Use ALL of them to accurately reproduce this person's exact appearance — facial structure, skin tone, body proportions, and features.`
       : '';
 
+    const identityAnchorNote = hasIdentityAnchor
+      ? `An already-generated canonical identity image of this EXACT person is also provided. The default look MUST depict the SAME individual — match their face shape, jawline, nose, lips, eyes, eyebrows, skin tone, and body proportions EXACTLY. This identity anchor is the ground truth for how this person looks.`
+      : '';
+
     let prompt = `Create a stylish fashion portrait based on the reference photo(s).
 
 IDENTITY PRESERVATION (CRITICAL):
@@ -129,6 +149,7 @@ IDENTITY PRESERVATION (CRITICAL):
 - Do NOT alter their appearance, ethnicity, age, or body type.
 - IMPORTANT: This generated image will serve as the CANONICAL IDENTITY REFERENCE for ALL future scenes. Every subsequent scene will use THIS image as the single source of truth for the character's appearance. Accuracy to the reference photo is PARAMOUNT — the generated character must be immediately recognizable as the same person in every future scene.
 ${multiRefNote}
+${identityAnchorNote}
 
 Full-length view, studio-quality lighting, editorial fashion photography style.`;
 
