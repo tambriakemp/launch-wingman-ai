@@ -208,7 +208,9 @@ serve(async (req) => {
       
       if (previewCharacter) {
         // EDIT MODE: The character preview is the base image — instruct the model to modify it
-        fullPrompt = `EDIT THIS IMAGE: Keep the person's face, body, and identity EXACTLY the same. Change ONLY the following:
+        fullPrompt = `OUTPUT: Generate exactly ONE single photograph. Do NOT create collages, grids, split-screen images, or multiple panels.
+
+EDIT THIS IMAGE: Keep the person's face, body, and identity EXACTLY the same. Change ONLY the following:
 
 1. SCENE: Place this person in the following setting — ${prompt}
 2. OUTFIT: Change their clothing to — ${currentOutfit}
@@ -226,7 +228,9 @@ Style: editorial fashion photography, professional lighting, tasteful, fully clo
 ${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmentImage ? "The subject should interact naturally with the environment, not pose at the camera." : "")}`;
       } else {
         // GENERATE FROM SCRATCH MODE (no preview available)
-        fullPrompt = `Create a high-quality, editorial-style fashion photograph.
+        fullPrompt = `OUTPUT: Generate exactly ONE single photograph. Do NOT create collages, grids, split-screen images, or multiple panels.
+
+Create a high-quality, editorial-style fashion photograph.
 
 IDENTITY (CRITICAL): Match the person in the reference photo(s) EXACTLY — same face, bone structure, skin tone, body type, age.
 ${multiRefInstruction}

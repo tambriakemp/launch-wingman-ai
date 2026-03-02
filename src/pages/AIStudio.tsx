@@ -802,6 +802,7 @@ const AIStudio = () => {
                   <><ArrowRight className="h-4 w-4 mr-2" /> Generate Storyboard</>
                 )}
               </Button>
+              <p className="text-[11px] text-muted-foreground mt-1.5">Generation can take 1–5 minutes. Please be patient.</p>
             </div>
           )}
 
