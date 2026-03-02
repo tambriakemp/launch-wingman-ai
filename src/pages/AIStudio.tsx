@@ -594,9 +594,13 @@ const AIStudio = () => {
         {/* Header */}
         <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-border py-3 px-6 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent tracking-tight">
-              AI Studio
-            </h1>
+            <div className="p-2 bg-rose-100/50 dark:bg-rose-900/20 rounded-lg shrink-0">
+              <Sparkles className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold text-foreground">AI Studio</h1>
+              <p className="text-xs text-muted-foreground hidden sm:block">Create AI-powered video content for your brand.</p>
+            </div>
             {(queue.length > 0 || isProcessing) && (
               <div className="flex items-center gap-3 px-3 py-1 bg-muted rounded-full border border-border">
                 <Loader2 className="h-3 w-3 animate-spin text-primary" />
