@@ -2461,6 +2461,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_api_keys: {
+        Row: {
+          api_key: string
+          created_at: string
+          id: string
+          service: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          id?: string
+          service: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          id?: string
+          service?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -2719,6 +2746,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      video_credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      video_credits: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          monthly_free_remaining: number
+          monthly_reset_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          monthly_free_remaining?: number
+          monthly_reset_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          monthly_free_remaining?: number
+          monthly_reset_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       webhook_logs: {
         Row: {
