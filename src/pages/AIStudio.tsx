@@ -96,6 +96,20 @@ const AIStudio = () => {
       try {
         // lastGeneratedUrl removed — each scene now anchors to canonical preview
         for (const task of currentBatch) {
+          // Check if generation was cancelled between tasks
+          if (!processingRef.current) {
+            // Clear loading states for remaining tasks
+            setGeneratedMedia(prev => {
+              const next = { ...prev };
+              currentBatch.forEach(t => {
+                if (!next[t.index]?.imageUrl || next[t.index]?.isGeneratingImage || next[t.index]?.isUpscaling || next[t.index]?.isGeneratingVideo) {
+                  next[t.index] = { ...next[t.index], isGeneratingImage: false, isUpscaling: false, isGeneratingVideo: false };
+                }
+              });
+              return next;
+            });
+            break;
+          }
           try {
             if (task.type === 'generate' || task.type === 'upscale') {
               const currentGeneratedMedia = generatedMediaRef.current;
