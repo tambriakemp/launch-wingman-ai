@@ -118,7 +118,8 @@ export const INITIAL_CONFIG: AppConfig = {
   skinUndertone: "Neutral",
   nailStyle: "Long Coffin Nails",
   customNailStyle: "",
-  cameraMovement: "Handheld / Vlog Style (Natural Shake)"
+  cameraMovement: "Handheld / Vlog Style (Natural Shake)",
+  sceneCount: null
 };
 
 export const DEFAULT_MEDIA: GeneratedMedia = {

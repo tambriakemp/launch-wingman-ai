@@ -280,6 +280,21 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
           </div>
 
+          {/* Number of Scenes */}
+          <div>
+            <Label label="Number of Scenes" />
+            <select
+              value={config.sceneCount ?? 'auto'}
+              onChange={(e) => setConfig(c => ({ ...c, sceneCount: e.target.value === 'auto' ? null : Number(e.target.value) }))}
+              className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="auto">Auto (let AI decide)</option>
+              {Array.from({ length: 13 }, (_, i) => i + 3).map(n => (
+                <option key={n} value={n}>{n} scenes</option>
+              ))}
+            </select>
+          </div>
+
           {/* Script */}
           <div className="pt-2 border-t border-border">
             <label className="flex items-center gap-2 cursor-pointer">

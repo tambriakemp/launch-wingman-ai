@@ -64,12 +64,23 @@ serve(async (req) => {
         return `MANDATORY STYLE REQUIREMENTS:\n- Outfit: ${outfit}\n- Hairstyle: ${hair}\n- Makeup: ${makeup}\n- Skin: ${skin}\n- Nails: ${nails}`;
       };
 
+      // Scene count logic
+      const sceneCount = config.sceneCount;
+      const sceneInstruction = sceneCount
+        ? `Generate exactly ${sceneCount} steps. Adapt the narrative pacing to fit ${sceneCount} scenes.`
+        : `Generate 13 to 15 steps.`;
+
       let narrativeContext = "";
       if (config.creationMode === 'vlog' && config.vlogCategory === 'Get Ready With Me') {
         const startOutfit = config.outfitType === 'Custom Outfit' ? config.outfitDetails : config.outfitType;
         const endBase = config.finalLookType === 'Custom Outfit' ? config.finalLook : config.finalLookType;
         const endOutfit = config.finalLookAdditionalInfo ? `${endBase} (${config.finalLookAdditionalInfo})` : endBase;
-        narrativeContext = `NARRATIVE ARC: This is a GRWM transformation.\nPART 1 (Steps 1-8): Starting outfit: "${startOutfit}".\nPART 2 (Steps 9-15): Final look reveal wearing: "${endOutfit}". Mark these steps with is_final_look: true.`;
+        if (sceneCount) {
+          const splitPoint = Math.ceil(sceneCount * 0.6);
+          narrativeContext = `NARRATIVE ARC: This is a GRWM transformation.\nPART 1 (Steps 1-${splitPoint}): Starting outfit: "${startOutfit}".\nPART 2 (Steps ${splitPoint + 1}-${sceneCount}): Final look reveal wearing: "${endOutfit}". Mark these steps with is_final_look: true.`;
+        } else {
+          narrativeContext = `NARRATIVE ARC: This is a GRWM transformation.\nPART 1 (Steps 1-8): Starting outfit: "${startOutfit}".\nPART 2 (Steps 9-15): Final look reveal wearing: "${endOutfit}". Mark these steps with is_final_look: true.`;
+        }
       }
 
       let scriptInstruction = config.useOwnScript && config.userScript
@@ -94,7 +105,7 @@ VISUAL CONTINUITY RULES (CRITICAL):
 - Maintain consistent time-of-day, weather, and ambient lighting across consecutive scenes unless a deliberate time skip is part of the narrative.
 - Each scene's image_prompt should describe the character's pose or action in a way that naturally follows from the previous scene's action.
 
-Generate 13 to 15 steps. For each step provide: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction, image_prompt, video_prompt, script, is_final_look (boolean).
+${sceneInstruction} For each step provide: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction, image_prompt, video_prompt, script, is_final_look (boolean).
 Also provide an analysis object with: face_structure, hair, skin_tone, makeup_accessories, clothing_vibe.`;
 
       // Build messages with images
