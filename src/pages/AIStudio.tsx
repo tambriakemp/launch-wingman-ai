@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem } from '@/components/ai-studio/types';
-import { INITIAL_CONFIG, DEFAULT_MEDIA, getUserFriendlyErrorMessage, VLOG_CATEGORIES, TOPIC_PLACEHOLDERS } from '@/components/ai-studio/constants';
+import { INITIAL_CONFIG, DEFAULT_MEDIA, getUserFriendlyErrorMessage } from '@/components/ai-studio/constants';
 import StudioStoryboard from '@/components/ai-studio/StudioStoryboard';
 import StoryboardToolbar from '@/components/ai-studio/StoryboardToolbar';
 import StudioHelp from '@/components/ai-studio/StudioHelp';
@@ -36,7 +36,6 @@ const AIStudio = () => {
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [isGeneratingTopic, setIsGeneratingTopic] = useState(false);
   const [enlargedImageIndex, setEnlargedImageIndex] = useState<number | null>(null);
-  const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
   const [previewLightbox, setPreviewLightbox] = useState<string | null>(null);
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const processingRef = useRef(false);
@@ -673,213 +672,93 @@ const AIStudio = () => {
             isProcessing={isProcessing}
           />
 
-          {/* Persistent Side-by-Side Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(320px,2fr)_3fr] gap-6 my-4">
-            {/* LEFT COLUMN - Topic, Preview Controls */}
-            <div className="flex flex-col gap-4">
-              {/* Vlog Topic / UGC Section */}
-              {config.creationMode === 'vlog' ? (
-                <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase text-muted-foreground mb-1.5">Vlog Category</label>
-                    <select
-                      value={config.vlogCategory}
-                      onChange={(e) => setConfig(c => ({ ...c, vlogCategory: e.target.value }))}
-                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
-                    >
-                      {VLOG_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+          {/* Inline Character Preview Bar */}
+          <div className="my-4">
+            {!previewCharacterImage ? (
+              <div className="bg-card border border-border rounded-xl p-6 text-center">
+                <p className="text-sm text-muted-foreground mb-3">
+                  {!referenceImage
+                    ? "Upload a character photo in the Character tab to get started."
+                    : !showSafetyTerms
+                    ? "Accept the safety terms in Settings to continue."
+                    : "Generate a character preview to start building your storyboard."}
+                </p>
+                <Button
+                  onClick={handleGeneratePreview}
+                  disabled={!showSafetyTerms || !referenceImage || isPreviewGenerating}
+                >
+                  {isPreviewGenerating ? (
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating Preview...</>
+                  ) : (
+                    <><Sparkles className="h-4 w-4 mr-2" /> Generate Character Preview</>
+                  )}
+                </Button>
+              </div>
+           ) : (
+              <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
+                <div className="flex gap-3">
+                  <div className="relative cursor-pointer" onClick={() => setPreviewLightbox(previewCharacterImage)}>
+                    <img src={previewCharacterImage} alt="Character Preview" className="w-16 h-24 rounded-lg object-cover border border-border hover:opacity-80 transition-opacity" />
+                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[8px] px-1.5 py-0.5 rounded-full font-bold">
+                      <Check className="h-2.5 w-2.5" />
+                    </span>
                   </div>
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <label className="block text-[10px] font-bold uppercase text-muted-foreground">Vlog Topic</label>
-                      <button
-                        onClick={handleGenerateTopicIdeas}
-                        disabled={isGeneratingTopic}
-                        className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1 disabled:opacity-50"
-                      >
-                        {isGeneratingTopic ? <span className="animate-pulse">Thinking...</span> : <><Sparkles className="h-3 w-3" /> Brainstorm</>}
-                      </button>
-                    </div>
-                    <textarea
-                      placeholder={TOPIC_PLACEHOLDERS[config.vlogCategory] || "Describe your video concept..."}
-                      value={config.vlogTopic}
-                      onChange={(e) => setConfig(c => ({ ...c, vlogTopic: e.target.value }))}
-                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[80px]"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase text-muted-foreground mb-1.5">Marketing Goal</label>
-                    <textarea
-                      placeholder="e.g. Promoting a new matte lipstick..."
-                      value={config.ugcPrompt}
-                      onChange={(e) => setConfig(c => ({ ...c, ugcPrompt: e.target.value }))}
-                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[80px]"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Character Preview Section */}
-              <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-                <label className="block text-[10px] font-bold uppercase text-muted-foreground">Character Preview</label>
-                {previewCharacterImage ? (
-                  <div className="flex gap-3 items-start">
-                    <div className="relative cursor-pointer" onClick={() => setPreviewLightbox(previewCharacterImage)}>
-                      <img src={previewCharacterImage} alt="Character Preview" className="w-20 h-28 rounded-lg object-cover border border-border hover:opacity-80 transition-opacity" />
-                      <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[8px] px-1.5 py-0.5 rounded-full font-bold">
-                        <Check className="h-2.5 w-2.5" />
+                  {previewFinalLookImage && (
+                    <div className="relative cursor-pointer" onClick={() => setPreviewLightbox(previewFinalLookImage)}>
+                      <img src={previewFinalLookImage} alt="Final Look" className="w-16 h-24 rounded-lg object-cover border border-accent/30 hover:opacity-80 transition-opacity" />
+                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground text-[7px] px-1.5 py-0.5 rounded-full font-bold whitespace-nowrap">
+                        Final Look
                       </span>
                     </div>
-                    {previewFinalLookImage && (
-                      <div className="relative cursor-pointer" onClick={() => setPreviewLightbox(previewFinalLookImage)}>
-                        <img src={previewFinalLookImage} alt="Final Look" className="w-20 h-28 rounded-lg object-cover border border-accent/30 hover:opacity-80 transition-opacity" />
-                        <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground text-[7px] px-1.5 py-0.5 rounded-full font-bold whitespace-nowrap">Final Look</span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-28 bg-muted/50 rounded-lg border border-dashed border-border">
-                    <p className="text-xs text-muted-foreground text-center px-4">
-                      {!referenceImage ? "Upload a character photo first" : !showSafetyTerms ? "Accept safety terms in Settings" : "Click below to generate"}
-                    </p>
-                  </div>
-                )}
-                <div className="flex flex-col gap-2">
-                  <Button
-                    size="sm"
-                    variant={previewCharacterImage ? "outline" : "default"}
-                    onClick={handleGeneratePreview}
-                    disabled={!showSafetyTerms || !referenceImage || isPreviewGenerating}
-                    className="w-full"
-                  >
-                    {isPreviewGenerating ? (
-                      <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> Generating...</>
-                    ) : previewCharacterImage ? (
-                      <><RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Regenerate Preview</>
-                    ) : (
-                      <><Sparkles className="h-3.5 w-3.5 mr-1.5" /> Generate Preview</>
-                    )}
-                  </Button>
-                  {previewCharacterImage && (
-                    <p className="text-[10px] text-muted-foreground text-center">{config.outfitType} · {config.hairstyle} · {config.makeup}</p>
                   )}
                 </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">Character Ready</p>
+                  <p className="text-xs text-muted-foreground">{config.outfitType} · {config.hairstyle} · {config.makeup}</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleGeneratePreview} disabled={isPreviewGenerating}>
+                  {isPreviewGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RotateCcw className="h-3.5 w-3.5 mr-1" />}
+                  Regenerate
+                </Button>
               </div>
-
-              {/* Storyboard-specific scene details (when storyboard exists) */}
-              {storyboard && storyboard.steps.length > 0 && (
-                <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-                  <label className="block text-[10px] font-bold uppercase text-muted-foreground">Scene Navigation</label>
-                  <StudioStoryboard
-                    config={config}
-                    storyboard={storyboard}
-                    generatedMedia={generatedMedia}
-                    onToggleSelect={handleToggleSelect}
-                    onToggleLock={handleToggleLock}
-                    onEnlarge={(i) => setEnlargedImageIndex(i)}
-                    onAddToQueue={addToQueue}
-                    onUpdatePrompt={handleUpdatePrompt}
-                    onUpdateVideoPrompt={handleUpdateVideoPrompt}
-                    onBatchRegenerate={() => handleBatchAction('regenerate')}
-                    onBatchUpscale={() => handleBatchAction('upscale')}
-                    onBatchGenerateVideo={() => handleBatchAction('video')}
-                    onBatchDelete={() => handleBatchAction('delete')}
-                    onAddBlankScene={() => {
-                      if (!storyboard) return;
-                      const newStep: VlogStep = {
-                        step_number: storyboard.steps.length + 1,
-                        step_name: 'New Scene',
-                        a_roll: '', b_roll: '', close_up_details: '', camera_direction: '',
-                        image_prompt: '', video_prompt: '', script: ''
-                      };
-                      setStoryboard({ ...storyboard, steps: [...storyboard.steps, newStep] });
-                      setGeneratedMedia(prev => ({ ...prev, [storyboard.steps.length]: { ...DEFAULT_MEDIA } }));
-                    }}
-                    selectionCount={getSelectionCount()}
-                    renderMode="navigation-only"
-                    currentSceneIndex={currentSceneIndex}
-                    onSceneChange={setCurrentSceneIndex}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* RIGHT COLUMN - Image & Video Preview */}
-            <div className="flex flex-col gap-4">
-              {storyboard ? (
-                <StudioStoryboard
-                  config={config}
-                  storyboard={storyboard}
-                  generatedMedia={generatedMedia}
-                  onToggleSelect={handleToggleSelect}
-                  onToggleLock={handleToggleLock}
-                  onEnlarge={(i) => setEnlargedImageIndex(i)}
-                  onAddToQueue={addToQueue}
-                  onUpdatePrompt={handleUpdatePrompt}
-                  onUpdateVideoPrompt={handleUpdateVideoPrompt}
-                  onBatchRegenerate={() => handleBatchAction('regenerate')}
-                  onBatchUpscale={() => handleBatchAction('upscale')}
-                  onBatchGenerateVideo={() => handleBatchAction('video')}
-                  onBatchDelete={() => handleBatchAction('delete')}
-                  onAddBlankScene={() => {
-                    if (!storyboard) return;
-                    const newStep: VlogStep = {
-                      step_number: storyboard.steps.length + 1,
-                      step_name: 'New Scene',
-                      a_roll: '', b_roll: '', close_up_details: '', camera_direction: '',
-                      image_prompt: '', video_prompt: '', script: ''
-                    };
-                    setStoryboard({ ...storyboard, steps: [...storyboard.steps, newStep] });
-                    setGeneratedMedia(prev => ({ ...prev, [storyboard.steps.length]: { ...DEFAULT_MEDIA } }));
-                  }}
-                  selectionCount={getSelectionCount()}
-                  renderMode="scene-content"
-                  currentSceneIndex={currentSceneIndex}
-                  onSceneChange={setCurrentSceneIndex}
-                />
-              ) : (
-                /* Initial empty scene card before storyboard generation */
-                <div className="bg-card border border-border rounded-xl overflow-hidden">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
-                    {/* Image Placeholder */}
-                    <div className="flex flex-col gap-2">
-                      <h4 className="text-xs font-bold text-muted-foreground uppercase">Image Preview</h4>
-                      <div
-                        className="relative w-full bg-muted/30 overflow-hidden rounded-lg border border-dashed border-border flex items-center justify-center"
-                        style={{ aspectRatio: config.aspectRatio.replace(':', '/') }}
-                      >
-                        {previewCharacterImage ? (
-                          <img src={previewCharacterImage} alt="Preview" className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => setPreviewLightbox(previewCharacterImage)} />
-                        ) : (
-                          <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
-                            <ImageIcon className="h-8 w-8" />
-                            <p className="text-xs">Generate a character preview to see it here</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {/* Video Placeholder */}
-                    <div className="flex flex-col gap-2">
-                      <h4 className="text-xs font-bold text-muted-foreground uppercase">Generated Video</h4>
-                      <div
-                        className="relative w-full bg-muted/30 overflow-hidden rounded-lg border border-dashed border-border flex items-center justify-center"
-                        style={{ aspectRatio: config.aspectRatio.replace(':', '/') }}
-                      >
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
-                          <Video className="h-8 w-8" />
-                          <p className="text-xs">Generate storyboard first, then create videos</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            )}
           </div>
+
+          {/* Scene Workspace */}
+          {storyboard ? (
+            <StudioStoryboard
+              config={config}
+              storyboard={storyboard}
+              generatedMedia={generatedMedia}
+              onToggleSelect={handleToggleSelect}
+              onToggleLock={handleToggleLock}
+              onEnlarge={(i) => setEnlargedImageIndex(i)}
+              onAddToQueue={addToQueue}
+              onUpdatePrompt={handleUpdatePrompt}
+              onUpdateVideoPrompt={handleUpdateVideoPrompt}
+              onBatchRegenerate={() => handleBatchAction('regenerate')}
+              onBatchUpscale={() => handleBatchAction('upscale')}
+              onBatchGenerateVideo={() => handleBatchAction('video')}
+              onBatchDelete={() => handleBatchAction('delete')}
+              onAddBlankScene={() => {
+                if (!storyboard) return;
+                const newStep: VlogStep = {
+                  step_number: storyboard.steps.length + 1,
+                  step_name: 'New Scene',
+                  a_roll: '', b_roll: '', close_up_details: '', camera_direction: '',
+                  image_prompt: '', video_prompt: '', script: ''
+                };
+                setStoryboard({ ...storyboard, steps: [...storyboard.steps, newStep] });
+                setGeneratedMedia(prev => ({ ...prev, [storyboard.steps.length]: { ...DEFAULT_MEDIA } }));
+              }}
+              selectionCount={getSelectionCount()}
+            />
+          ) : (
+            <div className="bg-card border border-border rounded-xl p-12 text-center">
+              <p className="text-muted-foreground text-sm mb-2">No storyboard yet</p>
+              <p className="text-xs text-muted-foreground">Generate a character preview, then create your storyboard below.</p>
+            </div>
+          )}
         </main>
 
         {/* Bottom Action Bar */}
