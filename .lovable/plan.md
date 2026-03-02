@@ -1,44 +1,124 @@
 
 
-## Three Changes to AI Studio
+## Hybrid Video Generation: Credits + BYOK Integration
 
-### 1. Add Timing Note to "Generate Storyboard" Button
+### Overview
+Implement a hybrid billing model for video generation in AI Studio:
+- **Pro users** get a monthly allowance of free video generations (e.g., 10/month)
+- **Credit packs** available for purchase via Stripe for additional generations
+- **BYOK option** for power users who want to use their own fal.ai API key
 
-Add a subtle helper text below the "Generate Storyboard" button that reads: "Generation can take 1-5 minutes. Please be patient."
+### Architecture
 
-**File:** `src/pages/AIStudio.tsx` (lines 790-806)
-
-### 2. Add "Single Scene Only" Instruction to Scene Image Prompt
-
-The collage/split-image issue comes from the AI model interpreting prompts loosely. Add an explicit instruction to the scene generation prompt telling the model to produce exactly ONE single-frame photograph -- no collages, grids, split screens, or multiple panels.
-
-**File:** `supabase/functions/generate-scene-image/index.ts`
-- In both the EDIT MODE prompt (~line 211) and the GENERATE FROM SCRATCH prompt (~line 229), prepend:
-  `"OUTPUT: Generate exactly ONE single photograph. Do NOT create collages, grids, split-screen images, or multiple panels."`
-
-### 3. Add Scene Count Selector to Settings Popover
-
-Add a "Number of Scenes" dropdown in the Settings popover (between Camera Movement and Script). Options: "Auto (let AI decide)" plus 3 through 15. Store the value in `AppConfig` as `sceneCount` (number or null for auto).
-
-**Files:**
-- `src/components/ai-studio/types.ts` -- add `sceneCount?: number | null` to `AppConfig`
-- `src/components/ai-studio/constants.ts` -- add `sceneCount: null` to `INITIAL_CONFIG`
-- `src/components/ai-studio/StoryboardToolbar.tsx` -- add scene count selector in the Settings popover after Camera Movement
-- `supabase/functions/generate-storyboard/index.ts` -- use `config.sceneCount` to dynamically set the step count in the system prompt. If null/undefined, keep current "13 to 15" language. If a number is set, instruct the AI to generate exactly that many steps and adapt the narrative to fit a shorter/longer format. Update the GRWM narrative arc split proportionally (e.g., for 8 scenes: Part 1 = scenes 1-5, Part 2 = scenes 6-8).
-
-### Technical Detail
-
-**Storyboard prompt adjustment logic** (`generate-storyboard/index.ts`):
-```
-const sceneCount = config.sceneCount;
-const sceneInstruction = sceneCount
-  ? `Generate exactly ${sceneCount} steps. Adapt the narrative pacing to fit ${sceneCount} scenes.`
-  : `Generate 13 to 15 steps.`;
+```text
+User clicks "Generate Video"
+        |
+        v
+  [Edge Function: generate-video]
+        |
+        +-- Check: Does user have their own fal.ai key in profiles?
+        |     YES --> Use their key (no credit deduction)
+        |     NO  --> Check credit balance
+        |              |
+        |              +-- Has credits (free monthly or purchased)?
+        |              |     YES --> Call fal.ai with platform key, deduct 1 credit
+        |              |     NO  --> Return error: "No credits remaining"
+        |              
+        v
+  [fal.ai API: MiniMax image-to-video]
+        |
+        v
+  Return video URL to client
 ```
 
-For GRWM with a custom scene count, the narrative arc split becomes:
+### What Gets Built
+
+**1. Database: `video_credits` table**
+- Tracks each user's credit balance, monthly free allowance, and reset date
+- Columns: `user_id`, `balance`, `monthly_free_remaining`, `monthly_reset_at`
+- Auto-created row when a user first generates video
+- RLS: users can only read their own row
+
+**2. Database: `video_credit_transactions` table**
+- Audit log of credit usage and purchases
+- Columns: `user_id`, `amount`, `type` (free_monthly, purchased, used), `description`, `created_at`
+
+**3. Edge Function: `generate-video`**
+- Accepts: scene image URL, video prompt, aspect ratio
+- Checks for user's own fal.ai key first (from profiles table or a new `user_api_keys` table)
+- If no BYOK key, checks and deducts credits
+- Calls fal.ai MiniMax (Hailuo) image-to-video endpoint
+- Returns video URL
+- Handles polling (fal.ai is async -- submit, then poll for result)
+
+**4. Edge Function: `purchase-video-credits`**
+- Creates a Stripe checkout session for credit packs
+- Packs: 10 credits ($5), 25 credits ($10), 50 credits ($18)
+- On success, credits are added to user's balance (via Stripe webhook or success callback)
+
+**5. Settings Page: "AI Studio" section**
+- Show current credit balance and monthly free remaining
+- "Buy Credits" button with pack options
+- Optional: "Use your own fal.ai API key" input field with save/clear
+
+**6. AI Studio UI Updates**
+- Update `processQueue` to call the `generate-video` edge function instead of throwing "coming soon"
+- Show credit balance in the toolbar
+- Display video in SceneCard when generated
+- Show appropriate error when credits are exhausted with a link to buy more
+
+**7. Wire up video display in SceneCard**
+- Render `<video>` element when `videoUrl` is available
+- Play/pause controls
+
+### Technical Details
+
+**fal.ai Integration:**
+- Endpoint: `https://queue.fal.run/fal-ai/minimax-video/image-to-video`
+- Cost: ~$0.10-0.20 per generation
+- Async flow: POST to submit, then poll `/requests/{id}/status` until complete
+- Secret needed: `FAL_KEY` (platform-level, stored as backend secret)
+
+**Credit Logic (in generate-video edge function):**
+```text
+1. Get user from auth token
+2. Check user_api_keys for fal.ai key
+   - If found: use it, skip credit check
+3. Check video_credits for user
+   - If no row: create one with monthly_free = 10
+   - If monthly_reset_at < now: reset monthly_free to 10
+   - If monthly_free > 0: deduct 1, proceed
+   - Else if balance > 0: deduct 1, proceed
+   - Else: return 402 "No credits"
+4. Call fal.ai, return video URL
+5. Log transaction
 ```
-const splitPoint = Math.ceil(sceneCount * 0.6);
-// PART 1: steps 1-splitPoint, PART 2: steps splitPoint+1 to sceneCount
-```
+
+**Stripe Credit Packs:**
+- Create 3 Stripe products/prices for credit packs
+- Use one-off payment mode (not subscription)
+- On payment success, add credits to user's balance
+
+**Monthly Reset:**
+- Pro users get 10 free credits/month
+- Reset tracked via `monthly_reset_at` timestamp
+- Checked and reset lazily on each generation request
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `video_credits` table | Create (migration) |
+| `video_credit_transactions` table | Create (migration) |
+| `user_api_keys` table | Create (migration) |
+| `supabase/functions/generate-video/index.ts` | Create |
+| `supabase/functions/purchase-video-credits/index.ts` | Create |
+| `src/pages/AIStudio.tsx` | Modify (wire generate-video call) |
+| `src/components/ai-studio/SceneCard.tsx` | Modify (render video) |
+| `src/pages/Settings.tsx` | Modify (add AI Studio credits section + BYOK) |
+| `src/hooks/useVideoCredits.ts` | Create (query credit balance) |
+| `supabase/config.toml` | Add new function entries |
+
+### Prerequisite
+You'll need to sign up at **fal.ai** and get an API key. I'll prompt you to add it as a backend secret (`FAL_KEY`) before building the edge function.
 
