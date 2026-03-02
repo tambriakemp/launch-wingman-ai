@@ -170,8 +170,11 @@ export const getUserFriendlyErrorMessage = (error: any): string => {
   if (msg.includes('safety') || msg.includes('blocked') || msg.includes('violation')) {
     return "😳 That prompt triggered safety filters. Try a different approach.";
   }
-  if (msg.includes('402')) {
-    return "💳 Credits exhausted. Please add more credits to continue.";
+  if (msg.includes('402') || msg.includes('exhausted balance') || msg.includes('platform.*balance')) {
+    return "💳 Credits exhausted. Please add more credits or use your own fal.ai API key.";
+  }
+  if (msg.includes('403') || msg.includes('locked')) {
+    return "💳 Platform video balance exhausted. Add your own fal.ai API key or purchase credits in Settings.";
   }
   if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed to fetch')) {
     return "📶 Network error. Check your connection and try again.";

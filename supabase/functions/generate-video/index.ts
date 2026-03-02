@@ -134,12 +134,19 @@ serve(async (req) => {
     if (!submitResponse.ok) {
       const errText = await submitResponse.text();
       console.error("[generate-video] fal.ai submit error:", errText);
+
+      // Parse error detail from fal.ai response
+      let detail = `HTTP ${submitResponse.status}`;
+      try {
+        const errJson = JSON.parse(errText);
+        detail = errJson?.detail || errJson?.message || detail;
+      } catch { /* not JSON */ }
+
       // Refund credit on failure if not BYOK
       if (!usingBYOK) {
         // Simple refund - add back 1 credit
         const { data: currentCredits } = await adminClient.from("video_credits").select("*").eq("user_id", userId).single();
         if (currentCredits) {
-          // Check if we deducted from monthly or balance by looking at last transaction
           const { data: lastTx } = await adminClient.from("video_credit_transactions")
             .select("type").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).single();
           if (lastTx?.type === "free_monthly") {
@@ -152,7 +159,16 @@ serve(async (req) => {
           });
         }
       }
-      throw new Error(`fal.ai error: ${submitResponse.status}`);
+
+      // Map balance/lock errors to 402
+      const detailLower = detail.toLowerCase();
+      if (detailLower.includes("exhausted") || detailLower.includes("balance") || detailLower.includes("locked") || submitResponse.status === 403) {
+        return new Response(JSON.stringify({ error: "Platform video generation balance exhausted. Please use your own fal.ai API key or purchase more credits." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      throw new Error(`fal.ai error: ${detail}`);
     }
 
     const submitData = await submitResponse.json();

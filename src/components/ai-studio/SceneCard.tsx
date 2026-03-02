@@ -179,7 +179,8 @@ const SceneCard: React.FC<SceneCardProps> = ({
             {media.videoError && !isVideoLoading && !media.videoUrl && (
               <div className="absolute inset-0 bg-destructive/80 flex flex-col items-center justify-center p-3 text-center z-30 backdrop-blur-sm">
                 <AlertCircle className="h-6 w-6 text-destructive-foreground mb-1" />
-                <p className="text-xs font-bold text-destructive-foreground mb-1">Video Failed</p>
+                <p className="text-xs font-bold text-destructive-foreground mb-0.5">Video Failed</p>
+                <p className="text-[10px] text-destructive-foreground/90 mb-2 max-w-[90%] line-clamp-2">{media.videoError}</p>
                 <Button size="sm" variant="destructive" onClick={(e) => { e.stopPropagation(); onGenerateVideo(); }}>Retry</Button>
               </div>
             )}
