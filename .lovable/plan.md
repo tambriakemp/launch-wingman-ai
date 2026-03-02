@@ -1,65 +1,55 @@
 
 
-## Upgrade AI Usage Card to "AI Settings" Hub + Credit Purchases
+## Reorganize Settings Page with Left-Side Tab Navigation
 
-### What Changes
+### Layout Change
 
-**1. Rename and expand the AiUsageCard into an "AI Settings" card with three sections:**
+Replace the current single-column scrolling list of cards with a two-panel layout:
+- **Left side**: Vertical tab list (sticky) with icons and labels
+- **Right side**: The cards for the selected tab (same exact card styling, no changes)
 
-- **Usage** -- Current month's AI call stats (existing functionality), plus a new "AI Studio" sub-section showing video generation count from `video_credit_transactions`
-- **Video Credits** -- Display current balance (monthly free remaining + purchased), with "Buy Credits" button offering 3 packs
-- **API Key (BYOK)** -- Input field to save/clear a personal fal.ai key in the `user_api_keys` table
+On mobile (below 768px), the tabs will stack horizontally at the top (scrollable) instead of a left sidebar, to keep things usable on small screens.
 
-**2. Track AI Studio usage separately**
+### Tab Structure
 
-The existing `ai_usage_logs` table tracks text-based AI calls (content drafts, talking points, etc.). Video generation is already tracked in `video_credit_transactions`. The new AI Settings card will query both:
-- `ai_usage_logs` for text AI usage (existing hook)
-- `video_credit_transactions` for video generation count this month (new query)
+| Tab | Icon | Cards Included |
+|-----|------|----------------|
+| **Profile** | User | Account, Change Password, AI Writing Style, Danger Zone |
+| **Billing** | CreditCard | Subscription, AI Settings (usage/credits/keys) |
+| **Integrations** | Link2 | Connected Accounts |
+| **Projects** | FolderOpen | Manage Projects, Annual Review |
+| **Notifications** | Bell | Check-In Preferences, Email Notifications |
 
-No new tables needed -- the data is already being logged.
+*Note: AI Writing Style is placed under Profile (personal preference), and AI Settings under Billing (credits/purchases). If you'd prefer them elsewhere, let me know after approving.*
 
-**3. Buy Credits via Stripe (one-time payments)**
+### What Stays the Same
+- Every card keeps its exact current styling, variant, icons, and content
+- All existing logic (handlers, queries, state) stays in Settings.tsx
+- No new components needed besides extracting tab content into simple render sections
 
-Create a `purchase-video-credits` edge function that creates a Stripe Checkout session for credit packs. On the success callback, a `fulfill-video-credits` edge function (or webhook) adds credits to the user's `video_credits.balance`.
+### Technical Approach
 
-**Pricing recommendation based on fal.ai costs:**
-- fal.ai MiniMax video costs ~$0.10-0.20 per generation
-- Suggested credit packs with healthy margin:
-  - **10 credits -- $4.99** (~$0.50/video, ~3x markup)
-  - **25 credits -- $9.99** (~$0.40/video, volume discount)
-  - **50 credits -- $17.99** (~$0.36/video, best value)
+**Files modified: 1** -- `src/pages/Settings.tsx` only
 
-These prices feel fair for end users while covering your costs with room for profit.
+The implementation uses Radix Tabs (already installed) with a vertical orientation:
 
-### Technical Details
+```text
++------------------+--------------------------------+
+|  [Profile]       |                                |
+|  [Billing]       |   Cards for selected tab       |
+|  [Integrations]  |   (same exact card markup)     |
+|  [Projects]      |                                |
+|  [Notifications] |                                |
++------------------+--------------------------------+
+```
 
-**Files to modify:**
+- Wrap the main content area in `<Tabs defaultValue="profile" orientation="vertical">`
+- Left column: `<TabsList>` styled as a vertical nav with `flex-col`, ~200px wide, sticky positioning
+- Right column: One `<TabsContent>` per tab containing the relevant `<motion.div>` card blocks (moved, not changed)
+- URL hash support: read `?tab=billing` from search params to allow deep-linking (e.g., after Stripe redirect lands on billing tab)
+- The Settings header ("Settings" + subtitle) stays above the tabs layout
 
-| File | Change |
-|------|--------|
-| `src/components/settings/AiUsageCard.tsx` | Rename to `AiSettingsCard.tsx`. Add three collapsible sections: Usage, Video Credits, API Key. Query `video_credit_transactions` for studio usage count. Add BYOK input that saves to `user_api_keys`. Add Buy Credits buttons. |
-| `src/pages/Settings.tsx` | Update import from `AiUsageCard` to `AiSettingsCard` |
-| `src/hooks/useVideoCredits.ts` | Create hook to fetch `video_credits` balance and `video_credit_transactions` count |
-
-**New files:**
-
-| File | Purpose |
-|------|---------|
-| `supabase/functions/purchase-video-credits/index.ts` | Creates Stripe Checkout session (mode: "payment") for selected credit pack. Uses existing `STRIPE_SECRET_KEY`. |
-| `supabase/functions/fulfill-video-credits/index.ts` | Called from the success page with the Checkout session ID. Verifies payment via Stripe API, then adds credits to `video_credits.balance` and logs in `video_credit_transactions`. |
-
-**Credit pack Stripe products:**
-- Create 3 Stripe products/prices using Stripe tools before building the edge function
-- These price IDs get hardcoded into `purchase-video-credits`
-
-**BYOK flow:**
-- User enters fal.ai key in Settings
-- Saved to `user_api_keys` table (service: "fal_ai")
-- `generate-video` edge function already checks this table first
-- Show masked key with a "Clear" button when saved
-
-**Success page flow:**
-- After Stripe checkout, redirect to `/settings?credits_success=true&session_id={CHECKOUT_SESSION_ID}`
-- Settings page detects this param, calls `fulfill-video-credits` to verify and add credits
-- Shows success toast
+### Mobile Behavior
+- Below `md` breakpoint: tabs render horizontally in a scrollable row at the top
+- Cards stack vertically below, same as current behavior per tab
 
