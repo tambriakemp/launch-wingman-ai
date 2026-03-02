@@ -1,55 +1,31 @@
 
 
-## Reorganize Settings Page with Left-Side Tab Navigation
+## Remove Launch Date Screen from Project Creation
 
-### Layout Change
+The launch timeline picker (step 2) appears in two places during project creation. Both will be simplified to a single-step flow: enter name, create project.
 
-Replace the current single-column scrolling list of cards with a two-panel layout:
-- **Left side**: Vertical tab list (sticky) with icons and labels
-- **Right side**: The cards for the selected tab (same exact card styling, no changes)
+### Changes
 
-On mobile (below 768px), the tabs will stack horizontally at the top (scrollable) instead of a left sidebar, to keep things usable on small screens.
+**1. `src/pages/AppRedirect.tsx`** (first-time user project creation)
+- Remove the `LaunchDates` interface, date state, `programWeeks`/`restWeeks` state, `calculateDatesFromPrelaunch` logic, and the `DatePickerField` component
+- Remove `step` state -- no longer needed since there's only one step
+- Remove `handleNextStep` and `handleSkipTimeline` functions
+- Remove the `launch_events` insert from `handleCreateProject`
+- Remove unused imports: `Calendar`, `Popover`, `PopoverContent`, `PopoverTrigger`, `CalendarIcon`, `Clock`, `Coffee`, `Package`, `Sparkles`, `format`, `addWeeks`, `subWeeks`, `cn`
+- The "Continue" button now directly calls `handleCreateProject` instead of advancing to step 2
 
-### Tab Structure
+**2. `src/components/ProjectSelector.tsx`** (sidebar "New Project" dialog)
+- Same cleanup: remove `LaunchDates`, date state, `programWeeks`/`restWeeks`, `calculateDatesFromPrelaunch`, `DatePickerField`, `step` state
+- Remove `handleNextStep` and `handleSkipTimeline`
+- Remove `launch_events` insert from the mutation
+- Remove unused imports
+- Dialog footer simplifies to just "Cancel" and "Create Project" buttons (no Back/Skip/Next)
+- The "Next" button becomes "Create Project" and calls the mutation directly
 
-| Tab | Icon | Cards Included |
-|-----|------|----------------|
-| **Profile** | User | Account, Change Password, AI Writing Style, Danger Zone |
-| **Billing** | CreditCard | Subscription, AI Settings (usage/credits/keys) |
-| **Integrations** | Link2 | Connected Accounts |
-| **Projects** | FolderOpen | Manage Projects, Annual Review |
-| **Notifications** | Bell | Check-In Preferences, Email Notifications |
-
-*Note: AI Writing Style is placed under Profile (personal preference), and AI Settings under Billing (credits/purchases). If you'd prefer them elsewhere, let me know after approving.*
-
-### What Stays the Same
-- Every card keeps its exact current styling, variant, icons, and content
-- All existing logic (handlers, queries, state) stays in Settings.tsx
-- No new components needed besides extracting tab content into simple render sections
-
-### Technical Approach
-
-**Files modified: 1** -- `src/pages/Settings.tsx` only
-
-The implementation uses Radix Tabs (already installed) with a vertical orientation:
-
-```text
-+------------------+--------------------------------+
-|  [Profile]       |                                |
-|  [Billing]       |   Cards for selected tab       |
-|  [Integrations]  |   (same exact card markup)     |
-|  [Projects]      |                                |
-|  [Notifications] |                                |
-+------------------+--------------------------------+
-```
-
-- Wrap the main content area in `<Tabs defaultValue="profile" orientation="vertical">`
-- Left column: `<TabsList>` styled as a vertical nav with `flex-col`, ~200px wide, sticky positioning
-- Right column: One `<TabsContent>` per tab containing the relevant `<motion.div>` card blocks (moved, not changed)
-- URL hash support: read `?tab=billing` from search params to allow deep-linking (e.g., after Stripe redirect lands on billing tab)
-- The Settings header ("Settings" + subtitle) stays above the tabs layout
-
-### Mobile Behavior
-- Below `md` breakpoint: tabs render horizontally in a scrollable row at the top
-- Cards stack vertically below, same as current behavior per tab
-
+### What's preserved
+- Project name input and validation
+- Project creation logic (insert into `projects` table)
+- localStorage save of last project
+- Navigation to the new project's dashboard
+- Notification email on project creation
+- Upgrade dialog for free-user project limits
