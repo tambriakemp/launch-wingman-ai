@@ -8,7 +8,8 @@ import ImageLightbox from '@/components/ai-studio/ImageLightbox';
 import SavedProjectsGrid from '@/components/ai-studio/SavedProjectsGrid';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Loader2, HelpCircle, RotateCcw, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, Check, ArrowRight, X } from 'lucide-react';
+import { Loader2, HelpCircle, RotateCcw, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, Check, ArrowRight, X, ShieldCheck } from 'lucide-react';
+import { VLOG_CATEGORIES, TOPIC_PLACEHOLDERS } from '@/components/ai-studio/constants';
 import { toast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
 import { ProjectLayout } from '@/components/layout/ProjectLayout';
@@ -27,6 +28,7 @@ const AIStudio = () => {
   const [previewCharacterImage, setPreviewCharacterImage] = useState<string | null>(null);
   const [previewFinalLookImage, setPreviewFinalLookImage] = useState<string | null>(null);
   const [isPreviewGenerating, setIsPreviewGenerating] = useState(false);
+  const [previewStep, setPreviewStep] = useState<string | null>(null);
   const [storyboard, setStoryboard] = useState<VlogStoryboard | null>(null);
   const [generatedMedia, setGeneratedMedia] = useState<Record<number, GeneratedMedia>>({});
   const [isProcessing, setIsProcessing] = useState(false);
@@ -244,19 +246,20 @@ const AIStudio = () => {
       const isGRWM = config.vlogCategory === 'Get Ready With Me' && config.creationMode === 'vlog';
 
       if (isGRWM) {
-        // Sequential: generate default look first (closer to selfie, best identity match), then use it as anchor for final look
+        setPreviewStep('Generating Default Look (1/2)...');
         const defaultResult = await supabase.functions.invoke('generate-character-preview', { body: previewBody });
         if (defaultResult.error) throw defaultResult.error;
         if (defaultResult.data?.error) throw new Error(defaultResult.data.error);
         const defaultLookUrl = defaultResult.data.imageUrl;
         setPreviewCharacterImage(defaultLookUrl);
 
-        // Generate final look with the default look as identity anchor
+        setPreviewStep('Generating Final Look (2/2)...');
         const finalResult = await supabase.functions.invoke('generate-character-preview', { body: { ...previewBody, isFinalLook: true, identityAnchorUrl: defaultLookUrl } });
         if (finalResult.error) throw finalResult.error;
         if (finalResult.data?.error) throw new Error(finalResult.data.error);
         setPreviewFinalLookImage(finalResult.data.imageUrl);
       } else {
+        setPreviewStep('Generating Preview...');
         const result = await supabase.functions.invoke('generate-character-preview', { body: previewBody });
         if (result.error) throw result.error;
         if (result.data?.error) throw new Error(result.data.error);
@@ -266,6 +269,7 @@ const AIStudio = () => {
       toast({ title: "Error", description: getUserFriendlyErrorMessage(e), variant: "destructive" });
     } finally {
       setIsPreviewGenerating(false);
+      setPreviewStep(null);
     }
   };
 
@@ -558,7 +562,7 @@ const AIStudio = () => {
 
   return (
     <ProjectLayout>
-      <div className="min-h-screen pb-24 relative">
+      <div className="min-h-screen pb-8 relative">
         {/* Header */}
         <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-border py-3 px-6 flex justify-between items-center">
           <div className="flex items-center gap-4">
@@ -667,10 +671,61 @@ const AIStudio = () => {
             setEnvironmentImages={setEnvironmentImages}
             productImage={productImage}
             setProductImage={setProductImage}
-            showSafetyTerms={showSafetyTerms}
-            setShowSafetyTerms={setShowSafetyTerms}
             isProcessing={isProcessing}
           />
+
+          {/* Safety Terms Banner (shown once, before first generation) */}
+          {!showSafetyTerms && (
+            <div className="bg-accent/10 border border-accent/30 rounded-xl p-4 flex items-start gap-3 my-3">
+              <ShieldCheck className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs text-foreground leading-relaxed">
+                  I confirm that I own the rights to these images, no children are shown, and images are not explicit.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowSafetyTerms(true)}
+                className="px-3 py-1.5 text-xs font-bold bg-accent text-accent-foreground rounded-lg hover:bg-accent/90 transition-colors flex-shrink-0"
+              >
+                I Agree
+              </button>
+            </div>
+          )}
+
+          {/* Inline Vlog Topic / Category (primary creative decisions) */}
+          {config.creationMode === 'vlog' && !storyboard && (
+            <div className="bg-card border border-border rounded-xl p-4 my-3 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <label className="block text-[10px] font-bold uppercase text-muted-foreground mb-1.5">Vlog Category</label>
+                  <select
+                    value={config.vlogCategory}
+                    onChange={(e) => setConfig(c => ({ ...c, vlogCategory: e.target.value }))}
+                    className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    {VLOG_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="block text-[10px] font-bold uppercase text-muted-foreground">Vlog Topic</label>
+                  {handleGenerateTopicIdeas && (
+                    <button onClick={handleGenerateTopicIdeas} disabled={isGeneratingTopic}
+                      className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1 disabled:opacity-50">
+                      {isGeneratingTopic ? <span className="animate-pulse">Thinking...</span> : <><Sparkles className="h-3 w-3" /> Brainstorm</>}
+                    </button>
+                  )}
+                </div>
+                <textarea
+                  placeholder={TOPIC_PLACEHOLDERS[config.vlogCategory] || "Describe your video concept..."}
+                  value={config.vlogTopic}
+                  onChange={(e) => setConfig(c => ({ ...c, vlogTopic: e.target.value }))}
+                  className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Inline Character Preview Bar */}
           <div className="my-4">
@@ -680,7 +735,7 @@ const AIStudio = () => {
                   {!referenceImage
                     ? "Upload a character photo in the Character tab to get started."
                     : !showSafetyTerms
-                    ? "Accept the safety terms in Settings to continue."
+                    ? "Accept the safety terms above to continue."
                     : "Generate a character preview to start building your storyboard."}
                 </p>
                 <Button
@@ -688,7 +743,7 @@ const AIStudio = () => {
                   disabled={!showSafetyTerms || !referenceImage || isPreviewGenerating}
                 >
                   {isPreviewGenerating ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating Preview...</>
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> {previewStep || 'Generating Preview...'}</>
                   ) : (
                     <><Sparkles className="h-4 w-4 mr-2" /> Generate Character Preview</>
                   )}
@@ -724,78 +779,84 @@ const AIStudio = () => {
             )}
           </div>
 
-          {/* Scene Workspace */}
-          {storyboard ? (
-            <StudioStoryboard
-              config={config}
-              storyboard={storyboard}
-              generatedMedia={generatedMedia}
-              onToggleSelect={handleToggleSelect}
-              onToggleLock={handleToggleLock}
-              onEnlarge={(i) => setEnlargedImageIndex(i)}
-              onAddToQueue={addToQueue}
-              onUpdatePrompt={handleUpdatePrompt}
-              onUpdateVideoPrompt={handleUpdateVideoPrompt}
-              onBatchRegenerate={() => handleBatchAction('regenerate')}
-              onBatchUpscale={() => handleBatchAction('upscale')}
-              onBatchGenerateVideo={() => handleBatchAction('video')}
-              onBatchDelete={() => handleBatchAction('delete')}
-              onAddBlankScene={() => {
-                if (!storyboard) return;
-                const newStep: VlogStep = {
-                  step_number: storyboard.steps.length + 1,
-                  step_name: 'New Scene',
-                  a_roll: '', b_roll: '', close_up_details: '', camera_direction: '',
-                  image_prompt: '', video_prompt: '', script: ''
-                };
-                setStoryboard({ ...storyboard, steps: [...storyboard.steps, newStep] });
-                setGeneratedMedia(prev => ({ ...prev, [storyboard.steps.length]: { ...DEFAULT_MEDIA } }));
-              }}
-              selectionCount={getSelectionCount()}
-            />
-          ) : (
-            <div className="bg-card border border-border rounded-xl p-12 text-center">
-              <p className="text-muted-foreground text-sm mb-2">No storyboard yet</p>
-              <p className="text-xs text-muted-foreground">Generate a character preview, then create your storyboard below.</p>
+          {/* Generate Storyboard - Inline CTA (replaces fixed bottom bar) */}
+          {!storyboard && previewCharacterImage && (
+            <div className="flex justify-center my-4">
+              <Button
+                onClick={handleGenerateStoryboard}
+                disabled={!previewCharacterImage || isGeneratingStoryboard}
+                className="px-8"
+                size="lg"
+              >
+                {isGeneratingStoryboard ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating Storyboard...</>
+                ) : (
+                  <><ArrowRight className="h-4 w-4 mr-2" /> Generate Storyboard</>
+                )}
+              </Button>
             </div>
           )}
-        </main>
 
-        {/* Bottom Action Bar */}
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border p-3 flex justify-center gap-3">
-          {!storyboard ? (
-            <Button
-              onClick={handleGenerateStoryboard}
-              disabled={!previewCharacterImage || isGeneratingStoryboard}
-              className="px-8"
-            >
-              {isGeneratingStoryboard ? (
-                <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating Storyboard...</>
-              ) : (
-                <><ArrowRight className="h-4 w-4 mr-2" /> Generate Storyboard</>
-              )}
-            </Button>
-          ) : (
+          {/* Scene Workspace */}
+          {storyboard ? (
             <>
-              <Button size="sm" variant="outline" onClick={() => {
-                const tasks: QueueItem[] = storyboard.steps
-                  .map((s, idx) => ({ id: Math.random().toString(), type: 'generate' as const, index: idx, step: s, config: { ...config } }))
-                  .filter(t => !generatedMedia[t.index]?.imageUrl);
-                if (tasks.length > 0) addToQueue(tasks);
-              }}>
-                <ImageIcon className="h-3.5 w-3.5 mr-1.5" /> Generate All Images
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => {
-                const tasks: QueueItem[] = storyboard.steps
-                  .map((s, idx) => ({ id: Math.random().toString(), type: 'generate_video' as const, index: idx, step: s, config: { ...config }, baseImageUrl: generatedMedia[idx]?.imageUrl }))
-                  .filter(t => t.baseImageUrl && !generatedMedia[t.index]?.videoUrl);
-                if (tasks.length > 0) addToQueue(tasks);
-              }}>
-                <Video className="h-3.5 w-3.5 mr-1.5" /> Generate All Videos
-              </Button>
+              {/* Contextual batch actions header */}
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold text-foreground">Storyboard · {storyboard.steps.length} scenes</h2>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => {
+                    const tasks: QueueItem[] = storyboard.steps
+                      .map((s, idx) => ({ id: Math.random().toString(), type: 'generate' as const, index: idx, step: s, config: { ...config } }))
+                      .filter(t => !generatedMedia[t.index]?.imageUrl);
+                    if (tasks.length > 0) addToQueue(tasks);
+                  }}>
+                    <ImageIcon className="h-3.5 w-3.5 mr-1.5" /> Generate All Images
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    const tasks: QueueItem[] = storyboard.steps
+                      .map((s, idx) => ({ id: Math.random().toString(), type: 'generate_video' as const, index: idx, step: s, config: { ...config }, baseImageUrl: generatedMedia[idx]?.imageUrl }))
+                      .filter(t => t.baseImageUrl && !generatedMedia[t.index]?.videoUrl);
+                    if (tasks.length > 0) addToQueue(tasks);
+                  }}>
+                    <Video className="h-3.5 w-3.5 mr-1.5" /> Generate All Videos
+                  </Button>
+                </div>
+              </div>
+              <StudioStoryboard
+                config={config}
+                storyboard={storyboard}
+                generatedMedia={generatedMedia}
+                onToggleSelect={handleToggleSelect}
+                onToggleLock={handleToggleLock}
+                onEnlarge={(i) => setEnlargedImageIndex(i)}
+                onAddToQueue={addToQueue}
+                onUpdatePrompt={handleUpdatePrompt}
+                onUpdateVideoPrompt={handleUpdateVideoPrompt}
+                onBatchRegenerate={() => handleBatchAction('regenerate')}
+                onBatchUpscale={() => handleBatchAction('upscale')}
+                onBatchGenerateVideo={() => handleBatchAction('video')}
+                onBatchDelete={() => handleBatchAction('delete')}
+                onAddBlankScene={() => {
+                  if (!storyboard) return;
+                  const newStep: VlogStep = {
+                    step_number: storyboard.steps.length + 1,
+                    step_name: 'New Scene',
+                    a_roll: '', b_roll: '', close_up_details: '', camera_direction: '',
+                    image_prompt: '', video_prompt: '', script: ''
+                  };
+                  setStoryboard({ ...storyboard, steps: [...storyboard.steps, newStep] });
+                  setGeneratedMedia(prev => ({ ...prev, [storyboard.steps.length]: { ...DEFAULT_MEDIA } }));
+                }}
+                selectionCount={getSelectionCount()}
+              />
             </>
-          )}
-        </div>
+          ) : !previewCharacterImage ? (
+            <div className="bg-card border border-border rounded-xl p-12 text-center">
+              <p className="text-muted-foreground text-sm mb-2">No storyboard yet</p>
+              <p className="text-xs text-muted-foreground">Generate a character preview, then create your storyboard.</p>
+            </div>
+          ) : null}
+        </main>
 
         {enlargedImageIndex !== null && (
           <ImageLightbox

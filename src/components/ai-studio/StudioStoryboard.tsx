@@ -1,12 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem } from './types';
 import SceneCard from './SceneCard';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, Save, Loader2, ChevronLeft, ChevronRight, Plus, ImageIcon, Video, RefreshCw, ZapIcon, Trash2 } from 'lucide-react';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { ChevronLeft, ChevronRight, Plus, ImageIcon, Video, RefreshCw, ZapIcon, Trash2 } from 'lucide-react';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface StudioStoryboardProps {
   config: AppConfig;
@@ -34,6 +31,7 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
   onAddBlankScene, selectionCount
 }) => {
   const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
+  const filmstripRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (currentSceneIndex >= storyboard.steps.length) {
@@ -51,6 +49,14 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
+
+  // Scroll active thumbnail into view
+  useEffect(() => {
+    if (filmstripRef.current) {
+      const thumb = filmstripRef.current.children[currentSceneIndex] as HTMLElement;
+      if (thumb) thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [currentSceneIndex]);
 
   const step = storyboard.steps[currentSceneIndex];
   const media = generatedMedia[currentSceneIndex];
@@ -127,8 +133,59 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
         />
       </div>
 
+      {/* Thumbnail Filmstrip */}
+      <div className="mt-4">
+        <ScrollArea className="w-full">
+          <div ref={filmstripRef} className="flex items-center gap-2 pb-2 px-1">
+            {storyboard.steps.map((s, idx) => {
+              const m = generatedMedia[idx];
+              const isActive = idx === currentSceneIndex;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentSceneIndex(idx)}
+                  className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                    isActive
+                      ? 'border-primary ring-2 ring-primary/30 scale-105'
+                      : m?.imageUrl
+                      ? 'border-border hover:border-primary/50'
+                      : 'border-border/50 hover:border-border'
+                  }`}
+                >
+                  {m?.imageUrl ? (
+                    <img src={m.imageUrl} alt={s.step_name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-muted-foreground">{idx + 1}</span>
+                    </div>
+                  )}
+                  {m?.isGeneratingImage && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                  <span className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] font-bold px-1 rounded ${
+                    isActive ? 'bg-primary text-primary-foreground' : 'bg-black/50 text-white'
+                  }`}>
+                    {idx + 1}
+                  </span>
+                </button>
+              );
+            })}
+            {/* Add Scene button in filmstrip */}
+            <button
+              onClick={() => { onAddBlankScene(); setCurrentSceneIndex(totalScenes); }}
+              className="flex-shrink-0 w-16 h-16 rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex items-center justify-center transition-colors"
+            >
+              <Plus className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </div>
+
       {/* Navigation */}
-      <div className="flex items-center justify-between mt-4">
+      <div className="flex items-center justify-between mt-2">
         <Button
           variant="outline" size="sm"
           disabled={currentSceneIndex === 0}
@@ -137,20 +194,9 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
           <ChevronLeft className="h-4 w-4 mr-1" /> Prev
         </Button>
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
-            {storyboard.steps.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentSceneIndex(idx)}
-                className={`w-2 h-2 rounded-full transition-all ${idx === currentSceneIndex ? 'bg-primary w-4' : generatedMedia[idx]?.imageUrl ? 'bg-primary/40' : 'bg-border'}`}
-              />
-            ))}
-          </div>
-          <span className="text-xs text-muted-foreground font-medium ml-2">
-            {currentSceneIndex + 1} / {totalScenes}
-          </span>
-        </div>
+        <span className="text-xs text-muted-foreground font-medium">
+          Scene {currentSceneIndex + 1} of {totalScenes}
+        </span>
 
         <Button
           variant="outline" size="sm"
@@ -158,14 +204,6 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
           onClick={() => setCurrentSceneIndex(prev => prev + 1)}
         >
           Next <ChevronRight className="h-4 w-4 ml-1" />
-        </Button>
-      </div>
-
-      {/* Add Blank Shot */}
-      <div className="flex justify-center mt-4">
-        <Button variant="ghost" size="sm" onClick={() => { onAddBlankScene(); setCurrentSceneIndex(totalScenes); }}
-          className="text-muted-foreground hover:text-foreground">
-          <Plus className="h-4 w-4 mr-1" /> Add Blank Shot
         </Button>
       </div>
     </div>

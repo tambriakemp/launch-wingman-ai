@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AppConfig, AspectRatio } from './types';
 import {
   MAKEUP_STYLES, COMPLEXION_OPTIONS, UNDERTONE_OPTIONS,
   NAIL_STYLES, OUTFIT_TYPES, HAIRSTYLE_GROUPS, CAMERA_MOVEMENTS,
-  VLOG_CATEGORIES, TOPIC_PLACEHOLDERS
+  VLOG_CATEGORIES, TOPIC_PLACEHOLDERS, QUICK_LOOK_PRESETS
 } from './constants';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ChevronDown, Palette, User, Settings2, Sparkles, MapPin, ShoppingBag } from 'lucide-react';
+import { ChevronDown, ChevronRight, Palette, User, Settings2, Sparkles, MapPin, Check } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import SavedCharacter from './SavedCharacter';
 import SavedEnvironments from './SavedEnvironments';
 import SavedLooks from './SavedLooks';
@@ -18,29 +19,36 @@ interface StoryboardToolbarProps {
   setConfig: React.Dispatch<React.SetStateAction<AppConfig>>;
   isGeneratingTopic?: boolean;
   onGenerateTopicIdeas?: () => void;
-  // Character props
   referenceImage?: string | null;
   setReferenceImage?: (img: string | null) => void;
   setReferenceImages?: (imgs: string[]) => void;
-  // Environment props
   environmentImage?: string | null;
   setEnvironmentImage?: (img: string | null) => void;
   setEnvironmentImages?: (imgs: string[]) => void;
-  // Product props
   productImage?: string | null;
   setProductImage?: (img: string | null) => void;
-  // Safety
   showSafetyTerms?: boolean;
   setShowSafetyTerms?: (v: boolean) => void;
   isProcessing?: boolean;
 }
 
-const ToolbarButton: React.FC<{ label: string; icon: React.ReactNode; children: React.ReactNode; wide?: boolean }> = ({ label, icon, children, wide }) => (
+const StatusDot: React.FC<{ active: boolean }> = ({ active }) => (
+  active ? (
+    <span className="flex items-center justify-center w-4 h-4 rounded-full bg-primary/20">
+      <Check className="h-2.5 w-2.5 text-primary" />
+    </span>
+  ) : (
+    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30" />
+  )
+);
+
+const ToolbarButton: React.FC<{ label: string; icon: React.ReactNode; children: React.ReactNode; wide?: boolean; configured?: boolean }> = ({ label, icon, children, wide, configured }) => (
   <Popover>
     <PopoverTrigger asChild>
       <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted hover:bg-muted/80 border border-border rounded-lg transition-colors">
         {icon}
         <span>{label}</span>
+        <StatusDot active={!!configured} />
         <ChevronDown className="h-3 w-3" />
       </button>
     </PopoverTrigger>
@@ -65,6 +73,21 @@ const SelectField: React.FC<{ value: string; onChange: (v: string) => void; opti
   </select>
 );
 
+const CollapsibleSection: React.FC<{ title: string; defaultOpen?: boolean; children: React.ReactNode }> = ({ title, defaultOpen = false, children }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="flex items-center justify-between w-full py-1.5 text-xs font-bold text-foreground hover:text-primary transition-colors">
+        <span>{title}</span>
+        <ChevronRight className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-90' : ''}`} />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pt-2 space-y-2">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
+
 const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   config, setConfig, isGeneratingTopic, onGenerateTopicIdeas,
   referenceImage, setReferenceImage, setReferenceImages,
@@ -73,6 +96,10 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   showSafetyTerms, setShowSafetyTerms,
   isProcessing
 }) => {
+  const hasCharacter = !!referenceImage;
+  const hasEnvironment = !!environmentImage;
+  const hasLookCustomized = config.outfitType !== 'Default Outfit' || config.makeup !== 'Soft Glam Baddie' || config.hairstyle !== 'Sleek Straight Wig';
+
   return (
     <div className="flex items-center gap-2 flex-wrap py-3 px-1">
       {/* Aspect Ratio Buttons */}
@@ -86,7 +113,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
       </div>
 
       {/* Character */}
-      <ToolbarButton label="Character" icon={<User className="h-3.5 w-3.5" />} wide>
+      <ToolbarButton label="Character" icon={<User className="h-3.5 w-3.5" />} wide configured={hasCharacter}>
         <div className="space-y-4">
           {setReferenceImage && (
             <>
@@ -101,7 +128,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
       </ToolbarButton>
 
       {/* Environment */}
-      <ToolbarButton label="Environment" icon={<MapPin className="h-3.5 w-3.5" />} wide>
+      <ToolbarButton label="Environment" icon={<MapPin className="h-3.5 w-3.5" />} wide configured={hasEnvironment}>
         <div className="space-y-3">
           {setEnvironmentImage && (
             <SavedEnvironments onSelect={setEnvironmentImage} onSelectMultiple={setEnvironmentImages} />
@@ -110,12 +137,28 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
       </ToolbarButton>
 
       {/* Look */}
-      <ToolbarButton label="Look" icon={<Palette className="h-3.5 w-3.5" />}>
+      <ToolbarButton label="Look" icon={<Palette className="h-3.5 w-3.5" />} configured={hasLookCustomized}>
         <div className="space-y-3">
           {/* Exact Match */}
           <div className="flex justify-between items-center pb-2 border-b border-border">
             <span className="text-xs font-medium text-foreground">Exact Face & Skin Tone</span>
             <Switch checked={config.exactMatch} onCheckedChange={(v) => setConfig(c => ({ ...c, exactMatch: v }))} />
+          </div>
+
+          {/* Quick Look Presets */}
+          <div>
+            <Label label="Quick Presets" />
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(QUICK_LOOK_PRESETS).map(([name, preset]) => (
+                <button
+                  key={name}
+                  onClick={() => setConfig(c => ({ ...c, ...preset }))}
+                  className="px-2.5 py-1 text-[10px] font-medium rounded-full border border-border bg-muted hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Product Upload (UGC only) */}
@@ -136,77 +179,75 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             </div>
           )}
 
-          {/* Outfit */}
-          <div>
-            <Label label="Outfit" />
+          {/* Collapsible: Outfit */}
+          <CollapsibleSection title="👗 Outfit" defaultOpen>
             <SelectField value={config.outfitType} onChange={(v) => setConfig(c => ({ ...c, outfitType: v }))} options={OUTFIT_TYPES} />
             {config.outfitType === 'Custom Outfit' && (
               <input type="text" placeholder="Describe outfit..." value={config.outfitDetails}
                 onChange={(e) => setConfig(c => ({ ...c, outfitDetails: e.target.value }))}
-                className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground mt-1.5 outline-none" />
+                className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
             )}
             <input type="text" placeholder="Additional details (optional)" value={config.outfitAdditionalInfo}
               onChange={(e) => setConfig(c => ({ ...c, outfitAdditionalInfo: e.target.value }))}
-              className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground mt-1.5 outline-none" />
-          </div>
+              className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
+          </CollapsibleSection>
 
           {/* GRWM Final Look */}
           {config.vlogCategory === 'Get Ready With Me' && config.creationMode === 'vlog' && (
-            <div className="pt-2 border-t border-border">
-              <Label label="Final Look (Reveal Outfit)" />
+            <CollapsibleSection title="✨ Final Look (Reveal Outfit)">
               <SelectField value={config.finalLookType} onChange={(v) => setConfig(c => ({ ...c, finalLookType: v }))} options={OUTFIT_TYPES} />
               {config.finalLookType === 'Custom Outfit' && (
                 <input type="text" placeholder="Describe final look outfit..." value={config.finalLook}
                   onChange={(e) => setConfig(c => ({ ...c, finalLook: e.target.value }))}
-                  className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground mt-1.5 outline-none" />
+                  className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
               )}
               <input type="text" placeholder="Additional final look details (optional)" value={config.finalLookAdditionalInfo}
                 onChange={(e) => setConfig(c => ({ ...c, finalLookAdditionalInfo: e.target.value }))}
-                className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground mt-1.5 outline-none" />
-            </div>
+                className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
+            </CollapsibleSection>
           )}
 
-          {/* Hairstyle */}
-          <div>
-            <Label label="Hairstyle" />
+          {/* Collapsible: Hair */}
+          <CollapsibleSection title="💇 Hairstyle">
             <SelectField value={config.hairstyle} onChange={(v) => setConfig(c => ({ ...c, hairstyle: v }))} options={[]} groups={HAIRSTYLE_GROUPS} />
             {config.hairstyle.includes('Custom') && (
               <input type="text" placeholder="Custom hairstyle..." value={config.customHairstyle}
                 onChange={(e) => setConfig(c => ({ ...c, customHairstyle: e.target.value }))}
-                className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground mt-1.5 outline-none" />
+                className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
             )}
-          </div>
+          </CollapsibleSection>
 
-          {/* Makeup */}
-          <div>
-            <Label label="Makeup" />
+          {/* Collapsible: Makeup */}
+          <CollapsibleSection title="💄 Makeup">
             <SelectField value={config.makeup} onChange={(v) => setConfig(c => ({ ...c, makeup: v }))} options={MAKEUP_STYLES} />
             {config.makeup === 'Custom' && (
               <input type="text" placeholder="Custom makeup..." value={config.customMakeup}
                 onChange={(e) => setConfig(c => ({ ...c, customMakeup: e.target.value }))}
-                className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground mt-1.5 outline-none" />
+                className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none" />
             )}
-          </div>
+          </CollapsibleSection>
 
-          {/* Skin + Nails */}
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label label="Skin" />
-              <SelectField value={config.skinComplexion} onChange={(v) => setConfig(c => ({ ...c, skinComplexion: v }))} options={COMPLEXION_OPTIONS} />
-              <div className="mt-1">
-                <SelectField value={config.skinUndertone} onChange={(v) => setConfig(c => ({ ...c, skinUndertone: v }))} options={UNDERTONE_OPTIONS} />
+          {/* Collapsible: Skin & Nails */}
+          <CollapsibleSection title="🖐 Skin & Nails">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label label="Skin" />
+                <SelectField value={config.skinComplexion} onChange={(v) => setConfig(c => ({ ...c, skinComplexion: v }))} options={COMPLEXION_OPTIONS} />
+                <div className="mt-1">
+                  <SelectField value={config.skinUndertone} onChange={(v) => setConfig(c => ({ ...c, skinUndertone: v }))} options={UNDERTONE_OPTIONS} />
+                </div>
+              </div>
+              <div>
+                <Label label="Nails" />
+                <SelectField value={config.nailStyle} onChange={(v) => setConfig(c => ({ ...c, nailStyle: v }))} options={NAIL_STYLES} />
+                {config.nailStyle === 'Custom' && (
+                  <input type="text" placeholder="Custom nails..." value={config.customNailStyle}
+                    onChange={(e) => setConfig(c => ({ ...c, customNailStyle: e.target.value }))}
+                    className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground mt-1 outline-none" />
+                )}
               </div>
             </div>
-            <div>
-              <Label label="Nails" />
-              <SelectField value={config.nailStyle} onChange={(v) => setConfig(c => ({ ...c, nailStyle: v }))} options={NAIL_STYLES} />
-              {config.nailStyle === 'Custom' && (
-                <input type="text" placeholder="Custom nails..." value={config.customNailStyle}
-                  onChange={(e) => setConfig(c => ({ ...c, customNailStyle: e.target.value }))}
-                  className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground mt-1.5 outline-none" />
-              )}
-            </div>
-          </div>
+          </CollapsibleSection>
 
           {/* Saved Looks */}
           <div className="pt-2 border-t border-border">
@@ -215,7 +256,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
         </div>
       </ToolbarButton>
 
-      {/* Settings */}
+      {/* Settings (slimmed down) */}
       <ToolbarButton label="Settings" icon={<Settings2 className="h-3.5 w-3.5" />}>
         <div className="space-y-3">
           {/* Creation Mode */}
@@ -239,29 +280,6 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
           </div>
 
-          {config.creationMode === 'vlog' && (
-            <>
-              <div>
-                <Label label="Vlog Category" />
-                <SelectField value={config.vlogCategory} onChange={(v) => setConfig(c => ({ ...c, vlogCategory: v }))} options={VLOG_CATEGORIES} />
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <Label label="Vlog Topic" />
-                  {onGenerateTopicIdeas && (
-                    <button onClick={onGenerateTopicIdeas} disabled={isGeneratingTopic}
-                      className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1 disabled:opacity-50">
-                      {isGeneratingTopic ? <span className="animate-pulse">Thinking...</span> : <><Sparkles className="h-3 w-3" /> Brainstorm</>}
-                    </button>
-                  )}
-                </div>
-                <textarea placeholder={TOPIC_PLACEHOLDERS[config.vlogCategory] || "Describe your video concept..."}
-                  value={config.vlogTopic} onChange={(e) => setConfig(c => ({ ...c, vlogTopic: e.target.value }))}
-                  className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px]" />
-              </div>
-            </>
-          )}
-
           {/* Script */}
           <div className="pt-2 border-t border-border">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -275,19 +293,6 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] mt-2" />
             )}
           </div>
-
-          {/* Safety Terms */}
-          {setShowSafetyTerms && (
-            <div className="pt-2 border-t border-border">
-              <label className="flex items-start gap-2 cursor-pointer">
-                <input type="checkbox" checked={showSafetyTerms || false} onChange={(e) => setShowSafetyTerms(e.target.checked)}
-                  className="mt-0.5 rounded border-border text-primary focus:ring-primary bg-muted" />
-                <span className="text-[10px] text-foreground leading-tight">
-                  I confirm that I own the rights to these images, no children are shown, and images are not explicit. <span className="text-primary font-bold">*Required</span>
-                </span>
-              </label>
-            </div>
-          )}
         </div>
       </ToolbarButton>
     </div>
