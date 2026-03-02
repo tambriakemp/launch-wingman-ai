@@ -732,6 +732,18 @@ const AIStudio = () => {
                   className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary"
                 />
               </div>
+              <div className="pt-2 border-t border-border">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={config.useOwnScript} onChange={(e) => setConfig(c => ({ ...c, useOwnScript: e.target.checked }))}
+                    className="rounded border-border text-primary focus:ring-primary bg-muted" />
+                  <span className="text-xs font-medium text-foreground">Use own script ✍️</span>
+                </label>
+                {config.useOwnScript && (
+                  <textarea placeholder="Paste your script here..."
+                    value={config.userScript} onChange={(e) => setConfig(c => ({ ...c, userScript: e.target.value.slice(0, 5000) }))}
+                    className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] mt-2 focus:ring-1 focus:ring-primary" />
+                )}
+              </div>
             </div>
           )}
 
