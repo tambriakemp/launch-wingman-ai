@@ -131,6 +131,33 @@ export const DEFAULT_MEDIA: GeneratedMedia = {
   error: undefined
 };
 
+export const QUICK_LOOK_PRESETS: Record<string, Partial<import('./types').AppConfig>> = {
+  "Natural Minimal": {
+    makeup: "Clean Girl Makeup",
+    hairstyle: "Loose Romantic Curls",
+    outfitType: "Loungewear Set",
+    nailStyle: "Natural Short Nails",
+  },
+  "Glam Baddie": {
+    makeup: "Full Glam Baddie",
+    hairstyle: "30-Inch Long Baddie Wig",
+    outfitType: "Date Night Dress",
+    nailStyle: "Long Coffin Nails",
+  },
+  "Soft Girl": {
+    makeup: "Dewy Glow",
+    hairstyle: "Half-Up Half-Down",
+    outfitType: "Casual Jeans & Tee",
+    nailStyle: "Short Neutral Polish",
+  },
+  "Streetwear": {
+    makeup: "Bare Face / No Makeup",
+    hairstyle: "Sleek High Ponytail",
+    outfitType: "Streetwear Baddie",
+    nailStyle: "Chrome Nails",
+  },
+};
+
 export const getUserFriendlyErrorMessage = (error: any): string => {
   const msg = (error?.message || error || "").toString().toLowerCase();
   if (msg.includes('429') || msg.includes('quota') || msg.includes('exhausted') || msg.includes('resource')) {
