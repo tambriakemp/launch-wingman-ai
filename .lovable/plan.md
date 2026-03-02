@@ -1,124 +1,65 @@
 
 
-## Hybrid Video Generation: Credits + BYOK Integration
+## Upgrade AI Usage Card to "AI Settings" Hub + Credit Purchases
 
-### Overview
-Implement a hybrid billing model for video generation in AI Studio:
-- **Pro users** get a monthly allowance of free video generations (e.g., 10/month)
-- **Credit packs** available for purchase via Stripe for additional generations
-- **BYOK option** for power users who want to use their own fal.ai API key
+### What Changes
 
-### Architecture
+**1. Rename and expand the AiUsageCard into an "AI Settings" card with three sections:**
 
-```text
-User clicks "Generate Video"
-        |
-        v
-  [Edge Function: generate-video]
-        |
-        +-- Check: Does user have their own fal.ai key in profiles?
-        |     YES --> Use their key (no credit deduction)
-        |     NO  --> Check credit balance
-        |              |
-        |              +-- Has credits (free monthly or purchased)?
-        |              |     YES --> Call fal.ai with platform key, deduct 1 credit
-        |              |     NO  --> Return error: "No credits remaining"
-        |              
-        v
-  [fal.ai API: MiniMax image-to-video]
-        |
-        v
-  Return video URL to client
-```
+- **Usage** -- Current month's AI call stats (existing functionality), plus a new "AI Studio" sub-section showing video generation count from `video_credit_transactions`
+- **Video Credits** -- Display current balance (monthly free remaining + purchased), with "Buy Credits" button offering 3 packs
+- **API Key (BYOK)** -- Input field to save/clear a personal fal.ai key in the `user_api_keys` table
 
-### What Gets Built
+**2. Track AI Studio usage separately**
 
-**1. Database: `video_credits` table**
-- Tracks each user's credit balance, monthly free allowance, and reset date
-- Columns: `user_id`, `balance`, `monthly_free_remaining`, `monthly_reset_at`
-- Auto-created row when a user first generates video
-- RLS: users can only read their own row
+The existing `ai_usage_logs` table tracks text-based AI calls (content drafts, talking points, etc.). Video generation is already tracked in `video_credit_transactions`. The new AI Settings card will query both:
+- `ai_usage_logs` for text AI usage (existing hook)
+- `video_credit_transactions` for video generation count this month (new query)
 
-**2. Database: `video_credit_transactions` table**
-- Audit log of credit usage and purchases
-- Columns: `user_id`, `amount`, `type` (free_monthly, purchased, used), `description`, `created_at`
+No new tables needed -- the data is already being logged.
 
-**3. Edge Function: `generate-video`**
-- Accepts: scene image URL, video prompt, aspect ratio
-- Checks for user's own fal.ai key first (from profiles table or a new `user_api_keys` table)
-- If no BYOK key, checks and deducts credits
-- Calls fal.ai MiniMax (Hailuo) image-to-video endpoint
-- Returns video URL
-- Handles polling (fal.ai is async -- submit, then poll for result)
+**3. Buy Credits via Stripe (one-time payments)**
 
-**4. Edge Function: `purchase-video-credits`**
-- Creates a Stripe checkout session for credit packs
-- Packs: 10 credits ($5), 25 credits ($10), 50 credits ($18)
-- On success, credits are added to user's balance (via Stripe webhook or success callback)
+Create a `purchase-video-credits` edge function that creates a Stripe Checkout session for credit packs. On the success callback, a `fulfill-video-credits` edge function (or webhook) adds credits to the user's `video_credits.balance`.
 
-**5. Settings Page: "AI Studio" section**
-- Show current credit balance and monthly free remaining
-- "Buy Credits" button with pack options
-- Optional: "Use your own fal.ai API key" input field with save/clear
+**Pricing recommendation based on fal.ai costs:**
+- fal.ai MiniMax video costs ~$0.10-0.20 per generation
+- Suggested credit packs with healthy margin:
+  - **10 credits -- $4.99** (~$0.50/video, ~3x markup)
+  - **25 credits -- $9.99** (~$0.40/video, volume discount)
+  - **50 credits -- $17.99** (~$0.36/video, best value)
 
-**6. AI Studio UI Updates**
-- Update `processQueue` to call the `generate-video` edge function instead of throwing "coming soon"
-- Show credit balance in the toolbar
-- Display video in SceneCard when generated
-- Show appropriate error when credits are exhausted with a link to buy more
-
-**7. Wire up video display in SceneCard**
-- Render `<video>` element when `videoUrl` is available
-- Play/pause controls
+These prices feel fair for end users while covering your costs with room for profit.
 
 ### Technical Details
 
-**fal.ai Integration:**
-- Endpoint: `https://queue.fal.run/fal-ai/minimax-video/image-to-video`
-- Cost: ~$0.10-0.20 per generation
-- Async flow: POST to submit, then poll `/requests/{id}/status` until complete
-- Secret needed: `FAL_KEY` (platform-level, stored as backend secret)
+**Files to modify:**
 
-**Credit Logic (in generate-video edge function):**
-```text
-1. Get user from auth token
-2. Check user_api_keys for fal.ai key
-   - If found: use it, skip credit check
-3. Check video_credits for user
-   - If no row: create one with monthly_free = 10
-   - If monthly_reset_at < now: reset monthly_free to 10
-   - If monthly_free > 0: deduct 1, proceed
-   - Else if balance > 0: deduct 1, proceed
-   - Else: return 402 "No credits"
-4. Call fal.ai, return video URL
-5. Log transaction
-```
-
-**Stripe Credit Packs:**
-- Create 3 Stripe products/prices for credit packs
-- Use one-off payment mode (not subscription)
-- On payment success, add credits to user's balance
-
-**Monthly Reset:**
-- Pro users get 10 free credits/month
-- Reset tracked via `monthly_reset_at` timestamp
-- Checked and reset lazily on each generation request
-
-### Files to Create/Modify
-
-| File | Action |
+| File | Change |
 |------|--------|
-| `video_credits` table | Create (migration) |
-| `video_credit_transactions` table | Create (migration) |
-| `user_api_keys` table | Create (migration) |
-| `supabase/functions/generate-video/index.ts` | Create |
-| `supabase/functions/purchase-video-credits/index.ts` | Create |
-| `src/pages/AIStudio.tsx` | Modify (wire generate-video call) |
-| `src/components/ai-studio/SceneCard.tsx` | Modify (render video) |
-| `src/pages/Settings.tsx` | Modify (add AI Studio credits section + BYOK) |
-| `src/hooks/useVideoCredits.ts` | Create (query credit balance) |
-| `supabase/config.toml` | Add new function entries |
+| `src/components/settings/AiUsageCard.tsx` | Rename to `AiSettingsCard.tsx`. Add three collapsible sections: Usage, Video Credits, API Key. Query `video_credit_transactions` for studio usage count. Add BYOK input that saves to `user_api_keys`. Add Buy Credits buttons. |
+| `src/pages/Settings.tsx` | Update import from `AiUsageCard` to `AiSettingsCard` |
+| `src/hooks/useVideoCredits.ts` | Create hook to fetch `video_credits` balance and `video_credit_transactions` count |
 
-### Prerequisite
-You'll need to sign up at **fal.ai** and get an API key. I'll prompt you to add it as a backend secret (`FAL_KEY`) before building the edge function.
+**New files:**
+
+| File | Purpose |
+|------|---------|
+| `supabase/functions/purchase-video-credits/index.ts` | Creates Stripe Checkout session (mode: "payment") for selected credit pack. Uses existing `STRIPE_SECRET_KEY`. |
+| `supabase/functions/fulfill-video-credits/index.ts` | Called from the success page with the Checkout session ID. Verifies payment via Stripe API, then adds credits to `video_credits.balance` and logs in `video_credit_transactions`. |
+
+**Credit pack Stripe products:**
+- Create 3 Stripe products/prices using Stripe tools before building the edge function
+- These price IDs get hardcoded into `purchase-video-credits`
+
+**BYOK flow:**
+- User enters fal.ai key in Settings
+- Saved to `user_api_keys` table (service: "fal_ai")
+- `generate-video` edge function already checks this table first
+- Show masked key with a "Clear" button when saved
+
+**Success page flow:**
+- After Stripe checkout, redirect to `/settings?credits_success=true&session_id={CHECKOUT_SESSION_ID}`
+- Settings page detects this param, calls `fulfill-video-credits` to verify and add credits
+- Shows success toast
 
