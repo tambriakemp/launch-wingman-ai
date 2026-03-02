@@ -180,7 +180,23 @@ const AIStudio = () => {
                 [task.index]: { ...prev[task.index], imageUrl: data.imageUrl, isGeneratingImage: false, isUpscaling: false, error: undefined }
               }));
             } else if (task.type === 'generate_video') {
-              throw new Error("Video generation coming soon");
+              if (!task.baseImageUrl) throw new Error("Image required before generating video");
+
+              const { data, error } = await supabase.functions.invoke('generate-video', {
+                body: {
+                  imageUrl: task.baseImageUrl,
+                  videoPrompt: task.step.video_prompt,
+                  aspectRatio: task.config.aspectRatio,
+                }
+              });
+
+              if (error) throw error;
+              if (data?.error) throw new Error(data.error);
+
+              setGeneratedMedia(prev => ({
+                ...prev,
+                [task.index]: { ...prev[task.index], videoUrl: data.videoUrl, isGeneratingVideo: false, videoError: undefined }
+              }));
             }
           } catch (error: any) {
             setGeneratedMedia(prev => ({
