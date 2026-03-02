@@ -78,12 +78,6 @@ const createNavSections = (projectId?: string): NavSection[] => [
     ],
   },
   {
-    heading: "Create",
-    items: [
-      { id: "ai-studio", label: "AI Studio", icon: Wand2, href: "/app/ai-studio", isProOnly: true },
-    ],
-  },
-  {
     heading: "Resources",
     items: [
       { id: "content-vault", label: "Content Vault", icon: Package, href: "/content-vault", isContentVaultOrPro: true },
@@ -260,10 +254,11 @@ const SidebarContent = ({
         ))}
 
         {/* Marketing Hub section - Admin only */}
-        {hasAdminAccess && (() => {
-          const marketingItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean }[] = [
+        {(isPro || hasAdminAccess) && (() => {
+           const marketingItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean }[] = [
             { label: "Campaigns", href: "/marketing-hub/campaigns", icon: Target },
             { label: "Social Planner", href: projectId ? `/projects/${projectId}/content` : "#", icon: MessageSquareText },
+            { label: "AI Studio", href: "/app/ai-studio", icon: Wand2 },
             { label: "Analytics", href: "/marketing-hub/analytics", icon: BarChart3 },
           ];
           return (
