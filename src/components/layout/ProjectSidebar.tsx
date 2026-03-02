@@ -77,13 +77,6 @@ const createNavSections = (projectId?: string): NavSection[] => [
       { id: "insights", label: "Insights", icon: Lightbulb, href: projectId ? `/projects/${projectId}/insights` : "#", isProOnly: true, requiresProject: !projectId },
     ],
   },
-  {
-    heading: "Resources",
-    items: [
-      { id: "content-vault", label: "Content Vault", icon: Package, href: "/content-vault", isContentVaultOrPro: true },
-      { id: "library", label: "Library", icon: FolderOpen, href: projectId ? `/projects/${projectId}/library` : "#", requiresProject: !projectId },
-    ],
-  },
 ];
 
 interface StepCompletion {
@@ -253,13 +246,17 @@ const SidebarContent = ({
           </div>
         ))}
 
-        {/* Marketing Hub section - Admin only */}
+        {/* Marketing Hub section */}
         {(isPro || hasAdminAccess) && (() => {
-           const marketingItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean }[] = [
+           const marketingItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean; requiresProject?: boolean }[] = [
             { label: "Campaigns", href: "/marketing-hub/campaigns", icon: Target },
-            { label: "Social Planner", href: projectId ? `/projects/${projectId}/content` : "#", icon: MessageSquareText },
+            { label: "Social Planner", href: projectId ? `/projects/${projectId}/content` : "#", icon: MessageSquareText, requiresProject: !projectId },
             { label: "AI Studio", href: "/app/ai-studio", icon: Wand2 },
             { label: "Analytics", href: "/marketing-hub/analytics", icon: BarChart3 },
+          ];
+          const resourceItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; requiresProject?: boolean }[] = [
+            { label: "Content Vault", href: "/content-vault", icon: Package },
+            { label: "Library", href: projectId ? `/projects/${projectId}/library` : "#", icon: FolderOpen, requiresProject: !projectId },
           ];
           return (
             <div>
@@ -269,6 +266,19 @@ const SidebarContent = ({
               </div>
               <div className="space-y-0.5">
                 {marketingItems.map((item) => {
+                  if (item.requiresProject) {
+                    return (
+                      <Tooltip key={item.label}>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground/40 cursor-not-allowed w-full">
+                            <item.icon className="w-4 h-4" />
+                            <span>{item.label}</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="right"><p>Select a project first</p></TooltipContent>
+                      </Tooltip>
+                    );
+                  }
                   if (item.disabled) {
                     return (
                       <Tooltip key={item.label}>
@@ -279,6 +289,43 @@ const SidebarContent = ({
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="right"><p>Coming soon</p></TooltipContent>
+                      </Tooltip>
+                    );
+                  }
+                  const isActive = location.pathname === item.href || location.pathname.startsWith(item.href);
+                  return (
+                    <button
+                      key={item.label}
+                      onClick={() => handleNavClick(item.href)}
+                      className={cn(
+                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
+                        isActive
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                      )}
+                    >
+                      <item.icon className={cn("w-4 h-4", isActive && "text-sidebar-primary")} />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <Separator className="my-2 bg-sidebar-border" />
+              <div className="mb-1.5 px-2">
+                <span className="text-[11px] font-semibold text-sidebar-foreground uppercase tracking-wider">Resources</span>
+              </div>
+              <div className="space-y-0.5">
+                {resourceItems.map((item) => {
+                  if (item.requiresProject) {
+                    return (
+                      <Tooltip key={item.label}>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground/40 cursor-not-allowed w-full">
+                            <item.icon className="w-4 h-4" />
+                            <span>{item.label}</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="right"><p>Select a project first</p></TooltipContent>
                       </Tooltip>
                     );
                   }
