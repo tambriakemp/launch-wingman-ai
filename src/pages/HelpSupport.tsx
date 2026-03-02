@@ -89,16 +89,18 @@ export default function HelpSupport() {
 
   return (
     <ProjectLayout>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <HelpCircle className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl font-bold">Help & Support</h1>
+        <div className="flex items-start gap-4 mb-8">
+          <div className="p-3 bg-sky-100/50 dark:bg-sky-900/20 rounded-xl shrink-0">
+            <HelpCircle className="w-6 h-6 text-sky-600 dark:text-sky-400" />
           </div>
-          <p className="text-muted-foreground">
-            Find answers to common questions or submit a support ticket.
-          </p>
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Help & Support</h1>
+            <p className="text-muted-foreground">
+              Find answers to common questions or submit a support ticket.
+            </p>
+          </div>
         </div>
 
         {/* FAQs */}

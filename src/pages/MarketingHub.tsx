@@ -37,12 +37,17 @@ const MarketingHub = () => {
 
   return (
     <ProjectLayout>
-      <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Marketing Hub</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Tools to build, track, and optimize your marketing campaigns.
-          </p>
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+        <div className="flex items-start gap-4 mb-8">
+          <div className="p-3 bg-rose-100/50 dark:bg-rose-900/20 rounded-xl shrink-0">
+            <Megaphone className="w-6 h-6 text-rose-600 dark:text-rose-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Marketing Hub</h1>
+            <p className="text-muted-foreground">
+              Tools to build, track, and optimize your marketing campaigns.
+            </p>
+          </div>
         </div>
 
         {/* Tools grid */}

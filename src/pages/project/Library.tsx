@@ -457,7 +457,7 @@ export default function Library() {
   };
 
   const content = (
-    <div className="max-w-3xl mx-auto py-4 md:py-8 px-4">
+    <div className="max-w-7xl mx-auto px-6 py-8">
       <AnimatePresence mode="wait">
         {selectedArticle ? (
           <ArticleView
@@ -474,24 +474,28 @@ export default function Library() {
             exit={{ opacity: 0 }}
           >
             {/* Header */}
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                <BookOpen className="w-5 h-5 text-primary" />
-                <h1 className="text-2xl font-semibold text-foreground">Library</h1>
+            <div className="flex items-start gap-4 mb-8">
+              <div className="p-3 bg-blue-100/50 dark:bg-blue-900/20 rounded-xl shrink-0">
+                <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-semibold text-foreground">Library</h1>
+                  {isAdmin && (
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                      Admin mode
+                    </span>
+                  )}
+                </div>
+                <p className="text-muted-foreground">
+                  Short explanations to support the step you're on.
+                </p>
                 {isAdmin && (
-                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full ml-2">
-                    Admin mode
-                  </span>
+                  <p className="text-sm text-muted-foreground/70 mt-1">
+                    Drag articles to reorder them. Changes are saved automatically.
+                  </p>
                 )}
               </div>
-              <p className="text-muted-foreground">
-                Short explanations to support the step you're on.
-              </p>
-              {isAdmin && (
-                <p className="text-sm text-muted-foreground/70 mt-1">
-                  Drag articles to reorder them. Changes are saved automatically.
-                </p>
-              )}
             </div>
 
             {/* Search */}

@@ -250,24 +250,25 @@ export default function Playbook() {
   
   return (
     <ProjectLayout>
-      <div className="max-w-2xl mx-auto py-8 px-4 space-y-8">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-2"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <BookMarked className="w-5 h-5 text-primary" />
+          <div className="flex items-start gap-4 mb-8">
+            <div className="p-3 bg-violet-100/50 dark:bg-violet-900/20 rounded-xl shrink-0">
+              <BookMarked className="w-6 h-6 text-violet-600 dark:text-violet-400" />
             </div>
-            <h1 className="text-2xl font-semibold text-foreground">
-              Your Launch Playbook
-            </h1>
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">
+                Your Launch Playbook
+              </h1>
+              <p className="text-muted-foreground">
+                A reflection of how you tend to plan, message, and launch — based on what you've completed.
+              </p>
+            </div>
           </div>
-          <p className="text-muted-foreground pl-[52px]">
-            A reflection of how you tend to plan, message, and launch — based on what you've completed.
-          </p>
         </motion.header>
         
         {/* How You Tend to Launch - Primary Section */}
