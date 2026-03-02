@@ -20,7 +20,7 @@ import { CheckInSettings } from "@/components/check-in";
 import { ToneSettings } from "@/components/settings/ToneSettings";
 import { AnnualReviewView } from "@/components/settings/AnnualReviewView";
 import { EmailPreferencesSettings } from "@/components/settings/EmailPreferencesSettings";
-import { AiUsageCard } from "@/components/settings/AiUsageCard";
+import { AiSettingsCard } from "@/components/settings/AiSettingsCard";
 import { ExportMyDataDialog } from "@/components/settings/ExportMyDataDialog";
 import { DeleteMyAccountDialog } from "@/components/settings/DeleteMyAccountDialog";
 import { FacebookPageSelector } from "@/components/settings/FacebookPageSelector";
@@ -219,13 +219,38 @@ const Settings = () => {
     fetchOrCreateProfile();
   }, [user]);
 
-  // Handle success/cancel redirects from Stripe and Pinterest
+  // Handle success/cancel redirects from Stripe, Pinterest, and credit purchases
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
       toast.success("Subscription successful! Welcome to Pro.");
       checkSubscription();
     } else if (searchParams.get('canceled') === 'true') {
       toast.info("Checkout canceled.");
+    }
+
+    // Handle credit purchase success
+    const sessionId = searchParams.get('session_id');
+    if (searchParams.get('credits_success') === 'true' && sessionId) {
+      const fulfillCredits = async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke('fulfill-video-credits', {
+            body: { sessionId },
+          });
+          if (error) throw error;
+          if (data?.alreadyFulfilled) {
+            toast.info("Credits already added to your account.");
+          } else {
+            toast.success(`${data?.credits || ''} video credits added to your account!`);
+          }
+          queryClient.invalidateQueries({ queryKey: ["video-credits"] });
+        } catch (err: any) {
+          console.error("Failed to fulfill credits:", err);
+          toast.error("Failed to add credits. Please contact support.");
+        }
+      };
+      fulfillCredits();
+    } else if (searchParams.get('credits_canceled') === 'true') {
+      toast.info("Credit purchase canceled.");
     }
     
     // Handle Pinterest OAuth callback
@@ -1826,7 +1851,7 @@ const Settings = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
         >
-          <AiUsageCard />
+          <AiSettingsCard />
         </motion.div>
 
         {/* Danger Zone */}
