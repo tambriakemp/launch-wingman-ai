@@ -113,9 +113,15 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
   return (
     <div className="flex flex-col h-[calc(100vh-theme(spacing.16))]">
       {/* Compact top bar with actions */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background shrink-0">
-        <div className="flex items-center gap-2">
-          <h1 className="text-lg font-semibold text-foreground">Social Planner</h1>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-teal-100/50 dark:bg-teal-900/20 rounded-lg shrink-0">
+            <Calendar className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+          </div>
+          <div>
+            <h1 className="text-lg font-semibold text-foreground">Social Planner</h1>
+            <p className="text-xs text-muted-foreground hidden sm:block">Plan and schedule your social content.</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center">
