@@ -176,16 +176,18 @@ const Assessments = () => {
 
   return (
     <ProjectLayout>
-      <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 px-4 md:px-0">
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Assessments</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
-            Take these assessments to understand your current approach and get personalized recommendations.
-          </p>
-        </motion.div>
+      <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 px-6">
+        <div className="flex items-start gap-4 pt-8">
+          <div className="p-3 bg-purple-100/50 dark:bg-purple-900/20 rounded-xl shrink-0">
+            <ClipboardCheck className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Assessments</h1>
+            <p className="text-muted-foreground">
+              Take these assessments to understand your current approach and get personalized recommendations.
+            </p>
+          </div>
+        </div>
 
         {/* Info Section */}
         <motion.div
