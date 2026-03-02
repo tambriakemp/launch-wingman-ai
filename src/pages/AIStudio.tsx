@@ -199,6 +199,7 @@ const AIStudio = () => {
               }));
             }
           } catch (error: any) {
+            const friendlyMsg = getUserFriendlyErrorMessage(error);
             setGeneratedMedia(prev => ({
               ...prev,
               [task.index]: {
@@ -206,9 +207,12 @@ const AIStudio = () => {
                 isGeneratingImage: false,
                 isUpscaling: false,
                 isGeneratingVideo: false,
-                ...(task.type === 'generate_video' ? { videoError: getUserFriendlyErrorMessage(error) } : { error: getUserFriendlyErrorMessage(error) })
+                ...(task.type === 'generate_video' ? { videoError: friendlyMsg } : { error: friendlyMsg })
               }
             }));
+            if (task.type === 'generate_video') {
+              toast({ title: "Video Generation Failed", description: friendlyMsg, variant: "destructive" });
+            }
           }
         }
       } finally {
