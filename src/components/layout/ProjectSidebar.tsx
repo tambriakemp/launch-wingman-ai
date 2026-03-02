@@ -73,10 +73,8 @@ const createNavSections = (projectId?: string): NavSection[] => [
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: projectId ? `/projects/${projectId}/dashboard` : "#", requiresProject: !projectId },
       { id: "tasks", label: "Tasks", icon: Kanban, href: projectId ? `/projects/${projectId}/tasks` : "#", requiresProject: !projectId },
-      { id: "content", label: "Social Planner", icon: MessageSquareText, href: projectId ? `/projects/${projectId}/content` : "#", isProOnly: true, requiresProject: !projectId },
       { id: "playbook", label: "Playbook", icon: BookOpen, href: `/playbook` },
       { id: "insights", label: "Insights", icon: Lightbulb, href: projectId ? `/projects/${projectId}/insights` : "#", isProOnly: true, requiresProject: !projectId },
-      { id: "library", label: "Library", icon: FolderOpen, href: projectId ? `/projects/${projectId}/library` : "#", requiresProject: !projectId },
     ],
   },
   {
@@ -89,6 +87,7 @@ const createNavSections = (projectId?: string): NavSection[] => [
     heading: "Resources",
     items: [
       { id: "content-vault", label: "Content Vault", icon: Package, href: "/content-vault", isContentVaultOrPro: true },
+      { id: "library", label: "Library", icon: FolderOpen, href: projectId ? `/projects/${projectId}/library` : "#", requiresProject: !projectId },
     ],
   },
 ];
@@ -264,6 +263,7 @@ const SidebarContent = ({
         {hasAdminAccess && (() => {
           const marketingItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean }[] = [
             { label: "Campaigns", href: "/marketing-hub/campaigns", icon: Target },
+            { label: "Social Planner", href: projectId ? `/projects/${projectId}/content` : "#", icon: MessageSquareText },
             { label: "Analytics", href: "/marketing-hub/analytics", icon: BarChart3 },
           ];
           return (
