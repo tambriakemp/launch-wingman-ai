@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
-import { Link } from "react-router-dom";
-import { ArrowLeft, MousePointerClick, Link2, Globe, Loader2, Target, Percent, DollarSign, Users } from "lucide-react";
+import { MousePointerClick, Link2, Globe, Loader2, Target, Percent, DollarSign, Users, BarChart3 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCampaignAnalytics, DateRange } from "@/hooks/useCampaignAnalytics";
@@ -30,19 +29,16 @@ const CampaignAnalytics = () => {
 
   return (
     <ProjectLayout>
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <Link
-              to="/marketing-hub"
-              className="p-1.5 rounded-md hover:bg-muted transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4 text-muted-foreground" />
-            </Link>
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-indigo-100/50 dark:bg-indigo-900/20 rounded-xl shrink-0">
+              <BarChart3 className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Analytics Dashboard</h1>
-              <p className="text-muted-foreground text-sm mt-0.5">
+              <h1 className="text-2xl font-semibold text-foreground">Analytics Dashboard</h1>
+              <p className="text-muted-foreground">
                 Track performance across your UTM campaigns and links.
               </p>
             </div>

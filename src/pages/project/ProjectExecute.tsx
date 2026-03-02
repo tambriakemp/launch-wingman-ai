@@ -1,6 +1,7 @@
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { ListTodo } from "lucide-react";
 import { TasksBoard } from "@/components/TasksBoard";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,7 +28,18 @@ const ProjectExecute = () => {
 
   return (
     <ProjectLayout>
-      <TasksBoard projectId={id} projectType={projectType} />
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex items-start gap-4 mb-8">
+          <div className="p-3 bg-orange-100/50 dark:bg-orange-900/20 rounded-xl shrink-0">
+            <ListTodo className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Tasks</h1>
+            <p className="text-muted-foreground">Manage and track your project tasks.</p>
+          </div>
+        </div>
+        <TasksBoard projectId={id} projectType={projectType} />
+      </div>
     </ProjectLayout>
   );
 };

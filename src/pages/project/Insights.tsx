@@ -224,19 +224,17 @@ export default function Insights() {
 
   return (
     <ProjectLayout>
-      <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         {/* Header */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Lightbulb className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">Insights</h1>
-              <p className="text-sm text-muted-foreground">
-                A simple record of where you started and where you landed.
-              </p>
-            </div>
+        <div className="flex items-start gap-4 mb-8">
+          <div className="p-3 bg-yellow-100/50 dark:bg-yellow-900/20 rounded-xl shrink-0">
+            <Lightbulb className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Insights</h1>
+            <p className="text-muted-foreground">
+              A simple record of where you started and where you landed.
+            </p>
           </div>
         </div>
 
