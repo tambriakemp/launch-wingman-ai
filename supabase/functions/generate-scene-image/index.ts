@@ -192,72 +192,57 @@ serve(async (req) => {
       if (lockedRefs?.find((r: any) => r.type === 'environment')) lockInstructions += "Use the provided background reference as the setting. ";
       if (environmentImages && environmentImages.length > 1) lockInstructions += "Multiple reference images of the same environment are provided showing different angles. Maintain exact spatial consistency — keep all fixtures, appliances, and furniture in their original positions. ";
 
-      // Anchor image instruction (character + outfit identity)
-      let anchorInstruction = "";
-      if (anchorImageUrl && !hasCharacterLock) {
-        anchorInstruction = `CRITICAL IDENTITY REFERENCE: One of the provided images is a previously generated scene of this SAME character. The person in that image IS the character — replicate their EXACT face, body type, skin tone, hair texture, and proportions. Only change the pose, setting, and outfit as described below.`;
-      }
       currentOutfit = sanitizeOutfit(currentOutfit);
 
-      // CANONICAL IDENTITY instruction when preview exists
-      let canonicalIdentityInstruction = "";
-      if (previewCharacter) {
-        canonicalIdentityInstruction = `CANONICAL IDENTITY (CRITICAL): A GENERATED CHARACTER PREVIEW image is provided. This is the DEFINITIVE, CANONICAL identity for this character. You MUST replicate this EXACT person — same face, bone structure, skin tone, body type, hair, and all distinguishing features. Do NOT deviate from this person's appearance under any circumstances. This preview is the SINGLE SOURCE OF TRUTH for the character's identity.`;
-      }
-
-      // Multi-photo reference instruction
+      // Multi-photo reference instruction (only used when no preview)
       let multiRefInstruction = "";
       if (!previewCharacter && referenceImages && referenceImages.length > 1 && !hasCharacterLock) {
-        multiRefInstruction = `Multiple reference photos of the SAME person are provided from different angles (face, profile, full body). Use ALL of them to accurately reproduce this person's exact appearance — facial structure, skin tone, body proportions, and features.`;
+        multiRefInstruction = `Multiple reference photos of the SAME person are provided from different angles. Use ALL of them to reproduce this person's exact appearance.`;
       }
 
       // Scene/environment mismatch guard
       const mismatchGuard = detectSceneLocationMismatch(prompt, environmentLabel);
 
-      // Scene continuity context
-      let sceneContextInstruction = "";
-      if (sceneNumber && totalScenes) {
-        sceneContextInstruction += `\nSCENE CONTEXT: This is scene ${sceneNumber} of ${totalScenes}.`;
-      }
-      if (previousScenePrompt) {
-        sceneContextInstruction += `\nPREVIOUS SCENE: "${previousScenePrompt}"\nMaintain visual continuity from the previous scene — same lighting, time of day, and spatial context. The character's position and action should naturally follow from the previous scene.`;
-      }
-      if (nextScenePrompt) {
-        sceneContextInstruction += `\nNEXT SCENE: "${nextScenePrompt}"\nAnticipate the transition — the character's pose and position should naturally lead into the next scene.`;
-      }
+      // Build prompt as EDIT instruction when preview exists, otherwise generate from scratch
+      let fullPrompt: string;
+      
+      if (previewCharacter) {
+        // EDIT MODE: The character preview is the base image — instruct the model to modify it
+        fullPrompt = `EDIT THIS IMAGE: Keep the person's face, body, and identity EXACTLY the same. Change ONLY the following:
 
-      const fullPrompt = `Create a high-quality, editorial-style fashion photograph.
+1. SCENE: Place this person in the following setting — ${prompt}
+2. OUTFIT: Change their clothing to — ${currentOutfit}
+3. STYLE: Hair: ${hair}, Makeup: ${makeup}, Skin tone: ${skin}, Nails: ${nails}
 
-IDENTITY PRESERVATION (CRITICAL):
-- This is the SAME person across all images. Match their EXACT facial structure, bone structure, skin tone, body proportions, hair texture, and age.
-- Do NOT change the character's appearance, age, ethnicity, or body type between scenes.
-- Do NOT add or remove facial features, freckles, beauty marks, or other distinguishing characteristics.
-${canonicalIdentityInstruction}
-${anchorInstruction}
-${multiRefInstruction}
-
-Outfit: ${currentOutfit}
-${previewCharacter && !anchorImageUrl ? 'A reference image is provided showing the character with their styled look. Replicate the outfit consistently.' : ''}
-
-Scene: ${prompt}
-
-Style details:
-- Hair: ${hair}
-- Makeup: ${makeup}
-- Skin tone: ${skin}
-- Nails: ${nails}
-
+CRITICAL RULES:
+- The person's face, bone structure, skin tone, body type, and age must remain IDENTICAL to the provided image.
+- Only change pose, clothing, and background as described above.
 ${lockInstructions}
-
-${config.exactMatch ? 'STRICT MODE: Closely match the EXACT facial features, skin tone, and proportions from the reference photo. This person must be immediately recognizable as the same individual.' : ''}
-${config.creationMode === 'ugc' ? 'Feature the product prominently in the scene.' : ''}
-
+${config.exactMatch ? '- STRICT MODE: This person must be immediately recognizable as the same individual.' : ''}
+${config.creationMode === 'ugc' ? '- Feature the product prominently in the scene.' : ''}
 ${mismatchGuard}
-${sceneContextInstruction}
 
 Style: editorial fashion photography, professional lighting, tasteful, fully clothed.
+${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmentImage ? "The subject should interact naturally with the environment, not pose at the camera." : "")}`;
+      } else {
+        // GENERATE FROM SCRATCH MODE (no preview available)
+        fullPrompt = `Create a high-quality, editorial-style fashion photograph.
 
-${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmentImage ? "The subject should interact naturally with the environment. Pose and gaze should reflect realistic behavior for the setting, not direct-to-camera posing." : "")}`;
+IDENTITY (CRITICAL): Match the person in the reference photo(s) EXACTLY — same face, bone structure, skin tone, body type, age.
+${multiRefInstruction}
+
+SCENE: ${prompt}
+OUTFIT: ${currentOutfit}
+STYLE: Hair: ${hair} | Makeup: ${makeup} | Skin: ${skin} | Nails: ${nails}
+
+${lockInstructions}
+${config.exactMatch ? 'STRICT MODE: This person must be immediately recognizable as the same individual.' : ''}
+${config.creationMode === 'ugc' ? 'Feature the product prominently in the scene.' : ''}
+${mismatchGuard}
+
+Style: editorial fashion photography, professional lighting, tasteful, fully clothed.
+${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmentImage ? "The subject should interact naturally with the environment, not pose at the camera." : "")}`;
+      }
 
       contentParts.push({ type: "text", text: fullPrompt });
     }
@@ -266,7 +251,7 @@ ${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmen
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
+        model: "google/gemini-3-pro-image-preview",
         messages: [{ role: "user", content: contentParts }],
         modalities: ["image", "text"]
       }),

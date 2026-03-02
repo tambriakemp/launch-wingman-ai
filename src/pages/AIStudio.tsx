@@ -94,7 +94,7 @@ const AIStudio = () => {
       });
 
       try {
-        let lastGeneratedUrl: string | undefined;
+        // lastGeneratedUrl removed — each scene now anchors to canonical preview
         for (const task of currentBatch) {
           try {
             if (task.type === 'generate' || task.type === 'upscale') {
@@ -117,17 +117,11 @@ const AIStudio = () => {
                 }
               });
 
-              let anchorImageUrl: string | undefined = lastGeneratedUrl;
-              if (!anchorImageUrl) {
-                const hasOutfitLock = lockedRefs.some(r => r.type === 'outfit');
-                const hasCharacterLock = lockedRefs.some(r => r.type === 'character');
-                if (!hasOutfitLock || !hasCharacterLock) {
-                  const firstGenerated = Object.values(currentGeneratedMedia).find(
-                    m => m.imageUrl && !m.imageUrl.startsWith('data:')
-                  );
-                  if (firstGenerated?.imageUrl) anchorImageUrl = firstGenerated.imageUrl;
-                }
-              }
+              // Always anchor to canonical character preview, NOT previous scene output
+              // This prevents identity drift across scenes
+              const activePreviewForAnchor = task.step.is_final_look && currentPreviewFinalLook
+                ? currentPreviewFinalLook : currentPreviewCharacter;
+              const anchorImageUrl: string | undefined = activePreviewForAnchor || undefined;
 
               const activePreview = task.step.is_final_look && currentPreviewFinalLook
                 ? currentPreviewFinalLook : currentPreviewCharacter;
@@ -165,7 +159,7 @@ const AIStudio = () => {
 
               if (error) throw error;
               if (data?.error) throw new Error(data.error);
-              if (data.imageUrl) lastGeneratedUrl = data.imageUrl;
+              // No longer chain lastGeneratedUrl — anchoring to preview instead
 
               setGeneratedMedia(prev => ({
                 ...prev,
