@@ -730,21 +730,9 @@ const AIStudio = () => {
             </div>
           )}
 
-          {/* Inline Vlog Topic / Category (primary creative decisions) */}
+          {/* Inline Vlog Topic (category moved to Create dropdown) */}
           {config.creationMode === 'vlog' && !storyboard && (
             <div className="bg-card border border-border rounded-xl p-4 my-3 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <label className="block text-[10px] font-bold uppercase text-muted-foreground mb-1.5">Vlog Category</label>
-                  <select
-                    value={config.vlogCategory}
-                    onChange={(e) => setConfig(c => ({ ...c, vlogCategory: e.target.value }))}
-                    className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    {VLOG_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-              </div>
               <div>
                 <div className="flex justify-between items-center mb-1.5">
                   <label className="block text-[10px] font-bold uppercase text-muted-foreground">Vlog Topic</label>
