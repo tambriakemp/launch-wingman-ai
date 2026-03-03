@@ -611,9 +611,9 @@ const AIStudio = () => {
   return (
     <ProjectLayout>
       <div className="min-h-screen pb-8 relative">
-        {/* Header */}
-        <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-border">
-          <div className="py-6 px-6 flex items-center gap-4">
+        {/* Header — matches Campaigns layout */}
+        <div className="max-w-7xl mx-auto px-4 pt-8 pb-4">
+          <div className="flex items-start gap-4">
             <div className="p-3 bg-rose-100/50 dark:bg-rose-900/20 rounded-xl shrink-0">
               <Sparkles className="w-6 h-6 text-rose-600 dark:text-rose-400" />
             </div>
@@ -623,17 +623,17 @@ const AIStudio = () => {
               <p className="text-xs text-muted-foreground/70 hidden sm:block mt-0.5">Upload a character, configure your look, then generate. Use lock icons on images to keep consistency across scenes.</p>
             </div>
             {(queue.length > 0 || isProcessing) && (
-              <div className="flex items-center gap-3 px-3 py-1 bg-muted rounded-full border border-border">
+              <div className="flex items-center gap-3 px-3 py-1 bg-muted rounded-full border border-border ml-auto">
                 <Loader2 className="h-3 w-3 animate-spin text-primary" />
                 <span className="text-xs text-muted-foreground font-mono">{queueStatusText()}</span>
                 <button onClick={clearQueue} className="text-xs text-destructive hover:text-destructive/80 underline uppercase font-bold ml-2">Cancel</button>
               </div>
             )}
             {storyboard && (
-              <span className="text-xs text-muted-foreground">{imagesGenerated}/{totalScenes} images</span>
+              <span className="text-xs text-muted-foreground ml-auto">{imagesGenerated}/{totalScenes} images</span>
             )}
           </div>
-        </header>
+        </div>
 
         <StudioHelp open={showHelp} onClose={() => setShowHelp(false)} />
 
