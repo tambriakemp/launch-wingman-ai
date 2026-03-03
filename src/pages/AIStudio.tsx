@@ -811,7 +811,7 @@ const AIStudio = () => {
 
           {/* Generate Storyboard - Inline CTA (replaces fixed bottom bar) */}
           {!storyboard && previewCharacterImage && (
-            <div className="flex justify-center my-4">
+            <div className="flex flex-col items-center my-4">
               <Button
                 onClick={handleGenerateStoryboard}
                 disabled={!previewCharacterImage || isGeneratingStoryboard}
