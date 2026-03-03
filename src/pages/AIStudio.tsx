@@ -149,6 +149,11 @@ const AIStudio = () => {
 
               console.log(`[Identity Gate] Scene ${task.index + 1}: activePreview=${activePreview ? 'SET (' + activePreview.substring(0, 50) + '...)' : 'NULL'}`);
 
+              // Pass previous scene's generated image for visual continuity chaining
+              const previousSceneImageUrl = task.index > 0
+                ? currentGeneratedMedia[task.index - 1]?.imageUrl
+                : undefined;
+
               const { data, error } = await supabase.functions.invoke('generate-scene-image', {
                 body: {
                   prompt: task.step.image_prompt,
@@ -166,6 +171,7 @@ const AIStudio = () => {
                   anchorImageUrl,
                   previousScenePrompt,
                   nextScenePrompt,
+                  previousSceneImageUrl,
                   sceneNumber: task.index + 1,
                   totalScenes: currentStoryboard?.steps.length
                 }
@@ -331,14 +337,8 @@ const AIStudio = () => {
       board.steps.forEach((_, idx) => { initialMedia[idx] = { ...DEFAULT_MEDIA }; });
       setGeneratedMedia(initialMedia);
 
-      const tasks: QueueItem[] = board.steps.map((step, index) => ({
-        id: Math.random().toString(36).slice(2, 9),
-        type: 'generate',
-        index,
-        step,
-        config: { ...config }
-      }));
-      addToQueue(tasks);
+      // Text-only generation: do NOT auto-queue images.
+      // User reviews/edits scene text, then generates images manually.
     } catch (e: any) {
       toast({ title: "Error", description: getUserFriendlyErrorMessage(e), variant: "destructive" });
     } finally {
@@ -371,13 +371,33 @@ const AIStudio = () => {
     const updatedSteps = [...storyboard.steps];
     updatedSteps[index] = { ...updatedSteps[index], image_prompt: newPrompt };
     setStoryboard({ ...storyboard, steps: updatedSteps });
-    addToQueue([{ id: Math.random().toString(), type: 'generate', index, step: updatedSteps[index], config: { ...config } }]);
   };
 
   const handleUpdateVideoPrompt = (index: number, newPrompt: string) => {
     if (!storyboard) return;
     const updatedSteps = [...storyboard.steps];
     updatedSteps[index] = { ...updatedSteps[index], video_prompt: newPrompt };
+    setStoryboard({ ...storyboard, steps: updatedSteps });
+  };
+
+  const handleUpdateScript = (index: number, newScript: string) => {
+    if (!storyboard) return;
+    const updatedSteps = [...storyboard.steps];
+    updatedSteps[index] = { ...updatedSteps[index], script: newScript };
+    setStoryboard({ ...storyboard, steps: updatedSteps });
+  };
+
+  const handleUpdateAction = (index: number, newAction: string) => {
+    if (!storyboard) return;
+    const updatedSteps = [...storyboard.steps];
+    updatedSteps[index] = { ...updatedSteps[index], a_roll: newAction };
+    setStoryboard({ ...storyboard, steps: updatedSteps });
+  };
+
+  const handleUpdateDetail = (index: number, newDetail: string) => {
+    if (!storyboard) return;
+    const updatedSteps = [...storyboard.steps];
+    updatedSteps[index] = { ...updatedSteps[index], close_up_details: newDetail };
     setStoryboard({ ...storyboard, steps: updatedSteps });
   };
 
@@ -863,6 +883,9 @@ const AIStudio = () => {
                 onAddToQueue={addToQueue}
                 onUpdatePrompt={handleUpdatePrompt}
                 onUpdateVideoPrompt={handleUpdateVideoPrompt}
+                onUpdateScript={handleUpdateScript}
+                onUpdateAction={handleUpdateAction}
+                onUpdateDetail={handleUpdateDetail}
                 onBatchRegenerate={() => handleBatchAction('regenerate')}
                 onBatchUpscale={() => handleBatchAction('upscale')}
                 onBatchGenerateVideo={() => handleBatchAction('video')}

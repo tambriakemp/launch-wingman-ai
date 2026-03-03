@@ -86,7 +86,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel, previousScenePrompt, nextScenePrompt, sceneNumber, totalScenes } = await req.json();
+    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel, previousScenePrompt, nextScenePrompt, previousSceneImageUrl, sceneNumber, totalScenes } = await req.json();
 
     const isUrl = (img: string): boolean => /^https?:\/\//i.test(img?.trim() || "");
 
@@ -172,6 +172,11 @@ serve(async (req) => {
         pushImage(environmentImage);
       }
 
+      // Add previous scene's generated image for visual continuity chaining
+      if (previousSceneImageUrl) {
+        pushImage(previousSceneImageUrl);
+      }
+
       // Build style description
       const hair = config.hairstyle?.includes('Custom') ? config.customHairstyle : config.hairstyle;
       const makeup = config.makeup === 'Custom' ? config.customMakeup : config.makeup;
@@ -203,6 +208,12 @@ serve(async (req) => {
       // Scene/environment mismatch guard
       const mismatchGuard = detectSceneLocationMismatch(prompt, environmentLabel);
 
+      // Continuity chaining instruction when previous scene image is provided
+      let continuityInstruction = "";
+      if (previousSceneImageUrl) {
+        continuityInstruction = `\nSCENE CONTINUITY: A previous scene image from this sequence has been provided. Maintain visual continuity — similar lighting, time of day, and spatial awareness. The person should appear to be continuing naturally from the previous scene. However, keep identity anchored to the canonical character preview. Create a DISTINCT composition and pose that matches THIS scene's description, NOT a copy of the previous scene.`;
+      }
+
       // Build prompt as EDIT instruction when preview exists, otherwise generate from scratch
       let fullPrompt: string;
       
@@ -225,7 +236,8 @@ ${config.creationMode === 'ugc' ? '- Feature the product prominently in the scen
 ${mismatchGuard}
 
 Style: editorial fashion photography, professional lighting, tasteful, fully clothed.
-${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmentImage ? "The subject should interact naturally with the environment, not pose at the camera." : "")}`;
+${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmentImage ? "The subject should interact naturally with the environment, not pose at the camera." : "")}
+${continuityInstruction}`;
       } else {
         // GENERATE FROM SCRATCH MODE (no preview available)
         fullPrompt = `OUTPUT: Generate exactly ONE single photograph. Do NOT create collages, grids, split-screen images, or multiple panels.
@@ -245,7 +257,8 @@ ${config.creationMode === 'ugc' ? 'Feature the product prominently in the scene.
 ${mismatchGuard}
 
 Style: editorial fashion photography, professional lighting, tasteful, fully clothed.
-${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmentImage ? "The subject should interact naturally with the environment, not pose at the camera." : "")}`;
+${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmentImage ? "The subject should interact naturally with the environment, not pose at the camera." : "")}
+${continuityInstruction}`;
       }
 
       contentParts.push({ type: "text", text: fullPrompt });
