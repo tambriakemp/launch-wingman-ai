@@ -593,7 +593,7 @@ const AIStudio = () => {
       <div className="min-h-screen pb-8 relative">
         {/* Header */}
         <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-border">
-          <div className="py-3 px-6 flex items-center gap-4">
+          <div className="py-6 px-6 flex items-center gap-4">
             <div className="p-3 bg-rose-100/50 dark:bg-rose-900/20 rounded-xl shrink-0">
               <Sparkles className="w-6 h-6 text-rose-600 dark:text-rose-400" />
             </div>
@@ -611,29 +611,6 @@ const AIStudio = () => {
             {storyboard && (
               <span className="text-xs text-muted-foreground">{imagesGenerated}/{totalScenes} images</span>
             )}
-          </div>
-          <div className="px-6 py-1.5 border-t border-border/50 flex items-center gap-2 overflow-x-auto">
-            <Button variant="ghost" size="sm" onClick={() => setShowProjectsDialog(true)}>
-              <FolderOpen className="h-4 w-4 mr-1" /> Projects
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleSaveClick} disabled={isSaving}>
-              {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-              Save
-            </Button>
-            {storyboard && (
-              <>
-                <Button variant="outline" size="sm" onClick={handleDownloadScript}>
-                  <FileText className="h-3.5 w-3.5 mr-1" /> Script
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleDownloadAll}>
-                  <Download className="h-3.5 w-3.5 mr-1" /> All
-                </Button>
-              </>
-            )}
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowHelp(true)}><HelpCircle className="h-4 w-4" /></Button>
-            <Button variant="outline" size="sm" onClick={() => setShowResetConfirmation(true)}>
-              <RotateCcw className="h-4 w-4 mr-1" /> New
-            </Button>
           </div>
         </header>
 
@@ -704,6 +681,14 @@ const AIStudio = () => {
             productImage={productImage}
             setProductImage={setProductImage}
             isProcessing={isProcessing}
+            onProjects={() => setShowProjectsDialog(true)}
+            onSave={handleSaveClick}
+            isSaving={isSaving}
+            onDownloadScript={handleDownloadScript}
+            onDownloadAll={handleDownloadAll}
+            hasStoryboard={!!storyboard}
+            onHelp={() => setShowHelp(true)}
+            onNew={() => setShowResetConfirmation(true)}
           />
 
           {/* Safety Terms Banner (shown once, before first generation) */}
