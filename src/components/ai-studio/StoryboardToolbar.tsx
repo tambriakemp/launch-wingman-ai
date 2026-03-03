@@ -9,6 +9,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ChevronDown, ChevronRight, Palette, User, Settings2, Sparkles, MapPin, Check } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Separator } from '@/components/ui/separator';
+import { FolderOpen, Save, FileText, Download, HelpCircle, RotateCcw, Loader2 } from 'lucide-react';
 import SavedCharacter from './SavedCharacter';
 import SavedEnvironments from './SavedEnvironments';
 import SavedLooks from './SavedLooks';
@@ -30,6 +32,14 @@ interface StoryboardToolbarProps {
   showSafetyTerms?: boolean;
   setShowSafetyTerms?: (v: boolean) => void;
   isProcessing?: boolean;
+  onProjects?: () => void;
+  onSave?: () => void;
+  isSaving?: boolean;
+  onDownloadScript?: () => void;
+  onDownloadAll?: () => void;
+  hasStoryboard?: boolean;
+  onHelp?: () => void;
+  onNew?: () => void;
 }
 
 const StatusDot: React.FC<{ active: boolean }> = ({ active }) => (
@@ -94,7 +104,8 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   environmentImage, setEnvironmentImage, setEnvironmentImages,
   productImage, setProductImage,
   showSafetyTerms, setShowSafetyTerms,
-  isProcessing
+  isProcessing,
+  onProjects, onSave, isSaving, onDownloadScript, onDownloadAll, hasStoryboard, onHelp, onNew
 }) => {
   const hasCharacter = !!referenceImage;
   const hasEnvironment = !!environmentImage;
@@ -297,6 +308,35 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
 
         </div>
       </ToolbarButton>
+
+      {/* Separator + Action Buttons */}
+      {onProjects && (
+        <>
+          <Separator orientation="vertical" className="h-6 mx-1" />
+          <button onClick={onProjects} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors">
+            <FolderOpen className="h-3.5 w-3.5" /> Projects
+          </button>
+          <button onClick={onSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors disabled:opacity-50">
+            {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Save
+          </button>
+          {hasStoryboard && (
+            <>
+              <button onClick={onDownloadScript} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors">
+                <FileText className="h-3.5 w-3.5" /> Script
+              </button>
+              <button onClick={onDownloadAll} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors">
+                <Download className="h-3.5 w-3.5" /> All
+              </button>
+            </>
+          )}
+          <button onClick={onHelp} className="flex items-center justify-center w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
+            <HelpCircle className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={onNew} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors">
+            <RotateCcw className="h-3.5 w-3.5" /> New
+          </button>
+        </>
+      )}
     </div>
   );
 };
