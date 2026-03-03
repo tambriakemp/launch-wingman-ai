@@ -138,6 +138,55 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
         </PopoverContent>
       </Popover>
 
+      {/* Create (formerly Settings) — right after Orientation */}
+      <ToolbarButton label="Create" icon={<Settings2 className="h-3.5 w-3.5" />}>
+        <div className="space-y-3">
+          {/* Creation Mode */}
+          <div>
+            <Label label="Creation Mode" />
+            <div className="grid grid-cols-2 gap-1 bg-muted p-0.5 rounded-md">
+              <button onClick={() => setConfig(c => ({ ...c, creationMode: 'vlog' }))}
+                className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'vlog' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}>
+                VLOG
+              </button>
+              <button onClick={() => setConfig(c => ({ ...c, creationMode: 'ugc' }))}
+                className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'ugc' ? 'bg-accent text-accent-foreground shadow' : 'text-muted-foreground'}`}>
+                UGC
+              </button>
+            </div>
+          </div>
+
+          {/* Vlog Category (only in vlog mode) */}
+          {config.creationMode === 'vlog' && (
+            <div>
+              <Label label="Vlog Category" />
+              <SelectField value={config.vlogCategory} onChange={(v) => setConfig(c => ({ ...c, vlogCategory: v }))} options={VLOG_CATEGORIES} />
+            </div>
+          )}
+
+          {/* Camera Movement */}
+          <div>
+            <Label label="Camera Movement" />
+            <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
+          </div>
+
+          {/* Number of Scenes */}
+          <div>
+            <Label label="Number of Scenes" />
+            <select
+              value={config.sceneCount ?? 'auto'}
+              onChange={(e) => setConfig(c => ({ ...c, sceneCount: e.target.value === 'auto' ? null : Number(e.target.value) }))}
+              className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="auto">Auto (let AI decide)</option>
+              {Array.from({ length: 13 }, (_, i) => i + 3).map(n => (
+                <option key={n} value={n}>{n} scenes</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </ToolbarButton>
+
       {/* Character */}
       <ToolbarButton label="Character" icon={<User className="h-3.5 w-3.5" />} wide configured={hasCharacter}>
         <div className="space-y-4">
@@ -279,48 +328,6 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
           <div className="pt-2 border-t border-border">
             <SavedLooks config={config} setConfig={setConfig} />
           </div>
-        </div>
-      </ToolbarButton>
-
-      {/* Settings (slimmed down) */}
-      <ToolbarButton label="Settings" icon={<Settings2 className="h-3.5 w-3.5" />}>
-        <div className="space-y-3">
-          {/* Creation Mode */}
-          <div>
-            <Label label="Creation Mode" />
-            <div className="grid grid-cols-2 gap-1 bg-muted p-0.5 rounded-md">
-              <button onClick={() => setConfig(c => ({ ...c, creationMode: 'vlog' }))}
-                className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'vlog' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}>
-                VLOG
-              </button>
-              <button onClick={() => setConfig(c => ({ ...c, creationMode: 'ugc' }))}
-                className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'ugc' ? 'bg-accent text-accent-foreground shadow' : 'text-muted-foreground'}`}>
-                UGC
-              </button>
-            </div>
-          </div>
-
-          {/* Camera Movement */}
-          <div>
-            <Label label="Camera Movement" />
-            <SelectField value={config.cameraMovement} onChange={(v) => setConfig(c => ({ ...c, cameraMovement: v }))} options={CAMERA_MOVEMENTS} />
-          </div>
-
-          {/* Number of Scenes */}
-          <div>
-            <Label label="Number of Scenes" />
-            <select
-              value={config.sceneCount ?? 'auto'}
-              onChange={(e) => setConfig(c => ({ ...c, sceneCount: e.target.value === 'auto' ? null : Number(e.target.value) }))}
-              className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="auto">Auto (let AI decide)</option>
-              {Array.from({ length: 13 }, (_, i) => i + 3).map(n => (
-                <option key={n} value={n}>{n} scenes</option>
-              ))}
-            </select>
-          </div>
-
         </div>
       </ToolbarButton>
 
