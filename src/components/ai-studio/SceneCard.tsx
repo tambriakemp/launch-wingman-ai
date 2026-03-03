@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { VlogStep, AspectRatio, GeneratedMedia } from './types';
-import { Download, RefreshCw, User, ShoppingBag, Landmark, Loader2, AlertCircle, ImageIcon, Video, ChevronDown, Copy } from 'lucide-react';
+import { Download, RefreshCw, User, ShoppingBag, Landmark, Loader2, AlertCircle, ImageIcon, Video, ChevronDown, Copy, Pencil, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 
 interface SceneCardProps {
   step: VlogStep;
@@ -17,13 +18,17 @@ interface SceneCardProps {
   onEnlarge: () => void;
   onUpdatePrompt: (newPrompt: string) => void;
   onUpdateVideoPrompt: (newPrompt: string) => void;
+  onUpdateScript?: (newScript: string) => void;
+  onUpdateAction?: (newAction: string) => void;
+  onUpdateDetail?: (newDetail: string) => void;
 }
 
 const SceneCard: React.FC<SceneCardProps> = ({
   step, index, media, aspectRatio,
   onGenerateImage, onUpscale, onGenerateVideo,
   onToggleSelect, onToggleLock, onEnlarge,
-  onUpdatePrompt, onUpdateVideoPrompt
+  onUpdatePrompt, onUpdateVideoPrompt,
+  onUpdateScript, onUpdateAction, onUpdateDetail
 }) => {
   const [isPromptOpen, setIsPromptOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -31,8 +36,19 @@ const SceneCard: React.FC<SceneCardProps> = ({
   const [isEditingVideo, setIsEditingVideo] = useState(false);
   const [editedVideoPrompt, setEditedVideoPrompt] = useState(step.video_prompt);
 
+  // Inline edit states for script, action, detail
+  const [isEditingScript, setIsEditingScript] = useState(false);
+  const [editedScript, setEditedScript] = useState(step.script);
+  const [isEditingAction, setIsEditingAction] = useState(false);
+  const [editedAction, setEditedAction] = useState(step.a_roll);
+  const [isEditingDetail, setIsEditingDetail] = useState(false);
+  const [editedDetail, setEditedDetail] = useState(step.close_up_details);
+
   useEffect(() => { setEditedPrompt(step.image_prompt); }, [step.image_prompt]);
   useEffect(() => { setEditedVideoPrompt(step.video_prompt); }, [step.video_prompt]);
+  useEffect(() => { setEditedScript(step.script); }, [step.script]);
+  useEffect(() => { setEditedAction(step.a_roll); }, [step.a_roll]);
+  useEffect(() => { setEditedDetail(step.close_up_details); }, [step.close_up_details]);
 
   const copyPrompt = (text: string) => navigator.clipboard.writeText(text);
   const handleSavePrompt = () => { onUpdatePrompt(editedPrompt); setIsEditing(false); };
@@ -61,6 +77,45 @@ const SceneCard: React.FC<SceneCardProps> = ({
   const isLoading = media.isGeneratingImage || media.isUpscaling;
   const isVideoLoading = media.isGeneratingVideo;
   const cssAspectRatio = aspectRatio.replace(':', '/');
+
+  // Inline editable field component
+  const EditableField = ({
+    label, value, editedValue, isFieldEditing, colorClass,
+    onEdit, onSave, onCancel, onChange
+  }: {
+    label: string; value: string; editedValue: string; isFieldEditing: boolean; colorClass?: string;
+    onEdit: () => void; onSave: () => void; onCancel: () => void; onChange: (v: string) => void;
+  }) => (
+    <div>
+      <div className="flex justify-between items-center mb-0.5">
+        <span className={`text-[10px] uppercase font-bold ${colorClass || 'text-primary'}`}>{label}</span>
+        {!isFieldEditing ? (
+          <button onClick={onEdit} className="text-[10px] text-muted-foreground hover:text-foreground uppercase font-bold flex items-center gap-1">
+            <Pencil className="h-3 w-3" /> Edit
+          </button>
+        ) : (
+          <div className="flex gap-1">
+            <button onClick={onSave} className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1">
+              <Check className="h-3 w-3" /> Save
+            </button>
+            <button onClick={onCancel} className="text-[10px] text-muted-foreground hover:text-foreground uppercase font-bold flex items-center gap-1">
+              <X className="h-3 w-3" /> Cancel
+            </button>
+          </div>
+        )}
+      </div>
+      {isFieldEditing ? (
+        <AutoResizeTextarea
+          value={editedValue}
+          onChange={(e) => onChange(e.target.value)}
+          className="text-sm bg-background border-primary"
+          minRows={2}
+        />
+      ) : (
+        <p className="text-sm text-foreground/80 leading-relaxed">{value || <span className="italic text-muted-foreground">Empty</span>}</p>
+      )}
+    </div>
+  );
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -206,29 +261,50 @@ const SceneCard: React.FC<SceneCardProps> = ({
         </div>
       </div>
 
-      {/* Script & Details */}
+      {/* Script & Details — All Editable */}
       <div className="space-y-4">
-        {step.script && (
-          <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-[10px] uppercase text-primary font-bold">Script / Voiceover</span>
-              <button onClick={() => copyPrompt(step.script)} className="text-[10px] text-muted-foreground hover:text-foreground uppercase font-bold flex items-center gap-1">
-                <Copy className="h-3 w-3" /> Copy
-              </button>
-            </div>
-            <p className="text-sm text-foreground/80 italic leading-relaxed">"{step.script}"</p>
-          </div>
-        )}
+        {/* Script / Voiceover */}
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+          <EditableField
+            label="Script / Voiceover"
+            value={step.script}
+            editedValue={editedScript}
+            isFieldEditing={isEditingScript}
+            onEdit={() => setIsEditingScript(true)}
+            onSave={() => { onUpdateScript?.(editedScript); setIsEditingScript(false); }}
+            onCancel={() => { setIsEditingScript(false); setEditedScript(step.script); }}
+            onChange={setEditedScript}
+          />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <p className="text-muted-foreground text-sm leading-relaxed border-l-2 border-primary pl-3">
-            <span className="text-[10px] uppercase text-primary font-bold block mb-0.5">Action</span>
-            {step.a_roll}
-          </p>
-          <p className="text-muted-foreground text-xs">
-            <span className="text-[10px] uppercase text-muted-foreground font-bold block mb-0.5">Detail</span>
-            {step.close_up_details}
-          </p>
+          {/* Action */}
+          <div className="border-l-2 border-primary pl-3">
+            <EditableField
+              label="Action"
+              value={step.a_roll}
+              editedValue={editedAction}
+              isFieldEditing={isEditingAction}
+              onEdit={() => setIsEditingAction(true)}
+              onSave={() => { onUpdateAction?.(editedAction); setIsEditingAction(false); }}
+              onCancel={() => { setIsEditingAction(false); setEditedAction(step.a_roll); }}
+              onChange={setEditedAction}
+            />
+          </div>
+          {/* Detail */}
+          <div>
+            <EditableField
+              label="Detail"
+              value={step.close_up_details}
+              editedValue={editedDetail}
+              isFieldEditing={isEditingDetail}
+              colorClass="text-muted-foreground"
+              onEdit={() => setIsEditingDetail(true)}
+              onSave={() => { onUpdateDetail?.(editedDetail); setIsEditingDetail(false); }}
+              onCancel={() => { setIsEditingDetail(false); setEditedDetail(step.close_up_details); }}
+              onChange={setEditedDetail}
+            />
+          </div>
         </div>
 
         {/* Prompts Dropdown */}
@@ -254,7 +330,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
                     <textarea value={editedPrompt} onChange={(e) => setEditedPrompt(e.target.value)} className="w-full h-32 bg-background border border-primary rounded p-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary mb-2 font-mono leading-relaxed" />
                     <div className="flex justify-end gap-2">
                       <Button size="sm" variant="ghost" onClick={() => { setIsEditing(false); setEditedPrompt(step.image_prompt); }}>Cancel</Button>
-                      <Button size="sm" onClick={handleSavePrompt}>Save & Regenerate</Button>
+                      <Button size="sm" onClick={handleSavePrompt}>Save</Button>
                     </div>
                   </div>
                 ) : (
@@ -276,7 +352,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
                     <textarea value={editedVideoPrompt} onChange={(e) => setEditedVideoPrompt(e.target.value)} className="w-full h-32 bg-background border border-primary rounded p-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary mb-2 font-mono leading-relaxed" />
                     <div className="flex justify-end gap-2">
                       <Button size="sm" variant="ghost" onClick={() => { setIsEditingVideo(false); setEditedVideoPrompt(step.video_prompt); }}>Cancel</Button>
-                      <Button size="sm" onClick={handleSaveVideoPrompt}>Save & Regenerate Video</Button>
+                      <Button size="sm" onClick={handleSaveVideoPrompt}>Save</Button>
                     </div>
                   </div>
                 ) : (
