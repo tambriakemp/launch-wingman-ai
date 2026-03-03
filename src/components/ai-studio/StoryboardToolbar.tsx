@@ -327,12 +327,9 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
       {/* Separator + Action Buttons */}
       {onProjects && (
         <>
-          <Separator orientation="vertical" className="h-6 mx-1" />
-          <button onClick={onProjects} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors">
-            <FolderOpen className="h-3.5 w-3.5" /> Projects
-          </button>
           {hasStoryboard && (
             <>
+              <Separator orientation="vertical" className="h-6 mx-1" />
               <button onClick={onSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 rounded-lg transition-colors disabled:opacity-50">
                 {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Save
               </button>
@@ -344,9 +341,14 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               </button>
             </>
           )}
-          <button onClick={onNew} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors">
-            <RotateCcw className="h-3.5 w-3.5" /> New
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            <button onClick={onProjects} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 border border-foreground rounded-lg transition-colors">
+              <FolderOpen className="h-3.5 w-3.5" /> Projects
+            </button>
+            <button onClick={onNew} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-yellow-400 text-yellow-950 hover:bg-yellow-500 border border-yellow-500 rounded-lg transition-colors">
+              <RotateCcw className="h-3.5 w-3.5" /> New
+            </button>
+          </div>
         </>
       )}
     </div>
