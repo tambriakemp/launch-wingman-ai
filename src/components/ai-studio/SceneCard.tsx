@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { VlogStep, AspectRatio, GeneratedMedia } from './types';
 import { Download, RefreshCw, User, ShoppingBag, Landmark, Loader2, AlertCircle, ImageIcon, Video, ChevronDown, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SceneCardProps {
   step: VlogStep;
@@ -87,20 +88,37 @@ const SceneCard: React.FC<SceneCardProps> = ({
             onClick={onEnlarge}
           >
             {media.imageUrl && !isLoading && (
-              <div className="absolute top-2 right-2 flex flex-col gap-2 z-[60]" onClick={(e) => e.stopPropagation()}>
-                <button onClick={(e) => { e.stopPropagation(); onToggleLock('character'); }} title="Character Lock"
-                  className={`p-1.5 rounded-full border shadow-xl transition-all active:scale-95 ${media.lockedCharacter ? 'bg-primary border-primary text-primary-foreground' : 'bg-black/70 border-border text-muted-foreground hover:text-primary'}`}>
-                  <User className="w-4 h-4" />
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); onToggleLock('outfit'); }} title="Outfit Lock"
-                  className={`p-1.5 rounded-full border shadow-xl transition-all active:scale-95 ${media.lockedOutfit ? 'bg-accent border-accent text-accent-foreground' : 'bg-black/70 border-border text-muted-foreground hover:text-accent-foreground'}`}>
-                  <ShoppingBag className="w-4 h-4" />
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); onToggleLock('environment'); }} title="Environment Lock"
-                  className={`p-1.5 rounded-full border shadow-xl transition-all active:scale-95 ${media.lockedEnvironment ? 'bg-green-600 border-green-400 text-white' : 'bg-black/70 border-border text-muted-foreground hover:text-green-400'}`}>
-                  <Landmark className="w-4 h-4" />
-                </button>
-              </div>
+              <TooltipProvider delayDuration={300}>
+                <div className="absolute top-2 right-2 flex flex-col gap-2 z-[60]" onClick={(e) => e.stopPropagation()}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={(e) => { e.stopPropagation(); onToggleLock('character'); }}
+                        className={`p-1.5 rounded-full border shadow-xl transition-all active:scale-95 ${media.lockedCharacter ? 'bg-primary border-primary text-primary-foreground' : 'bg-black/70 border-border text-muted-foreground hover:text-primary'}`}>
+                        <User className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left"><p>Lock face as master reference for all scenes</p></TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={(e) => { e.stopPropagation(); onToggleLock('outfit'); }}
+                        className={`p-1.5 rounded-full border shadow-xl transition-all active:scale-95 ${media.lockedOutfit ? 'bg-accent border-accent text-accent-foreground' : 'bg-black/70 border-border text-muted-foreground hover:text-accent-foreground'}`}>
+                        <ShoppingBag className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left"><p>Lock outfit to keep clothing consistent</p></TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={(e) => { e.stopPropagation(); onToggleLock('environment'); }}
+                        className={`p-1.5 rounded-full border shadow-xl transition-all active:scale-95 ${media.lockedEnvironment ? 'bg-green-600 border-green-400 text-white' : 'bg-black/70 border-border text-muted-foreground hover:text-green-400'}`}>
+                        <Landmark className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left"><p>Lock background for scene consistency</p></TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
             )}
 
             {media.imageUrl ? (

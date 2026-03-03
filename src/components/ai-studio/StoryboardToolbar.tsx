@@ -6,7 +6,7 @@ import {
   VLOG_CATEGORIES, TOPIC_PLACEHOLDERS, QUICK_LOOK_PRESETS
 } from './constants';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ChevronDown, ChevronRight, Palette, User, Settings2, Sparkles, MapPin, Check } from 'lucide-react';
+import { ChevronDown, ChevronRight, Palette, User, Settings2, Sparkles, MapPin, Check, RectangleVertical, RectangleHorizontal, Square } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
@@ -113,15 +113,30 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
 
   return (
     <div className="flex items-center gap-2 flex-wrap py-3 px-1">
-      {/* Aspect Ratio Buttons */}
-      <div className="flex items-center border border-border rounded-lg overflow-hidden">
-        {(['9:16', '16:9', '1:1'] as AspectRatio[]).map(ratio => (
-          <button key={ratio} onClick={() => setConfig(c => ({ ...c, aspectRatio: ratio }))}
-            className={`px-3 py-1.5 text-xs font-medium transition-colors ${config.aspectRatio === ratio ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
-            {ratio}
+      {/* Aspect Ratio Dropdown */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted hover:bg-muted/80 border border-border rounded-lg transition-colors">
+            {config.aspectRatio === '9:16' ? <RectangleVertical className="h-3.5 w-3.5" /> : config.aspectRatio === '16:9' ? <RectangleHorizontal className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+            <span>{config.aspectRatio === '9:16' ? 'Portrait' : config.aspectRatio === '16:9' ? 'Landscape' : 'Square'}</span>
+            <ChevronDown className="h-3 w-3" />
           </button>
-        ))}
-      </div>
+        </PopoverTrigger>
+        <PopoverContent className="w-44 p-1" align="start">
+          {([
+            { value: '9:16' as AspectRatio, label: 'Portrait', Icon: RectangleVertical },
+            { value: '16:9' as AspectRatio, label: 'Landscape', Icon: RectangleHorizontal },
+            { value: '1:1' as AspectRatio, label: 'Square', Icon: Square },
+          ]).map(({ value, label, Icon }) => (
+            <button key={value} onClick={() => setConfig(c => ({ ...c, aspectRatio: value }))}
+              className={`flex items-center gap-2 w-full px-3 py-2 text-xs rounded-md transition-colors ${config.aspectRatio === value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
+              <Icon className="h-4 w-4" />
+              <span>{label}</span>
+              <span className="ml-auto text-[10px] opacity-60">{value}</span>
+            </button>
+          ))}
+        </PopoverContent>
+      </Popover>
 
       {/* Character */}
       <ToolbarButton label="Character" icon={<User className="h-3.5 w-3.5" />} wide configured={hasCharacter}>
@@ -316,11 +331,11 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
           <button onClick={onProjects} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors">
             <FolderOpen className="h-3.5 w-3.5" /> Projects
           </button>
-          <button onClick={onSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors disabled:opacity-50">
-            {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Save
-          </button>
           {hasStoryboard && (
             <>
+              <button onClick={onSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 rounded-lg transition-colors disabled:opacity-50">
+                {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Save
+              </button>
               <button onClick={onDownloadScript} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors">
                 <FileText className="h-3.5 w-3.5" /> Script
               </button>
@@ -329,9 +344,6 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               </button>
             </>
           )}
-          <button onClick={onHelp} className="flex items-center justify-center w-7 h-7 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
-            <HelpCircle className="h-3.5 w-3.5" />
-          </button>
           <button onClick={onNew} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors">
             <RotateCcw className="h-3.5 w-3.5" /> New
           </button>
