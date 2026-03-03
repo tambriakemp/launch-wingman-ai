@@ -600,6 +600,7 @@ const AIStudio = () => {
             <div>
               <h1 className="text-2xl font-semibold text-foreground">AI Studio</h1>
               <p className="text-sm text-muted-foreground hidden sm:block">Create AI-powered video content for your brand.</p>
+              <p className="text-xs text-muted-foreground/70 hidden sm:block mt-0.5">Upload a character, configure your look, then generate. Use lock icons on images to keep consistency across scenes.</p>
             </div>
             {(queue.length > 0 || isProcessing) && (
               <div className="flex items-center gap-3 px-3 py-1 bg-muted rounded-full border border-border">
