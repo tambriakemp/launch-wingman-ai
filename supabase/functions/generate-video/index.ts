@@ -169,15 +169,16 @@ serve(async (req) => {
     }
 
     const submitData = await submitResponse.json();
+    console.log("[generate-video] fal.ai submit response keys:", Object.keys(submitData));
     const requestId = submitData.request_id;
-    const statusUrl = submitData.status_url;
-    const responseUrl = submitData.response_url;
+    const statusUrl = submitData.status_url || `https://queue.fal.run/fal-ai/kling-video/o3/standard/image-to-video/requests/${requestId}/status`;
+    const responseUrl = submitData.response_url || `https://queue.fal.run/fal-ai/kling-video/o3/standard/image-to-video/requests/${requestId}`;
 
     if (!requestId) {
       throw new Error("No request_id returned from fal.ai");
     }
 
-    console.log("[generate-video] Submitted successfully. Request ID:", requestId);
+    console.log("[generate-video] Submitted successfully. Request ID:", requestId, "Status URL:", statusUrl);
 
     // Return requestId + URLs — client will poll via check-video-status
     return new Response(JSON.stringify({ requestId, statusUrl, responseUrl }), {
