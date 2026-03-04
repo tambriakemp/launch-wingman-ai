@@ -1,40 +1,47 @@
 
 
-## Plan: Add "AI Prompts" Category to Content Vault
+## Plan: Bulk AI Prompt Importer (Copy-Paste + PDF Parser)
 
 ### Overview
-Add a new "AI Prompts" category to the Content Vault. Unlike other categories that use downloads/lightbox, AI Prompts entries show a modal with the cover image, prompt text, and a copy button. Prompts are stored as a new `resource_type` ("ai_prompt") in the existing `content_vault_resources` table, using `description` for the prompt text.
+Add a new admin card on the Content Vault management page specifically for bulk-adding AI prompts. It supports two input methods:
+1. **Copy-paste** — paste multiple prompts separated by a delimiter (blank line, `---`, or numbered headings)
+2. **PDF upload** — upload a PDF, parse it server-side using AI to extract individual prompts separated by headings/images
 
-### Database Changes
+Each extracted prompt gets an auto-generated short title (via AI) and can have tags and a cover image assigned before importing.
 
-**1. Migration: Add "AI Prompts" category + subcategory**
-- Insert a new row into `content_vault_categories` with name "AI Prompts", slug "ai-prompts"
-- Insert a default subcategory (e.g., "General") under it
-- Seed the example prompt from the screenshot as the first resource with `resource_type = 'ai_prompt'`, the prompt text in `description`, a generated short title, the uploaded image as `cover_image_url`, and a tag like "Lifestyle"
+### Components
 
-### Frontend Changes
+**1. New admin component: `src/components/admin/PromptBulkImporter.tsx`**
+- Card with two tabs: "Paste Prompts" and "Upload PDF"
+- **Paste tab**: Large textarea. User pastes multiple prompts. A "Parse" button splits by blank lines or `---` separators. Shows parsed prompts in an editable list.
+- **PDF tab**: File upload for PDF. Sends to a new edge function that extracts text and splits into individual prompts.
+- **Shared UI after parsing**:
+  - List of parsed prompts, each showing a preview of the text and an editable auto-generated title
+  - Tag input (shared across all or per-prompt)
+  - Optional cover image URL field per prompt (or bulk)
+  - Subcategory selector (pre-set to the AI Prompts "General" subcategory)
+  - "Generate Titles" button that calls AI to create short titles from each prompt
+  - "Import All" button that inserts into `content_vault_resources` with `resource_type = 'ai_prompt'`
 
-**2. New Component: `PromptModal.tsx`** (`src/components/content-vault/PromptModal.tsx`)
-- Dialog with the cover image displayed prominently at top
-- Prompt text below in a readable format
-- "Copy Prompt" button that copies `description` to clipboard with toast feedback
-- Tags displayed as badges
-- Title at the top
+**2. New edge function: `supabase/functions/parse-prompts-bulk/index.ts`**
+- Accepts either `{ prompts: string[] }` (pre-split from paste) or `{ pdfBase64: string }` (PDF file)
+- For paste: just returns the prompts as-is
+- For PDF: uses AI (Gemini) to extract and split individual prompts from the PDF text
+- For all prompts: calls AI to generate a short title (3-6 words) for each prompt
+- Returns `{ prompts: { title: string, text: string }[] }`
 
-**3. Modify `ContentVaultCategory.tsx`**
-- Detect when the current category slug is `"ai-prompts"`
-- Instead of opening the lightbox on resource click, open the new `PromptModal`
-- Hide the download button on `ResourceCard` for `ai_prompt` type resources (they don't need downloading)
+**3. Update `AdminContentVault.tsx`**
+- Add the new `PromptBulkImporter` card to the page
 
-**4. Seed the example resource**
-- Title: "Luxury Street Style Portrait" (auto-generated from the prompt)
-- Tag: "Lifestyle"
-- Cover image: the uploaded screenshot image, stored in content vault storage
-- Prompt: the full text from the uploaded image
+### Import flow
+1. Admin pastes prompts or uploads PDF
+2. System parses/splits into individual prompts
+3. AI generates short titles for each
+4. Admin reviews, edits titles/tags, optionally adds cover images
+5. Admin clicks "Import" — inserts all as `content_vault_resources` with `resource_type = 'ai_prompt'`, `description = prompt text`, `resource_url = '#'` (placeholder since prompts don't have URLs)
 
-### Files to Create/Modify
-- **New**: `src/components/content-vault/PromptModal.tsx`
-- **Modify**: `src/pages/ContentVaultCategory.tsx` — add prompt modal logic for ai_prompt resources
-- **Modify**: `src/components/content-vault/ResourceCard.tsx` — hide download for ai_prompt type
-- **Migration**: Insert category, subcategory, and seed resource
+### Files to create/modify
+- **New**: `src/components/admin/PromptBulkImporter.tsx`
+- **New**: `supabase/functions/parse-prompts-bulk/index.ts`
+- **Modify**: `src/pages/AdminContentVault.tsx` — add the new card
 
