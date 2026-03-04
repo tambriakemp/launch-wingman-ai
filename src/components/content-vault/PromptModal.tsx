@@ -14,6 +14,72 @@ interface PromptModalProps {
   tags: string[];
 }
 
+/** Renders description text with basic formatting: bullets, bold, paragraphs */
+const FormattedDescription = ({ text }: { text: string }) => {
+  // Split into paragraph blocks by double newlines
+  const blocks = text.split(/\n\n+/);
+
+  return (
+    <div className="space-y-3">
+      {blocks.map((block, blockIdx) => {
+        const lines = block.split("\n");
+
+        // Check if this block is a bullet list
+        const isList = lines.every(
+          (l) => /^[-•*]\s/.test(l.trim()) || l.trim() === ""
+        );
+
+        if (isList) {
+          const items = lines
+            .map((l) => l.trim())
+            .filter((l) => l.length > 0)
+            .map((l) => l.replace(/^[-•*]\s+/, ""));
+          return (
+            <ul key={blockIdx} className="list-disc list-inside space-y-1">
+              {items.map((item, i) => (
+                <li key={i} className="text-sm text-foreground leading-relaxed">
+                  <RichInline text={item} />
+                </li>
+              ))}
+            </ul>
+          );
+        }
+
+        // Regular paragraph (preserve single line breaks)
+        return (
+          <p key={blockIdx} className="text-sm text-foreground leading-relaxed">
+            {lines.map((line, i) => (
+              <span key={i}>
+                {i > 0 && <br />}
+                <RichInline text={line} />
+              </span>
+            ))}
+          </p>
+        );
+      })}
+    </div>
+  );
+};
+
+/** Renders inline bold (**text**) */
+const RichInline = ({ text }: { text: string }) => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith("**") && part.endsWith("**")) {
+          return (
+            <strong key={i} className="font-semibold">
+              {part.slice(2, -2)}
+            </strong>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+};
+
 export const PromptModal = ({
   open,
   onOpenChange,
@@ -74,9 +140,7 @@ export const PromptModal = ({
           {/* Prompt Text */}
           {description && (
             <div className="bg-muted rounded-lg p-4 mb-4">
-              <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-                {description}
-              </p>
+              <FormattedDescription text={description} />
             </div>
           )}
 
