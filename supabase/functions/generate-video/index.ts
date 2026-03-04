@@ -180,52 +180,64 @@ serve(async (req) => {
 
     console.log("[generate-video] Request ID:", requestId, "- polling for result...");
 
-    // 4. Poll for result
-    const maxAttempts = 120; // 10 minutes max
+    // 4. Poll for result (edge functions have ~300s timeout, so limit polling)
+    const maxAttempts = 55; // ~275 seconds max (within edge function timeout)
     let attempt = 0;
 
     while (attempt < maxAttempts) {
       await new Promise(r => setTimeout(r, 5000)); // 5 second intervals
       attempt++;
 
-      const statusResponse = await fetch(`https://queue.fal.run/fal-ai/minimax-video/requests/${requestId}/status`, {
-        headers: { "Authorization": `Key ${falKey}` },
-      });
-
-      if (!statusResponse.ok) {
-        console.error("[generate-video] Status check failed:", statusResponse.status);
-        continue;
-      }
-
-      const statusData = await statusResponse.json();
-      console.log(`[generate-video] Poll ${attempt}: status=${statusData.status}`);
-
-      if (statusData.status === "COMPLETED") {
-        // Fetch the result
-        const resultResponse = await fetch(`https://queue.fal.run/fal-ai/minimax-video/requests/${requestId}`, {
+      try {
+        const statusResponse = await fetch(`https://queue.fal.run/fal-ai/minimax-video/requests/${requestId}/status`, {
           headers: { "Authorization": `Key ${falKey}` },
         });
 
-        if (!resultResponse.ok) throw new Error("Failed to fetch result");
+        if (!statusResponse.ok) {
+          console.error(`[generate-video] Status check failed: HTTP ${statusResponse.status}`);
+          continue;
+        }
 
-        const resultData = await resultResponse.json();
-        const videoUrl = resultData?.video?.url;
+        const statusData = await statusResponse.json();
+        if (attempt % 5 === 0 || statusData.status !== "IN_PROGRESS") {
+          console.log(`[generate-video] Poll ${attempt}/${maxAttempts}: status=${statusData.status}`);
+        }
 
-        if (!videoUrl) throw new Error("No video URL in result");
+        if (statusData.status === "COMPLETED") {
+          const resultResponse = await fetch(`https://queue.fal.run/fal-ai/minimax-video/requests/${requestId}`, {
+            headers: { "Authorization": `Key ${falKey}` },
+          });
 
-        console.log("[generate-video] Video ready:", videoUrl);
+          if (!resultResponse.ok) throw new Error("Failed to fetch result");
 
-        return new Response(JSON.stringify({ videoUrl }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+          const resultData = await resultResponse.json();
+          const videoUrl = resultData?.video?.url;
 
-      if (statusData.status === "FAILED") {
-        throw new Error("Video generation failed on fal.ai");
+          if (!videoUrl) throw new Error("No video URL in result");
+
+          console.log("[generate-video] Video ready:", videoUrl);
+
+          return new Response(JSON.stringify({ videoUrl }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        if (statusData.status === "FAILED") {
+          const failDetail = statusData.error || statusData.detail || "Unknown failure";
+          console.error("[generate-video] fal.ai job FAILED:", failDetail);
+          throw new Error(`Video generation failed: ${failDetail}`);
+        }
+      } catch (pollError) {
+        if (pollError instanceof Error && pollError.message.includes("Video generation failed")) {
+          throw pollError;
+        }
+        console.error(`[generate-video] Poll error at attempt ${attempt}:`, pollError);
+        // Continue polling on transient errors
       }
     }
 
-    throw new Error("Video generation timed out");
+    console.error(`[generate-video] Timed out after ${maxAttempts} polls (~${maxAttempts * 5}s). Request ID: ${requestId}`);
+    throw new Error("Video generation timed out after ~5 minutes. The video may still be processing on fal.ai — please try again shortly.");
 
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
