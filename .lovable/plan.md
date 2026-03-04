@@ -1,26 +1,40 @@
 
 
-## Plan: Merge Phases into Labels + Add "My ToDo List" Section
+## Plan: Add "AI Prompts" Category to Content Vault
 
-### What Changes
+### Overview
+Add a new "AI Prompts" category to the Content Vault. Unlike other categories that use downloads/lightbox, AI Prompts entries show a modal with the cover image, prompt text, and a copy button. Prompts are stored as a new `resource_type` ("ai_prompt") in the existing `content_vault_resources` table, using `description` for the prompt text.
 
-**1. TaskDialog — Remove Phase, Expand Labels**
-- Remove the Phase `<Select>` dropdown entirely from the form
-- Remove `selectedPhase` state and all phase-related logic from `onSubmit`
-- Add all 10 TASK_PHASES entries into the TASK_LABELS array (keeping their colors)
-- Remove the `TASK_PHASES` export (or keep as empty for backward compat)
-- Update the `onSubmit` signature to remove `phase` parameter
+### Database Changes
 
-**2. TasksBoard — Add "My ToDo List" Section**
-- After the last PhaseSection ("Post-Launch"), add a new section that renders custom tasks from the `tasks` table
-- This section will display tasks with their labels, status badges, due dates, and action menus (edit/delete)
-- Styled consistently with the existing PhaseSection collapsible pattern but for user-created tasks
-- Tasks will be filterable by the search/filter toolbar already in place
+**1. Migration: Add "AI Prompts" category + subcategory**
+- Insert a new row into `content_vault_categories` with name "AI Prompts", slug "ai-prompts"
+- Insert a default subcategory (e.g., "General") under it
+- Seed the example prompt from the screenshot as the first resource with `resource_type = 'ai_prompt'`, the prompt text in `description`, a generated short title, the uploaded image as `cover_image_url`, and a tag like "Lifestyle"
 
-**3. TasksBoard — Update create/update handlers**
-- Remove `phase` from the `handleCreateTask` and `handleUpdateTask` data objects (pass `null` or omit)
+### Frontend Changes
 
-### Files to Modify
-- `src/components/TaskDialog.tsx` — merge phases into labels, remove phase UI
-- `src/components/TasksBoard.tsx` — add "My ToDo List" section rendering custom tasks, update handlers
+**2. New Component: `PromptModal.tsx`** (`src/components/content-vault/PromptModal.tsx`)
+- Dialog with the cover image displayed prominently at top
+- Prompt text below in a readable format
+- "Copy Prompt" button that copies `description` to clipboard with toast feedback
+- Tags displayed as badges
+- Title at the top
+
+**3. Modify `ContentVaultCategory.tsx`**
+- Detect when the current category slug is `"ai-prompts"`
+- Instead of opening the lightbox on resource click, open the new `PromptModal`
+- Hide the download button on `ResourceCard` for `ai_prompt` type resources (they don't need downloading)
+
+**4. Seed the example resource**
+- Title: "Luxury Street Style Portrait" (auto-generated from the prompt)
+- Tag: "Lifestyle"
+- Cover image: the uploaded screenshot image, stored in content vault storage
+- Prompt: the full text from the uploaded image
+
+### Files to Create/Modify
+- **New**: `src/components/content-vault/PromptModal.tsx`
+- **Modify**: `src/pages/ContentVaultCategory.tsx` — add prompt modal logic for ai_prompt resources
+- **Modify**: `src/components/content-vault/ResourceCard.tsx` — hide download for ai_prompt type
+- **Migration**: Insert category, subcategory, and seed resource
 
