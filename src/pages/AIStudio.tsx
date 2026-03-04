@@ -205,6 +205,8 @@ const AIStudio = () => {
 
               // Step 2: Client-side polling for completion
               const requestId = data.requestId;
+              const statusUrl = data.statusUrl;
+              const responseUrl = data.responseUrl;
               const maxPolls = 60; // 10 minutes max (60 * 10s)
               let polls = 0;
 
@@ -213,7 +215,7 @@ const AIStudio = () => {
                 polls++;
 
                 const { data: statusData, error: statusError } = await supabase.functions.invoke('check-video-status', {
-                  body: { requestId }
+                  body: { requestId, statusUrl, responseUrl }
                 });
 
                 if (statusError) {

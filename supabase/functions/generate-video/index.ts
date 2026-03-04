@@ -170,6 +170,8 @@ serve(async (req) => {
 
     const submitData = await submitResponse.json();
     const requestId = submitData.request_id;
+    const statusUrl = submitData.status_url;
+    const responseUrl = submitData.response_url;
 
     if (!requestId) {
       throw new Error("No request_id returned from fal.ai");
@@ -177,8 +179,8 @@ serve(async (req) => {
 
     console.log("[generate-video] Submitted successfully. Request ID:", requestId);
 
-    // Return requestId immediately — client will poll via check-video-status
-    return new Response(JSON.stringify({ requestId }), {
+    // Return requestId + URLs — client will poll via check-video-status
+    return new Response(JSON.stringify({ requestId, statusUrl, responseUrl }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
