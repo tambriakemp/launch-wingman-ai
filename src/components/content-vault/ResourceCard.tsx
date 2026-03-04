@@ -14,6 +14,7 @@ interface ResourceCardProps {
   title: string;
   description: string | null;
   coverImageUrl: string | null;
+  coverImageFit?: string;
   resourceUrl: string;
   previewUrl?: string | null;
   resourceType: string;
@@ -51,7 +52,8 @@ export const ResourceCard = ({
   id,
   title, 
   description, 
-  coverImageUrl, 
+  coverImageUrl,
+  coverImageFit = 'cover',
   resourceUrl,
   previewUrl,
   resourceType, 
@@ -141,7 +143,7 @@ export const ResourceCard = ({
           <img 
             src={displayImageUrl} 
             alt={title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className={`w-full h-full group-hover:scale-105 transition-transform duration-500 ${coverImageFit === 'contain' ? 'object-contain bg-muted/50' : 'object-cover'}`}
           />
         ) : isDocument ? (
           // Document placeholder
