@@ -1,41 +1,25 @@
 
 
-## Problem
+## Current State
 
-The edge function logs show the video generation polled 39 times (~195 seconds) then the function was **shut down** by the runtime before the video completed. The client sees "Failed to fetch" because the connection was terminated. This is a fundamental architecture issue: MiniMax video generation often takes 3-5+ minutes, which exceeds edge function timeout limits (~300s including cold start overhead).
+The video panel in SceneCard shows the generated video but has **no download or regenerate buttons** when a video exists. The model used is **fal-ai/minimax-video** (MiniMax image-to-video), which does not have strong identity preservation — hence the character changing between scenes.
 
-## Solution: Client-Side Polling
+## Video Model
 
-Split the flow into two parts:
+You're using **MiniMax image-to-video** via fal.ai. This model is known for producing cinematic motion but has weak identity consistency — it treats each frame generation somewhat independently from the source image's facial features. This is a known limitation of most current image-to-video models.
 
-1. **Edge function** (`generate-video`): Only **submits** the job to fal.ai, deducts credits, and immediately returns the `requestId`. No polling.
+## Plan
 
-2. **New edge function** (`check-video-status`): Accepts a `requestId`, checks fal.ai status, and returns `{ status, videoUrl }`.
+### 1. Add Download and Regenerate buttons to the video panel
+When a video exists (`media.videoUrl` is set), overlay action buttons similar to the image panel:
+- **Download** button — fetches the video URL as a blob and triggers a browser download with a filename like `scene-{n}-video.mp4`
+- **Regenerate** button — calls `onGenerateVideo()` to re-queue video generation for that scene
 
-3. **Frontend** (`AIStudio.tsx`): After getting the `requestId`, polls `check-video-status` every 10 seconds from the browser. No edge function timeout risk.
+These will be small icon buttons overlaid at the bottom of the video container, matching the existing image panel button style (download/refresh icons).
 
-## Changes
+### 2. File changes
+- **`src/components/ai-studio/SceneCard.tsx`**: Add download + regenerate button overlay inside the video panel when `media.videoUrl` exists. Download will use `fetch` + blob + `URL.createObjectURL` pattern to force a file save.
 
-### 1. Simplify `generate-video` edge function
-- Remove the entire polling loop (lines ~185-250)
-- After successful fal.ai queue submission, return `{ requestId }` immediately
-- Keep all credit logic and error handling as-is
-
-### 2. Create `check-video-status` edge function
-- Accepts `{ requestId }` in body + auth header
-- Looks up user's fal.ai key (BYOK) or uses platform key
-- Calls `https://queue.fal.run/fal-ai/minimax-video/requests/{requestId}/status`
-- If COMPLETED, fetches result and returns `{ status: "completed", videoUrl }`
-- If IN_PROGRESS, returns `{ status: "in_progress" }`
-- If FAILED, returns `{ status: "failed", error: "..." }`
-
-### 3. Update frontend polling in `AIStudio.tsx`
-- After calling `generate-video` and getting `requestId`, enter a client-side polling loop
-- Call `check-video-status` every 10 seconds
-- Update scene state with progress indicator
-- On completion, set `videoUrl`; on failure, set `videoError` with friendly message
-- No browser timeout issues since `fetch` calls are short-lived
-
-### 4. Update error constants
-- Add messaging for "video is processing" state vs actual failures
+### Technical note on identity consistency
+To improve character consistency in videos, the best approach would be to switch to a model with better identity preservation (e.g., Kling or Runway Gen-3), but those would require different API integrations. Within the current MiniMax setup, ensuring the source image has a clear, well-lit face and adding identity-reinforcing language in the video prompt can help marginally.
 
