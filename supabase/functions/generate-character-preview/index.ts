@@ -245,11 +245,9 @@ Style details:
     let bytes: Uint8Array;
     if (imageUrl.startsWith("data:")) {
       const base64Data = imageUrl.split(",")[1];
-      const binaryString = atob(base64Data);
-      bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
+      // Use Deno's native base64 decoder — avoids CPU-heavy byte-by-byte loop
+      const { decode: decodeBase64 } = await import("https://deno.land/std@0.168.0/encoding/base64.ts");
+      bytes = decodeBase64(base64Data);
     } else {
       const imgResp = await fetch(imageUrl);
       bytes = new Uint8Array(await imgResp.arrayBuffer());
