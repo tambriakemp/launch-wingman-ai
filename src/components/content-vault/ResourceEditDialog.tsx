@@ -42,6 +42,7 @@ export const ResourceEditDialog = ({
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [isFetchingThumbnail, setIsFetchingThumbnail] = useState(false);
   const [isGeneratingVideoThumbnail, setIsGeneratingVideoThumbnail] = useState(false);
   const [isRenamingWithAI, setIsRenamingWithAI] = useState(false);
@@ -85,7 +86,7 @@ export const ResourceEditDialog = ({
         .update({
           title: data.title,
           description: data.description || null,
-          resource_url: data.resource_url,
+          resource_url: data.resource_url || '#',
           preview_url: data.preview_url || null,
           cover_image_url: data.cover_image_url || null,
           resource_type: data.resource_type,
@@ -340,6 +341,33 @@ export const ResourceEditDialog = ({
     }
   }, [processAndUploadImage]);
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      await processAndUploadImage(file);
+    }
+  }, [processAndUploadImage]);
+
   const handleRemoveCover = () => {
     setFormData(prev => ({ ...prev, cover_image_url: "" }));
   };
@@ -382,9 +410,13 @@ export const ResourceEditDialog = ({
           <div className="space-y-2">
             <Label>Cover Image</Label>
             <div 
-              className="aspect-video bg-muted rounded-lg overflow-hidden relative cursor-pointer border-2 border-dashed border-transparent hover:border-primary/50 transition-colors focus:outline-none focus:border-primary"
+              className={`aspect-video bg-muted rounded-lg overflow-hidden relative cursor-pointer border-2 border-dashed transition-colors focus:outline-none focus:border-primary ${isDragging ? 'border-primary bg-primary/5' : 'border-transparent hover:border-primary/50'}`}
               tabIndex={0}
               onPaste={handlePaste}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
               onClick={() => !formData.cover_image_url && fileInputRef.current?.click()}
             >
               {formData.cover_image_url ? (
@@ -425,7 +457,7 @@ export const ResourceEditDialog = ({
                         <ImageIcon className="w-8 h-8" />
                         <Clipboard className="w-6 h-6" />
                       </div>
-                      <p className="text-sm">Click to upload or paste an image</p>
+                      <p className="text-sm">Click, paste, or drag an image</p>
                     </>
                   )}
                 </div>
@@ -563,7 +595,7 @@ export const ResourceEditDialog = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="resource_url">Resource URL</Label>
+            <Label htmlFor="resource_url">Resource URL (optional)</Label>
             <Input
               id="resource_url"
               type="url"
@@ -571,7 +603,7 @@ export const ResourceEditDialog = ({
               onChange={(e) =>
                 setFormData({ ...formData, resource_url: e.target.value })
               }
-              required
+              placeholder="https://..."
             />
           </div>
 
