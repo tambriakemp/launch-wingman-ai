@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem } from '@/components/ai-studio/types';
 import { INITIAL_CONFIG, DEFAULT_MEDIA, getUserFriendlyErrorMessage } from '@/components/ai-studio/constants';
+import { uploadBase64ToStorage, uploadImagesToStorage } from '@/components/ai-studio/uploadToStorage';
 import StudioStoryboard from '@/components/ai-studio/StudioStoryboard';
 import StoryboardToolbar from '@/components/ai-studio/StoryboardToolbar';
 import StudioHelp from '@/components/ai-studio/StudioHelp';
@@ -317,11 +318,22 @@ const AIStudio = () => {
     if (!showSafetyTerms) { toast({ title: "Terms Required", description: "Please accept the safety terms in Settings.", variant: "destructive" }); return; }
     setIsPreviewGenerating(true);
     try {
+      // Upload images to storage first to avoid edge function memory limits
+      setPreviewStep('Uploading images...');
+      const { data: { user } } = await supabase.auth.getUser();
+      const folder = `temp/${user?.id ?? 'anon'}`;
+
+      const allRefImages = referenceImages.length > 0 ? referenceImages : (referenceImage ? [referenceImage] : []);
+      const refUrlsPromise = allRefImages.length > 0 ? uploadImagesToStorage(allRefImages, folder) : Promise.resolve([]);
+
+      const allEnvImages = environmentImages.length > 0 ? environmentImages : (environmentImage ? [environmentImage] : []);
+      const envUrlsPromise = allEnvImages.length > 0 ? uploadImagesToStorage(allEnvImages, folder) : Promise.resolve([]);
+
+      const [referenceImageUrls, environmentImageUrls] = await Promise.all([refUrlsPromise, envUrlsPromise]);
+
       const previewBody = {
-        referenceImage,
-        referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
-        environmentImage,
-        environmentImages: environmentImages.length > 0 ? environmentImages : undefined,
+        referenceImageUrls: referenceImageUrls.length > 0 ? referenceImageUrls : undefined,
+        environmentImageUrls: environmentImageUrls.length > 0 ? environmentImageUrls : undefined,
         config,
         isFinalLook: false
       };
