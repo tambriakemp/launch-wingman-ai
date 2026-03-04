@@ -53,9 +53,7 @@ export const TASK_LABELS = [
   { id: "high-priority", label: "High Priority", color: "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30" },
   { id: "can-delegate", label: "Can Delegate", color: "bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-500/30" },
   { id: "quick-win", label: "Quick Win", color: "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30" },
-];
-
-export const TASK_PHASES = [
+  // Phase labels (formerly separate phase selector)
   { id: "foundation", label: "Foundation", color: "bg-slate-500/20 text-slate-700 dark:text-slate-300 border-slate-500/30" },
   { id: "content-creation", label: "Content Creation", color: "bg-violet-500/20 text-violet-700 dark:text-violet-300 border-violet-500/30" },
   { id: "technical-setup", label: "Technical Setup", color: "bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30" },
@@ -67,6 +65,9 @@ export const TASK_PHASES = [
   { id: "delivery", label: "Delivery", color: "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30" },
   { id: "analysis", label: "Analysis", color: "bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/30" },
 ];
+
+// Kept for backward compatibility
+export const TASK_PHASES: { id: string; label: string; color: string }[] = [];
 
 export interface Subtask {
   id: string;
@@ -118,7 +119,7 @@ export const TaskDialog = ({
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [columnId, setColumnId] = useState("todo");
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
-  const [selectedPhase, setSelectedPhase] = useState<string | null>(null);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Subtasks state
@@ -150,7 +151,7 @@ export const TaskDialog = ({
       setDueDate(editTask.due_date ? new Date(editTask.due_date) : undefined);
       setColumnId(editTask.column_id);
       setSelectedLabels(editTask.labels || []);
-      setSelectedPhase(editTask.phase || null);
+      
       fetchSubtasks();
     } else {
       setTitleState("");
@@ -158,7 +159,7 @@ export const TaskDialog = ({
       setDueDate(undefined);
       setColumnId("todo");
       setSelectedLabels([]);
-      setSelectedPhase(null);
+      
       setSubtasks([]);
     }
   }, [editTask, open, fetchSubtasks]);
@@ -254,7 +255,7 @@ export const TaskDialog = ({
         due_date: dueDate || null,
         column_id: columnId,
         labels: selectedLabels,
-        phase: selectedPhase,
+        phase: null,
       });
       onOpenChange(false);
     } catch (error) {
@@ -321,22 +322,6 @@ export const TaskDialog = ({
                   </Badge>
                 ))}
               </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="phase">Phase</Label>
-              <Select value={selectedPhase || "none"} onValueChange={(value) => setSelectedPhase(value === "none" ? null : value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a phase" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No phase</SelectItem>
-                  {TASK_PHASES.map((phase) => (
-                    <SelectItem key={phase.id} value={phase.id}>
-                      {phase.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
             <div className="grid gap-2">
               <Label>Due Date</Label>
