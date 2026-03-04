@@ -260,3 +260,6 @@ verify_jwt = false
 
 [functions.campaign-pixel]
 verify_jwt = false
+
+[functions.parse-prompts-bulk]
+verify_jwt = false
