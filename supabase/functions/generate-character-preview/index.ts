@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { encode as encodeBase64, decode as decodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
+import { decode as decodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,51 +56,66 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { referenceImage, referenceImages, environmentImage, environmentImages, config, isFinalLook, identityAnchorUrl } = await req.json();
-
-    const stripBase64Prefix = (img: string): string => {
-      if (img.includes(',')) return img.split(',')[1];
-      return img;
-    };
+    const {
+      // URL-based fields (preferred — lightweight)
+      referenceImageUrls,
+      environmentImageUrls,
+      // Legacy base64 fields (fallback)
+      referenceImage,
+      referenceImages,
+      environmentImage,
+      environmentImages,
+      config,
+      isFinalLook,
+      identityAnchorUrl,
+    } = await req.json();
 
     const contentParts: any[] = [];
 
-    // Add identity anchor image FIRST (highest priority for vision models)
-    // This is a previously generated look used to enforce character consistency
+    // --- Identity anchor (always a URL) ---
     let hasIdentityAnchor = false;
     if (identityAnchorUrl) {
-      // Pass the URL directly — no need to re-encode as base64
       contentParts.push({ type: "image_url", image_url: { url: identityAnchorUrl } });
       hasIdentityAnchor = true;
-      console.log("Identity anchor placed FIRST in content array (direct URL)");
+      console.log("Identity anchor placed FIRST in content array (URL)");
     }
 
-    // Add reference images AFTER identity anchor
-    if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
+    // --- Reference images ---
+    const refUrls: string[] = referenceImageUrls ?? [];
+    if (refUrls.length > 0) {
+      for (const url of refUrls) {
+        contentParts.push({ type: "image_url", image_url: { url } });
+      }
+    } else if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
+      // Legacy base64 fallback
       for (const refImg of referenceImages) {
-        const refBase64 = stripBase64Prefix(refImg);
-        contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${refBase64}` } });
+        const b = refImg.includes(',') ? refImg : `data:image/jpeg;base64,${refImg}`;
+        contentParts.push({ type: "image_url", image_url: { url: b } });
       }
     } else if (referenceImage) {
-      const refBase64 = stripBase64Prefix(referenceImage);
-      contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${refBase64}` } });
+      const b = referenceImage.includes(',') ? referenceImage : `data:image/jpeg;base64,${referenceImage}`;
+      contentParts.push({ type: "image_url", image_url: { url: b } });
     }
 
-    // Add environment images
-    if (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 0) {
+    // --- Environment images ---
+    const envUrls: string[] = environmentImageUrls ?? [];
+    if (envUrls.length > 0) {
+      for (const url of envUrls) {
+        contentParts.push({ type: "image_url", image_url: { url } });
+      }
+    } else if (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 0) {
       for (const envImg of environmentImages) {
-        const envBase64 = stripBase64Prefix(envImg);
-        contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${envBase64}` } });
+        const b = envImg.includes(',') ? envImg : `data:image/jpeg;base64,${envImg}`;
+        contentParts.push({ type: "image_url", image_url: { url: b } });
       }
     } else if (environmentImage) {
-      const envBase64 = stripBase64Prefix(environmentImage);
-      contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${envBase64}` } });
+      const b = environmentImage.includes(',') ? environmentImage : `data:image/jpeg;base64,${environmentImage}`;
+      contentParts.push({ type: "image_url", image_url: { url: b } });
     }
 
-    // Sanitize outfit descriptions to avoid safety filter triggers
+    // Sanitize outfit descriptions
     const sanitizeOutfitDescription = (desc: string): string => {
       if (!desc) return desc;
-      // Replace lingerie/intimate terms with professional fashion equivalents
       return desc
         .replace(/\bteddy\b/gi, 'sleepwear set')
         .replace(/\blingerie\b/gi, 'loungewear')
@@ -128,14 +143,17 @@ serve(async (req) => {
     const skin = config.skinComplexion === 'Custom' ? config.customSkinComplexion : `${config.skinComplexion} ${config.skinUndertone}`;
     const nails = config.nailStyle === 'Custom' ? config.customNailStyle : config.nailStyle;
 
-    // Multi-photo instruction
-    const multiRefNote = (referenceImages && referenceImages.length > 1)
+    const hasMultiRef = (refUrls.length > 1) || (referenceImages && referenceImages.length > 1);
+    const multiRefNote = hasMultiRef
       ? `Multiple reference photos of the SAME person are provided from different angles (face, profile, full body). Use ALL of them to accurately reproduce this person's exact appearance — facial structure, skin tone, body proportions, and features.`
       : '';
 
     const identityAnchorNote = hasIdentityAnchor
       ? `CRITICAL: The FIRST image provided is an already-generated canonical identity of this EXACT person. It is the GROUND TRUTH. You MUST match this person's face shape, jawline, nose, lips, eyes, eyebrows, skin tone, and body proportions EXACTLY. The subsequent reference photos provide supplementary angles — use them for additional detail but defer to the first image for identity.`
       : '';
+
+    const hasEnv = envUrls.length > 0 || (environmentImages?.length > 0) || environmentImage;
+    const hasMultiEnv = envUrls.length > 1 || (environmentImages && environmentImages.length > 1);
 
     let prompt = `Create a stylish fashion portrait based on the reference photo(s).
 
@@ -148,9 +166,9 @@ ${identityAnchorNote}
 
 Full-length view, studio-quality lighting, editorial fashion photography style.`;
 
-    if (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 1) {
+    if (hasMultiEnv) {
       prompt += ` Multiple reference images of the same environment are provided showing different angles. Use these as the setting/backdrop. Maintain exact spatial consistency.`;
-    } else if (environmentImage || (environmentImages && environmentImages.length === 1)) {
+    } else if (hasEnv) {
       prompt += ` Use the provided environment image as the setting/backdrop.`;
     } else {
       prompt += ` Setting: a clean, modern backdrop suitable for fashion or lifestyle content.`;
@@ -175,15 +193,16 @@ Style details:
       prompt += `\nSTRICT MODE: Match the EXACT facial features, skin tone, and proportions from the reference photo. This person must be immediately recognizable as the same individual.`;
     }
 
-    const envContext = (environmentImages?.length > 0 || environmentImage) ? prompt : "";
-    const behaviorPrompt = getSceneBehaviorPrompt(envContext);
+    const behaviorPrompt = hasEnv ? getSceneBehaviorPrompt(prompt) : "";
     if (behaviorPrompt) {
       prompt += `\n${behaviorPrompt}`;
-    } else if (environmentImages?.length > 0 || environmentImage) {
+    } else if (hasEnv) {
       prompt += `\nThe subject should interact naturally with the environment. Pose and gaze should reflect realistic behavior for the setting, not direct-to-camera posing.`;
     }
 
     contentParts.push({ type: "text", text: prompt });
+
+    console.log(`Sending ${contentParts.length} content parts (images as URLs, no base64 in memory)`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -217,7 +236,7 @@ Style details:
       throw new Error("Character preview generation failed - no image in response. Please try again.");
     }
 
-    // Upload preview to storage instead of returning raw base64
+    // Upload preview to storage
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -241,21 +260,20 @@ Style details:
 
     const previewType = isFinalLook ? 'final-look' : 'character-preview';
     const fileName = `${userId}/${previewType}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabaseClient.storage
       .from("ai-studio")
       .upload(fileName, bytes, { contentType: "image/png", upsert: true });
 
     if (uploadError) {
       console.error("Preview upload error:", uploadError);
-      // Fallback: return the raw image if upload fails
       return new Response(JSON.stringify({ imageUrl }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    const { data: publicUrlData } = supabase.storage.from("ai-studio").getPublicUrl(fileName);
+    const { data: publicUrlData } = supabaseClient.storage.from("ai-studio").getPublicUrl(fileName);
     console.log(`Preview uploaded to storage: ${publicUrlData.publicUrl}`);
 
     return new Response(JSON.stringify({ imageUrl: publicUrlData.publicUrl }), {
