@@ -54,24 +54,31 @@ const SceneCard: React.FC<SceneCardProps> = ({
   const handleSavePrompt = () => { onUpdatePrompt(editedPrompt); setIsEditing(false); };
   const handleSaveVideoPrompt = () => { onUpdateVideoPrompt(editedVideoPrompt); setIsEditingVideo(false); };
 
-  const downloadImage = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (media.imageUrl) {
-      try {
-        const response = await fetch(media.imageUrl);
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = `scene-${step.step_number}-${step.step_name.replace(/\s+/g, '-').toLowerCase()}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(blobUrl);
-      } catch {
-        window.location.href = media.imageUrl;
-      }
+  const downloadMedia = async (url: string, ext: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `scene-${step.step_number}-${step.step_name.replace(/\s+/g, '-').toLowerCase()}.${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.location.href = url;
     }
+  };
+
+  const downloadImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (media.imageUrl) downloadMedia(media.imageUrl, 'png');
+  };
+
+  const downloadVideo = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (media.videoUrl) downloadMedia(media.videoUrl, 'mp4');
   };
 
   const isLoading = media.isGeneratingImage || media.isUpscaling;
@@ -255,6 +262,16 @@ const SceneCard: React.FC<SceneCardProps> = ({
                 <p className="text-xs font-bold text-destructive-foreground mb-0.5">Video Failed</p>
                 <p className="text-[10px] text-destructive-foreground/90 mb-2 max-w-[90%] line-clamp-2">{media.videoError}</p>
                 <Button size="sm" variant="destructive" onClick={(e) => { e.stopPropagation(); onGenerateVideo(); }}>Retry</Button>
+              </div>
+            )}
+            {media.videoUrl && !isVideoLoading && (
+              <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 z-40 px-2 pointer-events-none">
+                <button onClick={downloadVideo} title="Download" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                  <Download className="h-3 w-3" />
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); onGenerateVideo(); }} title="Regenerate" className="pointer-events-auto p-1.5 bg-black/60 hover:bg-primary text-white rounded-full backdrop-blur-md border border-white/10 shadow-lg active:scale-95">
+                  <RefreshCw className="h-3 w-3" />
+                </button>
               </div>
             )}
           </div>
