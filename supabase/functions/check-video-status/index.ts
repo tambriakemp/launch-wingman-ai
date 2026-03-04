@@ -61,7 +61,9 @@ serve(async (req) => {
     }
 
     // Check status using the URL provided by fal.ai
+    console.log("[check-video-status] Fetching status from:", statusUrl);
     const statusResponse = await fetch(statusUrl, {
+      method: "GET",
       headers: { "Authorization": `Key ${falKey}` },
     });
 
