@@ -30,7 +30,7 @@ serve(async (req) => {
     const contentParts: any[] = [
       {
         type: "text",
-        text: `Generate an image based on this prompt. Create a high-quality, visually striking image:\n\n${prompt}`,
+        text: `Generate an image based on this prompt. Create a high-quality, visually striking image. IMPORTANT: Frame the shot as a wide or medium shot so the main subject is fully visible from head to toe (if a person) or in its entirety. Do NOT crop tightly or zoom in — leave breathing room around the subject. Use a 16:9 or 3:2 landscape composition:\n\n${prompt}`,
       },
     ];
 
@@ -43,7 +43,7 @@ serve(async (req) => {
       // Update instruction to reference the image
       contentParts[0] = {
         type: "text",
-        text: `The reference image shows the person/subject that MUST appear in the generated image. Preserve their exact facial features, hair, skin tone, body type, and overall appearance. Generate the scene described below but featuring this exact person. Do NOT change or replace the person — they must be recognizable as the same individual from the reference photo. Create a high-quality, visually striking image:\n\n${prompt}`,
+        text: `The reference image shows the person/subject that MUST appear in the generated image. Preserve their exact facial features, hair, skin tone, body type, and overall appearance. Generate the scene described below but featuring this exact person. Do NOT change or replace the person — they must be recognizable as the same individual from the reference photo. IMPORTANT: Frame the shot as a wide or medium shot so the person is fully visible from head to toe. Do NOT crop tightly or zoom in — leave breathing room around the subject. Use a 16:9 or 3:2 landscape composition. Create a high-quality, visually striking image:\n\n${prompt}`,
       };
     }
 
