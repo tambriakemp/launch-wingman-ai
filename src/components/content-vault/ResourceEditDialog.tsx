@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Upload, X, Image as ImageIcon, Clipboard, Wand2, Film, Sparkles, Star } from "lucide-react";
+import { Loader2, Upload, X, Image as ImageIcon, Clipboard, Wand2, Film, Sparkles, Star, ImagePlus } from "lucide-react";
 
 interface Resource {
   id: string;
@@ -41,12 +41,15 @@ export const ResourceEditDialog = ({
 }: ResourceEditDialogProps) => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const referenceInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isFetchingThumbnail, setIsFetchingThumbnail] = useState(false);
   const [isGeneratingVideoThumbnail, setIsGeneratingVideoThumbnail] = useState(false);
   const [isRenamingWithAI, setIsRenamingWithAI] = useState(false);
   const [isSettingCategoryThumbnail, setIsSettingCategoryThumbnail] = useState(false);
+  const [isGeneratingAICover, setIsGeneratingAICover] = useState(false);
+  const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: resource?.title || "",
     description: resource?.description || "",
@@ -271,7 +274,93 @@ export const ResourceEditDialog = ({
     }
   }, [resource, formData.cover_image_url]);
 
-  // Set as category thumbnail (controls the main Content Vault category card image)
+  // Generate cover image with AI (ai_prompt resources only)
+  const generateAICover = useCallback(async () => {
+    if (!resource) return;
+    
+    const promptText = formData.description;
+    if (!promptText) {
+      toast.error('Add a prompt in the description field first');
+      return;
+    }
+
+    setIsGeneratingAICover(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-prompt-cover', {
+        body: { 
+          prompt: promptText,
+          referenceImageUrl: referenceImageUrl || undefined,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      if (data?.imageBase64) {
+        // Convert base64 to blob and upload
+        const base64Data = data.imageBase64.replace(/^data:image\/\w+;base64,/, '');
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'image/png' });
+
+        const fileName = `resource-covers/${resource.id}-ai-gen-${Date.now()}.png`;
+        const { error: uploadError } = await supabase.storage
+          .from('content-media')
+          .upload(fileName, blob, { upsert: true, contentType: 'image/png' });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('content-media')
+          .getPublicUrl(fileName);
+
+        setFormData(prev => ({ ...prev, cover_image_url: publicUrl }));
+        toast.success('AI cover image generated!');
+      }
+    } catch (error: any) {
+      console.error('Error generating AI cover:', error);
+      toast.error(error.message || 'Failed to generate AI cover image');
+    } finally {
+      setIsGeneratingAICover(false);
+    }
+  }, [resource, formData.description, referenceImageUrl]);
+
+  // Handle reference image upload
+  const handleReferenceImageSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    if (!resource) return;
+
+    try {
+      const fileExt = file.name.split('.').pop() || 'png';
+      const fileName = `resource-covers/${resource.id}-ref-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('content-media')
+        .upload(fileName, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('content-media')
+        .getPublicUrl(fileName);
+
+      setReferenceImageUrl(publicUrl);
+      toast.success('Reference image uploaded');
+    } catch (error) {
+      console.error('Error uploading reference:', error);
+      toast.error('Failed to upload reference image');
+    }
+  }, [resource]);
+
+
   const setAsCategoryThumbnail = useCallback(async () => {
     if (!resource) return;
 
@@ -397,7 +486,8 @@ export const ResourceEditDialog = ({
     formData.preview_url ||
     ((formData.resource_type === 'image' || formData.resource_type === 'photo') ? formData.resource_url : '');
   const canSetCategoryThumbnail = Boolean(categoryThumbnailCandidateUrl);
-  const isProcessing = isUploading || isFetchingThumbnail || isGeneratingVideoThumbnail || isRenamingWithAI || isSettingCategoryThumbnail;
+  const isAiPrompt = formData.resource_type === 'ai_prompt';
+  const isProcessing = isUploading || isFetchingThumbnail || isGeneratingVideoThumbnail || isRenamingWithAI || isSettingCategoryThumbnail || isGeneratingAICover;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -590,9 +680,77 @@ export const ResourceEditDialog = ({
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
-              rows={2}
+              rows={isAiPrompt ? 6 : 2}
             />
           </div>
+
+          {/* AI Cover Generation - ai_prompt only */}
+          {isAiPrompt && (
+            <div className="space-y-2 rounded-lg border border-dashed border-primary/30 p-3 bg-primary/5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                <ImagePlus className="w-4 h-4" />
+                Generate Cover with AI
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Uses the description as the prompt. Optionally add a reference photo for style guidance.
+              </p>
+              
+              {/* Reference image */}
+              <div className="flex items-center gap-2">
+                {referenceImageUrl ? (
+                  <div className="relative w-16 h-16 rounded overflow-hidden border">
+                    <img src={referenceImageUrl} alt="Reference" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setReferenceImageUrl(null)}
+                      className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-bl p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => referenceInputRef.current?.click()}
+                    disabled={isProcessing}
+                  >
+                    <Upload className="w-3 h-3 mr-1.5" />
+                    Add Reference Photo
+                  </Button>
+                )}
+                <input
+                  type="file"
+                  ref={referenceInputRef}
+                  onChange={handleReferenceImageSelect}
+                  accept="image/*"
+                  className="hidden"
+                />
+              </div>
+
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                className="w-full"
+                onClick={generateAICover}
+                disabled={isProcessing || !formData.description}
+              >
+                {isGeneratingAICover ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate Cover Image
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="resource_url">Resource URL (optional)</Label>

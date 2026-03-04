@@ -263,3 +263,6 @@ verify_jwt = false
 
 [functions.parse-prompts-bulk]
 verify_jwt = false
+
+[functions.generate-prompt-cover]
+verify_jwt = false
