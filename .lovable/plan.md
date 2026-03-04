@@ -1,39 +1,21 @@
 
 
-## Plan: Cover Image Fit/Position Control
+## Plan: Improve Reference Image Prompt for Identity Preservation
 
 ### Problem
-AI-generated cover images get cropped with `object-cover` + center positioning, cutting off important parts of the image.
+The current prompt tells the AI to use the reference image as "style/composition guidance," which means it treats it as a mood board rather than preserving the actual person/subject in the photo. The AI needs explicit instructions to keep the person's identity, features, and appearance from the reference image.
 
 ### Solution
-Add a `cover_image_fit` column to `content_vault_resources` that stores the CSS object-fit value (`cover` or `contain`). Default to `cover` for backward compatibility. In the Edit Resource dialog, add a simple toggle so admins can switch between "Fill" (cover) and "Fit" (contain) modes.
+Update the prompt in `supabase/functions/generate-prompt-cover/index.ts` (line 44-47) to explicitly instruct the model to preserve the person's identity, facial features, and appearance from the reference image — not just use it for style guidance.
 
-### Database Migration
-```sql
-ALTER TABLE content_vault_resources 
-ADD COLUMN cover_image_fit text NOT NULL DEFAULT 'cover';
-```
+**Change the reference image prompt from:**
+> "using the provided reference image as style/composition guidance"
 
-### Changes
+**To something like:**
+> "The reference image shows the person/subject that MUST appear in the generated image. Preserve their exact facial features, hair, skin tone, and overall appearance. Generate the scene described in the prompt but featuring this exact person."
 
-**1. `src/components/content-vault/ResourceEditDialog.tsx`**
-- Add `cover_image_fit` to form state (default `'cover'`)
-- Below the cover image preview, add a small toggle group: **Fill** | **Fit**
-- Fill = `object-cover`, Fit = `object-contain` (with a subtle background color behind contain)
-- Save the value to the database on submit
-- Apply the selected fit to the preview image in the dialog
+### File to modify
+- `supabase/functions/generate-prompt-cover/index.ts` — update the text prompt on lines 44-47
 
-**2. `src/components/content-vault/ResourceCard.tsx`**
-- Read `cover_image_fit` from the resource data
-- Apply `object-cover` or `object-contain` accordingly on the card image
-- When `contain`, add a background color so it doesn't look empty
-
-**3. `src/components/content-vault/PromptModal.tsx`**
-- Same: read `cover_image_fit` and apply to the modal image
-
-### Files
-- **Migration**: Add `cover_image_fit` column
-- **Modify**: `ResourceEditDialog.tsx` — toggle + form state
-- **Modify**: `ResourceCard.tsx` — dynamic object-fit class
-- **Modify**: `PromptModal.tsx` — dynamic object-fit class
+**Note:** Gemini's image generation model has inherent limitations with facial identity preservation compared to specialized models like InstantID. The improved prompt will yield better results but may not achieve perfect likeness in all cases.
 
