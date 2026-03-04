@@ -1,43 +1,39 @@
 
 
-## Plan: Rich Description Formatting + AI Cover Image Generation
+## Plan: Cover Image Fit/Position Control
 
-### 1. Rich Description Display in PromptModal
+### Problem
+AI-generated cover images get cropped with `object-cover` + center positioning, cutting off important parts of the image.
 
-The description already preserves `whitespace-pre-wrap`, so line breaks work. To support richer formatting (bullets, paragraphs, bold), we'll render the description as simple Markdown-like formatting:
+### Solution
+Add a `cover_image_fit` column to `content_vault_resources` that stores the CSS object-fit value (`cover` or `contain`). Default to `cover` for backward compatibility. In the Edit Resource dialog, add a simple toggle so admins can switch between "Fill" (cover) and "Fit" (contain) modes.
 
-**In `PromptModal.tsx`:**
-- Parse `description` to convert basic patterns: `- ` or `• ` lines into bullet lists, double newlines into paragraph breaks, `**text**` into bold
-- Use a small render function (no external library needed) that splits by paragraphs and renders `<ul>` for bullet sections and `<p>` for paragraph text
-- The "Copy Prompt" button continues to copy the raw text (no HTML)
+### Database Migration
+```sql
+ALTER TABLE content_vault_resources 
+ADD COLUMN cover_image_fit text NOT NULL DEFAULT 'cover';
+```
 
-**In `ResourceEditDialog.tsx`:**
-- Change description `<Textarea>` rows from 2 to 6 for ai_prompt types so longer formatted prompts are easier to edit
+### Changes
 
-### 2. AI Cover Image Generation (ai_prompt resources only)
+**1. `src/components/content-vault/ResourceEditDialog.tsx`**
+- Add `cover_image_fit` to form state (default `'cover'`)
+- Below the cover image preview, add a small toggle group: **Fill** | **Fit**
+- Fill = `object-cover`, Fit = `object-contain` (with a subtle background color behind contain)
+- Save the value to the database on submit
+- Apply the selected fit to the preview image in the dialog
 
-**In `ResourceEditDialog.tsx`:**
-- Add a new "Generate Cover with AI" button that only appears when `resource_type === 'ai_prompt'`
-- Add a reference image upload area (small, separate from the main cover image area) — the admin uploads a reference photo
-- Store reference image in state (as base64 or uploaded URL)
-- On click "Generate Cover", call a new edge function
+**2. `src/components/content-vault/ResourceCard.tsx`**
+- Read `cover_image_fit` from the resource data
+- Apply `object-cover` or `object-contain` accordingly on the card image
+- When `contain`, add a background color so it doesn't look empty
 
-**New edge function: `supabase/functions/generate-prompt-cover/index.ts`**
-- Accepts `{ prompt: string, referenceImageUrl?: string }` 
-- Uses `google/gemini-3-pro-image-preview` (best for image generation)
-- Sends the prompt text as the generation instruction, with the reference image if provided
-- Returns the generated image as base64
-- The frontend uploads the result to the `content-media` bucket and sets it as the cover image
+**3. `src/components/content-vault/PromptModal.tsx`**
+- Same: read `cover_image_fit` and apply to the modal image
 
-### Flow
-1. Admin opens Edit Resource for an ai_prompt resource
-2. Optionally uploads/pastes a reference photo into the reference image area
-3. Clicks "Generate Cover with AI"
-4. Edge function sends the description (prompt text) + reference image to Gemini image model
-5. Generated image is returned, uploaded to storage, and set as cover_image_url
-
-### Files to create/modify
-- **Modify**: `src/components/content-vault/PromptModal.tsx` — rich text rendering for description
-- **Modify**: `src/components/content-vault/ResourceEditDialog.tsx` — add reference image + generate cover button for ai_prompt type, increase textarea rows
-- **New**: `supabase/functions/generate-prompt-cover/index.ts` — AI image generation edge function
+### Files
+- **Migration**: Add `cover_image_fit` column
+- **Modify**: `ResourceEditDialog.tsx` — toggle + form state
+- **Modify**: `ResourceCard.tsx` — dynamic object-fit class
+- **Modify**: `PromptModal.tsx` — dynamic object-fit class
 
