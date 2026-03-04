@@ -6,6 +6,7 @@ import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { ResourceCard } from "@/components/content-vault/ResourceCard";
 import { ResourceEditDialog } from "@/components/content-vault/ResourceEditDialog";
 import { ResourceLightbox } from "@/components/content-vault/ResourceLightbox";
+import { PromptModal } from "@/components/content-vault/PromptModal";
 import { VaultFilters } from "@/components/content-vault/VaultFilters";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useAdmin } from "@/hooks/useAdmin";
@@ -58,6 +59,9 @@ const ContentVaultCategory = () => {
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
   const [deletingResource, setDeletingResource] = useState<Resource | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [promptResource, setPromptResource] = useState<Resource | null>(null);
+  
+  const isAiPrompts = categorySlug === 'ai-prompts';
   
   // Bulk selection state (admin only)
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -221,6 +225,12 @@ const ContentVaultCategory = () => {
     // Don't open lightbox in selection mode
     if (isSelectionMode) {
       toggleSelection(resource.id);
+      return;
+    }
+    
+    // AI Prompts open the prompt modal
+    if (resource.resource_type === 'ai_prompt') {
+      setPromptResource(resource);
       return;
     }
     
@@ -475,6 +485,16 @@ const ContentVaultCategory = () => {
         currentIndex={lightboxIndex ?? 0}
         open={lightboxIndex !== null}
         onOpenChange={(open) => !open && setLightboxIndex(null)}
+      />
+
+      {/* Prompt Modal for AI Prompts */}
+      <PromptModal
+        open={!!promptResource}
+        onOpenChange={(open) => !open && setPromptResource(null)}
+        title={promptResource?.title || ''}
+        description={promptResource?.description || null}
+        coverImageUrl={promptResource?.cover_image_url || null}
+        tags={promptResource?.tags || []}
       />
     </ProjectLayout>
   );
