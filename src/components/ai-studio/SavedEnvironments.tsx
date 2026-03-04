@@ -96,7 +96,7 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
     const files = Array.from(e.target.files || []);
     const valid = files.filter(f => {
       if (!f.type.startsWith('image/')) { toast.error(`${f.name} is not an image.`); return false; }
-      if (f.size > 10 * 1024 * 1024) { toast.error(`${f.name} is too large (max 10MB).`); return false; }
+      if (f.size > 25 * 1024 * 1024) { toast.error(`${f.name} is too large (max 25MB).`); return false; }
       return true;
     });
     const total = newGroupFiles.length + valid.length;
@@ -346,7 +346,7 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
           const file = e.target.files?.[0];
           if (file && addingToGroupId) {
             if (!file.type.startsWith('image/')) { toast.error('Please upload an image file.'); return; }
-            if (file.size > 10 * 1024 * 1024) { toast.error('Image must be under 10MB.'); return; }
+            if (file.size > 25 * 1024 * 1024) { toast.error('Image must be under 25MB.'); return; }
             handleAddImageToGroup(addingToGroupId, file);
           }
           if (e.target) e.target.value = '';

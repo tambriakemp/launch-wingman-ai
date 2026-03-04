@@ -59,7 +59,7 @@ const SavedCharacter: React.FC<SavedCharacterProps> = ({ onSelect, onSelectMulti
     const file = e.target.files?.[0];
     if (!file || !userId) return;
     if (!file.type.startsWith('image/')) { toast.error('Please upload an image file.'); return; }
-    if (file.size > 10 * 1024 * 1024) { toast.error('Image must be under 10MB.'); return; }
+    if (file.size > 25 * 1024 * 1024) { toast.error('Image must be under 25MB.'); return; }
 
     setUploading(activeSlot);
     const path = getPath(userId, activeSlot);
