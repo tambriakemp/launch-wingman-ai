@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { encode as encodeBase64, decode as decodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,23 +69,10 @@ serve(async (req) => {
     // This is a previously generated look used to enforce character consistency
     let hasIdentityAnchor = false;
     if (identityAnchorUrl) {
-      try {
-        const anchorResp = await fetch(identityAnchorUrl);
-        if (anchorResp.ok) {
-          const anchorBytes = new Uint8Array(await anchorResp.arrayBuffer());
-          let binary = '';
-          const chunkSize = 8192;
-          for (let i = 0; i < anchorBytes.length; i += chunkSize) {
-            binary += String.fromCharCode(...anchorBytes.subarray(i, i + chunkSize));
-          }
-          const anchorBase64 = btoa(binary);
-          contentParts.push({ type: "image_url", image_url: { url: `data:image/png;base64,${anchorBase64}` } });
-          hasIdentityAnchor = true;
-          console.log("Identity anchor placed FIRST in content array");
-        }
-      } catch (e) {
-        console.error("Failed to fetch identity anchor:", e);
-      }
+      // Pass the URL directly — no need to re-encode as base64
+      contentParts.push({ type: "image_url", image_url: { url: identityAnchorUrl } });
+      hasIdentityAnchor = true;
+      console.log("Identity anchor placed FIRST in content array (direct URL)");
     }
 
     // Add reference images AFTER identity anchor
@@ -245,8 +233,6 @@ Style details:
     let bytes: Uint8Array;
     if (imageUrl.startsWith("data:")) {
       const base64Data = imageUrl.split(",")[1];
-      // Use Deno's native base64 decoder — avoids CPU-heavy byte-by-byte loop
-      const { decode: decodeBase64 } = await import("https://deno.land/std@0.168.0/encoding/base64.ts");
       bytes = decodeBase64(base64Data);
     } else {
       const imgResp = await fetch(imageUrl);
