@@ -118,7 +118,7 @@ serve(async (req) => {
     // 3. Submit to fal.ai MiniMax image-to-video (no polling — return requestId immediately)
     console.log("[generate-video] Submitting to fal.ai queue...");
 
-    const submitResponse = await fetch("https://queue.fal.run/fal-ai/minimax-video/image-to-video", {
+    const submitResponse = await fetch("https://queue.fal.run/fal-ai/kling-video/o3/standard/image-to-video", {
       method: "POST",
       headers: {
         "Authorization": `Key ${falKey}`,
@@ -127,7 +127,7 @@ serve(async (req) => {
       body: JSON.stringify({
         image_url: imageUrl,
         prompt: videoPrompt,
-        prompt_optimizer: true,
+        duration: "5",
       }),
     });
 

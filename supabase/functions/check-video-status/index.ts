@@ -61,7 +61,7 @@ serve(async (req) => {
     }
 
     // Check status
-    const statusResponse = await fetch(`https://queue.fal.run/fal-ai/minimax-video/requests/${requestId}/status`, {
+    const statusResponse = await fetch(`https://queue.fal.run/fal-ai/kling-video/o3/standard/image-to-video/requests/${requestId}/status`, {
       headers: { "Authorization": `Key ${falKey}` },
     });
 
@@ -75,7 +75,7 @@ serve(async (req) => {
 
     if (statusData.status === "COMPLETED") {
       // Fetch the actual result
-      const resultResponse = await fetch(`https://queue.fal.run/fal-ai/minimax-video/requests/${requestId}`, {
+      const resultResponse = await fetch(`https://queue.fal.run/fal-ai/kling-video/o3/standard/image-to-video/requests/${requestId}`, {
         headers: { "Authorization": `Key ${falKey}` },
       });
 
