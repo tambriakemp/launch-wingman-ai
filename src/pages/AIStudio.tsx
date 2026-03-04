@@ -188,6 +188,7 @@ const AIStudio = () => {
             } else if (task.type === 'generate_video') {
               if (!task.baseImageUrl) throw new Error("Image required before generating video");
 
+              // Step 1: Submit job and get requestId
               const { data, error } = await supabase.functions.invoke('generate-video', {
                 body: {
                   imageUrl: task.baseImageUrl,
@@ -198,11 +199,52 @@ const AIStudio = () => {
 
               if (error) throw error;
               if (data?.error) throw new Error(data.error);
+              if (!data?.requestId) throw new Error("No request ID returned");
 
-              setGeneratedMedia(prev => ({
-                ...prev,
-                [task.index]: { ...prev[task.index], videoUrl: data.videoUrl, isGeneratingVideo: false, videoError: undefined }
-              }));
+              console.log(`[AIStudio] Video submitted for scene ${task.index + 1}, requestId: ${data.requestId}`);
+
+              // Step 2: Client-side polling for completion
+              const requestId = data.requestId;
+              const maxPolls = 60; // 10 minutes max (60 * 10s)
+              let polls = 0;
+
+              while (polls < maxPolls) {
+                await new Promise(r => setTimeout(r, 10000)); // 10 second intervals
+                polls++;
+
+                const { data: statusData, error: statusError } = await supabase.functions.invoke('check-video-status', {
+                  body: { requestId }
+                });
+
+                if (statusError) {
+                  console.error(`[AIStudio] Status poll ${polls} error:`, statusError);
+                  continue; // Retry on transient errors
+                }
+
+                if (statusData?.error) {
+                  throw new Error(statusData.error);
+                }
+
+                if (polls % 3 === 0) {
+                  console.log(`[AIStudio] Scene ${task.index + 1} video poll ${polls}/${maxPolls}: ${statusData?.status}`);
+                }
+
+                if (statusData?.status === 'completed' && statusData?.videoUrl) {
+                  setGeneratedMedia(prev => ({
+                    ...prev,
+                    [task.index]: { ...prev[task.index], videoUrl: statusData.videoUrl, isGeneratingVideo: false, videoError: undefined }
+                  }));
+                  break;
+                }
+
+                if (statusData?.status === 'failed') {
+                  throw new Error(statusData.error || "Video generation failed");
+                }
+              }
+
+              if (polls >= maxPolls) {
+                throw new Error("Video generation timed out after 10 minutes. The video may still be processing — please try again shortly.");
+              }
             }
           } catch (error: any) {
             const rawMsg = error?.message || error?.toString() || "Unknown error";

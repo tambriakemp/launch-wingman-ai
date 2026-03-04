@@ -115,7 +115,7 @@ serve(async (req) => {
       }
     }
 
-    // 3. Call fal.ai MiniMax image-to-video
+    // 3. Submit to fal.ai MiniMax image-to-video (no polling — return requestId immediately)
     console.log("[generate-video] Submitting to fal.ai queue...");
 
     const submitResponse = await fetch("https://queue.fal.run/fal-ai/minimax-video/image-to-video", {
@@ -135,7 +135,6 @@ serve(async (req) => {
       const errText = await submitResponse.text();
       console.error("[generate-video] fal.ai submit error:", errText);
 
-      // Parse error detail from fal.ai response
       let detail = `HTTP ${submitResponse.status}`;
       try {
         const errJson = JSON.parse(errText);
@@ -144,7 +143,6 @@ serve(async (req) => {
 
       // Refund credit on failure if not BYOK
       if (!usingBYOK) {
-        // Simple refund - add back 1 credit
         const { data: currentCredits } = await adminClient.from("video_credits").select("*").eq("user_id", userId).single();
         if (currentCredits) {
           const { data: lastTx } = await adminClient.from("video_credit_transactions")
@@ -160,7 +158,6 @@ serve(async (req) => {
         }
       }
 
-      // Map balance/lock errors to 402
       const detailLower = detail.toLowerCase();
       if (detailLower.includes("exhausted") || detailLower.includes("balance") || detailLower.includes("locked") || submitResponse.status === 403) {
         return new Response(JSON.stringify({ error: "Platform video generation balance exhausted. Please use your own fal.ai API key or purchase more credits." }), {
@@ -178,66 +175,12 @@ serve(async (req) => {
       throw new Error("No request_id returned from fal.ai");
     }
 
-    console.log("[generate-video] Request ID:", requestId, "- polling for result...");
+    console.log("[generate-video] Submitted successfully. Request ID:", requestId);
 
-    // 4. Poll for result (edge functions have ~300s timeout, so limit polling)
-    const maxAttempts = 55; // ~275 seconds max (within edge function timeout)
-    let attempt = 0;
-
-    while (attempt < maxAttempts) {
-      await new Promise(r => setTimeout(r, 5000)); // 5 second intervals
-      attempt++;
-
-      try {
-        const statusResponse = await fetch(`https://queue.fal.run/fal-ai/minimax-video/requests/${requestId}/status`, {
-          headers: { "Authorization": `Key ${falKey}` },
-        });
-
-        if (!statusResponse.ok) {
-          console.error(`[generate-video] Status check failed: HTTP ${statusResponse.status}`);
-          continue;
-        }
-
-        const statusData = await statusResponse.json();
-        if (attempt % 5 === 0 || statusData.status !== "IN_PROGRESS") {
-          console.log(`[generate-video] Poll ${attempt}/${maxAttempts}: status=${statusData.status}`);
-        }
-
-        if (statusData.status === "COMPLETED") {
-          const resultResponse = await fetch(`https://queue.fal.run/fal-ai/minimax-video/requests/${requestId}`, {
-            headers: { "Authorization": `Key ${falKey}` },
-          });
-
-          if (!resultResponse.ok) throw new Error("Failed to fetch result");
-
-          const resultData = await resultResponse.json();
-          const videoUrl = resultData?.video?.url;
-
-          if (!videoUrl) throw new Error("No video URL in result");
-
-          console.log("[generate-video] Video ready:", videoUrl);
-
-          return new Response(JSON.stringify({ videoUrl }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        if (statusData.status === "FAILED") {
-          const failDetail = statusData.error || statusData.detail || "Unknown failure";
-          console.error("[generate-video] fal.ai job FAILED:", failDetail);
-          throw new Error(`Video generation failed: ${failDetail}`);
-        }
-      } catch (pollError) {
-        if (pollError instanceof Error && pollError.message.includes("Video generation failed")) {
-          throw pollError;
-        }
-        console.error(`[generate-video] Poll error at attempt ${attempt}:`, pollError);
-        // Continue polling on transient errors
-      }
-    }
-
-    console.error(`[generate-video] Timed out after ${maxAttempts} polls (~${maxAttempts * 5}s). Request ID: ${requestId}`);
-    throw new Error("Video generation timed out after ~5 minutes. The video may still be processing on fal.ai — please try again shortly.");
+    // Return requestId immediately — client will poll via check-video-status
+    return new Response(JSON.stringify({ requestId }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
