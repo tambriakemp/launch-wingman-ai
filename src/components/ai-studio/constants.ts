@@ -176,8 +176,14 @@ export const getUserFriendlyErrorMessage = (error: any): string => {
   if (msg.includes('403') || msg.includes('locked')) {
     return "💳 Platform video balance exhausted. Add your own fal.ai API key or purchase credits in Settings.";
   }
-  if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed to fetch')) {
+  if (msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('load failed')) {
+    return "⏱️ The request timed out or was interrupted. Video generation can take 3-5 minutes — please try again.";
+  }
+  if (msg.includes('network') || msg.includes('fetch')) {
     return "📶 Network error. Check your connection and try again.";
+  }
+  if (msg.includes('timed out') || msg.includes('timeout')) {
+    return "⏱️ Video generation timed out. This can happen with complex scenes — please retry.";
   }
   return "👾 Something went wrong. Please try again.";
 };

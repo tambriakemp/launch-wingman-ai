@@ -205,7 +205,9 @@ const AIStudio = () => {
               }));
             }
           } catch (error: any) {
+            const rawMsg = error?.message || error?.toString() || "Unknown error";
             const friendlyMsg = getUserFriendlyErrorMessage(error);
+            console.error(`[AIStudio] ${task.type} failed for scene ${task.index + 1}:`, rawMsg, error);
             setGeneratedMedia(prev => ({
               ...prev,
               [task.index]: {
@@ -218,6 +220,8 @@ const AIStudio = () => {
             }));
             if (task.type === 'generate_video') {
               toast({ title: "Video Generation Failed", description: friendlyMsg, variant: "destructive" });
+            } else {
+              toast({ title: "Generation Failed", description: friendlyMsg, variant: "destructive" });
             }
           }
         }
