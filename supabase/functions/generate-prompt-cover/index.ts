@@ -43,7 +43,7 @@ serve(async (req) => {
       // Update instruction to reference the image
       contentParts[0] = {
         type: "text",
-        text: `Generate an image based on this prompt, using the provided reference image as style/composition guidance. Create a high-quality, visually striking image:\n\n${prompt}`,
+        text: `The reference image shows the person/subject that MUST appear in the generated image. Preserve their exact facial features, hair, skin tone, body type, and overall appearance. Generate the scene described below but featuring this exact person. Do NOT change or replace the person — they must be recognizable as the same individual from the reference photo. Create a high-quality, visually striking image:\n\n${prompt}`,
       };
     }
 
