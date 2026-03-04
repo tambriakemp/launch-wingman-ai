@@ -30,9 +30,9 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub;
 
-    const { requestId } = await req.json();
-    if (!requestId) {
-      return new Response(JSON.stringify({ error: "requestId is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { requestId, statusUrl, responseUrl } = await req.json();
+    if (!requestId || !statusUrl) {
+      return new Response(JSON.stringify({ error: "requestId and statusUrl are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Resolve fal.ai key (BYOK or platform)
@@ -60,8 +60,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "No fal.ai key available" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Check status
-    const statusResponse = await fetch(`https://queue.fal.run/fal-ai/kling-video/o3/standard/image-to-video/requests/${requestId}/status`, {
+    // Check status using the URL provided by fal.ai
+    const statusResponse = await fetch(statusUrl, {
       headers: { "Authorization": `Key ${falKey}` },
     });
 
@@ -74,8 +74,9 @@ serve(async (req) => {
     const statusData = await statusResponse.json();
 
     if (statusData.status === "COMPLETED") {
-      // Fetch the actual result
-      const resultResponse = await fetch(`https://queue.fal.run/fal-ai/kling-video/o3/standard/image-to-video/requests/${requestId}`, {
+      // Fetch the actual result using the response URL from fal.ai
+      const resultUrl = responseUrl || statusUrl.replace('/status', '');
+      const resultResponse = await fetch(resultUrl, {
         headers: { "Authorization": `Key ${falKey}` },
       });
 
