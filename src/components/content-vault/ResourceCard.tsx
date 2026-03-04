@@ -65,6 +65,7 @@ export const ResourceCard = ({
 }: ResourceCardProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const isCanvaLink = resourceType === 'canva_link';
+  const isAiPrompt = resourceType === 'ai_prompt';
   const isDocument = resourceType === 'document' || /\.(pdf|docx|doc|rtf)$/i.test(resourceUrl);
   const docType = getDocumentType(resourceUrl);
   const hasMissingPreview = isMissingPreview(resourceUrl, previewUrl);
@@ -114,7 +115,9 @@ export const ResourceCard = ({
   };
 
   const handleCardClick = () => {
-    if (isCanvaLink) {
+    if (isAiPrompt) {
+      onClick();
+    } else if (isCanvaLink) {
       // Track Canva link access for popularity
       trackResourceAccess(id);
       window.open(resourceUrl, '_blank');
@@ -245,7 +248,7 @@ export const ResourceCard = ({
         )}
 
         {/* Persistent Download Button - Always visible on mobile, hover on desktop */}
-        {!isCanvaLink && (
+        {!isCanvaLink && !isAiPrompt && (
           <Button 
             size="icon"
             onClick={handleDownload}
@@ -263,7 +266,7 @@ export const ResourceCard = ({
         {/* Hover Overlay for desktop */}
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
           <span className="text-white text-sm font-medium">
-            {isCanvaLink ? "Open in Canva" : isDocument ? "Preview document" : "Click to preview"}
+            {isAiPrompt ? "View prompt" : isCanvaLink ? "Open in Canva" : isDocument ? "Preview document" : "Click to preview"}
           </span>
         </div>
       </div>
