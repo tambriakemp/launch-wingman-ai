@@ -820,6 +820,7 @@ export type Database = {
       }
       content_vault_resources: {
         Row: {
+          cover_image_fit: string
           cover_image_url: string | null
           created_at: string
           description: string | null
@@ -834,6 +835,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          cover_image_fit?: string
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
@@ -848,6 +850,7 @@ export type Database = {
           title: string
         }
         Update: {
+          cover_image_fit?: string
           cover_image_url?: string | null
           created_at?: string
           description?: string | null

@@ -11,6 +11,7 @@ interface PromptModalProps {
   title: string;
   description: string | null;
   coverImageUrl: string | null;
+  coverImageFit?: string;
   tags: string[];
 }
 
@@ -86,6 +87,7 @@ export const PromptModal = ({
   title,
   description,
   coverImageUrl,
+  coverImageFit = 'cover',
   tags,
 }: PromptModalProps) => {
   const [copied, setCopied] = useState(false);
@@ -111,7 +113,7 @@ export const PromptModal = ({
             <img
               src={coverImageUrl}
               alt={title}
-              className="w-full h-full object-cover"
+              className={`w-full h-full ${coverImageFit === 'contain' ? 'object-contain bg-muted/50' : 'object-cover'}`}
             />
           </div>
         ) : (

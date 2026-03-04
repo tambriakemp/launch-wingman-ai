@@ -1,0 +1,1 @@
+ALTER TABLE content_vault_resources ADD COLUMN cover_image_fit text NOT NULL DEFAULT 'cover';

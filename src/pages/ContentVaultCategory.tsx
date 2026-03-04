@@ -427,6 +427,7 @@ const ContentVaultCategory = () => {
                   title={resource.title}
                   description={resource.description}
                   coverImageUrl={resource.cover_image_url}
+                  coverImageFit={(resource as any).cover_image_fit}
                   resourceUrl={resource.resource_url}
                   previewUrl={resource.preview_url}
                   resourceType={resource.resource_type}
@@ -494,6 +495,7 @@ const ContentVaultCategory = () => {
         title={promptResource?.title || ''}
         description={promptResource?.description || null}
         coverImageUrl={promptResource?.cover_image_url || null}
+        coverImageFit={(promptResource as any)?.cover_image_fit}
         tags={promptResource?.tags || []}
       />
     </ProjectLayout>

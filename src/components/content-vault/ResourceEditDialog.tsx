@@ -21,6 +21,7 @@ interface Resource {
   title: string;
   description: string | null;
   cover_image_url: string | null;
+  cover_image_fit?: string;
   resource_type: string;
   resource_url: string;
   preview_url: string | null;
@@ -56,6 +57,7 @@ export const ResourceEditDialog = ({
     resource_url: resource?.resource_url || "",
     preview_url: resource?.preview_url || "",
     cover_image_url: resource?.cover_image_url || "",
+    cover_image_fit: resource?.cover_image_fit || "cover",
     resource_type: resource?.resource_type || "canva_link",
     tags: resource?.tags?.join(", ") || "",
   });
@@ -69,6 +71,7 @@ export const ResourceEditDialog = ({
         resource_url: resource.resource_url,
         preview_url: resource.preview_url || "",
         cover_image_url: resource.cover_image_url || "",
+        cover_image_fit: resource.cover_image_fit || "cover",
         resource_type: resource.resource_type,
         tags: resource.tags?.join(", ") || "",
       });
@@ -92,6 +95,7 @@ export const ResourceEditDialog = ({
           resource_url: data.resource_url || '#',
           preview_url: data.preview_url || null,
           cover_image_url: data.cover_image_url || null,
+          cover_image_fit: data.cover_image_fit || 'cover',
           resource_type: data.resource_type,
           tags,
         })
@@ -474,6 +478,7 @@ export const ResourceEditDialog = ({
       resource_url: resource.resource_url,
       preview_url: resource.preview_url || "",
       cover_image_url: resource.cover_image_url || "",
+      cover_image_fit: resource.cover_image_fit || "cover",
       resource_type: resource.resource_type,
       tags: resource.tags?.join(", ") || "",
     });
@@ -514,7 +519,7 @@ export const ResourceEditDialog = ({
                   <img 
                     src={formData.cover_image_url} 
                     alt="Cover preview"
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full ${formData.cover_image_fit === 'contain' ? 'object-contain bg-muted/50' : 'object-cover'}`}
                   />
                   <Button
                     type="button"
@@ -553,6 +558,29 @@ export const ResourceEditDialog = ({
                 </div>
               )}
             </div>
+
+            {/* Fill / Fit toggle */}
+            {formData.cover_image_url && (
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground">Image fit:</Label>
+                <div className="flex rounded-md border border-border overflow-hidden">
+                  <button
+                    type="button"
+                    className={`px-3 py-1 text-xs font-medium transition-colors ${formData.cover_image_fit === 'cover' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                    onClick={() => setFormData(prev => ({ ...prev, cover_image_fit: 'cover' }))}
+                  >
+                    Fill
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-3 py-1 text-xs font-medium transition-colors ${formData.cover_image_fit === 'contain' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                    onClick={() => setFormData(prev => ({ ...prev, cover_image_fit: 'contain' }))}
+                  >
+                    Fit
+                  </button>
+                </div>
+              </div>
+            )}
             
             <input
               type="file"
