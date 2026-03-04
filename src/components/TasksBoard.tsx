@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO, isPast, isToday } from "date-fns";
-import { MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, X, Settings, ListChecks, Search, AlertTriangle, RefreshCw, CheckSquare, FileText } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, X, Settings, ListChecks, Search, AlertTriangle, RefreshCw, CheckSquare, FileText, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -76,6 +76,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [myTodoExpanded, setMyTodoExpanded] = useState(true);
 
   // Funnel change detection
   const [funnelTypeChanged, setFunnelTypeChanged] = useState(false);
@@ -344,8 +345,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
       description: data.description || null,
       due_date: data.due_date ? format(data.due_date, "yyyy-MM-dd") : null,
       column_id: data.column_id,
-      labels: data.labels,
-      phase: data.phase,
+        phase: null,
       position: tasks.filter(t => t.column_id === data.column_id).length,
     });
 
@@ -369,8 +369,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
         description: data.description || null,
         due_date: data.due_date ? format(data.due_date, "yyyy-MM-dd") : null,
         column_id: data.column_id,
-        labels: data.labels,
-        phase: data.phase,
+        phase: null,
       })
       .eq("id", editingTask.id);
 
@@ -467,6 +466,14 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
   const getLabelInfo = (labelId: string) => {
     return TASK_LABELS.find((l) => l.id === labelId);
   };
+
+  // Filter custom tasks for "My ToDo List"
+  const filteredTasks = tasks.filter((task) => {
+    if (searchQuery && !task.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (selectedLabels.length > 0 && !selectedLabels.some(l => task.labels?.includes(l))) return false;
+    if (selectedStatus !== "all" && task.column_id !== selectedStatus) return false;
+    return true;
+  });
 
   if (isLoading) {
     return (
@@ -669,6 +676,98 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
           prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType), ...getPreLaunchTasks(), ...getLaunchTasksForFunnel(currentFunnelType)]}
           isProOnly
         />
+
+        {/* My ToDo List - Custom user tasks */}
+        <div className="border border-border rounded-lg overflow-hidden">
+          <button
+            type="button"
+            className="w-full flex items-center gap-2 px-4 py-3 bg-muted/30 hover:bg-muted/50 transition-colors text-left"
+            onClick={() => setMyTodoExpanded(prev => !prev)}
+          >
+            {myTodoExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+            <ListTodo className="w-4 h-4 text-primary" />
+            <span className="font-medium text-sm">My ToDo List</span>
+            <Badge variant="secondary" className="ml-auto text-xs">
+              {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
+            </Badge>
+          </button>
+          <AnimatePresence>
+            {myTodoExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="p-4 space-y-2">
+                  {filteredTasks.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      {hasActiveFilters ? "No tasks match your filters." : "No custom tasks yet. Click \"Add Task\" to create one."}
+                    </p>
+                  ) : (
+                    filteredTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="flex items-start gap-3 p-3 rounded-md border border-border bg-card hover:bg-accent/50 cursor-pointer transition-colors group"
+                        onClick={(e) => handleCardClick(task, e)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-medium truncate">{task.title}</span>
+                            {task.subtask_count && task.subtask_count > 0 && (
+                              <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                                <ListTodo className="w-3 h-3" />
+                                {task.subtask_count}
+                              </span>
+                            )}
+                          </div>
+                          {task.description && (
+                            <p className="text-xs text-muted-foreground truncate mb-1">{task.description}</p>
+                          )}
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {task.labels?.map((labelId) => {
+                              const label = getLabelInfo(labelId);
+                              return label ? (
+                                <Badge key={labelId} variant="outline" className={cn("text-[10px] px-1.5 py-0", label.color)}>
+                                  {label.label}
+                                </Badge>
+                              ) : null;
+                            })}
+                            {task.due_date && (
+                              <span className={cn("text-[10px] flex items-center gap-0.5", isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date)) ? "text-destructive" : "text-muted-foreground")}>
+                                <Calendar className="w-3 h-3" />
+                                {format(parseISO(task.due_date), "MMM d")}
+                              </span>
+                            )}
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              {COLUMNS.find(c => c.id === task.column_id)?.label || task.column_id}
+                            </Badge>
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" data-no-click>
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => { setEditingTask(task); setTaskDialogOpen(true); }}>
+                              <Pencil className="w-4 h-4 mr-2" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(task)}>
+                              <Trash2 className="w-4 h-4 mr-2" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Checklist View */}
