@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -61,17 +61,18 @@ export function BulkCoverGeneratorDialog({
   const [items, setItems] = useState<ItemState[]>([]);
   const [completedCount, setCompletedCount] = useState(0);
 
-  // Initialize items when dialog opens
-  const initItems = useCallback(() => {
-    setItems(resources.map((r) => ({ id: r.id, title: r.title, status: "pending" })));
-    setCompletedCount(0);
-    abortRef.current = false;
-  }, [resources]);
+  // Initialize items when dialog opens or resources change
+  useEffect(() => {
+    if (open && resources.length > 0) {
+      setItems(resources.map((r) => ({ id: r.id, title: r.title, status: "pending" as ItemStatus })));
+      setCompletedCount(0);
+      abortRef.current = false;
+    }
+  }, [open, resources]);
 
   const handleOpenChange = (newOpen: boolean) => {
-    if (isProcessing) return; // prevent closing during generation
+    if (isProcessing) return;
     if (newOpen) {
-      initItems();
       setReferenceImageUrl(null);
       setReferencePreview(null);
     }
