@@ -77,18 +77,28 @@ export const PromptBulkImporter = () => {
     if (!pdfFile) return;
     setIsParsing(true);
     try {
-      const buffer = await pdfFile.arrayBuffer();
-      const base64 = btoa(
-        new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
-      );
+      // Upload PDF to storage first to avoid memory limits in edge function
+      const fileName = `pdf-imports/${Date.now()}-${pdfFile.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("admin-docs")
+        .upload(fileName, pdfFile, { contentType: "application/pdf", upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("admin-docs")
+        .getPublicUrl(fileName);
 
       const { data, error } = await supabase.functions.invoke("parse-prompts-bulk", {
-        body: { pdfBase64: base64, mode: "pdf" },
+        body: { pdfUrl: urlData.publicUrl, mode: "pdf" },
       });
 
       if (error) throw error;
       setParsedPrompts(data.prompts || []);
       toast({ title: `Extracted ${data.prompts?.length || 0} prompts from PDF` });
+
+      // Clean up the temp file
+      await supabase.storage.from("admin-docs").remove([fileName]);
     } catch (err: any) {
       console.error(err);
       toast({ title: "PDF parse failed", description: err.message, variant: "destructive" });
