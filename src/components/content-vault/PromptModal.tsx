@@ -106,23 +106,26 @@ export const PromptModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto p-0">
-        {/* Cover Image */}
-        {coverImageUrl ? (
-          <div className="aspect-[4/3] w-full overflow-hidden rounded-t-lg">
-            <img
-              src={coverImageUrl}
-              alt={title}
-              className={`w-full h-full ${coverImageFit === 'contain' ? 'object-contain bg-muted/50' : 'object-cover'}`}
-            />
-          </div>
-        ) : (
-          <div className="aspect-[4/3] w-full bg-muted flex items-center justify-center rounded-t-lg">
-            <ImageIcon className="w-16 h-16 text-muted-foreground/30" />
-          </div>
-        )}
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col p-0">
+        {/* Cover Image - fixed at top */}
+        <div className="flex-shrink-0">
+          {coverImageUrl ? (
+            <div className="aspect-[4/3] w-full overflow-hidden rounded-t-lg">
+              <img
+                src={coverImageUrl}
+                alt={title}
+                className={`w-full h-full ${coverImageFit === 'contain' ? 'object-contain bg-muted/50' : 'object-cover'}`}
+              />
+            </div>
+          ) : (
+            <div className="aspect-[4/3] w-full bg-muted flex items-center justify-center rounded-t-lg">
+              <ImageIcon className="w-16 h-16 text-muted-foreground/30" />
+            </div>
+          )}
+        </div>
 
-        <div className="p-6 pt-2">
+        {/* Scrollable content area */}
+        <div className="flex-1 overflow-y-auto p-6 pt-2">
           <DialogHeader className="mb-4">
             <DialogTitle className="text-xl">{title}</DialogTitle>
             <DialogDescription className="sr-only">AI prompt details</DialogDescription>
