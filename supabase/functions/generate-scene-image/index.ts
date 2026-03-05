@@ -170,7 +170,8 @@ serve(async (req) => {
         const envLabelText = environmentLabel ? `The environment is: "${environmentLabel}". ` : '';
         contentParts.push({ type: "text", text: `${envLabelText}The following images show the ENVIRONMENT/ROOM — reproduce this space EXACTLY as shown:` });
         if (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 0) {
-          for (const envImg of environmentImages) {
+          const cappedEnvImages = environmentImages.slice(0, 3);
+          for (const envImg of cappedEnvImages) {
             pushImage(envImg);
           }
         } else if (environmentImage) {

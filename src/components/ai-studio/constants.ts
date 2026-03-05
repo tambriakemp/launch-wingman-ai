@@ -159,7 +159,7 @@ export const QUICK_LOOK_PRESETS: Record<string, Partial<import('./types').AppCon
   },
 };
 
-export const getUserFriendlyErrorMessage = (error: any): string => {
+export const getUserFriendlyErrorMessage = (error: any, context: 'image' | 'video' | 'general' = 'general'): string => {
   const msg = (error?.message || error || "").toString().toLowerCase();
   if (msg.includes('429') || msg.includes('quota') || msg.includes('exhausted') || msg.includes('resource')) {
     return "🛑 Quota exceeded. Please check your billing or try again later.";
@@ -168,22 +168,31 @@ export const getUserFriendlyErrorMessage = (error: any): string => {
     return "🥵 The AI is overloaded. Give it a moment and try again.";
   }
   if (msg.includes('safety') || msg.includes('blocked') || msg.includes('violation')) {
-    return "😳 That prompt triggered safety filters. Try a different approach.";
+    return "😳 That prompt triggered safety filters. Try a different description.";
   }
   if (msg.includes('402') || msg.includes('exhausted balance') || msg.includes('platform.*balance')) {
     return "💳 Credits exhausted. Please add more credits or use your own fal.ai API key.";
   }
   if (msg.includes('403') || msg.includes('locked')) {
-    return "💳 Platform video balance exhausted. Add your own fal.ai API key or purchase credits in Settings.";
+    return "💳 Platform balance exhausted. Add your own fal.ai API key or purchase credits in Settings.";
+  }
+  if (msg.includes('aborted') || msg.includes('aborterror')) {
+    if (context === 'image') return "⏱️ Image generation timed out after 90 seconds. Try simplifying the scene or reducing environment images, then regenerate.";
+    if (context === 'video') return "⏱️ Video generation timed out. Videos can take 3-5 minutes — please try again.";
+    return "⏱️ The request timed out. Please try again.";
   }
   if (msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('load failed')) {
-    return "⏱️ The request timed out or was interrupted. Video generation can take 3-5 minutes — please try again.";
+    if (context === 'image') return "⏱️ Image generation timed out or was interrupted. Try regenerating this scene.";
+    if (context === 'video') return "⏱️ Video generation timed out or was interrupted. Videos can take 3-5 minutes — please try again.";
+    return "⏱️ The request timed out or was interrupted. Please try again.";
   }
   if (msg.includes('network') || msg.includes('fetch')) {
     return "📶 Network error. Check your connection and try again.";
   }
   if (msg.includes('timed out') || msg.includes('timeout')) {
-    return "⏱️ Video generation timed out. This can happen with complex scenes — please retry.";
+    if (context === 'image') return "⏱️ Image generation timed out. Try simplifying the scene or regenerating.";
+    if (context === 'video') return "⏱️ Video generation timed out. This can happen with complex scenes — please retry.";
+    return "⏱️ The request timed out. Please try again.";
   }
   return "👾 Something went wrong. Please try again.";
 };
