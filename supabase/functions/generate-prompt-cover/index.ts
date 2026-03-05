@@ -43,7 +43,17 @@ serve(async (req) => {
       // Update instruction to reference the image
       contentParts[0] = {
         type: "text",
-        text: `The reference image shows the person/subject that MUST appear in the generated image. Preserve their exact facial features, hair, skin tone, body type, and overall appearance. Generate the scene described below but featuring this exact person. Do NOT change or replace the person — they must be recognizable as the same individual from the reference photo. IMPORTANT: Frame the shot as a wide or medium shot so the person is fully visible from head to toe. Do NOT crop tightly or zoom in — leave breathing room around the subject. Use a 16:9 or 3:2 landscape composition. Create a high-quality, visually striking image:\n\n${prompt}`,
+        text: `CRITICAL INSTRUCTION — IDENTITY PRESERVATION:
+You are given a reference photo of a real person. This is the ONLY person who must appear in the generated image. You MUST:
+1. Use the EXACT same face, facial structure, eye shape, eye color, nose, lips, jawline, skin tone, and complexion from the reference photo — do NOT alter, beautify, age, or stylize them.
+2. Match their hair color, texture, and approximate length.
+3. Match their body type and proportions.
+4. The generated person must be immediately recognizable as the same individual in the reference photo. If placed side by side, a viewer should have zero doubt it is the same person.
+5. Do NOT substitute, blend, or merge with any other person's features.
+
+COMPOSITION: Frame as a wide or medium shot. The person must be fully visible (head to toe if standing). Do NOT crop tightly or zoom in. Leave breathing room. Use 16:9 or 3:2 landscape composition.
+
+Now generate a high-quality, visually striking image for this scene, featuring the EXACT person from the reference photo:\n\n${prompt}`,
       };
     }
 
