@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 interface SavedEnvironmentsProps {
   onSelect: (urlOrBase64: string) => void;
   onSelectMultiple?: (urls: string[]) => void;
+  onSelectLabel?: (label: string) => void;
   activeGroupId?: string | null;
 }
 
@@ -28,7 +29,7 @@ interface EnvironmentGroup {
   images: EnvironmentEntry[];
 }
 
-const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelectMultiple, activeGroupId }) => {
+const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelectMultiple, onSelectLabel, activeGroupId }) => {
   const [groups, setGroups] = useState<EnvironmentGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -129,6 +130,7 @@ const SavedEnvironments: React.FC<SavedEnvironmentsProps> = ({ onSelect, onSelec
     if (onSelectMultiple && urls.length > 1) {
       onSelectMultiple(urls);
     }
+    onSelectLabel?.(group.name);
     setInternalActiveGroupId(group.id);
     setSelectingGroupId(null);
     toast.success(`"${group.name}" applied (${urls.length} reference images)!`);

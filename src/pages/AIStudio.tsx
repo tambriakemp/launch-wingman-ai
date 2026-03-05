@@ -26,6 +26,7 @@ const AIStudio = () => {
   const [productImage, setProductImage] = useState<string | null>(null);
   const [environmentImage, setEnvironmentImage] = useState<string | null>(null);
   const [environmentImages, setEnvironmentImages] = useState<string[]>([]);
+  const [environmentLabel, setEnvironmentLabel] = useState<string | null>(null);
   const [previewCharacterImage, setPreviewCharacterImage] = useState<string | null>(null);
   const [previewFinalLookImage, setPreviewFinalLookImage] = useState<string | null>(null);
   const [isPreviewGenerating, setIsPreviewGenerating] = useState(false);
@@ -327,6 +328,7 @@ const AIStudio = () => {
       const previewBody = {
         referenceImageUrls: allRefUrls.length > 0 ? allRefUrls : undefined,
         environmentImageUrls: allEnvUrls.length > 0 ? allEnvUrls : undefined,
+        environmentLabel: environmentLabel || undefined,
         config,
         isFinalLook: false
       };
@@ -552,6 +554,7 @@ const AIStudio = () => {
     setProductImage(null);
     setEnvironmentImage(null);
     setEnvironmentImages([]);
+    setEnvironmentLabel(null);
     setPreviewCharacterImage(null);
     setPreviewFinalLookImage(null);
     setStoryboard(null);
@@ -761,6 +764,7 @@ const AIStudio = () => {
             environmentImage={environmentImage}
             setEnvironmentImage={setEnvironmentImage}
             setEnvironmentImages={setEnvironmentImages}
+            setEnvironmentLabel={setEnvironmentLabel}
             productImage={productImage}
             setProductImage={setProductImage}
             isProcessing={isProcessing}

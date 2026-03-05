@@ -68,6 +68,7 @@ serve(async (req) => {
       config,
       isFinalLook,
       identityAnchorUrl,
+      environmentLabel,
     } = await req.json();
 
     const contentParts: any[] = [];
@@ -97,8 +98,16 @@ serve(async (req) => {
       contentParts.push({ type: "image_url", image_url: { url: b } });
     }
 
-    // --- Environment images ---
+    // --- Text separator before environment images ---
     const envUrls: string[] = environmentImageUrls ?? [];
+    const hasEnvImages = envUrls.length > 0 || (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 0) || environmentImage;
+    
+    if (hasEnvImages) {
+      const envLabelText = environmentLabel ? `The environment is: "${environmentLabel}". ` : '';
+      contentParts.push({ type: "text", text: `${envLabelText}The following images show the ENVIRONMENT/ROOM — reproduce this space EXACTLY as shown:` });
+    }
+
+    // --- Environment images ---
     if (envUrls.length > 0) {
       for (const url of envUrls) {
         contentParts.push({ type: "image_url", image_url: { url } });
@@ -152,8 +161,10 @@ serve(async (req) => {
       ? `CRITICAL: The FIRST image provided is an already-generated canonical identity of this EXACT person. It is the GROUND TRUTH. You MUST match this person's face shape, jawline, nose, lips, eyes, eyebrows, skin tone, and body proportions EXACTLY. The subsequent reference photos provide supplementary angles — use them for additional detail but defer to the first image for identity.`
       : '';
 
-    const hasEnv = envUrls.length > 0 || (environmentImages?.length > 0) || environmentImage;
+    const hasEnv = hasEnvImages;
     const hasMultiEnv = envUrls.length > 1 || (environmentImages && environmentImages.length > 1);
+
+    const envLabelPrompt = environmentLabel ? `The environment is: "${environmentLabel}". ` : '';
 
     let prompt = `Create a stylish fashion portrait based on the reference photo(s).
 
@@ -167,9 +178,9 @@ ${identityAnchorNote}
 Full-length view, studio-quality lighting, editorial fashion photography style.`;
 
     if (hasMultiEnv) {
-      prompt += ` Multiple reference images of the same environment are provided showing different angles. Use these as the setting/backdrop. Maintain exact spatial consistency.`;
+      prompt += `\n\nENVIRONMENT FIDELITY (CRITICAL): ${envLabelPrompt}Multiple angles of the SAME space are provided as environment reference images. You MUST reproduce this environment PRECISELY — same wall colors, flooring, furniture, fixtures, lighting direction, and camera perspective. Cross-reference all angles to ensure spatial accuracy — objects visible in one angle must be consistent with their position in other angles. Do NOT substitute, rearrange, recolor, or reimagine ANY element of the space. The character is placed INTO this real environment exactly as shown.`;
     } else if (hasEnv) {
-      prompt += ` Use the provided environment image as the setting/backdrop.`;
+      prompt += `\n\nENVIRONMENT FIDELITY (CRITICAL): ${envLabelPrompt}The environment reference image provided shows the EXACT room/space. You MUST reproduce this environment PRECISELY — same wall colors, flooring, furniture, fixtures, lighting direction, and camera perspective. Do NOT substitute, rearrange, recolor, or reimagine ANY element of the space. The character is placed INTO this real environment exactly as shown.`;
     } else {
       prompt += ` Setting: a clean, modern backdrop suitable for fashion or lifestyle content.`;
     }
