@@ -97,10 +97,35 @@ Now generate a high-quality, visually striking image for this scene, featuring t
     }
 
     const data = await response.json();
-    const imageUrl =
-      data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    console.log("AI response structure:", JSON.stringify(Object.keys(data)));
+    console.log("First choice keys:", JSON.stringify(data.choices?.[0] ? Object.keys(data.choices[0]) : "no choices"));
+    const message = data.choices?.[0]?.message;
+    if (message) {
+      console.log("Message keys:", JSON.stringify(Object.keys(message)));
+    }
+
+    // Try multiple known response formats
+    let imageUrl =
+      message?.images?.[0]?.image_url?.url ||   // Lovable AI format
+      message?.content?.[0]?.image_url?.url ||   // OpenAI-style multimodal
+      null;
+
+    // Check if content is an array with image parts
+    if (!imageUrl && Array.isArray(message?.content)) {
+      const imgPart = message.content.find((p: any) => p.type === "image_url" || p.image_url);
+      if (imgPart) {
+        imageUrl = imgPart.image_url?.url || imgPart.url;
+      }
+    }
+
+    // Check inline_data format (Gemini native)
+    if (!imageUrl && message?.content?.[0]?.inline_data) {
+      const inline = message.content[0].inline_data;
+      imageUrl = `data:${inline.mime_type};base64,${inline.data}`;
+    }
 
     if (!imageUrl) {
+      console.error("Full AI response (no image found):", JSON.stringify(data).slice(0, 2000));
       return new Response(
         JSON.stringify({ error: "No image was generated. Try a different prompt." }),
         { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
