@@ -92,34 +92,8 @@ serve(async (req) => {
           }),
         }
       );
-            tools: [
-              {
-                type: "function",
-                function: {
-                  name: "extract_prompts",
-                  description: "Return extracted prompts from the PDF",
-                  parameters: {
-                    type: "object",
-                    properties: {
-                      prompts: {
-                        type: "array",
-                        items: { type: "string" },
-                        description: "Array of individual prompt texts",
-                      },
-                    },
-                    required: ["prompts"],
-                    additionalProperties: false,
-                  },
-                },
-              },
-            ],
-            tool_choice: {
-              type: "function",
-              function: { name: "extract_prompts" },
-            },
-          }),
-        }
-      );
+
+
 
       if (!extractResponse.ok) {
         const errText = await extractResponse.text();
