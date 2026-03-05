@@ -1,46 +1,42 @@
 
 
-## Problem Analysis
+## Problem
 
-The tab crash during preview regeneration is caused by **browser memory exhaustion**. Here's why:
+The character preview prompt currently gives the AI model vague environment instructions like "Use the provided environment image as the setting/backdrop" or "Maintain exact spatial consistency." This is insufficient — the model treats environment images as loose inspiration rather than a strict reference, freely altering colors, furniture placement, lighting, and layout between regenerations.
 
-1. **Base64 images stored in React state**: `referenceImage`, `referenceImages`, `environmentImages`, `productImage` are all held as raw base64 strings in memory — each high-res photo can be 5-15MB as base64.
+## Root Cause
 
-2. **Memory spike during upload**: When `handleGeneratePreview` runs, it calls `uploadImagesToStorage` which converts ALL base64 strings to `Uint8Array` simultaneously via `Promise.all` (line 327-332). This effectively **triples** memory usage momentarily (base64 in state + decoded bytes + upload buffers).
-
-3. **No cleanup**: Old base64 data stays in state even after URLs are obtained from storage.
+1. **No explicit environment fidelity instructions** — the prompt tells the model to use the environment but doesn't enforce preserving specific details (wall color, furniture, fixtures, lighting, camera angle).
+2. **Environment images are mixed in with reference images** without clear labeling — the model may not distinguish which images are "the person" vs "the room."
+3. **No environment description metadata is passed** — the environment group label (e.g., "Modern Kitchen", "Marble Bathroom") isn't sent to the edge function, so the prompt can't anchor the setting semantically.
 
 ## Plan
 
-### 1. Upload images to storage immediately on file selection (not during preview generation)
+### 1. Pass environment group metadata to the edge function
 
-Modify `StoryboardToolbar` (or wherever images are picked) so that when the user selects a file, it:
-- Uploads to storage immediately
-- Stores the **public URL** in state instead of base64
-- This keeps memory usage flat regardless of how many images are loaded
+- From `AIStudio.tsx`, include the selected environment group's `label` (e.g., "White Kitchen") in the request body as `environmentLabel`.
+- This gives the prompt a semantic anchor for the space.
 
-Update `AIStudio.tsx` state to use URLs:
-- `referenceImage` / `referenceImages` → store URLs after upload
-- `environmentImage` / `environmentImages` → store URLs after upload  
-- `productImage` → store URL after upload
+### 2. Strengthen environment fidelity in the prompt (`generate-character-preview/index.ts`)
 
-### 2. Simplify `handleGeneratePreview` to pass URLs directly
+Replace the current vague environment instructions with strict fidelity language:
 
-Since images are already uploaded, `handleGeneratePreview` skips the upload step entirely — just passes the stored URLs to the edge function. This eliminates the memory spike.
+- **Single environment image**: "ENVIRONMENT FIDELITY (CRITICAL): The environment reference image provided shows the EXACT room/space. You MUST reproduce this environment precisely — same wall colors, flooring, furniture, fixtures, lighting direction, and camera perspective. Do NOT substitute, rearrange, or reimagine any element of the space. The character is placed INTO this real environment."
 
-### 3. Fix the queue processor to use URLs instead of base64
+- **Multi-environment images**: Add: "Multiple angles of the SAME space are provided. Cross-reference all angles to ensure spatial accuracy — objects visible in one angle must be consistent with their position in other angles."
 
-Lines 161-165 in the queue processor still pass raw base64 fields (`referenceImage`, `productImage`, `environmentImage`) to `generate-scene-image`. Update these to pass URLs instead.
+- **With label**: Prepend "The environment is: {label}." to ground the model semantically.
 
-Lines 126-133 extract base64 from locked image URLs — if the imageUrl is already a storage URL (not base64), skip the split logic.
+### 3. Separate environment images from reference images in the content array with text markers
 
-### 4. Add defensive guards against tab crashes
+Insert a text part between reference images and environment images:
+```
+[ref images] → { type: "text", text: "The following images show the ENVIRONMENT/ROOM — reproduce this space exactly:" } → [env images] → [main prompt]
+```
 
-- Wrap the preview regeneration in a safety check: if `performance.memory` (Chrome) shows high usage, warn the user before proceeding
-- Add `try/catch` around the image upload helper to handle `RangeError` (out of memory) gracefully with a toast instead of crashing
+This prevents the model from confusing environment photos with additional character reference angles.
 
 ### Files to modify
-- `src/pages/AIStudio.tsx` — change state from base64 to URLs, simplify preview/scene generation
-- `src/components/ai-studio/StoryboardToolbar.tsx` (or image picker component) — upload on selection, return URL
-- `src/components/ai-studio/uploadToStorage.ts` — add a helper for File → storage URL (not just base64 → storage)
+- `src/pages/AIStudio.tsx` — pass `environmentLabel` in the preview request body
+- `supabase/functions/generate-character-preview/index.ts` — add text separator, strengthen environment prompt, use label
 
