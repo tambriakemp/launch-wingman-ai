@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AppConfig, VlogStep, VlogStoryboard, GeneratedMedia, QueueItem } from '@/components/ai-studio/types';
 import { INITIAL_CONFIG, DEFAULT_MEDIA, getUserFriendlyErrorMessage } from '@/components/ai-studio/constants';
-import { uploadBase64ToStorage, uploadImagesToStorage } from '@/components/ai-studio/uploadToStorage';
+// uploadToStorage helpers no longer needed here — images are uploaded on selection
 import StudioStoryboard from '@/components/ai-studio/StudioStoryboard';
 import StoryboardToolbar from '@/components/ai-studio/StoryboardToolbar';
 import StudioHelp from '@/components/ai-studio/StudioHelp';
@@ -122,13 +122,13 @@ const AIStudio = () => {
               const currentEnvironmentImages = environmentImagesRef.current;
               const currentStoryboard = storyboardRef.current;
 
+              // Locked refs now use URLs directly (no base64 extraction needed)
               const lockedRefs: { type: string; base64: string }[] = [];
               Object.values(currentGeneratedMedia).forEach((m) => {
                 if (m.imageUrl) {
-                  const base64 = m.imageUrl.includes(',') ? m.imageUrl.split(',')[1] : m.imageUrl;
-                  if (m.lockedCharacter) lockedRefs.push({ type: 'character', base64 });
-                  if (m.lockedOutfit) lockedRefs.push({ type: 'outfit', base64 });
-                  if (m.lockedEnvironment) lockedRefs.push({ type: 'environment', base64 });
+                  if (m.lockedCharacter) lockedRefs.push({ type: 'character', base64: m.imageUrl });
+                  if (m.lockedOutfit) lockedRefs.push({ type: 'outfit', base64: m.imageUrl });
+                  if (m.lockedEnvironment) lockedRefs.push({ type: 'environment', base64: m.imageUrl });
                 }
               });
 
@@ -318,22 +318,15 @@ const AIStudio = () => {
     if (!showSafetyTerms) { toast({ title: "Terms Required", description: "Please accept the safety terms in Settings.", variant: "destructive" }); return; }
     setIsPreviewGenerating(true);
     try {
-      // Upload images to storage first to avoid edge function memory limits
-      setPreviewStep('Uploading images...');
-      const { data: { user } } = await supabase.auth.getUser();
-      const folder = `temp/${user?.id ?? 'anon'}`;
+      // Images are already URLs (uploaded on selection) — pass directly, no re-upload needed
+      setPreviewStep('Preparing...');
 
-      const allRefImages = referenceImages.length > 0 ? referenceImages : (referenceImage ? [referenceImage] : []);
-      const refUrlsPromise = allRefImages.length > 0 ? uploadImagesToStorage(allRefImages, folder) : Promise.resolve([]);
-
-      const allEnvImages = environmentImages.length > 0 ? environmentImages : (environmentImage ? [environmentImage] : []);
-      const envUrlsPromise = allEnvImages.length > 0 ? uploadImagesToStorage(allEnvImages, folder) : Promise.resolve([]);
-
-      const [referenceImageUrls, environmentImageUrls] = await Promise.all([refUrlsPromise, envUrlsPromise]);
+      const allRefUrls = referenceImages.length > 0 ? referenceImages : (referenceImage ? [referenceImage] : []);
+      const allEnvUrls = environmentImages.length > 0 ? environmentImages : (environmentImage ? [environmentImage] : []);
 
       const previewBody = {
-        referenceImageUrls: referenceImageUrls.length > 0 ? referenceImageUrls : undefined,
-        environmentImageUrls: environmentImageUrls.length > 0 ? environmentImageUrls : undefined,
+        referenceImageUrls: allRefUrls.length > 0 ? allRefUrls : undefined,
+        environmentImageUrls: allEnvUrls.length > 0 ? allEnvUrls : undefined,
         config,
         isFinalLook: false
       };
@@ -375,15 +368,11 @@ const AIStudio = () => {
     }
     setIsGeneratingStoryboard(true);
     try {
-      // Upload images to storage first to avoid memory limits in edge functions
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData?.user?.id || 'anon';
-      const folder = `${uid}/storyboard`;
-
-      const refUrl = referenceImage ? await uploadBase64ToStorage(referenceImage, folder) : null;
-      const prodUrl = productImage ? await uploadBase64ToStorage(productImage, folder) : null;
-      const envUrl = environmentImage ? await uploadBase64ToStorage(environmentImage, folder) : null;
-      const envUrls = environmentImages.length > 0 ? await uploadImagesToStorage(environmentImages, folder) : [];
+      // Images are already URLs (uploaded on selection) — pass directly
+      const refUrl = referenceImage;
+      const prodUrl = productImage;
+      const envUrl = environmentImage;
+      const envUrls = environmentImages;
 
       // Safety check using URL
       if (refUrl) {

@@ -1,8 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Loader2 } from 'lucide-react';
+import { uploadFileToStorage } from './uploadToStorage';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface UploadZoneProps {
-  onImageSelected: (base64: string) => void;
+  onImageSelected: (urlOrBase64: string) => void;
   isProcessing: boolean;
   disabled?: boolean;
   title?: string;
@@ -18,38 +21,40 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (file: File) => {
+    if (disabled || uploading) return;
+    setUploading(true);
+    try {
+      // Show local preview immediately
+      const objectUrl = URL.createObjectURL(file);
+      setPreview(objectUrl);
+
+      // Upload to storage and return URL (no base64 in memory)
+      const { data: { user } } = await supabase.auth.getUser();
+      const folder = `temp/${user?.id ?? 'anon'}`;
+      const url = await uploadFileToStorage(file, folder);
+      onImageSelected(url);
+    } catch (err: any) {
+      toast.error(err?.message || 'Upload failed');
+      setPreview(null);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (disabled) return;
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setPreview(result);
-        const base64Data = result.split(',')[1];
-        onImageSelected(base64Data);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (file) handleFile(file);
   };
 
   const handleDragOver = (e: React.DragEvent) => e.preventDefault();
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    if (disabled) return;
     const file = e.dataTransfer.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setPreview(result);
-        const base64Data = result.split(',')[1];
-        onImageSelected(base64Data);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (file) handleFile(file);
   };
 
   if (disabled) {
@@ -71,7 +76,7 @@ const UploadZone: React.FC<UploadZoneProps> = ({
         }`}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        onClick={() => !preview && fileInputRef.current?.click()}
+        onClick={() => !preview && !uploading && fileInputRef.current?.click()}
       >
         <input
           type="file"
@@ -79,10 +84,15 @@ const UploadZone: React.FC<UploadZoneProps> = ({
           onChange={handleFileChange}
           accept="image/*"
           className="hidden"
-          disabled={isProcessing}
+          disabled={isProcessing || uploading}
         />
 
-        {preview ? (
+        {uploading ? (
+          <div className="flex items-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <p className="text-xs text-muted-foreground">Uploading...</p>
+          </div>
+        ) : preview ? (
           <div className="relative flex items-center gap-3">
             <img
               src={preview}
