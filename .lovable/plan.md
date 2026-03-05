@@ -2,41 +2,28 @@
 
 ## Problem
 
-The character preview prompt currently gives the AI model vague environment instructions like "Use the provided environment image as the setting/backdrop" or "Maintain exact spatial consistency." This is insufficient — the model treats environment images as loose inspiration rather than a strict reference, freely altering colors, furniture placement, lighting, and layout between regenerations.
+The `generate-scene-image` edge function (used for storyboard scenes) is missing the environment consistency improvements that were added to `generate-character-preview`. Specifically:
 
-## Root Cause
-
-1. **No explicit environment fidelity instructions** — the prompt tells the model to use the environment but doesn't enforce preserving specific details (wall color, furniture, fixtures, lighting, camera angle).
-2. **Environment images are mixed in with reference images** without clear labeling — the model may not distinguish which images are "the person" vs "the room."
-3. **No environment description metadata is passed** — the environment group label (e.g., "Modern Kitchen", "Marble Bathroom") isn't sent to the edge function, so the prompt can't anchor the setting semantically.
+1. **`environmentLabel` is never passed** from `AIStudio.tsx` to the scene generation call (lines 159-180) — even though the function accepts it for mismatch detection
+2. **No text separator** between character reference images and environment images in the content array — the model can't distinguish which images are "person" vs "room"
+3. **No strict environment fidelity block** in the scene prompt — only a weak "Maintain exact spatial consistency" line buried in lock instructions
+4. Environment images are interleaved with character/product/anchor images with no visual separation
 
 ## Plan
 
-### 1. Pass environment group metadata to the edge function
+### 1. Pass `environmentLabel` from `AIStudio.tsx` to `generate-scene-image`
 
-- From `AIStudio.tsx`, include the selected environment group's `label` (e.g., "White Kitchen") in the request body as `environmentLabel`.
-- This gives the prompt a semantic anchor for the space.
+Add `environmentLabel` to the scene generation invocation body at line ~178.
 
-### 2. Strengthen environment fidelity in the prompt (`generate-character-preview/index.ts`)
+### 2. Add text separator and strict fidelity block to `generate-scene-image/index.ts`
 
-Replace the current vague environment instructions with strict fidelity language:
-
-- **Single environment image**: "ENVIRONMENT FIDELITY (CRITICAL): The environment reference image provided shows the EXACT room/space. You MUST reproduce this environment precisely — same wall colors, flooring, furniture, fixtures, lighting direction, and camera perspective. Do NOT substitute, rearrange, or reimagine any element of the space. The character is placed INTO this real environment."
-
-- **Multi-environment images**: Add: "Multiple angles of the SAME space are provided. Cross-reference all angles to ensure spatial accuracy — objects visible in one angle must be consistent with their position in other angles."
-
-- **With label**: Prepend "The environment is: {label}." to ground the model semantically.
-
-### 3. Separate environment images from reference images in the content array with text markers
-
-Insert a text part between reference images and environment images:
-```
-[ref images] → { type: "text", text: "The following images show the ENVIRONMENT/ROOM — reproduce this space exactly:" } → [env images] → [main prompt]
-```
-
-This prevents the model from confusing environment photos with additional character reference angles.
+Mirror what `generate-character-preview` does:
+- Insert a text separator before environment images: `"The following images show the ENVIRONMENT/ROOM — reproduce this space EXACTLY as shown:"`
+- Include the environment label in the separator
+- Add an `ENVIRONMENT FIDELITY (CRITICAL)` block to both edit-mode and generate-from-scratch prompts, with single-env and multi-env variants
+- Remove the weak "Maintain exact spatial consistency" line from lock instructions (line 198)
 
 ### Files to modify
-- `src/pages/AIStudio.tsx` — pass `environmentLabel` in the preview request body
-- `supabase/functions/generate-character-preview/index.ts` — add text separator, strengthen environment prompt, use label
+- `src/pages/AIStudio.tsx` — add `environmentLabel` to the `generate-scene-image` invocation body
+- `supabase/functions/generate-scene-image/index.ts` — add text separator before env images, add strict environment fidelity prompt block, remove weak line 198
 
