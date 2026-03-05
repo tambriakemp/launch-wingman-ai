@@ -375,17 +375,30 @@ const AIStudio = () => {
     }
     setIsGeneratingStoryboard(true);
     try {
-      const { data: safetyData } = await supabase.functions.invoke('generate-storyboard', {
-        body: { action: 'validate_safety', referenceImage }
-      });
-      if (safetyData && !safetyData.safe) {
-        toast({ title: "Safety Check Failed", description: safetyData.error || "Content violation detected.", variant: "destructive" });
-        setIsGeneratingStoryboard(false);
-        return;
+      // Upload images to storage first to avoid memory limits in edge functions
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData?.user?.id || 'anon';
+      const folder = `${uid}/storyboard`;
+
+      const refUrl = referenceImage ? await uploadBase64ToStorage(referenceImage, folder) : null;
+      const prodUrl = productImage ? await uploadBase64ToStorage(productImage, folder) : null;
+      const envUrl = environmentImage ? await uploadBase64ToStorage(environmentImage, folder) : null;
+      const envUrls = environmentImages.length > 0 ? await uploadImagesToStorage(environmentImages, folder) : [];
+
+      // Safety check using URL
+      if (refUrl) {
+        const { data: safetyData } = await supabase.functions.invoke('generate-storyboard', {
+          body: { action: 'validate_safety', referenceImageUrl: refUrl }
+        });
+        if (safetyData && !safetyData.safe) {
+          toast({ title: "Safety Check Failed", description: safetyData.error || "Content violation detected.", variant: "destructive" });
+          setIsGeneratingStoryboard(false);
+          return;
+        }
       }
 
       const { data, error } = await supabase.functions.invoke('generate-storyboard', {
-        body: { action: 'generate', referenceImage, productImage, environmentImage, environmentImages: environmentImages.length > 0 ? environmentImages : undefined, config }
+        body: { action: 'generate', referenceImageUrl: refUrl, productImageUrl: prodUrl, environmentImageUrl: envUrl, environmentImageUrls: envUrls.length > 0 ? envUrls : undefined, config }
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

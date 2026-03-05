@@ -5,16 +5,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const stripBase64Prefix = (img: string): string => {
-  if (!img) return "";
-  let cleaned = img.trim();
-  if (cleaned.includes(",") && cleaned.startsWith("data:")) {
-    cleaned = cleaned.split(",")[1];
-  }
-  cleaned = cleaned.replace(/\s/g, "");
-  return cleaned;
-};
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -22,10 +12,14 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { action, referenceImage, productImage, environmentImage, environmentImages, config } = await req.json();
-    const refClean = referenceImage ? stripBase64Prefix(referenceImage) : null;
-    const prodClean = productImage ? stripBase64Prefix(productImage) : null;
-    const envClean = environmentImage ? stripBase64Prefix(environmentImage) : null;
+    const body = await req.json();
+    const { action, config } = body;
+
+    // Accept URLs (new) or fall back to legacy base64 fields
+    const referenceImageUrl = body.referenceImageUrl || null;
+    const productImageUrl = body.productImageUrl || null;
+    const environmentImageUrl = body.environmentImageUrl || null;
+    const environmentImageUrls: string[] = body.environmentImageUrls || [];
 
     // Topic brainstorming
     if (action === "brainstorm") {
@@ -64,7 +58,6 @@ serve(async (req) => {
         return `MANDATORY STYLE REQUIREMENTS:\n- Outfit: ${outfit}\n- Hairstyle: ${hair}\n- Makeup: ${makeup}\n- Skin: ${skin}\n- Nails: ${nails}`;
       };
 
-      // Scene count logic
       const sceneCount = config.sceneCount;
       const sceneInstruction = sceneCount
         ? `Generate exactly ${sceneCount} steps. Adapt the narrative pacing to fit ${sceneCount} scenes.`
@@ -108,20 +101,20 @@ VISUAL CONTINUITY RULES (CRITICAL):
 ${sceneInstruction} For each step provide: step_number, step_name, a_roll, b_roll, close_up_details, camera_direction, image_prompt, video_prompt, script, is_final_look (boolean).
 Also provide an analysis object with: face_structure, hair, skin_tone, makeup_accessories, clothing_vibe.`;
 
-      // Build messages with images
+      // Build messages with image URLs (no base64 in memory)
       const contentParts: any[] = [];
-      if (refClean) contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${refClean}` } });
-      if (prodClean) contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${prodClean}` } });
-      // Add environment images (multi-angle group takes priority)
-      if (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 0) {
-        for (const envImg of environmentImages) {
-          const clean = stripBase64Prefix(envImg);
-          contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${clean}` } });
+      if (referenceImageUrl) contentParts.push({ type: "image_url", image_url: { url: referenceImageUrl } });
+      if (productImageUrl) contentParts.push({ type: "image_url", image_url: { url: productImageUrl } });
+      if (environmentImageUrls.length > 0) {
+        for (const envUrl of environmentImageUrls) {
+          contentParts.push({ type: "image_url", image_url: { url: envUrl } });
         }
-      } else if (envClean) {
-        contentParts.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${envClean}` } });
+      } else if (environmentImageUrl) {
+        contentParts.push({ type: "image_url", image_url: { url: environmentImageUrl } });
       }
       contentParts.push({ type: "text", text: "Generate the storyboard based on these reference images and the system instructions." });
+
+      console.log(`Sending ${contentParts.length} content parts (images as URLs, no base64 in memory)`);
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -190,7 +183,6 @@ Also provide an analysis object with: face_structure, hair, skin_tone, makeup_ac
       const data = await response.json();
       const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
       if (!toolCall) {
-        // Fallback: try to parse content as JSON
         const content = data.choices?.[0]?.message?.content;
         if (content) {
           try {
@@ -209,6 +201,11 @@ Also provide an analysis object with: face_structure, hair, skin_tone, makeup_ac
 
     // Safety validation
     if (action === "validate_safety") {
+      const safetyImageUrl = body.referenceImageUrl;
+      if (!safetyImageUrl) {
+        return new Response(JSON.stringify({ safe: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -217,7 +214,7 @@ Also provide an analysis object with: face_structure, hair, skin_tone, makeup_ac
           messages: [{
             role: "user",
             content: [
-              { type: "image_url", image_url: { url: `data:image/jpeg;base64,${refClean}` } },
+              { type: "image_url", image_url: { url: safetyImageUrl } },
               { type: "text", text: 'Analyze this image for safety. Check for: 1. Children/minors (under 18). 2. Explicit content. Respond with JSON: { "isSafe": boolean, "reason": string }.' }
             ]
           }]
