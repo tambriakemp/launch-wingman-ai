@@ -174,6 +174,7 @@ const AIStudio = () => {
                   previousScenePrompt,
                   nextScenePrompt,
                   previousSceneImageUrl,
+                  environmentLabel: environmentLabel || undefined,
                   sceneNumber: task.index + 1,
                   totalScenes: currentStoryboard?.steps.length
                 }
