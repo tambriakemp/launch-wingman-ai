@@ -163,13 +163,19 @@ serve(async (req) => {
         pushImage(productImage);
       }
 
-      // Add environment images
-      if (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 0 && !lockedRefs?.find((r: any) => r.type === 'environment')) {
-        for (const envImg of environmentImages) {
-          pushImage(envImg);
+      // Add environment images with text separator for clarity
+      const hasEnvImages = (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 0) || environmentImage;
+      const hasEnvLock = lockedRefs?.find((r: any) => r.type === 'environment');
+      if (hasEnvImages && !hasEnvLock) {
+        const envLabelText = environmentLabel ? `The environment is: "${environmentLabel}". ` : '';
+        contentParts.push({ type: "text", text: `${envLabelText}The following images show the ENVIRONMENT/ROOM — reproduce this space EXACTLY as shown:` });
+        if (environmentImages && Array.isArray(environmentImages) && environmentImages.length > 0) {
+          for (const envImg of environmentImages) {
+            pushImage(envImg);
+          }
+        } else if (environmentImage) {
+          pushImage(environmentImage);
         }
-      } else if (environmentImage && !lockedRefs?.find((r: any) => r.type === 'environment')) {
-        pushImage(environmentImage);
       }
 
       // Add previous scene's generated image for visual continuity chaining
@@ -195,7 +201,7 @@ serve(async (req) => {
       if (lockedRefs?.find((r: any) => r.type === 'outfit')) lockInstructions += "Use the exact outfit shown in the outfit reference image. ";
       if (hasCharacterLock) lockInstructions += "Match the face and appearance from the character reference image closely. ";
       if (lockedRefs?.find((r: any) => r.type === 'environment')) lockInstructions += "Use the provided background reference as the setting. ";
-      if (environmentImages && environmentImages.length > 1) lockInstructions += "Multiple reference images of the same environment are provided showing different angles. Maintain exact spatial consistency — keep all fixtures, appliances, and furniture in their original positions. ";
+      // Removed weak spatial consistency line — replaced by strict ENVIRONMENT FIDELITY block below
 
       currentOutfit = sanitizeOutfit(currentOutfit);
 
@@ -207,6 +213,17 @@ serve(async (req) => {
 
       // Scene/environment mismatch guard
       const mismatchGuard = detectSceneLocationMismatch(prompt, environmentLabel);
+
+      // Build environment fidelity instruction
+      let envFidelityInstruction = "";
+      const hasEnvRef = (environmentImages && environmentImages.length > 0) || environmentImage;
+      if (hasEnvRef && !mismatchGuard) {
+        const envLabelText = environmentLabel ? `The environment is: "${environmentLabel}". ` : '';
+        envFidelityInstruction = `\nENVIRONMENT FIDELITY (CRITICAL): ${envLabelText}The environment reference image(s) show the EXACT room/space. You MUST reproduce this environment PRECISELY — same wall colors, flooring, furniture, fixtures, lighting direction, and camera perspective. Do NOT substitute, rearrange, or reimagine any element of the space. The character is placed INTO this real environment.`;
+        if (environmentImages && environmentImages.length > 1) {
+          envFidelityInstruction += ` Multiple angles of the SAME space are provided. Cross-reference all angles to ensure spatial accuracy — objects visible in one angle must be consistent with their position in other angles.`;
+        }
+      }
 
       // Continuity chaining instruction when previous scene image is provided
       let continuityInstruction = "";
@@ -237,6 +254,7 @@ ${mismatchGuard}
 
 Style: editorial fashion photography, professional lighting, tasteful, fully clothed.
 ${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmentImage ? "The subject should interact naturally with the environment, not pose at the camera." : "")}
+${envFidelityInstruction}
 ${continuityInstruction}`;
       } else {
         // GENERATE FROM SCRATCH MODE (no preview available)
@@ -258,6 +276,7 @@ ${mismatchGuard}
 
 Style: editorial fashion photography, professional lighting, tasteful, fully clothed.
 ${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmentImage ? "The subject should interact naturally with the environment, not pose at the camera." : "")}
+${envFidelityInstruction}
 ${continuityInstruction}`;
       }
 
