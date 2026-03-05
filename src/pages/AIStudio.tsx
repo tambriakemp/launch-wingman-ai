@@ -156,38 +156,46 @@ const AIStudio = () => {
                 ? currentGeneratedMedia[task.index - 1]?.imageUrl
                 : undefined;
 
-              const { data, error } = await supabase.functions.invoke('generate-scene-image', {
-                body: {
-                  prompt: task.step.image_prompt,
-                  referenceImage: activePreview ? undefined : currentReferenceImage,
-                  referenceImages: activePreview ? undefined : (currentReferenceImages.length > 0 ? currentReferenceImages : undefined),
-                  productImage,
-                  environmentImage: currentEnvironmentImage,
-                  environmentImages: currentEnvironmentImages.length > 0 ? currentEnvironmentImages : undefined,
-                  previewCharacter: activePreview,
-                  config: task.config,
-                  lockedRefs,
-                  isFinalLook: task.step.is_final_look,
-                  isUpscale: task.type === 'upscale',
-                  baseImageUrl: task.baseImageUrl,
-                  anchorImageUrl,
-                  previousScenePrompt,
-                  nextScenePrompt,
-                  previousSceneImageUrl,
-                  environmentLabel: environmentLabel || undefined,
-                  sceneNumber: task.index + 1,
-                  totalScenes: currentStoryboard?.steps.length
-                }
-              });
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 90000);
 
-              if (error) throw error;
-              if (data?.error) throw new Error(data.error);
+              try {
+                const { data, error } = await supabase.functions.invoke('generate-scene-image', {
+                  body: {
+                    prompt: task.step.image_prompt,
+                    referenceImage: activePreview ? undefined : currentReferenceImage,
+                    referenceImages: activePreview ? undefined : (currentReferenceImages.length > 0 ? currentReferenceImages : undefined),
+                    productImage,
+                    environmentImage: currentEnvironmentImage,
+                    environmentImages: currentEnvironmentImages.length > 0 ? currentEnvironmentImages.slice(0, 3) : undefined,
+                    previewCharacter: activePreview,
+                    config: task.config,
+                    lockedRefs,
+                    isFinalLook: task.step.is_final_look,
+                    isUpscale: task.type === 'upscale',
+                    baseImageUrl: task.baseImageUrl,
+                    anchorImageUrl,
+                    previousScenePrompt,
+                    nextScenePrompt,
+                    previousSceneImageUrl,
+                    environmentLabel: environmentLabel || undefined,
+                    sceneNumber: task.index + 1,
+                    totalScenes: currentStoryboard?.steps.length
+                  },
+                });
+
+
+                if (error) throw error;
+                if (data?.error) throw new Error(data.error);
               // No longer chain lastGeneratedUrl — anchoring to preview instead
 
               setGeneratedMedia(prev => ({
                 ...prev,
                 [task.index]: { ...prev[task.index], imageUrl: data.imageUrl, isGeneratingImage: false, isUpscaling: false, error: undefined }
               }));
+              } finally {
+                clearTimeout(timeoutId);
+              }
             } else if (task.type === 'generate_video') {
               if (!task.baseImageUrl) throw new Error("Image required before generating video");
 
@@ -252,8 +260,9 @@ const AIStudio = () => {
               }
             }
           } catch (error: any) {
+            const errorContext = task.type === 'generate_video' ? 'video' as const : 'image' as const;
             const rawMsg = error?.message || error?.toString() || "Unknown error";
-            const friendlyMsg = getUserFriendlyErrorMessage(error);
+            const friendlyMsg = getUserFriendlyErrorMessage(error, errorContext);
             console.error(`[AIStudio] ${task.type} failed for scene ${task.index + 1}:`, rawMsg, error);
             setGeneratedMedia(prev => ({
               ...prev,
