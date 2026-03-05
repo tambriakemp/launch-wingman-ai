@@ -135,7 +135,36 @@ export const PromptBulkImporter = () => {
     try {
       const subId = await ensureSubcategoryId();
 
-      const resources = parsedPrompts.map((p, i) => ({
+      // Fetch existing prompts to check for duplicates
+      const { data: existing } = await supabase
+        .from("content_vault_resources")
+        .select("title, description")
+        .eq("subcategory_id", subId)
+        .eq("resource_type", "ai_prompt");
+
+      const existingDescs = new Set(
+        (existing || []).map((r) => (r.description || "").trim().toLowerCase())
+      );
+      const existingTitles = new Set(
+        (existing || []).map((r) => (r.title || "").trim().toLowerCase())
+      );
+
+      // Filter out duplicates by description or title
+      const unique = parsedPrompts.filter((p) => {
+        const descKey = p.text.trim().toLowerCase();
+        const titleKey = p.title.trim().toLowerCase();
+        return !existingDescs.has(descKey) && !existingTitles.has(titleKey);
+      });
+
+      const skipped = parsedPrompts.length - unique.length;
+
+      if (unique.length === 0) {
+        toast({ title: "No new prompts to import", description: `All ${skipped} prompts already exist.` });
+        setIsImporting(false);
+        return;
+      }
+
+      const resources = unique.map((p, i) => ({
         title: p.title,
         description: p.text,
         resource_type: "ai_prompt",
@@ -149,7 +178,10 @@ export const PromptBulkImporter = () => {
       const { error } = await supabase.from("content_vault_resources").insert(resources);
       if (error) throw error;
 
-      toast({ title: `Imported ${resources.length} prompts!` });
+      const msg = skipped > 0
+        ? `Imported ${unique.length} prompts! (${skipped} duplicates skipped)`
+        : `Imported ${unique.length} prompts!`;
+      toast({ title: msg });
       setParsedPrompts([]);
       setRawText("");
       setPdfFile(null);
