@@ -22,6 +22,7 @@ interface StudioSetupProps {
   environmentImage: string | null;
   setEnvironmentImage: (img: string | null) => void;
   setEnvironmentImages?: (imgs: string[]) => void;
+  setEnvironmentLabel?: (label: string) => void;
   productImage: string | null;
   setProductImage: (img: string | null) => void;
   isProcessing: boolean;
@@ -50,6 +51,7 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
   referenceImage, setReferenceImage, setReferenceImages,
   environmentImage, setEnvironmentImage,
   setEnvironmentImages,
+  setEnvironmentLabel,
   productImage, setProductImage,
   isProcessing, isPreviewGenerating,
   showSafetyTerms, setShowSafetyTerms,
@@ -83,7 +85,7 @@ const StudioSetup: React.FC<StudioSetupProps> = ({
         {/* Card 2: Environment */}
         <section className="bg-card p-6 rounded-2xl border border-border">
           <SectionHeading title="Environment" />
-          <SavedEnvironments onSelect={setEnvironmentImage} onSelectMultiple={setEnvironmentImages} />
+          <SavedEnvironments onSelect={setEnvironmentImage} onSelectMultiple={setEnvironmentImages} onSelectLabel={setEnvironmentLabel} />
         </section>
 
         {/* Card 3: Look */}

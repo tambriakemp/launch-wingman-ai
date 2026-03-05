@@ -27,6 +27,7 @@ interface StoryboardToolbarProps {
   environmentImage?: string | null;
   setEnvironmentImage?: (img: string | null) => void;
   setEnvironmentImages?: (imgs: string[]) => void;
+  setEnvironmentLabel?: (label: string) => void;
   productImage?: string | null;
   setProductImage?: (img: string | null) => void;
   showSafetyTerms?: boolean;
@@ -101,7 +102,7 @@ const CollapsibleSection: React.FC<{ title: string; defaultOpen?: boolean; child
 const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   config, setConfig, isGeneratingTopic, onGenerateTopicIdeas,
   referenceImage, setReferenceImage, setReferenceImages,
-  environmentImage, setEnvironmentImage, setEnvironmentImages,
+  environmentImage, setEnvironmentImage, setEnvironmentImages, setEnvironmentLabel,
   productImage, setProductImage,
   showSafetyTerms, setShowSafetyTerms,
   isProcessing,
@@ -206,7 +207,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
       <ToolbarButton label="Environment" icon={<MapPin className="h-3.5 w-3.5" />} wide configured={hasEnvironment}>
         <div className="space-y-3">
           {setEnvironmentImage && (
-            <SavedEnvironments onSelect={setEnvironmentImage} onSelectMultiple={setEnvironmentImages} />
+            <SavedEnvironments onSelect={setEnvironmentImage} onSelectMultiple={setEnvironmentImages} onSelectLabel={setEnvironmentLabel} />
           )}
         </div>
       </ToolbarButton>
