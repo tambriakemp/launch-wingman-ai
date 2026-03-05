@@ -49,15 +49,25 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     
-    // Use getClaims for Lovable Cloud ES256 compatibility
-    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      logStep("Auth failed", { message: claimsError?.message || "Invalid token" });
-      throw new Error("Unauthorized: Invalid authentication token");
+    // Try getUser first (works with service role even for near-expired tokens), fall back to getClaims
+    let adminUserId: string | undefined;
+    let adminEmail: string | undefined;
+    
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    if (userError || !userData?.user) {
+      logStep("getUser failed, trying getClaims", { message: userError?.message });
+      const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+      if (claimsError || !claimsData?.claims) {
+        logStep("Auth failed", { message: claimsError?.message || "Invalid token" });
+        throw new Error("Unauthorized: Invalid authentication token");
+      }
+      adminUserId = claimsData.claims.sub as string;
+      adminEmail = claimsData.claims.email as string;
+    } else {
+      adminUserId = userData.user.id;
+      adminEmail = userData.user.email;
     }
     
-    const adminUserId = claimsData.claims.sub as string;
-    const adminEmail = claimsData.claims.email as string;
     if (!adminUserId || !adminEmail) throw new Error("Unauthorized: User not authenticated");
     
     // Check if user is admin or manager
