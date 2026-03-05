@@ -15,12 +15,12 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { prompts, pdfBase64, mode } = await req.json();
+    const { prompts, pdfUrl, mode } = await req.json();
 
     let promptTexts: string[] = [];
 
-    if (mode === "pdf" && pdfBase64) {
-      // Use AI to extract prompts from PDF content
+    if (mode === "pdf" && pdfUrl) {
+      // Use AI to extract prompts from PDF via URL (avoids memory issues with base64)
       const extractResponse = await fetch(
         "https://ai.gateway.lovable.dev/v1/chat/completions",
         {
@@ -47,7 +47,7 @@ serve(async (req) => {
                   {
                     type: "image_url",
                     image_url: {
-                      url: `data:application/pdf;base64,${pdfBase64}`,
+                      url: pdfUrl,
                     },
                   },
                 ],
@@ -97,7 +97,7 @@ serve(async (req) => {
     } else if (prompts && Array.isArray(prompts)) {
       promptTexts = prompts.filter((p: string) => p.trim().length > 0);
     } else {
-      throw new Error("Provide either prompts array or pdfBase64");
+      throw new Error("Provide either prompts array or pdfUrl");
     }
 
     if (promptTexts.length === 0) {
