@@ -20,17 +20,7 @@ serve(async (req) => {
     let promptTexts: string[] = [];
 
     if (mode === "pdf" && pdfUrl) {
-      // Download PDF and convert to base64 data URL (Gemini requires data URLs for PDFs, not raw URLs)
-      const pdfResponse = await fetch(pdfUrl);
-      if (!pdfResponse.ok) throw new Error("Failed to download PDF from storage");
-      const pdfArrayBuf = await pdfResponse.arrayBuffer();
-      const pdfBytes = new Uint8Array(pdfArrayBuf);
-      let binary = "";
-      for (let i = 0; i < pdfBytes.length; i++) {
-        binary += String.fromCharCode(pdfBytes[i]);
-      }
-      const pdfBase64 = btoa(binary);
-      const pdfDataUrl = `data:application/pdf;base64,${pdfBase64}`;
+      // Pass the public URL directly to the AI API to avoid memory limits
 
       const extractResponse = await fetch(
         "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -58,7 +48,7 @@ serve(async (req) => {
                   {
                     type: "image_url",
                     image_url: {
-                      url: pdfDataUrl,
+                      url: pdfUrl,
                     },
                   },
                 ],
