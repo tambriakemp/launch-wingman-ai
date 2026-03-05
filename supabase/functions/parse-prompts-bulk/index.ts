@@ -41,19 +41,19 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
+            model: "google/gemini-2.5-pro",
             messages: [
               {
                 role: "system",
                 content:
-                  "You are a document parser. Extract individual AI image generation prompts from this PDF content. Each prompt is typically separated by headings, images, or page breaks. Return ONLY the prompts as a JSON array of strings. Each string should be a complete, standalone prompt.",
+                  "You are a document parser specializing in extracting AI image generation prompts from visually complex PDF layouts. The PDF may use a multi-column grid layout where each prompt is a text block paired with a corresponding image (above, below, or beside it). Read across all columns on every page, top to bottom, left to right. Each text block near an image is a separate, complete prompt. Do NOT merge text from adjacent columns. Return ONLY the prompts as a JSON array of strings. Each string should be one complete, standalone prompt exactly as written.",
               },
               {
                 role: "user",
                 content: [
                   {
                     type: "text",
-                    text: "Extract all individual AI image generation prompts from this PDF. Return them as a JSON array of strings.",
+                    text: "Extract all individual AI image generation prompts from this PDF. The document uses a magazine-style multi-column grid layout where each prompt appears as a text block near a photo. Read across columns on each page and extract every prompt as a separate entry. Return them as a JSON array of strings.",
                   },
                   {
                     type: "image_url",
