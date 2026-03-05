@@ -1,39 +1,46 @@
 
 
-## Plan: Bulk Cover Photo Generation for AI Prompts
+## Problem Analysis
 
-### Overview
-Add a "Generate Covers" bulk action to the existing selection mode on the AI Prompts category page. When admin selects prompts and clicks "Generate Covers", a dialog appears where they can optionally upload a reference photo, then batch-generate cover images for all selected prompts sequentially.
+The tab crash during preview regeneration is caused by **browser memory exhaustion**. Here's why:
 
-### Changes
+1. **Base64 images stored in React state**: `referenceImage`, `referenceImages`, `environmentImages`, `productImage` are all held as raw base64 strings in memory — each high-res photo can be 5-15MB as base64.
 
-**1. `src/pages/ContentVaultCategory.tsx`**
-- Add a new "Generate Covers" button in the selection mode toolbar (next to "Delete")
-- Only show this button when on the `ai-prompts` category
-- Add state for a `BulkCoverGeneratorDialog` (open/close, selected resource list)
-- Pass the selected resources (filtered to those without cover images, or all selected) to the dialog
+2. **Memory spike during upload**: When `handleGeneratePreview` runs, it calls `uploadImagesToStorage` which converts ALL base64 strings to `Uint8Array` simultaneously via `Promise.all` (line 327-332). This effectively **triples** memory usage momentarily (base64 in state + decoded bytes + upload buffers).
 
-**2. New: `src/components/content-vault/BulkCoverGeneratorDialog.tsx`**
-- Dialog with:
-  - Optional reference image upload (drag-drop or file picker) with preview
-  - List of selected prompts showing title + status (pending/generating/done/error)
-  - "Generate All" button to start sequential processing
-  - Progress indicator (e.g., "3 of 12 complete")
-- Processing logic:
-  - For each selected prompt, call `supabase.functions.invoke('generate-prompt-cover', { body: { prompt: resource.description, referenceImageUrl } })`
-  - On success, upload the returned base64 image to `content-media` storage bucket
-  - Update the resource's `cover_image_url` in the database
-  - Show per-item status (spinner → checkmark → error icon)
-  - Add a small delay between requests to avoid rate limiting (e.g., 2 seconds)
-- Handle 429/402 errors gracefully — pause and show message
-- On completion, invalidate queries to refresh the grid
+3. **No cleanup**: Old base64 data stays in state even after URLs are obtained from storage.
 
-**3. Edge function `generate-prompt-cover/index.ts`** — No changes needed. It already accepts `prompt` + optional `referenceImageUrl` and returns the generated image.
+## Plan
 
-### Flow
-1. Admin enters selection mode → selects prompts needing covers
-2. Clicks "Generate Covers" → dialog opens
-3. Optionally uploads a reference photo
-4. Clicks "Generate All" → each prompt is processed sequentially
-5. Cover images are saved to storage and linked to resources automatically
+### 1. Upload images to storage immediately on file selection (not during preview generation)
+
+Modify `StoryboardToolbar` (or wherever images are picked) so that when the user selects a file, it:
+- Uploads to storage immediately
+- Stores the **public URL** in state instead of base64
+- This keeps memory usage flat regardless of how many images are loaded
+
+Update `AIStudio.tsx` state to use URLs:
+- `referenceImage` / `referenceImages` → store URLs after upload
+- `environmentImage` / `environmentImages` → store URLs after upload  
+- `productImage` → store URL after upload
+
+### 2. Simplify `handleGeneratePreview` to pass URLs directly
+
+Since images are already uploaded, `handleGeneratePreview` skips the upload step entirely — just passes the stored URLs to the edge function. This eliminates the memory spike.
+
+### 3. Fix the queue processor to use URLs instead of base64
+
+Lines 161-165 in the queue processor still pass raw base64 fields (`referenceImage`, `productImage`, `environmentImage`) to `generate-scene-image`. Update these to pass URLs instead.
+
+Lines 126-133 extract base64 from locked image URLs — if the imageUrl is already a storage URL (not base64), skip the split logic.
+
+### 4. Add defensive guards against tab crashes
+
+- Wrap the preview regeneration in a safety check: if `performance.memory` (Chrome) shows high usage, warn the user before proceeding
+- Add `try/catch` around the image upload helper to handle `RangeError` (out of memory) gracefully with a toast instead of crashing
+
+### Files to modify
+- `src/pages/AIStudio.tsx` — change state from base64 to URLs, simplify preview/scene generation
+- `src/components/ai-studio/StoryboardToolbar.tsx` (or image picker component) — upload on selection, return URL
+- `src/components/ai-studio/uploadToStorage.ts` — add a helper for File → storage URL (not just base64 → storage)
 
