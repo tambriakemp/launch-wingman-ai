@@ -13,8 +13,9 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BulkCoverGeneratorDialog } from "@/components/content-vault/BulkCoverGeneratorDialog";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Package, Trash2, X, CheckSquare } from "lucide-react";
+import { ChevronRight, Package, Trash2, X, CheckSquare, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Category {
@@ -67,6 +68,7 @@ const ContentVaultCategory = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [showBulkCoverGenerator, setShowBulkCoverGenerator] = useState(false);
 
   // Fetch category
   const { data: category, isLoading: categoryLoading } = useQuery({
@@ -367,6 +369,17 @@ const ContentVaultCategory = () => {
                       <CheckSquare className="w-4 h-4 mr-2" />
                       Select All ({filteredResources.length})
                     </Button>
+                    {isAiPrompts && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowBulkCoverGenerator(true)}
+                        disabled={selectedIds.size === 0}
+                      >
+                        <Wand2 className="w-4 h-4 mr-2" />
+                        Generate Covers ({selectedIds.size})
+                      </Button>
+                    )}
                     <Button
                       variant="destructive"
                       size="sm"
@@ -486,6 +499,13 @@ const ContentVaultCategory = () => {
         currentIndex={lightboxIndex ?? 0}
         open={lightboxIndex !== null}
         onOpenChange={(open) => !open && setLightboxIndex(null)}
+      />
+
+      {/* Bulk Cover Generator */}
+      <BulkCoverGeneratorDialog
+        open={showBulkCoverGenerator}
+        onOpenChange={setShowBulkCoverGenerator}
+        resources={filteredResources.filter((r) => selectedIds.has(r.id))}
       />
 
       {/* Prompt Modal for AI Prompts */}
