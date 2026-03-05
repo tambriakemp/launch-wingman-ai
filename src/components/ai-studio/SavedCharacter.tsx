@@ -5,8 +5,8 @@ import { Trash2, Upload, CheckCircle, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SavedCharacterProps {
-  onSelect: (base64: string) => void;
-  onSelectMultiple?: (base64s: string[]) => void;
+  onSelect: (urlOrBase64: string) => void;
+  onSelectMultiple?: (urls: string[]) => void;
   isActive?: boolean;
 }
 
@@ -90,35 +90,20 @@ const SavedCharacter: React.FC<SavedCharacterProps> = ({ onSelect, onSelectMulti
     toast.success('Photo removed.');
   };
 
-  const handleUse = async () => {
+  // Pass URLs directly — no base64 conversion needed
+  const handleUse = () => {
     const validUrls = thumbnails.filter(Boolean) as string[];
     if (validUrls.length === 0) return;
     setSelecting(true);
-    try {
-      const base64s: string[] = [];
-      for (const url of validUrls) {
-        const res = await fetch(url);
-        const blob = await res.blob();
-        const b64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(blob);
-        });
-        base64s.push(b64);
-      }
-      // Always call onSelect with first image for backward compatibility
-      onSelect(base64s[0]);
-      // If multiple refs and handler exists, pass all
-      if (onSelectMultiple && base64s.length > 1) {
-        onSelectMultiple(base64s);
-      }
-      setSelecting(false);
-      setInternalActive(true);
-      toast.success('Character photo(s) applied!');
-    } catch {
-      toast.error('Failed to load image.');
-      setSelecting(false);
+
+    // Pass URLs directly instead of fetching and converting to base64
+    onSelect(validUrls[0]);
+    if (onSelectMultiple && validUrls.length > 1) {
+      onSelectMultiple(validUrls);
     }
+    setSelecting(false);
+    setInternalActive(true);
+    toast.success('Character photo(s) applied!');
   };
 
   const hasAnyPhoto = thumbnails.some(Boolean);
