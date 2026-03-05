@@ -1,21 +1,26 @@
 
 
-## Plan: Improve Reference Image Prompt for Identity Preservation
+## Plan: Improve PDF Parsing for Column Layouts
 
 ### Problem
-The current prompt tells the AI to use the reference image as "style/composition guidance," which means it treats it as a mood board rather than preserving the actual person/subject in the photo. The AI needs explicit instructions to keep the person's identity, features, and appearance from the reference image.
+The current system prompt for PDF extraction is too generic. It says prompts are "separated by headings, images, or page breaks" — but the screenshot shows a **multi-column grid layout** where each prompt sits below a corresponding image, arranged in 2-3 columns across the page. The AI model needs explicit instructions to handle this visual layout.
+
+Additionally, the current `WORKER_LIMIT` error suggests the base64 conversion of larger PDFs is still hitting memory limits. We should switch to `google/gemini-2.5-pro` for better document understanding of complex layouts.
 
 ### Solution
-Update the prompt in `supabase/functions/generate-prompt-cover/index.ts` (line 44-47) to explicitly instruct the model to preserve the person's identity, facial features, and appearance from the reference image — not just use it for style guidance.
+Update the system and user prompts in the edge function (lines 48-49, 57-58) to explicitly describe the column-based layout pattern:
 
-**Change the reference image prompt from:**
-> "using the provided reference image as style/composition guidance"
+1. **Better system prompt** — Describe the expected layout: prompts arranged in a grid/column format, each paired with an image above or beside it. Instruct the model to read across columns and extract the full text block associated with each image.
 
-**To something like:**
-> "The reference image shows the person/subject that MUST appear in the generated image. Preserve their exact facial features, hair, skin tone, and overall appearance. Generate the scene described in the prompt but featuring this exact person."
+2. **Upgrade model** — Use `google/gemini-2.5-pro` instead of `google/gemini-2.5-flash` for the extraction step, as Pro handles complex visual document layouts significantly better.
+
+3. **Better user prompt** — Tell the model the PDF uses a magazine-style multi-column layout where each prompt is a text block near/below a photo, and to extract each one as a complete standalone prompt.
 
 ### File to modify
-- `supabase/functions/generate-prompt-cover/index.ts` — update the text prompt on lines 44-47
+- `supabase/functions/parse-prompts-bulk/index.ts` — lines 44, 48-49, 57-58
 
-**Note:** Gemini's image generation model has inherent limitations with facial identity preservation compared to specialized models like InstantID. The improved prompt will yield better results but may not achieve perfect likeness in all cases.
+### Changes
+- Line 44: Change model from `google/gemini-2.5-flash` to `google/gemini-2.5-pro`
+- Lines 48-49: Update system prompt to describe column/grid layouts with image-text pairs
+- Lines 57-58: Update user prompt to specify reading across columns and extracting each text block as a separate prompt
 
