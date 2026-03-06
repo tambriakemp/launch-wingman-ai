@@ -264,6 +264,7 @@ const Planner = () => {
                 tasks={filteredTasks}
                 onEditTask={handleEditTask}
                 onCreateTask={handleQuickCreate}
+                onToggleComplete={handleToggleComplete}
               />
             </TabsContent>
 
