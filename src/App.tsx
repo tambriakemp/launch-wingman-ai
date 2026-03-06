@@ -79,6 +79,7 @@ import HelpSupport from "./pages/HelpSupport";
 import HelpSupportTicket from "./pages/HelpSupportTicket";
 import Onboarding from "./pages/Onboarding";
 import AIStudio from "./pages/AIStudio";
+import Planner from "./pages/Planner";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -476,6 +477,16 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AIStudio />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Planner */}
+            <Route
+              path="/planner"
+              element={
+                <ProtectedRoute>
+                  <Planner />
                 </ProtectedRoute>
               }
             />
