@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format, parseISO, isPast, isToday, startOfWeek, endOfWeek, isBefore, isAfter } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Circle, Calendar, MapPin, ChevronDown, ChevronRight, MoreHorizontal, Pencil, Trash2, CalendarCheck } from "lucide-react";
+import { CheckCircle2, Circle, Calendar, MapPin, ChevronDown, ChevronRight, MoreHorizontal, Pencil, Trash2, CalendarCheck, Clock, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ interface PlannerListViewProps {
   onToggleComplete: (task: PlannerTask) => void;
   onEditTask: (task: PlannerTask) => void;
   onDeleteTask: (taskId: string) => void;
+  onAddTask?: () => void;
 }
 
 type GroupKey = "overdue" | "today" | "this_week" | "anytime" | "completed";
@@ -69,7 +70,7 @@ function groupTasks(tasks: PlannerTask[]): Record<GroupKey, PlannerTask[]> {
   return groups;
 }
 
-export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask, onDeleteTask }: PlannerListViewProps) => {
+export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask, onDeleteTask, onAddTask }: PlannerListViewProps) => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(GROUP_CONFIG.map((g) => [g.key, g.defaultOpen]))
   );
@@ -84,11 +85,23 @@ export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask
     setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const hasAnyTasks = tasks.length > 0;
+  const hasTodayTasks = grouped.today.length > 0;
+
   return (
     <div className="space-y-3">
+      {/* "All clear" for today when there are tasks but none due today */}
+      {hasAnyTasks && !hasTodayTasks && grouped.overdue.length === 0 && (
+        <div className="rounded-lg border border-border bg-card p-4 text-center">
+          <CalendarCheck className="w-8 h-8 mx-auto mb-2 text-primary/50" />
+          <p className="text-sm font-medium text-foreground">All clear for today!</p>
+          <p className="text-xs text-muted-foreground mt-0.5">No tasks due or overdue.</p>
+        </div>
+      )}
+
       {GROUP_CONFIG.map(({ key, label }) => {
-        const groupTasks = grouped[key];
-        if (groupTasks.length === 0) return null;
+        const items = grouped[key];
+        if (items.length === 0) return null;
         const isOpen = expandedGroups[key];
 
         return (
@@ -100,13 +113,13 @@ export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask
             >
               {isOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
               <span className={cn("font-medium text-sm", key === "overdue" && "text-destructive")}>{label}</span>
-              <Badge variant="secondary" className="ml-auto text-xs">{groupTasks.length}</Badge>
+              <Badge variant="secondary" className="ml-auto text-xs">{items.length}</Badge>
             </button>
             <AnimatePresence>
               {isOpen && (
                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
                   <div className="divide-y divide-border">
-                    {groupTasks.map((task) => (
+                    {items.map((task) => (
                       <TaskRow key={task.id} task={task} onToggleComplete={onToggleComplete} onEdit={onEditTask} onDelete={onDeleteTask} />
                     ))}
                   </div>
@@ -117,10 +130,17 @@ export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask
         );
       })}
 
-      {tasks.length === 0 && (
+      {!hasAnyTasks && (
         <div className="text-center py-12 text-muted-foreground">
           <CalendarCheck className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">No planner items yet. Click "Add" to get started.</p>
+          <p className="text-sm font-medium">No planner items yet</p>
+          <p className="text-xs mt-1 mb-4">Get started by adding your first task or event.</p>
+          {onAddTask && (
+            <Button size="sm" className="gap-1.5" onClick={onAddTask}>
+              <Plus className="w-4 h-4" />
+              Add your first task
+            </Button>
+          )}
         </div>
       )}
     </div>
@@ -130,6 +150,7 @@ export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask
 function TaskRow({ task, onToggleComplete, onEdit, onDelete }: { task: PlannerTask; onToggleComplete: (t: PlannerTask) => void; onEdit: (t: PlannerTask) => void; onDelete: (id: string) => void }) {
   const isDone = task.column_id === "done";
   const isEvent = task.task_type === "event";
+  const isUnscheduled = !task.start_at && !task.end_at;
 
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/30 transition-colors group cursor-pointer" onClick={() => onEdit(task)}>
@@ -170,6 +191,19 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete }: { task: PlannerTa
           )}
         </div>
       </div>
+
+      {/* Schedule hint for unscheduled tasks */}
+      {isUnscheduled && !isDone && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary"
+          title="Schedule this task"
+          onClick={(e) => { e.stopPropagation(); onEdit(task); }}
+        >
+          <Clock className="w-4 h-4" />
+        </Button>
+      )}
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

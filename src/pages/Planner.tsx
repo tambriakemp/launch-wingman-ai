@@ -3,7 +3,6 @@ import { CalendarCheck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import { Plus, Search, ChevronDown, List, CalendarDays, Columns3 } from "lucide-react";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Button } from "@/components/ui/button";
@@ -29,6 +28,7 @@ const Planner = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<PlannerTask | null>(null);
   const [defaultTaskType, setDefaultTaskType] = useState<"task" | "event">("task");
+  const [defaultDueAt, setDefaultDueAt] = useState<Date | null>(null);
 
   const fetchTasks = useCallback(async () => {
     if (!user) return;
@@ -37,13 +37,19 @@ const Planner = () => {
       .select("*")
       .eq("user_id", user.id)
       .eq("task_scope", "planner")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(500);
 
     if (error) {
       console.error("Error fetching planner tasks:", error);
       toast.error("Failed to load planner tasks");
     } else {
-      setTasks((data as unknown as PlannerTask[]) || []);
+      const items = (data as unknown as PlannerTask[]) || [];
+      setTasks(items);
+
+      // Diagnostics
+      const scheduled = items.filter((t) => t.start_at && t.end_at).length;
+      console.log(`[Planner] Total: ${items.length}, Scheduled: ${scheduled}, Unscheduled: ${items.length - scheduled}`);
     }
     setIsLoading(false);
   }, [user]);
@@ -55,7 +61,6 @@ const Planner = () => {
   const handleCreateTask = async (data: Partial<PlannerTask>) => {
     if (!user) return;
 
-    // Get a project_id - use stored one
     let projectId: string | null = null;
     try {
       const stored = localStorage.getItem("lastProjectInfo");
@@ -63,7 +68,6 @@ const Planner = () => {
     } catch {}
 
     if (!projectId) {
-      // Fetch first project
       const { data: projects } = await supabase
         .from("projects")
         .select("id")
@@ -160,6 +164,21 @@ const Planner = () => {
   const handleEditTask = (task: PlannerTask) => {
     setEditingTask(task);
     setDefaultTaskType(task.task_type as "task" | "event" || "task");
+    setDefaultDueAt(null);
+    setDialogOpen(true);
+  };
+
+  const handleQuickCreate = (defaults: { due_at?: string }) => {
+    setEditingTask(null);
+    setDefaultTaskType("task");
+    setDefaultDueAt(defaults.due_at ? new Date(defaults.due_at) : null);
+    setDialogOpen(true);
+  };
+
+  const handleAddTask = () => {
+    setEditingTask(null);
+    setDefaultTaskType("task");
+    setDefaultDueAt(null);
     setDialogOpen(true);
   };
 
@@ -201,10 +220,10 @@ const Planner = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => { setEditingTask(null); setDefaultTaskType("task"); setDialogOpen(true); }}>
+                  <DropdownMenuItem onClick={() => { setEditingTask(null); setDefaultTaskType("task"); setDefaultDueAt(null); setDialogOpen(true); }}>
                     Add Task
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setEditingTask(null); setDefaultTaskType("event"); setDialogOpen(true); }}>
+                  <DropdownMenuItem onClick={() => { setEditingTask(null); setDefaultTaskType("event"); setDefaultDueAt(null); setDialogOpen(true); }}>
                     Add Event
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -236,6 +255,7 @@ const Planner = () => {
                 onToggleComplete={handleToggleComplete}
                 onEditTask={handleEditTask}
                 onDeleteTask={handleDeleteTask}
+                onAddTask={handleAddTask}
               />
             </TabsContent>
 
@@ -243,6 +263,7 @@ const Planner = () => {
               <PlannerCalendarView
                 tasks={filteredTasks}
                 onEditTask={handleEditTask}
+                onCreateTask={handleQuickCreate}
               />
             </TabsContent>
 
@@ -266,10 +287,11 @@ const Planner = () => {
 
       <PlannerTaskDialog
         open={dialogOpen}
-        onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingTask(null); }}
+        onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditingTask(null); setDefaultDueAt(null); } }}
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
         editTask={editingTask}
         defaultTaskType={defaultTaskType}
+        defaultDueAt={defaultDueAt}
       />
     </ProjectLayout>
   );

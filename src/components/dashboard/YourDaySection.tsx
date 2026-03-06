@@ -26,7 +26,8 @@ export const YourDaySection = ({ projectId }: YourDaySectionProps) => {
         .select("*")
         .eq("user_id", user.id)
         .eq("task_scope", "planner")
-        .order("due_at", { ascending: true });
+        .order("due_at", { ascending: true })
+        .limit(50);
       if (error) throw error;
       return data || [];
     },
