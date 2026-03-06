@@ -221,6 +221,12 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             <Switch checked={config.exactMatch} onCheckedChange={(v) => setConfig(c => ({ ...c, exactMatch: v }))} />
           </div>
 
+          {/* Ultra-Realistic */}
+          <div className="flex justify-between items-center pb-2 border-b border-border">
+            <span className="text-xs font-medium text-foreground">Ultra-Realistic Skin & Photo</span>
+            <Switch checked={config.ultraRealistic} onCheckedChange={(v) => setConfig(c => ({ ...c, ultraRealistic: v }))} />
+          </div>
+
           {/* Quick Look Presets */}
           <div>
             <Label label="Quick Presets" />

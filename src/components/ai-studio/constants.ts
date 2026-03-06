@@ -119,6 +119,7 @@ export const INITIAL_CONFIG: AppConfig = {
   nailStyle: "Long Coffin Nails",
   customNailStyle: "",
   cameraMovement: "Handheld / Vlog Style (Natural Shake)",
+  ultraRealistic: false,
   sceneCount: null
 };
 
