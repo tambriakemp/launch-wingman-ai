@@ -189,14 +189,14 @@ export const PlannerCalendarView = ({
   return (
     <div className="flex h-full overflow-hidden">
       {/* ===== DARK LEFT SIDEBAR ===== */}
-      <div className="hidden lg:flex flex-col w-[280px] shrink-0 bg-sidebar-accent text-white overflow-y-auto p-3 space-y-3">
+      <div className="hidden lg:flex flex-col w-[280px] shrink-0 bg-transparent text-white overflow-hidden p-3 space-y-2">
         {/* Profile area */}
-        <div className="px-2 pt-2 pb-1 flex items-center gap-3">
+        <div className="px-2 pt-2 pb-1 flex items-center gap-3 shrink-0">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
             <User className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">My Calendar</p>
+            <p className="text-sm font-semibold text-sidebar-foreground">My Calendar</p>
             <p className="text-[11px] text-gray-400">Personal Planner</p>
           </div>
         </div>
