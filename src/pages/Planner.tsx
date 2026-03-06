@@ -232,21 +232,30 @@ const Planner = () => {
           </div>
 
           {/* View Tabs */}
-          <Tabs defaultValue="list">
+          <Tabs defaultValue="calendar">
             <TabsList className="mb-4">
-              <TabsTrigger value="list" className="gap-1.5">
-                <List className="w-4 h-4" />
-                List
-              </TabsTrigger>
               <TabsTrigger value="calendar" className="gap-1.5">
                 <CalendarDays className="w-4 h-4" />
                 Calendar
+              </TabsTrigger>
+              <TabsTrigger value="list" className="gap-1.5">
+                <List className="w-4 h-4" />
+                List
               </TabsTrigger>
               <TabsTrigger value="board" className="gap-1.5">
                 <Columns3 className="w-4 h-4" />
                 Board
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="calendar">
+              <PlannerCalendarView
+                tasks={filteredTasks}
+                onEditTask={handleEditTask}
+                onCreateTask={handleQuickCreate}
+                onToggleComplete={handleToggleComplete}
+              />
+            </TabsContent>
 
             <TabsContent value="list">
               <PlannerListView
@@ -256,15 +265,6 @@ const Planner = () => {
                 onEditTask={handleEditTask}
                 onDeleteTask={handleDeleteTask}
                 onAddTask={handleAddTask}
-              />
-            </TabsContent>
-
-            <TabsContent value="calendar">
-              <PlannerCalendarView
-                tasks={filteredTasks}
-                onEditTask={handleEditTask}
-                onCreateTask={handleQuickCreate}
-                onToggleComplete={handleToggleComplete}
               />
             </TabsContent>
 
