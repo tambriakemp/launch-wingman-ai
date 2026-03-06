@@ -1,23 +1,16 @@
 
 
-# Separate Sidebar Sections into Rounded Cards with Launchely Black Background
+# Fix Sidebar Card Background & Week Grid Alignment
 
-## What Changes
+## Changes in `src/components/planner/PlannerCalendarView.tsx`
 
-The sidebar currently has sections (Mini Calendar, My List, Categories) separated by thin border dividers within a single `bg-gray-900` column. Instead, each section should be its own **rounded card** using the Launchely brand black (`hsl(var(--sidebar-background))` which is `40 6% 7%`).
+### 1. Card background color
+Change `bg-sidebar` on the three card containers (Mini Calendar, My List, Categories) to match the main navigation background. The nav uses `bg-sidebar` too — so the cards blend in. Use a slightly lighter shade like `bg-sidebar-accent` (which is `40 6% 15%`) to make cards distinct from the nav, or use `bg-[hsl(40,6%,12%)]` for a subtle lift.
 
-## File: `src/components/planner/PlannerCalendarView.tsx`
+Lines affected: ~205, ~273, ~295 — the three `rounded-xl bg-sidebar p-4` divs.
 
-**Sidebar container** (line ~192): Change from `bg-gray-900` to a slightly lighter dark background (e.g., `bg-gray-900/50` or `bg-[hsl(40,6%,12%)]`) so the cards stand out against it. Or use a transparent/subtle background.
+### 2. Vertical line alignment fix
+The day column headers are a fixed row above the scrollable time grid. The scrollbar in the time grid area takes up space, causing the columns below to be narrower than the headers. Fix by adding `overflow-y-scroll` (always show scrollbar space) to the scroll container, or better, add a matching right padding/margin to the header row to account for scrollbar width. The cleanest approach: wrap both header and grid in the same scroll container so they share the same width context.
 
-**Wrap each section in a card div** with `rounded-xl bg-sidebar p-4` (where `bg-sidebar` maps to `hsl(var(--sidebar-background))` = Launchely black `40 6% 7%`):
-
-1. **Mini Calendar card** — wrap the Calendar component (lines ~205-233) in a rounded card
-2. **Upcoming Event card** — already has its own card styling, adjust to use `bg-sidebar` base
-3. **My List card** — wrap the Collapsible (lines ~277-294) in a rounded card
-4. **Categories card** — wrap the Collapsible (lines ~299-332) in a rounded card
-
-**Remove** the `<div className="border-t border-gray-700/50 mx-4" />` dividers between sections (lines ~235, 274, 296) since the cards will create visual separation via gaps.
-
-**Add spacing** between cards using `space-y-3` or `gap-3` on the sidebar's inner content area.
+**Approach**: Move the day column headers inside the `overflow-y-auto` scroll container (before the grid div), and make them sticky at top with `sticky top-0 z-10 bg-background`. This ensures headers and grid columns share the exact same width.
 
