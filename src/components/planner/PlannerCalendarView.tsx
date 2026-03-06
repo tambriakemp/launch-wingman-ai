@@ -17,6 +17,8 @@ import {
   getMinutes,
   setHours,
   setMinutes,
+  isAfter,
+  differenceInMinutes,
 } from "date-fns";
 import {
   ChevronLeft,
@@ -26,44 +28,45 @@ import {
   CheckCircle2,
   MapPin,
   Pencil,
+  Clock,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Progress } from "@/components/ui/progress";
+import { PlannerListView } from "./PlannerListView";
 import type { PlannerTask } from "./PlannerTaskDialog";
 
 interface PlannerCalendarViewProps {
   tasks: PlannerTask[];
+  isLoading: boolean;
   onEditTask: (task: PlannerTask) => void;
   onCreateTask?: (defaults: { due_at?: string }) => void;
   onToggleComplete?: (task: PlannerTask) => void;
+  onDeleteTask?: (taskId: string) => void;
+  onAddTask?: () => void;
 }
 
-const HOUR_HEIGHT = 60;
+const HOUR_HEIGHT = 64;
 const START_HOUR = 6;
 const END_HOUR = 22;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
 
-const CARD_STYLES: Record<string, string> = {
-  "event-business": "bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300",
-  "event-life": "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300",
-  "task-business": "bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300",
-  "task-life": "bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300",
+const CARD_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  "event-business": { bg: "bg-blue-100 dark:bg-blue-900/50", text: "text-blue-800 dark:text-blue-200", border: "border-blue-200 dark:border-blue-700" },
+  "event-life": { bg: "bg-emerald-100 dark:bg-emerald-900/50", text: "text-emerald-800 dark:text-emerald-200", border: "border-emerald-200 dark:border-emerald-700" },
+  "task-business": { bg: "bg-amber-100 dark:bg-amber-900/50", text: "text-amber-800 dark:text-amber-200", border: "border-amber-200 dark:border-amber-700" },
+  "task-life": { bg: "bg-purple-100 dark:bg-purple-900/50", text: "text-purple-800 dark:text-purple-200", border: "border-purple-200 dark:border-purple-700" },
 };
 
-const CATEGORY_DOTS: Record<string, string> = {
-  business: "bg-blue-500",
-  life: "bg-emerald-500",
-};
-
-function getCardStyle(task: PlannerTask) {
+function getCardColors(task: PlannerTask) {
   const type = task.task_type || "task";
   const cat = task.category || "business";
-  return CARD_STYLES[`${type}-${cat}`] || CARD_STYLES["task-business"];
+  return CARD_COLORS[`${type}-${cat}`] || CARD_COLORS["task-business"];
 }
 
 function getTaskPosition(task: PlannerTask) {
@@ -76,48 +79,39 @@ function getTaskPosition(task: PlannerTask) {
   const clampedEnd = Math.min(endH, END_HOUR);
   if (clampedEnd <= clampedStart) return null;
   const top = (clampedStart - START_HOUR) * HOUR_HEIGHT;
-  const height = Math.max((clampedEnd - clampedStart) * HOUR_HEIGHT, 20);
+  const height = Math.max((clampedEnd - clampedStart) * HOUR_HEIGHT, 24);
   return { top, height };
 }
 
 export const PlannerCalendarView = ({
   tasks,
+  isLoading,
   onEditTask,
   onCreateTask,
   onToggleComplete,
+  onDeleteTask,
+  onAddTask,
 }: PlannerCalendarViewProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<"week" | "month">("week");
+  const [viewMode, setViewMode] = useState<"month" | "week" | "day">("week");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Filter toggles
-  const [showTasks, setShowTasks] = useState(true);
-  const [showEvents, setShowEvents] = useState(true);
+  const [listOpen, setListOpen] = useState(true);
+  const [catSection, setCatSection] = useState(true);
   const [showBusiness, setShowBusiness] = useState(true);
   const [showLife, setShowLife] = useState(true);
+  const [showHealth, setShowHealth] = useState(true);
 
-  // Collapsible sidebar sections
-  const [calSection, setCalSection] = useState(true);
-  const [catSection, setCatSection] = useState(true);
-
-  // Filter logic
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
-      if (!showTasks && (t.task_type === "task" || !t.task_type)) return false;
-      if (!showEvents && t.task_type === "event") return false;
       if (!showBusiness && (t.category === "business" || !t.category)) return false;
       if (!showLife && t.category === "life") return false;
       return true;
     });
-  }, [tasks, showTasks, showEvents, showBusiness, showLife]);
+  }, [tasks, showBusiness, showLife]);
 
   const scheduledTasks = useMemo(
     () => filteredTasks.filter((t) => t.start_at && t.end_at),
-    [filteredTasks]
-  );
-
-  const unscheduledTasks = useMemo(
-    () => filteredTasks.filter((t) => !t.start_at && t.column_id !== "done"),
     [filteredTasks]
   );
 
@@ -128,7 +122,7 @@ export const PlannerCalendarView = ({
     }
   }, [viewMode]);
 
-  // Current time indicator
+  // Current time
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 60000);
@@ -139,12 +133,12 @@ export const PlannerCalendarView = ({
   const nowTop = (nowHour - START_HOUR) * HOUR_HEIGHT;
   const showNowLine = nowHour >= START_HOUR && nowHour <= END_HOUR;
 
-  // Week data
+  // Week
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  // Month data
+  // Month
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const monthCalStart = startOfWeek(monthStart, { weekStartsOn: 0 });
@@ -162,28 +156,53 @@ export const PlannerCalendarView = ({
 
   const hours = Array.from({ length: TOTAL_HOURS }, (_, i) => START_HOUR + i);
 
-  // Navigation
   const goToday = () => setCurrentDate(new Date());
   const goPrev = () =>
-    setCurrentDate(viewMode === "week" ? subWeeks(currentDate, 1) : subMonths(currentDate, 1));
+    setCurrentDate(viewMode === "month" ? subMonths(currentDate, 1) : subWeeks(currentDate, 1));
   const goNext = () =>
-    setCurrentDate(viewMode === "week" ? addWeeks(currentDate, 1) : addMonths(currentDate, 1));
+    setCurrentDate(viewMode === "month" ? addMonths(currentDate, 1) : addWeeks(currentDate, 1));
 
   const handleMiniDateSelect = (date: Date | undefined) => {
     if (date) setCurrentDate(date);
   };
 
-  const headerTitle = format(currentDate, "MMMM yyyy");
-  const headerSubtitle =
-    viewMode === "week"
-      ? `${format(weekStart, "MMM d")} – ${format(weekEnd, "MMM d, yyyy")}`
-      : null;
+  // Next upcoming event for sidebar card
+  const nextEvent = useMemo(() => {
+    return scheduledTasks
+      .filter((t) => t.start_at && isAfter(parseISO(t.start_at), now))
+      .sort((a, b) => parseISO(a.start_at!).getTime() - parseISO(b.start_at!).getTime())[0] || null;
+  }, [scheduledTasks, now]);
+
+  // Category progress
+  const categoryProgress = useMemo(() => {
+    const biz = tasks.filter((t) => (t.category === "business" || !t.category));
+    const bizDone = biz.filter((t) => t.column_id === "done").length;
+    const life = tasks.filter((t) => t.category === "life");
+    const lifeDone = life.filter((t) => t.column_id === "done").length;
+    return {
+      business: biz.length > 0 ? Math.round((bizDone / biz.length) * 100) : 0,
+      life: life.length > 0 ? Math.round((lifeDone / life.length) * 100) : 0,
+      health: 0,
+    };
+  }, [tasks]);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-0 rounded-xl border border-border bg-card overflow-hidden min-h-[680px]">
-      {/* ===== LEFT SIDEBAR ===== */}
-      <div className="hidden lg:flex flex-col w-56 shrink-0 border-r border-border bg-muted/20">
-        <div className="p-3">
+    <div className="flex h-full overflow-hidden">
+      {/* ===== DARK LEFT SIDEBAR ===== */}
+      <div className="hidden lg:flex flex-col w-[280px] shrink-0 bg-gray-900 dark:bg-gray-950 text-white overflow-y-auto">
+        {/* Profile area */}
+        <div className="px-5 pt-5 pb-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+            <User className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">My Calendar</p>
+            <p className="text-[11px] text-gray-400">Personal Planner</p>
+          </div>
+        </div>
+
+        {/* Mini Calendar */}
+        <div className="px-3 pb-3">
           <Calendar
             mode="single"
             selected={currentDate}
@@ -193,147 +212,187 @@ export const PlannerCalendarView = ({
               months: "flex flex-col",
               month: "space-y-2",
               caption: "flex justify-center pt-1 relative items-center",
-              caption_label: "text-xs font-medium",
+              caption_label: "text-xs font-medium text-gray-200",
               nav: "space-x-1 flex items-center",
-              nav_button: "h-6 w-6 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md border border-border",
+              nav_button: "h-6 w-6 bg-transparent p-0 opacity-60 hover:opacity-100 inline-flex items-center justify-center rounded-md border border-gray-700 text-gray-300",
               nav_button_previous: "absolute left-0",
               nav_button_next: "absolute right-0",
               table: "w-full border-collapse",
               head_row: "flex",
-              head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-[10px]",
+              head_cell: "text-gray-500 rounded-md flex-1 font-normal text-[10px]",
               row: "flex w-full mt-1",
               cell: "flex-1 h-7 text-center text-[11px] p-0 relative",
-              day: "h-7 w-7 p-0 font-normal aria-selected:opacity-100 hover:bg-accent rounded-md inline-flex items-center justify-center",
-              day_selected: "bg-primary text-primary-foreground hover:bg-primary",
-              day_today: "bg-accent text-accent-foreground font-semibold",
-              day_outside: "text-muted-foreground opacity-40",
-              day_disabled: "text-muted-foreground opacity-50",
+              day: "h-7 w-7 p-0 font-normal text-gray-300 hover:bg-gray-700 rounded-md inline-flex items-center justify-center aria-selected:opacity-100",
+              day_selected: "bg-blue-600 text-white hover:bg-blue-600",
+              day_today: "bg-gray-700 text-white font-semibold",
+              day_outside: "text-gray-600 opacity-40",
+              day_disabled: "text-gray-600 opacity-30",
               day_hidden: "invisible",
             }}
           />
         </div>
 
-        <div className="border-t border-border" />
+        <div className="border-t border-gray-700/50 mx-4" />
 
-        {/* My Calendars */}
-        <Collapsible open={calSection} onOpenChange={setCalSection}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:bg-accent/30 transition-colors">
-            My Calendars
-            <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", !calSection && "-rotate-90")} />
+        {/* Upcoming Event Card */}
+        {nextEvent && (
+          <div className="px-4 py-4">
+            <div className="rounded-xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-gray-700/50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-3.5 h-3.5 text-blue-400" />
+                <span className="text-[11px] text-blue-300 font-medium">
+                  {nextEvent.start_at && format(parseISO(nextEvent.start_at), "h:mm a")}
+                  {nextEvent.end_at && ` – ${format(parseISO(nextEvent.end_at), "h:mm a")}`}
+                </span>
+                {nextEvent.start_at && nextEvent.end_at && (
+                  <Badge className="text-[9px] px-1.5 py-0 bg-blue-500/20 text-blue-300 border-0 ml-auto">
+                    {differenceInMinutes(parseISO(nextEvent.end_at), parseISO(nextEvent.start_at))}m
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm font-semibold text-white mb-1">{nextEvent.title}</p>
+              {nextEvent.location && (
+                <p className="text-[11px] text-gray-400 flex items-center gap-1">
+                  <MapPin className="w-3 h-3" /> {nextEvent.location}
+                </p>
+              )}
+              <div className="flex gap-2 mt-3">
+                <button className="text-[11px] px-3 py-1.5 rounded-lg bg-gray-700/60 text-gray-300 hover:bg-gray-600/60 transition-colors">
+                  Later
+                </button>
+                <button
+                  className="text-[11px] px-3 py-1.5 rounded-lg bg-blue-600/30 text-blue-300 hover:bg-blue-600/40 transition-colors"
+                  onClick={() => onEditTask(nextEvent)}
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="border-t border-gray-700/50 mx-4" />
+
+        {/* My List */}
+        <Collapsible open={listOpen} onOpenChange={setListOpen}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-200 transition-colors">
+            My List
+            <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", !listOpen && "-rotate-90")} />
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="px-4 pb-3 space-y-2.5">
-              <label className="flex items-center gap-2.5 cursor-pointer group">
-                <Checkbox checked={showTasks} onCheckedChange={(v) => setShowTasks(!!v)} className="h-3.5 w-3.5 rounded border-amber-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500" />
-                <span className="text-xs text-foreground group-hover:text-foreground/80">Tasks</span>
-              </label>
-              <label className="flex items-center gap-2.5 cursor-pointer group">
-                <Checkbox checked={showEvents} onCheckedChange={(v) => setShowEvents(!!v)} className="h-3.5 w-3.5 rounded border-blue-400 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500" />
-                <span className="text-xs text-foreground group-hover:text-foreground/80">Events</span>
-              </label>
-              <label className="flex items-center gap-2.5 cursor-not-allowed opacity-50">
-                <Checkbox disabled className="h-3.5 w-3.5 rounded" />
-                <span className="text-xs text-muted-foreground">Content</span>
-                <Badge variant="outline" className="text-[8px] px-1 py-0 ml-auto">Soon</Badge>
-              </label>
+            <div className="px-2 pb-3 max-h-[240px] overflow-y-auto planner-sidebar-list">
+              <PlannerListView
+                tasks={tasks}
+                isLoading={isLoading}
+                onToggleComplete={onToggleComplete!}
+                onEditTask={onEditTask}
+                onDeleteTask={onDeleteTask!}
+                onAddTask={onAddTask}
+              />
             </div>
           </CollapsibleContent>
         </Collapsible>
 
-        <div className="border-t border-border" />
+        <div className="border-t border-gray-700/50 mx-4" />
 
         {/* Categories */}
         <Collapsible open={catSection} onOpenChange={setCatSection}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:bg-accent/30 transition-colors">
+          <CollapsibleTrigger className="flex items-center justify-between w-full px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-200 transition-colors">
             Categories
             <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", !catSection && "-rotate-90")} />
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="px-4 pb-3 space-y-2.5">
-              <label className="flex items-center gap-2.5 cursor-pointer group">
-                <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
-                <Checkbox checked={showBusiness} onCheckedChange={(v) => setShowBusiness(!!v)} className="h-3.5 w-3.5 rounded" />
-                <span className="text-xs text-foreground group-hover:text-foreground/80">Work</span>
-              </label>
-              <label className="flex items-center gap-2.5 cursor-pointer group">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
-                <Checkbox checked={showLife} onCheckedChange={(v) => setShowLife(!!v)} className="h-3.5 w-3.5 rounded" />
-                <span className="text-xs text-foreground group-hover:text-foreground/80">Personal</span>
-              </label>
+            <div className="px-5 pb-4 space-y-3">
+              <button
+                className="flex items-center gap-3 w-full group"
+                onClick={() => setShowBusiness(!showBusiness)}
+              >
+                <div className={cn("w-3 h-3 rounded-full bg-blue-500 shrink-0", !showBusiness && "opacity-30")} />
+                <span className={cn("text-xs text-gray-300 flex-1 text-left", !showBusiness && "opacity-50")}>Work</span>
+                <Progress value={categoryProgress.business} className="w-16 h-1.5 bg-gray-700" indicatorClassName="bg-blue-500" />
+              </button>
+              <button
+                className="flex items-center gap-3 w-full group"
+                onClick={() => setShowLife(!showLife)}
+              >
+                <div className={cn("w-3 h-3 rounded-full bg-emerald-500 shrink-0", !showLife && "opacity-30")} />
+                <span className={cn("text-xs text-gray-300 flex-1 text-left", !showLife && "opacity-50")}>Personal</span>
+                <Progress value={categoryProgress.life} className="w-16 h-1.5 bg-gray-700" indicatorClassName="bg-emerald-500" />
+              </button>
+              <button
+                className="flex items-center gap-3 w-full group"
+                onClick={() => setShowHealth(!showHealth)}
+              >
+                <div className={cn("w-3 h-3 rounded-full bg-pink-500 shrink-0", !showHealth && "opacity-30")} />
+                <span className={cn("text-xs text-gray-300 flex-1 text-left", !showHealth && "opacity-50")}>Health</span>
+                <Progress value={categoryProgress.health} className="w-16 h-1.5 bg-gray-700" indicatorClassName="bg-pink-500" />
+              </button>
             </div>
           </CollapsibleContent>
         </Collapsible>
       </div>
 
-      {/* ===== CENTER CANVAS ===== */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* ===== MAIN CALENDAR AREA ===== */}
+      <div className="flex-1 flex flex-col min-w-0 bg-background">
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border bg-card">
-          <div>
-            <h3 className="text-lg font-bold text-foreground leading-tight">{headerTitle}</h3>
-            {headerSubtitle && (
-              <p className="text-[11px] text-muted-foreground">{headerSubtitle}</p>
-            )}
+        <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-border shrink-0">
+          <h2 className="text-xl font-bold text-foreground">
+            {format(currentDate, "MMMM, yyyy")}
+          </h2>
+
+          <div className="flex items-center rounded-xl border border-border bg-muted/30 p-1">
+            {(["month", "week", "day"] as const).map((mode) => (
+              <button
+                key={mode}
+                className={cn(
+                  "px-4 py-1.5 text-xs font-medium rounded-lg transition-colors capitalize",
+                  viewMode === mode
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setViewMode(mode)}
+              >
+                {mode}
+              </button>
+            ))}
           </div>
+
           <div className="flex items-center gap-2">
-            <div className="flex items-center rounded-lg border border-border bg-muted/30 p-0.5">
-              <button
-                className={cn(
-                  "px-3 py-1 text-xs font-medium rounded-md transition-colors",
-                  viewMode === "week"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setViewMode("week")}
-              >
-                Week
-              </button>
-              <button
-                className={cn(
-                  "px-3 py-1 text-xs font-medium rounded-md transition-colors",
-                  viewMode === "month"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setViewMode("month")}
-              >
-                Month
-              </button>
-            </div>
-            <Button variant="outline" size="sm" onClick={goToday} className="text-xs h-7">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goPrev}>
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={goToday} className="text-xs h-8 px-4 rounded-lg">
               Today
             </Button>
-            <div className="flex items-center">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goPrev}>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goNext}>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goNext}>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
         </div>
 
-        {viewMode === "week" ? (
-          /* ========== WEEKLY VIEW ========== */
+        {viewMode === "week" || viewMode === "day" ? (
+          /* ========== WEEKLY / DAY VIEW ========== */
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Day column headers */}
-            <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-border bg-muted/20 shrink-0">
+            <div className={cn(
+              "grid border-b border-border bg-background shrink-0",
+              viewMode === "day" ? "grid-cols-[56px_1fr]" : "grid-cols-[56px_repeat(7,1fr)]"
+            )}>
               <div className="border-r border-border" />
-              {weekDays.map((day) => {
+              {(viewMode === "day" ? [currentDate] : weekDays).map((day) => {
                 const isToday = isSameDay(day, now);
                 return (
                   <div
                     key={day.toISOString()}
                     className="text-center py-3 border-r border-border last:border-r-0"
                   >
-                    <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                    <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                       {format(day, "EEE")}
                     </div>
                     <div
                       className={cn(
-                        "text-sm font-semibold mt-0.5 w-7 h-7 flex items-center justify-center mx-auto rounded-full transition-colors",
-                        isToday && "bg-primary text-primary-foreground"
+                        "text-xl font-bold mt-1 w-10 h-10 flex items-center justify-center mx-auto rounded-full transition-colors",
+                        isToday ? "bg-primary text-primary-foreground" : "text-foreground"
                       )}
                     >
                       {format(day, "d")}
@@ -346,7 +405,10 @@ export const PlannerCalendarView = ({
             {/* Scrollable time grid */}
             <div ref={scrollRef} className="overflow-y-auto flex-1">
               <div
-                className="grid grid-cols-[56px_repeat(7,1fr)] relative"
+                className={cn(
+                  "grid relative",
+                  viewMode === "day" ? "grid-cols-[56px_1fr]" : "grid-cols-[56px_repeat(7,1fr)]"
+                )}
                 style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}
               >
                 {/* Time gutter */}
@@ -365,7 +427,7 @@ export const PlannerCalendarView = ({
                 </div>
 
                 {/* Day columns */}
-                {weekDays.map((day) => {
+                {(viewMode === "day" ? [currentDate] : weekDays).map((day) => {
                   const dayTasks = getTasksForDay(day);
                   const isToday = isSameDay(day, now);
                   return (
@@ -402,61 +464,45 @@ export const PlannerCalendarView = ({
                         </div>
                       )}
 
-                      {/* Event cards — pastel style */}
+                      {/* Event cards */}
                       {dayTasks.map((task, taskIdx) => {
                         const pos = getTaskPosition(task);
                         if (!pos) return null;
-                        const isEvent = task.task_type === "event";
                         const isDone = task.column_id === "done";
-                        const style = getCardStyle(task);
+                        const colors = getCardColors(task);
                         return (
                           <button
                             key={task.id}
                             className={cn(
-                              "absolute left-1 right-1 z-10 rounded-lg px-2 py-1.5 text-left overflow-hidden border transition-all group",
+                              "absolute left-1.5 right-1.5 z-10 rounded-xl px-3 py-2 text-left overflow-hidden transition-all group",
                               "hover:shadow-lg hover:-translate-y-px hover:z-30",
-                              style,
-                              isDone && "opacity-50 line-through"
+                              colors.bg, colors.text,
+                              isDone && "opacity-50"
                             )}
                             style={{
                               top: pos.top + 1,
                               height: pos.height - 2,
-                              ...(taskIdx > 0
-                                ? { left: `${taskIdx * 6 + 4}px` }
-                                : {}),
+                              ...(taskIdx > 0 ? { left: `${taskIdx * 8 + 6}px` } : {}),
                             }}
                             onClick={(e) => {
                               e.stopPropagation();
                               onEditTask(task);
                             }}
                           >
-                            <div className="flex items-start gap-1">
-                              {isEvent ? (
-                                <CalendarIcon className="w-3 h-3 mt-0.5 shrink-0 opacity-60" />
-                              ) : (
-                                <CheckCircle2
-                                  className={cn(
-                                    "w-3 h-3 mt-0.5 shrink-0 opacity-60",
-                                    isDone && "fill-current"
-                                  )}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onToggleComplete?.(task);
-                                  }}
-                                />
-                              )}
-                              <span className="text-[10px] font-semibold truncate leading-tight">
-                                {task.title}
-                              </span>
-                            </div>
-                            {pos.height > 36 && task.start_at && task.end_at && (
-                              <div className="text-[9px] opacity-60 mt-0.5 ml-4">
-                                {format(parseISO(task.start_at), "h:mm a")} –{" "}
-                                {format(parseISO(task.end_at), "h:mm a")}
+                            <span className={cn("text-xs font-bold truncate block leading-tight", isDone && "line-through")}>
+                              {task.title}
+                            </span>
+                            {pos.height > 40 && task.start_at && task.end_at && (
+                              <div className="text-[10px] opacity-70 mt-1">
+                                {format(parseISO(task.start_at), "h:mm a")} – {format(parseISO(task.end_at), "h:mm a")}
                               </div>
                             )}
-                            {/* Hover edit icon */}
-                            <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {pos.height > 56 && task.location && (
+                              <div className="text-[10px] opacity-60 mt-0.5 flex items-center gap-0.5">
+                                <MapPin className="w-3 h-3" /> {task.location}
+                              </div>
+                            )}
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <Pencil className="w-3 h-3 opacity-50" />
                             </div>
                           </button>
@@ -470,12 +516,12 @@ export const PlannerCalendarView = ({
           </div>
         ) : (
           /* ========== MONTHLY VIEW ========== */
-          <div className="flex-1 overflow-auto p-2">
-            <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
+          <div className="flex-1 overflow-auto p-3">
+            <div className="grid grid-cols-7 gap-px bg-border rounded-xl overflow-hidden">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
                 <div
                   key={d}
-                  className="text-center text-[11px] font-medium text-muted-foreground py-2 bg-muted/30"
+                  className="text-center text-[11px] font-medium text-muted-foreground py-2.5 bg-muted/30"
                 >
                   {d}
                 </div>
@@ -488,28 +534,28 @@ export const PlannerCalendarView = ({
                   <div
                     key={day.toISOString()}
                     className={cn(
-                      "min-h-[90px] p-1.5 bg-card cursor-pointer hover:bg-accent/10 transition-colors",
+                      "min-h-[100px] p-2 bg-card cursor-pointer hover:bg-accent/10 transition-colors",
                       !isCurrentMonth && "opacity-35"
                     )}
                     onClick={() => onCreateTask?.({ due_at: day.toISOString() })}
                   >
                     <div
                       className={cn(
-                        "text-[11px] font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full",
-                        isCurrentDay && "bg-primary text-primary-foreground"
+                        "text-xs font-medium mb-1.5 w-7 h-7 flex items-center justify-center rounded-full",
+                        isCurrentDay && "bg-primary text-primary-foreground font-bold"
                       )}
                     >
                       {format(day, "d")}
                     </div>
-                    <div className="space-y-0.5">
+                    <div className="space-y-1">
                       {dayTasks.slice(0, 2).map((task) => {
-                        const style = getCardStyle(task);
+                        const colors = getCardColors(task);
                         return (
                           <button
                             key={task.id}
                             className={cn(
-                              "w-full text-left text-[10px] px-1.5 py-0.5 rounded-md border truncate transition-colors",
-                              style
+                              "w-full text-left text-[10px] px-2 py-1 rounded-lg truncate transition-colors font-medium",
+                              colors.bg, colors.text
                             )}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -517,7 +563,7 @@ export const PlannerCalendarView = ({
                             }}
                           >
                             {task.start_at && (
-                              <span className="font-semibold">
+                              <span className="font-bold">
                                 {format(parseISO(task.start_at), "h:mm")}{" "}
                               </span>
                             )}
@@ -526,7 +572,7 @@ export const PlannerCalendarView = ({
                         );
                       })}
                       {dayTasks.length > 2 && (
-                        <div className="text-[10px] text-muted-foreground px-1.5 font-medium">
+                        <div className="text-[10px] text-muted-foreground px-2 font-medium">
                           +{dayTasks.length - 2} more
                         </div>
                       )}
@@ -537,50 +583,6 @@ export const PlannerCalendarView = ({
             </div>
           </div>
         )}
-      </div>
-
-      {/* ===== RIGHT SIDEBAR ===== */}
-      <div className="lg:w-64 shrink-0 border-t lg:border-t-0 lg:border-l border-border bg-muted/10 flex flex-col">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-          <CalendarIcon className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm font-semibold text-foreground">Unscheduled</span>
-          <Badge variant="secondary" className="text-[10px] ml-auto">
-            {unscheduledTasks.length}
-          </Badge>
-        </div>
-        <ScrollArea className="flex-1 max-h-[600px] lg:max-h-none">
-          <div className="p-3 space-y-1.5">
-            {unscheduledTasks.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-6">
-                No unscheduled items
-              </p>
-            ) : (
-              unscheduledTasks.map((task) => {
-                const catDot = CATEGORY_DOTS[task.category || "business"] || CATEGORY_DOTS.business;
-                return (
-                  <button
-                    key={task.id}
-                    className="flex items-center gap-2 w-full text-left p-2 rounded-lg border border-border hover:bg-accent/20 hover:shadow-sm transition-all group"
-                    onClick={() => onEditTask(task)}
-                  >
-                    <div className={cn("w-2 h-2 rounded-full shrink-0", catDot)} />
-                    <span className="text-xs truncate flex-1 text-foreground">
-                      {task.title}
-                    </span>
-                    {task.task_type === "event" && (
-                      <Badge
-                        variant="outline"
-                        className="text-[8px] px-1 py-0 border-blue-300 text-blue-600 dark:text-blue-400 shrink-0"
-                      >
-                        Event
-                      </Badge>
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </ScrollArea>
       </div>
     </div>
   );
