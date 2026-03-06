@@ -189,9 +189,9 @@ export const PlannerCalendarView = ({
   return (
     <div className="flex h-full overflow-hidden">
       {/* ===== DARK LEFT SIDEBAR ===== */}
-      <div className="hidden lg:flex flex-col w-[280px] shrink-0 bg-gray-900 dark:bg-gray-950 text-white overflow-y-auto">
+      <div className="hidden lg:flex flex-col w-[280px] shrink-0 bg-sidebar-accent text-white overflow-y-auto p-3 space-y-3">
         {/* Profile area */}
-        <div className="px-5 pt-5 pb-4 flex items-center gap-3">
+        <div className="px-2 pt-2 pb-1 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
             <User className="w-5 h-5" />
           </div>
@@ -201,8 +201,8 @@ export const PlannerCalendarView = ({
           </div>
         </div>
 
-        {/* Mini Calendar */}
-        <div className="px-3 pb-3">
+        {/* Mini Calendar Card */}
+        <div className="rounded-xl bg-sidebar p-4">
           <Calendar
             mode="single"
             selected={currentDate}
@@ -232,12 +232,10 @@ export const PlannerCalendarView = ({
           />
         </div>
 
-        <div className="border-t border-gray-700/50 mx-4" />
-
         {/* Upcoming Event Card */}
         {nextEvent && (
-          <div className="px-4 py-4">
-            <div className="rounded-xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-gray-700/50 p-4">
+          <div className="rounded-xl bg-sidebar p-4">
+            <div className="rounded-lg bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-gray-700/50 p-3">
               <div className="flex items-center gap-2 mb-2">
                 <Clock className="w-3.5 h-3.5 text-blue-400" />
                 <span className="text-[11px] text-blue-300 font-medium">
@@ -271,65 +269,65 @@ export const PlannerCalendarView = ({
           </div>
         )}
 
-        <div className="border-t border-gray-700/50 mx-4" />
+        {/* My List Card */}
+        <div className="rounded-xl bg-sidebar p-4">
+          <Collapsible open={listOpen} onOpenChange={setListOpen}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-200 transition-colors">
+              My List
+              <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", !listOpen && "-rotate-90")} />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="pt-3 max-h-[240px] overflow-y-auto planner-sidebar-list">
+                <PlannerListView
+                  tasks={tasks}
+                  isLoading={isLoading}
+                  onToggleComplete={onToggleComplete!}
+                  onEditTask={onEditTask}
+                  onDeleteTask={onDeleteTask!}
+                  onAddTask={onAddTask}
+                />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
 
-        {/* My List */}
-        <Collapsible open={listOpen} onOpenChange={setListOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-200 transition-colors">
-            My List
-            <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", !listOpen && "-rotate-90")} />
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="px-2 pb-3 max-h-[240px] overflow-y-auto planner-sidebar-list">
-              <PlannerListView
-                tasks={tasks}
-                isLoading={isLoading}
-                onToggleComplete={onToggleComplete!}
-                onEditTask={onEditTask}
-                onDeleteTask={onDeleteTask!}
-                onAddTask={onAddTask}
-              />
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-
-        <div className="border-t border-gray-700/50 mx-4" />
-
-        {/* Categories */}
-        <Collapsible open={catSection} onOpenChange={setCatSection}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-200 transition-colors">
-            Categories
-            <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", !catSection && "-rotate-90")} />
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="px-5 pb-4 space-y-3">
-              <button
-                className="flex items-center gap-3 w-full group"
-                onClick={() => setShowBusiness(!showBusiness)}
-              >
-                <div className={cn("w-3 h-3 rounded-full bg-blue-500 shrink-0", !showBusiness && "opacity-30")} />
-                <span className={cn("text-xs text-gray-300 flex-1 text-left", !showBusiness && "opacity-50")}>Work</span>
-                <Progress value={categoryProgress.business} className="w-16 h-1.5 bg-gray-700" indicatorClassName="bg-blue-500" />
-              </button>
-              <button
-                className="flex items-center gap-3 w-full group"
-                onClick={() => setShowLife(!showLife)}
-              >
-                <div className={cn("w-3 h-3 rounded-full bg-emerald-500 shrink-0", !showLife && "opacity-30")} />
-                <span className={cn("text-xs text-gray-300 flex-1 text-left", !showLife && "opacity-50")}>Personal</span>
-                <Progress value={categoryProgress.life} className="w-16 h-1.5 bg-gray-700" indicatorClassName="bg-emerald-500" />
-              </button>
-              <button
-                className="flex items-center gap-3 w-full group"
-                onClick={() => setShowHealth(!showHealth)}
-              >
-                <div className={cn("w-3 h-3 rounded-full bg-pink-500 shrink-0", !showHealth && "opacity-30")} />
-                <span className={cn("text-xs text-gray-300 flex-1 text-left", !showHealth && "opacity-50")}>Health</span>
-                <Progress value={categoryProgress.health} className="w-16 h-1.5 bg-gray-700" indicatorClassName="bg-pink-500" />
-              </button>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+        {/* Categories Card */}
+        <div className="rounded-xl bg-sidebar p-4">
+          <Collapsible open={catSection} onOpenChange={setCatSection}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-200 transition-colors">
+              Categories
+              <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", !catSection && "-rotate-90")} />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="pt-3 space-y-3">
+                <button
+                  className="flex items-center gap-3 w-full group"
+                  onClick={() => setShowBusiness(!showBusiness)}
+                >
+                  <div className={cn("w-3 h-3 rounded-full bg-blue-500 shrink-0", !showBusiness && "opacity-30")} />
+                  <span className={cn("text-xs text-gray-300 flex-1 text-left", !showBusiness && "opacity-50")}>Work</span>
+                  <Progress value={categoryProgress.business} className="w-16 h-1.5 bg-gray-700" indicatorClassName="bg-blue-500" />
+                </button>
+                <button
+                  className="flex items-center gap-3 w-full group"
+                  onClick={() => setShowLife(!showLife)}
+                >
+                  <div className={cn("w-3 h-3 rounded-full bg-emerald-500 shrink-0", !showLife && "opacity-30")} />
+                  <span className={cn("text-xs text-gray-300 flex-1 text-left", !showLife && "opacity-50")}>Personal</span>
+                  <Progress value={categoryProgress.life} className="w-16 h-1.5 bg-gray-700" indicatorClassName="bg-emerald-500" />
+                </button>
+                <button
+                  className="flex items-center gap-3 w-full group"
+                  onClick={() => setShowHealth(!showHealth)}
+                >
+                  <div className={cn("w-3 h-3 rounded-full bg-pink-500 shrink-0", !showHealth && "opacity-30")} />
+                  <span className={cn("text-xs text-gray-300 flex-1 text-left", !showHealth && "opacity-50")}>Health</span>
+                  <Progress value={categoryProgress.health} className="w-16 h-1.5 bg-gray-700" indicatorClassName="bg-pink-500" />
+                </button>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
       </div>
 
       {/* ===== MAIN CALENDAR AREA ===== */}
