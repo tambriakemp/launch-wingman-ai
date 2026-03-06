@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { CalendarCheck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -169,10 +170,18 @@ const Planner = () => {
 
   return (
     <ProjectLayout>
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <h1 className="text-2xl font-bold text-foreground">Planner</h1>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-blue-100/50 dark:bg-blue-900/20 rounded-xl shrink-0">
+                <CalendarCheck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-semibold text-foreground">Planner</h1>
+                <p className="text-muted-foreground">Organize your tasks, events, and schedule in one place.</p>
+              </div>
+            </div>
             <div className="flex items-center gap-2">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
