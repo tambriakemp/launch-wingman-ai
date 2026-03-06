@@ -202,7 +202,7 @@ export const PlannerCalendarView = ({
         </div>
 
         {/* Mini Calendar Card */}
-        <div className="rounded-xl bg-sidebar p-4">
+        <div className="rounded-xl bg-sidebar-accent p-4">
           <Calendar
             mode="single"
             selected={currentDate}
@@ -234,7 +234,7 @@ export const PlannerCalendarView = ({
 
         {/* Upcoming Event Card */}
         {nextEvent && (
-          <div className="rounded-xl bg-sidebar p-4">
+           <div className="rounded-xl bg-sidebar-accent p-4">
             <div className="rounded-lg bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-gray-700/50 p-3">
               <div className="flex items-center gap-2 mb-2">
                 <Clock className="w-3.5 h-3.5 text-blue-400" />
@@ -270,7 +270,7 @@ export const PlannerCalendarView = ({
         )}
 
         {/* My List Card */}
-        <div className="rounded-xl bg-sidebar p-4">
+        <div className="rounded-xl bg-sidebar-accent p-4">
           <Collapsible open={listOpen} onOpenChange={setListOpen}>
             <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-200 transition-colors">
               My List
@@ -292,7 +292,7 @@ export const PlannerCalendarView = ({
         </div>
 
         {/* Categories Card */}
-        <div className="rounded-xl bg-sidebar p-4">
+        <div className="rounded-xl bg-sidebar-accent p-4">
           <Collapsible open={catSection} onOpenChange={setCatSection}>
             <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-200 transition-colors">
               Categories
@@ -371,37 +371,36 @@ export const PlannerCalendarView = ({
         {viewMode === "week" || viewMode === "day" ? (
           /* ========== WEEKLY / DAY VIEW ========== */
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Day column headers */}
-            <div className={cn(
-              "grid border-b border-border bg-background shrink-0",
-              viewMode === "day" ? "grid-cols-[56px_1fr]" : "grid-cols-[56px_repeat(7,1fr)]"
-            )}>
-              <div className="border-r border-border" />
-              {(viewMode === "day" ? [currentDate] : weekDays).map((day) => {
-                const isToday = isSameDay(day, now);
-                return (
-                  <div
-                    key={day.toISOString()}
-                    className="text-center py-3 border-r border-border last:border-r-0"
-                  >
-                    <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                      {format(day, "EEE")}
-                    </div>
-                    <div
-                      className={cn(
-                        "text-xl font-bold mt-1 w-10 h-10 flex items-center justify-center mx-auto rounded-full transition-colors",
-                        isToday ? "bg-primary text-primary-foreground" : "text-foreground"
-                      )}
-                    >
-                      {format(day, "d")}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Scrollable time grid */}
+            {/* Scrollable time grid with sticky headers */}
             <div ref={scrollRef} className="overflow-y-auto flex-1">
+              {/* Day column headers (sticky) */}
+              <div className={cn(
+                "grid border-b border-border bg-background sticky top-0 z-10",
+                viewMode === "day" ? "grid-cols-[56px_1fr]" : "grid-cols-[56px_repeat(7,1fr)]"
+              )}>
+                <div className="border-r border-border" />
+                {(viewMode === "day" ? [currentDate] : weekDays).map((day) => {
+                  const isToday = isSameDay(day, now);
+                  return (
+                    <div
+                      key={day.toISOString()}
+                      className="text-center py-3 border-r border-border last:border-r-0"
+                    >
+                      <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                        {format(day, "EEE")}
+                      </div>
+                      <div
+                        className={cn(
+                          "text-xl font-bold mt-1 w-10 h-10 flex items-center justify-center mx-auto rounded-full transition-colors",
+                          isToday ? "bg-primary text-primary-foreground" : "text-foreground"
+                        )}
+                      >
+                        {format(day, "d")}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
               <div
                 className={cn(
                   "grid relative",
