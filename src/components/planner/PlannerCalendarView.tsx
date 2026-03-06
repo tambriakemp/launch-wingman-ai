@@ -196,13 +196,13 @@ export const PlannerCalendarView = ({
             <User className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-sidebar-foreground">My Calendar</p>
+            <p className="text-sm font-semibold text-[#131211]">My Calendar</p>
             <p className="text-[11px] text-gray-400">Personal Planner</p>
           </div>
         </div>
 
         {/* Mini Calendar Card */}
-        <div className="rounded-xl bg-sidebar-accent p-4">
+        <div className="rounded-xl bg-[#131211] p-4">
           <Calendar
             mode="single"
             selected={currentDate}
@@ -234,7 +234,7 @@ export const PlannerCalendarView = ({
 
         {/* Upcoming Event Card */}
         {nextEvent && (
-           <div className="rounded-xl bg-sidebar-accent p-4">
+           <div className="rounded-xl bg-[#131211] p-4">
             <div className="rounded-lg bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-gray-700/50 p-3">
               <div className="flex items-center gap-2 mb-2">
                 <Clock className="w-3.5 h-3.5 text-blue-400" />
@@ -270,7 +270,7 @@ export const PlannerCalendarView = ({
         )}
 
         {/* My List Card */}
-        <div className="rounded-xl bg-sidebar-accent p-4">
+        <div className="rounded-xl bg-[#131211] p-4">
           <Collapsible open={listOpen} onOpenChange={setListOpen}>
             <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-200 transition-colors">
               My List
@@ -292,7 +292,7 @@ export const PlannerCalendarView = ({
         </div>
 
         {/* Categories Card */}
-        <div className="rounded-xl bg-sidebar-accent p-4">
+        <div className="rounded-xl bg-[#131211] p-4">
           <Collapsible open={catSection} onOpenChange={setCatSection}>
             <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-200 transition-colors">
               Categories
