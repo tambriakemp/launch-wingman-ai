@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Plus, Search, ChevronDown, List, CalendarDays, Columns3 } from "lucide-react";
+import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -13,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ProjectSidebar } from "@/components/layout/ProjectSidebar";
+
 import { PlannerListView } from "@/components/planner/PlannerListView";
 import { PlannerCalendarView } from "@/components/planner/PlannerCalendarView";
 import { PlannerBoardView } from "@/components/planner/PlannerBoardView";
@@ -167,10 +168,8 @@ const Planner = () => {
   });
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <ProjectSidebar />
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-4 py-6">
+    <ProjectLayout>
+      <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <h1 className="text-2xl font-bold text-foreground">Planner</h1>
@@ -254,8 +253,7 @@ const Planner = () => {
               />
             </TabsContent>
           </Tabs>
-        </div>
-      </main>
+      </div>
 
       <PlannerTaskDialog
         open={dialogOpen}
@@ -264,7 +262,7 @@ const Planner = () => {
         editTask={editingTask}
         defaultTaskType={defaultTaskType}
       />
-    </div>
+    </ProjectLayout>
   );
 };
 
