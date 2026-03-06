@@ -1,30 +1,15 @@
 import { useState, useCallback, useEffect } from "react";
-import { CalendarCheck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Search, ChevronDown, List, CalendarDays, Columns3 } from "lucide-react";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-import { PlannerListView } from "@/components/planner/PlannerListView";
 import { PlannerCalendarView } from "@/components/planner/PlannerCalendarView";
-import { PlannerBoardView } from "@/components/planner/PlannerBoardView";
 import { PlannerTaskDialog, type PlannerTask } from "@/components/planner/PlannerTaskDialog";
 
 const Planner = () => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<PlannerTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<PlannerTask | null>(null);
   const [defaultTaskType, setDefaultTaskType] = useState<"task" | "event">("task");
@@ -44,12 +29,7 @@ const Planner = () => {
       console.error("Error fetching planner tasks:", error);
       toast.error("Failed to load planner tasks");
     } else {
-      const items = (data as unknown as PlannerTask[]) || [];
-      setTasks(items);
-
-      // Diagnostics
-      const scheduled = items.filter((t) => t.start_at && t.end_at).length;
-      console.log(`[Planner] Total: ${items.length}, Scheduled: ${scheduled}, Unscheduled: ${items.length - scheduled}`);
+      setTasks((data as unknown as PlannerTask[]) || []);
     }
     setIsLoading(false);
   }, [user]);
@@ -182,108 +162,18 @@ const Planner = () => {
     setDialogOpen(true);
   };
 
-  const filteredTasks = tasks.filter((task) => {
-    if (searchQuery && !task.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
-  });
-
   return (
     <ProjectLayout>
-      <div className="px-6 py-8 space-y-6">
-          {/* Header */}
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-blue-100/50 dark:bg-blue-900/20 rounded-xl shrink-0">
-                <CalendarCheck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-semibold text-foreground">Planner</h1>
-                <p className="text-muted-foreground">Organize your tasks, events, and schedule in one place.</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-48 h-9 pl-8"
-                />
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button className="gap-1">
-                    <Plus className="w-4 h-4" />
-                    Add
-                    <ChevronDown className="w-3 h-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => { setEditingTask(null); setDefaultTaskType("task"); setDefaultDueAt(null); setDialogOpen(true); }}>
-                    Add Task
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setEditingTask(null); setDefaultTaskType("event"); setDefaultDueAt(null); setDialogOpen(true); }}>
-                    Add Event
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-
-          {/* View Tabs */}
-          <Tabs defaultValue="calendar">
-            <TabsList className="mb-4">
-              <TabsTrigger value="calendar" className="gap-1.5">
-                <CalendarDays className="w-4 h-4" />
-                Calendar
-              </TabsTrigger>
-              <TabsTrigger value="list" className="gap-1.5">
-                <List className="w-4 h-4" />
-                List
-              </TabsTrigger>
-              <TabsTrigger value="board" className="gap-1.5">
-                <Columns3 className="w-4 h-4" />
-                Board
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="calendar">
-              <PlannerCalendarView
-                tasks={filteredTasks}
-                onEditTask={handleEditTask}
-                onCreateTask={handleQuickCreate}
-                onToggleComplete={handleToggleComplete}
-              />
-            </TabsContent>
-
-            <TabsContent value="list">
-              <PlannerListView
-                tasks={filteredTasks}
-                isLoading={isLoading}
-                onToggleComplete={handleToggleComplete}
-                onEditTask={handleEditTask}
-                onDeleteTask={handleDeleteTask}
-                onAddTask={handleAddTask}
-              />
-            </TabsContent>
-
-            <TabsContent value="board">
-              <PlannerBoardView
-                tasks={filteredTasks}
-                onToggleComplete={handleToggleComplete}
-                onEditTask={handleEditTask}
-                onDeleteTask={handleDeleteTask}
-                onStatusChange={async (taskId, newStatus) => {
-                  const { error } = await supabase
-                    .from("tasks")
-                    .update({ column_id: newStatus } as any)
-                    .eq("id", taskId);
-                  if (!error) fetchTasks();
-                }}
-              />
-            </TabsContent>
-          </Tabs>
+      <div className="h-[calc(100vh-3.5rem)] overflow-hidden">
+        <PlannerCalendarView
+          tasks={tasks}
+          isLoading={isLoading}
+          onEditTask={handleEditTask}
+          onCreateTask={handleQuickCreate}
+          onToggleComplete={handleToggleComplete}
+          onDeleteTask={handleDeleteTask}
+          onAddTask={handleAddTask}
+        />
       </div>
 
       <PlannerTaskDialog
