@@ -1,37 +1,175 @@
 
 
-## Problem Analysis
+# Planner Feature Implementation Plan
 
-From the logs, the error is clear: **the edge function is timing out**. The client sends a request to `generate-scene-image` with 6 environment images + preview + anchor image (all as URLs), and the AI model takes too long to respond. The client's fetch connection closes before the response arrives, causing:
-- Edge function: `"Http: connection closed before message completed"` / `"Cannot read headers: request closed"`
-- Client: `"Failed to fetch"` → mapped to `"⏱️ The request timed out or was interrupted. Video generation can take 3-5 minutes — please try again."`
+## Overview
 
-The error message mentions "Video generation" even for image generation failures — that's misleading.
+Add a full Planner feature with List + Calendar views, extend the existing `tasks` table with new columns, migrate custom "My ToDo List" tasks to planner scope, add a "Your Day" section to the Dashboard, and add a single "Planner" nav item under the Plan section.
 
-## Plan
+---
 
-### 1. Fix error messages to be context-specific
+## 1. Database Migration
 
-Update `getUserFriendlyErrorMessage` in `constants.ts`:
-- The "failed to fetch" message currently says "Video generation can take 3-5 minutes" — but this fires for image generation too
-- Make the function accept an optional `context` parameter (`'image' | 'video' | 'general'`) so the message is appropriate
-- Add specific messages for image generation timeouts vs video timeouts
-- Update all call sites in `AIStudio.tsx` to pass the context based on `task.type`
+**Add columns to existing `public.tasks` table:**
 
-### 2. Reduce environment images sent to the model
+```sql
+ALTER TABLE public.tasks
+  ADD COLUMN task_origin TEXT NOT NULL DEFAULT 'system',
+  ADD COLUMN task_scope TEXT NOT NULL DEFAULT 'funnel_build',
+  ADD COLUMN task_type TEXT NOT NULL DEFAULT 'task',
+  ADD COLUMN category TEXT NULL,
+  ADD COLUMN due_at TIMESTAMPTZ NULL,
+  ADD COLUMN start_at TIMESTAMPTZ NULL,
+  ADD COLUMN end_at TIMESTAMPTZ NULL,
+  ADD COLUMN location TEXT NULL,
+  ADD COLUMN linked_entity_type TEXT NULL,
+  ADD COLUMN linked_entity_id UUID NULL;
+```
 
-The request body shows **6 environment images** being sent. Each one the model must download and process, massively increasing latency. Limit to max 3 environment images (the model doesn't need 6 angles of the same room — 2-3 is sufficient for spatial understanding). This is the single biggest speed improvement available without changing models.
+**Data migration** — existing custom tasks (those without a `phase` value, i.e. user-created "My ToDo List" tasks) become planner tasks:
 
-### 3. Add client-side timeout with retry guidance
+```sql
+UPDATE public.tasks
+SET task_origin = 'user', task_scope = 'planner', category = 'business'
+WHERE phase IS NULL;
 
-The `supabase.functions.invoke` call has no timeout. Add an `AbortController` with a 90-second timeout for image generation, and show a clear message: "Image generation timed out after 90 seconds. This can happen with complex scenes — try regenerating this scene."
+UPDATE public.tasks
+SET task_origin = 'system', task_scope = 'funnel_build'
+WHERE phase IS NOT NULL;
+```
 
-### 4. Model speed consideration
+RLS policies remain unchanged — they already enforce `auth.uid() = user_id` for all CRUD.
 
-`google/gemini-3-pro-image-preview` is the best quality image model available. The alternative `google/gemini-2.5-flash-image` is faster but lower quality. Rather than switching models, the biggest speed gain comes from reducing the number of images sent (point 2 above). No model change recommended.
+---
 
-### Files to modify
-- `src/components/ai-studio/constants.ts` — make error messages context-aware (image vs video)
-- `src/pages/AIStudio.tsx` — add AbortController timeout, limit env images to 3, pass error context
-- `supabase/functions/generate-scene-image/index.ts` — cap environment images to 3 server-side as safety net
+## 2. Sidebar Navigation
+
+**File: `src/components/layout/ProjectSidebar.tsx`**
+
+Add "Planner" nav item to the Plan section (after Tasks, before Playbook):
+
+```typescript
+{ id: "planner", label: "Planner", icon: CalendarCheck, href: "/planner" },
+```
+
+Import `CalendarCheck` from lucide-react.
+
+---
+
+## 3. New Route
+
+**File: `src/App.tsx`**
+
+Add route: `/planner` → new `Planner` page component, wrapped in `ProtectedRoute`.
+
+---
+
+## 4. Planner Page (`src/pages/Planner.tsx`)
+
+Single page with top view tabs: **List | Calendar | Board**
+
+### Shared state:
+- Fetch tasks where `task_scope = 'planner'` and `user_id = auth.uid()`
+- Search, filter by category (business/life), status, labels
+- "+ Add" dropdown: Add Task / Add Event
+
+### A) List View (default) — `src/components/planner/PlannerListView.tsx`
+
+Groups (collapsible):
+- **Overdue** — `due_at < now AND column_id != 'done'`
+- **Today** — `due_at` is today
+- **This Week** — `due_at` within current week
+- **Anytime** — no `due_at`
+- **Completed** — `column_id = 'done'`
+
+Each row: checkbox, title, type icon (task/event), due date, category chip, linked entity chip, status badge.
+
+### B) Calendar View — `src/components/planner/PlannerCalendarView.tsx`
+
+- Month grid (week view optional for later)
+- Shows ONLY items where `start_at IS NOT NULL AND end_at IS NOT NULL`
+- Right sidebar: "Unscheduled" list (items with no `start_at`)
+- Click unscheduled item → opens edit modal to add times
+
+### C) Board View (optional MVP+) — `src/components/planner/PlannerBoardView.tsx`
+
+- Columns: To Do / Doing / Done
+- Task cards only (exclude events)
+- Drag between columns using `@hello-pangea/dnd` (already installed)
+
+### Create/Edit Dialog — `src/components/planner/PlannerTaskDialog.tsx`
+
+Fields: title (required), task_type (task/event), status (todo/doing/done), category (business/life), due_at, start_at/end_at (required if event), location, linked_entity_type/id, description, labels.
+
+Validation: if `task_type = 'event'`, require `start_at` and `end_at`.
+
+---
+
+## 5. Dashboard Enhancement — "Your Day" Section
+
+**File: `src/pages/project/plan/FunnelOverviewContent.tsx`**
+
+Add a `YourDaySection` component rendered below the greeting header.
+
+### Cards:
+1. **Top Priorities** — up to 3 planner tasks due today, with inline checkbox completion
+2. **Due Today** — count of today + overdue planner tasks, show top 5
+3. **Scheduled** — next 3 scheduled items (`start_at >= now`), link to `/planner`
+4. **Content Shipping** — count of scheduled social posts this week (from `content_planner` table), link to Social Planner
+
+Component: `src/components/dashboard/YourDaySection.tsx`
+
+---
+
+## 6. Existing Tasks Page Update
+
+**File: `src/components/TasksBoard.tsx`**
+
+- Remove the entire "My ToDo List" section (lines ~680-814)
+- Remove the "Add Task" button that created custom tasks
+- Add an info card at the bottom: "Your personal tasks have moved to Planner" with a link to `/planner`
+- Ensure all data queries filter by `task_scope = 'funnel_build'` (or simply continue using `phase IS NOT NULL` which is equivalent post-migration)
+
+---
+
+## 7. Type Updates
+
+**File: `src/components/TaskDialog.tsx`** — Update the `Task` interface:
+
+```typescript
+export interface Task {
+  // ... existing fields
+  task_origin: string;
+  task_scope: string;
+  task_type: string;
+  category: string | null;
+  due_at: string | null;
+  start_at: string | null;
+  end_at: string | null;
+  location: string | null;
+  linked_entity_type: string | null;
+  linked_entity_id: string | null;
+}
+```
+
+---
+
+## Files to Create
+- `src/pages/Planner.tsx` — main page with view tabs
+- `src/components/planner/PlannerListView.tsx`
+- `src/components/planner/PlannerCalendarView.tsx`
+- `src/components/planner/PlannerBoardView.tsx` (optional)
+- `src/components/planner/PlannerTaskDialog.tsx`
+- `src/components/dashboard/YourDaySection.tsx`
+
+## Files to Modify
+- `src/components/layout/ProjectSidebar.tsx` — add Planner nav item
+- `src/App.tsx` — add `/planner` route
+- `src/components/TasksBoard.tsx` — remove My ToDo List, add redirect card
+- `src/components/TaskDialog.tsx` — extend Task interface
+- `src/pages/project/plan/FunnelOverviewContent.tsx` — add YourDaySection
+
+## Database Migration
+- Add 10 new columns to `public.tasks`
+- Backfill `task_origin`/`task_scope` on existing rows
 
