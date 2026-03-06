@@ -2330,43 +2330,73 @@ export type Database = {
       }
       tasks: {
         Row: {
+          category: string | null
           column_id: string
           created_at: string
           description: string | null
+          due_at: string | null
           due_date: string | null
+          end_at: string | null
           id: string
           labels: string[] | null
+          linked_entity_id: string | null
+          linked_entity_type: string | null
+          location: string | null
           phase: string | null
           position: number
           project_id: string
+          start_at: string | null
+          task_origin: string
+          task_scope: string
+          task_type: string
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          category?: string | null
           column_id?: string
           created_at?: string
           description?: string | null
+          due_at?: string | null
           due_date?: string | null
+          end_at?: string | null
           id?: string
           labels?: string[] | null
+          linked_entity_id?: string | null
+          linked_entity_type?: string | null
+          location?: string | null
           phase?: string | null
           position?: number
           project_id: string
+          start_at?: string | null
+          task_origin?: string
+          task_scope?: string
+          task_type?: string
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          category?: string | null
           column_id?: string
           created_at?: string
           description?: string | null
+          due_at?: string | null
           due_date?: string | null
+          end_at?: string | null
           id?: string
           labels?: string[] | null
+          linked_entity_id?: string | null
+          linked_entity_type?: string | null
+          location?: string | null
           phase?: string | null
           position?: number
           project_id?: string
+          start_at?: string | null
+          task_origin?: string
+          task_scope?: string
+          task_type?: string
           title?: string
           updated_at?: string
           user_id?: string

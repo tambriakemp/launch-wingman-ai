@@ -18,6 +18,7 @@ import {
   ProjectPausedView,
   ProjectLaunchedView,
 } from "@/components/dashboard";
+import { YourDaySection } from "@/components/dashboard/YourDaySection";
 import { CheckInBanner, CheckInFlow } from "@/components/check-in";
 import { MemoryReviewBanner } from "@/components/relaunch";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
@@ -251,6 +252,9 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
         onArchive={archive}
         onMarkComplete={projectState === 'launched' ? markCompleted : undefined}
       />
+
+      {/* Your Day Section */}
+      <YourDaySection projectId={projectId} />
 
       {/* Show celebration card if a phase was recently completed and not dismissed */}
       {mostRecentlyCompletedPhase && !dismissedPhases.includes(mostRecentlyCompletedPhase) && (
