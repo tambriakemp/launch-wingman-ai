@@ -58,6 +58,7 @@ export interface AppConfig {
   nailStyle: string;
   customNailStyle: string;
   cameraMovement: string;
+  ultraRealistic: boolean;
   sceneCount?: number | null;
 }
 

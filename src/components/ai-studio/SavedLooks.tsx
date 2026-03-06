@@ -18,6 +18,7 @@ const LOOK_KEYS = [
   'makeup', 'customMakeup',
   'skinComplexion', 'customSkinComplexion', 'skinUndertone',
   'nailStyle', 'customNailStyle',
+  'ultraRealistic',
 ] as const;
 
 type LookSettings = Pick<AppConfig, typeof LOOK_KEYS[number]>;
