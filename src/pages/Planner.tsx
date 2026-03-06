@@ -5,9 +5,12 @@ import { toast } from "sonner";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { PlannerCalendarView } from "@/components/planner/PlannerCalendarView";
 import { PlannerTaskDialog, type PlannerTask } from "@/components/planner/PlannerTaskDialog";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
 
 const Planner = () => {
   const { user } = useAuth();
+  const { hasAccess, isLoading: accessLoading } = useFeatureAccess();
   const [tasks, setTasks] = useState<PlannerTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -161,6 +164,26 @@ const Planner = () => {
     setDefaultDueAt(null);
     setDialogOpen(true);
   };
+
+  if (accessLoading) {
+    return (
+      <ProjectLayout>
+        <div className="h-[calc(100vh-3.5rem)] flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      </ProjectLayout>
+    );
+  }
+
+  if (!hasAccess('social_calendar')) {
+    return (
+      <ProjectLayout>
+        <div className="h-[calc(100vh-3.5rem)] flex items-center justify-center p-8">
+          <UpgradePrompt feature="social_calendar" />
+        </div>
+      </ProjectLayout>
+    );
+  }
 
   return (
     <ProjectLayout>
