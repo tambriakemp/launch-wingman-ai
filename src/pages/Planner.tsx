@@ -189,9 +189,9 @@ const Planner = () => {
 
   return (
     <ProjectLayout>
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+      <div className="px-6 py-8 space-y-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div className="flex items-start gap-4">
               <div className="p-3 bg-blue-100/50 dark:bg-blue-900/20 rounded-xl shrink-0">
                 <CalendarCheck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
