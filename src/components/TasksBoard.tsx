@@ -94,6 +94,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
       .from("tasks")
       .select("*")
       .eq("project_id", projectId)
+      .eq("task_scope", "funnel_build")
       .order("position", { ascending: true });
 
     if (tasksError) {
