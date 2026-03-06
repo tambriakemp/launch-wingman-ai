@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, CalendarOff } from "lucide-react";
+import { CalendarCheck, CalendarIcon, CalendarOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -60,12 +59,10 @@ const STATUSES = [
   { id: "done", label: "Done" },
 ];
 
-/** Convert an ISO string to a local datetime-local input value */
-function isoToLocalDatetime(iso: string): string {
+/** Extract HH:MM from an ISO string in local time */
+function isoToLocalTime(iso: string): string {
   const d = new Date(iso);
-  const offset = d.getTimezoneOffset();
-  const local = new Date(d.getTime() - offset * 60000);
-  return local.toISOString().slice(0, 16);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 interface PlannerTaskDialogProps {
@@ -90,9 +87,9 @@ export const PlannerTaskDialog = ({
   const [taskType, setTaskType] = useState<"task" | "event">("task");
   const [columnId, setColumnId] = useState("todo");
   const [category, setCategory] = useState<"business" | "life">("business");
-  const [dueAt, setDueAt] = useState<Date | undefined>(undefined);
-  const [startAt, setStartAt] = useState("");
-  const [endAt, setEndAt] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [location, setLocation] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -105,22 +102,45 @@ export const PlannerTaskDialog = ({
       setTaskType((editTask.task_type as "task" | "event") || "task");
       setColumnId(editTask.column_id);
       setCategory((editTask.category as "business" | "life") || "business");
-      setDueAt(editTask.due_at ? new Date(editTask.due_at) : undefined);
-      setStartAt(editTask.start_at ? isoToLocalDatetime(editTask.start_at) : "");
-      setEndAt(editTask.end_at ? isoToLocalDatetime(editTask.end_at) : "");
       setLocation(editTask.location || "");
+
+      // Date: prefer start_at, fallback to due_at
+      if (editTask.start_at) {
+        setSelectedDate(new Date(editTask.start_at));
+        setStartTime(isoToLocalTime(editTask.start_at));
+      } else if (editTask.due_at) {
+        setSelectedDate(new Date(editTask.due_at));
+        setStartTime("");
+      } else {
+        setSelectedDate(undefined);
+        setStartTime("");
+      }
+
+      if (editTask.end_at) {
+        setEndTime(isoToLocalTime(editTask.end_at));
+      } else {
+        setEndTime("");
+      }
     } else {
       setTitle("");
       setDescription("");
       setTaskType(defaultTaskType);
       setColumnId("todo");
       setCategory("business");
-      setDueAt(defaultDueAt || undefined);
-      setStartAt("");
-      setEndAt("");
+      setSelectedDate(defaultDueAt || undefined);
+      setStartTime("");
+      setEndTime("");
       setLocation("");
     }
   }, [editTask, open, defaultTaskType, defaultDueAt]);
+
+  /** Combine selected date + time string into ISO */
+  const combineDatetime = (date: Date, time: string): string => {
+    const [h, m] = time.split(":").map(Number);
+    const combined = new Date(date);
+    combined.setHours(h, m, 0, 0);
+    return combined.toISOString();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,24 +148,26 @@ export const PlannerTaskDialog = ({
       toast.error("Title is required");
       return;
     }
-    if (taskType === "event" && (!startAt || !endAt)) {
-      toast.error("Events require start and end times");
+    if (taskType === "event" && (!selectedDate || !startTime || !endTime)) {
+      toast.error("Events require a date with start and end times");
       return;
     }
-    // Pair consistency
-    if (startAt && !endAt) {
+    // Pair consistency for times
+    if (startTime && !endTime) {
       toast.error("End time is required when start time is set");
       return;
     }
-    if (endAt && !startAt) {
+    if (endTime && !startTime) {
       toast.error("Start time is required when end time is set");
       return;
     }
     // end >= start
-    if (startAt && endAt && new Date(endAt) < new Date(startAt)) {
+    if (startTime && endTime && startTime >= endTime) {
       toast.error("End time must be after start time");
       return;
     }
+
+    const hasSchedule = selectedDate && startTime && endTime;
 
     setIsSubmitting(true);
     try {
@@ -155,9 +177,9 @@ export const PlannerTaskDialog = ({
         task_type: taskType,
         column_id: columnId,
         category,
-        due_at: dueAt ? dueAt.toISOString() : null,
-        start_at: startAt ? new Date(startAt).toISOString() : null,
-        end_at: endAt ? new Date(endAt).toISOString() : null,
+        due_at: selectedDate ? selectedDate.toISOString() : null,
+        start_at: hasSchedule ? combineDatetime(selectedDate!, startTime) : null,
+        end_at: hasSchedule ? combineDatetime(selectedDate!, endTime) : null,
         location: location.trim() || null,
       });
       onOpenChange(false);
@@ -193,40 +215,63 @@ export const PlannerTaskDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto p-0">
         <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>{editTask ? "Edit" : "Add"} {taskType === "event" ? "Event" : "Task"}</DialogTitle>
-            <DialogDescription>
-              {editTask ? "Update details below." : "Create a new planner item."}
-            </DialogDescription>
+          {/* Header with icon */}
+          <DialogHeader className="px-6 pt-6 pb-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <CalendarCheck className="w-5 h-5 text-primary" />
+              </div>
+              <DialogTitle className="text-lg">
+                {editTask ? "Edit" : "Create"} {taskType === "event" ? "Event" : "Schedule"}
+              </DialogTitle>
+            </div>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="planner-title">Title *</Label>
-              <Input id="planner-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter title" maxLength={200} />
+
+          <div className="px-6 space-y-4 pb-2">
+            {/* Title */}
+            <div className="space-y-1.5">
+              <Label htmlFor="planner-title" className="text-xs font-medium text-muted-foreground">Title *</Label>
+              <Input
+                id="planner-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter title"
+                maxLength={200}
+                className="h-10"
+              />
             </div>
 
-            <div className="grid gap-2">
-              <Label>Description</Label>
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" rows={2} maxLength={1000} />
+            {/* Description */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Description</Label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Optional description"
+                rows={2}
+                maxLength={1000}
+                className="resize-none"
+              />
             </div>
 
+            {/* Type + Category row */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-2">
-                <Label>Type</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Type</Label>
                 <Select value={taskType} onValueChange={(v) => setTaskType(v as "task" | "event")}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="task">Task</SelectItem>
                     <SelectItem value="event">Event</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid gap-2">
-                <Label>Category</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Category</Label>
                 <Select value={category} onValueChange={(v) => setCategory(v as "business" | "life")}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="business">Business</SelectItem>
                     <SelectItem value="life">Life</SelectItem>
@@ -235,10 +280,11 @@ export const PlannerTaskDialog = ({
               </div>
             </div>
 
-            <div className="grid gap-2">
-              <Label>Status</Label>
+            {/* Status */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Status</Label>
               <Select value={columnId} onValueChange={setColumnId}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {STATUSES.map((s) => (
                     <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
@@ -247,45 +293,54 @@ export const PlannerTaskDialog = ({
               </Select>
             </div>
 
-            <div className="grid gap-2">
-              <Label>Due Date</Label>
+            {/* Date picker */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !dueAt && "text-muted-foreground")}>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-10", !selectedDate && "text-muted-foreground")}>
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueAt ? format(dueAt, "PPP") : "Pick a date"}
+                    {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={dueAt} onSelect={setDueAt} initialFocus />
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
                 </PopoverContent>
               </Popover>
             </div>
 
-            {(taskType === "event" || startAt || endAt) && (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="grid gap-2">
-                    <Label>Start {taskType === "event" && "*"}</Label>
-                    <Input type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>End {taskType === "event" && "*"}</Label>
-                    <Input type="datetime-local" value={endAt} onChange={(e) => setEndAt(e.target.value)} />
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label>Location</Label>
-                  <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Optional location" />
-                </div>
-              </>
-            )}
+            {/* Start / End time — always visible */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Start Time</Label>
+                <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="h-10" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">End Time</Label>
+                <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="h-10" />
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Location</Label>
+              <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Optional location" className="h-10" />
+            </div>
           </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
+
+          {/* Footer */}
+          <DialogFooter className="px-6 py-4 border-t border-border flex-col sm:flex-row gap-2">
             {editTask && isScheduled && (
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
+                size="sm"
                 className="gap-1.5 text-muted-foreground mr-auto"
                 onClick={handleUnschedule}
                 disabled={isSubmitting}
