@@ -11,8 +11,10 @@ import {
   startOfWeek,
   endOfWeek,
   parseISO,
+  isPast,
+  isToday,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, CalendarCheck, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,9 +24,10 @@ import type { PlannerTask } from "./PlannerTaskDialog";
 interface PlannerCalendarViewProps {
   tasks: PlannerTask[];
   onEditTask: (task: PlannerTask) => void;
+  onCreateTask?: (defaults: { due_at?: string }) => void;
 }
 
-export const PlannerCalendarView = ({ tasks, onEditTask }: PlannerCalendarViewProps) => {
+export const PlannerCalendarView = ({ tasks, onEditTask, onCreateTask }: PlannerCalendarViewProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const scheduledTasks = useMemo(
@@ -34,6 +37,11 @@ export const PlannerCalendarView = ({ tasks, onEditTask }: PlannerCalendarViewPr
 
   const unscheduledTasks = useMemo(
     () => tasks.filter((t) => !t.start_at && t.column_id !== "done"),
+    [tasks]
+  );
+
+  const overdueTasks = useMemo(
+    () => tasks.filter((t) => t.due_at && isPast(parseISO(t.due_at)) && !isToday(parseISO(t.due_at)) && t.column_id !== "done"),
     [tasks]
   );
 
@@ -47,6 +55,12 @@ export const PlannerCalendarView = ({ tasks, onEditTask }: PlannerCalendarViewPr
     scheduledTasks.filter((t) => t.start_at && isSameDay(parseISO(t.start_at), day));
 
   const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  const handleDayClick = (day: Date) => {
+    if (onCreateTask) {
+      onCreateTask({ due_at: day.toISOString() });
+    }
+  };
 
   return (
     <div className="flex flex-col lg:flex-row gap-4">
@@ -69,19 +83,20 @@ export const PlannerCalendarView = ({ tasks, onEditTask }: PlannerCalendarViewPr
           {days.map((day) => {
             const dayTasks = getTasksForDay(day);
             const isCurrentMonth = isSameMonth(day, currentMonth);
-            const isToday = isSameDay(day, new Date());
+            const isCurrentDay = isSameDay(day, new Date());
 
             return (
               <div
                 key={day.toISOString()}
                 className={cn(
-                  "min-h-[80px] p-1 bg-card",
+                  "min-h-[80px] p-1 bg-card cursor-pointer hover:bg-accent/20 transition-colors",
                   !isCurrentMonth && "opacity-40"
                 )}
+                onClick={() => handleDayClick(day)}
               >
                 <div className={cn(
                   "text-[11px] font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full",
-                  isToday && "bg-primary text-primary-foreground"
+                  isCurrentDay && "bg-primary text-primary-foreground"
                 )}>
                   {format(day, "d")}
                 </div>
@@ -95,7 +110,7 @@ export const PlannerCalendarView = ({ tasks, onEditTask }: PlannerCalendarViewPr
                           ? "bg-primary/10 text-primary hover:bg-primary/20"
                           : "bg-accent hover:bg-accent/80 text-accent-foreground"
                       )}
-                      onClick={() => onEditTask(task)}
+                      onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
                     >
                       {task.start_at && (
                         <span className="font-medium">{format(parseISO(task.start_at), "h:mm")} </span>
@@ -113,8 +128,9 @@ export const PlannerCalendarView = ({ tasks, onEditTask }: PlannerCalendarViewPr
         </div>
       </div>
 
-      {/* Unscheduled Sidebar */}
-      <div className="w-full lg:w-64 shrink-0">
+      {/* Sidebar */}
+      <div className="w-full lg:w-64 shrink-0 space-y-3">
+        {/* Unscheduled */}
         <div className="border border-border rounded-lg">
           <div className="px-3 py-2 border-b border-border bg-muted/30">
             <h4 className="text-sm font-medium flex items-center gap-1.5">
@@ -123,7 +139,7 @@ export const PlannerCalendarView = ({ tasks, onEditTask }: PlannerCalendarViewPr
               <Badge variant="secondary" className="text-[10px] ml-auto">{unscheduledTasks.length}</Badge>
             </h4>
           </div>
-          <ScrollArea className="max-h-[400px]">
+          <ScrollArea className="max-h-[250px]">
             <div className="p-2 space-y-1">
               {unscheduledTasks.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-4">All items scheduled!</p>
@@ -149,6 +165,35 @@ export const PlannerCalendarView = ({ tasks, onEditTask }: PlannerCalendarViewPr
             </div>
           </ScrollArea>
         </div>
+
+        {/* Overdue */}
+        {overdueTasks.length > 0 && (
+          <div className="border border-destructive/30 rounded-lg">
+            <div className="px-3 py-2 border-b border-destructive/20 bg-destructive/5">
+              <h4 className="text-sm font-medium flex items-center gap-1.5 text-destructive">
+                <AlertTriangle className="w-4 h-4" />
+                Overdue
+                <Badge variant="destructive" className="text-[10px] ml-auto">{overdueTasks.length}</Badge>
+              </h4>
+            </div>
+            <ScrollArea className="max-h-[150px]">
+              <div className="p-2 space-y-1">
+                {overdueTasks.map((task) => (
+                  <button
+                    key={task.id}
+                    className="w-full text-left p-2 rounded-md hover:bg-accent/50 transition-colors"
+                    onClick={() => onEditTask(task)}
+                  >
+                    <p className="text-sm truncate">{task.title}</p>
+                    <span className="text-[10px] text-destructive">
+                      Due {format(parseISO(task.due_at!), "MMM d")}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        )}
       </div>
     </div>
   );

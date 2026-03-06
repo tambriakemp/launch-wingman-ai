@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, CalendarOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,12 +60,21 @@ const STATUSES = [
   { id: "done", label: "Done" },
 ];
 
+/** Convert an ISO string to a local datetime-local input value */
+function isoToLocalDatetime(iso: string): string {
+  const d = new Date(iso);
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
 interface PlannerTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: Partial<PlannerTask>) => Promise<void>;
   editTask?: PlannerTask | null;
   defaultTaskType?: "task" | "event";
+  defaultDueAt?: Date | null;
 }
 
 export const PlannerTaskDialog = ({
@@ -74,6 +83,7 @@ export const PlannerTaskDialog = ({
   onSubmit,
   editTask,
   defaultTaskType = "task",
+  defaultDueAt,
 }: PlannerTaskDialogProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -86,6 +96,8 @@ export const PlannerTaskDialog = ({
   const [location, setLocation] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const isScheduled = editTask && (editTask.start_at || editTask.end_at);
+
   useEffect(() => {
     if (editTask) {
       setTitle(editTask.title);
@@ -94,8 +106,8 @@ export const PlannerTaskDialog = ({
       setColumnId(editTask.column_id);
       setCategory((editTask.category as "business" | "life") || "business");
       setDueAt(editTask.due_at ? new Date(editTask.due_at) : undefined);
-      setStartAt(editTask.start_at ? editTask.start_at.slice(0, 16) : "");
-      setEndAt(editTask.end_at ? editTask.end_at.slice(0, 16) : "");
+      setStartAt(editTask.start_at ? isoToLocalDatetime(editTask.start_at) : "");
+      setEndAt(editTask.end_at ? isoToLocalDatetime(editTask.end_at) : "");
       setLocation(editTask.location || "");
     } else {
       setTitle("");
@@ -103,12 +115,12 @@ export const PlannerTaskDialog = ({
       setTaskType(defaultTaskType);
       setColumnId("todo");
       setCategory("business");
-      setDueAt(undefined);
+      setDueAt(defaultDueAt || undefined);
       setStartAt("");
       setEndAt("");
       setLocation("");
     }
-  }, [editTask, open, defaultTaskType]);
+  }, [editTask, open, defaultTaskType, defaultDueAt]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,6 +130,20 @@ export const PlannerTaskDialog = ({
     }
     if (taskType === "event" && (!startAt || !endAt)) {
       toast.error("Events require start and end times");
+      return;
+    }
+    // Pair consistency
+    if (startAt && !endAt) {
+      toast.error("End time is required when start time is set");
+      return;
+    }
+    if (endAt && !startAt) {
+      toast.error("Start time is required when end time is set");
+      return;
+    }
+    // end >= start
+    if (startAt && endAt && new Date(endAt) < new Date(startAt)) {
+      toast.error("End time must be after start time");
       return;
     }
 
@@ -133,6 +159,29 @@ export const PlannerTaskDialog = ({
         start_at: startAt ? new Date(startAt).toISOString() : null,
         end_at: endAt ? new Date(endAt).toISOString() : null,
         location: location.trim() || null,
+      });
+      onOpenChange(false);
+    } catch {
+      // handled upstream
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUnschedule = async () => {
+    if (!editTask) return;
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        title: editTask.title,
+        description: editTask.description,
+        task_type: editTask.task_type === "event" ? "task" : editTask.task_type,
+        column_id: editTask.column_id,
+        category: editTask.category,
+        due_at: editTask.due_at,
+        start_at: null,
+        end_at: null,
+        location: null,
       });
       onOpenChange(false);
     } catch {
@@ -232,7 +281,19 @@ export const PlannerTaskDialog = ({
               </>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            {editTask && isScheduled && (
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-1.5 text-muted-foreground mr-auto"
+                onClick={handleUnschedule}
+                disabled={isSubmitting}
+              >
+                <CalendarOff className="w-4 h-4" />
+                Unschedule
+              </Button>
+            )}
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving..." : editTask ? "Update" : "Create"}</Button>
           </DialogFooter>
