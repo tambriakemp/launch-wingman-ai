@@ -57,35 +57,6 @@ const TASK_ICONS: Record<string, LucideIcon> = {
   postlaunch_capture_ending_point: BarChart3,
 };
 
-const PHASE_ICON_BG: Record<Phase, string> = {
-  planning: "bg-blue-500/10 text-blue-500",
-  messaging: "bg-purple-500/10 text-purple-500",
-  build: "bg-emerald-500/10 text-emerald-500",
-  content: "bg-amber-500/10 text-amber-500",
-  "pre-launch": "bg-cyan-500/10 text-cyan-500",
-  launch: "bg-rose-500/10 text-rose-500",
-  "post-launch": "bg-teal-500/10 text-teal-500",
-};
-
-const PHASE_BUTTON_COLORS: Record<Phase, string> = {
-  planning: "bg-blue-500 hover:bg-blue-600 text-white",
-  messaging: "bg-purple-500 hover:bg-purple-600 text-white",
-  build: "bg-emerald-500 hover:bg-emerald-600 text-white",
-  content: "bg-amber-500 hover:bg-amber-600 text-white",
-  "pre-launch": "bg-cyan-500 hover:bg-cyan-600 text-white",
-  launch: "bg-rose-500 hover:bg-rose-600 text-white",
-  "post-launch": "bg-teal-500 hover:bg-teal-600 text-white",
-};
-
-const PHASE_BADGE_COLORS: Record<Phase, string> = {
-  planning: "bg-blue-500/15 text-blue-600 border-blue-500/30",
-  messaging: "bg-purple-500/15 text-purple-600 border-purple-500/30",
-  build: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
-  content: "bg-amber-500/15 text-amber-600 border-amber-500/30",
-  "pre-launch": "bg-cyan-500/15 text-cyan-600 border-cyan-500/30",
-  launch: "bg-rose-500/15 text-rose-600 border-rose-500/30",
-  "post-launch": "bg-teal-500/15 text-teal-600 border-teal-500/30",
-};
 
 const MAX_LINES = 7;
 
@@ -187,12 +158,9 @@ function ContentRenderer({
       return (
         <div className="flex flex-wrap gap-2">
           {items.map((item, idx) => (
-            <span 
+             <span 
               key={idx}
-              className={cn(
-                "inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border",
-                PHASE_BADGE_COLORS[phase]
-              )}
+              className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border bg-secondary/15 text-secondary border-secondary/30"
             >
               {item.value}
             </span>
@@ -383,7 +351,7 @@ export function SummaryCard({
 
         {/* Header with icon and label */}
         <div className="flex items-center gap-3 mb-4 pr-10">
-          <div className={cn("p-2.5 rounded-xl", PHASE_ICON_BG[phase])}>
+          <div className="p-2.5 rounded-xl bg-secondary/10 text-secondary">
             <Icon className="w-5 h-5" />
           </div>
           <h3 className="text-base font-semibold text-foreground">
@@ -418,9 +386,9 @@ export function SummaryCard({
           <Button 
             size="sm"
             onClick={handleViewTask}
-            className={cn("text-sm", PHASE_BUTTON_COLORS[phase])}
+            className="text-sm"
           >
-            View Task
+            Edit
           </Button>
           
           {needsTruncation && (

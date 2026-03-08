@@ -7,7 +7,7 @@ import { PhaseFilters } from "@/components/phase-snapshot/PhaseFilters";
 import { MasonryGrid } from "@/components/phase-snapshot/MasonryGrid";
 import { ExportSnapshotButton } from "@/components/phase-snapshot/ExportSnapshotButton";
 import { usePhaseSnapshot } from "@/hooks/usePhaseSnapshot";
-import { Phase, PHASES } from "@/types/tasks";
+import { Phase, PHASES, PHASE_LABELS } from "@/types/tasks";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function LoadingSkeleton() {
@@ -31,12 +31,17 @@ function LoadingSkeleton() {
 
 export default function PhaseSnapshot() {
   const { id } = useParams();
-  const [selectedPhase, setSelectedPhase] = useState<Phase>("planning");
+  const [selectedPhase, setSelectedPhase] = useState<Phase | "all">("all");
   const { data: phases, isLoading, error } = usePhaseSnapshot(id);
 
   // Get all blocks for selected phase with phase info attached
   const filteredBlocks = useMemo(() => {
     if (!phases) return [];
+    if (selectedPhase === "all") {
+      return phases.flatMap(p =>
+        p.blocks.map(block => ({ ...block, phase: p.phase }))
+      );
+    }
     const phaseData = phases.find(p => p.phase === selectedPhase);
     if (!phaseData) return [];
     return phaseData.blocks.map(block => ({
@@ -59,7 +64,7 @@ export default function PhaseSnapshot() {
     return (
       <ProjectLayout>
         <div className="max-w-5xl mx-auto px-4 py-12 text-center">
-          <p className="text-muted-foreground">Unable to load phase snapshot.</p>
+          <p className="text-muted-foreground">Unable to load launch brief.</p>
         </div>
       </ProjectLayout>
     );
@@ -75,11 +80,11 @@ export default function PhaseSnapshot() {
           className="mb-8"
         >
           <Link
-            to={`/projects/${id}/tasks`}
+            to={`/projects/${id}/dashboard`}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Tasks
+            Back to Dashboard
           </Link>
         </motion.div>
 
@@ -92,10 +97,10 @@ export default function PhaseSnapshot() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight mb-3">
-                Phase Snapshot
+                Launch Brief
               </h1>
               <p className="text-muted-foreground leading-relaxed max-w-xl">
-                A summary of everything you've defined so far, organized by phase.
+                Everything you've built, organized by phase. Your complete launch picture.
               </p>
             </div>
             <ExportSnapshotButton phases={phases} />
@@ -121,7 +126,20 @@ export default function PhaseSnapshot() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <MasonryGrid blocks={filteredBlocks} />
+          {selectedPhase === "all" ? (
+            <div className="space-y-10">
+              {phases.filter(p => p.hasContent).map(phaseData => (
+                <div key={phaseData.phase}>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">
+                    {phaseData.phaseLabel}
+                  </h2>
+                  <MasonryGrid blocks={phaseData.blocks.map(b => ({ ...b, phase: phaseData.phase }))} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <MasonryGrid blocks={filteredBlocks} />
+          )}
         </motion.div>
 
         {/* Reflective Footer */}
