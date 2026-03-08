@@ -211,6 +211,17 @@ const ContentVault = () => {
         <div className="max-w-7xl mx-auto px-6 py-8">
           <VaultHeader totalResourceCount={totalResourceCount || undefined} />
           
+          {/* Search */}
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search categories..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
           {/* Categories Grid */}
           {categoriesLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
@@ -218,9 +229,13 @@ const ContentVault = () => {
                 <Skeleton key={i} className="h-24 rounded-xl" />
               ))}
             </div>
-          ) : categories && categories.length > 0 ? (
+          ) : (() => {
+            const filteredCategories = categories?.filter(cat =>
+              cat.name.toLowerCase().includes(searchQuery.toLowerCase())
+            ) ?? [];
+            return filteredCategories.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              {categories.map((category) => {
+              {filteredCategories.map((category) => {
                 const iconConfig = getCategoryIcon(category.slug);
                 return (
                   <CategoryCard
