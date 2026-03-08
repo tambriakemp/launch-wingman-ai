@@ -215,6 +215,14 @@ export const PlannerTaskDialog = ({
     const hasSchedule = selectedDate && startTime && endTime;
 
     setIsSubmitting(true);
+    const recurrenceRuleValue = recurrenceFreq === "none" ? null : {
+      freq: recurrenceFreq,
+      interval: recurrenceInterval,
+      days: recurrenceDays,
+      end_type: recurrenceEndType,
+      end_date: recurrenceEndDate ? recurrenceEndDate.toISOString().split("T")[0] : null,
+      count: recurrenceCount,
+    };
     try {
       await onSubmit({
         title: title.trim(),
@@ -226,6 +234,7 @@ export const PlannerTaskDialog = ({
         start_at: hasSchedule ? combineDatetime(selectedDate!, startTime) : null,
         end_at: hasSchedule ? combineDatetime(selectedDate!, endTime) : null,
         location: location.trim() || null,
+        recurrence_rule: recurrenceRuleValue,
       });
       onOpenChange(false);
     } catch {
