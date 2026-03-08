@@ -82,6 +82,7 @@ const Planner = () => {
       end_at: data.end_at || null,
       location: data.location || null,
       position: 0,
+      recurrence_rule: data.recurrence_rule || null,
     } as any);
 
     if (error) {
@@ -104,11 +105,12 @@ const Planner = () => {
         description: data.description || null,
         column_id: data.column_id || "todo",
         task_type: data.task_type || "task",
-        category: data.category || "business",
+        category: data.category || null,
         due_at: data.due_at || null,
         start_at: data.start_at || null,
         end_at: data.end_at || null,
         location: data.location || null,
+        recurrence_rule: data.recurrence_rule !== undefined ? data.recurrence_rule : editingTask.recurrence_rule,
       } as any)
       .eq("id", editingTask.id);
 
@@ -148,6 +150,18 @@ const Planner = () => {
   };
 
   const handleEditTask = (task: PlannerTask) => {
+    // If it's a virtual recurrence instance, find the parent task
+    if ((task as any)._isVirtualRecurrence) {
+      const parentId = (task as any)._parentId;
+      const parent = tasks.find(t => t.id === parentId);
+      if (parent) {
+        setEditingTask(parent);
+        setDefaultTaskType(parent.task_type as "task" | "event" || "task");
+        setDefaultDueAt(null);
+        setDialogOpen(true);
+      }
+      return;
+    }
     setEditingTask(task);
     setDefaultTaskType(task.task_type as "task" | "event" || "task");
     setDefaultDueAt(null);

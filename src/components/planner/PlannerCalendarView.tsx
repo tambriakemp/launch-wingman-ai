@@ -18,7 +18,9 @@ import {
   setHours,
   setMinutes,
   isAfter,
+  addDays,
 } from "date-fns";
+import { expandAllRecurring } from "./recurrenceUtils";
 import {
   ChevronLeft,
   ChevronRight,
@@ -210,11 +212,6 @@ export const PlannerCalendarView = ({
     });
   }, [tasks, activeCategories]);
 
-  const scheduledTasks = useMemo(
-    () => filteredTasks.filter((t) => t.start_at && t.end_at),
-    [filteredTasks]
-  );
-
   // Scroll to ~8 AM on mount
   useEffect(() => {
     if (scrollRef.current && viewMode === "week") {
@@ -237,6 +234,23 @@ export const PlannerCalendarView = ({
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+  const windowStart = useMemo(() => {
+    if (viewMode === "month") return startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 });
+    if (viewMode === "day") return currentDate;
+    return weekStart;
+  }, [viewMode, currentDate, weekStart]);
+
+  const windowEnd = useMemo(() => {
+    if (viewMode === "month") return endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 });
+    if (viewMode === "day") return addDays(currentDate, 1);
+    return weekEnd;
+  }, [viewMode, currentDate, weekEnd]);
+
+  const scheduledTasks = useMemo(() => {
+    const expanded = expandAllRecurring(filteredTasks, windowStart, windowEnd);
+    return expanded.filter(t => t.start_at && t.end_at);
+  }, [filteredTasks, windowStart, windowEnd]);
 
   // Month
   const monthStart = startOfMonth(currentDate);
@@ -498,6 +512,9 @@ export const PlannerCalendarView = ({
                             <span className={cn("text-xs font-bold truncate block leading-tight", isDone && "line-through")}>
                               {task.title}
                             </span>
+                            {(task.recurrence_rule || (task as any)._isVirtualRecurrence) && (
+                              <span className="text-[9px] opacity-60 mt-0.5 block">↻ repeating</span>
+                            )}
                             {pos.height > 40 && task.start_at && task.end_at && (
                               <div className="text-[10px] opacity-70 mt-1">
                                 {format(parseISO(task.start_at), "h:mm a")} – {format(parseISO(task.end_at), "h:mm a")}
@@ -574,6 +591,9 @@ export const PlannerCalendarView = ({
                               </span>
                             )}
                             {task.title}
+                            {(task.recurrence_rule || (task as any)._isVirtualRecurrence) && (
+                              <span className="opacity-50"> ↻</span>
+                            )}
                           </button>
                         );
                       })}
