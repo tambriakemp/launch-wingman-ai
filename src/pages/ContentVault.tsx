@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { FolderOpen, ArrowRight, Search } from "lucide-react";
+import { FolderOpen, ArrowRight, Search, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { CategoryCard } from "@/components/content-vault/CategoryCard";
@@ -9,11 +9,15 @@ import { PopularResourceItem } from "@/components/content-vault/PopularResourceI
 import { CategoryEditDialog } from "@/components/content-vault/CategoryEditDialog";
 import { VaultHeader } from "@/components/content-vault/VaultHeader";
 import { getCategoryIcon } from "@/components/content-vault/categoryIcons";
+import { ResourceLightbox } from "@/components/content-vault/ResourceLightbox";
+import { PromptModal } from "@/components/content-vault/PromptModal";
+import { trackResourceAccess } from "@/components/content-vault/trackResourceAccess";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useAdmin } from "@/hooks/useAdmin";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -48,6 +52,8 @@ const ContentVault = () => {
   
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [promptResource, setPromptResource] = useState<any | null>(null);
 
   // Fetch categories
   const { data: categories, isLoading: categoriesLoading } = useQuery({
@@ -73,8 +79,12 @@ const ContentVault = () => {
         .select(`
           id,
           title,
+          description,
+          cover_image_url,
+          preview_url,
           resource_type,
           resource_url,
+          tags,
           subcategory:content_vault_subcategories!inner(
             name,
             category:content_vault_categories!inner(name, slug)
@@ -192,6 +202,23 @@ const ContentVault = () => {
     navigate(`/content-vault/${slug}`);
   };
 
+  const handleSearchResultClick = (resource: any, index: number) => {
+    trackResourceAccess(resource.id);
+    
+    if (resource.resource_type === 'image_prompt' || resource.resource_type === 'video_prompt') {
+      setPromptResource(resource);
+      return;
+    }
+    
+    const isMediaOrDocument = /\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|mov|pdf|docx|doc|rtf)$/i.test(resource.resource_url);
+    
+    if (isMediaOrDocument) {
+      setLightboxIndex(index);
+    } else {
+      window.open(resource.resource_url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   // Show loading state while checking permissions
   if (accessLoading) {
     return (
@@ -261,15 +288,25 @@ const ContentVault = () => {
                 </div>
               ) : searchResults && searchResults.length > 0 ? (
                 <div className="divide-y divide-border">
-                  {searchResults.map((resource) => (
-                    <PopularResourceItem
+                  {searchResults.map((resource, index) => (
+                    <div
                       key={resource.id}
-                      id={resource.id}
-                      title={resource.title}
-                      categoryName={(resource.subcategory as any).category.name}
-                      resourceType={resource.resource_type}
-                      resourceUrl={resource.resource_url}
-                    />
+                      className="flex items-center justify-between py-3 cursor-pointer hover:bg-muted/50 rounded-lg px-2 -mx-2 transition-colors"
+                      onClick={() => handleSearchResultClick(resource, index)}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="p-2 rounded-lg bg-muted shrink-0">
+                          <FileText className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground truncate">{resource.title}</p>
+                          <p className="text-sm text-muted-foreground">{(resource.subcategory as any).category.name}</p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-xs shrink-0">
+                        {resource.resource_type === 'canva_link' ? 'Canva' : resource.resource_type === 'document' ? 'PDF' : resource.resource_type === 'image_prompt' ? 'Prompt' : 'Link'}
+                      </Badge>
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -360,6 +397,24 @@ const ContentVault = () => {
           )}
         </div>
       </div>
+
+      {/* Lightbox for media/document search results */}
+      <ResourceLightbox
+        resources={searchResults || []}
+        currentIndex={lightboxIndex ?? 0}
+        open={lightboxIndex !== null}
+        onOpenChange={(open) => !open && setLightboxIndex(null)}
+      />
+
+      {/* Prompt modal for AI prompt search results */}
+      <PromptModal
+        open={!!promptResource}
+        onOpenChange={(open) => !open && setPromptResource(null)}
+        title={promptResource?.title || ''}
+        description={promptResource?.description || null}
+        coverImageUrl={promptResource?.cover_image_url || null}
+        tags={promptResource?.tags || []}
+      />
     </ProjectLayout>
   );
 };
