@@ -512,6 +512,9 @@ export const PlannerCalendarView = ({
                             <span className={cn("text-xs font-bold truncate block leading-tight", isDone && "line-through")}>
                               {task.title}
                             </span>
+                            {(task.recurrence_rule || (task as any)._isVirtualRecurrence) && (
+                              <span className="text-[9px] opacity-60 mt-0.5 block">↻ repeating</span>
+                            )}
                             {pos.height > 40 && task.start_at && task.end_at && (
                               <div className="text-[10px] opacity-70 mt-1">
                                 {format(parseISO(task.start_at), "h:mm a")} – {format(parseISO(task.end_at), "h:mm a")}
