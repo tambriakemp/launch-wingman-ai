@@ -283,11 +283,17 @@ export const PlannerTaskDialog = ({
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Category</Label>
-                <Select value={category} onValueChange={(v) => setCategory(v as "business" | "life")}>
+                <Select value={category} onValueChange={(v) => setCategory(v)}>
                   <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="business">Business</SelectItem>
-                    <SelectItem value="life">Life</SelectItem>
+                    {plannerCategories.map((cat: { id: string; name: string; color: string }) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full" style={{ background: cat.color }} />
+                          {cat.name}
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

@@ -18,27 +18,16 @@ import {
   setHours,
   setMinutes,
   isAfter,
-  differenceInMinutes,
 } from "date-fns";
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  Calendar as CalendarIcon,
-  CheckCircle2,
   MapPin,
   Pencil,
-  Clock,
-  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Progress } from "@/components/ui/progress";
-import { PlannerListView } from "./PlannerListView";
 import type { PlannerTask } from "./PlannerTaskDialog";
 
 interface PlannerCalendarViewProps {
@@ -83,6 +72,107 @@ function getTaskPosition(task: PlannerTask) {
   return { top, height };
 }
 
+const DEFAULT_CATEGORIES = [
+  { id: "business", name: "Work", color: "#f5c842" },
+  { id: "life", name: "Personal", color: "#0ea572" },
+  { id: "health", name: "Health", color: "#f43f5e" },
+  { id: "finance", name: "Finance", color: "#8b5cf6" },
+];
+
+const PRESET_COLORS = [
+  "#f5c842", "#0ea572", "#f43f5e", "#8b5cf6",
+  "#3b82f6", "#f97316", "#06b6d4", "#ec4899",
+  "#84cc16", "#6366f1", "#14b8a6", "#ef4444",
+];
+
+function CategoryManager({ categories, onSave, onClose }: {
+  categories: { id: string; name: string; color: string }[];
+  onSave: (cats: { id: string; name: string; color: string }[]) => void;
+  onClose: () => void;
+}) {
+  const [local, setLocal] = useState(categories);
+  const [newName, setNewName] = useState("");
+  const [newColor, setNewColor] = useState(PRESET_COLORS[4]);
+
+  const addCategory = () => {
+    if (!newName.trim()) return;
+    const id = newName.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
+    setLocal(prev => [...prev, { id, name: newName.trim(), color: newColor }]);
+    setNewName("");
+    setNewColor(PRESET_COLORS[4]);
+  };
+
+  const removeCategory = (id: string) => {
+    setLocal(prev => prev.filter(c => c.id !== id));
+  };
+
+  const save = () => {
+    localStorage.setItem("planner-categories", JSON.stringify(local));
+    onSave(local);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-background border border-border rounded-2xl shadow-xl w-[400px] max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h3 className="font-semibold text-base">Manage Categories</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">✕</button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="space-y-2">
+            {local.map(cat => (
+              <div key={cat.id} className="flex items-center gap-3 py-2 px-3 rounded-lg border border-border">
+                <div className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color }} />
+                <span className="flex-1 text-sm">{cat.name}</span>
+                <button
+                  onClick={() => removeCategory(cat.id)}
+                  className="text-muted-foreground hover:text-destructive transition-colors text-xs"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-border pt-4 space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Add Category</p>
+            <input
+              className="w-full h-9 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Category name"
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && addCategory()}
+            />
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">Color</p>
+              <div className="flex flex-wrap gap-2">
+                {PRESET_COLORS.map(c => (
+                  <button
+                    key={c}
+                    className={cn("w-6 h-6 rounded-full border-2 transition-transform hover:scale-110", newColor === c ? "border-foreground" : "border-transparent")}
+                    style={{ background: c }}
+                    onClick={() => setNewColor(c)}
+                  />
+                ))}
+              </div>
+            </div>
+            <button
+              className="w-full h-9 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+              onClick={addCategory}
+            >
+              Add Category
+            </button>
+          </div>
+        </div>
+        <div className="flex gap-2 px-6 py-4 border-t border-border">
+          <button onClick={onClose} className="flex-1 h-9 rounded-lg border border-border text-sm hover:bg-accent transition-colors">Cancel</button>
+          <button onClick={save} className="flex-1 h-9 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">Save</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export const PlannerCalendarView = ({
   tasks,
   isLoading,
@@ -96,19 +186,29 @@ export const PlannerCalendarView = ({
   const [viewMode, setViewMode] = useState<"month" | "week" | "day">("week");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const [listOpen, setListOpen] = useState(true);
-  const [catSection, setCatSection] = useState(true);
-  const [showBusiness, setShowBusiness] = useState(true);
-  const [showLife, setShowLife] = useState(true);
-  const [showHealth, setShowHealth] = useState(true);
+  const [categories, setCategories] = useState(() => {
+    try {
+      const stored = localStorage.getItem("planner-categories");
+      return stored ? JSON.parse(stored) : DEFAULT_CATEGORIES;
+    } catch { return DEFAULT_CATEGORIES; }
+  });
+  const [activeCategories, setActiveCategories] = useState<string[]>(() =>
+    categories.map((c: typeof DEFAULT_CATEGORIES[0]) => c.id)
+  );
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+
+  const toggleCategory = (id: string) => {
+    setActiveCategories(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
 
   const filteredTasks = useMemo(() => {
-    return tasks.filter((t) => {
-      if (!showBusiness && (t.category === "business" || !t.category)) return false;
-      if (!showLife && t.category === "life") return false;
-      return true;
+    return tasks.filter(t => {
+      const cat = t.category || "business";
+      return activeCategories.includes(cat);
     });
-  }, [tasks, showBusiness, showLife]);
+  }, [tasks, activeCategories]);
 
   const scheduledTasks = useMemo(
     () => filteredTasks.filter((t) => t.start_at && t.end_at),
@@ -166,167 +266,81 @@ export const PlannerCalendarView = ({
     if (date) setCurrentDate(date);
   };
 
-  // Next upcoming event for sidebar card
-  const nextEvent = useMemo(() => {
-    return scheduledTasks
-      .filter((t) => t.start_at && isAfter(parseISO(t.start_at), now))
-      .sort((a, b) => parseISO(a.start_at!).getTime() - parseISO(b.start_at!).getTime())[0] || null;
-  }, [scheduledTasks, now]);
-
-  // Category progress
-  const categoryProgress = useMemo(() => {
-    const biz = tasks.filter((t) => (t.category === "business" || !t.category));
-    const bizDone = biz.filter((t) => t.column_id === "done").length;
-    const life = tasks.filter((t) => t.category === "life");
-    const lifeDone = life.filter((t) => t.column_id === "done").length;
-    return {
-      business: biz.length > 0 ? Math.round((bizDone / biz.length) * 100) : 0,
-      life: life.length > 0 ? Math.round((lifeDone / life.length) * 100) : 0,
-      health: 0,
-    };
-  }, [tasks]);
-
   return (
     <div className="flex h-full overflow-hidden">
-      {/* ===== DARK LEFT SIDEBAR ===== */}
-      <div className="hidden lg:flex flex-col w-[280px] shrink-0 bg-transparent text-white overflow-hidden p-3 space-y-2">
-        {/* Profile area */}
-        <div className="px-2 pt-2 pb-1 flex items-center gap-3 shrink-0">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
-            <User className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-[#131211]">My Calendar</p>
-            <p className="text-[11px] text-gray-400">Personal Planner</p>
-          </div>
-        </div>
-
-        {/* Mini Calendar Card */}
-        <div className="rounded-xl bg-[#131211] p-4">
+      {/* ===== LEFT SIDEBAR ===== */}
+      <div className="hidden lg:flex flex-col w-[260px] shrink-0 border-r border-border bg-background overflow-y-auto">
+        {/* Mini calendar navigation */}
+        <div className="p-4 border-b border-border">
           <Calendar
             mode="single"
             selected={currentDate}
             onSelect={handleMiniDateSelect}
-            className="p-0 pointer-events-auto [&_.rdp-month]:w-full [&_.rdp-table]:w-full [&_.rdp-head_cell]:w-full [&_.rdp-cell]:w-full"
-            classNames={{
-              months: "flex flex-col",
-              month: "space-y-2",
-              caption: "flex justify-center pt-1 relative items-center",
-              caption_label: "text-xs font-medium text-gray-200",
-              nav: "space-x-1 flex items-center",
-              nav_button: "h-6 w-6 bg-transparent p-0 opacity-60 hover:opacity-100 inline-flex items-center justify-center rounded-md border border-gray-700 text-gray-300",
-              nav_button_previous: "absolute left-0",
-              nav_button_next: "absolute right-0",
-              table: "w-full border-collapse",
-              head_row: "flex",
-              head_cell: "text-gray-500 rounded-md flex-1 font-normal text-[10px]",
-              row: "flex w-full mt-1",
-              cell: "flex-1 h-7 text-center text-[11px] p-0 relative",
-              day: "h-7 w-7 p-0 font-normal text-gray-300 hover:bg-gray-700 rounded-md inline-flex items-center justify-center aria-selected:opacity-100",
-              day_selected: "bg-blue-600 text-white hover:bg-blue-600",
-              day_today: "bg-gray-700 text-white font-semibold",
-              day_outside: "text-gray-600 opacity-40",
-              day_disabled: "text-gray-600 opacity-30",
-              day_hidden: "invisible",
-            }}
+            className="p-0 pointer-events-auto"
           />
         </div>
 
-        {/* Upcoming Event Card */}
-        {nextEvent && (
-           <div className="rounded-xl bg-[#131211] p-4">
-            <div className="rounded-lg bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-gray-700/50 p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-3.5 h-3.5 text-blue-400" />
-                <span className="text-[11px] text-blue-300 font-medium">
-                  {nextEvent.start_at && format(parseISO(nextEvent.start_at), "h:mm a")}
-                  {nextEvent.end_at && ` – ${format(parseISO(nextEvent.end_at), "h:mm a")}`}
-                </span>
-                {nextEvent.start_at && nextEvent.end_at && (
-                  <Badge className="text-[9px] px-1.5 py-0 bg-blue-500/20 text-blue-300 border-0 ml-auto">
-                    {differenceInMinutes(parseISO(nextEvent.end_at), parseISO(nextEvent.start_at))}m
-                  </Badge>
-                )}
-              </div>
-              <p className="text-sm font-semibold text-white mb-1">{nextEvent.title}</p>
-              {nextEvent.location && (
-                <p className="text-[11px] text-gray-400 flex items-center gap-1">
-                  <MapPin className="w-3 h-3" /> {nextEvent.location}
-                </p>
-              )}
-              <div className="flex gap-2 mt-3">
-                <button className="text-[11px] px-3 py-1.5 rounded-lg bg-gray-700/60 text-gray-300 hover:bg-gray-600/60 transition-colors">
-                  Later
-                </button>
-                <button
-                  className="text-[11px] px-3 py-1.5 rounded-lg bg-blue-600/30 text-blue-300 hover:bg-blue-600/40 transition-colors"
-                  onClick={() => onEditTask(nextEvent)}
-                >
-                  Details
-                </button>
-              </div>
-            </div>
+        {/* Categories section */}
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categories</span>
+            <button
+              className="text-[11px] text-primary hover:underline"
+              onClick={() => setShowCategoryManager(true)}
+            >
+              Manage
+            </button>
           </div>
-        )}
-
-        {/* My List Card */}
-        <div className="rounded-xl bg-[#131211] p-4">
-          <Collapsible open={listOpen} onOpenChange={setListOpen}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-200 transition-colors">
-              My List
-              <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", !listOpen && "-rotate-90")} />
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="pt-3 max-h-[240px] overflow-y-auto planner-sidebar-list">
-                <PlannerListView
-                  tasks={tasks}
-                  isLoading={isLoading}
-                  onToggleComplete={onToggleComplete!}
-                  onEditTask={onEditTask}
-                  onDeleteTask={onDeleteTask!}
-                  onAddTask={onAddTask}
-                />
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+          <div className="space-y-1">
+            {categories.map((cat: typeof DEFAULT_CATEGORIES[0]) => (
+              <button
+                key={cat.id}
+                className={cn(
+                  "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-accent/50 text-left",
+                  !activeCategories.includes(cat.id) && "opacity-40"
+                )}
+                onClick={() => toggleCategory(cat.id)}
+              >
+                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: cat.color }} />
+                <span className="flex-1 truncate">{cat.name}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {tasks.filter(t => t.category === cat.id).length}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Categories Card */}
-        <div className="rounded-xl bg-[#131211] p-4">
-          <Collapsible open={catSection} onOpenChange={setCatSection}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-200 transition-colors">
-              Categories
-              <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", !catSection && "-rotate-90")} />
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="pt-3 space-y-3">
-                <button
-                  className="flex items-center gap-3 w-full group"
-                  onClick={() => setShowBusiness(!showBusiness)}
-                >
-                  <div className={cn("w-3 h-3 rounded-full bg-blue-500 shrink-0", !showBusiness && "opacity-30")} />
-                  <span className={cn("text-xs text-gray-300 flex-1 text-left", !showBusiness && "opacity-50")}>Work</span>
-                  <Progress value={categoryProgress.business} className="w-16 h-1.5 bg-gray-700" indicatorClassName="bg-blue-500" />
-                </button>
-                <button
-                  className="flex items-center gap-3 w-full group"
-                  onClick={() => setShowLife(!showLife)}
-                >
-                  <div className={cn("w-3 h-3 rounded-full bg-emerald-500 shrink-0", !showLife && "opacity-30")} />
-                  <span className={cn("text-xs text-gray-300 flex-1 text-left", !showLife && "opacity-50")}>Personal</span>
-                  <Progress value={categoryProgress.life} className="w-16 h-1.5 bg-gray-700" indicatorClassName="bg-emerald-500" />
-                </button>
-                <button
-                  className="flex items-center gap-3 w-full group"
-                  onClick={() => setShowHealth(!showHealth)}
-                >
-                  <div className={cn("w-3 h-3 rounded-full bg-pink-500 shrink-0", !showHealth && "opacity-30")} />
-                  <span className={cn("text-xs text-gray-300 flex-1 text-left", !showHealth && "opacity-50")}>Health</span>
-                  <Progress value={categoryProgress.health} className="w-16 h-1.5 bg-gray-700" indicatorClassName="bg-pink-500" />
-                </button>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+        {/* Upcoming tasks list */}
+        <div className="p-4 flex-1">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-3">Upcoming</span>
+          <div className="space-y-1">
+            {tasks
+              .filter(t => t.column_id !== "done" && t.due_at && isAfter(parseISO(t.due_at), new Date()))
+              .sort((a, b) => parseISO(a.due_at!).getTime() - parseISO(b.due_at!).getTime())
+              .slice(0, 8)
+              .map(task => {
+                const cat = categories.find((c: typeof DEFAULT_CATEGORIES[0]) => c.id === task.category);
+                return (
+                  <button
+                    key={task.id}
+                    className="flex items-start gap-2 w-full px-2 py-2 rounded-lg hover:bg-accent/50 transition-colors text-left group"
+                    onClick={() => onEditTask(task)}
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: cat?.color || '#71717a' }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-foreground truncate">{task.title}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {task.due_at && format(parseISO(task.due_at), "MMM d")}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            {tasks.filter(t => t.column_id !== "done" && t.due_at && isAfter(parseISO(t.due_at), new Date())).length === 0 && (
+              <p className="text-xs text-muted-foreground px-2">Nothing upcoming</p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -371,9 +385,7 @@ export const PlannerCalendarView = ({
         {viewMode === "week" || viewMode === "day" ? (
           /* ========== WEEKLY / DAY VIEW ========== */
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Scrollable time grid with sticky headers */}
             <div ref={scrollRef} className="overflow-y-auto flex-1">
-              {/* Day column headers (sticky) */}
               <div className={cn(
                 "grid border-b border-border bg-background sticky top-0 z-10",
                 viewMode === "day" ? "grid-cols-[56px_1fr]" : "grid-cols-[56px_repeat(7,1fr)]"
@@ -435,7 +447,6 @@ export const PlannerCalendarView = ({
                         isToday && "bg-primary/[0.02]"
                       )}
                     >
-                      {/* Hour lines */}
                       {hours.map((h) => (
                         <div
                           key={h}
@@ -448,7 +459,6 @@ export const PlannerCalendarView = ({
                         />
                       ))}
 
-                      {/* Current time indicator */}
                       {isToday && showNowLine && (
                         <div
                           className="absolute left-0 right-0 z-20 pointer-events-none"
@@ -461,7 +471,6 @@ export const PlannerCalendarView = ({
                         </div>
                       )}
 
-                      {/* Event cards */}
                       {dayTasks.map((task, taskIdx) => {
                         const pos = getTaskPosition(task);
                         if (!pos) return null;
@@ -581,6 +590,14 @@ export const PlannerCalendarView = ({
           </div>
         )}
       </div>
+
+      {showCategoryManager && (
+        <CategoryManager
+          categories={categories}
+          onSave={setCategories}
+          onClose={() => setShowCategoryManager(false)}
+        />
+      )}
     </div>
   );
 };

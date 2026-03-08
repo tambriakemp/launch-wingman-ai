@@ -221,19 +221,6 @@ const Planner = () => {
               onAddTask={handleAddTask}
             />
           )}
-          {view === "board" && (
-            <PlannerBoardView
-              tasks={tasks}
-              onEditTask={handleEditTask}
-              onToggleComplete={handleToggleComplete}
-              onDeleteTask={handleDeleteTask}
-              onStatusChange={async (taskId, newStatus) => {
-                const { error } = await supabase.from("tasks").update({ column_id: newStatus } as any).eq("id", taskId);
-                if (error) { toast.error("Failed to update task"); return; }
-                fetchTasks();
-              }}
-            />
-          )}
         </div>
       </div>
 
