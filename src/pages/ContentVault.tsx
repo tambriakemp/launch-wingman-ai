@@ -397,6 +397,24 @@ const ContentVault = () => {
           )}
         </div>
       </div>
+
+      {/* Lightbox for media/document search results */}
+      <ResourceLightbox
+        resources={searchResults || []}
+        currentIndex={lightboxIndex ?? 0}
+        open={lightboxIndex !== null}
+        onOpenChange={(open) => !open && setLightboxIndex(null)}
+      />
+
+      {/* Prompt modal for AI prompt search results */}
+      <PromptModal
+        open={!!promptResource}
+        onOpenChange={(open) => !open && setPromptResource(null)}
+        title={promptResource?.title || ''}
+        description={promptResource?.description || null}
+        coverImageUrl={promptResource?.cover_image_url || null}
+        tags={promptResource?.tags || []}
+      />
     </ProjectLayout>
   );
 };
