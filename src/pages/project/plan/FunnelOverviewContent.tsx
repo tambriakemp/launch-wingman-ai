@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { isToday, isTomorrow, parseISO } from "date-fns";
@@ -182,46 +183,81 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     );
   }
 
+  // Determine the view key for animation
+  const viewKey = dashboardViewType === 'launched' && showPostLaunchTasks
+    ? 'tasks'
+    : dashboardViewType;
+
   // Handle different dashboard views based on project lifecycle state
   if (dashboardViewType === 'paused') {
     return (
-      <ProjectPausedView
-        projectName={project?.name}
-        onResume={async () => {
-          await resume();
-        }}
-      />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="paused"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ProjectPausedView
+            projectName={project?.name}
+            onResume={async () => {
+              await resume();
+            }}
+          />
+        </motion.div>
+      </AnimatePresence>
     );
   }
 
   if (dashboardViewType === 'completed') {
     return (
-      <ProjectCompletedView
-        projectName={project?.name}
-        onRelaunch={async () => {
-          // Reset to in_progress to start a new launch cycle
-          await transitionTo('in_progress');
-        }}
-        onNewProject={() => {
-          navigate('/app');
-        }}
-        onPause={async () => {
-          await transitionTo('paused');
-        }}
-      />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="completed"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ProjectCompletedView
+            projectName={project?.name}
+            onRelaunch={async () => {
+              // Reset to in_progress to start a new launch cycle
+              await transitionTo('in_progress');
+            }}
+            onNewProject={() => {
+              navigate('/app');
+            }}
+            onPause={async () => {
+              await transitionTo('paused');
+            }}
+          />
+        </motion.div>
+      </AnimatePresence>
     );
   }
 
   if (dashboardViewType === 'launched' && !showPostLaunchTasks) {
     return (
-      <ProjectLaunchedView
-        projectName={project?.name}
-        onContinueToPostLaunch={() => {
-          // Just show post-launch tasks, don't change project state
-          setShowPostLaunchTasks(true);
-        }}
-        onMarkComplete={markCompleted}
-      />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="launched"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ProjectLaunchedView
+            projectName={project?.name}
+            onContinueToPostLaunch={() => {
+              // Just show post-launch tasks, don't change project state
+              setShowPostLaunchTasks(true);
+            }}
+            onMarkComplete={markCompleted}
+          />
+        </motion.div>
+      </AnimatePresence>
     );
   }
 
@@ -257,87 +293,96 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     : undefined;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 py-6 px-4">
-      {/* Memory Review Banner - for relaunch projects with items to review */}
-      <MemoryReviewBanner projectId={projectId} />
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={viewKey}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.2 }}
+        className="max-w-2xl mx-auto space-y-6 py-6 px-4"
+      >
+        {/* Memory Review Banner - for relaunch projects with items to review */}
+        <MemoryReviewBanner projectId={projectId} />
 
-      {/* Check-in banner - soft, dismissible */}
-      <CheckInBanner onStartCheckIn={() => setCheckInOpen(true)} />
+        {/* Check-in banner - soft, dismissible */}
+        <CheckInBanner onStartCheckIn={() => setCheckInOpen(true)} />
 
-      <GreetingHeader
-        firstName={profile?.first_name}
-        projectName={project?.name}
-        projectId={projectId}
-        projectState={projectState}
-        isRelaunch={project?.is_relaunch}
-        parentProjectId={Array.isArray(project?.parent_project) ? project.parent_project[0]?.id : (project?.parent_project as { id: string; name: string } | null)?.id}
-        parentProjectName={Array.isArray(project?.parent_project) ? project.parent_project[0]?.name : (project?.parent_project as { id: string; name: string } | null)?.name}
-        onPause={pause}
-        onResume={resume}
-        onArchive={archive}
-        onMarkComplete={projectState === 'launched' ? markCompleted : undefined}
-      />
-
-      {/* Your Day Section */}
-      <YourDaySection projectId={projectId} />
-
-      {/* Show celebration card if a phase was recently completed and not dismissed */}
-      {mostRecentlyCompletedPhase && !dismissedPhases.includes(mostRecentlyCompletedPhase) && (
-        <PhaseCelebrationCard
-          completedPhase={mostRecentlyCompletedPhase}
-          nextPhase={nextPhaseAfterCompleted}
-          onDismiss={() => handleDismissCelebration(mostRecentlyCompletedPhase)}
-        />
-      )}
-
-      {/* Check-in flow dialog */}
-      <CheckInFlow open={checkInOpen} onOpenChange={setCheckInOpen} />
-
-      {nextBestTask ? (
-        <NextBestTaskCard
-          title={nextBestTask.title}
-          whyItMatters={nextBestTask.whyItMatters}
-          estimatedMinutes={nextBestTask.estimatedTimeRange}
-          route={nextBestTask.route}
-        />
-      ) : (
-        <div className="p-6 rounded-lg border border-border bg-card text-center">
-          <p className="text-muted-foreground">
-            {isPhaseComplete 
-              ? "All tasks in this phase are complete! You're ready to move forward."
-              : "No tasks available right now. Check back soon!"}
-          </p>
-        </div>
-      )}
-
-      <ProgressSnapshotCard
-        currentPhase={currentPhaseLabel}
-        isPhaseComplete={isPhaseComplete}
-        reassuranceText={getReassuranceText(activePhase, isPhaseComplete, nextPhaseAfterCompleted)}
-      />
-
-      {hasContent && (
-        <UpcomingContentCard
-          today={todayContent}
-          tomorrow={tomorrowContent}
+        <GreetingHeader
+          firstName={profile?.first_name}
+          projectName={project?.name}
           projectId={projectId}
+          projectState={projectState}
+          isRelaunch={project?.is_relaunch}
+          parentProjectId={Array.isArray(project?.parent_project) ? project.parent_project[0]?.id : (project?.parent_project as { id: string; name: string } | null)?.id}
+          parentProjectName={Array.isArray(project?.parent_project) ? project.parent_project[0]?.name : (project?.parent_project as { id: string; name: string } | null)?.name}
+          onPause={pause}
+          onResume={resume}
+          onArchive={archive}
+          onMarkComplete={projectState === 'launched' ? markCompleted : undefined}
         />
-      )}
 
-      <StuckHelpCard onOpenModal={() => setStuckModalOpen(true)} />
+        {/* Your Day Section */}
+        <YourDaySection projectId={projectId} />
 
-      <DailyMotivationCard />
+        {/* Show celebration card if a phase was recently completed and not dismissed */}
+        {mostRecentlyCompletedPhase && !dismissedPhases.includes(mostRecentlyCompletedPhase) && (
+          <PhaseCelebrationCard
+            completedPhase={mostRecentlyCompletedPhase}
+            nextPhase={nextPhaseAfterCompleted}
+            onDismiss={() => handleDismissCelebration(mostRecentlyCompletedPhase)}
+          />
+        )}
 
-      <StuckHelpDialog
-        open={stuckModalOpen}
-        onOpenChange={setStuckModalOpen}
-        currentTask={{
-          title: nextBestTask?.title || "Getting started",
-          whyItMatters: nextBestTask?.whyItMatters || "This helps you move forward with your launch.",
-        }}
-        projectContext={project?.name}
-      />
-    </div>
+        {/* Check-in flow dialog */}
+        <CheckInFlow open={checkInOpen} onOpenChange={setCheckInOpen} />
+
+        {nextBestTask ? (
+          <NextBestTaskCard
+            title={nextBestTask.title}
+            whyItMatters={nextBestTask.whyItMatters}
+            estimatedMinutes={nextBestTask.estimatedTimeRange}
+            route={nextBestTask.route}
+          />
+        ) : (
+          <div className="p-6 rounded-lg border border-border bg-card text-center">
+            <p className="text-muted-foreground">
+              {isPhaseComplete 
+                ? "All tasks in this phase are complete! You're ready to move forward."
+                : "No tasks available right now. Check back soon!"}
+            </p>
+          </div>
+        )}
+
+        <ProgressSnapshotCard
+          currentPhase={currentPhaseLabel}
+          isPhaseComplete={isPhaseComplete}
+          reassuranceText={getReassuranceText(activePhase, isPhaseComplete, nextPhaseAfterCompleted)}
+        />
+
+        {hasContent && (
+          <UpcomingContentCard
+            today={todayContent}
+            tomorrow={tomorrowContent}
+            projectId={projectId}
+          />
+        )}
+
+        <StuckHelpCard onOpenModal={() => setStuckModalOpen(true)} />
+
+        <DailyMotivationCard />
+
+        <StuckHelpDialog
+          open={stuckModalOpen}
+          onOpenChange={setStuckModalOpen}
+          currentTask={{
+            title: nextBestTask?.title || "Getting started",
+            whyItMatters: nextBestTask?.whyItMatters || "This helps you move forward with your launch.",
+          }}
+          projectContext={project?.name}
+        />
+      </motion.div>
+    </AnimatePresence>
   );
 };
 
