@@ -140,9 +140,6 @@ const Settings = () => {
   const [isDisconnectingTikTok, setIsDisconnectingTikTok] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
-  // Annual Review state
-  const [showAnnualReview, setShowAnnualReview] = useState(false);
-  const { data: annualReviewData } = useAnnualReview();
 
   // Fetch projects for management
   const { data: projects = [], isLoading: isLoadingProjects } = useQuery({
