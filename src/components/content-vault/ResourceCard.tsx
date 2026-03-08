@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ExternalLink, Download, Image as ImageIcon, Loader2, Check, Pencil, Eye, FileText, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { trackResourceAccess } from "./trackResourceAccess";
@@ -66,6 +67,7 @@ export const ResourceCard = ({
   onEdit,
 }: ResourceCardProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const isCanvaLink = resourceType === 'canva_link';
   const isAiPrompt = resourceType === 'image_prompt' || resourceType === 'video_prompt';
   const isDocument = resourceType === 'document' || /\.(pdf|docx|doc|rtf)$/i.test(resourceUrl);
@@ -75,6 +77,10 @@ export const ResourceCard = ({
   // Use resource URL as cover image for images/videos if no cover image specified
   const isMediaResource = /\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|mov)$/i.test(resourceUrl);
   const displayImageUrl = coverImageUrl || (isMediaResource ? resourceUrl : null);
+
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [displayImageUrl]);
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -140,11 +146,19 @@ export const ResourceCard = ({
       {/* Cover Image */}
       <div className="aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800/50 dark:to-slate-900/50 relative overflow-hidden">
         {displayImageUrl ? (
-          <img 
-            src={displayImageUrl} 
-            alt={title}
-            className={`w-full h-full group-hover:scale-105 transition-transform duration-500 ${coverImageFit === 'contain' ? 'object-contain bg-muted/50' : 'object-cover'}`}
-          />
+          <div className="relative w-full h-full">
+            {!imageLoaded && (
+              <Skeleton className="absolute inset-0 w-full h-full rounded-none" />
+            )}
+            <img 
+              src={displayImageUrl} 
+              alt={title}
+              onLoad={() => setImageLoaded(true)}
+              className={`w-full h-full group-hover:scale-105 transition-all duration-500 ${
+                coverImageFit === 'contain' ? 'object-contain bg-muted/50' : 'object-cover'
+              } ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            />
+          </div>
         ) : isDocument ? (
           // Document placeholder
           <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
