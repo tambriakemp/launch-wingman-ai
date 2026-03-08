@@ -158,12 +158,9 @@ function ContentRenderer({
       return (
         <div className="flex flex-wrap gap-2">
           {items.map((item, idx) => (
-            <span 
+             <span 
               key={idx}
-              className={cn(
-                "inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border",
-                PHASE_BADGE_COLORS[phase]
-              )}
+              className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border bg-secondary/15 text-secondary border-secondary/30"
             >
               {item.value}
             </span>
