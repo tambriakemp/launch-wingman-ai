@@ -351,7 +351,7 @@ export function SummaryCard({
 
         {/* Header with icon and label */}
         <div className="flex items-center gap-3 mb-4 pr-10">
-          <div className={cn("p-2.5 rounded-xl", PHASE_ICON_BG[phase])}>
+          <div className="p-2.5 rounded-xl bg-secondary/10 text-secondary">
             <Icon className="w-5 h-5" />
           </div>
           <h3 className="text-base font-semibold text-foreground">
