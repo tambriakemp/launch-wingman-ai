@@ -192,11 +192,10 @@ const Planner = () => {
     <ProjectLayout>
       <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
         <div className="px-4 pt-4">
-          <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar" | "board")} className="mb-4">
+          <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar")} className="mb-4">
             <TabsList>
               <TabsTrigger value="list">List</TabsTrigger>
               <TabsTrigger value="calendar">Calendar</TabsTrigger>
-              <TabsTrigger value="board">Board</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
