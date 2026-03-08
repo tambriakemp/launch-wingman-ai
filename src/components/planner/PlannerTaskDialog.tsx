@@ -143,6 +143,23 @@ export const PlannerTaskDialog = ({
       } else {
         setEndTime("");
       }
+
+      if (editTask.recurrence_rule) {
+        const r = editTask.recurrence_rule;
+        setRecurrenceFreq(r.freq || "none");
+        setRecurrenceInterval(r.interval || 1);
+        setRecurrenceDays(r.days || []);
+        setRecurrenceEndType(r.end_type || "never");
+        setRecurrenceEndDate(r.end_date ? new Date(r.end_date) : undefined);
+        setRecurrenceCount(r.count || 10);
+      } else {
+        setRecurrenceFreq("none");
+        setRecurrenceInterval(1);
+        setRecurrenceDays([]);
+        setRecurrenceEndType("never");
+        setRecurrenceEndDate(undefined);
+        setRecurrenceCount(10);
+      }
     } else {
       setTitle("");
       setDescription("");
@@ -153,6 +170,12 @@ export const PlannerTaskDialog = ({
       setStartTime("");
       setEndTime("");
       setLocation("");
+      setRecurrenceFreq("none");
+      setRecurrenceInterval(1);
+      setRecurrenceDays([]);
+      setRecurrenceEndType("never");
+      setRecurrenceEndDate(undefined);
+      setRecurrenceCount(10);
     }
   }, [editTask, open, defaultTaskType, defaultDueAt]);
 
