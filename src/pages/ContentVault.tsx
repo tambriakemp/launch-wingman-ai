@@ -79,8 +79,12 @@ const ContentVault = () => {
         .select(`
           id,
           title,
+          description,
+          cover_image_url,
+          preview_url,
           resource_type,
           resource_url,
+          tags,
           subcategory:content_vault_subcategories!inner(
             name,
             category:content_vault_categories!inner(name, slug)
