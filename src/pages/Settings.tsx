@@ -753,26 +753,28 @@ const Settings = () => {
 
         <Tabs defaultValue={defaultTab} orientation={isMobile ? "horizontal" : "vertical"} className="flex flex-col md:flex-row gap-6">
           {/* Tab Navigation */}
-          <TabsList className={`${
-            isMobile 
-              ? "flex flex-row overflow-x-auto w-full h-auto p-1 shrink-0" 
-              : "flex flex-col h-fit w-[200px] shrink-0 sticky top-4 p-1"
-          } bg-muted/50 rounded-xl`}>
-            {SETTINGS_TABS.map(({ value, label, icon: Icon }) => (
-              <TabsTrigger
-                key={value}
-                value={value}
-                className={`${
-                  isMobile 
-                    ? "flex-1 min-w-fit px-3 py-2" 
-                    : "w-full justify-start gap-2 px-3 py-2.5"
-                } data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg text-sm`}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span className={isMobile ? "hidden sm:inline" : ""}>{label}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="overflow-x-auto pb-1 -mb-1">
+            <TabsList className={`${
+              isMobile 
+                ? "flex w-max min-w-full h-auto gap-1 p-1 shrink-0" 
+                : "flex flex-col h-fit w-[200px] shrink-0 sticky top-4 p-1"
+            } md:w-full md:flex-wrap bg-muted/50 rounded-xl`}>
+              {SETTINGS_TABS.map(({ value, label, icon: Icon }) => (
+                <TabsTrigger
+                  key={value}
+                  value={value}
+                  className={`whitespace-nowrap ${
+                    isMobile 
+                      ? "flex-1 min-w-fit px-3 py-2" 
+                      : "w-full justify-start gap-2 px-3 py-2.5"
+                  } data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg text-sm`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className={isMobile ? "hidden sm:inline" : ""}>{label}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
 
           {/* Tab Content */}
           <div className="flex-1 min-w-0">
