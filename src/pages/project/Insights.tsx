@@ -27,6 +27,8 @@ export default function Insights() {
   const { hasAccess, isLoading: accessLoading } = useFeatureAccess();
   const queryClient = useQueryClient();
   const [isMetricSheetOpen, setIsMetricSheetOpen] = useState(false);
+  const [showAnnualReview, setShowAnnualReview] = useState(false);
+  const { data: annualReviewData } = useAnnualReview();
   
   const canAccessInsights = hasAccess('insights_history');
 
