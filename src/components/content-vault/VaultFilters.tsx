@@ -25,6 +25,10 @@ interface VaultFiltersProps {
   allTags: string[];
   selectedTags: string[];
   onTagsChange: (tags: string[]) => void;
+  isPromptCategory?: boolean;
+  selectedPromptType?: string;
+  onPromptTypeChange?: (value: string) => void;
+  resources?: { resource_type: string }[];
 }
 
 // Format tag: remove hyphens and capitalize first letter of each word
