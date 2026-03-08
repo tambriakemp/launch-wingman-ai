@@ -64,6 +64,30 @@ const ContentVault = () => {
     enabled: canAccessVault,
   });
 
+  // Search resources by title
+  const { data: searchResults, isLoading: searchLoading } = useQuery({
+    queryKey: ['content-vault-search', searchQuery],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('content_vault_resources')
+        .select(`
+          id,
+          title,
+          resource_type,
+          resource_url,
+          subcategory:content_vault_subcategories!inner(
+            name,
+            category:content_vault_categories!inner(name, slug)
+          )
+        `)
+        .ilike('title', `%${searchQuery}%`)
+        .limit(20);
+      if (error) throw error;
+      return data;
+    },
+    enabled: canAccessVault && searchQuery.trim().length > 1,
+  });
+
   // Fetch total resource count
   const { data: totalResourceCount } = useQuery({
     queryKey: ['content-vault-total-count'],
@@ -215,80 +239,116 @@ const ContentVault = () => {
           <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search categories..."
+              placeholder="Search resources..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
             />
           </div>
 
-          {/* Categories Grid */}
-          {categoriesLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              {[...Array(6)].map((_, i) => (
-                <Skeleton key={i} className="h-24 rounded-xl" />
-              ))}
-            </div>
-          ) : (() => {
-            const filteredCategories = categories?.filter(cat =>
-              cat.name.toLowerCase().includes(searchQuery.toLowerCase())
-            ) ?? [];
-            return filteredCategories.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              {filteredCategories.map((category) => {
-                const iconConfig = getCategoryIcon(category.slug);
-                return (
-                  <CategoryCard
-                    key={category.id}
-                    name={category.name}
-                    icon={iconConfig.icon}
-                    iconColor={iconConfig.color}
-                    onClick={() => handleCategoryClick(category.slug)}
-                    showEditButton={hasAdminAccess}
-                    onEditClick={() => setEditingCategory(category)}
-                  />
-                );
-              })}
-            </div>
+          {searchQuery.trim().length > 1 ? (
+            /* Search Results Mode */
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Search className="w-5 h-5 text-primary" />
+                <span className="font-semibold text-foreground">Search Results</span>
+              </div>
+              {searchLoading ? (
+                <div className="space-y-3">
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-14 rounded-lg" />
+                  ))}
+                </div>
+              ) : searchResults && searchResults.length > 0 ? (
+                <div className="divide-y divide-border">
+                  {searchResults.map((resource) => (
+                    <PopularResourceItem
+                      key={resource.id}
+                      id={resource.id}
+                      title={resource.title}
+                      categoryName={(resource.subcategory as any).category.name}
+                      resourceType={resource.resource_type}
+                      resourceUrl={resource.resource_url}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  No results found for "{searchQuery}"
+                </p>
+              )}
+            </Card>
           ) : (
-            <div className="text-center py-16 mb-8">
-              <p className="text-muted-foreground">No categories available yet.</p>
-            </div>
-          );
-          })()}
+            <>
+              {/* Categories Grid */}
+              {categoriesLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                  {[...Array(6)].map((_, i) => (
+                    <Skeleton key={i} className="h-24 rounded-xl" />
+                  ))}
+                </div>
+              ) : (() => {
+                const filteredCategories = categories?.filter(cat =>
+                  cat.name.toLowerCase().includes(searchQuery.toLowerCase())
+                ) ?? [];
+                return filteredCategories.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                  {filteredCategories.map((category) => {
+                    const iconConfig = getCategoryIcon(category.slug);
+                    return (
+                      <CategoryCard
+                        key={category.id}
+                        name={category.name}
+                        icon={iconConfig.icon}
+                        iconColor={iconConfig.color}
+                        onClick={() => handleCategoryClick(category.slug)}
+                        showEditButton={hasAdminAccess}
+                        onEditClick={() => setEditingCategory(category)}
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-16 mb-8">
+                  <p className="text-muted-foreground">No categories available yet.</p>
+                </div>
+              );
+              })()}
 
-          {/* Popular Resources Section */}
-          <Card className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <FolderOpen className="w-5 h-5 text-amber-500" />
-              <span className="font-semibold text-foreground">Popular Resources</span>
-            </div>
-            
-            {popularLoading ? (
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <Skeleton key={i} className="h-14 rounded-lg" />
-                ))}
-              </div>
-            ) : popularResources && popularResources.length > 0 ? (
-              <div className="divide-y divide-border">
-                {popularResources.map((resource) => (
-                  <PopularResourceItem
-                    key={resource.id}
-                    id={resource.id}
-                    title={resource.title}
-                    categoryName={resource.subcategory.category.name}
-                    resourceType={resource.resource_type}
-                    resourceUrl={resource.resource_url}
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-8">
-                No resources available yet.
-              </p>
-            )}
-          </Card>
+              {/* Popular Resources Section */}
+              <Card className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <FolderOpen className="w-5 h-5 text-amber-500" />
+                  <span className="font-semibold text-foreground">Popular Resources</span>
+                </div>
+                
+                {popularLoading ? (
+                  <div className="space-y-3">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-14 rounded-lg" />
+                    ))}
+                  </div>
+                ) : popularResources && popularResources.length > 0 ? (
+                  <div className="divide-y divide-border">
+                    {popularResources.map((resource) => (
+                      <PopularResourceItem
+                        key={resource.id}
+                        id={resource.id}
+                        title={resource.title}
+                        categoryName={resource.subcategory.category.name}
+                        resourceType={resource.resource_type}
+                        resourceUrl={resource.resource_url}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">
+                    No resources available yet.
+                  </p>
+                )}
+              </Card>
+            </>
+          )}
 
           {/* Edit Dialog */}
           {editingCategory && (
