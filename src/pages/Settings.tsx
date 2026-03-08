@@ -49,7 +49,9 @@ import {
   FlaskConical,
   Zap,
   Package,
+  Info,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Profile {
   first_name: string | null;
