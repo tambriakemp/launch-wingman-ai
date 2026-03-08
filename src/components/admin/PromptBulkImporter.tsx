@@ -25,6 +25,7 @@ export const PromptBulkImporter = () => {
   const [bulkCoverImage, setBulkCoverImage] = useState("");
   const [subcategoryId, setSubcategoryId] = useState<string | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [promptType, setPromptType] = useState<"image_prompt" | "video_prompt">("image_prompt");
 
   // Fetch the AI Prompts > General subcategory ID on first use
   const ensureSubcategoryId = async () => {
@@ -140,7 +141,7 @@ export const PromptBulkImporter = () => {
         .from("content_vault_resources")
         .select("title, description")
         .eq("subcategory_id", subId)
-        .eq("resource_type", "ai_prompt");
+        .in("resource_type", ["image_prompt", "video_prompt"]);
 
       const existingDescs = new Set(
         (existing || []).map((r) => (r.description || "").trim().toLowerCase())
@@ -167,7 +168,7 @@ export const PromptBulkImporter = () => {
       const resources = unique.map((p, i) => ({
         title: p.title,
         description: p.text,
-        resource_type: "ai_prompt",
+        resource_type: promptType,
         resource_url: "#",
         subcategory_id: subId,
         tags: globalTags.length > 0 ? globalTags : null,
@@ -205,6 +206,19 @@ export const PromptBulkImporter = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Prompt Type Selector */}
+        <div>
+          <label className="text-sm font-medium mb-1 block">Prompt Type</label>
+          <select
+            value={promptType}
+            onChange={(e) => setPromptType(e.target.value as "image_prompt" | "video_prompt")}
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="image_prompt">Image Prompt</option>
+            <option value="video_prompt">Video Prompt</option>
+          </select>
+        </div>
+
         {parsedPrompts.length === 0 ? (
           <Tabs defaultValue="paste">
             <TabsList className="w-full">

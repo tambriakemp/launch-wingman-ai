@@ -231,7 +231,7 @@ const ContentVaultCategory = () => {
     }
     
     // AI Prompts open the prompt modal
-    if (resource.resource_type === 'ai_prompt') {
+    if (resource.resource_type === 'image_prompt' || resource.resource_type === 'video_prompt') {
       setPromptResource(resource);
       return;
     }

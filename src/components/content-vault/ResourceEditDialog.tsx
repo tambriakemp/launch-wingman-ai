@@ -491,7 +491,7 @@ export const ResourceEditDialog = ({
     formData.preview_url ||
     ((formData.resource_type === 'image' || formData.resource_type === 'photo') ? formData.resource_url : '');
   const canSetCategoryThumbnail = Boolean(categoryThumbnailCandidateUrl);
-  const isAiPrompt = formData.resource_type === 'ai_prompt';
+  const isAiPrompt = formData.resource_type === 'image_prompt' || formData.resource_type === 'video_prompt';
   const isProcessing = isUploading || isFetchingThumbnail || isGeneratingVideoThumbnail || isRenamingWithAI || isSettingCategoryThumbnail || isGeneratingAICover;
 
   return (
@@ -828,14 +828,28 @@ export const ResourceEditDialog = ({
 
           <div className="space-y-2">
             <Label htmlFor="resource_type">Resource Type</Label>
-            <Input
-              id="resource_type"
-              value={formData.resource_type}
-              onChange={(e) =>
-                setFormData({ ...formData, resource_type: e.target.value })
-              }
-              placeholder="canva_link or download"
-            />
+            {isAiPrompt ? (
+              <select
+                id="resource_type"
+                value={formData.resource_type}
+                onChange={(e) =>
+                  setFormData({ ...formData, resource_type: e.target.value })
+                }
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="image_prompt">Image Prompt</option>
+                <option value="video_prompt">Video Prompt</option>
+              </select>
+            ) : (
+              <Input
+                id="resource_type"
+                value={formData.resource_type}
+                onChange={(e) =>
+                  setFormData({ ...formData, resource_type: e.target.value })
+                }
+                placeholder="canva_link or download"
+              />
+            )}
           </div>
 
           <div className="space-y-2">

@@ -67,7 +67,7 @@ export const ResourceCard = ({
 }: ResourceCardProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const isCanvaLink = resourceType === 'canva_link';
-  const isAiPrompt = resourceType === 'ai_prompt';
+  const isAiPrompt = resourceType === 'image_prompt' || resourceType === 'video_prompt';
   const isDocument = resourceType === 'document' || /\.(pdf|docx|doc|rtf)$/i.test(resourceUrl);
   const docType = getDocumentType(resourceUrl);
   const hasMissingPreview = isMissingPreview(resourceUrl, previewUrl);
@@ -199,6 +199,17 @@ export const ResourceCard = ({
               className={`${DOCUMENT_BADGE_COLORS[docType] || 'bg-slate-500'} text-white text-xs font-bold shadow-lg border-0`}
             >
               {docType.toUpperCase()}
+            </Badge>
+          </div>
+        )}
+
+        {/* Prompt Type Badge */}
+        {isAiPrompt && (
+          <div className="absolute top-3 right-3">
+            <Badge 
+              className={`${resourceType === 'video_prompt' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white text-xs font-semibold shadow-lg border-0 px-2.5 py-1`}
+            >
+              {resourceType === 'video_prompt' ? 'Video' : 'Image'}
             </Badge>
           </div>
         )}
