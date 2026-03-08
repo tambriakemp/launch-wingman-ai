@@ -10,9 +10,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Campaign } from "@/types/campaign";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
 
 export default function CampaignPlanner() {
   const { user } = useAuth();
+  const { hasAccess, isLoading: featureLoading } = useFeatureAccess();
   const [view, setView] = useState<"table" | "timeline">("table");
   const [showModal, setShowModal] = useState(false);
 
@@ -80,6 +83,16 @@ export default function CampaignPlanner() {
       goal_target: Number(c.goal_target) || 0,
     };
   });
+
+  if (!featureLoading && !hasAccess('social_calendar')) {
+    return (
+      <ProjectLayout>
+        <div className="max-w-2xl mx-auto py-16">
+          <UpgradePrompt feature="social_calendar" variant="card" customMessage="Campaign Planner is a Pro feature. Upgrade to track, measure, and optimize your marketing campaigns." />
+        </div>
+      </ProjectLayout>
+    );
+  }
 
   return (
     <ProjectLayout>

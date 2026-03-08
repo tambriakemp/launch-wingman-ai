@@ -439,9 +439,9 @@ const App = () => (
             <Route
               path="/marketing-hub/utm-builder"
               element={
-                <ProtectedAdminRoute>
+                <ProtectedRoute>
                   <UTMBuilder />
-                </ProtectedAdminRoute>
+                </ProtectedRoute>
               }
             />
             <Route
@@ -453,21 +453,21 @@ const App = () => (
               }
             />
 
-            {/* Campaign Planner routes (admin only) */}
+            {/* Campaign Planner routes (Pro+) */}
             <Route
               path="/marketing-hub/campaigns"
               element={
-                <ProtectedAdminRoute>
+                <ProtectedRoute>
                   <CampaignPlanner />
-                </ProtectedAdminRoute>
+                </ProtectedRoute>
               }
             />
             <Route
               path="/marketing-hub/campaigns/:campaignId"
               element={
-                <ProtectedAdminRoute>
+                <ProtectedRoute>
                   <CampaignDetail />
-                </ProtectedAdminRoute>
+                </ProtectedRoute>
               }
             />
 
