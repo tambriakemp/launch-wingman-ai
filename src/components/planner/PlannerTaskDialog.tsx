@@ -82,11 +82,24 @@ export const PlannerTaskDialog = ({
   defaultTaskType = "task",
   defaultDueAt,
 }: PlannerTaskDialogProps) => {
+  const DEFAULT_CATEGORIES = [
+    { id: "business", name: "Work", color: "#f5c842" },
+    { id: "life", name: "Personal", color: "#0ea572" },
+    { id: "health", name: "Health", color: "#f43f5e" },
+    { id: "finance", name: "Finance", color: "#8b5cf6" },
+  ];
+  const [plannerCategories] = useState(() => {
+    try {
+      const stored = localStorage.getItem("planner-categories");
+      return stored ? JSON.parse(stored) : DEFAULT_CATEGORIES;
+    } catch { return DEFAULT_CATEGORIES; }
+  });
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [taskType, setTaskType] = useState<"task" | "event">("task");
   const [columnId, setColumnId] = useState("todo");
-  const [category, setCategory] = useState<"business" | "life">("business");
+  const [category, setCategory] = useState("business");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
