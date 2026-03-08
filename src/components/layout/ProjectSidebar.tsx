@@ -271,6 +271,8 @@ const SidebarContent = ({
               </div>
               <div className="space-y-0.5">
                 {marketingItems.map((item) => {
+                  const isProLocked = item.isProOnly && !isPro && !hasAdminAccess;
+                  
                   if (item.requiresProject) {
                     return (
                       <Tooltip key={item.label}>
@@ -281,6 +283,26 @@ const SidebarContent = ({
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="right"><p>Select a project first</p></TooltipContent>
+                      </Tooltip>
+                    );
+                  }
+                  if (isProLocked) {
+                    return (
+                      <Tooltip key={item.label}>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => onUpgradeClick(item.label)}
+                            className={cn(
+                              "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm w-full text-left",
+                              "text-sidebar-foreground/40 hover:bg-sidebar-accent/30 cursor-pointer"
+                            )}
+                          >
+                            <item.icon className="w-4 h-4" />
+                            <span className="flex-1">{item.label}</span>
+                            <Crown className="w-3 h-3 text-primary" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right"><p>Pro feature - Upgrade to access</p></TooltipContent>
                       </Tooltip>
                     );
                   }
