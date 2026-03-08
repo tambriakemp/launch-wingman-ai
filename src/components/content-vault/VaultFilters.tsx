@@ -47,6 +47,10 @@ export const VaultFilters = ({
   allTags,
   selectedTags,
   onTagsChange,
+  isPromptCategory,
+  selectedPromptType = "all",
+  onPromptTypeChange,
+  resources = [],
 }: VaultFiltersProps) => {
   const handleTagChange = (value: string) => {
     if (value === "all") {
