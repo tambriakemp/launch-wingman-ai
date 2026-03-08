@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
-import { ArrowLeft, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2, Check, Crown } from "lucide-react";
+import { ArrowLeft, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2, Check, Crown, Download } from "lucide-react";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { motion, AnimatePresence } from "framer-motion";
