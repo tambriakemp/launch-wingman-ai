@@ -61,7 +61,7 @@ export function MemoryReviewBanner({ projectId }: MemoryReviewBannerProps) {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-muted-foreground"
-                onClick={() => setDismissed(true)}
+                onClick={handleDismiss}
               >
                 <X className="w-4 h-4" />
               </Button>
