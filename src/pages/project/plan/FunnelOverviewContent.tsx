@@ -478,7 +478,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
             }}
             onNewProject={() => {
               localStorage.removeItem("lastProjectInfo");
-              navigate("/app");
+              navigate("/app?new=1");
             }}
             onPause={async () => {
               await transitionTo("paused");
