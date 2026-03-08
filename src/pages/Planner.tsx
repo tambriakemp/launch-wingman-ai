@@ -105,11 +105,12 @@ const Planner = () => {
         description: data.description || null,
         column_id: data.column_id || "todo",
         task_type: data.task_type || "task",
-        category: data.category || "business",
+        category: data.category || null,
         due_at: data.due_at || null,
         start_at: data.start_at || null,
         end_at: data.end_at || null,
         location: data.location || null,
+        recurrence_rule: data.recurrence_rule !== undefined ? data.recurrence_rule : editingTask.recurrence_rule,
       } as any)
       .eq("id", editingTask.id);
 
