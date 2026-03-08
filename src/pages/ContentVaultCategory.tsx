@@ -53,6 +53,7 @@ const ContentVaultCategory = () => {
   const canAccessVault = hasAccess('content_vault');
 
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("all");
+  const [selectedPromptType, setSelectedPromptType] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
