@@ -206,6 +206,19 @@ export const PromptBulkImporter = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Prompt Type Selector */}
+        <div>
+          <label className="text-sm font-medium mb-1 block">Prompt Type</label>
+          <select
+            value={promptType}
+            onChange={(e) => setPromptType(e.target.value as "image_prompt" | "video_prompt")}
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="image_prompt">Image Prompt</option>
+            <option value="video_prompt">Video Prompt</option>
+          </select>
+        </div>
+
         {parsedPrompts.length === 0 ? (
           <Tabs defaultValue="paste">
             <TabsList className="w-full">
