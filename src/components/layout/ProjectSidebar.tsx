@@ -13,6 +13,7 @@ import {
   Crown,
   ClipboardCheck,
   BookOpen,
+  BookMarked,
   MessageSquareText,
   Lightbulb,
   Package,
