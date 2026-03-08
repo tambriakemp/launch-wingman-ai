@@ -64,6 +64,30 @@ const ContentVault = () => {
     enabled: canAccessVault,
   });
 
+  // Search resources by title
+  const { data: searchResults, isLoading: searchLoading } = useQuery({
+    queryKey: ['content-vault-search', searchQuery],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('content_vault_resources')
+        .select(`
+          id,
+          title,
+          resource_type,
+          resource_url,
+          subcategory:content_vault_subcategories!inner(
+            name,
+            category:content_vault_categories!inner(name, slug)
+          )
+        `)
+        .ilike('title', `%${searchQuery}%`)
+        .limit(20);
+      if (error) throw error;
+      return data;
+    },
+    enabled: canAccessVault && searchQuery.trim().length > 1,
+  });
+
   // Fetch total resource count
   const { data: totalResourceCount } = useQuery({
     queryKey: ['content-vault-total-count'],
