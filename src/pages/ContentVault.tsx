@@ -246,73 +246,109 @@ const ContentVault = () => {
             />
           </div>
 
-          {/* Categories Grid */}
-          {categoriesLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              {[...Array(6)].map((_, i) => (
-                <Skeleton key={i} className="h-24 rounded-xl" />
-              ))}
-            </div>
-          ) : (() => {
-            const filteredCategories = categories?.filter(cat =>
-              cat.name.toLowerCase().includes(searchQuery.toLowerCase())
-            ) ?? [];
-            return filteredCategories.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              {filteredCategories.map((category) => {
-                const iconConfig = getCategoryIcon(category.slug);
-                return (
-                  <CategoryCard
-                    key={category.id}
-                    name={category.name}
-                    icon={iconConfig.icon}
-                    iconColor={iconConfig.color}
-                    onClick={() => handleCategoryClick(category.slug)}
-                    showEditButton={hasAdminAccess}
-                    onEditClick={() => setEditingCategory(category)}
-                  />
-                );
-              })}
-            </div>
+          {searchQuery.trim().length > 1 ? (
+            /* Search Results Mode */
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Search className="w-5 h-5 text-primary" />
+                <span className="font-semibold text-foreground">Search Results</span>
+              </div>
+              {searchLoading ? (
+                <div className="space-y-3">
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-14 rounded-lg" />
+                  ))}
+                </div>
+              ) : searchResults && searchResults.length > 0 ? (
+                <div className="divide-y divide-border">
+                  {searchResults.map((resource) => (
+                    <PopularResourceItem
+                      key={resource.id}
+                      id={resource.id}
+                      title={resource.title}
+                      categoryName={(resource.subcategory as any).category.name}
+                      resourceType={resource.resource_type}
+                      resourceUrl={resource.resource_url}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  No results found for "{searchQuery}"
+                </p>
+              )}
+            </Card>
           ) : (
-            <div className="text-center py-16 mb-8">
-              <p className="text-muted-foreground">No categories available yet.</p>
-            </div>
-          );
-          })()}
+            <>
+              {/* Categories Grid */}
+              {categoriesLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                  {[...Array(6)].map((_, i) => (
+                    <Skeleton key={i} className="h-24 rounded-xl" />
+                  ))}
+                </div>
+              ) : (() => {
+                const filteredCategories = categories?.filter(cat =>
+                  cat.name.toLowerCase().includes(searchQuery.toLowerCase())
+                ) ?? [];
+                return filteredCategories.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                  {filteredCategories.map((category) => {
+                    const iconConfig = getCategoryIcon(category.slug);
+                    return (
+                      <CategoryCard
+                        key={category.id}
+                        name={category.name}
+                        icon={iconConfig.icon}
+                        iconColor={iconConfig.color}
+                        onClick={() => handleCategoryClick(category.slug)}
+                        showEditButton={hasAdminAccess}
+                        onEditClick={() => setEditingCategory(category)}
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-16 mb-8">
+                  <p className="text-muted-foreground">No categories available yet.</p>
+                </div>
+              );
+              })()}
 
-          {/* Popular Resources Section */}
-          <Card className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <FolderOpen className="w-5 h-5 text-amber-500" />
-              <span className="font-semibold text-foreground">Popular Resources</span>
-            </div>
-            
-            {popularLoading ? (
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <Skeleton key={i} className="h-14 rounded-lg" />
-                ))}
-              </div>
-            ) : popularResources && popularResources.length > 0 ? (
-              <div className="divide-y divide-border">
-                {popularResources.map((resource) => (
-                  <PopularResourceItem
-                    key={resource.id}
-                    id={resource.id}
-                    title={resource.title}
-                    categoryName={resource.subcategory.category.name}
-                    resourceType={resource.resource_type}
-                    resourceUrl={resource.resource_url}
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-8">
-                No resources available yet.
-              </p>
-            )}
-          </Card>
+              {/* Popular Resources Section */}
+              <Card className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <FolderOpen className="w-5 h-5 text-amber-500" />
+                  <span className="font-semibold text-foreground">Popular Resources</span>
+                </div>
+                
+                {popularLoading ? (
+                  <div className="space-y-3">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-14 rounded-lg" />
+                    ))}
+                  </div>
+                ) : popularResources && popularResources.length > 0 ? (
+                  <div className="divide-y divide-border">
+                    {popularResources.map((resource) => (
+                      <PopularResourceItem
+                        key={resource.id}
+                        id={resource.id}
+                        title={resource.title}
+                        categoryName={resource.subcategory.category.name}
+                        resourceType={resource.resource_type}
+                        resourceUrl={resource.resource_url}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">
+                    No resources available yet.
+                  </p>
+                )}
+              </Card>
+            </>
+          )}
 
           {/* Edit Dialog */}
           {editingCategory && (
