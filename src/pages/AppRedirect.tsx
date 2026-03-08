@@ -60,7 +60,7 @@ const AppRedirect = () => {
   useEffect(() => {
     const redirectToProject = async () => {
       if (authLoading || checkingOnboarding) return;
-      
+      if (searchParams.get('new') === '1') { setChecking(false); return; }
       if (!user) {
         navigate('/auth', { replace: true });
         return;
