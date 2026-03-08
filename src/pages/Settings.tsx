@@ -727,14 +727,6 @@ const Settings = () => {
     }
   };
 
-  // If showing annual review, render that instead
-  if (showAnnualReview) {
-    return (
-      <ProjectLayout>
-        <AnnualReviewView onClose={() => setShowAnnualReview(false)} />
-      </ProjectLayout>
-    );
-  }
 
   return (
     <ProjectLayout>
