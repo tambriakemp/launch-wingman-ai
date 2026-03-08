@@ -1072,20 +1072,16 @@ export default function TaskDetail() {
               )}
             </div>
             {/* Auto-save status indicator */}
-            {autoSaveStatus !== 'idle' && (
+            {autoSaveStatus === 'saving' && (
               <span className="text-xs text-muted-foreground flex items-center gap-1">
-                {autoSaveStatus === 'saving' && (
-                  <>
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Saving...
-                  </>
-                )}
-                {autoSaveStatus === 'saved' && (
-                  <>
-                    <Check className="w-3 h-3 text-emerald-500" />
-                    Saved
-                  </>
-                )}
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Saving...
+              </span>
+            )}
+            {autoSaveStatus === 'saved' && (
+              <span className="text-xs text-green-600 flex items-center gap-1">
+                <Check className="w-3 h-3" />
+                Saved
               </span>
             )}
           </div>
