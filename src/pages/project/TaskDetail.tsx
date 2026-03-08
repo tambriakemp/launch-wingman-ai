@@ -821,17 +821,34 @@ export default function TaskDetail() {
     }
   };
 
+  // Helper to mark a phase intro as seen in DB
+  const markIntroSeen = async (phaseKey: string) => {
+    if (!user?.id || !projectId) return;
+    const introKey = `${projectId}_${phaseKey}`;
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('seen_intros')
+      .eq('user_id', user.id)
+      .single();
+
+    const seenIntros: Record<string, boolean> = (profile?.seen_intros as Record<string, boolean>) || {};
+    seenIntros[introKey] = true;
+
+    await supabase
+      .from('profiles')
+      .update({ seen_intros: seenIntros })
+      .eq('user_id', user.id);
+  };
+
   // Handle dismissing launch intro
   const handleLaunchIntroContinue = () => {
-    const launchIntroKey = `mvl_launch_intro_${projectId}`;
-    localStorage.setItem(launchIntroKey, 'true');
+    markIntroSeen('launch');
     setShowLaunchIntro(false);
   };
 
   // Handle dismissing pre-launch intro
   const handlePreLaunchIntroContinue = () => {
-    const preLaunchIntroKey = `prelaunch_intro_${projectId}`;
-    localStorage.setItem(preLaunchIntroKey, 'true');
+    markIntroSeen('prelaunch');
     setShowPreLaunchIntro(false);
   };
 
