@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { FolderOpen, ArrowRight } from "lucide-react";
+import { FolderOpen, ArrowRight, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { CategoryCard } from "@/components/content-vault/CategoryCard";
@@ -15,6 +15,7 @@ import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface Category {
   id: string;
@@ -46,6 +47,7 @@ const ContentVault = () => {
   const canAccessVault = hasAccess('content_vault');
   
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch categories
   const { data: categories, isLoading: categoriesLoading } = useQuery({
@@ -209,6 +211,17 @@ const ContentVault = () => {
         <div className="max-w-7xl mx-auto px-6 py-8">
           <VaultHeader totalResourceCount={totalResourceCount || undefined} />
           
+          {/* Search */}
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search categories..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
           {/* Categories Grid */}
           {categoriesLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
@@ -216,9 +229,13 @@ const ContentVault = () => {
                 <Skeleton key={i} className="h-24 rounded-xl" />
               ))}
             </div>
-          ) : categories && categories.length > 0 ? (
+          ) : (() => {
+            const filteredCategories = categories?.filter(cat =>
+              cat.name.toLowerCase().includes(searchQuery.toLowerCase())
+            ) ?? [];
+            return filteredCategories.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              {categories.map((category) => {
+              {filteredCategories.map((category) => {
                 const iconConfig = getCategoryIcon(category.slug);
                 return (
                   <CategoryCard
@@ -237,7 +254,8 @@ const ContentVault = () => {
             <div className="text-center py-16 mb-8">
               <p className="text-muted-foreground">No categories available yet.</p>
             </div>
-          )}
+          );
+          })()}
 
           {/* Popular Resources Section */}
           <Card className="p-6">
