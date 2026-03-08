@@ -204,6 +204,11 @@ const ContentVaultCategory = () => {
         return false;
       }
       
+      // Prompt type filter (for AI prompts category)
+      if (isAiPrompts && selectedPromptType !== "all" && resource.resource_type !== selectedPromptType) {
+        return false;
+      }
+      
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
