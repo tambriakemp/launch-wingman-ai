@@ -227,7 +227,7 @@ const ContentVaultCategory = () => {
       
       return true;
     });
-  }, [resources, selectedSubcategory, searchQuery, selectedTags]);
+  }, [resources, selectedSubcategory, selectedPromptType, searchQuery, selectedTags, isAiPrompts]);
 
   const handleResourceClick = (resource: Resource, index: number) => {
     // Don't open lightbox in selection mode
