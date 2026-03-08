@@ -15,6 +15,7 @@ import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface Category {
   id: string;
