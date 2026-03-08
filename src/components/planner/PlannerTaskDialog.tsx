@@ -51,6 +51,9 @@ export interface PlannerTask {
   location: string | null;
   linked_entity_type: string | null;
   linked_entity_id: string | null;
+  recurrence_rule: any | null;
+  recurrence_parent_id: string | null;
+  recurrence_exception_dates: string[] | null;
 }
 
 const STATUSES = [
