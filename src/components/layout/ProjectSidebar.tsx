@@ -8,6 +8,7 @@ import {
   Rocket,
   Kanban,
   Lock,
+  FileText,
   FolderOpen,
   Crown,
   ClipboardCheck,
