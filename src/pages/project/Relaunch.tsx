@@ -40,7 +40,7 @@ export default function Relaunch() {
 
   // Only allow relaunch from launched or completed states
   useEffect(() => {
-    if (projectStatus && !["launched", "completed"].includes(projectStatus)) {
+    if (projectStatus && !["launched", "completed", "post-launch"].includes(projectStatus)) {
       navigate(`/projects/${id}`);
     }
   }, [projectStatus, id, navigate]);
