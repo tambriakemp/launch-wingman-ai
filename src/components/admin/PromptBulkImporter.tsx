@@ -141,7 +141,7 @@ export const PromptBulkImporter = () => {
         .from("content_vault_resources")
         .select("title, description")
         .eq("subcategory_id", subId)
-        .eq("resource_type", "ai_prompt");
+        .in("resource_type", ["image_prompt", "video_prompt"]);
 
       const existingDescs = new Set(
         (existing || []).map((r) => (r.description || "").trim().toLowerCase())
