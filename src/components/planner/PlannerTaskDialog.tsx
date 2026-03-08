@@ -387,6 +387,116 @@ export const PlannerTaskDialog = ({
               </div>
             </div>
 
+            {/* Recurrence */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Repeat</Label>
+              <Select value={recurrenceFreq} onValueChange={(v) => setRecurrenceFreq(v as any)}>
+                <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Does not repeat</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {recurrenceFreq !== "none" && (
+              <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-4">
+                {/* Interval */}
+                <div className="flex items-center gap-3">
+                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Every</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={99}
+                    value={recurrenceInterval}
+                    onChange={e => setRecurrenceInterval(Number(e.target.value))}
+                    className="h-8 w-16 text-center"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {recurrenceFreq === "daily" ? "day(s)" : recurrenceFreq === "weekly" ? "week(s)" : recurrenceFreq === "monthly" ? "month(s)" : "year(s)"}
+                  </span>
+                </div>
+
+                {/* Day picker for weekly */}
+                {recurrenceFreq === "weekly" && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">On days</Label>
+                    <div className="flex gap-1.5">
+                      {[["SU","S"],["MO","M"],["TU","T"],["WE","W"],["TH","T"],["FR","F"],["SA","S"]].map(([val, label]) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setRecurrenceDays(prev =>
+                            prev.includes(val) ? prev.filter(d => d !== val) : [...prev, val]
+                          )}
+                          className={cn(
+                            "w-8 h-8 rounded-full text-xs font-semibold border transition-colors",
+                            recurrenceDays.includes(val)
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                          )}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* End condition */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Ends</Label>
+                  <div className="space-y-2">
+                    {[
+                      { val: "never", label: "Never" },
+                      { val: "on_date", label: "On date" },
+                      { val: "after_n", label: "After" },
+                    ].map(opt => (
+                      <label key={opt.val} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="recurrence-end"
+                          value={opt.val}
+                          checked={recurrenceEndType === opt.val}
+                          onChange={() => setRecurrenceEndType(opt.val as any)}
+                          className="accent-primary"
+                        />
+                        <span className="text-sm">{opt.label}</span>
+                        {opt.val === "on_date" && recurrenceEndType === "on_date" && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-7 text-xs ml-1">
+                                {recurrenceEndDate ? format(recurrenceEndDate, "MMM d, yyyy") : "Pick date"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar mode="single" selected={recurrenceEndDate} onSelect={setRecurrenceEndDate} className="p-3 pointer-events-auto" />
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                        {opt.val === "after_n" && recurrenceEndType === "after_n" && (
+                          <div className="flex items-center gap-1.5 ml-1">
+                            <Input
+                              type="number"
+                              min={1}
+                              max={999}
+                              value={recurrenceCount}
+                              onChange={e => setRecurrenceCount(Number(e.target.value))}
+                              className="h-7 w-14 text-center text-xs"
+                            />
+                            <span className="text-xs text-muted-foreground">occurrences</span>
+                          </div>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Location */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Location</Label>

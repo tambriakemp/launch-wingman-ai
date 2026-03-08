@@ -231,10 +231,22 @@ export const PlannerCalendarView = ({
     });
   }, [tasks, activeCategories]);
 
-  const scheduledTasks = useMemo(
-    () => filteredTasks.filter((t) => t.start_at && t.end_at),
-    [filteredTasks]
-  );
+  const windowStart = useMemo(() => {
+    if (viewMode === "month") return startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 });
+    if (viewMode === "day") return currentDate;
+    return weekStart;
+  }, [viewMode, currentDate, weekStart]);
+
+  const windowEnd = useMemo(() => {
+    if (viewMode === "month") return endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 });
+    if (viewMode === "day") return addDays(currentDate, 1);
+    return weekEnd;
+  }, [viewMode, currentDate, weekEnd]);
+
+  const scheduledTasks = useMemo(() => {
+    const expanded = expandAllRecurring(filteredTasks, windowStart, windowEnd);
+    return expanded.filter(t => t.start_at && t.end_at);
+  }, [filteredTasks, windowStart, windowEnd]);
 
   // Scroll to ~8 AM on mount
   useEffect(() => {

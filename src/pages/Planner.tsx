@@ -150,6 +150,18 @@ const Planner = () => {
   };
 
   const handleEditTask = (task: PlannerTask) => {
+    // If it's a virtual recurrence instance, find the parent task
+    if ((task as any)._isVirtualRecurrence) {
+      const parentId = (task as any)._parentId;
+      const parent = tasks.find(t => t.id === parentId);
+      if (parent) {
+        setEditingTask(parent);
+        setDefaultTaskType(parent.task_type as "task" | "event" || "task");
+        setDefaultDueAt(null);
+        setDialogOpen(true);
+      }
+      return;
+    }
     setEditingTask(task);
     setDefaultTaskType(task.task_type as "task" | "event" || "task");
     setDefaultDueAt(null);
