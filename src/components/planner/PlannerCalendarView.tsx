@@ -591,6 +591,9 @@ export const PlannerCalendarView = ({
                               </span>
                             )}
                             {task.title}
+                            {(task.recurrence_rule || (task as any)._isVirtualRecurrence) && (
+                              <span className="opacity-50"> ↻</span>
+                            )}
                           </button>
                         );
                       })}
