@@ -203,6 +203,17 @@ export const ResourceCard = ({
           </div>
         )}
 
+        {/* Prompt Type Badge */}
+        {isAiPrompt && (
+          <div className="absolute top-3 right-3">
+            <Badge 
+              className={`${resourceType === 'video_prompt' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white text-xs font-semibold shadow-lg border-0 px-2.5 py-1`}
+            >
+              {resourceType === 'video_prompt' ? 'Video' : 'Image'}
+            </Badge>
+          </div>
+        )}
+
         {/* Missing Preview Warning - Admin only */}
         {isAdmin && hasMissingPreview && (
           <TooltipProvider>
