@@ -288,15 +288,25 @@ const ContentVault = () => {
                 </div>
               ) : searchResults && searchResults.length > 0 ? (
                 <div className="divide-y divide-border">
-                  {searchResults.map((resource) => (
-                    <PopularResourceItem
+                  {searchResults.map((resource, index) => (
+                    <div
                       key={resource.id}
-                      id={resource.id}
-                      title={resource.title}
-                      categoryName={(resource.subcategory as any).category.name}
-                      resourceType={resource.resource_type}
-                      resourceUrl={resource.resource_url}
-                    />
+                      className="flex items-center justify-between py-3 cursor-pointer hover:bg-muted/50 rounded-lg px-2 -mx-2 transition-colors"
+                      onClick={() => handleSearchResultClick(resource, index)}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="p-2 rounded-lg bg-muted shrink-0">
+                          <FileText className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground truncate">{resource.title}</p>
+                          <p className="text-sm text-muted-foreground">{(resource.subcategory as any).category.name}</p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-xs shrink-0">
+                        {resource.resource_type === 'canva_link' ? 'Canva' : resource.resource_type === 'document' ? 'PDF' : resource.resource_type === 'image_prompt' ? 'Prompt' : 'Link'}
+                      </Badge>
+                    </div>
                   ))}
                 </div>
               ) : (
