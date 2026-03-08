@@ -212,23 +212,6 @@ export const PlannerCalendarView = ({
     });
   }, [tasks, activeCategories]);
 
-  const windowStart = useMemo(() => {
-    if (viewMode === "month") return startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 });
-    if (viewMode === "day") return currentDate;
-    return weekStart;
-  }, [viewMode, currentDate, weekStart]);
-
-  const windowEnd = useMemo(() => {
-    if (viewMode === "month") return endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 });
-    if (viewMode === "day") return addDays(currentDate, 1);
-    return weekEnd;
-  }, [viewMode, currentDate, weekEnd]);
-
-  const scheduledTasks = useMemo(() => {
-    const expanded = expandAllRecurring(filteredTasks, windowStart, windowEnd);
-    return expanded.filter(t => t.start_at && t.end_at);
-  }, [filteredTasks, windowStart, windowEnd]);
-
   // Scroll to ~8 AM on mount
   useEffect(() => {
     if (scrollRef.current && viewMode === "week") {
@@ -251,6 +234,23 @@ export const PlannerCalendarView = ({
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+  const windowStart = useMemo(() => {
+    if (viewMode === "month") return startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 });
+    if (viewMode === "day") return currentDate;
+    return weekStart;
+  }, [viewMode, currentDate, weekStart]);
+
+  const windowEnd = useMemo(() => {
+    if (viewMode === "month") return endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 });
+    if (viewMode === "day") return addDays(currentDate, 1);
+    return weekEnd;
+  }, [viewMode, currentDate, weekEnd]);
+
+  const scheduledTasks = useMemo(() => {
+    const expanded = expandAllRecurring(filteredTasks, windowStart, windowEnd);
+    return expanded.filter(t => t.start_at && t.end_at);
+  }, [filteredTasks, windowStart, windowEnd]);
 
   // Month
   const monthStart = startOfMonth(currentDate);
