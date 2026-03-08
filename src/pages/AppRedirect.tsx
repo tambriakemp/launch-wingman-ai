@@ -173,53 +173,42 @@ const AppRedirect = () => {
 
   if (showCreateProject) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="w-12 h-12 bg-accent rounded-xl flex items-center justify-center mx-auto mb-4">
-              <Rocket className="w-6 h-6 text-accent-foreground" />
+      <ProjectLayout>
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="text-center max-w-md space-y-6">
+            <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto">
+              <Rocket className="w-7 h-7 text-primary" />
             </div>
-            <CardTitle className="text-2xl">Welcome to Launchely!</CardTitle>
-            <CardDescription>
-              Let's create your first project to get started.
-            </CardDescription>
-            <a
-              href={`https://docs.lovable.dev`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors inline-flex items-center gap-1 mt-2"
-            >
-              <HelpCircle className="w-3 h-3" />
-              How Launchely works
-            </a>
-          </CardHeader>
-          <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="projectName">Project Name</Label>
+              <h1 className="text-2xl font-bold text-foreground">Welcome to Launchely!</h1>
+              <p className="text-muted-foreground">
+                Let's set up your first launch project to get started.
+              </p>
+            </div>
+            <div className="space-y-3 w-full">
               <Input
-                id="projectName"
                 placeholder="e.g., Q1 Launch, Coaching Program"
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()}
                 autoFocus
               />
+              <Button
+                className="w-full"
+                onClick={handleCreateProject}
+                disabled={!projectName.trim() || isCreating}
+              >
+                {isCreating ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4 mr-2" />
+                )}
+                Create Project
+              </Button>
             </div>
-            <Button 
-              className="w-full" 
-              onClick={handleCreateProject}
-              disabled={!projectName.trim() || isCreating}
-            >
-              {isCreating ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Plus className="w-4 h-4 mr-2" />
-              )}
-              Create Project
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
+      </ProjectLayout>
     );
   }
 
