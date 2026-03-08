@@ -42,7 +42,10 @@ export const PopularResourceItem = ({
   };
 
   return (
-    <div className="flex items-center justify-between py-3 group">
+    <div 
+      className="flex items-center justify-between py-3 group cursor-pointer hover:bg-muted/50 rounded-lg px-2 -mx-2 transition-colors"
+      onClick={handleClick}
+    >
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="p-2 rounded-lg bg-muted shrink-0">
           <FileText className="w-4 h-4 text-muted-foreground" />
@@ -60,8 +63,8 @@ export const PopularResourceItem = ({
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={handleClick}
+          className="h-8 w-8 text-muted-foreground"
+          onClick={(e) => { e.stopPropagation(); handleClick(); }}
         >
           {resourceType === 'document' ? (
             <Download className="h-4 w-4" />
