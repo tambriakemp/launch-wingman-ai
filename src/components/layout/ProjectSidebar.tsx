@@ -74,6 +74,7 @@ const createNavSections = (projectId?: string): NavSection[] => [
     heading: "Plan",
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: projectId ? `/projects/${projectId}/dashboard` : "#", requiresProject: !projectId },
+      { id: "summary", label: "Phase Snapshot", icon: FileText, href: projectId ? `/projects/${projectId}/summary` : "#", requiresProject: !projectId },
       { id: "tasks", label: "Tasks", icon: Kanban, href: projectId ? `/projects/${projectId}/tasks` : "#", requiresProject: !projectId },
       { id: "planner", label: "Planner", icon: CalendarCheck, href: "/planner" },
       { id: "playbook", label: "Playbook", icon: BookOpen, href: `/playbook` },
