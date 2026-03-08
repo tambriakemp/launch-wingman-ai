@@ -47,6 +47,7 @@ const ContentVault = () => {
   const canAccessVault = hasAccess('content_vault');
   
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch categories
   const { data: categories, isLoading: categoriesLoading } = useQuery({
