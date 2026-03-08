@@ -67,7 +67,7 @@ export const ResourceCard = ({
 }: ResourceCardProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const isCanvaLink = resourceType === 'canva_link';
-  const isAiPrompt = resourceType === 'ai_prompt';
+  const isAiPrompt = resourceType === 'image_prompt' || resourceType === 'video_prompt';
   const isDocument = resourceType === 'document' || /\.(pdf|docx|doc|rtf)$/i.test(resourceUrl);
   const docType = getDocumentType(resourceUrl);
   const hasMissingPreview = isMissingPreview(resourceUrl, previewUrl);

@@ -25,6 +25,7 @@ export const PromptBulkImporter = () => {
   const [bulkCoverImage, setBulkCoverImage] = useState("");
   const [subcategoryId, setSubcategoryId] = useState<string | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [promptType, setPromptType] = useState<"image_prompt" | "video_prompt">("image_prompt");
 
   // Fetch the AI Prompts > General subcategory ID on first use
   const ensureSubcategoryId = async () => {
