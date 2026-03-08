@@ -35,7 +35,14 @@ const AIStudio = () => {
   const [generatedMedia, setGeneratedMedia] = useState<Record<number, GeneratedMedia>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false);
-  const [showSafetyTerms, setShowSafetyTerms] = useState(false);
+  const [showSafetyTerms, setShowSafetyTerms] = useState(() => {
+    return localStorage.getItem('ai-studio-terms-accepted') === 'true';
+  });
+
+  const handleAcceptTerms = () => {
+    localStorage.setItem('ai-studio-terms-accepted', 'true');
+    setShowSafetyTerms(true);
+  };
   const [showHelp, setShowHelp] = useState(false);
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [isGeneratingTopic, setIsGeneratingTopic] = useState(false);
