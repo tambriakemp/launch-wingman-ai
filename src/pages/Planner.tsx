@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { PlannerCalendarView } from "@/components/planner/PlannerCalendarView";
+import { PlannerListView } from "@/components/planner/PlannerListView";
+import { PlannerBoardView } from "@/components/planner/PlannerBoardView";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlannerTaskDialog, type PlannerTask } from "@/components/planner/PlannerTaskDialog";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
@@ -11,6 +14,7 @@ import { UpgradePrompt } from "@/components/UpgradePrompt";
 const Planner = () => {
   const { user } = useAuth();
   const { hasAccess, isLoading: accessLoading } = useFeatureAccess();
+  const [view, setView] = useState<"list" | "calendar" | "board">("calendar");
   const [tasks, setTasks] = useState<PlannerTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -187,16 +191,52 @@ const Planner = () => {
 
   return (
     <ProjectLayout>
-      <div className="h-[calc(100vh-3.5rem)] overflow-hidden">
-        <PlannerCalendarView
-          tasks={tasks}
-          isLoading={isLoading}
-          onEditTask={handleEditTask}
-          onCreateTask={handleQuickCreate}
-          onToggleComplete={handleToggleComplete}
-          onDeleteTask={handleDeleteTask}
-          onAddTask={handleAddTask}
-        />
+      <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
+        <div className="px-4 pt-4">
+          <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar" | "board")} className="mb-4">
+            <TabsList>
+              <TabsTrigger value="list">List</TabsTrigger>
+              <TabsTrigger value="calendar">Calendar</TabsTrigger>
+              <TabsTrigger value="board">Board</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+        <div className="flex-1 overflow-hidden">
+          {view === "calendar" && (
+            <PlannerCalendarView
+              tasks={tasks}
+              isLoading={isLoading}
+              onEditTask={handleEditTask}
+              onCreateTask={handleQuickCreate}
+              onToggleComplete={handleToggleComplete}
+              onDeleteTask={handleDeleteTask}
+              onAddTask={handleAddTask}
+            />
+          )}
+          {view === "list" && (
+            <PlannerListView
+              tasks={tasks}
+              isLoading={isLoading}
+              onEditTask={handleEditTask}
+              onToggleComplete={handleToggleComplete}
+              onDeleteTask={handleDeleteTask}
+              onAddTask={handleAddTask}
+            />
+          )}
+          {view === "board" && (
+            <PlannerBoardView
+              tasks={tasks}
+              onEditTask={handleEditTask}
+              onToggleComplete={handleToggleComplete}
+              onDeleteTask={handleDeleteTask}
+              onStatusChange={async (taskId, newStatus) => {
+                const { error } = await supabase.from("tasks").update({ column_id: newStatus } as any).eq("id", taskId);
+                if (error) { toast.error("Failed to update task"); return; }
+                fetchTasks();
+              }}
+            />
+          )}
+        </div>
       </div>
 
       <PlannerTaskDialog
