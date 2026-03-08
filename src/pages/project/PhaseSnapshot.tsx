@@ -7,24 +7,15 @@ import { PhaseFilters } from "@/components/phase-snapshot/PhaseFilters";
 import { MasonryGrid } from "@/components/phase-snapshot/MasonryGrid";
 import { ExportSnapshotButton } from "@/components/phase-snapshot/ExportSnapshotButton";
 import { usePhaseSnapshot } from "@/hooks/usePhaseSnapshot";
-import { Phase, PHASES, PHASE_LABELS } from "@/types/tasks";
+import { Phase } from "@/types/tasks";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function LoadingSkeleton() {
   return (
-    <div className="space-y-6">
-      <Skeleton className="h-10 w-64" />
-      <Skeleton className="h-5 w-96" />
-      <div className="flex gap-2 pt-4">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <Skeleton key={i} className="h-10 w-24 rounded-full" />
-        ))}
-      </div>
-      <div className="columns-1 md:columns-2 gap-5 space-y-5 pt-6">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <Skeleton key={i} className="h-40 w-full rounded-xl break-inside-avoid" />
-        ))}
-      </div>
+    <div className="space-y-2">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <Skeleton key={i} className="h-14 w-full rounded-lg" />
+      ))}
     </div>
   );
 }
@@ -34,7 +25,6 @@ export default function PhaseSnapshot() {
   const [selectedPhase, setSelectedPhase] = useState<Phase | "all">("all");
   const { data: phases, isLoading, error } = usePhaseSnapshot(id);
 
-  // Get all blocks for selected phase with phase info attached
   const filteredBlocks = useMemo(() => {
     if (!phases) return [];
     if (selectedPhase === "all") {
@@ -74,7 +64,7 @@ export default function PhaseSnapshot() {
     <ProjectLayout>
       <div className="max-w-5xl mx-auto px-4 py-8 sm:py-12">
         {/* Back Link */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="mb-8"
@@ -120,7 +110,7 @@ export default function PhaseSnapshot() {
           />
         </motion.div>
 
-        {/* Masonry Grid of Cards */}
+        {/* Accordion List */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -128,21 +118,34 @@ export default function PhaseSnapshot() {
         >
           {selectedPhase === "all" ? (
             <div className="space-y-10">
-              {phases.filter(p => p.hasContent).map(phaseData => (
-                <div key={phaseData.phase}>
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">
-                    {phaseData.phaseLabel}
-                  </h2>
-                  <MasonryGrid blocks={phaseData.blocks.map(b => ({ ...b, phase: phaseData.phase }))} />
-                </div>
-              ))}
+              {(() => {
+                let runningIndex = 0;
+                return phases.filter(p => p.hasContent).map(phaseData => {
+                  const offset = runningIndex;
+                  runningIndex += phaseData.blocks.length;
+                  return (
+                    <div key={phaseData.phase}>
+                      <div className="flex items-center gap-3 mb-4">
+                        <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          {phaseData.phaseLabel}
+                        </h2>
+                        <div className="flex-1 h-px bg-border/50" />
+                      </div>
+                      <MasonryGrid
+                        blocks={phaseData.blocks.map(b => ({ ...b, phase: phaseData.phase }))}
+                        indexOffset={offset}
+                      />
+                    </div>
+                  );
+                });
+              })()}
             </div>
           ) : (
             <MasonryGrid blocks={filteredBlocks} />
           )}
         </motion.div>
 
-        {/* Reflective Footer */}
+        {/* Footer */}
         <motion.footer
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
