@@ -67,6 +67,11 @@ export const ResourceCard = ({
   onEdit,
 }: ResourceCardProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [displayImageUrl]);
   const isCanvaLink = resourceType === 'canva_link';
   const isAiPrompt = resourceType === 'image_prompt' || resourceType === 'video_prompt';
   const isDocument = resourceType === 'document' || /\.(pdf|docx|doc|rtf)$/i.test(resourceUrl);
