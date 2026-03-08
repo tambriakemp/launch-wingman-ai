@@ -254,7 +254,8 @@ const ContentVault = () => {
             <div className="text-center py-16 mb-8">
               <p className="text-muted-foreground">No categories available yet.</p>
             </div>
-          )}
+          );
+          })()}
 
           {/* Popular Resources Section */}
           <Card className="p-6">
