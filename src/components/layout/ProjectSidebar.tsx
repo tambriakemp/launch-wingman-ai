@@ -79,7 +79,7 @@ const createNavSections = (projectId?: string): NavSection[] => [
       { id: "planner", label: "Planner", icon: CalendarCheck, href: "/planner" },
       { id: "playbook", label: "Playbook", icon: BookOpen, href: `/playbook` },
       { id: "insights", label: "Insights", icon: Lightbulb, href: projectId ? `/projects/${projectId}/insights` : "#", isProOnly: true, requiresProject: !projectId },
-      { id: "ai-studio", label: "AI Studio", icon: Wand2, href: "/app/ai-studio", isProOnly: true },
+      
     ],
   },
 ];
@@ -252,12 +252,12 @@ const SidebarContent = ({
         ))}
 
         {/* Marketing Hub section */}
-        {(isPro || hasAdminAccess) && (() => {
-           const marketingItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean; requiresProject?: boolean }[] = [
-            { label: "Campaigns", href: "/marketing-hub/campaigns", icon: Target },
-            { label: "Social Planner", href: projectId ? `/projects/${projectId}/content` : "#", icon: MessageSquareText, requiresProject: !projectId },
-            { label: "AI Studio", href: "/app/ai-studio", icon: Wand2 },
-            { label: "Analytics", href: "/marketing-hub/analytics", icon: BarChart3 },
+        {(() => {
+           const marketingItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean; requiresProject?: boolean; isProOnly?: boolean }[] = [
+            { label: "Campaigns", href: "/marketing-hub/campaigns", icon: Target, isProOnly: true },
+            { label: "Social Planner", href: projectId ? `/projects/${projectId}/content` : "#", icon: MessageSquareText, requiresProject: !projectId, isProOnly: true },
+            { label: "AI Studio", href: "/app/ai-studio", icon: Wand2, isProOnly: true },
+            { label: "Analytics", href: "/marketing-hub/analytics", icon: BarChart3, isProOnly: true },
           ];
           const resourceItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; requiresProject?: boolean }[] = [
             { label: "Content Vault", href: "/content-vault", icon: Package },
@@ -271,6 +271,8 @@ const SidebarContent = ({
               </div>
               <div className="space-y-0.5">
                 {marketingItems.map((item) => {
+                  const isProLocked = item.isProOnly && !isPro && !hasAdminAccess;
+                  
                   if (item.requiresProject) {
                     return (
                       <Tooltip key={item.label}>
@@ -281,6 +283,26 @@ const SidebarContent = ({
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="right"><p>Select a project first</p></TooltipContent>
+                      </Tooltip>
+                    );
+                  }
+                  if (isProLocked) {
+                    return (
+                      <Tooltip key={item.label}>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => onUpgradeClick(item.label)}
+                            className={cn(
+                              "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm w-full text-left",
+                              "text-sidebar-foreground/40 hover:bg-sidebar-accent/30 cursor-pointer"
+                            )}
+                          >
+                            <item.icon className="w-4 h-4" />
+                            <span className="flex-1">{item.label}</span>
+                            <Crown className="w-3 h-3 text-primary" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right"><p>Pro feature - Upgrade to access</p></TooltipContent>
                       </Tooltip>
                     );
                   }
