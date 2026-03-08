@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS dismissed_celebrations jsonb NOT NULL DEFAULT '{}'::jsonb;

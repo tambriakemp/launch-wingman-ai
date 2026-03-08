@@ -1670,6 +1670,7 @@ export type Database = {
         Row: {
           banned_until: string | null
           created_at: string
+          dismissed_celebrations: Json
           first_name: string | null
           id: string
           last_active: string | null
@@ -1683,6 +1684,7 @@ export type Database = {
         Insert: {
           banned_until?: string | null
           created_at?: string
+          dismissed_celebrations?: Json
           first_name?: string | null
           id?: string
           last_active?: string | null
@@ -1696,6 +1698,7 @@ export type Database = {
         Update: {
           banned_until?: string | null
           created_at?: string
+          dismissed_celebrations?: Json
           first_name?: string | null
           id?: string
           last_active?: string | null
