@@ -4,10 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ProjectLayout } from '@/components/layout/ProjectLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Plus, Loader2, Rocket, HelpCircle } from 'lucide-react';
+import { Plus, Loader2, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface LastProjectInfo {
