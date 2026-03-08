@@ -137,10 +137,7 @@ function FullContentRenderer({
           {items.map((item, idx) => (
             <span 
               key={idx}
-              className={cn(
-                "inline-flex items-center px-4 py-2 rounded-full text-base font-medium border",
-                PHASE_BADGE_COLORS[phase]
-              )}
+              className="inline-flex items-center px-4 py-2 rounded-full text-base font-medium border bg-secondary/15 text-secondary border-secondary/30"
             >
               {item.value}
             </span>
