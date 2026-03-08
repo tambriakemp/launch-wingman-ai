@@ -52,6 +52,8 @@ const ContentVault = () => {
   
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [promptResource, setPromptResource] = useState<any | null>(null);
 
   // Fetch categories
   const { data: categories, isLoading: categoriesLoading } = useQuery({
