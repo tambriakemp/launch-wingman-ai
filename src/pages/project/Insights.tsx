@@ -319,6 +319,38 @@ export default function Insights() {
                 </CardHeader>
               </Card>
             )}
+
+            {/* Annual Review Section */}
+            <Card variant="elevated">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-accent/50 rounded-xl flex items-center justify-center">
+                    <BookOpen className="w-5 h-5 text-foreground" />
+                  </div>
+                  <div>
+                    <CardTitle>Annual Review</CardTitle>
+                    <CardDescription>Reflect on your year of launches and set intentions for next year.</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {showAnnualReview ? (
+                  <AnnualReviewView onClose={() => setShowAnnualReview(false)} />
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground mb-4">This isn't a performance review — just a moment to reflect.</p>
+                    <button
+                      onClick={() => setShowAnnualReview(true)}
+                      disabled={!annualReviewData?.isEligible}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <BookOpen className="w-4 h-4" />
+                      {annualReviewData?.isEligible ? "View Your Year in Review" : `Complete ${2 - (annualReviewData?.totalCompleted || 0)} more projects to unlock`}
+                    </button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </>
         )}
 
