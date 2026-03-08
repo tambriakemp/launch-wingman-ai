@@ -428,6 +428,10 @@ const ContentVaultCategory = () => {
             allTags={allTags}
             selectedTags={selectedTags}
             onTagsChange={setSelectedTags}
+            isPromptCategory={isAiPrompts}
+            selectedPromptType={selectedPromptType}
+            onPromptTypeChange={setSelectedPromptType}
+            resources={resources || []}
           />
 
           {/* Resources Grid */}
