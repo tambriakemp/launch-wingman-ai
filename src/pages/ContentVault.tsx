@@ -202,6 +202,23 @@ const ContentVault = () => {
     navigate(`/content-vault/${slug}`);
   };
 
+  const handleSearchResultClick = (resource: any, index: number) => {
+    trackResourceAccess(resource.id);
+    
+    if (resource.resource_type === 'image_prompt' || resource.resource_type === 'video_prompt') {
+      setPromptResource(resource);
+      return;
+    }
+    
+    const isMediaOrDocument = /\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|mov|pdf|docx|doc|rtf)$/i.test(resource.resource_url);
+    
+    if (isMediaOrDocument) {
+      setLightboxIndex(index);
+    } else {
+      window.open(resource.resource_url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   // Show loading state while checking permissions
   if (accessLoading) {
     return (
