@@ -68,10 +68,6 @@ export const ResourceCard = ({
 }: ResourceCardProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
-
-  useEffect(() => {
-    setImageLoaded(false);
-  }, [displayImageUrl]);
   const isCanvaLink = resourceType === 'canva_link';
   const isAiPrompt = resourceType === 'image_prompt' || resourceType === 'video_prompt';
   const isDocument = resourceType === 'document' || /\.(pdf|docx|doc|rtf)$/i.test(resourceUrl);
@@ -81,6 +77,10 @@ export const ResourceCard = ({
   // Use resource URL as cover image for images/videos if no cover image specified
   const isMediaResource = /\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|mov)$/i.test(resourceUrl);
   const displayImageUrl = coverImageUrl || (isMediaResource ? resourceUrl : null);
+
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [displayImageUrl]);
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
