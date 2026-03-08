@@ -49,7 +49,9 @@ import {
   FlaskConical,
   Zap,
   Package,
+  Info,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Profile {
   first_name: string | null;
@@ -879,7 +881,21 @@ const Settings = () => {
                     <div className="space-y-2">
                       <h4 className="text-sm font-medium">Export My Data</h4>
                       <p className="text-sm text-muted-foreground">Download a copy of all your data including projects, content, and settings.</p>
-                      <ExportMyDataDialog />
+                      <div className="flex items-center gap-2">
+                        <ExportMyDataDialog />
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                                <Info className="w-4 h-4" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p className="text-sm">Exports your profile, all projects, tasks, offers, snapshots, and metric history as a JSON file.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                     </div>
                     <Separator />
                     <div className="space-y-2">
