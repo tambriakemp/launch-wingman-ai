@@ -168,7 +168,7 @@ export const PromptBulkImporter = () => {
       const resources = unique.map((p, i) => ({
         title: p.title,
         description: p.text,
-        resource_type: "ai_prompt",
+        resource_type: promptType,
         resource_url: "#",
         subcategory_id: subId,
         tags: globalTags.length > 0 ? globalTags : null,
