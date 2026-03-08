@@ -15,10 +15,11 @@ interface LastProjectInfo {
 
 const AppRedirect = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const [checking, setChecking] = useState(true);
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
-  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [showCreateProject, setShowCreateProject] = useState(searchParams.get('new') === '1');
   const [projectName, setProjectName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
