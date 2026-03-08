@@ -386,9 +386,9 @@ export function SummaryCard({
           <Button 
             size="sm"
             onClick={handleViewTask}
-            className={cn("text-sm", PHASE_BUTTON_COLORS[phase])}
+            className="text-sm"
           >
-            View Task
+            Edit
           </Button>
           
           {needsTruncation && (
