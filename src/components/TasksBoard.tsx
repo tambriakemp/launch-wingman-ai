@@ -611,10 +611,6 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button onClick={() => { setEditingTask(null); setTaskDialogOpen(true); }} className="gap-1">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Add Task</span>
-          </Button>
         </div>
       </div>
 
