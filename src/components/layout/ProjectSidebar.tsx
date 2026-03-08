@@ -474,7 +474,9 @@ export const ProjectSidebar = () => {
   };
 
   const isActiveRoute = (href: string) => {
-    return location.pathname === href;
+    if (href === '#') return false;
+    if (href === '/app') return location.pathname === href;
+    return location.pathname === href || location.pathname.startsWith(href + '/');
   };
 
   const handleUpgradeClick = (feature: string) => {
