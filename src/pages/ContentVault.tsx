@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { FolderOpen, ArrowRight, Search } from "lucide-react";
+import { FolderOpen, ArrowRight, Search, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { CategoryCard } from "@/components/content-vault/CategoryCard";
@@ -9,11 +9,15 @@ import { PopularResourceItem } from "@/components/content-vault/PopularResourceI
 import { CategoryEditDialog } from "@/components/content-vault/CategoryEditDialog";
 import { VaultHeader } from "@/components/content-vault/VaultHeader";
 import { getCategoryIcon } from "@/components/content-vault/categoryIcons";
+import { ResourceLightbox } from "@/components/content-vault/ResourceLightbox";
+import { PromptModal } from "@/components/content-vault/PromptModal";
+import { trackResourceAccess } from "@/components/content-vault/trackResourceAccess";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useAdmin } from "@/hooks/useAdmin";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
