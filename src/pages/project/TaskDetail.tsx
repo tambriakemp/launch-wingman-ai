@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
-import { ArrowLeft, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2, Check, Crown } from "lucide-react";
+import { ArrowLeft, Clock, HelpCircle, Sparkles, Loader2, CheckCircle2, Check, Crown, Download } from "lucide-react";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,6 +11,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { StuckHelpDialog } from "@/components/dashboard/StuckHelpDialog";
 import { AIResponseRenderer } from "@/components/ui/ai-response-renderer";
 import { FunnelDiagram } from "@/components/funnel/FunnelDiagram";
@@ -1069,33 +1075,75 @@ export default function TaskDetail() {
               <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                 Your response
               </h2>
-              {taskId === 'planning_phase_review' && project && (
-                <ExportPlanButton 
-                  projectName={project.name}
-                  projectTasks={projectTasks}
-                  offers={projectOffers}
-                  selectedFunnelType={project.selected_funnel_type}
-                />
+              {(taskId === 'planning_phase_review' || taskId === 'messaging_phase_review' || taskId === 'build_phase_review' || taskId === 'content_phase_review') && project && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Download className="w-4 h-4" />
+                      Export
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {taskId === 'planning_phase_review' && (
+                      <DropdownMenuItem onSelect={() => document.getElementById('export-plan-trigger')?.click()}>
+                        Export Plan
+                      </DropdownMenuItem>
+                    )}
+                    {taskId === 'messaging_phase_review' && projectId && (
+                      <DropdownMenuItem onSelect={() => document.getElementById('export-messaging-trigger')?.click()}>
+                        Export Messaging
+                      </DropdownMenuItem>
+                    )}
+                    {taskId === 'build_phase_review' && (
+                      <DropdownMenuItem onSelect={() => document.getElementById('export-build-trigger')?.click()}>
+                        Export Build Assets
+                      </DropdownMenuItem>
+                    )}
+                    {taskId === 'content_phase_review' && (
+                      <DropdownMenuItem onSelect={() => document.getElementById('export-content-trigger')?.click()}>
+                        Export Content
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
-              {taskId === 'messaging_phase_review' && project && projectId && (
-                <ExportMessagingButton 
-                  projectId={projectId}
-                  projectName={project.name}
-                  projectTasks={projectTasks}
-                />
-              )}
-              {taskId === 'build_phase_review' && project && (
-                <ExportBuildButton 
-                  projectName={project.name}
-                  projectTasks={projectTasks}
-                />
-              )}
-              {taskId === 'content_phase_review' && project && (
-                <ExportContentButton 
-                  projectName={project.name}
-                  projectTasks={projectTasks}
-                />
-              )}
+              <div className="hidden">
+                {project && (
+                  <div id="export-plan-trigger">
+                    <ExportPlanButton 
+                      projectName={project.name}
+                      projectTasks={projectTasks}
+                      offers={projectOffers}
+                      selectedFunnelType={project.selected_funnel_type}
+                    />
+                  </div>
+                )}
+                {project && projectId && (
+                  <div id="export-messaging-trigger">
+                    <ExportMessagingButton 
+                      projectId={projectId}
+                      projectName={project.name}
+                      projectTasks={projectTasks}
+                    />
+                  </div>
+                )}
+                {project && (
+                  <div id="export-build-trigger">
+                    <ExportBuildButton 
+                      projectName={project.name}
+                      projectTasks={projectTasks}
+                    />
+                  </div>
+                )}
+                {project && (
+                  <div id="export-content-trigger">
+                    <ExportContentButton 
+                      projectName={project.name}
+                      projectTasks={projectTasks}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
             {/* Auto-save status indicator */}
             {autoSaveStatus === 'saving' && (
