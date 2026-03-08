@@ -306,11 +306,8 @@ export function ViewMoreDialog({
         </ScrollArea>
 
         <div className="flex justify-end p-6 pt-4 border-t border-border/30 bg-muted/30">
-          <Button 
-            onClick={handleEdit} 
-            className={cn("text-white", PHASE_BUTTON_COLORS[phase])}
-          >
-            View Task
+          <Button onClick={handleEdit}>
+            Edit
           </Button>
         </div>
       </DialogContent>
