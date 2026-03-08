@@ -82,11 +82,24 @@ export const PlannerTaskDialog = ({
   defaultTaskType = "task",
   defaultDueAt,
 }: PlannerTaskDialogProps) => {
+  const DEFAULT_CATEGORIES = [
+    { id: "business", name: "Work", color: "#f5c842" },
+    { id: "life", name: "Personal", color: "#0ea572" },
+    { id: "health", name: "Health", color: "#f43f5e" },
+    { id: "finance", name: "Finance", color: "#8b5cf6" },
+  ];
+  const [plannerCategories] = useState(() => {
+    try {
+      const stored = localStorage.getItem("planner-categories");
+      return stored ? JSON.parse(stored) : DEFAULT_CATEGORIES;
+    } catch { return DEFAULT_CATEGORIES; }
+  });
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [taskType, setTaskType] = useState<"task" | "event">("task");
   const [columnId, setColumnId] = useState("todo");
-  const [category, setCategory] = useState<"business" | "life">("business");
+  const [category, setCategory] = useState("business");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -101,7 +114,7 @@ export const PlannerTaskDialog = ({
       setDescription(editTask.description || "");
       setTaskType((editTask.task_type as "task" | "event") || "task");
       setColumnId(editTask.column_id);
-      setCategory((editTask.category as "business" | "life") || "business");
+      setCategory(editTask.category || "business");
       setLocation(editTask.location || "");
 
       // Date: prefer start_at, fallback to due_at
@@ -270,11 +283,17 @@ export const PlannerTaskDialog = ({
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Category</Label>
-                <Select value={category} onValueChange={(v) => setCategory(v as "business" | "life")}>
+                <Select value={category} onValueChange={(v) => setCategory(v)}>
                   <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="business">Business</SelectItem>
-                    <SelectItem value="life">Life</SelectItem>
+                    {plannerCategories.map((cat: { id: string; name: string; color: string }) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full" style={{ background: cat.color }} />
+                          {cat.name}
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
