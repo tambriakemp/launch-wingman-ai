@@ -11,6 +11,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { StuckHelpDialog } from "@/components/dashboard/StuckHelpDialog";
 import { AIResponseRenderer } from "@/components/ui/ai-response-renderer";
 import { FunnelDiagram } from "@/components/funnel/FunnelDiagram";
