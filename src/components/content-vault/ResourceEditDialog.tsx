@@ -491,7 +491,7 @@ export const ResourceEditDialog = ({
     formData.preview_url ||
     ((formData.resource_type === 'image' || formData.resource_type === 'photo') ? formData.resource_url : '');
   const canSetCategoryThumbnail = Boolean(categoryThumbnailCandidateUrl);
-  const isAiPrompt = formData.resource_type === 'ai_prompt';
+  const isAiPrompt = formData.resource_type === 'image_prompt' || formData.resource_type === 'video_prompt';
   const isProcessing = isUploading || isFetchingThumbnail || isGeneratingVideoThumbnail || isRenamingWithAI || isSettingCategoryThumbnail || isGeneratingAICover;
 
   return (
