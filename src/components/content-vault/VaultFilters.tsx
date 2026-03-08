@@ -25,6 +25,10 @@ interface VaultFiltersProps {
   allTags: string[];
   selectedTags: string[];
   onTagsChange: (tags: string[]) => void;
+  isPromptCategory?: boolean;
+  selectedPromptType?: string;
+  onPromptTypeChange?: (value: string) => void;
+  resources?: { resource_type: string }[];
 }
 
 // Format tag: remove hyphens and capitalize first letter of each word
@@ -43,6 +47,10 @@ export const VaultFilters = ({
   allTags,
   selectedTags,
   onTagsChange,
+  isPromptCategory,
+  selectedPromptType = "all",
+  onPromptTypeChange,
+  resources = [],
 }: VaultFiltersProps) => {
   const handleTagChange = (value: string) => {
     if (value === "all") {
@@ -60,16 +68,34 @@ export const VaultFilters = ({
     onSubcategoryChange("all");
     onSearchChange("");
     onTagsChange([]);
+    onPromptTypeChange?.("all");
   };
 
-  const hasActiveFilters = selectedSubcategory !== "all" || searchQuery || selectedTags.length > 0;
+  const hasActiveFilters = selectedSubcategory !== "all" || searchQuery || selectedTags.length > 0 || selectedPromptType !== "all";
+
+  const imageCount = resources.filter(r => r.resource_type === 'image_prompt').length;
+  const videoCount = resources.filter(r => r.resource_type === 'video_prompt').length;
 
   return (
     <div className="space-y-4">
       {/* Main Filters Row */}
       <div className="flex flex-col sm:flex-row gap-3">
-        {/* Subcategory Filter */}
-        {subcategories.length > 0 && (
+        {/* Prompt Type Filter (for AI Prompts category) */}
+        {isPromptCategory && onPromptTypeChange && (
+          <Select value={selectedPromptType} onValueChange={onPromptTypeChange}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types ({imageCount + videoCount})</SelectItem>
+              <SelectItem value="image_prompt">Image Prompts ({imageCount})</SelectItem>
+              <SelectItem value="video_prompt">Video Prompts ({videoCount})</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+
+        {/* Subcategory Filter (for non-prompt categories) */}
+        {!isPromptCategory && subcategories.length > 0 && (
           <Select value={selectedSubcategory} onValueChange={onSubcategoryChange}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="All Types" />

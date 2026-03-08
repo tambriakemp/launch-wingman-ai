@@ -53,6 +53,7 @@ const ContentVaultCategory = () => {
   const canAccessVault = hasAccess('content_vault');
 
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("all");
+  const [selectedPromptType, setSelectedPromptType] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
@@ -203,6 +204,11 @@ const ContentVaultCategory = () => {
         return false;
       }
       
+      // Prompt type filter (for AI prompts category)
+      if (isAiPrompts && selectedPromptType !== "all" && resource.resource_type !== selectedPromptType) {
+        return false;
+      }
+      
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -221,7 +227,7 @@ const ContentVaultCategory = () => {
       
       return true;
     });
-  }, [resources, selectedSubcategory, searchQuery, selectedTags]);
+  }, [resources, selectedSubcategory, selectedPromptType, searchQuery, selectedTags, isAiPrompts]);
 
   const handleResourceClick = (resource: Resource, index: number) => {
     // Don't open lightbox in selection mode
@@ -422,6 +428,10 @@ const ContentVaultCategory = () => {
             allTags={allTags}
             selectedTags={selectedTags}
             onTagsChange={setSelectedTags}
+            isPromptCategory={isAiPrompts}
+            selectedPromptType={selectedPromptType}
+            onPromptTypeChange={setSelectedPromptType}
+            resources={resources || []}
           />
 
           {/* Resources Grid */}
