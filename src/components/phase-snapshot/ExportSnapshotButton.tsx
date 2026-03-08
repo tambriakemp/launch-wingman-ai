@@ -34,421 +34,456 @@ export function ExportSnapshotButton({ phases, projectName = "Project" }: Export
         day: "numeric",
       });
 
-      let html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Launch Brief - ${projectName}</title>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-            
-            * { box-sizing: border-box; margin: 0; padding: 0; }
-            
-            body {
-              font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-              color: #18181b;
-              background: #ffffff;
-              font-size: 13px;
-              line-height: 1.6;
-            }
+      const blockIndex = { count: 0 };
 
-            .cover {
-              min-height: 100vh;
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
-              padding: 60px;
-              background: #18181b;
-              color: #ffffff;
-              page-break-after: always;
-            }
-            .cover-label {
-              font-size: 11px;
-              font-weight: 600;
-              letter-spacing: 0.15em;
-              text-transform: uppercase;
-              color: #f5c842;
-              margin-bottom: 24px;
-            }
-            .cover-title {
-              font-size: 48px;
-              font-weight: 700;
-              line-height: 1.1;
-              margin-bottom: 16px;
-              color: #ffffff;
-            }
-            .cover-subtitle {
-              font-size: 18px;
-              color: rgba(255,255,255,0.6);
-              margin-bottom: 48px;
-              max-width: 480px;
-              line-height: 1.5;
-            }
-            .cover-meta {
-              display: flex;
-              flex-direction: column;
-              gap: 8px;
-            }
-            .cover-meta-item {
-              font-size: 13px;
-              color: rgba(255,255,255,0.5);
-            }
-            .cover-meta-item strong {
-              color: rgba(255,255,255,0.85);
-              font-weight: 500;
-            }
-            .cover-accent {
-              width: 48px;
-              height: 4px;
-              background: #f5c842;
-              border-radius: 2px;
-              margin-bottom: 32px;
-            }
+      let html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Launch Brief — ${projectName}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-            .content {
-              padding: 48px 56px;
-              max-width: 800px;
-              margin: 0 auto;
-            }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-            .phase-section {
-              margin-bottom: 48px;
-              page-break-inside: avoid;
-            }
-            .phase-header {
-              display: flex;
-              align-items: center;
-              gap: 12px;
-              margin-bottom: 20px;
-              padding-bottom: 12px;
-              border-bottom: 2px solid #18181b;
-            }
-            .phase-dot {
-              width: 10px;
-              height: 10px;
-              background: #f5c842;
-              border-radius: 50%;
-              flex-shrink: 0;
-            }
-            .phase-title {
-              font-size: 11px;
-              font-weight: 700;
-              letter-spacing: 0.12em;
-              text-transform: uppercase;
-              color: #18181b;
-            }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 13px;
+      line-height: 1.65;
+      color: #18181b;
+      background: #fff;
+      padding: 48px 56px;
+      max-width: 820px;
+      margin: 0 auto;
+    }
 
-            .block {
-              margin-bottom: 16px;
-              padding: 20px 24px;
-              border: 1px solid #e4e4e7;
-              border-radius: 10px;
-              page-break-inside: avoid;
-              background: #fafafa;
-            }
-            .block-label {
-              font-size: 10px;
-              font-weight: 700;
-              letter-spacing: 0.1em;
-              text-transform: uppercase;
-              color: #71717a;
-              margin-bottom: 10px;
-            }
-            .block-content { font-size: 13px; color: #3f3f46; }
+    /* ── Document Header ── */
+    .doc-header {
+      border-bottom: 3px solid #18181b;
+      padding-bottom: 16px;
+      margin-bottom: 40px;
+    }
+    .doc-brand {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #f5c842;
+      background: #18181b;
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 3px;
+      margin-bottom: 10px;
+    }
+    .doc-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: #18181b;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+    .doc-meta {
+      font-size: 12px;
+      color: #71717a;
+      margin-top: 4px;
+    }
 
-            .paragraph { line-height: 1.7; }
+    /* ── Phase Section ── */
+    .phase-section {
+      margin-bottom: 44px;
+    }
+    .phase-heading {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #18181b;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #18181b;
+      margin-bottom: 0;
+    }
 
-            .quote {
-              font-style: italic;
-              font-size: 15px;
-              line-height: 1.65;
-              color: #18181b;
-              padding: 12px 20px;
-              border-left: 3px solid #f5c842;
-              background: #fffbeb;
-              border-radius: 0 6px 6px 0;
-            }
-            .quote::before { content: open-quote; }
-            .quote::after { content: close-quote; }
+    /* ── Block Row ── */
+    .block {
+      border-bottom: 1px solid #e4e4e7;
+      padding: 18px 0;
+    }
+    .block:last-child {
+      border-bottom: none;
+    }
+    .block-header {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .block-num {
+      font-size: 10px;
+      font-weight: 700;
+      color: #a1a1aa;
+      min-width: 22px;
+      font-variant-numeric: tabular-nums;
+    }
+    .block-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #18181b;
+    }
+    .block-body {
+      padding-left: 32px;
+      font-size: 13px;
+      color: #3f3f46;
+    }
 
-            .numbered-list { padding: 0; list-style: none; }
-            .numbered-list li {
-              display: flex;
-              gap: 12px;
-              padding: 6px 0;
-              border-bottom: 1px solid #f4f4f5;
-            }
-            .numbered-list li:last-child { border-bottom: none; }
-            .num {
-              font-weight: 700;
-              color: #18181b;
-              min-width: 20px;
-              font-size: 12px;
-            }
+    /* ── Content Types ── */
+    p { margin-bottom: 0; line-height: 1.7; }
 
-            .kv-row { margin-bottom: 12px; }
-            .kv-label {
-              font-size: 10px;
-              font-weight: 700;
-              text-transform: uppercase;
-              letter-spacing: 0.08em;
-              color: #a1a1aa;
-              margin-bottom: 3px;
-            }
-            .kv-value { color: #18181b; line-height: 1.6; }
+    blockquote {
+      border-left: 3px solid #f5c842;
+      background: #fffbeb;
+      padding: 10px 16px;
+      border-radius: 0 5px 5px 0;
+      font-style: italic;
+      font-size: 14px;
+      color: #18181b;
+      line-height: 1.65;
+    }
 
-            .offer-item {
-              padding: 14px 0;
-              border-bottom: 1px solid #e4e4e7;
-            }
-            .offer-item:first-child { padding-top: 0; }
-            .offer-item:last-child { border-bottom: none; padding-bottom: 0; }
-            .offer-name { font-weight: 600; font-size: 14px; color: #18181b; }
-            .offer-desc { color: #71717a; margin-top: 3px; font-size: 12px; }
-            .offer-price {
-              display: inline-block;
-              margin-top: 6px;
-              padding: 3px 10px;
-              background: #18181b;
-              color: #f5c842;
-              border-radius: 4px;
-              font-size: 11px;
-              font-weight: 600;
-            }
+    ol.num-list { list-style: none; padding: 0; }
+    ol.num-list li {
+      display: flex;
+      gap: 10px;
+      padding: 5px 0;
+      border-bottom: 1px solid #f4f4f5;
+      color: #3f3f46;
+    }
+    ol.num-list li:last-child { border-bottom: none; }
+    .li-num { font-weight: 700; color: #18181b; min-width: 18px; font-size: 12px; }
 
-            .checklist { padding: 0; list-style: none; }
-            .checklist li {
-              display: flex;
-              align-items: center;
-              gap: 10px;
-              padding: 5px 0;
-              font-size: 13px;
-              color: #3f3f46;
-            }
-            .check-icon {
-              width: 16px;
-              height: 16px;
-              background: #0ea572;
-              border-radius: 50%;
-              flex-shrink: 0;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              color: white;
-              font-size: 9px;
-              font-weight: 700;
-            }
+    .kv-table { width: 100%; border-collapse: collapse; }
+    .kv-table tr td:first-child {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #a1a1aa;
+      padding: 7px 16px 7px 0;
+      vertical-align: top;
+      width: 130px;
+    }
+    .kv-table tr td:last-child {
+      padding: 7px 0;
+      color: #18181b;
+      border-bottom: 1px solid #f4f4f5;
+      vertical-align: top;
+    }
+    .kv-table tr:last-child td:last-child { border-bottom: none; }
 
-            .badge-list { display: flex; flex-wrap: wrap; gap: 8px; }
-            .badge {
-              padding: 6px 14px;
-              background: #18181b;
-              color: #f5c842;
-              border-radius: 20px;
-              font-size: 12px;
-              font-weight: 600;
-            }
+    .offer-table { width: 100%; border-collapse: collapse; }
+    .offer-table th {
+      background: #18181b;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 7px 12px;
+      text-align: left;
+    }
+    .offer-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #e4e4e7;
+      font-size: 12px;
+      color: #3f3f46;
+      vertical-align: top;
+    }
+    .offer-table tr:last-child td { border-bottom: none; }
+    .offer-table tr:nth-child(even) td { background: #fafafa; }
+    .price-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      background: #18181b;
+      color: #f5c842;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 700;
+    }
 
-            .metrics-grid {
-              display: grid;
-              grid-template-columns: repeat(2, 1fr);
-              gap: 12px;
-            }
-            .metric-cell {
-              padding: 12px;
-              background: #f4f4f5;
-              border-radius: 6px;
-            }
-            .metric-label {
-              font-size: 10px;
-              text-transform: uppercase;
-              letter-spacing: 0.08em;
-              color: #a1a1aa;
-              margin-bottom: 4px;
-            }
-            .metric-value { font-size: 18px; font-weight: 700; color: #18181b; }
+    ul.checklist { list-style: none; padding: 0; }
+    ul.checklist li {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 5px 0;
+      border-bottom: 1px solid #f4f4f5;
+      color: #3f3f46;
+    }
+    ul.checklist li:last-child { border-bottom: none; }
+    .check-mark {
+      width: 15px;
+      height: 15px;
+      background: #0ea572;
+      border-radius: 50%;
+      flex-shrink: 0;
+      color: white;
+      font-size: 8px;
+      font-weight: 900;
+      text-align: center;
+      line-height: 15px;
+    }
 
-            .dates-row {
-              display: flex;
-              justify-content: space-between;
-              padding: 8px 0;
-              border-bottom: 1px solid #f4f4f5;
-              font-size: 13px;
-            }
-            .dates-row:last-child { border-bottom: none; }
-            .date-label { color: #71717a; }
-            .date-value { font-weight: 600; color: #18181b; }
+    .metrics-table { width: 100%; border-collapse: collapse; }
+    .metrics-table th {
+      background: #18181b;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 7px 12px;
+      text-align: left;
+    }
+    .metrics-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #e4e4e7;
+      font-size: 13px;
+    }
+    .metrics-table tr:last-child td { border-bottom: none; }
+    .metrics-table tr:nth-child(even) td { background: #fafafa; }
+    .metric-val { font-size: 16px; font-weight: 700; color: #18181b; }
 
-            .color-swatches { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
-            .color-swatch {
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              font-size: 12px;
-              color: #3f3f46;
-            }
-            .swatch-dot {
-              width: 20px;
-              height: 20px;
-              border-radius: 50%;
-              border: 1px solid rgba(0,0,0,0.1);
-              flex-shrink: 0;
-            }
-            .font-row {
-              padding: 6px 0;
-              border-bottom: 1px solid #f4f4f5;
-              display: flex;
-              gap: 8px;
-              font-size: 13px;
-            }
-            .font-row:last-child { border-bottom: none; }
-            .font-category { color: #a1a1aa; font-size: 11px; min-width: 60px; text-transform: capitalize; margin-top: 2px; }
+    .dates-table { width: 100%; border-collapse: collapse; }
+    .dates-table th {
+      background: #18181b;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 7px 12px;
+      text-align: left;
+    }
+    .dates-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #e4e4e7;
+      font-size: 13px;
+    }
+    .dates-table tr:last-child td { border-bottom: none; }
+    .dates-table tr:nth-child(even) td { background: #fafafa; }
+    .dates-table td:last-child { font-weight: 600; color: #18181b; }
 
-            .bio-platform {
-              font-size: 10px;
-              font-weight: 700;
-              text-transform: uppercase;
-              letter-spacing: 0.1em;
-              color: #a1a1aa;
-              margin-bottom: 4px;
-            }
-            .bio-content { line-height: 1.6; margin-bottom: 12px; }
+    .badge-list { display: flex; flex-wrap: wrap; gap: 7px; }
+    .badge {
+      padding: 4px 12px;
+      background: #18181b;
+      color: #f5c842;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
 
-            .page-footer {
-              margin-top: 64px;
-              padding-top: 24px;
-              border-top: 1px solid #e4e4e7;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              font-size: 11px;
-              color: #a1a1aa;
-            }
-            .footer-brand { font-weight: 600; color: #18181b; }
+    .color-swatches { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+    .color-swatch { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #3f3f46; }
+    .swatch-circle {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.12);
+      flex-shrink: 0;
+    }
+    .font-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #a1a1aa;
+      margin-bottom: 6px;
+    }
+    .font-table { width: 100%; border-collapse: collapse; }
+    .font-table td {
+      padding: 6px 0;
+      border-bottom: 1px solid #f4f4f5;
+      font-size: 12px;
+    }
+    .font-table tr:last-child td { border-bottom: none; }
+    .font-table td:first-child { color: #a1a1aa; text-transform: capitalize; width: 80px; }
+    .font-table td:last-child { font-weight: 600; color: #18181b; }
 
-            @media print {
-              .cover { min-height: 100vh; }
-              .phase-section { page-break-inside: avoid; }
-              .block { page-break-inside: avoid; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="cover">
-            <div class="cover-label">Launchely</div>
-            <div class="cover-accent"></div>
-            <div class="cover-title">${projectName}</div>
-            <div class="cover-subtitle">Your complete launch brief — everything you've built, phase by phase.</div>
-            <div class="cover-meta">
-              <div class="cover-meta-item"><strong>Document:</strong> Launch Brief</div>
-              <div class="cover-meta-item"><strong>Exported:</strong> ${date}</div>
-            </div>
-          </div>
-          <div class="content">
-      `;
+    .bio-block { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #f4f4f5; }
+    .bio-block:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .bio-platform-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #a1a1aa;
+      margin-bottom: 4px;
+    }
+    .bio-text { line-height: 1.65; color: #18181b; }
+
+    /* ── Footer ── */
+    .doc-footer {
+      margin-top: 56px;
+      padding-top: 16px;
+      border-top: 1px solid #e4e4e7;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #a1a1aa;
+    }
+    .footer-brand { font-weight: 700; color: #18181b; }
+
+    @media print {
+      body { padding: 24px 32px; }
+      .phase-section { page-break-inside: avoid; }
+      .block { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="doc-header">
+    <div class="doc-brand">Launchely</div>
+    <div class="doc-title">${projectName} — Launch Brief</div>
+    <div class="doc-meta">Exported ${date}</div>
+  </div>
+`;
 
       phases.forEach((phaseData) => {
         if (!phaseData.hasContent) return;
 
         const phaseLabel = PHASE_LABELS[phaseData.phase as Phase] || phaseData.phase;
-        
-        html += `<div class="phase-section"><div class="phase-header"><div class="phase-dot"></div><div class="phase-title">${phaseLabel}</div></div>`;
+
+        html += `<div class="phase-section">
+    <div class="phase-heading">${phaseLabel}</div>`;
 
         phaseData.blocks.forEach((block) => {
+          blockIndex.count++;
+          const num = String(blockIndex.count).padStart(2, '0');
           const items = block.structuredContent?.items || [];
-          let contentHtml = "";
+          let contentHtml = '';
 
           switch (block.contentType) {
-            case "numbered-list":
-              contentHtml = `<ul class="numbered-list">${items.map((item, idx) => 
-                `<li><span class="num">${idx + 1}</span>${item.value}</li>`
-              ).join("")}</ul>`;
+
+            case 'paragraph':
+              contentHtml = items.map(item => `<p>${item.value}</p>`).join('');
               break;
 
-            case "key-value":
-              contentHtml = items.map((item) => 
-                `<div class="kv-row"><div class="kv-label">${item.label || ""}</div><div class="kv-value">${item.value}</div></div>`
-              ).join("");
+            case 'quote':
+              contentHtml = items.map(item => `<blockquote>${item.value}</blockquote>`).join('');
               break;
 
-            case "offer-stack":
-              contentHtml = items.map((item) => 
-                `<div class="offer-item"><div class="offer-name">${item.label || ""}</div>${item.value ? `<div class="offer-desc">${item.value}</div>` : ""}${item.secondary ? `<span class="offer-price">${item.secondary}</span>` : ""}</div>`
-              ).join("");
+            case 'numbered-list':
+              contentHtml = `<ol class="num-list">${items.map((item, idx) =>
+                `<li><span class="li-num">${idx + 1}.</span>${item.value}</li>`
+              ).join('')}</ol>`;
               break;
 
-            case "checklist":
-              contentHtml = `<ul class="checklist">${items.map((item) => 
-                `<li><span class="check-icon">✓</span>${item.value}</li>`
-              ).join("")}</ul>`;
+            case 'key-value':
+              contentHtml = `<table class="kv-table">${items.map(item =>
+                `<tr><td>${item.label || ''}</td><td>${item.value}</td></tr>`
+              ).join('')}</table>`;
               break;
 
-            case "dates":
-              contentHtml = items.map((item) => 
-                `<div class="dates-row"><span class="date-label">${item.label}</span><span class="date-value">${item.value}</span></div>`
-              ).join("");
+            case 'offer-stack':
+              contentHtml = `<table class="offer-table">
+          <tr><th>Offer</th><th>Description</th><th>Price</th></tr>
+          ${items.map(item =>
+                `<tr>
+              <td>${item.label || ''}</td>
+              <td>${item.value || '—'}</td>
+              <td>${item.secondary ? `<span class="price-tag">${item.secondary}</span>` : '—'}</td>
+            </tr>`
+              ).join('')}
+        </table>`;
               break;
 
-            case "metrics":
-              contentHtml = `<div class="metrics-grid">${items.map((item) => 
-                `<div class="metric-cell"><div class="metric-label">${item.label}</div><div class="metric-value">${item.value}</div></div>`
-              ).join("")}</div>`;
+            case 'checklist':
+              contentHtml = `<ul class="checklist">${items.map(item =>
+                `<li><span class="check-mark">✓</span>${item.value}</li>`
+              ).join('')}</ul>`;
               break;
 
-            case "quote":
-              contentHtml = items.map((item) => 
-                `<div class="quote">${item.value}</div>`
-              ).join("");
+            case 'metrics':
+              contentHtml = `<table class="metrics-table">
+          <tr><th>Metric</th><th>Value</th></tr>
+          ${items.map(item =>
+                `<tr><td>${item.label}</td><td class="metric-val">${item.value}</td></tr>`
+              ).join('')}
+        </table>`;
               break;
 
-            case "social-bio":
-              contentHtml = items.map((item) => 
-                `<div class="bio-platform">${item.label}</div><div class="bio-content">${item.value}</div>`
-              ).join("");
+            case 'dates':
+              contentHtml = `<table class="dates-table">
+          <tr><th>Milestone</th><th>Date</th></tr>
+          ${items.map(item =>
+                `<tr><td>${item.label}</td><td>${item.value}</td></tr>`
+              ).join('')}
+        </table>`;
               break;
 
-            case "badge":
-              contentHtml = `<div class="badge-list">${items.map((item) => 
+            case 'badge':
+              contentHtml = `<div class="badge-list">${items.map(item =>
                 `<span class="badge">${item.value}</span>`
-              ).join("")}</div>`;
+              ).join('')}</div>`;
               break;
 
-            case "visual-palette":
-              const colors = items.filter(i => i.label === "color");
-              const fonts = items.filter(i => i.label !== "color");
+            case 'visual-palette': {
+              const colors = items.filter(i => i.label === 'color');
+              const fonts = items.filter(i => i.label !== 'color');
               if (colors.length > 0) {
-                contentHtml += `<div class="color-swatches">${colors.map((c) => 
-                  `<div class="color-swatch"><div class="swatch-dot" style="background:${c.color || c.value}"></div>${c.value || c.color}</div>`
-                ).join("")}</div>`;
+                contentHtml += `<div class="color-swatches">${colors.map(c =>
+                  `<div class="color-swatch">
+                    <div class="swatch-circle" style="background:${c.color || c.value}"></div>
+                    ${c.value || c.color || ''}
+                  </div>`
+                ).join('')}</div>`;
               }
               if (fonts.length > 0) {
-                contentHtml += fonts.map((f) => 
-                  `<div class="font-row"><span class="font-category">${f.label}</span>${f.value}</div>`
-                ).join("");
+                contentHtml += `<div class="font-section-label">Fonts</div>
+              <table class="font-table">
+                ${fonts.map(f =>
+                    `<tr><td>${f.label}</td><td>${f.value}</td></tr>`
+                  ).join('')}
+              </table>`;
               }
+              break;
+            }
+
+            case 'social-bio':
+              contentHtml = items.map(item =>
+                `<div class="bio-block">
+                  <div class="bio-platform-label">${item.label}</div>
+                  <div class="bio-text">${item.value}</div>
+                </div>`
+              ).join('');
               break;
 
             default:
-              contentHtml = items.map((item) => 
-                `<p class="paragraph">${item.value}</p>`
-              ).join("");
+              contentHtml = items.map(item => `<p>${item.value}</p>`).join('');
           }
 
-          html += `<div class="block"><div class="block-label">${block.label}</div><div class="block-content">${contentHtml}</div></div>`;
+          html += `<div class="block">
+      <div class="block-header">
+        <span class="block-num">${num}</span>
+        <span class="block-label">${block.label}</span>
+      </div>
+      <div class="block-body">${contentHtml}</div>
+    </div>`;
         });
 
         html += `</div>`;
       });
 
       html += `
-            <div class="page-footer">
-              <span class="footer-brand">Launchely</span>
-              <span>Launch Brief · Exported ${date}</span>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
+  <div class="doc-footer">
+    <span class="footer-brand">Launchely</span>
+    <span>Launch Brief · ${date}</span>
+  </div>
+</body>
+</html>`;
 
       // Open print window
       const printWindow = window.open("", "_blank");
