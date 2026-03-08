@@ -82,6 +82,7 @@ const Planner = () => {
       end_at: data.end_at || null,
       location: data.location || null,
       position: 0,
+      recurrence_rule: data.recurrence_rule || null,
     } as any);
 
     if (error) {
