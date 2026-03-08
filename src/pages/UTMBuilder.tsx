@@ -25,16 +25,6 @@ const generateShortCode = (): string => {
 const UTMBuilder = () => {
   const { user } = useAuth();
   const { hasAccess, isLoading: featureLoading } = useFeatureAccess();
-
-  if (!featureLoading && !hasAccess('social_calendar')) {
-    return (
-      <ProjectLayout>
-        <div className="max-w-2xl mx-auto py-16">
-          <UpgradePrompt feature="social_calendar" variant="card" customMessage="UTM Campaign Builder is a Pro feature. Upgrade to create and track UTM-tagged links." />
-        </div>
-      </ProjectLayout>
-    );
-  }
   const queryClient = useQueryClient();
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
 
@@ -170,6 +160,16 @@ const UTMBuilder = () => {
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["utm-base-urls"] }),
   });
+
+  if (!featureLoading && !hasAccess('social_calendar')) {
+    return (
+      <ProjectLayout>
+        <div className="max-w-2xl mx-auto py-16">
+          <UpgradePrompt feature="social_calendar" variant="card" customMessage="UTM Campaign Builder is a Pro feature. Upgrade to create and track UTM-tagged links." />
+        </div>
+      </ProjectLayout>
+    );
+  }
 
   return (
     <ProjectLayout>

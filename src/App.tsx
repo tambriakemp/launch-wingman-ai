@@ -439,9 +439,9 @@ const App = () => (
             <Route
               path="/marketing-hub/utm-builder"
               element={
-                <ProtectedAdminRoute>
+                <ProtectedRoute>
                   <UTMBuilder />
-                </ProtectedAdminRoute>
+                </ProtectedRoute>
               }
             />
             <Route
