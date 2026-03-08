@@ -19,13 +19,11 @@ import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog"
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { CheckInSettings } from "@/components/check-in";
 import { ToneSettings } from "@/components/settings/ToneSettings";
-import { AnnualReviewView } from "@/components/settings/AnnualReviewView";
 import { EmailPreferencesSettings } from "@/components/settings/EmailPreferencesSettings";
 import { AiSettingsCard } from "@/components/settings/AiSettingsCard";
 import { ExportMyDataDialog } from "@/components/settings/ExportMyDataDialog";
 import { DeleteMyAccountDialog } from "@/components/settings/DeleteMyAccountDialog";
 import { FacebookPageSelector } from "@/components/settings/FacebookPageSelector";
-import { useAnnualReview } from "@/hooks/useAnnualReview";
 import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
 import { usePinterestSandboxToken } from "@/hooks/usePinterestSandboxToken";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -140,9 +138,6 @@ const Settings = () => {
   const [isDisconnectingTikTok, setIsDisconnectingTikTok] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
-  // Annual Review state
-  const [showAnnualReview, setShowAnnualReview] = useState(false);
-  const { data: annualReviewData } = useAnnualReview();
 
   // Fetch projects for management
   const { data: projects = [], isLoading: isLoadingProjects } = useQuery({
@@ -727,14 +722,6 @@ const Settings = () => {
     }
   };
 
-  // If showing annual review, render that instead
-  if (showAnnualReview) {
-    return (
-      <ProjectLayout>
-        <AnnualReviewView onClose={() => setShowAnnualReview(false)} />
-      </ProjectLayout>
-    );
-  }
 
   return (
     <ProjectLayout>
@@ -1419,29 +1406,6 @@ const Settings = () => {
                 </Card>
               </motion.div>
 
-              {/* Annual Review Card */}
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-                <Card variant="elevated">
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-accent/50 rounded-xl flex items-center justify-center">
-                        <BookOpen className="w-5 h-5 text-foreground" />
-                      </div>
-                      <div>
-                        <CardTitle>Annual Review</CardTitle>
-                        <CardDescription>A moment to reflect on your journey</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4">This isn't a performance review — just a moment to reflect.</p>
-                    <Button variant="outline" onClick={() => setShowAnnualReview(true)} disabled={!annualReviewData?.isEligible}>
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      {annualReviewData?.isEligible ? "View Your Year in Review" : `Complete ${2 - (annualReviewData?.totalCompleted || 0)} more projects to unlock`}
-                    </Button>
-                  </CardContent>
-                </Card>
-              </motion.div>
             </TabsContent>
 
             {/* Notifications Tab */}
