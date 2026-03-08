@@ -252,12 +252,12 @@ const SidebarContent = ({
         ))}
 
         {/* Marketing Hub section */}
-        {(isPro || hasAdminAccess) && (() => {
-           const marketingItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean; requiresProject?: boolean }[] = [
-            { label: "Campaigns", href: "/marketing-hub/campaigns", icon: Target },
-            { label: "Social Planner", href: projectId ? `/projects/${projectId}/content` : "#", icon: MessageSquareText, requiresProject: !projectId },
-            { label: "AI Studio", href: "/app/ai-studio", icon: Wand2 },
-            { label: "Analytics", href: "/marketing-hub/analytics", icon: BarChart3 },
+        {(() => {
+           const marketingItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean; requiresProject?: boolean; isProOnly?: boolean }[] = [
+            { label: "Campaigns", href: "/marketing-hub/campaigns", icon: Target, isProOnly: true },
+            { label: "Social Planner", href: projectId ? `/projects/${projectId}/content` : "#", icon: MessageSquareText, requiresProject: !projectId, isProOnly: true },
+            { label: "AI Studio", href: "/app/ai-studio", icon: Wand2, isProOnly: true },
+            { label: "Analytics", href: "/marketing-hub/analytics", icon: BarChart3, isProOnly: true },
           ];
           const resourceItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; requiresProject?: boolean }[] = [
             { label: "Content Vault", href: "/content-vault", icon: Package },
