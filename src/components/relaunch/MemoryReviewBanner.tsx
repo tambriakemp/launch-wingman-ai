@@ -10,7 +10,14 @@ interface MemoryReviewBannerProps {
 }
 
 export function MemoryReviewBanner({ projectId }: MemoryReviewBannerProps) {
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    return localStorage.getItem(`memory-review-dismissed-${projectId}`) === 'true';
+  });
+
+  const handleDismiss = () => {
+    localStorage.setItem(`memory-review-dismissed-${projectId}`, 'true');
+    setDismissed(true);
+  };
   const [sheetOpen, setSheetOpen] = useState(false);
   const { 
     itemsNeedingReview, 
