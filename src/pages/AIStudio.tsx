@@ -805,7 +805,7 @@ const AIStudio = () => {
                 </p>
               </div>
               <button
-                onClick={() => setShowSafetyTerms(true)}
+                onClick={handleAcceptTerms}
                 className="px-3 py-1.5 text-xs font-bold bg-accent text-accent-foreground rounded-lg hover:bg-accent/90 transition-colors flex-shrink-0"
               >
                 I Agree
