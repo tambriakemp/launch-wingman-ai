@@ -114,7 +114,7 @@ export const PlannerTaskDialog = ({
       setDescription(editTask.description || "");
       setTaskType((editTask.task_type as "task" | "event") || "task");
       setColumnId(editTask.column_id);
-      setCategory((editTask.category as "business" | "life") || "business");
+      setCategory(editTask.category || "business");
       setLocation(editTask.location || "");
 
       // Date: prefer start_at, fallback to due_at
