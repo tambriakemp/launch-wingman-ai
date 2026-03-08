@@ -68,9 +68,13 @@ export const VaultFilters = ({
     onSubcategoryChange("all");
     onSearchChange("");
     onTagsChange([]);
+    onPromptTypeChange?.("all");
   };
 
-  const hasActiveFilters = selectedSubcategory !== "all" || searchQuery || selectedTags.length > 0;
+  const hasActiveFilters = selectedSubcategory !== "all" || searchQuery || selectedTags.length > 0 || selectedPromptType !== "all";
+
+  const imageCount = resources.filter(r => r.resource_type === 'image_prompt').length;
+  const videoCount = resources.filter(r => r.resource_type === 'video_prompt').length;
 
   return (
     <div className="space-y-4">
