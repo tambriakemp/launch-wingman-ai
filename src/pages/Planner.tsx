@@ -14,6 +14,7 @@ import { UpgradePrompt } from "@/components/UpgradePrompt";
 const Planner = () => {
   const { user } = useAuth();
   const { hasAccess, isLoading: accessLoading } = useFeatureAccess();
+  const [view, setView] = useState<"list" | "calendar" | "board">("calendar");
   const [tasks, setTasks] = useState<PlannerTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
