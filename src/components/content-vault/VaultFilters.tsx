@@ -80,8 +80,22 @@ export const VaultFilters = ({
     <div className="space-y-4">
       {/* Main Filters Row */}
       <div className="flex flex-col sm:flex-row gap-3">
-        {/* Subcategory Filter */}
-        {subcategories.length > 0 && (
+        {/* Prompt Type Filter (for AI Prompts category) */}
+        {isPromptCategory && onPromptTypeChange && (
+          <Select value={selectedPromptType} onValueChange={onPromptTypeChange}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types ({imageCount + videoCount})</SelectItem>
+              <SelectItem value="image_prompt">Image Prompts ({imageCount})</SelectItem>
+              <SelectItem value="video_prompt">Video Prompts ({videoCount})</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+
+        {/* Subcategory Filter (for non-prompt categories) */}
+        {!isPromptCategory && subcategories.length > 0 && (
           <Select value={selectedSubcategory} onValueChange={onSubcategoryChange}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="All Types" />
