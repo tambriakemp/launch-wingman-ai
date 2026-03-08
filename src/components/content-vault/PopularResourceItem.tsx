@@ -42,7 +42,10 @@ export const PopularResourceItem = ({
   };
 
   return (
-    <div className="flex items-center justify-between py-3 group">
+    <div 
+      className="flex items-center justify-between py-3 group cursor-pointer hover:bg-muted/50 rounded-lg px-2 -mx-2 transition-colors"
+      onClick={handleClick}
+    >
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="p-2 rounded-lg bg-muted shrink-0">
           <FileText className="w-4 h-4 text-muted-foreground" />
