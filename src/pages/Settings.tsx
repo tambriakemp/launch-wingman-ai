@@ -19,13 +19,11 @@ import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog"
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { CheckInSettings } from "@/components/check-in";
 import { ToneSettings } from "@/components/settings/ToneSettings";
-import { AnnualReviewView } from "@/components/settings/AnnualReviewView";
 import { EmailPreferencesSettings } from "@/components/settings/EmailPreferencesSettings";
 import { AiSettingsCard } from "@/components/settings/AiSettingsCard";
 import { ExportMyDataDialog } from "@/components/settings/ExportMyDataDialog";
 import { DeleteMyAccountDialog } from "@/components/settings/DeleteMyAccountDialog";
 import { FacebookPageSelector } from "@/components/settings/FacebookPageSelector";
-import { useAnnualReview } from "@/hooks/useAnnualReview";
 import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
 import { usePinterestSandboxToken } from "@/hooks/usePinterestSandboxToken";
 import { useIsMobile } from "@/hooks/use-mobile";
