@@ -5,7 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lightbulb, TrendingUp } from "lucide-react";
+import { Lightbulb, TrendingUp, BookOpen } from "lucide-react";
+import { AnnualReviewView } from "@/components/settings/AnnualReviewView";
+import { useAnnualReview } from "@/hooks/useAnnualReview";
 import { 
   StartingSnapshot, 
   EndingSnapshot, 
