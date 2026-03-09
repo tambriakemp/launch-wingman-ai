@@ -81,6 +81,7 @@ import Onboarding from "./pages/Onboarding";
 import AIStudio from "./pages/AIStudio";
 import Planner from "./pages/Planner";
 import HabitTracker from "./pages/HabitTracker";
+import DailyPage from "./pages/DailyPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -502,7 +503,18 @@ const App = () => (
               }
             />
 
+            {/* Daily Page */}
+            <Route
+              path="/daily"
+              element={
+                <ProtectedRoute>
+                  <DailyPage />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Public short link redirect */}
+            <Route path="/r/:code" element={<UTMRedirect />} />
             <Route path="/r/:code" element={<UTMRedirect />} />
 
             <Route path="*" element={<NotFound />} />

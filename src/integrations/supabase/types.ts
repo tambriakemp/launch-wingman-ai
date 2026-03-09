@@ -957,6 +957,63 @@ export type Database = {
           },
         ]
       }
+      daily_pages: {
+        Row: {
+          created_at: string
+          evening_reflection: string | null
+          gratitude: string | null
+          id: string
+          intention: string | null
+          mood: string | null
+          notes: string | null
+          page_date: string
+          priority_1: string | null
+          priority_1_done: boolean
+          priority_2: string | null
+          priority_2_done: boolean
+          priority_3: string | null
+          priority_3_done: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          evening_reflection?: string | null
+          gratitude?: string | null
+          id?: string
+          intention?: string | null
+          mood?: string | null
+          notes?: string | null
+          page_date: string
+          priority_1?: string | null
+          priority_1_done?: boolean
+          priority_2?: string | null
+          priority_2_done?: boolean
+          priority_3?: string | null
+          priority_3_done?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          evening_reflection?: string | null
+          gratitude?: string | null
+          id?: string
+          intention?: string | null
+          mood?: string | null
+          notes?: string | null
+          page_date?: string
+          priority_1?: string | null
+          priority_1_done?: boolean
+          priority_2?: string | null
+          priority_2_done?: boolean
+          priority_3?: string | null
+          priority_3_done?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       deliverable_copy: {
         Row: {
           content: string
