@@ -492,6 +492,16 @@ const App = () => (
               }
             />
 
+            {/* Habits */}
+            <Route
+              path="/habits"
+              element={
+                <ProtectedRoute>
+                  <HabitTracker />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Public short link redirect */}
             <Route path="/r/:code" element={<UTMRedirect />} />
 
