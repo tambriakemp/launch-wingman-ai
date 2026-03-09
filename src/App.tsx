@@ -80,6 +80,7 @@ import HelpSupportTicket from "./pages/HelpSupportTicket";
 import Onboarding from "./pages/Onboarding";
 import AIStudio from "./pages/AIStudio";
 import Planner from "./pages/Planner";
+import HabitTracker from "./pages/HabitTracker";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -487,6 +488,16 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Planner />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Habits */}
+            <Route
+              path="/habits"
+              element={
+                <ProtectedRoute>
+                  <HabitTracker />
                 </ProtectedRoute>
               }
             />

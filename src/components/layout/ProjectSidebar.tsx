@@ -33,6 +33,7 @@ import {
   ShoppingBag,
   Wand2,
   CalendarCheck,
+  Flame,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
 import { LaunchelyLogo } from "@/components/ui/LaunchelyLogo";
@@ -77,6 +78,7 @@ const createNavSections = (projectId?: string): NavSection[] => [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: projectId ? `/projects/${projectId}/dashboard` : "#", requiresProject: !projectId },
       { id: "tasks", label: "Tasks", icon: Kanban, href: projectId ? `/projects/${projectId}/tasks` : "#", requiresProject: !projectId },
       { id: "planner", label: "Planner", icon: CalendarCheck, href: "/planner" },
+      { id: "habits", label: "Habits", icon: Flame, href: "/habits" },
       { id: "summary", label: "Launch Brief", icon: BookMarked, href: projectId ? `/projects/${projectId}/summary` : "#", requiresProject: !projectId },
       { id: "playbook", label: "Playbook", icon: BookOpen, href: `/playbook` },
       { id: "insights", label: "Insights", icon: Lightbulb, href: projectId ? `/projects/${projectId}/insights` : "#", isProOnly: true, requiresProject: !projectId },
