@@ -33,6 +33,7 @@ import {
   ShoppingBag,
   Wand2,
   CalendarCheck,
+  Flame,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
 import { LaunchelyLogo } from "@/components/ui/LaunchelyLogo";
