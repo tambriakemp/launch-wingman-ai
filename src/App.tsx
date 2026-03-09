@@ -503,7 +503,18 @@ const App = () => (
               }
             />
 
+            {/* Daily Page */}
+            <Route
+              path="/daily"
+              element={
+                <ProtectedRoute>
+                  <DailyPage />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Public short link redirect */}
+            <Route path="/r/:code" element={<UTMRedirect />} />
             <Route path="/r/:code" element={<UTMRedirect />} />
 
             <Route path="*" element={<NotFound />} />
