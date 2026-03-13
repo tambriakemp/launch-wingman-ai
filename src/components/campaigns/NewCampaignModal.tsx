@@ -421,6 +421,10 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
               toast.error("Please fill in all required fields including goal target");
               return;
             }
+            if (step === 1 && autoUtm && !baseDestinationUrl.trim()) {
+              toast.error("Please enter a base destination URL for your UTM links");
+              return;
+            }
             step < 3 ? setStep(step + 1) : handleCreate();
           }} disabled={saving}>
             {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Creating...</> : step < 3 ? "Next" : "Create Campaign"}
