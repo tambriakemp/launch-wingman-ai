@@ -112,11 +112,8 @@ const AITwinFormula = () => {
 
   return (
     <>
-      <Helmet>
-        <title>The AI Twin Formula | Build a Brand Without Showing Your Face</title>
-        <meta name="description" content="The step-by-step system for creating your AI twin, filming content, and growing an audience — even if you're camera-shy, starting from zero, or rebuilding after a setback." />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-      </Helmet>
+      {/* Set page title */}
+      {(() => { document.title = "The AI Twin Formula | Build a Brand Without Showing Your Face"; return null; })()}
 
       <div className="font-['Inter'] text-white leading-relaxed overflow-x-hidden" style={{ background: "#1A1A2E" }}>
 
