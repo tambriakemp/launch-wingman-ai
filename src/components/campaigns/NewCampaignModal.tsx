@@ -52,6 +52,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
   const [autoUtm, setAutoUtm] = useState(true);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [selectedFunnelId, setSelectedFunnelId] = useState<string | null>(null);
+  const [baseDestinationUrl, setBaseDestinationUrl] = useState("");
   const [saving, setSaving] = useState(false);
 
   const { data: funnels, isLoading: funnelsLoading } = useQuery({
