@@ -110,11 +110,17 @@ const scrollToPricing = (e: React.MouseEvent) => {
 const AITwinFormula = () => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
+  useEffect(() => {
+    document.title = "The AI Twin Formula | Build a Brand Without Showing Your Face";
+    const link = document.createElement("link");
+    link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap";
+    link.rel = "stylesheet";
+    document.head.appendChild(link);
+    return () => { link.remove(); };
+  }, []);
+
   return (
     <>
-      {/* Set page title */}
-      {(() => { document.title = "The AI Twin Formula | Build a Brand Without Showing Your Face"; return null; })()}
-
       <div className="font-['Inter'] text-white leading-relaxed overflow-x-hidden" style={{ background: "#1A1A2E" }}>
 
         {/* URGENCY BAR */}
