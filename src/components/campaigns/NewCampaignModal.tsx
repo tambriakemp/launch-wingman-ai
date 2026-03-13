@@ -288,6 +288,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
                     </button>
                   ))}
                 </div>
+                </div>
               </div>
             )}
           </div>
