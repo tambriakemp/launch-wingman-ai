@@ -1,42 +1,16 @@
 
 
-## Create "AI Twin Formula" Sales Page
+# Fix Sidebar Card Background & Week Grid Alignment
 
-### Overview
-Recreate the uploaded HTML sales page as a React component at `/ai-twin-formula`, matching the exact layout, content, styling, and dark purple/pink theme.
+## Changes in `src/components/planner/PlannerCalendarView.tsx`
 
-### Files to Create/Modify
+### 1. Card background color
+Change `bg-sidebar` on the three card containers (Mini Calendar, My List, Categories) to match the main navigation background. The nav uses `bg-sidebar` too — so the cards blend in. Use a slightly lighter shade like `bg-sidebar-accent` (which is `40 6% 15%`) to make cards distinct from the nav, or use `bg-[hsl(40,6%,12%)]` for a subtle lift.
 
-**1. `src/pages/AITwinFormula.tsx`** (new)
-- A single large React component that replicates every section from the HTML:
-  - Urgency bar (sticky gradient top bar)
-  - Hero with gradient background, eyebrow badge, headline, subtitle, CTA buttons, stats
-  - Pain section (6 cards with "Sound Familiar?" heading)
-  - Story section (blockquote-style origin story with signature)
-  - Meet Styl section (centered card with stats)
-  - Solution Bridge (7-step numbered list)
-  - Modules section (10 module cards + 1 bonus, with left border accent)
-  - Who It's For (6 emoji cards)
-  - Value Stack (value table with crossed-out prices, total row)
-  - Social Proof (3 testimonial cards with star ratings)
-  - Pricing section (pricing card with badge, includes list, guarantee box)
-  - Guarantee section (shield card)
-  - FAQ section (accordion with toggle)
-  - Final CTA
-  - Footer
-- Use inline Tailwind where possible, but for the custom gradients, glass effects, and pseudo-elements, use a scoped CSS approach or inline styles
-- FAQ accordion uses local React state
-- All CTA links point to `#pricing` with smooth scroll
-- External purchase link goes to `https://www.skool.com`
+Lines affected: ~205, ~273, ~295 — the three `rounded-xl bg-sidebar p-4` divs.
 
-**2. `src/App.tsx`**
-- Import `AITwinFormula` page
-- Add route: `<Route path="/ai-twin-formula" element={<AITwinFormula />} />`
-- Place it with the other public (non-protected) routes
+### 2. Vertical line alignment fix
+The day column headers are a fixed row above the scrollable time grid. The scrollbar in the time grid area takes up space, causing the columns below to be narrower than the headers. Fix by adding `overflow-y-scroll` (always show scrollbar space) to the scroll container, or better, add a matching right padding/margin to the header row to account for scrollbar width. The cleanest approach: wrap both header and grid in the same scroll container so they share the same width context.
 
-### Design Notes
-- This is a standalone page — no app header/sidebar, no `LandingHeader`/`LandingFooter` — it's a self-contained sales page with its own dark theme and footer
-- Color scheme: dark navy (`#1A1A2E`), purple (`#7C3AED`), pink (`#D63384`), gold accents (`#B07D2A`)
-- All content copied exactly from the HTML
-- Fully responsive (mobile breakpoints preserved)
+**Approach**: Move the day column headers inside the `overflow-y-auto` scroll container (before the grid div), and make them sticky at top with `sticky top-0 z-10 bg-background`. This ensures headers and grid columns share the exact same width.
 
