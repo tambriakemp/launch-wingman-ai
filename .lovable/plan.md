@@ -1,19 +1,16 @@
 
 
-## Fix: Auto-generated UTM links use `example.com` as base URL
+# Fix Sidebar Card Background & Week Grid Alignment
 
-### Problem
-In `src/components/campaigns/NewCampaignModal.tsx` line 124, the auto-generate UTM logic hardcodes `const baseUrl = "https://example.com"; // placeholder` when creating links during campaign creation. Every auto-generated link gets `example.com` as its destination.
+## Changes in `src/components/planner/PlannerCalendarView.tsx`
 
-### Solution
-Add a "Base Destination URL" input field to Step 2 (Attribution) of the New Campaign modal. When auto-generate UTM is enabled, the user must provide a real destination URL. Use that URL instead of the hardcoded placeholder.
+### 1. Card background color
+Change `bg-sidebar` on the three card containers (Mini Calendar, My List, Categories) to match the main navigation background. The nav uses `bg-sidebar` too — so the cards blend in. Use a slightly lighter shade like `bg-sidebar-accent` (which is `40 6% 15%`) to make cards distinct from the nav, or use `bg-[hsl(40,6%,12%)]` for a subtle lift.
 
-### Changes
+Lines affected: ~205, ~273, ~295 — the three `rounded-xl bg-sidebar p-4` divs.
 
-**`src/components/campaigns/NewCampaignModal.tsx`**
-1. Add state: `const [baseDestinationUrl, setBaseDestinationUrl] = useState("")`
-2. In Step 2 UI (Attribution), when `autoUtm` is checked, show a text input labeled "Base Destination URL" with placeholder `https://yourdomain.com/offer` right below the auto-generate checkbox
-3. Add validation: block proceeding to Step 3 if `autoUtm` is enabled but no valid URL is entered
-4. Replace line 124 (`const baseUrl = "https://example.com"`) with `const baseUrl = baseDestinationUrl`
-5. Reset `baseDestinationUrl` in the `reset()` function
+### 2. Vertical line alignment fix
+The day column headers are a fixed row above the scrollable time grid. The scrollbar in the time grid area takes up space, causing the columns below to be narrower than the headers. Fix by adding `overflow-y-scroll` (always show scrollbar space) to the scroll container, or better, add a matching right padding/margin to the header row to account for scrollbar width. The cleanest approach: wrap both header and grid in the same scroll container so they share the same width context.
+
+**Approach**: Move the day column headers inside the `overflow-y-auto` scroll container (before the grid div), and make them sticky at top with `sticky top-0 z-10 bg-background`. This ensures headers and grid columns share the exact same width.
 

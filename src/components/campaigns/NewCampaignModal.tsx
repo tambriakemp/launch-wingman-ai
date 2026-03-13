@@ -52,6 +52,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
   const [autoUtm, setAutoUtm] = useState(true);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [selectedFunnelId, setSelectedFunnelId] = useState<string | null>(null);
+  const [baseDestinationUrl, setBaseDestinationUrl] = useState("");
   const [saving, setSaving] = useState(false);
 
   const { data: funnels, isLoading: funnelsLoading } = useQuery({
@@ -82,7 +83,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
 
   const reset = () => {
     setStep(0); setName(""); setGoal(""); setStartDate(""); setEndDate("");
-    setBudget(""); setGoalTarget(""); setAutoUtm(true); setSelectedPlatforms([]); setSelectedFunnelId(null); setSaving(false);
+    setBudget(""); setGoalTarget(""); setAutoUtm(true); setSelectedPlatforms([]); setSelectedFunnelId(null); setBaseDestinationUrl(""); setSaving(false);
   };
 
   const handleCreate = async () => {
@@ -121,7 +122,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
         const utmRows = selectedPlatforms.map((p) => {
           const ch = platformMap[p] ?? "other";
           const defaults = CHANNEL_UTM_DEFAULTS[ch] ?? { source: ch, medium: "other" };
-          const baseUrl = "https://example.com"; // placeholder
+          const baseUrl = baseDestinationUrl;
           return {
             user_id: user.id,
             campaign_id: inserted.id,
@@ -260,7 +261,18 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
               </div>
             </div>
             {autoUtm && (
-              <div>
+              <div className="space-y-5">
+                <div>
+                  <Label className="text-sm font-medium">Base Destination URL</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">The page visitors will land on when they click your links</p>
+                  <Input
+                    value={baseDestinationUrl}
+                    onChange={(e) => setBaseDestinationUrl(e.target.value)}
+                    placeholder="https://yourdomain.com/offer"
+                    type="url"
+                  />
+                </div>
+                <div>
                 <Label className="text-sm font-medium mb-3 block">Select platforms to track</Label>
                 <div className="grid grid-cols-3 gap-2.5">
                   {platforms.map((p) => (
@@ -275,6 +287,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
                       {p.name}
                     </button>
                   ))}
+                </div>
                 </div>
               </div>
             )}
@@ -406,6 +419,10 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
           <Button onClick={() => {
             if (step === 0 && (!name || !goal || !startDate || !goalTarget)) {
               toast.error("Please fill in all required fields including goal target");
+              return;
+            }
+            if (step === 1 && autoUtm && !baseDestinationUrl.trim()) {
+              toast.error("Please enter a base destination URL for your UTM links");
               return;
             }
             step < 3 ? setStep(step + 1) : handleCreate();
