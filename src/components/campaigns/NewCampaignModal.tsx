@@ -261,7 +261,18 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
               </div>
             </div>
             {autoUtm && (
-              <div>
+              <div className="space-y-5">
+                <div>
+                  <Label className="text-sm font-medium">Base Destination URL</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">The page visitors will land on when they click your links</p>
+                  <Input
+                    value={baseDestinationUrl}
+                    onChange={(e) => setBaseDestinationUrl(e.target.value)}
+                    placeholder="https://yourdomain.com/offer"
+                    type="url"
+                  />
+                </div>
+                <div>
                 <Label className="text-sm font-medium mb-3 block">Select platforms to track</Label>
                 <div className="grid grid-cols-3 gap-2.5">
                   {platforms.map((p) => (
