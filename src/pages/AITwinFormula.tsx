@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Helmet } from "react-helmet-async";
+import { useState, useEffect } from "react";
 
 const faqData = [
   {
