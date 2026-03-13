@@ -83,7 +83,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
 
   const reset = () => {
     setStep(0); setName(""); setGoal(""); setStartDate(""); setEndDate("");
-    setBudget(""); setGoalTarget(""); setAutoUtm(true); setSelectedPlatforms([]); setSelectedFunnelId(null); setSaving(false);
+    setBudget(""); setGoalTarget(""); setAutoUtm(true); setSelectedPlatforms([]); setSelectedFunnelId(null); setBaseDestinationUrl(""); setSaving(false);
   };
 
   const handleCreate = async () => {
