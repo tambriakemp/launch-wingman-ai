@@ -122,7 +122,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
         const utmRows = selectedPlatforms.map((p) => {
           const ch = platformMap[p] ?? "other";
           const defaults = CHANNEL_UTM_DEFAULTS[ch] ?? { source: ch, medium: "other" };
-          const baseUrl = "https://example.com"; // placeholder
+          const baseUrl = baseDestinationUrl;
           return {
             user_id: user.id,
             campaign_id: inserted.id,
