@@ -30,6 +30,7 @@ import AdminVideoInstructions from "./pages/AdminVideoInstructions";
 import AdminBrandKit from "./pages/AdminBrandKit";
 import NotFound from "./pages/NotFound";
 import SalesFunnel from "./pages/SalesFunnel";
+import AITwinFormula from "./pages/AITwinFormula";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import MarketingHub from "./pages/MarketingHub";
