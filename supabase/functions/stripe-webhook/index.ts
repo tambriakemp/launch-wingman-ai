@@ -232,7 +232,7 @@ serve(async (req) => {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        customerEmail = session.customer_email || null;
+        customerEmail = session.customer_email || session.customer_details?.email || null;
         
         // If no email on session, fetch from customer
         if (!customerEmail && session.customer) {
@@ -243,11 +243,15 @@ serve(async (req) => {
         }
         
         eventType = "subscription_started";
-        logStep("Checkout completed", { customerEmail, mode: session.mode, metadata: session.metadata });
+        logStep("Checkout completed", { customerEmail, mode: session.mode, metadata: session.metadata, paymentStatus: session.payment_status });
 
         // If this is an AI Twin Formula purchase, trigger Skool community access
-        if (session.metadata?.product === "ai_twin_formula" && customerEmail && session.payment_status === "paid") {
-          logStep("AI Twin Formula purchase detected, triggering Skool access", { email: customerEmail });
+        if (
+          session.metadata?.product === "ai_twin_formula" &&
+          customerEmail &&
+          (session.payment_status === "paid" || session.payment_status === "no_payment_required")
+        ) {
+          logStep("AI Twin Formula purchase detected, triggering Skool access", { email: customerEmail, paymentStatus: session.payment_status });
           EdgeRuntime.waitUntil(triggerSkoolAccess(customerEmail));
         }
 
