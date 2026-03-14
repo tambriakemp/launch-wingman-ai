@@ -367,7 +367,7 @@ const AITwinFormula = () => {
                 <div className="font-bold text-base">Total Real-World Value</div>
                 <div className="flex items-baseline gap-3">
                   <span className="text-[1.1rem] line-through" style={{ color: "rgba(255,255,255,0.6)" }}>$519+</span>
-                  <span className="text-[1.6rem] font-black" style={{ background: "linear-gradient(135deg, #E85BA3, #9D65F5)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>$37</span>
+                  <span className="text-[1.6rem] font-black" style={{ background: "linear-gradient(135deg, #E85BA3, #9D65F5)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>$27</span>
                 </div>
               </div>
             </div>
