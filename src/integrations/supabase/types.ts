@@ -3196,6 +3196,51 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_reviews: {
+        Row: {
+          created_at: string
+          didnt_finish: string | null
+          energy_level: number | null
+          id: string
+          lessons: string | null
+          next_week_focus: string | null
+          next_week_priorities: string | null
+          overall_rating: number | null
+          updated_at: string
+          user_id: string
+          week_start: string
+          wins: string | null
+        }
+        Insert: {
+          created_at?: string
+          didnt_finish?: string | null
+          energy_level?: number | null
+          id?: string
+          lessons?: string | null
+          next_week_focus?: string | null
+          next_week_priorities?: string | null
+          overall_rating?: number | null
+          updated_at?: string
+          user_id: string
+          week_start: string
+          wins?: string | null
+        }
+        Update: {
+          created_at?: string
+          didnt_finish?: string | null
+          energy_level?: number | null
+          id?: string
+          lessons?: string | null
+          next_week_focus?: string | null
+          next_week_priorities?: string | null
+          overall_rating?: number | null
+          updated_at?: string
+          user_id?: string
+          week_start?: string
+          wins?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       social_connections_decrypted: {
