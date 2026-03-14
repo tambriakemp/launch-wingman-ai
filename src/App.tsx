@@ -519,6 +519,26 @@ const App = () => (
               }
             />
 
+            {/* Goals */}
+            <Route
+              path="/goals"
+              element={
+                <ProtectedRoute>
+                  <Goals />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Brain Dump */}
+            <Route
+              path="/brain-dump"
+              element={
+                <ProtectedRoute>
+                  <BrainDump />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Public short link redirect */}
             <Route path="/r/:code" element={<UTMRedirect />} />
             <Route path="/r/:code" element={<UTMRedirect />} />
