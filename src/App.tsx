@@ -31,6 +31,7 @@ import AdminBrandKit from "./pages/AdminBrandKit";
 import NotFound from "./pages/NotFound";
 import SalesFunnel from "./pages/SalesFunnel";
 import AITwinFormula from "./pages/AITwinFormula";
+import AITwinThankYou from "./pages/AITwinThankYou";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import MarketingHub from "./pages/MarketingHub";
@@ -134,6 +135,7 @@ const App = () => (
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/go" element={<SalesFunnel />} />
             <Route path="/ai-twin-formula" element={<AITwinFormula />} />
+            <Route path="/ai-twin-formula/thank-you" element={<AITwinThankYou />} />
             <Route path="/checkout/success" element={<CheckoutSuccess />} />
             
             {/* Onboarding flow (shown once after registration) */}
