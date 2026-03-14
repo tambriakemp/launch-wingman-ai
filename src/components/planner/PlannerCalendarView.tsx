@@ -261,7 +261,7 @@ export const PlannerCalendarView = ({
     }
   };
 
-
+  const [categories, setCategories] = useState(() => {
     try {
       const stored = localStorage.getItem("planner-categories");
       return stored ? JSON.parse(stored) : DEFAULT_CATEGORIES;
