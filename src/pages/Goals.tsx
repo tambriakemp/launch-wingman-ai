@@ -247,7 +247,7 @@ const Goals = () => {
                   key={s}
                   onClick={() => setFilterStatus(s)}
                   className={cn(
-                    "text-xs px-3 py-1.5 rounded-full border transition-colors capitalize",
+                    "text-xs px-2.5 py-1 rounded-full border transition-colors capitalize",
                     filterStatus === s
                       ? "bg-primary text-primary-foreground border-primary"
                       : "border-border text-muted-foreground hover:border-primary/40"
