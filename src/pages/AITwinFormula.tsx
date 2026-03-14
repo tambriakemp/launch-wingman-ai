@@ -416,9 +416,22 @@ const AITwinFormula = () => {
               <div className="text-base line-through mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>Regular price: $57</div>
               <div className="text-[4rem] font-black leading-none my-2" style={{ background: "linear-gradient(135deg, #E85BA3, #9D65F5)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>$27</div>
               <div className="text-[0.85rem] mb-8" style={{ color: "rgba(255,255,255,0.6)" }}>One-time payment · No monthly fees · Instant access</div>
-              <a href="https://www.skool.com" target="_blank" rel="noopener noreferrer" className="block w-full text-center text-white text-[1.05rem] font-bold rounded-full no-underline transition-all hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #D63384, #7C3AED)", padding: "16px 20px", boxShadow: "0 8px 32px rgba(214,51,132,0.35)" }}>
-                Yes — Give Me Instant Access →
-              </a>
+              <input
+                type="email"
+                placeholder="Enter your email address"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                className="w-full rounded-xl text-[0.95rem] mb-3 outline-none focus:ring-2 focus:ring-purple-500"
+                style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", padding: "14px 18px", color: "#fff" }}
+              />
+              <button
+                onClick={handleCheckout}
+                disabled={checkoutLoading}
+                className="block w-full text-center text-white text-[1.05rem] font-bold rounded-full no-underline transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                style={{ background: "linear-gradient(135deg, #D63384, #7C3AED)", padding: "16px 20px", boxShadow: "0 8px 32px rgba(214,51,132,0.35)", border: "none" }}
+              >
+                {checkoutLoading ? "Loading checkout..." : "Yes — Give Me Instant Access →"}
+              </button>
               <div className="text-left mt-6 mb-8 flex flex-col gap-2.5">
                 {pricingIncludes.map((line) => (
                   <div key={line} className="flex items-center gap-2.5 text-[0.9rem]">
