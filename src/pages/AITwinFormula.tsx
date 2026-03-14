@@ -410,7 +410,7 @@ const AITwinFormula = () => {
             <h2 className="text-center text-[clamp(1.6rem,3.5vw,2.4rem)] font-extrabold leading-[1.25] mb-4 tracking-tight">One payment. Lifetime access. Real results.</h2>
             <div className="relative max-w-[520px] mx-auto mt-10 rounded-[24px] text-center" style={{ background: "linear-gradient(160deg, #1e1040, #1A1A2E)", border: "2px solid rgba(214,51,132,0.35)", padding: "48px", boxShadow: "0 20px 60px rgba(214,51,132,0.15)" }}>
               <div className="absolute left-1/2 -translate-x-1/2 -top-3.5 text-[0.75rem] font-bold tracking-[0.08em] uppercase rounded-full whitespace-nowrap text-white" style={{ background: "linear-gradient(135deg, #D63384, #7C3AED)", padding: "5px 18px" }}>
-                🔥 Introductory Offer — Save $20
+                🔥 Introductory Offer — Save $30
               </div>
               <div className="text-[0.85rem] font-semibold tracking-[0.08em] uppercase mb-2" style={{ color: "rgba(255,255,255,0.6)" }}>The AI Twin Formula</div>
               <div className="text-base line-through mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>Regular price: $57</div>
