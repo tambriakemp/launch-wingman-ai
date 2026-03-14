@@ -1,16 +1,26 @@
 
 
-# Fix Sidebar Card Background & Week Grid Alignment
+## Fix: Stripe Webhook Signature Verification + 100% Coupon Handling
 
-## Changes in `src/components/planner/PlannerCalendarView.tsx`
+### Problem
+Two issues found:
 
-### 1. Card background color
-Change `bg-sidebar` on the three card containers (Mini Calendar, My List, Categories) to match the main navigation background. The nav uses `bg-sidebar` too — so the cards blend in. Use a slightly lighter shade like `bg-sidebar-accent` (which is `40 6% 15%`) to make cards distinct from the nav, or use `bg-[hsl(40,6%,12%)]` for a subtle lift.
+1. **Webhook failing** — The logs show: `"SubtleCryptoProvider cannot be used in a synchronous context. Use await constructEventAsync(...)"`. The current code uses `stripe.webhooks.constructEvent()` (sync), but Deno's crypto is async-only. This means ALL Stripe webhooks are being rejected with a 400, so the Skool access webhook never fires.
 
-Lines affected: ~205, ~273, ~295 — the three `rounded-xl bg-sidebar p-4` divs.
+2. **100% off coupons** — When a coupon covers the full amount, Stripe still fires `checkout.session.completed` but the webhook rejection above prevents processing.
 
-### 2. Vertical line alignment fix
-The day column headers are a fixed row above the scrollable time grid. The scrollbar in the time grid area takes up space, causing the columns below to be narrower than the headers. Fix by adding `overflow-y-scroll` (always show scrollbar space) to the scroll container, or better, add a matching right padding/margin to the header row to account for scrollbar width. The cleanest approach: wrap both header and grid in the same scroll container so they share the same width context.
+### Fix
 
-**Approach**: Move the day column headers inside the `overflow-y-auto` scroll container (before the grid div), and make them sticky at top with `sticky top-0 z-10 bg-background`. This ensures headers and grid columns share the exact same width.
+**File: `supabase/functions/stripe-webhook/index.ts`** (line 198)
+- Replace `stripe.webhooks.constructEvent(body, signature, webhookSecret)` with `await stripe.webhooks.constructEventAsync(body, signature, webhookSecret)`
+- This is a one-line change that fixes all webhook processing
+
+**File: `src/pages/AITwinFormula.tsx`**
+- Update the price display from `$27` to `$27` (no change needed — already correct)
+- No other frontend changes needed
+
+### What this fixes
+- All Stripe webhooks will be properly verified and processed
+- After successful payment (including 100% off coupons), the Skool community access webhook will fire with the buyer's email
+- Admin notifications and SureContact syncs will also start working
 
