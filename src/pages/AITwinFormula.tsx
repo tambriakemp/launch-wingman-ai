@@ -111,6 +111,8 @@ const scrollToPricing = (e: React.MouseEvent) => {
 
 const AITwinFormula = () => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
 
   useEffect(() => {
     document.title = "The AI Twin Formula | Build a Brand Without Showing Your Face";
@@ -118,8 +120,42 @@ const AITwinFormula = () => {
     link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap";
     link.rel = "stylesheet";
     document.head.appendChild(link);
+
+    // Check for success/canceled params
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") === "success") {
+      toast.success("Payment successful! Check your email for Skool access.");
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (params.get("canceled") === "true") {
+      toast.info("Checkout was canceled.");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
     return () => { link.remove(); };
   }, []);
+
+  const handleCheckout = async () => {
+    if (!emailInput || !emailInput.includes("@")) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    setCheckoutLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-ai-twin-checkout", {
+        body: { email: emailInput },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (err: any) {
+      console.error("Checkout error:", err);
+      toast.error(err.message || "Failed to start checkout. Please try again.");
+      setCheckoutLoading(false);
+    }
+  };
 
   return (
     <>
