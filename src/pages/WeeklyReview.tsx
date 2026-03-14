@@ -255,20 +255,20 @@ const WeeklyReview = () => {
           </div>
 
           {/* Stats row */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-xl border border-border bg-card p-4 text-center">
-              <CheckCircle2 className="w-5 h-5 mx-auto mb-1 text-primary" />
-              <p className="text-2xl font-bold text-foreground">{completedTasks.length}</p>
+          <div className="grid grid-cols-3 gap-2 mb-6">
+            <div className="rounded-xl border border-border bg-card px-3 py-2.5 text-center">
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-1 text-primary" />
+              <p className="text-xl sm:text-2xl font-bold text-foreground">{completedTasks.length}</p>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Tasks done</p>
             </div>
-            <div className="rounded-xl border border-border bg-card p-4 text-center">
-              <Flame className="w-5 h-5 mx-auto mb-1 text-orange-500" />
-              <p className="text-2xl font-bold text-foreground">{overallHabitRate}%</p>
+            <div className="rounded-xl border border-border bg-card px-3 py-2.5 text-center">
+              <Flame className="w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-1 text-orange-500" />
+              <p className="text-xl sm:text-2xl font-bold text-foreground">{overallHabitRate}%</p>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Habit rate</p>
             </div>
-            <div className="rounded-xl border border-border bg-card p-4 text-center">
-              <Target className="w-5 h-5 mx-auto mb-1 text-primary" />
-              <p className="text-2xl font-bold text-foreground">{goalStats.length}</p>
+            <div className="rounded-xl border border-border bg-card px-3 py-2.5 text-center">
+              <Target className="w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-1 text-primary" />
+              <p className="text-xl sm:text-2xl font-bold text-foreground">{goalStats.length}</p>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Active goals</p>
             </div>
           </div>
