@@ -262,7 +262,7 @@ const Goals = () => {
                   key={c}
                   onClick={() => setFilterCategory(c)}
                   className={cn(
-                    "text-xs px-3 py-1.5 rounded-full border transition-colors capitalize",
+                    "text-xs px-2.5 py-1 rounded-full border transition-colors capitalize",
                     filterCategory === c
                       ? "bg-primary text-primary-foreground border-primary"
                       : "border-border text-muted-foreground hover:border-primary/40"

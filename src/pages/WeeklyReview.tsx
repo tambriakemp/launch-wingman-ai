@@ -214,7 +214,7 @@ const WeeklyReview = () => {
 
   return (
     <ProjectLayout>
-      <div className="max-w-2xl mx-auto pb-20">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-16">
         <div className="space-y-8">
 
           {/* Date nav */}

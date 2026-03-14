@@ -163,6 +163,7 @@ export function HabitGrid({ habits, completions, currentMonth, onToggle, onEdit,
           );
         })}
       </div>
+      </div>
     </div>
   );
 }

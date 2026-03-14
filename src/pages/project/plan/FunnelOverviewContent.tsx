@@ -62,7 +62,7 @@ const PhaseProgressRail = ({
                   )}
                 </div>
                 <span
-                  className={`text-[10px] leading-tight text-center whitespace-nowrap ${
+                  className={`text-[10px] leading-tight text-center whitespace-nowrap hidden sm:block ${
                     isActive
                       ? "text-primary font-semibold"
                       : isComplete
@@ -71,6 +71,13 @@ const PhaseProgressRail = ({
                   }`}
                 >
                   {PHASE_LABELS[phase] || phase}
+                </span>
+                <span className={`text-[9px] leading-tight text-center block sm:hidden truncate max-w-[32px] ${
+                  isComplete ? "text-primary font-semibold"
+                  : isActive ? "text-foreground font-medium"
+                  : "text-muted-foreground"
+                }`}>
+                  {(PHASE_LABELS[phase] || phase).split(" ")[0]}
                 </span>
               </div>
 

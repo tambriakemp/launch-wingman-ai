@@ -181,7 +181,7 @@ const HabitTracker = () => {
 
         {/* Stats row */}
         {habits.length > 0 && (
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
               <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Target className="w-4 h-4 text-primary" />
