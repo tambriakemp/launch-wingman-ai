@@ -48,8 +48,8 @@ serve(async (req) => {
       customer_creation: customerId ? undefined : "always",
       line_items: [{ price: AI_TWIN_PRICE_ID, quantity: 1 }],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/ai-twin-formula?checkout=success`,
-      cancel_url: `${req.headers.get("origin")}/ai-twin-formula?canceled=true`,
+      success_url: `${req.headers.get("origin")}/ai-twin-formula/thank-you?checkout=success`,
+      cancel_url: `${req.headers.get("origin")}/ai-twin-formula`,
       metadata: {
         product: "ai_twin_formula",
         buyer_email: email,

@@ -135,6 +135,7 @@ const App = () => (
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/go" element={<SalesFunnel />} />
             <Route path="/ai-twin-formula" element={<AITwinFormula />} />
+            <Route path="/ai-twin-formula/thank-you" element={<AITwinThankYou />} />
             <Route path="/checkout/success" element={<CheckoutSuccess />} />
             
             {/* Onboarding flow (shown once after registration) */}
