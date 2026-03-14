@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const faqData = [
   {
@@ -109,6 +111,8 @@ const scrollToPricing = (e: React.MouseEvent) => {
 
 const AITwinFormula = () => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
 
   useEffect(() => {
     document.title = "The AI Twin Formula | Build a Brand Without Showing Your Face";
@@ -116,8 +120,42 @@ const AITwinFormula = () => {
     link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap";
     link.rel = "stylesheet";
     document.head.appendChild(link);
+
+    // Check for success/canceled params
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") === "success") {
+      toast.success("Payment successful! Check your email for Skool access.");
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (params.get("canceled") === "true") {
+      toast.info("Checkout was canceled.");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
     return () => { link.remove(); };
   }, []);
+
+  const handleCheckout = async () => {
+    if (!emailInput || !emailInput.includes("@")) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    setCheckoutLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-ai-twin-checkout", {
+        body: { email: emailInput },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (err: any) {
+      console.error("Checkout error:", err);
+      toast.error(err.message || "Failed to start checkout. Please try again.");
+      setCheckoutLoading(false);
+    }
+  };
 
   return (
     <>
@@ -128,7 +166,7 @@ const AITwinFormula = () => {
           className="text-center text-[0.85rem] font-semibold tracking-wide sticky top-0 z-[100]"
           style={{ background: "linear-gradient(90deg, #7C3AED, #D63384)", padding: "10px 20px", letterSpacing: "0.03em" }}
         >
-          🔥 Introductory price — <span style={{ color: "#D4A43A" }}>save $20 today</span> — price increases when the counter hits zero &nbsp;|&nbsp; 100% digital, instant access
+          🔥 Introductory price — <span style={{ color: "#D4A43A" }}>save $30 today</span> — price increases when the counter hits zero &nbsp;|&nbsp; 100% digital, instant access
         </div>
 
         {/* HERO */}
@@ -329,13 +367,13 @@ const AITwinFormula = () => {
                 <div className="font-bold text-base">Total Real-World Value</div>
                 <div className="flex items-baseline gap-3">
                   <span className="text-[1.1rem] line-through" style={{ color: "rgba(255,255,255,0.6)" }}>$519+</span>
-                  <span className="text-[1.6rem] font-black" style={{ background: "linear-gradient(135deg, #E85BA3, #9D65F5)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>$37</span>
+                  <span className="text-[1.6rem] font-black" style={{ background: "linear-gradient(135deg, #E85BA3, #9D65F5)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>$27</span>
                 </div>
               </div>
             </div>
             <div className="text-center mt-9">
               <a href="#pricing" onClick={scrollToPricing} className="inline-block text-white text-[1.05rem] font-bold rounded-full no-underline transition-all hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #D63384, #7C3AED)", padding: "16px 40px", boxShadow: "0 8px 32px rgba(214,51,132,0.35)" }}>
-                Get Instant Access for $37 →
+                Get Instant Access for $27 →
               </a>
               <p className="text-[0.8rem] mt-2.5" style={{ color: "rgba(255,255,255,0.4)" }}>One-time payment. No subscriptions. Lifetime access.</p>
             </div>
@@ -372,15 +410,28 @@ const AITwinFormula = () => {
             <h2 className="text-center text-[clamp(1.6rem,3.5vw,2.4rem)] font-extrabold leading-[1.25] mb-4 tracking-tight">One payment. Lifetime access. Real results.</h2>
             <div className="relative max-w-[520px] mx-auto mt-10 rounded-[24px] text-center" style={{ background: "linear-gradient(160deg, #1e1040, #1A1A2E)", border: "2px solid rgba(214,51,132,0.35)", padding: "48px", boxShadow: "0 20px 60px rgba(214,51,132,0.15)" }}>
               <div className="absolute left-1/2 -translate-x-1/2 -top-3.5 text-[0.75rem] font-bold tracking-[0.08em] uppercase rounded-full whitespace-nowrap text-white" style={{ background: "linear-gradient(135deg, #D63384, #7C3AED)", padding: "5px 18px" }}>
-                🔥 Introductory Offer — Save $20
+                🔥 Introductory Offer — Save $30
               </div>
               <div className="text-[0.85rem] font-semibold tracking-[0.08em] uppercase mb-2" style={{ color: "rgba(255,255,255,0.6)" }}>The AI Twin Formula</div>
               <div className="text-base line-through mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>Regular price: $57</div>
-              <div className="text-[4rem] font-black leading-none my-2" style={{ background: "linear-gradient(135deg, #E85BA3, #9D65F5)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>$37</div>
+              <div className="text-[4rem] font-black leading-none my-2" style={{ background: "linear-gradient(135deg, #E85BA3, #9D65F5)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>$27</div>
               <div className="text-[0.85rem] mb-8" style={{ color: "rgba(255,255,255,0.6)" }}>One-time payment · No monthly fees · Instant access</div>
-              <a href="https://www.skool.com" target="_blank" rel="noopener noreferrer" className="block w-full text-center text-white text-[1.05rem] font-bold rounded-full no-underline transition-all hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #D63384, #7C3AED)", padding: "16px 20px", boxShadow: "0 8px 32px rgba(214,51,132,0.35)" }}>
-                Yes — Give Me Instant Access →
-              </a>
+              <input
+                type="email"
+                placeholder="Enter your email address"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                className="w-full rounded-xl text-[0.95rem] mb-3 outline-none focus:ring-2 focus:ring-purple-500"
+                style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", padding: "14px 18px", color: "#fff" }}
+              />
+              <button
+                onClick={handleCheckout}
+                disabled={checkoutLoading}
+                className="block w-full text-center text-white text-[1.05rem] font-bold rounded-full no-underline transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                style={{ background: "linear-gradient(135deg, #D63384, #7C3AED)", padding: "16px 20px", boxShadow: "0 8px 32px rgba(214,51,132,0.35)", border: "none" }}
+              >
+                {checkoutLoading ? "Loading checkout..." : "Yes — Give Me Instant Access →"}
+              </button>
               <div className="text-left mt-6 mb-8 flex flex-col gap-2.5">
                 {pricingIncludes.map((line) => (
                   <div key={line} className="flex items-center gap-2.5 text-[0.9rem]">
@@ -449,7 +500,7 @@ const AITwinFormula = () => {
             <h2 className="text-[clamp(1.8rem,4vw,2.8rem)] font-black mb-4 tracking-tight">Your story is worth telling.<br />You don't have to show your face to tell it.</h2>
             <p className="max-w-[500px] mx-auto mb-9" style={{ color: "rgba(255,255,255,0.6)" }}>The tools exist. The system works. The only question is: are you going to use it?</p>
             <a href="#pricing" onClick={scrollToPricing} className="inline-block text-white text-[1.1rem] font-bold rounded-full no-underline transition-all hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #D63384, #7C3AED)", padding: "18px 48px", boxShadow: "0 8px 32px rgba(214,51,132,0.35)" }}>
-              Get The AI Twin Formula — $37 →
+              Get The AI Twin Formula — $27 →
             </a>
             <p className="mt-4 text-[0.8rem]" style={{ color: "rgba(255,255,255,0.4)" }}>🔒 Secure checkout &nbsp;·&nbsp; Instant access &nbsp;·&nbsp; 7-day guarantee</p>
           </div>

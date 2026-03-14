@@ -126,6 +126,23 @@ async function fireIncomingWebhooks(
   }
 }
 
+const SKOOL_WEBHOOK_BASE = "https://api2.skool.com/groups/launchely/webhooks/9f070ee6bddb4a8395df1bbd83de470a";
+
+// Send Skool community access webhook after AI Twin Formula purchase
+async function triggerSkoolAccess(email: string) {
+  try {
+    const skoolUrl = `${SKOOL_WEBHOOK_BASE}?email=${encodeURIComponent(email)}`;
+    const response = await fetch(skoolUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    logStep("Skool webhook sent", { email, status: response.status, ok: response.ok });
+  } catch (error) {
+    logStep("Skool webhook error", { email, error: String(error) });
+  }
+}
+
 // Notify admins about subscription events
 async function notifyAdmins(type: 'pro_signup' | 'pro_cancellation', email: string, userName?: string) {
   const baseUrl = Deno.env.get("SUPABASE_URL");
@@ -226,7 +243,13 @@ serve(async (req) => {
         }
         
         eventType = "subscription_started";
-        logStep("Checkout completed", { customerEmail, mode: session.mode });
+        logStep("Checkout completed", { customerEmail, mode: session.mode, metadata: session.metadata });
+
+        // If this is an AI Twin Formula purchase, trigger Skool community access
+        if (session.metadata?.product === "ai_twin_formula" && customerEmail && session.payment_status === "paid") {
+          logStep("AI Twin Formula purchase detected, triggering Skool access", { email: customerEmail });
+          EdgeRuntime.waitUntil(triggerSkoolAccess(customerEmail));
+        }
 
         // Sync order to SureContact E-Commerce tab and notify admins
         if (customerEmail) {
