@@ -31,6 +31,7 @@ import AdminBrandKit from "./pages/AdminBrandKit";
 import NotFound from "./pages/NotFound";
 import SalesFunnel from "./pages/SalesFunnel";
 import AITwinFormula from "./pages/AITwinFormula";
+import AITwinThankYou from "./pages/AITwinThankYou";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import MarketingHub from "./pages/MarketingHub";
