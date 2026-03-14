@@ -399,7 +399,7 @@ export const PlannerCalendarView = ({
         </div>
 
         {/* Upcoming tasks list */}
-        <div className="p-4 flex-1">
+        <div className="p-4">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-3">Upcoming</span>
           <div className="space-y-1">
             {tasks
