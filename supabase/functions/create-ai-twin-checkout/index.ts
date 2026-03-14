@@ -45,6 +45,7 @@ serve(async (req) => {
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       customer_email: customerId ? undefined : email,
+      customer_creation: customerId ? undefined : "always",
       line_items: [{ price: AI_TWIN_PRICE_ID, quantity: 1 }],
       mode: "payment",
       success_url: `${req.headers.get("origin")}/ai-twin-formula?checkout=success`,
