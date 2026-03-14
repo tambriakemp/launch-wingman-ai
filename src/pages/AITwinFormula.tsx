@@ -500,7 +500,7 @@ const AITwinFormula = () => {
             <h2 className="text-[clamp(1.8rem,4vw,2.8rem)] font-black mb-4 tracking-tight">Your story is worth telling.<br />You don't have to show your face to tell it.</h2>
             <p className="max-w-[500px] mx-auto mb-9" style={{ color: "rgba(255,255,255,0.6)" }}>The tools exist. The system works. The only question is: are you going to use it?</p>
             <a href="#pricing" onClick={scrollToPricing} className="inline-block text-white text-[1.1rem] font-bold rounded-full no-underline transition-all hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #D63384, #7C3AED)", padding: "18px 48px", boxShadow: "0 8px 32px rgba(214,51,132,0.35)" }}>
-              Get The AI Twin Formula — $37 →
+              Get The AI Twin Formula — $27 →
             </a>
             <p className="mt-4 text-[0.8rem]" style={{ color: "rgba(255,255,255,0.4)" }}>🔒 Secure checkout &nbsp;·&nbsp; Instant access &nbsp;·&nbsp; 7-day guarantee</p>
           </div>
