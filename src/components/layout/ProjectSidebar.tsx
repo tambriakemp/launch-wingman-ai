@@ -351,6 +351,7 @@ const SidebarContent = ({
                   { label: "Daily Page", href: "/daily", icon: BookOpen, isProOnly: true },
                   { label: "Goals", href: "/goals", icon: Target, isProOnly: true },
                   { label: "Brain Dump", href: "/brain-dump", icon: Brain, isProOnly: true },
+                  { label: "Weekly Review", href: "/weekly", icon: BarChart2, isProOnly: true },
                 ].map((item) => {
                   const isProLocked = item.isProOnly && !isPro && !hasAdminAccess;
                   if (isProLocked) {

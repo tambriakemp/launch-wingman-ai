@@ -540,6 +540,16 @@ const App = () => (
               }
             />
 
+            {/* Weekly Review */}
+            <Route
+              path="/weekly"
+              element={
+                <ProtectedRoute>
+                  <WeeklyReview />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Public short link redirect */}
             <Route path="/r/:code" element={<UTMRedirect />} />
             <Route path="/r/:code" element={<UTMRedirect />} />
