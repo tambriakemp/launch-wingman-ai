@@ -243,7 +243,13 @@ serve(async (req) => {
         }
         
         eventType = "subscription_started";
-        logStep("Checkout completed", { customerEmail, mode: session.mode });
+        logStep("Checkout completed", { customerEmail, mode: session.mode, metadata: session.metadata });
+
+        // If this is an AI Twin Formula purchase, trigger Skool community access
+        if (session.metadata?.product === "ai_twin_formula" && customerEmail && session.payment_status === "paid") {
+          logStep("AI Twin Formula purchase detected, triggering Skool access", { email: customerEmail });
+          EdgeRuntime.waitUntil(triggerSkoolAccess(customerEmail));
+        }
 
         // Sync order to SureContact E-Commerce tab and notify admins
         if (customerEmail) {
