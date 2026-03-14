@@ -241,7 +241,7 @@ const Goals = () => {
 
           {/* Filters */}
           {goals.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               {["active", "completed", "all"].map((s) => (
                 <button
                   key={s}
