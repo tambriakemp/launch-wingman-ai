@@ -166,7 +166,7 @@ const AITwinFormula = () => {
           className="text-center text-[0.85rem] font-semibold tracking-wide sticky top-0 z-[100]"
           style={{ background: "linear-gradient(90deg, #7C3AED, #D63384)", padding: "10px 20px", letterSpacing: "0.03em" }}
         >
-          🔥 Introductory price — <span style={{ color: "#D4A43A" }}>save $20 today</span> — price increases when the counter hits zero &nbsp;|&nbsp; 100% digital, instant access
+          🔥 Introductory price — <span style={{ color: "#D4A43A" }}>save $30 today</span> — price increases when the counter hits zero &nbsp;|&nbsp; 100% digital, instant access
         </div>
 
         {/* HERO */}
