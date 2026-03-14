@@ -34,6 +34,7 @@ import {
   Wand2,
   CalendarCheck,
   Flame,
+  Brain,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
 import { LaunchelyLogo } from "@/components/ui/LaunchelyLogo";
@@ -347,6 +348,8 @@ const SidebarContent = ({
                   { label: "Calendar", href: "/planner", icon: CalendarCheck, isProOnly: true },
                   { label: "Habits", href: "/habits", icon: Flame, isProOnly: true },
                   { label: "Daily Page", href: "/daily", icon: BookOpen, isProOnly: true },
+                  { label: "Goals", href: "/goals", icon: Target, isProOnly: true },
+                  { label: "Brain Dump", href: "/brain-dump", icon: Brain, isProOnly: true },
                 ].map((item) => {
                   const isProLocked = item.isProOnly && !isPro && !hasAdminAccess;
                   if (isProLocked) {

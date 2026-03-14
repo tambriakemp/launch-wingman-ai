@@ -253,6 +253,36 @@ export type Database = {
         }
         Relationships: []
       }
+      brain_dump_items: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          processed_as: string | null
+          processed_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          processed_as?: string | null
+          processed_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          processed_as?: string | null
+          processed_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       brand_colors: {
         Row: {
           created_at: string
@@ -1308,6 +1338,92 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      goal_milestones: {
+        Row: {
+          created_at: string
+          due_date: string | null
+          goal_id: string
+          id: string
+          is_done: boolean
+          position: number
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          due_date?: string | null
+          goal_id: string
+          id?: string
+          is_done?: boolean
+          position?: number
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string | null
+          goal_id?: string
+          id?: string
+          is_done?: boolean
+          position?: number
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_milestones_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goals: {
+        Row: {
+          category: string
+          color: string
+          created_at: string
+          description: string | null
+          id: string
+          quarter: string | null
+          status: string
+          target_date: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          why_statement: string | null
+        }
+        Insert: {
+          category?: string
+          color?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          quarter?: string | null
+          status?: string
+          target_date?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          why_statement?: string | null
+        }
+        Update: {
+          category?: string
+          color?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          quarter?: string | null
+          status?: string
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          why_statement?: string | null
+        }
+        Relationships: []
       }
       habit_completions: {
         Row: {

@@ -84,6 +84,8 @@ import AIStudio from "./pages/AIStudio";
 import Planner from "./pages/Planner";
 import HabitTracker from "./pages/HabitTracker";
 import DailyPage from "./pages/DailyPage";
+import Goals from "./pages/Goals";
+import BrainDump from "./pages/BrainDump";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -513,6 +515,26 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <DailyPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Goals */}
+            <Route
+              path="/goals"
+              element={
+                <ProtectedRoute>
+                  <Goals />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Brain Dump */}
+            <Route
+              path="/brain-dump"
+              element={
+                <ProtectedRoute>
+                  <BrainDump />
                 </ProtectedRoute>
               }
             />
