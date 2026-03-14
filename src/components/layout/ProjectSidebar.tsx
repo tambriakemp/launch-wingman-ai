@@ -340,6 +340,55 @@ const SidebarContent = ({
               </div>
               <Separator className="my-2 bg-sidebar-border" />
               <div className="mb-1.5 px-2">
+                <span className="text-[11px] font-semibold text-sidebar-foreground uppercase tracking-wider">Planner</span>
+              </div>
+              <div className="space-y-0.5">
+                {[
+                  { label: "Calendar", href: "/planner", icon: CalendarCheck, isProOnly: true },
+                  { label: "Habits", href: "/habits", icon: Flame, isProOnly: true },
+                  { label: "Daily Page", href: "/daily", icon: BookOpen, isProOnly: true },
+                ].map((item) => {
+                  const isProLocked = item.isProOnly && !isPro && !hasAdminAccess;
+                  if (isProLocked) {
+                    return (
+                      <Tooltip key={item.label}>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => onUpgradeClick(item.label)}
+                            className={cn(
+                              "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm w-full text-left",
+                              "text-sidebar-foreground/40 hover:bg-sidebar-accent/30 cursor-pointer"
+                            )}
+                          >
+                            <item.icon className="w-4 h-4" />
+                            <span className="flex-1">{item.label}</span>
+                            <Crown className="w-3 h-3 text-primary" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right"><p>Pro feature - Upgrade to access</p></TooltipContent>
+                      </Tooltip>
+                    );
+                  }
+                  const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + "/");
+                  return (
+                    <button
+                      key={item.label}
+                      onClick={() => handleNavClick(item.href)}
+                      className={cn(
+                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
+                        isActive
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                      )}
+                    >
+                      <item.icon className={cn("w-4 h-4", isActive && "text-sidebar-primary")} />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <Separator className="my-2 bg-sidebar-border" />
+              <div className="mb-1.5 px-2">
                 <span className="text-[11px] font-semibold text-sidebar-foreground uppercase tracking-wider">Resources</span>
               </div>
               <div className="space-y-0.5">
