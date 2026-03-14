@@ -86,6 +86,7 @@ import HabitTracker from "./pages/HabitTracker";
 import DailyPage from "./pages/DailyPage";
 import Goals from "./pages/Goals";
 import BrainDump from "./pages/BrainDump";
+import WeeklyReview from "./pages/WeeklyReview";
 
 const queryClient = new QueryClient({
   defaultOptions: {
