@@ -373,7 +373,7 @@ const AITwinFormula = () => {
             </div>
             <div className="text-center mt-9">
               <a href="#pricing" onClick={scrollToPricing} className="inline-block text-white text-[1.05rem] font-bold rounded-full no-underline transition-all hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #D63384, #7C3AED)", padding: "16px 40px", boxShadow: "0 8px 32px rgba(214,51,132,0.35)" }}>
-                Get Instant Access for $37 →
+                Get Instant Access for $27 →
               </a>
               <p className="text-[0.8rem] mt-2.5" style={{ color: "rgba(255,255,255,0.4)" }}>One-time payment. No subscriptions. Lifetime access.</p>
             </div>
