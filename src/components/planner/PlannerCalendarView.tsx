@@ -429,6 +429,69 @@ export const PlannerCalendarView = ({
             )}
           </div>
         </div>
+
+        {/* Today's Priorities */}
+        <div className="p-4 border-t border-border">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-3 flex items-center gap-1.5">
+            <Target className="w-3.5 h-3.5" />
+            Today's Priorities
+          </span>
+          {priorities.length === 0 ? (
+            <Link to="/daily" className="text-xs text-primary hover:underline px-2">
+              Set priorities on Daily Page →
+            </Link>
+          ) : (
+            <div className="space-y-1">
+              {priorities.map(p => (
+                <button
+                  key={p.num}
+                  className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg hover:bg-accent/50 transition-colors text-left"
+                  onClick={() => togglePriority(p.num)}
+                >
+                  {p.done ? (
+                    <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                  ) : (
+                    <Circle className="w-4 h-4 text-muted-foreground shrink-0" />
+                  )}
+                  <span className={cn("text-xs truncate", p.done && "line-through text-muted-foreground")}>{p.text}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Habits */}
+        <div className="p-4 border-t border-border">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-3 flex items-center gap-1.5">
+            <Flame className="w-3.5 h-3.5" />
+            Habits
+          </span>
+          {sidebarHabits.length === 0 ? (
+            <Link to="/habits" className="text-xs text-primary hover:underline px-2">
+              Create habits →
+            </Link>
+          ) : (
+            <div className="space-y-1">
+              {sidebarHabits.map((habit: any) => {
+                const isDone = habitCompletions.some((c: any) => c.habit_id === habit.id);
+                return (
+                  <button
+                    key={habit.id}
+                    className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg hover:bg-accent/50 transition-colors text-left"
+                    onClick={() => toggleHabitCompletion(habit.id)}
+                  >
+                    {isDone ? (
+                      <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: habit.color }} />
+                    ) : (
+                      <Circle className="w-4 h-4 text-muted-foreground shrink-0" />
+                    )}
+                    <span className={cn("text-xs truncate", isDone && "line-through text-muted-foreground")}>{habit.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ===== MAIN CALENDAR AREA ===== */}
