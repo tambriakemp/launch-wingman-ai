@@ -84,6 +84,8 @@ import AIStudio from "./pages/AIStudio";
 import Planner from "./pages/Planner";
 import HabitTracker from "./pages/HabitTracker";
 import DailyPage from "./pages/DailyPage";
+import Goals from "./pages/Goals";
+import BrainDump from "./pages/BrainDump";
 
 const queryClient = new QueryClient({
   defaultOptions: {
