@@ -35,6 +35,7 @@ import {
   CalendarCheck,
   Flame,
   Brain,
+  BarChart2,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
 import { LaunchelyLogo } from "@/components/ui/LaunchelyLogo";
