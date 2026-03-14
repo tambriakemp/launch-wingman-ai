@@ -64,7 +64,8 @@ export function HabitGrid({ habits, completions, currentMonth, onToggle, onEdit,
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card">
+    <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div className="min-w-[600px] rounded-xl border border-border bg-card">
       {/* Day header row */}
       <div className="flex items-center border-b border-border bg-muted/30">
         <div className="w-[200px] shrink-0" />
@@ -161,6 +162,7 @@ export function HabitGrid({ habits, completions, currentMonth, onToggle, onEdit,
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );

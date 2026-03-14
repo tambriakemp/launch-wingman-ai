@@ -204,7 +204,7 @@ const Goals = () => {
 
           {/* Stats */}
           {goals.length > 0 && (
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Target className="w-4 h-4 text-primary" />
@@ -241,13 +241,13 @@ const Goals = () => {
 
           {/* Filters */}
           {goals.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               {["active", "completed", "all"].map((s) => (
                 <button
                   key={s}
                   onClick={() => setFilterStatus(s)}
                   className={cn(
-                    "text-xs px-3 py-1.5 rounded-full border transition-colors capitalize",
+                    "text-xs px-2.5 py-1 rounded-full border transition-colors capitalize",
                     filterStatus === s
                       ? "bg-primary text-primary-foreground border-primary"
                       : "border-border text-muted-foreground hover:border-primary/40"
@@ -262,7 +262,7 @@ const Goals = () => {
                   key={c}
                   onClick={() => setFilterCategory(c)}
                   className={cn(
-                    "text-xs px-3 py-1.5 rounded-full border transition-colors capitalize",
+                    "text-xs px-2.5 py-1 rounded-full border transition-colors capitalize",
                     filterCategory === c
                       ? "bg-primary text-primary-foreground border-primary"
                       : "border-border text-muted-foreground hover:border-primary/40"
