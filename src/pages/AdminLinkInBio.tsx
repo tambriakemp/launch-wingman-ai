@@ -76,6 +76,7 @@ const EMPTY_CARD: Omit<CardData, "id"> = {
 const ICON_OPTIONS = [
   "Instagram", "Facebook", "Youtube", "Music2", "Mail", "Link2",
   "ExternalLink", "Twitter", "Linkedin", "Github", "Globe",
+  "TikTok", "Pinterest", "HubSpot",
 ];
 
 const PLATFORM_OPTIONS = [
@@ -452,12 +453,14 @@ const HEADER_FIELDS = [
   { key: "header_bio_color", label: "Bio Text Color", type: "color" },
   { key: "header_icon_color", label: "Social Icon Color", type: "color" },
   { key: "header_icon_bg_color", label: "Social Icon Background", type: "color" },
+  { key: "social_icon_size", label: "Social Icon Size (px)", type: "text" },
 ];
 
 const COLOR_FIELDS = [
   { key: "page_bg_color", label: "Page Background", type: "color" },
   { key: "card_bg_color", label: "Card Background", type: "color" },
   { key: "card_border_color", label: "Card Border", type: "color" },
+  { key: "card_gradient_color", label: "Card Image Gradient", type: "color" },
   { key: "button_bg_color", label: "Button Background", type: "color" },
   { key: "button_text_color", label: "Button Text", type: "color" },
   { key: "accent_color", label: "Accent / Highlight", type: "color" },
