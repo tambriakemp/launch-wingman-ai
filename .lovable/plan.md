@@ -1,16 +1,66 @@
 
 
-# Fix Sidebar Card Background & Week Grid Alignment
+## Fix: Canva URL swap bug in bulk import
 
-## Changes in `src/components/planner/PlannerCalendarView.tsx`
+### Problem
 
-### 1. Card background color
-Change `bg-sidebar` on the three card containers (Mini Calendar, My List, Categories) to match the main navigation background. The nav uses `bg-sidebar` too — so the cards blend in. Use a slightly lighter shade like `bg-sidebar-accent` (which is `40 6% 15%`) to make cards distinct from the nav, or use `bg-[hsl(40,6%,12%)]` for a subtle lift.
+When importing via the "Canva Bulk Import" paste box, `resource_url` and `preview_url` sometimes get swapped in the database. This causes:
+- **Card click** (should open design in Canva) → opens the preview instead
+- **Eye icon** (should show preview) → opens the design editor instead
 
-Lines affected: ~205, ~273, ~295 — the three `rounded-xl bg-sidebar p-4` divs.
+### Root Cause
 
-### 2. Vertical line alignment fix
-The day column headers are a fixed row above the scrollable time grid. The scrollbar in the time grid area takes up space, causing the columns below to be narrower than the headers. Fix by adding `overflow-y-scroll` (always show scrollbar space) to the scroll container, or better, add a matching right padding/margin to the header row to account for scrollbar width. The cleanest approach: wrap both header and grid in the same scroll container so they share the same width context.
+In `supabase/functions/bulk-import-canva/index.ts`, two issues combine:
 
-**Approach**: Move the day column headers inside the `overflow-y-auto` scroll container (before the grid div), and make them sticky at top with `sticky top-0 z-10 bg-background`. This ensures headers and grid columns share the exact same width.
+1. **Fallback logic (line 364)**: When no `templateUrl` is identified, the code falls through to use `previewUrl` as the `resource_url`:
+   ```ts
+   const resourceUrl = design.templateUrl || design.previewUrl || design.editUrl;
+   ```
+   Then on line 411, `preview_url` is also set to `design.previewUrl` — so both fields get the same preview URL, or worse, the preview URL lands in `resource_url`.
+
+2. **URL classification ambiguity (line 53-58)**: A Canva `/view` link with `mode=preview` query param is classified as `preview`, but the `/view` path segment could also serve as a usable template link. When users paste a single `/view?mode=preview` link, there's no `templateUrl`, so the preview URL incorrectly becomes the `resource_url`.
+
+### Fix
+
+**File: `supabase/functions/bulk-import-canva/index.ts`**
+
+1. **When only a preview URL exists, derive a template URL from it**: If a `/watch` or `/view?mode=preview` URL is the only link, construct the template URL by converting `/watch` to `/view` or stripping `mode=preview`. Store the original as `preview_url` and the derived version as `resource_url`.
+
+2. **When only a template URL exists, derive a preview URL**: Convert `/view` to `/watch` format for the preview link, so both fields are populated correctly.
+
+3. **Update the import block** (lines 361-415) to use this derivation logic before inserting, ensuring `resource_url` always points to the template/design link and `preview_url` always points to the watch/preview link.
+
+### Specific Changes
+
+Add a helper function:
+```ts
+function deriveUrls(design: ParsedDesign): { resourceUrl: string; previewUrl: string | null } {
+  // Prefer template URL for resource_url
+  if (design.templateUrl) {
+    // Derive preview from template if missing
+    const preview = design.previewUrl || design.templateUrl.replace(/\/view(\?|$)/, '/watch$1');
+    return { resourceUrl: design.templateUrl, previewUrl: preview !== design.templateUrl ? preview : null };
+  }
+  
+  // Only preview URL available — derive template from it
+  if (design.previewUrl) {
+    const templateUrl = design.previewUrl
+      .replace(/\/watch(\?|$)/, '/view$1')
+      .replace(/([?&])mode=preview(&|$)/, '$1')
+      .replace(/[?&]$/, '');
+    return { resourceUrl: templateUrl, previewUrl: design.previewUrl };
+  }
+  
+  // Only edit URL
+  return { resourceUrl: design.editUrl!, previewUrl: null };
+}
+```
+
+Update the insert block (~line 405-415) to use `deriveUrls(design)` instead of raw template/preview fields.
+
+**Redeploy** the `bulk-import-canva` edge function after changes.
+
+### Scope
+- One edge function file modified and redeployed
+- No frontend changes needed — `ResourceCard` click logic is already correct when URLs are stored in the right fields
 
