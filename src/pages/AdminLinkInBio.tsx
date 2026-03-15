@@ -76,6 +76,7 @@ const EMPTY_CARD: Omit<CardData, "id"> = {
 const ICON_OPTIONS = [
   "Instagram", "Facebook", "Youtube", "Music2", "Mail", "Link2",
   "ExternalLink", "Twitter", "Linkedin", "Github", "Globe",
+  "TikTok", "Pinterest", "HubSpot",
 ];
 
 const PLATFORM_OPTIONS = [
