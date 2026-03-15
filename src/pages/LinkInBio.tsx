@@ -154,6 +154,7 @@ function LinkCard({ card, branding, onCtaClick, children }: { card: LinkCardData
           href={card.cta_url || "#"}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={onCtaClick}
           className="block w-full text-center font-bold transition-transform duration-150 hover:scale-[0.98] active:scale-[0.96]"
           style={{ background: btnBg, color: btnText, height: 44, lineHeight: "44px", borderRadius: 8, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 15 }}
         >
