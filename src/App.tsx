@@ -87,6 +87,7 @@ import DailyPage from "./pages/DailyPage";
 import Goals from "./pages/Goals";
 import BrainDump from "./pages/BrainDump";
 import WeeklyReview from "./pages/WeeklyReview";
+import LinkInBio from "./pages/LinkInBio";
 
 const queryClient = new QueryClient({
   defaultOptions: {
