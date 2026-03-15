@@ -453,6 +453,7 @@ const HEADER_FIELDS = [
   { key: "header_bio_color", label: "Bio Text Color", type: "color" },
   { key: "header_icon_color", label: "Social Icon Color", type: "color" },
   { key: "header_icon_bg_color", label: "Social Icon Background", type: "color" },
+  { key: "social_icon_size", label: "Social Icon Size (px)", type: "text" },
 ];
 
 const COLOR_FIELDS = [
