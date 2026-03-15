@@ -1788,6 +1788,60 @@ export type Database = {
         }
         Relationships: []
       }
+      linkinbio_settings: {
+        Row: {
+          id: string
+          setting_key: string
+          setting_value: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          setting_key: string
+          setting_value: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      linkinbio_social_links: {
+        Row: {
+          created_at: string
+          icon_name: string
+          id: string
+          is_visible: boolean
+          platform: string
+          position: number
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          icon_name?: string
+          id?: string
+          is_visible?: boolean
+          platform: string
+          position?: number
+          updated_at?: string
+          url?: string
+        }
+        Update: {
+          created_at?: string
+          icon_name?: string
+          id?: string
+          is_visible?: boolean
+          platform?: string
+          position?: number
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       metric_updates: {
         Row: {
           created_at: string
