@@ -1728,6 +1728,66 @@ export type Database = {
         }
         Relationships: []
       }
+      linkinbio_cards: {
+        Row: {
+          badge_color: string | null
+          badge_text: string | null
+          card_type: string
+          created_at: string
+          cta_text: string
+          cta_url: string
+          description: string
+          highlight: boolean
+          id: string
+          image_url: string | null
+          is_visible: boolean
+          position: number
+          price_current: string | null
+          price_note: string | null
+          price_original: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          badge_color?: string | null
+          badge_text?: string | null
+          card_type?: string
+          created_at?: string
+          cta_text?: string
+          cta_url?: string
+          description?: string
+          highlight?: boolean
+          id?: string
+          image_url?: string | null
+          is_visible?: boolean
+          position?: number
+          price_current?: string | null
+          price_note?: string | null
+          price_original?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          badge_color?: string | null
+          badge_text?: string | null
+          card_type?: string
+          created_at?: string
+          cta_text?: string
+          cta_url?: string
+          description?: string
+          highlight?: boolean
+          id?: string
+          image_url?: string | null
+          is_visible?: boolean
+          position?: number
+          price_current?: string | null
+          price_note?: string | null
+          price_original?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       metric_updates: {
         Row: {
           created_at: string
