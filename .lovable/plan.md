@@ -1,16 +1,33 @@
 
 
-# Fix Sidebar Card Background & Week Grid Alignment
+## Fix Swapped Canva URLs in Existing Resources
 
-## Changes in `src/components/planner/PlannerCalendarView.tsx`
+### Problem
+9 resources have `mode=preview` (preview/watch links) stored in `resource_url` instead of the template/design link. This causes card clicks to open the preview instead of the Canva editor.
 
-### 1. Card background color
-Change `bg-sidebar` on the three card containers (Mini Calendar, My List, Categories) to match the main navigation background. The nav uses `bg-sidebar` too — so the cards blend in. Use a slightly lighter shade like `bg-sidebar-accent` (which is `40 6% 15%`) to make cards distinct from the nav, or use `bg-[hsl(40,6%,12%)]` for a subtle lift.
+### Affected Resources
 
-Lines affected: ~205, ~273, ~295 — the three `rounded-xl bg-sidebar p-4` divs.
+**Swapped (template link is in preview_url, preview link is in resource_url):**
+- "Everyday Happiness" — swap resource_url and preview_url
+- "Limiting Beliefs" — swap resource_url and preview_url
 
-### 2. Vertical line alignment fix
-The day column headers are a fixed row above the scrollable time grid. The scrollbar in the time grid area takes up space, causing the columns below to be narrower than the headers. Fix by adding `overflow-y-scroll` (always show scrollbar space) to the scroll container, or better, add a matching right padding/margin to the header row to account for scrollbar width. The cleanest approach: wrap both header and grid in the same scroll container so they share the same width context.
+**Only preview link exists (preview_url is null):**
+- "40 Etsy Mockup Templates for Digital Products"
+- "Melanin Tips and Tricks"
+- "Millie - Bold and Luxury"
+- "Modern & Ambitious Entrepreneur"
+- "Motivating"
+- "Paris"
 
-**Approach**: Move the day column headers inside the `overflow-y-auto` scroll container (before the grid div), and make them sticky at top with `sticky top-0 z-10 bg-background`. This ensures headers and grid columns share the exact same width.
+For these 6, move current resource_url → preview_url, then derive a template URL by stripping `&mode=preview` from the URL.
+
+**Both fields have same preview link:**
+- "Social Media Coach II" — derive template URL by stripping `&mode=preview`, keep original as preview_url.
+
+### Implementation
+Run 9 UPDATE statements against the database using the data insert tool. No code changes needed — the edge function fix from the previous update will prevent this from happening on future imports.
+
+### Result
+- Card click → opens Canva design/template (correct)
+- Eye icon → opens preview (correct)
 
