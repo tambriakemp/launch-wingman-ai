@@ -32,6 +32,27 @@ interface ImportResult {
   designs: ParsedDesign[];
 }
 
+function deriveUrls(design: ParsedDesign): { resourceUrl: string; previewUrl: string | null } {
+  // Prefer template URL for resource_url (the "use this template" link)
+  if (design.templateUrl) {
+    // Derive preview from template if missing: /view → /watch
+    const preview = design.previewUrl || design.templateUrl.replace(/\/view(\?|$)/, '/watch$1');
+    return { resourceUrl: design.templateUrl, previewUrl: preview !== design.templateUrl ? preview : null };
+  }
+
+  // Only preview URL available — derive template from it
+  if (design.previewUrl) {
+    const templateUrl = design.previewUrl
+      .replace(/\/watch(\?|$)/, '/view$1')
+      .replace(/([?&])mode=preview(&|$)/, '$1')
+      .replace(/[?&]$/, '');
+    return { resourceUrl: templateUrl, previewUrl: design.previewUrl };
+  }
+
+  // Only edit URL
+  return { resourceUrl: design.editUrl!, previewUrl: null };
+}
+
 function parseCanvaUrl(url: string): CanvaLink | null {
   try {
     const urlObj = new URL(url.trim());
