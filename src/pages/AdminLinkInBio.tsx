@@ -537,19 +537,30 @@ function BrandingTab() {
       );
     }
     if (field.type === "image") {
+      const folder = field.key.includes("profile") ? "profile" : "hero";
       return (
         <div key={field.key} className="space-y-2 col-span-full">
           <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
             <ImageIcon className="w-3.5 h-3.5" /> {field.label}
           </Label>
-          <Input
-            value={settings[field.key] || ""}
-            onChange={e => updateSetting(field.key, e.target.value)}
-            placeholder="https://..."
-          />
+          <div className="flex items-center gap-2">
+            <Input
+              value={settings[field.key] || ""}
+              onChange={e => updateSetting(field.key, e.target.value)}
+              placeholder="https://... or upload"
+              className="flex-1"
+            />
+            <ImageUploadButton onUploaded={(url) => updateSetting(field.key, url)} folder={folder} />
+          </div>
           {settings[field.key] && (
             <div className="relative rounded-lg overflow-hidden border border-border max-w-[240px]" style={{ aspectRatio: field.key === "profile_image_url" ? "1/1" : "3/4" }}>
               <img src={settings[field.key]} alt={field.label} className="w-full h-full object-cover" />
+              <button
+                onClick={() => updateSetting(field.key, "")}
+                className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
           <AiImageGenerator onGenerated={(url) => updateSetting(field.key, url)} />
