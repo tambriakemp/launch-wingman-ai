@@ -75,6 +75,7 @@ type BrandingMap = Record<string, string>;
 function LinkCard({ card, branding, children }: { card: LinkCardData; branding: BrandingMap; children?: React.ReactNode }) {
   const cardBg = branding.card_bg_color || "#1C1C1E";
   const cardBorder = branding.card_border_color || "#2A2A2C";
+  const cardGradient = branding.card_gradient_color || cardBg;
   const accent = branding.accent_color || "#C9A96E";
   const btnBg = branding.button_bg_color || "#FFFFFF";
   const btnText = branding.button_text_color || "#0A0A0A";
