@@ -292,6 +292,7 @@ const LinkInBio = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={s.platform}
+                      onClick={() => trackClick("social", s.id, s.platform, href)}
                       className="transition-opacity duration-150 hover:opacity-60 flex items-center justify-center"
                       style={{ color: headerIconColor, width: socialIconSize, height: socialIconSize, borderRadius: "50%", background: headerIconBg }}
                     >
