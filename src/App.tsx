@@ -439,6 +439,14 @@ const App = () => (
                 </ProtectedAdminRoute>
               }
             />
+            <Route
+              path="/admin/link-in-bio"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLinkInBio />
+                </ProtectedAdminRoute>
+              }
+            />
             {/* Marketing Hub routes (admin only) */}
             <Route
               path="/marketing-hub"
