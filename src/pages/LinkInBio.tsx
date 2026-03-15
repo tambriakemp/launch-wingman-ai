@@ -176,6 +176,7 @@ const LinkInBio = () => {
   const headerBioColor = branding.header_bio_color || bodyColor;
   const headerIconColor = branding.header_icon_color || headingColor;
   const headerIconBg = branding.header_icon_bg_color || "rgba(255,255,255,0.1)";
+  const socialIconSize = parseInt(branding.social_icon_size || "32", 10);
   const btnBg = branding.button_bg_color || "#FFFFFF";
   const btnText = branding.button_text_color || "#0A0A0A";
   const cardBorder = branding.card_border_color || "#333";
