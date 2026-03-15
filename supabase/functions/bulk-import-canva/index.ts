@@ -381,9 +381,9 @@ serve(async (req) => {
 
     for (const design of designs) {
       try {
-        // Use template URL if available, otherwise fall back to preview or edit URL
-        const resourceUrl = design.templateUrl || design.previewUrl || design.editUrl;
-        if (!resourceUrl) {
+        // Derive correct resource_url (template/design) and preview_url (watch/preview)
+        const derived = deriveUrls(design);
+        if (!derived.resourceUrl) {
           result.skipped++;
           continue;
         }
@@ -398,26 +398,24 @@ serve(async (req) => {
         }
 
         if (design.isDuplicate && design.existingResourceId) {
-          // Update existing resource with preview URL if missing
+          // Update existing resource with correct URLs
           const updateData: Record<string, string | null> = {};
           
-          if (design.previewUrl) {
-            updateData.preview_url = design.previewUrl;
+          if (derived.previewUrl) {
+            updateData.preview_url = derived.previewUrl;
           }
+          // Also fix resource_url if it was previously swapped
+          updateData.resource_url = derived.resourceUrl;
           
-          if (Object.keys(updateData).length > 0) {
-            const { error: updateError } = await supabase
-              .from('content_vault_resources')
-              .update(updateData)
-              .eq('id', design.existingResourceId);
+          const { error: updateError } = await supabase
+            .from('content_vault_resources')
+            .update(updateData)
+            .eq('id', design.existingResourceId);
 
-            if (updateError) {
-              result.errors.push(`Failed to update ${design.designId}: ${updateError.message}`);
-            } else {
-              result.updated++;
-            }
+          if (updateError) {
+            result.errors.push(`Failed to update ${design.designId}: ${updateError.message}`);
           } else {
-            result.skipped++;
+            result.updated++;
           }
         } else {
           // Insert new resource
@@ -428,8 +426,8 @@ serve(async (req) => {
             .insert({
               subcategory_id: targetSubcategoryId,
               title,
-              resource_url: resourceUrl,
-              preview_url: design.previewUrl,
+              resource_url: derived.resourceUrl,
+              preview_url: derived.previewUrl,
               cover_image_url: cachedThumbnailUrl,
               resource_type: 'canva_link',
               position: nextPosition++,
