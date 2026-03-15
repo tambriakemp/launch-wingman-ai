@@ -168,6 +168,7 @@ const LinkInBio = () => {
   const [cards, setCards] = useState<LinkCardData[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLinkData[]>([]);
   const [branding, setBranding] = useState<BrandingMap>({});
+  const [isLoaded, setIsLoaded] = useState(false);
   const [email, setEmail] = useState("");
   const [submitState, setSubmitState] = useState<"idle" | "sending" | "success">("idle");
 
