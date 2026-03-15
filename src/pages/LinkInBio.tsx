@@ -242,10 +242,11 @@ const LinkInBio = () => {
               <div className="flex items-center justify-center gap-2 mt-5 flex-wrap">
                 {socialLinks.map((s) => {
                   const IconComp = ICON_MAP[s.icon_name] || Link2;
+                  const href = s.url.includes("@") && !s.url.startsWith("mailto:") ? `mailto:${s.url}` : s.url;
                   return (
                     <a
                       key={s.id}
-                      href={s.url}
+                      href={href}
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={s.platform}
