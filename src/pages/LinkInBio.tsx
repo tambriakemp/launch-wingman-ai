@@ -338,7 +338,7 @@ const LinkInBio = () => {
                   </form>
                 </LinkCard>
               ) : (
-                <LinkCard key={card.id} card={card} branding={branding} />
+                <LinkCard key={card.id} card={card} branding={branding} onCtaClick={() => trackClick("card_cta", card.id, card.title, card.cta_url)} />
               )
             )}
           </div>
