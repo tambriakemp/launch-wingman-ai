@@ -186,6 +186,7 @@ const LinkInBio = () => {
         (settingsRes.data as unknown as { setting_key: string; setting_value: string }[]).forEach(s => { map[s.setting_key] = s.setting_value; });
         setBranding(map);
       }
+      setIsLoaded(true);
     });
   }, []);
 
