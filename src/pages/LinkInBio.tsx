@@ -177,7 +177,7 @@ const LinkInBio = () => {
                       rel="noopener noreferrer"
                       aria-label={s.platform}
                       className="transition-opacity duration-150 hover:opacity-60 flex items-center justify-center"
-                      style={{ color: headingColor, width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.1)" }}
+                      style={{ color: headerIconColor, width: 40, height: 40, borderRadius: "50%", background: headerIconBg }}
                     >
                       <IconComp size={20} strokeWidth={1.8} />
                     </a>
