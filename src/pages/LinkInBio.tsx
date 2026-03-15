@@ -209,6 +209,17 @@ const LinkInBio = () => {
     }
   };
 
+  const trackClick = useCallback((linkType: string, linkId: string, linkLabel: string, linkUrl: string) => {
+    supabase.from("linkinbio_clicks" as any).insert({
+      link_type: linkType,
+      link_id: linkId,
+      link_label: linkLabel,
+      link_url: linkUrl,
+      referrer: document.referrer || null,
+      user_agent: navigator.userAgent || null,
+    } as any).then(() => {});
+  }, []);
+
   const pageBg = branding.page_bg_color || "#0A0A0A";
   const accent = branding.accent_color || "#C9A96E";
   const headingColor = branding.heading_text_color || "#FFFFFF";
