@@ -138,6 +138,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/go" element={<SalesFunnel />} />
+            <Route path="/links" element={<LinkInBio />} />
             <Route path="/ai-twin-formula" element={<AITwinFormula />} />
             <Route path="/ai-twin-formula/thank-you" element={<AITwinThankYou />} />
             <Route path="/checkout/success" element={<CheckoutSuccess />} />
