@@ -215,7 +215,7 @@ const LinkInBio = () => {
     <>
       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
 
-      <div className="min-h-screen w-full" style={{ background: pageBg, fontFamily: "'Inter', sans-serif" }}>
+      <div className="min-h-screen w-full transition-opacity duration-300" style={{ background: pageBg, fontFamily: "'Inter', sans-serif", opacity: isLoaded ? 1 : 0 }}>
         {/* ── HERO HEADER ── */}
         <div className="relative w-full" style={{ maxWidth: 480, margin: "0 auto" }}>
          <div className="relative w-full overflow-hidden" style={{ aspectRatio: "3/4", maxHeight: 520, background: pageBg }}>
