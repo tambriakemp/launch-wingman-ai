@@ -157,10 +157,10 @@ const LinkInBio = () => {
           </div>
 
           <div className="relative text-center -mt-28 z-10 px-5">
-            <h1 className="font-extrabold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 32, color: headingColor, marginBottom: 8 }}>
+            <h1 className="font-extrabold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 32, color: headerNameColor, marginBottom: 8 }}>
               {branding.brand_name || "Launchely"}
             </h1>
-            <p style={{ fontSize: 15, color: bodyColor, lineHeight: 1.5, maxWidth: 340, margin: "0 auto" }}>
+            <p style={{ fontSize: 15, color: headerBioColor, lineHeight: 1.5, maxWidth: 340, margin: "0 auto" }}>
               {branding.bio_text || "Laid off tech girl building in public 🛠️  |  Life habits + launch tools 👇🏽"}
             </p>
 
