@@ -1,16 +1,23 @@
 
 
-# Fix Sidebar Card Background & Week Grid Alignment
+## Fix: Email link prefix
 
-## Changes in `src/components/planner/PlannerCalendarView.tsx`
+The only actual code issue is the Email social link. The URL stored is `hello@launchely.com` without a `mailto:` prefix, so clicking it tries to navigate to it as a web URL.
 
-### 1. Card background color
-Change `bg-sidebar` on the three card containers (Mini Calendar, My List, Categories) to match the main navigation background. The nav uses `bg-sidebar` too — so the cards blend in. Use a slightly lighter shade like `bg-sidebar-accent` (which is `40 6% 15%`) to make cards distinct from the nav, or use `bg-[hsl(40,6%,12%)]` for a subtle lift.
+### Change in `src/pages/LinkInBio.tsx`
 
-Lines affected: ~205, ~273, ~295 — the three `rounded-xl bg-sidebar p-4` divs.
+In the social links rendering loop, add logic to prefix `mailto:` for email URLs that don't have a protocol:
 
-### 2. Vertical line alignment fix
-The day column headers are a fixed row above the scrollable time grid. The scrollbar in the time grid area takes up space, causing the columns below to be narrower than the headers. Fix by adding `overflow-y-scroll` (always show scrollbar space) to the scroll container, or better, add a matching right padding/margin to the header row to account for scrollbar width. The cleanest approach: wrap both header and grid in the same scroll container so they share the same width context.
+```tsx
+// Before the <a> tag, compute the final href
+const href = s.url.includes("@") && !s.url.startsWith("mailto:") 
+  ? `mailto:${s.url}` 
+  : s.url;
+```
 
-**Approach**: Move the day column headers inside the `overflow-y-auto` scroll container (before the grid div), and make them sticky at top with `sticky top-0 z-10 bg-background`. This ensures headers and grid columns share the exact same width.
+Then use `href={href}` instead of `href={s.url}`.
+
+### No other changes needed
+
+The "connection refused" for Instagram/TikTok/etc. is a preview sandbox restriction, not a code issue. These links work correctly on the published site.
 
