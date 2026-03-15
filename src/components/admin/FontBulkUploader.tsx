@@ -21,27 +21,24 @@ const SUBCATEGORIES = [
   { id: "ef52e7b4-4275-476b-b8d9-30e36c507507", slug: "font-pairings", name: "Font Pairings" },
 ];
 
-interface FontEntry {
+interface ZipFontEntry {
   id: string;
-  fileName: string;
+  zipFile: File;
   fontName: string;
-  fileData: ArrayBuffer;
   previewDataUrl: string | null;
-  status: "pending" | "generating" | "ready" | "uploading" | "done" | "error";
+  status: "pending" | "ready" | "uploading" | "done" | "error";
   error?: string;
 }
 
 function deriveFontName(fileName: string): string {
-  // Remove extension, replace dashes/underscores with spaces, title-case
   return fileName
-    .replace(/\.(ttf|otf|woff2?|zip)$/i, "")
+    .replace(/\.(zip)$/i, "")
     .replace(/[-_]+/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase())
     .trim();
 }
 
 async function generateFontPreview(fontName: string, fontData: ArrayBuffer): Promise<string> {
-  // Load font temporarily
   const font = new FontFace(fontName, fontData);
   await font.load();
   document.fonts.add(font);
@@ -51,27 +48,21 @@ async function generateFontPreview(fontName: string, fontData: ArrayBuffer): Pro
   canvas.height = 400;
   const ctx = canvas.getContext("2d")!;
 
-  // Background gradient
   const grad = ctx.createLinearGradient(0, 0, 800, 400);
   grad.addColorStop(0, "#fafafa");
   grad.addColorStop(1, "#f0f0f0");
   ctx.fillStyle = grad;
-  ctx.roundRect(0, 0, 800, 400, 0);
-  ctx.fill();
+  ctx.fillRect(0, 0, 800, 400);
 
-  // Subtle border
   ctx.strokeStyle = "#e0e0e0";
   ctx.lineWidth = 2;
   ctx.strokeRect(1, 1, 798, 398);
 
-  // Font name label (small, muted)
   ctx.fillStyle = "#888";
   ctx.font = "14px system-ui, sans-serif";
   ctx.fillText(fontName, 40, 40);
 
-  // Sample text in the actual font
   ctx.fillStyle = "#1a1a1a";
-
   ctx.font = `48px "${fontName}"`;
   ctx.fillText("AaBbCcDdEeFf", 40, 110);
 
@@ -87,9 +78,7 @@ async function generateFontPreview(fontName: string, fontData: ArrayBuffer): Pro
   ctx.fillStyle = "#777";
   ctx.fillText("1234567890 !@#$%^&*()_+-=", 40, 330);
 
-  // Cleanup
   document.fonts.delete(font);
-
   return canvas.toDataURL("image/png");
 }
 
@@ -103,7 +92,7 @@ function dataUrlToBlob(dataUrl: string): Blob {
 }
 
 export function FontBulkUploader() {
-  const [fonts, setFonts] = useState<FontEntry[]>([]);
+  const [fonts, setFonts] = useState<ZipFontEntry[]>([]);
   const [subcategoryId, setSubcategoryId] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -111,7 +100,7 @@ export function FontBulkUploader() {
 
   const stats = {
     total: fonts.length,
-    pending: fonts.filter((f) => f.status === "pending" || f.status === "generating" || f.status === "ready").length,
+    pending: fonts.filter((f) => f.status === "pending" || f.status === "ready").length,
     uploading: fonts.filter((f) => f.status === "uploading").length,
     done: fonts.filter((f) => f.status === "done").length,
     error: fonts.filter((f) => f.status === "error").length,
@@ -126,55 +115,50 @@ export function FontBulkUploader() {
       return;
     }
 
-    const newFonts: FontEntry[] = [];
+    const newEntries: ZipFontEntry[] = [];
 
     for (const zipFile of zipFiles) {
       try {
         const zip = await JSZip.loadAsync(zipFile);
-        const entries = Object.entries(zip.files);
-
-        for (const [path, entry] of entries) {
+        // Find the first valid font file for preview generation
+        let previewDataUrl: string | null = null;
+        for (const [path, entry] of Object.entries(zip.files)) {
           if (entry.dir) continue;
           const fileName = path.split("/").pop() || path;
-          // Skip macOS resource forks and hidden files
           if (fileName.startsWith(".") || path.includes("__MACOSX")) continue;
-
           const ext = "." + fileName.split(".").pop()?.toLowerCase();
           if (!FONT_EXTENSIONS.includes(ext)) continue;
 
-          const arrayBuffer = await entry.async("arraybuffer");
-          const fontName = deriveFontName(fileName);
-
-          // Generate preview
-          let previewDataUrl: string | null = null;
           try {
-            previewDataUrl = await generateFontPreview(fontName, arrayBuffer);
+            const arrayBuffer = await entry.async("arraybuffer");
+            const tempName = deriveFontName(fileName);
+            previewDataUrl = await generateFontPreview(tempName, arrayBuffer);
+            break; // Only need the first font for preview
           } catch (err) {
-            console.warn(`Could not generate preview for ${fontName}:`, err);
+            console.warn(`Could not generate preview from ${fileName}:`, err);
           }
-
-          newFonts.push({
-            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-            fileName,
-            fontName,
-            fileData: arrayBuffer,
-            previewDataUrl,
-            status: previewDataUrl ? "ready" : "pending",
-          });
         }
+
+        newEntries.push({
+          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          zipFile,
+          fontName: deriveFontName(zipFile.name),
+          previewDataUrl,
+          status: previewDataUrl ? "ready" : "pending",
+        });
       } catch (err) {
         console.error("ZIP extraction error:", err);
-        toast.error(`Failed to extract ${zipFile.name}`);
+        toast.error(`Failed to read ${zipFile.name}`);
       }
     }
 
-    if (newFonts.length === 0) {
-      toast.error("No font files found in ZIP(s)");
+    if (newEntries.length === 0) {
+      toast.error("No valid font ZIPs found");
       return;
     }
 
-    setFonts((prev) => [...prev, ...newFonts]);
-    toast.success(`Found ${newFonts.length} font files`);
+    setFonts((prev) => [...prev, ...newEntries]);
+    toast.success(`Added ${newEntries.length} font ZIP(s)`);
   }, []);
 
   const handleDrop = useCallback(
@@ -207,33 +191,28 @@ export function FontBulkUploader() {
     let successCount = 0;
     let failCount = 0;
 
-    for (const font of toUpload) {
-      setFonts((prev) => prev.map((f) => (f.id === font.id ? { ...f, status: "uploading" as const } : f)));
+    for (const entry of toUpload) {
+      setFonts((prev) => prev.map((f) => (f.id === entry.id ? { ...f, status: "uploading" as const } : f)));
 
       try {
         const ts = Date.now();
-        const ext = font.fileName.split(".").pop()?.toLowerCase() || "ttf";
-        const safeName = font.fontName.toLowerCase().replace(/\s+/g, "-");
+        const safeName = entry.fontName.toLowerCase().replace(/\s+/g, "-");
 
-        // Upload font file
-        const fontPath = `fonts/${ts}-${safeName}.${ext}`;
-        const fontBlob = new Blob([font.fileData], {
-          type: ext === "woff2" ? "font/woff2" : ext === "woff" ? "font/woff" : ext === "otf" ? "font/otf" : "font/ttf",
-        });
-
-        const { error: fontUploadErr } = await supabase.storage
+        // Upload the original ZIP file
+        const zipPath = `fonts/${ts}-${safeName}.zip`;
+        const { error: zipUploadErr } = await supabase.storage
           .from("content-media")
-          .upload(fontPath, fontBlob, { upsert: true });
+          .upload(zipPath, entry.zipFile, { upsert: true, contentType: "application/zip" });
 
-        if (fontUploadErr) throw fontUploadErr;
+        if (zipUploadErr) throw zipUploadErr;
 
-        const { data: fontUrlData } = supabase.storage.from("content-media").getPublicUrl(fontPath);
+        const { data: zipUrlData } = supabase.storage.from("content-media").getPublicUrl(zipPath);
 
         // Upload preview image
         let coverUrl: string | null = null;
-        if (font.previewDataUrl) {
+        if (entry.previewDataUrl) {
           const previewPath = `font-previews/${ts}-${safeName}.png`;
-          const previewBlob = dataUrlToBlob(font.previewDataUrl);
+          const previewBlob = dataUrlToBlob(entry.previewDataUrl);
 
           const { error: previewErr } = await supabase.storage
             .from("content-media")
@@ -245,24 +224,24 @@ export function FontBulkUploader() {
           coverUrl = previewUrlData.publicUrl;
         }
 
-        // Insert DB record
+        // Insert DB record — one per ZIP
         const { error: dbErr } = await supabase.from("content_vault_resources").insert({
-          title: font.fontName,
-          resource_url: fontUrlData.publicUrl,
+          title: entry.fontName,
+          resource_url: zipUrlData.publicUrl,
           cover_image_url: coverUrl,
           resource_type: "download",
           subcategory_id: subcategoryId,
-          description: `${font.fontName} font file (.${ext})`,
+          description: `${entry.fontName} font pack (.zip)`,
         });
 
         if (dbErr) throw dbErr;
 
-        setFonts((prev) => prev.map((f) => (f.id === font.id ? { ...f, status: "done" as const } : f)));
+        setFonts((prev) => prev.map((f) => (f.id === entry.id ? { ...f, status: "done" as const } : f)));
         successCount++;
       } catch (err: any) {
-        console.error(`Failed to upload ${font.fontName}:`, err);
+        console.error(`Failed to upload ${entry.fontName}:`, err);
         setFonts((prev) =>
-          prev.map((f) => (f.id === font.id ? { ...f, status: "error" as const, error: err.message } : f))
+          prev.map((f) => (f.id === entry.id ? { ...f, status: "error" as const, error: err.message } : f))
         );
         failCount++;
       }
@@ -271,7 +250,7 @@ export function FontBulkUploader() {
     setIsProcessing(false);
 
     if (failCount === 0) {
-      toast.success(`Successfully uploaded ${successCount} fonts!`);
+      toast.success(`Successfully uploaded ${successCount} font pack(s)!`);
     } else {
       toast.warning(`Uploaded ${successCount}, failed ${failCount}`);
     }
@@ -291,7 +270,7 @@ export function FontBulkUploader() {
             </div>
             <div>
               <CardTitle className="text-lg">Font Bulk Importer</CardTitle>
-              <CardDescription>Upload ZIP files with fonts • Auto-generates preview images</CardDescription>
+              <CardDescription>Upload ZIP files with fonts • Each ZIP becomes one downloadable resource</CardDescription>
             </div>
           </div>
           {fonts.length > 0 && (
@@ -303,7 +282,6 @@ export function FontBulkUploader() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Subcategory Selector */}
         <Select value={subcategoryId} onValueChange={setSubcategoryId}>
           <SelectTrigger>
             <SelectValue placeholder="Select font subcategory" />
@@ -317,7 +295,6 @@ export function FontBulkUploader() {
           </SelectContent>
         </Select>
 
-        {/* Drop Zone */}
         <div
           onDrop={handleDrop}
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -338,10 +315,9 @@ export function FontBulkUploader() {
           />
           <Upload className={`w-10 h-10 mx-auto mb-3 ${isDragging ? "text-primary" : "text-muted-foreground"}`} />
           <p className="text-sm font-medium">Drop ZIP files here or click to browse</p>
-          <p className="text-xs text-muted-foreground mt-1">ZIP files containing .ttf, .otf, .woff, .woff2</p>
+          <p className="text-xs text-muted-foreground mt-1">Each ZIP = one downloadable font resource</p>
         </div>
 
-        {/* Stats Bar */}
         {fonts.length > 0 && (
           <div className="flex items-center gap-4 text-sm flex-wrap">
             <Badge variant="outline">Total: {stats.total}</Badge>
@@ -352,13 +328,12 @@ export function FontBulkUploader() {
           </div>
         )}
 
-        {/* Progress */}
         {isProcessing && (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Uploading fonts...
+                Uploading font packs...
               </span>
               <span>{Math.round(progress)}%</span>
             </div>
@@ -366,53 +341,48 @@ export function FontBulkUploader() {
           </div>
         )}
 
-        {/* Font Preview Grid */}
         {fonts.length > 0 && (
           <ScrollArea className="h-[400px] rounded-lg border p-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {fonts.map((font) => (
-                <div key={font.id} className="relative group rounded-lg overflow-hidden border bg-card">
-                  {font.previewDataUrl ? (
-                    <img src={font.previewDataUrl} alt={font.fontName} className="w-full aspect-[2/1] object-cover" />
+              {fonts.map((entry) => (
+                <div key={entry.id} className="relative group rounded-lg overflow-hidden border bg-card">
+                  {entry.previewDataUrl ? (
+                    <img src={entry.previewDataUrl} alt={entry.fontName} className="w-full aspect-[2/1] object-cover" />
                   ) : (
                     <div className="w-full aspect-[2/1] bg-muted flex items-center justify-center">
                       <Type className="w-8 h-8 text-muted-foreground" />
                     </div>
                   )}
 
-                  {/* Status Overlay */}
                   <div
                     className={`absolute inset-0 flex items-center justify-center
-                    ${font.status === "uploading" ? "bg-black/50" : ""}
-                    ${font.status === "done" ? "bg-green-500/20" : ""}
-                    ${font.status === "error" ? "bg-red-500/20" : ""}
+                    ${entry.status === "uploading" ? "bg-black/50" : ""}
+                    ${entry.status === "done" ? "bg-green-500/20" : ""}
+                    ${entry.status === "error" ? "bg-red-500/20" : ""}
                   `}
                   >
-                    {font.status === "uploading" && <Loader2 className="w-6 h-6 text-white animate-spin" />}
-                    {font.status === "done" && <CheckCircle2 className="w-6 h-6 text-green-500" />}
-                    {font.status === "error" && <XCircle className="w-6 h-6 text-red-500" />}
+                    {entry.status === "uploading" && <Loader2 className="w-6 h-6 text-white animate-spin" />}
+                    {entry.status === "done" && <CheckCircle2 className="w-6 h-6 text-green-500" />}
+                    {entry.status === "error" && <XCircle className="w-6 h-6 text-red-500" />}
                   </div>
 
-                  {/* Remove Button */}
-                  {!isProcessing && font.status !== "done" && (
+                  {!isProcessing && entry.status !== "done" && (
                     <button
-                      onClick={() => removeFont(font.id)}
+                      onClick={() => removeFont(entry.id)}
                       className="absolute top-1 right-1 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <X className="w-3 h-3" />
                     </button>
                   )}
 
-                  {/* Font Name */}
                   <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-2 truncate">
-                    {font.fontName}
-                    <span className="ml-1 opacity-60">(.{font.fileName.split(".").pop()})</span>
+                    {entry.fontName}
+                    <span className="ml-1 opacity-60">(.zip)</span>
                   </div>
 
-                  {/* Error tooltip */}
-                  {font.error && (
+                  {entry.error && (
                     <div className="absolute top-1 left-1 bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded max-w-[90%] truncate">
-                      {font.error}
+                      {entry.error}
                     </div>
                   )}
                 </div>
@@ -421,14 +391,13 @@ export function FontBulkUploader() {
           </ScrollArea>
         )}
 
-        {/* Action Buttons */}
         {fonts.length > 0 && (
           <div className="flex items-center gap-2">
             {!isProcessing ? (
               <>
                 <Button onClick={startUpload} disabled={stats.pending === 0 || !subcategoryId} className="flex-1">
                   <Zap className="w-4 h-4 mr-2" />
-                  Upload {stats.pending} Fonts
+                  Upload {stats.pending} Font Pack{stats.pending !== 1 ? "s" : ""}
                 </Button>
                 {stats.error > 0 && (
                   <Button variant="outline" onClick={retryFailed}>
@@ -446,12 +415,10 @@ export function FontBulkUploader() {
           </div>
         )}
 
-        {/* Info */}
         <Alert className="bg-primary/5 border-primary/20">
           <Type className="h-4 w-4 text-primary" />
           <AlertDescription className="text-xs">
-            Upload ZIP files containing font files. Each font gets a preview image auto-generated showing sample text.
-            Fonts are added to the Content Vault under the selected subcategory.
+            Each ZIP file becomes one downloadable resource. A preview image is auto-generated from the first font found inside the ZIP.
           </AlertDescription>
         </Alert>
       </CardContent>
