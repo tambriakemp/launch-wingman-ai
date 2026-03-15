@@ -446,8 +446,12 @@ function SocialLinksTab() {
 const HEADER_FIELDS = [
   { key: "brand_name", label: "Brand Name", type: "text" },
   { key: "bio_text", label: "Bio Text", type: "textarea" },
-  { key: "hero_image_url", label: "Hero Image URL", type: "image" },
-  { key: "profile_image_url", label: "Profile Image URL", type: "image" },
+  { key: "hero_image_url", label: "Hero Image", type: "image" },
+  { key: "profile_image_url", label: "Profile Image", type: "image" },
+  { key: "header_name_color", label: "Name Color", type: "color" },
+  { key: "header_bio_color", label: "Bio Text Color", type: "color" },
+  { key: "header_icon_color", label: "Social Icon Color", type: "color" },
+  { key: "header_icon_bg_color", label: "Social Icon Background", type: "color" },
 ];
 
 const COLOR_FIELDS = [
@@ -457,8 +461,8 @@ const COLOR_FIELDS = [
   { key: "button_bg_color", label: "Button Background", type: "color" },
   { key: "button_text_color", label: "Button Text", type: "color" },
   { key: "accent_color", label: "Accent / Highlight", type: "color" },
-  { key: "heading_text_color", label: "Heading Text", type: "color" },
-  { key: "body_text_color", label: "Body Text", type: "color" },
+  { key: "heading_text_color", label: "Card Heading Text", type: "color" },
+  { key: "body_text_color", label: "Card Body Text", type: "color" },
 ];
 
 const FOOTER_FIELDS = [
