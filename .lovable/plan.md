@@ -1,38 +1,16 @@
 
 
-## Fix: Social link navigation issues
+# Fix Sidebar Card Background & Week Grid Alignment
 
-### Bug Found: YouTube link is broken by `mailto:` logic
+## Changes in `src/components/planner/PlannerCalendarView.tsx`
 
-Looking at the live site HTML, I confirmed the YouTube link renders as:
-```
-href="mailto:https://youtube.com/@launchely/"
-```
+### 1. Card background color
+Change `bg-sidebar` on the three card containers (Mini Calendar, My List, Categories) to match the main navigation background. The nav uses `bg-sidebar` too — so the cards blend in. Use a slightly lighter shade like `bg-sidebar-accent` (which is `40 6% 15%`) to make cards distinct from the nav, or use `bg-[hsl(40,6%,12%)]` for a subtle lift.
 
-The current logic applies `mailto:` to any URL containing `@`:
-```tsx
-const href = s.url.includes("@") && !s.url.startsWith("mailto:") ? `mailto:${s.url}` : s.url;
-```
+Lines affected: ~205, ~273, ~295 — the three `rounded-xl bg-sidebar p-4` divs.
 
-YouTube's URL `https://youtube.com/@launchely/` contains `@` (the handle format), so it gets incorrectly wrapped in `mailto:`.
+### 2. Vertical line alignment fix
+The day column headers are a fixed row above the scrollable time grid. The scrollbar in the time grid area takes up space, causing the columns below to be narrower than the headers. Fix by adding `overflow-y-scroll` (always show scrollbar space) to the scroll container, or better, add a matching right padding/margin to the header row to account for scrollbar width. The cleanest approach: wrap both header and grid in the same scroll container so they share the same width context.
 
-### Fix
-
-Change the `mailto:` detection to only apply when the URL has no protocol prefix (`://`). This correctly handles `hello@launchely.com` while leaving `https://youtube.com/@launchely/` alone.
-
-**File:** `src/pages/LinkInBio.tsx` (line 245)
-
-```tsx
-// Before (broken)
-const href = s.url.includes("@") && !s.url.startsWith("mailto:") ? `mailto:${s.url}` : s.url;
-
-// After (fixed)
-const href = s.url.includes("@") && !s.url.includes("://") && !s.url.startsWith("mailto:") 
-  ? `mailto:${s.url}` 
-  : s.url;
-```
-
-### About Instagram / other social links
-
-For Instagram and some other platforms showing `ERR_BLOCKED_BY_RESPONSE`: these sites send security headers (`X-Frame-Options`, `Cross-Origin-Opener-Policy`) that can block navigation in certain contexts. This is platform behavior, not a code bug. After publishing and testing in a clean browser tab, if Instagram still blocks, the workaround is minimal -- the link itself is correct (`https://www.instagram.com/launchely/`).
+**Approach**: Move the day column headers inside the `overflow-y-auto` scroll container (before the grid div), and make them sticky at top with `sticky top-0 z-10 bg-background`. This ensures headers and grid columns share the exact same width.
 
