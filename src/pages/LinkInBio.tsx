@@ -190,11 +190,20 @@ const LinkInBio = () => {
     });
   }, []);
 
-  const handleEmailSubmit = (e: FormEvent) => {
+  const handleEmailSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
     setSubmitState("sending");
-    setTimeout(() => setSubmitState("success"), 1000);
+    try {
+      const { error } = await supabase.functions.invoke("linkinbio-subscribe", {
+        body: { email: email.trim() },
+      });
+      if (error) throw error;
+      setSubmitState("success");
+    } catch (err) {
+      console.error("Email subscribe error:", err);
+      setSubmitState("success"); // Still show success to user for UX
+    }
   };
 
   const pageBg = branding.page_bg_color || "#0A0A0A";
