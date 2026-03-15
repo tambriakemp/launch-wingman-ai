@@ -457,7 +457,7 @@ export default function Library() {
   };
 
   const content = (
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="max-w-7xl mx-auto px-2.5 md:px-6 py-8">
       <AnimatePresence mode="wait">
         {selectedArticle ? (
           <ArticleView

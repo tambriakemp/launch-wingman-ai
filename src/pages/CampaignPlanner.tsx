@@ -96,7 +96,7 @@ export default function CampaignPlanner() {
 
   return (
     <ProjectLayout>
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+      <div className="max-w-7xl mx-auto px-2.5 md:px-6 py-8 space-y-6">
         <div className="flex items-start gap-4 mb-8">
           <div className="p-3 bg-emerald-100/50 dark:bg-emerald-900/20 rounded-xl shrink-0">
             <Megaphone className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />

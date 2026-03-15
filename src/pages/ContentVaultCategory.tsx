@@ -352,7 +352,7 @@ const ContentVaultCategory = () => {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto px-2.5 md:px-6 py-8">
           {/* Header */}
           <div className="mb-8 flex items-start justify-between gap-4">
             <div>
