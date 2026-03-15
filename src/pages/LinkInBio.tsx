@@ -93,6 +93,10 @@ function LinkCard({ card, branding, children }: { card: LinkCardData; branding: 
       {card.image_url && (
         <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
           <img src={card.image_url} alt={card.title} className="w-full h-full object-cover" style={{ borderRadius: "16px 16px 0 0" }} loading="lazy" />
+          {/* Bottom gradient overlay with title */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end" style={{ background: `linear-gradient(to top, ${cardBg} 10%, transparent 100%)`, minHeight: '50%' }}>
+            <h3 className="font-bold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, color: headingColor, lineHeight: 1.3 }}>{card.title}</h3>
+          </div>
           {card.badge_text && (
             <span
               className="absolute top-3 left-3 text-white font-bold uppercase"
@@ -104,7 +108,7 @@ function LinkCard({ card, branding, children }: { card: LinkCardData; branding: 
         </div>
       )}
       <div className="p-4 space-y-3">
-        <h3 className="font-bold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, color: headingColor, lineHeight: 1.3 }}>{card.title}</h3>
+        {!card.image_url && <h3 className="font-bold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, color: headingColor, lineHeight: 1.3 }}>{card.title}</h3>}
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: bodyColor, lineHeight: 1.6 }}>{card.description}</p>
         {(card.price_original || card.price_current) && (
           <p style={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
