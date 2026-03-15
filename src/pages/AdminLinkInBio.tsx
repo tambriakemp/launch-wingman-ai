@@ -16,8 +16,20 @@ import {
 } from "@/components/ui/select";
 import {
   Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink, ArrowUp, ArrowDown,
-  Link2, Palette, Share2, Sparkles, Loader2, Image as ImageIcon, User, Type
+  Link2, Palette, Share2, Sparkles, Loader2, Image as ImageIcon, User, Type, Upload
 } from "lucide-react";
+
+
+// ── Image Upload Helper ────────────────────────────────────
+
+async function uploadImageToStorage(file: File, folder: string): Promise<string> {
+  const ext = file.name.split(".").pop() || "jpg";
+  const path = `linkinbio/${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await supabase.storage.from("brand-assets").upload(path, file, { upsert: true });
+  if (error) throw error;
+  const { data } = supabase.storage.from("brand-assets").getPublicUrl(path);
+  return data.publicUrl;
+}
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -70,6 +82,38 @@ const PLATFORM_OPTIONS = [
   "Instagram", "TikTok", "YouTube", "Facebook", "Pinterest",
   "Twitter/X", "LinkedIn", "Email", "Website", "Other",
 ];
+
+// ── Image Upload Button ────────────────────────────────────
+
+function ImageUploadButton({ onUploaded, folder = "cards" }: { onUploaded: (url: string) => void; folder?: string }) {
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please select an image file"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Image must be under 10MB"); return; }
+    setIsUploading(true);
+    try {
+      const url = await uploadImageToStorage(file, folder);
+      onUploaded(url);
+      toast.success("Image uploaded!");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  return (
+    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-border bg-background hover:bg-accent cursor-pointer transition-colors">
+      {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+      {isUploading ? "Uploading..." : "Upload Image"}
+      <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" disabled={isUploading} />
+    </label>
+  );
+}
 
 // ── AI Image Generator ─────────────────────────────────────
 
@@ -230,7 +274,10 @@ function CardsTab() {
               <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <ImageIcon className="w-3.5 h-3.5" /> Card Image
               </Label>
-              <Input value={form.image_url || ""} onChange={e => updateForm({ image_url: e.target.value })} placeholder="https://... or paste a generated image URL" />
+              <div className="flex items-center gap-2">
+                <Input value={form.image_url || ""} onChange={e => updateForm({ image_url: e.target.value })} placeholder="https://... or paste URL" className="flex-1" />
+                <ImageUploadButton onUploaded={(url) => updateForm({ image_url: url })} folder="cards" />
+              </div>
               {form.image_url && (
                 <div className="relative rounded-lg overflow-hidden border border-border" style={{ aspectRatio: "16/9" }}>
                   <img src={form.image_url} alt="Preview" className="w-full h-full object-cover" />
@@ -399,8 +446,12 @@ function SocialLinksTab() {
 const HEADER_FIELDS = [
   { key: "brand_name", label: "Brand Name", type: "text" },
   { key: "bio_text", label: "Bio Text", type: "textarea" },
-  { key: "hero_image_url", label: "Hero Image URL", type: "image" },
-  { key: "profile_image_url", label: "Profile Image URL", type: "image" },
+  { key: "hero_image_url", label: "Hero Image", type: "image" },
+  { key: "profile_image_url", label: "Profile Image", type: "image" },
+  { key: "header_name_color", label: "Name Color", type: "color" },
+  { key: "header_bio_color", label: "Bio Text Color", type: "color" },
+  { key: "header_icon_color", label: "Social Icon Color", type: "color" },
+  { key: "header_icon_bg_color", label: "Social Icon Background", type: "color" },
 ];
 
 const COLOR_FIELDS = [
@@ -410,8 +461,8 @@ const COLOR_FIELDS = [
   { key: "button_bg_color", label: "Button Background", type: "color" },
   { key: "button_text_color", label: "Button Text", type: "color" },
   { key: "accent_color", label: "Accent / Highlight", type: "color" },
-  { key: "heading_text_color", label: "Heading Text", type: "color" },
-  { key: "body_text_color", label: "Body Text", type: "color" },
+  { key: "heading_text_color", label: "Card Heading Text", type: "color" },
+  { key: "body_text_color", label: "Card Body Text", type: "color" },
 ];
 
 const FOOTER_FIELDS = [
@@ -486,19 +537,30 @@ function BrandingTab() {
       );
     }
     if (field.type === "image") {
+      const folder = field.key.includes("profile") ? "profile" : "hero";
       return (
         <div key={field.key} className="space-y-2 col-span-full">
           <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
             <ImageIcon className="w-3.5 h-3.5" /> {field.label}
           </Label>
-          <Input
-            value={settings[field.key] || ""}
-            onChange={e => updateSetting(field.key, e.target.value)}
-            placeholder="https://..."
-          />
+          <div className="flex items-center gap-2">
+            <Input
+              value={settings[field.key] || ""}
+              onChange={e => updateSetting(field.key, e.target.value)}
+              placeholder="https://... or upload"
+              className="flex-1"
+            />
+            <ImageUploadButton onUploaded={(url) => updateSetting(field.key, url)} folder={folder} />
+          </div>
           {settings[field.key] && (
             <div className="relative rounded-lg overflow-hidden border border-border max-w-[240px]" style={{ aspectRatio: field.key === "profile_image_url" ? "1/1" : "3/4" }}>
               <img src={settings[field.key]} alt={field.label} className="w-full h-full object-cover" />
+              <button
+                onClick={() => updateSetting(field.key, "")}
+                className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
           <AiImageGenerator onGenerated={(url) => updateSetting(field.key, url)} />

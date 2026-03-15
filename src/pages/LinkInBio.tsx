@@ -139,6 +139,10 @@ const LinkInBio = () => {
   const accent = branding.accent_color || "#C9A96E";
   const headingColor = branding.heading_text_color || "#FFFFFF";
   const bodyColor = branding.body_text_color || "#B0B0B0";
+  const headerNameColor = branding.header_name_color || headingColor;
+  const headerBioColor = branding.header_bio_color || bodyColor;
+  const headerIconColor = branding.header_icon_color || headingColor;
+  const headerIconBg = branding.header_icon_bg_color || "rgba(255,255,255,0.1)";
   const btnBg = branding.button_bg_color || "#FFFFFF";
   const btnText = branding.button_text_color || "#0A0A0A";
   const cardBorder = branding.card_border_color || "#333";
@@ -157,10 +161,10 @@ const LinkInBio = () => {
           </div>
 
           <div className="relative text-center -mt-28 z-10 px-5">
-            <h1 className="font-extrabold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 32, color: headingColor, marginBottom: 8 }}>
+            <h1 className="font-extrabold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 32, color: headerNameColor, marginBottom: 8 }}>
               {branding.brand_name || "Launchely"}
             </h1>
-            <p style={{ fontSize: 15, color: bodyColor, lineHeight: 1.5, maxWidth: 340, margin: "0 auto" }}>
+            <p style={{ fontSize: 15, color: headerBioColor, lineHeight: 1.5, maxWidth: 340, margin: "0 auto" }}>
               {branding.bio_text || "Laid off tech girl building in public 🛠️  |  Life habits + launch tools 👇🏽"}
             </p>
 
@@ -177,7 +181,7 @@ const LinkInBio = () => {
                       rel="noopener noreferrer"
                       aria-label={s.platform}
                       className="transition-opacity duration-150 hover:opacity-60 flex items-center justify-center"
-                      style={{ color: headingColor, width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.1)" }}
+                      style={{ color: headerIconColor, width: 40, height: 40, borderRadius: "50%", background: headerIconBg }}
                     >
                       <IconComp size={20} strokeWidth={1.8} />
                     </a>
