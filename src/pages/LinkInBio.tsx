@@ -95,7 +95,7 @@ function LinkCard({ card, branding, children }: { card: LinkCardData; branding: 
         <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
           <img src={card.image_url} alt={card.title} className="w-full h-full object-cover" style={{ borderRadius: "16px 16px 0 0" }} loading="lazy" />
           {/* Bottom gradient overlay with title */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end" style={{ background: `linear-gradient(to top, ${cardBg} 10%, transparent 100%)`, minHeight: '50%' }}>
+          <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end" style={{ background: `linear-gradient(to top, ${cardGradient} 10%, transparent 100%)`, minHeight: '50%' }}>
             <h3 className="font-bold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, color: headingColor, lineHeight: 1.3 }}>{card.title}</h3>
           </div>
           {card.badge_text && (
