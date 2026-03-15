@@ -1,4 +1,5 @@
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, useCallback, FormEvent } from "react";
+import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Instagram, Music2, Youtube, Facebook, Mail, Link2,
@@ -72,7 +73,7 @@ type BrandingMap = Record<string, string>;
 
 // ── LinkCard component ─────────────────────────────────────
 
-function LinkCard({ card, branding, children }: { card: LinkCardData; branding: BrandingMap; children?: React.ReactNode }) {
+function LinkCard({ card, branding, onCtaClick, children }: { card: LinkCardData; branding: BrandingMap; onCtaClick?: () => void; children?: React.ReactNode }) {
   const cardBg = branding.card_bg_color || "#1C1C1E";
   const cardBorder = branding.card_border_color || "#2A2A2C";
   const cardGradient = branding.card_gradient_color || cardBg;
@@ -116,6 +117,7 @@ function LinkCard({ card, branding, children }: { card: LinkCardData; branding: 
               href={card.cta_url || "#"}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={onCtaClick}
               className="block w-full text-center font-bold transition-transform duration-150 hover:scale-[0.98] active:scale-[0.96]"
               style={{ background: btnBg, color: btnText, height: 44, lineHeight: "44px", borderRadius: 8, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 15 }}
             >
@@ -152,6 +154,7 @@ function LinkCard({ card, branding, children }: { card: LinkCardData; branding: 
           href={card.cta_url || "#"}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={onCtaClick}
           className="block w-full text-center font-bold transition-transform duration-150 hover:scale-[0.98] active:scale-[0.96]"
           style={{ background: btnBg, color: btnText, height: 44, lineHeight: "44px", borderRadius: 8, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 15 }}
         >
@@ -206,6 +209,17 @@ const LinkInBio = () => {
     }
   };
 
+  const trackClick = useCallback((linkType: string, linkId: string, linkLabel: string, linkUrl: string) => {
+    supabase.from("linkinbio_clicks" as any).insert({
+      link_type: linkType,
+      link_id: linkId,
+      link_label: linkLabel,
+      link_url: linkUrl,
+      referrer: document.referrer || null,
+      user_agent: navigator.userAgent || null,
+    } as any).then(() => {});
+  }, []);
+
   const pageBg = branding.page_bg_color || "#0A0A0A";
   const accent = branding.accent_color || "#C9A96E";
   const headingColor = branding.heading_text_color || "#FFFFFF";
@@ -220,8 +234,27 @@ const LinkInBio = () => {
   const cardBorder = branding.card_border_color || "#333";
   const cardBg = branding.card_bg_color || "#111";
 
+  const pageTitle = branding.brand_name || "Launchely";
+  const pageDescription = branding.bio_text || "Launch planning tools, habits & resources for coaches and marketers.";
+  const ogImage = branding.hero_image_url || "https://launchely.com/og-image.png";
+
   return (
     <>
+      <Helmet>
+        <title>{pageTitle} | Links</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href="https://launchely.com/links" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://launchely.com/links" />
+        <meta property="og:title" content={`${pageTitle} | Links`} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:image" content={ogImage} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@launchely" />
+        <meta name="twitter:title" content={`${pageTitle} | Links`} />
+        <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:image" content={ogImage} />
+      </Helmet>
       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
 
       <div className="min-h-screen w-full transition-opacity duration-300" style={{ background: pageBg, fontFamily: "'Inter', sans-serif", opacity: isLoaded ? 1 : 0 }}>
@@ -259,6 +292,7 @@ const LinkInBio = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={s.platform}
+                      onClick={() => trackClick("social", s.id, s.platform, href)}
                       className="transition-opacity duration-150 hover:opacity-60 flex items-center justify-center"
                       style={{ color: headerIconColor, width: socialIconSize, height: socialIconSize, borderRadius: "50%", background: headerIconBg }}
                     >
@@ -304,7 +338,7 @@ const LinkInBio = () => {
                   </form>
                 </LinkCard>
               ) : (
-                <LinkCard key={card.id} card={card} branding={branding} />
+                <LinkCard key={card.id} card={card} branding={branding} onCtaClick={() => trackClick("card_cta", card.id, card.title, card.cta_url)} />
               )
             )}
           </div>

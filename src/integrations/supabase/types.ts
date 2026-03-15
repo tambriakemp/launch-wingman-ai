@@ -1788,6 +1788,39 @@ export type Database = {
         }
         Relationships: []
       }
+      linkinbio_clicks: {
+        Row: {
+          clicked_at: string
+          id: string
+          link_id: string
+          link_label: string
+          link_type: string
+          link_url: string
+          referrer: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          clicked_at?: string
+          id?: string
+          link_id: string
+          link_label: string
+          link_type: string
+          link_url: string
+          referrer?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          clicked_at?: string
+          id?: string
+          link_id?: string
+          link_label?: string
+          link_type?: string
+          link_url?: string
+          referrer?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       linkinbio_settings: {
         Row: {
           id: string
