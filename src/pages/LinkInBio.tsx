@@ -234,8 +234,27 @@ const LinkInBio = () => {
   const cardBorder = branding.card_border_color || "#333";
   const cardBg = branding.card_bg_color || "#111";
 
+  const pageTitle = branding.brand_name || "Launchely";
+  const pageDescription = branding.bio_text || "Launch planning tools, habits & resources for coaches and marketers.";
+  const ogImage = branding.hero_image_url || "https://launchely.com/og-image.png";
+
   return (
     <>
+      <Helmet>
+        <title>{pageTitle} | Links</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href="https://launchely.com/links" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://launchely.com/links" />
+        <meta property="og:title" content={`${pageTitle} | Links`} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:image" content={ogImage} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@launchely" />
+        <meta name="twitter:title" content={`${pageTitle} | Links`} />
+        <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:image" content={ogImage} />
+      </Helmet>
       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
 
       <div className="min-h-screen w-full transition-opacity duration-300" style={{ background: pageBg, fontFamily: "'Inter', sans-serif", opacity: isLoaded ? 1 : 0 }}>
