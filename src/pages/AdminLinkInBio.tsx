@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import {
   Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink, ArrowUp, ArrowDown,
-  Link2, Palette, Share2
+  Link2, Palette, Share2, Sparkles, Loader2, Image as ImageIcon, User, Type
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────
@@ -70,6 +70,62 @@ const PLATFORM_OPTIONS = [
   "Instagram", "TikTok", "YouTube", "Facebook", "Pinterest",
   "Twitter/X", "LinkedIn", "Email", "Website", "Other",
 ];
+
+// ── AI Image Generator ─────────────────────────────────────
+
+function AiImageGenerator({ onGenerated }: { onGenerated: (url: string) => void }) {
+  const [prompt, setPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const generate = async () => {
+    if (!prompt.trim()) { toast.error("Enter a prompt first"); return; }
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-prompt-cover", {
+        body: { prompt: prompt.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.imageBase64) {
+        onGenerated(data.imageBase64);
+        toast.success("Image generated!");
+        setPrompt("");
+      } else {
+        throw new Error("No image returned");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to generate image");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-dashed border-border bg-muted/30 p-3 space-y-2">
+      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <Sparkles className="w-3.5 h-3.5" />
+        Generate with AI
+      </div>
+      <Textarea
+        value={prompt}
+        onChange={e => setPrompt(e.target.value)}
+        placeholder="Describe the image you want… e.g. 'A warm lifestyle flat-lay with a laptop, coffee, and notebook on a cream background'"
+        rows={2}
+        className="resize-none text-sm"
+        disabled={isGenerating}
+      />
+      <Button
+        size="sm"
+        variant="secondary"
+        onClick={generate}
+        disabled={isGenerating || !prompt.trim()}
+        className="gap-1.5 w-full"
+      >
+        {isGenerating ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating...</> : <><Sparkles className="w-3.5 h-3.5" /> Generate Image</>}
+      </Button>
+    </div>
+  );
+}
 
 // ── Cards Tab ──────────────────────────────────────────────
 
@@ -168,7 +224,27 @@ function CardsTab() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5"><Label className="text-xs font-medium text-muted-foreground">Title *</Label><Input value={form.title} onChange={e => updateForm({ title: e.target.value })} maxLength={200} /></div>
             <div className="space-y-1.5"><Label className="text-xs font-medium text-muted-foreground">Description</Label><Textarea value={form.description} onChange={e => updateForm({ description: e.target.value })} rows={3} className="resize-none" maxLength={500} /></div>
-            <div className="space-y-1.5"><Label className="text-xs font-medium text-muted-foreground">Image URL</Label><Input value={form.image_url || ""} onChange={e => updateForm({ image_url: e.target.value })} placeholder="https://..." /></div>
+
+            {/* Image section with AI generation */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5" /> Card Image
+              </Label>
+              <Input value={form.image_url || ""} onChange={e => updateForm({ image_url: e.target.value })} placeholder="https://... or paste a generated image URL" />
+              {form.image_url && (
+                <div className="relative rounded-lg overflow-hidden border border-border" style={{ aspectRatio: "16/9" }}>
+                  <img src={form.image_url} alt="Preview" className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => updateForm({ image_url: "" })}
+                    className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+              <AiImageGenerator onGenerated={(url) => updateForm({ image_url: url })} />
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label className="text-xs font-medium text-muted-foreground">Badge Text</Label><Input value={form.badge_text || ""} onChange={e => updateForm({ badge_text: e.target.value })} placeholder="FREE" maxLength={20} /></div>
               <div className="space-y-1.5"><Label className="text-xs font-medium text-muted-foreground">Badge Color</Label><div className="flex items-center gap-2"><input type="color" value={form.badge_color} onChange={e => updateForm({ badge_color: e.target.value })} className="w-8 h-8 rounded border border-border cursor-pointer" /><Input value={form.badge_color} onChange={e => updateForm({ badge_color: e.target.value })} className="flex-1" /></div></div>
@@ -318,13 +394,16 @@ function SocialLinksTab() {
   );
 }
 
-// ── Branding Tab ───────────────────────────────────────────
+// ── Branding Tab (separated into sections) ─────────────────
 
-const BRANDING_FIELDS = [
+const HEADER_FIELDS = [
   { key: "brand_name", label: "Brand Name", type: "text" },
-  { key: "bio_text", label: "Bio Text", type: "text" },
-  { key: "hero_image_url", label: "Hero Image URL", type: "text" },
-  { key: "footer_text", label: "Footer Text", type: "text" },
+  { key: "bio_text", label: "Bio Text", type: "textarea" },
+  { key: "hero_image_url", label: "Hero Image URL", type: "image" },
+  { key: "profile_image_url", label: "Profile Image URL", type: "image" },
+];
+
+const COLOR_FIELDS = [
   { key: "page_bg_color", label: "Page Background", type: "color" },
   { key: "card_bg_color", label: "Card Background", type: "color" },
   { key: "card_border_color", label: "Card Border", type: "color" },
@@ -333,6 +412,10 @@ const BRANDING_FIELDS = [
   { key: "accent_color", label: "Accent / Highlight", type: "color" },
   { key: "heading_text_color", label: "Heading Text", type: "color" },
   { key: "body_text_color", label: "Body Text", type: "color" },
+];
+
+const FOOTER_FIELDS = [
+  { key: "footer_text", label: "Footer Text", type: "text" },
 ];
 
 function BrandingTab() {
@@ -352,54 +435,135 @@ function BrandingTab() {
 
   const handleSave = async () => {
     setIsSaving(true);
+    // Upsert all settings (handles new keys like profile_image_url)
     const promises = Object.entries(settings).map(([key, value]) =>
-      supabase.from("linkinbio_settings" as any).update({ setting_value: value, updated_at: new Date().toISOString() }).eq("setting_key", key)
+      supabase.from("linkinbio_settings" as any).upsert(
+        { setting_key: key, setting_value: value, updated_at: new Date().toISOString() },
+        { onConflict: "setting_key" }
+      )
     );
     await Promise.all(promises);
     toast.success("Branding saved");
     setIsSaving(false);
   };
 
+  const updateSetting = (key: string, value: string) => setSettings(s => ({ ...s, [key]: value }));
+
   if (isLoading) return <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" /></div>;
 
-  return (
-    <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">Control colors, text, and images on your /links page.</p>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {BRANDING_FIELDS.map(field => (
-          <div key={field.key} className="space-y-1.5">
-            <Label className="text-xs font-medium text-muted-foreground">{field.label}</Label>
-            {field.type === "color" ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={settings[field.key] || "#000000"}
-                  onChange={e => setSettings(s => ({ ...s, [field.key]: e.target.value }))}
-                  className="w-10 h-10 rounded border border-border cursor-pointer shrink-0"
-                />
-                <Input
-                  value={settings[field.key] || ""}
-                  onChange={e => setSettings(s => ({ ...s, [field.key]: e.target.value }))}
-                  className="flex-1"
-                />
-              </div>
-            ) : (
-              <Input
-                value={settings[field.key] || ""}
-                onChange={e => setSettings(s => ({ ...s, [field.key]: e.target.value }))}
-              />
-            )}
+  const renderField = (field: { key: string; label: string; type: string }) => {
+    if (field.type === "color") {
+      return (
+        <div key={field.key} className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">{field.label}</Label>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={settings[field.key] || "#000000"}
+              onChange={e => updateSetting(field.key, e.target.value)}
+              className="w-10 h-10 rounded border border-border cursor-pointer shrink-0"
+            />
+            <Input
+              value={settings[field.key] || ""}
+              onChange={e => updateSetting(field.key, e.target.value)}
+              className="flex-1"
+            />
           </div>
-        ))}
+        </div>
+      );
+    }
+    if (field.type === "textarea") {
+      return (
+        <div key={field.key} className="space-y-1.5 col-span-full">
+          <Label className="text-xs font-medium text-muted-foreground">{field.label}</Label>
+          <Textarea
+            value={settings[field.key] || ""}
+            onChange={e => updateSetting(field.key, e.target.value)}
+            rows={2}
+            className="resize-none"
+          />
+        </div>
+      );
+    }
+    if (field.type === "image") {
+      return (
+        <div key={field.key} className="space-y-2 col-span-full">
+          <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+            <ImageIcon className="w-3.5 h-3.5" /> {field.label}
+          </Label>
+          <Input
+            value={settings[field.key] || ""}
+            onChange={e => updateSetting(field.key, e.target.value)}
+            placeholder="https://..."
+          />
+          {settings[field.key] && (
+            <div className="relative rounded-lg overflow-hidden border border-border max-w-[240px]" style={{ aspectRatio: field.key === "profile_image_url" ? "1/1" : "3/4" }}>
+              <img src={settings[field.key]} alt={field.label} className="w-full h-full object-cover" />
+            </div>
+          )}
+          <AiImageGenerator onGenerated={(url) => updateSetting(field.key, url)} />
+        </div>
+      );
+    }
+    return (
+      <div key={field.key} className="space-y-1.5">
+        <Label className="text-xs font-medium text-muted-foreground">{field.label}</Label>
+        <Input
+          value={settings[field.key] || ""}
+          onChange={e => updateSetting(field.key, e.target.value)}
+        />
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Header Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 border-b border-border pb-2">
+          <User className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Header & Profile</h3>
+        </div>
+        <p className="text-xs text-muted-foreground">Control the hero image, profile photo, name, and bio text displayed at the top of your page.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {HEADER_FIELDS.map(renderField)}
+        </div>
+      </div>
+
+      {/* Colors Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 border-b border-border pb-2">
+          <Palette className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Colors & Styling</h3>
+        </div>
+        <p className="text-xs text-muted-foreground">Set the color palette for your page, cards, buttons, and text.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {COLOR_FIELDS.map(renderField)}
+        </div>
+      </div>
+
+      {/* Footer Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 border-b border-border pb-2">
+          <Type className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Footer</h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {FOOTER_FIELDS.map(renderField)}
+        </div>
       </div>
 
       {/* Live preview swatch */}
       <div className="rounded-xl border border-border p-4 space-y-3">
-        <Label className="text-xs font-medium text-muted-foreground">Preview</Label>
+        <Label className="text-xs font-medium text-muted-foreground">Live Preview</Label>
         <div className="rounded-lg p-6 flex flex-col items-center gap-3" style={{ background: settings.page_bg_color || "#0A0A0A" }}>
+          {settings.profile_image_url && (
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2" style={{ borderColor: settings.accent_color || "#C9A96E" }}>
+              <img src={settings.profile_image_url} alt="Profile" className="w-full h-full object-cover" />
+            </div>
+          )}
           <span style={{ color: settings.heading_text_color || "#FFF", fontWeight: 700, fontSize: 18 }}>{settings.brand_name || "Brand"}</span>
-          <span style={{ color: settings.body_text_color || "#999", fontSize: 13 }}>{settings.bio_text?.slice(0, 40) || "Bio text..."}</span>
+          <span style={{ color: settings.body_text_color || "#999", fontSize: 13, textAlign: "center" }}>{settings.bio_text?.slice(0, 60) || "Bio text..."}</span>
           <div className="rounded-lg p-3 w-full max-w-[220px]" style={{ background: settings.card_bg_color || "#1C1C1E", border: `1px solid ${settings.card_border_color || "#2A2A2C"}` }}>
             <span style={{ color: settings.heading_text_color || "#FFF", fontSize: 13, fontWeight: 600 }}>Sample Card</span>
             <div className="mt-2 rounded text-center py-1.5" style={{ background: settings.button_bg_color || "#FFF", color: settings.button_text_color || "#000", fontSize: 12, fontWeight: 600 }}>Button</div>
