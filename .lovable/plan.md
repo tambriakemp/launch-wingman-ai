@@ -1,33 +1,62 @@
 
 
-## Fix Swapped Canva URLs in Existing Resources
+## Font Bulk Importer for Content Vault
 
-### Problem
-9 resources have `mode=preview` (preview/watch links) stored in `resource_url` instead of the template/design link. This causes card clicks to open the preview instead of the Canva editor.
+### Overview
+Build an admin component that lets you upload ZIP files containing font files (.ttf, .otf, .woff, .woff2), automatically extracts them, uploads each font to storage, generates a preview image showing what the font looks like, and creates entries in the `content_vault_resources` table under the Fonts category.
 
-### Affected Resources
+### Existing Infrastructure
+- **Font subcategories** already exist: Serif, Sans Serif, Script, Display, Font Pairings
+- **Storage bucket**: `content-media` (public) — will store font files and preview images
+- **AI image generation**: Available via Lovable AI gateway (gemini flash image model) — but not needed here since we can render font previews on a canvas element client-side
+- **Pattern to follow**: Similar to `BulkPhotoUploadCard.tsx` — drag-drop files, process in batches, upload to storage, insert DB records
 
-**Swapped (template link is in preview_url, preview link is in resource_url):**
-- "Everyday Happiness" — swap resource_url and preview_url
-- "Limiting Beliefs" — swap resource_url and preview_url
+### Implementation Plan
 
-**Only preview link exists (preview_url is null):**
-- "40 Etsy Mockup Templates for Digital Products"
-- "Melanin Tips and Tricks"
-- "Millie - Bold and Luxury"
-- "Modern & Ambitious Entrepreneur"
-- "Motivating"
-- "Paris"
+**1. New component: `src/components/admin/FontBulkUploader.tsx`**
+- Card UI with drag-and-drop zone for ZIP files
+- Subcategory selector (Serif, Sans Serif, Script, Display, Font Pairings)
+- On ZIP upload:
+  - Use JSZip (need to add dependency) to extract font files (.ttf, .otf, .woff, .woff2) from the ZIP
+  - For each font file:
+    - Load the font temporarily using `FontFace` API
+    - Render a preview image on an off-screen `<canvas>` showing sample text (e.g., "AaBbCc 123 — The quick brown fox") in the font
+    - Export canvas as PNG blob
+    - Upload font file to `content-media/fonts/{timestamp}-{filename}`
+    - Upload preview PNG to `content-media/font-previews/{timestamp}-{fontname}.png`
+    - Insert into `content_vault_resources` with:
+      - `title`: font name (derived from filename)
+      - `resource_url`: public URL of the font file (download link)
+      - `cover_image_url`: public URL of the generated preview image
+      - `resource_type`: `"download"`
+      - `subcategory_id`: selected subcategory
+- Progress bar showing upload status
+- Results summary (added/skipped/failed)
 
-For these 6, move current resource_url → preview_url, then derive a template URL by stripping `&mode=preview` from the URL.
+**2. Add to admin page: `src/pages/AdminContentVault.tsx`**
+- Import and render `FontBulkUploader` in the content vault management page
 
-**Both fields have same preview link:**
-- "Social Media Coach II" — derive template URL by stripping `&mode=preview`, keep original as preview_url.
+**3. Add dependency: `jszip`**
+- For client-side ZIP extraction
 
-### Implementation
-Run 9 UPDATE statements against the database using the data insert tool. No code changes needed — the edge function fix from the previous update will prevent this from happening on future imports.
+### Font Preview Generation (Client-Side Canvas)
+```text
+┌──────────────────────────────────┐
+│  Montserrat Bold                 │  ← font name
+│                                  │
+│  AaBbCcDdEeFf                    │  ← sample chars
+│  The quick brown fox jumps       │  ← pangram
+│  over the lazy dog               │
+│  1234567890 !@#$%                │  ← numbers/symbols
+└──────────────────────────────────┘
+```
+- Canvas size: 800×400px with subtle gradient background
+- Renders 3 lines of sample text at different sizes
+- Exported as PNG and uploaded as the cover image
 
-### Result
-- Card click → opens Canva design/template (correct)
-- Eye icon → opens preview (correct)
+### Scope
+- 1 new component file
+- 1 new dependency (jszip)
+- 1 minor edit to AdminContentVault.tsx
+- No database changes needed — uses existing tables and buckets
 
