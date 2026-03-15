@@ -155,8 +155,14 @@ const LinkInBio = () => {
       <div className="min-h-screen w-full" style={{ background: pageBg, fontFamily: "'Inter', sans-serif" }}>
         {/* ── HERO HEADER ── */}
         <div className="relative w-full" style={{ maxWidth: 480, margin: "0 auto" }}>
-          <div className="relative w-full overflow-hidden" style={{ aspectRatio: "3/4", maxHeight: 520 }}>
-            <img src={branding.hero_image_url || "https://picsum.photos/seed/launchely-hero/600/800"} alt={branding.brand_name || "Launchely"} className="w-full h-full object-cover" />
+         <div className="relative w-full overflow-hidden" style={{ aspectRatio: "3/4", maxHeight: 520, background: pageBg }}>
+            <img
+              src={branding.hero_image_url || "https://picsum.photos/seed/launchely-hero/600/800"}
+              alt={branding.brand_name || "Launchely"}
+              className="w-full h-full object-cover"
+              style={{ opacity: 0, transition: "opacity 0.3s ease-in" }}
+              onLoad={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "1"; }}
+            />
             <div className="absolute inset-0" style={{ background: `linear-gradient(to bottom, transparent 40%, ${pageBg} 95%)` }} />
           </div>
 
