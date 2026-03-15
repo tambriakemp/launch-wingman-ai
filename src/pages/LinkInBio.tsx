@@ -91,7 +91,7 @@ function LinkCard({ card, branding, children }: { card: LinkCardData; branding: 
           borderLeft: card.highlight ? `4px solid ${accent}` : `1px solid ${cardBorder}`,
         }}
       >
-        <img src={card.image_url} alt={card.title} className="w-full h-full object-cover" style={{ aspectRatio: "16/9", display: "block" }} loading="lazy" />
+        <img src={card.image_url} alt={card.title} className="w-full h-full object-cover" style={{ aspectRatio: "3/4", display: "block" }} loading="lazy" />
         <div className="absolute inset-0 flex flex-col justify-end p-4 space-y-2" style={{ background: `linear-gradient(to top, ${cardGradient} 30%, transparent 100%)` }}>
           {card.badge_text && (
             <span
