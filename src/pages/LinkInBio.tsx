@@ -208,7 +208,7 @@ const LinkInBio = () => {
 
             {/* Social icons */}
             {socialLinks.length > 0 && (
-              <div className="flex items-center justify-center gap-3 mt-5 flex-wrap">
+              <div className="flex items-center justify-center gap-2 mt-5 flex-wrap">
                 {socialLinks.map((s) => {
                   const IconComp = ICON_MAP[s.icon_name] || Link2;
                   return (
@@ -219,9 +219,9 @@ const LinkInBio = () => {
                       rel="noopener noreferrer"
                       aria-label={s.platform}
                       className="transition-opacity duration-150 hover:opacity-60 flex items-center justify-center"
-                      style={{ color: headerIconColor, width: 40, height: 40, borderRadius: "50%", background: headerIconBg }}
+                      style={{ color: headerIconColor, width: 32, height: 32, borderRadius: "50%", background: headerIconBg }}
                     >
-                      <IconComp size={20} strokeWidth={1.8} />
+                      <IconComp size={16} strokeWidth={1.8} />
                     </a>
                   );
                 })}
