@@ -274,7 +274,10 @@ function CardsTab() {
               <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <ImageIcon className="w-3.5 h-3.5" /> Card Image
               </Label>
-              <Input value={form.image_url || ""} onChange={e => updateForm({ image_url: e.target.value })} placeholder="https://... or paste a generated image URL" />
+              <div className="flex items-center gap-2">
+                <Input value={form.image_url || ""} onChange={e => updateForm({ image_url: e.target.value })} placeholder="https://... or paste URL" className="flex-1" />
+                <ImageUploadButton onUploaded={(url) => updateForm({ image_url: url })} folder="cards" />
+              </div>
               {form.image_url && (
                 <div className="relative rounded-lg overflow-hidden border border-border" style={{ aspectRatio: "16/9" }}>
                   <img src={form.image_url} alt="Preview" className="w-full h-full object-cover" />
