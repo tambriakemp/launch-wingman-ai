@@ -36,6 +36,7 @@ const AdminContentVault = () => {
         </div>
 
         <div className="space-y-6">
+          <FontBulkUploader />
           <PromptBulkImporter />
           <R2ManagementCard />
           <CanvaManagementCard />
