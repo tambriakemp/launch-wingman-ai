@@ -221,9 +221,9 @@ const LinkInBio = () => {
                       rel="noopener noreferrer"
                       aria-label={s.platform}
                       className="transition-opacity duration-150 hover:opacity-60 flex items-center justify-center"
-                      style={{ color: headerIconColor, width: 32, height: 32, borderRadius: "50%", background: headerIconBg }}
+                      style={{ color: headerIconColor, width: socialIconSize, height: socialIconSize, borderRadius: "50%", background: headerIconBg }}
                     >
-                      <IconComp size={16} strokeWidth={1.8} />
+                      <IconComp size={Math.round(socialIconSize * 0.5)} strokeWidth={1.8} />
                     </a>
                   );
                 })}

@@ -460,6 +460,7 @@ const COLOR_FIELDS = [
   { key: "page_bg_color", label: "Page Background", type: "color" },
   { key: "card_bg_color", label: "Card Background", type: "color" },
   { key: "card_border_color", label: "Card Border", type: "color" },
+  { key: "card_gradient_color", label: "Card Image Gradient", type: "color" },
   { key: "button_bg_color", label: "Button Background", type: "color" },
   { key: "button_text_color", label: "Button Text", type: "color" },
   { key: "accent_color", label: "Accent / Highlight", type: "color" },
