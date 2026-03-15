@@ -82,22 +82,17 @@ function LinkCard({ card, branding, children }: { card: LinkCardData; branding: 
   const headingColor = branding.heading_text_color || "#F5F5F5";
   const bodyColor = branding.body_text_color || "#9A9A9A";
 
-  return (
-    <div
-      className="rounded-[16px] overflow-hidden"
-      style={{
-        background: cardBg,
-        border: `1px solid ${cardBorder}`,
-        borderLeft: card.highlight ? `4px solid ${accent}` : `1px solid ${cardBorder}`,
-      }}
-    >
-      {card.image_url && (
-        <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
-          <img src={card.image_url} alt={card.title} className="w-full h-full object-cover" style={{ borderRadius: "16px 16px 0 0" }} loading="lazy" />
-          {/* Bottom gradient overlay with title */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end" style={{ background: `linear-gradient(to top, ${cardGradient} 10%, transparent 100%)`, minHeight: '50%' }}>
-            <h3 className="font-bold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, color: headingColor, lineHeight: 1.3 }}>{card.title}</h3>
-          </div>
+  if (card.image_url) {
+    return (
+      <div
+        className="rounded-[16px] overflow-hidden relative"
+        style={{
+          border: `1px solid ${cardBorder}`,
+          borderLeft: card.highlight ? `4px solid ${accent}` : `1px solid ${cardBorder}`,
+        }}
+      >
+        <img src={card.image_url} alt={card.title} className="w-full h-full object-cover" style={{ aspectRatio: "16/9", display: "block" }} loading="lazy" />
+        <div className="absolute inset-0 flex flex-col justify-end p-4 space-y-2" style={{ background: `linear-gradient(to top, ${cardGradient} 30%, transparent 100%)` }}>
           {card.badge_text && (
             <span
               className="absolute top-3 left-3 text-white font-bold uppercase"
@@ -106,31 +101,63 @@ function LinkCard({ card, branding, children }: { card: LinkCardData; branding: 
               {card.badge_text}
             </span>
           )}
+          <h3 className="font-bold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, color: headingColor, lineHeight: 1.3 }}>{card.title}</h3>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: bodyColor, lineHeight: 1.5 }}>{card.description}</p>
+          {(card.price_original || card.price_current) && (
+            <p style={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
+              {card.price_original && <span style={{ color: bodyColor, textDecoration: "line-through" }}>{card.price_original}</span>}
+              {card.price_current && <span style={{ color: headingColor, fontWeight: 700, marginLeft: 6 }}>{card.price_current}</span>}
+            </p>
+          )}
+          {card.price_note && <p style={{ fontSize: 12, color: bodyColor, fontFamily: "'Inter', sans-serif" }}>{card.price_note}</p>}
+          {children}
+          {!children && (
+            <a
+              href={card.cta_url || "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full text-center font-bold transition-transform duration-150 hover:scale-[0.98] active:scale-[0.96]"
+              style={{ background: btnBg, color: btnText, height: 44, lineHeight: "44px", borderRadius: 8, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 15 }}
+            >
+              {card.cta_text}
+            </a>
+          )}
         </div>
-      )}
-      <div className="p-4 space-y-3">
-        {!card.image_url && <h3 className="font-bold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, color: headingColor, lineHeight: 1.3 }}>{card.title}</h3>}
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: bodyColor, lineHeight: 1.6 }}>{card.description}</p>
-        {(card.price_original || card.price_current) && (
-          <p style={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
-            {card.price_original && <span style={{ color: bodyColor, textDecoration: "line-through" }}>{card.price_original}</span>}
-            {card.price_current && <span style={{ color: headingColor, fontWeight: 700, marginLeft: 6 }}>{card.price_current}</span>}
-          </p>
-        )}
-        {card.price_note && <p style={{ fontSize: 13, color: bodyColor, fontFamily: "'Inter', sans-serif" }}>{card.price_note}</p>}
-        {children}
-        {!children && (
-          <a
-            href={card.cta_url || "#"}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block w-full text-center font-bold transition-transform duration-150 hover:scale-[0.98] active:scale-[0.96]"
-            style={{ background: btnBg, color: btnText, height: 44, lineHeight: "44px", borderRadius: 8, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 15 }}
-          >
-            {card.cta_text}
-          </a>
-        )}
       </div>
+    );
+  }
+
+  // No-image fallback card
+  return (
+    <div
+      className="rounded-[16px] overflow-hidden p-4 space-y-3"
+      style={{
+        background: cardBg,
+        border: `1px solid ${cardBorder}`,
+        borderLeft: card.highlight ? `4px solid ${accent}` : `1px solid ${cardBorder}`,
+      }}
+    >
+      <h3 className="font-bold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, color: headingColor, lineHeight: 1.3 }}>{card.title}</h3>
+      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: bodyColor, lineHeight: 1.6 }}>{card.description}</p>
+      {(card.price_original || card.price_current) && (
+        <p style={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
+          {card.price_original && <span style={{ color: bodyColor, textDecoration: "line-through" }}>{card.price_original}</span>}
+          {card.price_current && <span style={{ color: headingColor, fontWeight: 700, marginLeft: 6 }}>{card.price_current}</span>}
+        </p>
+      )}
+      {card.price_note && <p style={{ fontSize: 13, color: bodyColor, fontFamily: "'Inter', sans-serif" }}>{card.price_note}</p>}
+      {children}
+      {!children && (
+        <a
+          href={card.cta_url || "#"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full text-center font-bold transition-transform duration-150 hover:scale-[0.98] active:scale-[0.96]"
+          style={{ background: btnBg, color: btnText, height: 44, lineHeight: "44px", borderRadius: 8, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 15 }}
+        >
+          {card.cta_text}
+        </a>
+      )}
     </div>
   );
 }
