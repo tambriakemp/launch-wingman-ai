@@ -16,8 +16,20 @@ import {
 } from "@/components/ui/select";
 import {
   Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink, ArrowUp, ArrowDown,
-  Link2, Palette, Share2, Sparkles, Loader2, Image as ImageIcon, User, Type
+  Link2, Palette, Share2, Sparkles, Loader2, Image as ImageIcon, User, Type, Upload
 } from "lucide-react";
+import { v4 as uuidv4 } from "crypto";
+
+// ── Image Upload Helper ────────────────────────────────────
+
+async function uploadImageToStorage(file: File, folder: string): Promise<string> {
+  const ext = file.name.split(".").pop() || "jpg";
+  const path = `linkinbio/${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await supabase.storage.from("brand-assets").upload(path, file, { upsert: true });
+  if (error) throw error;
+  const { data } = supabase.storage.from("brand-assets").getPublicUrl(path);
+  return data.publicUrl;
+}
 
 // ── Types ──────────────────────────────────────────────────
 
