@@ -228,7 +228,7 @@ export default function Insights() {
 
   return (
     <ProjectLayout>
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-2.5 md:px-6 py-8 space-y-8">
         {/* Header */}
         <div className="flex items-start gap-4 mb-8">
           <div className="p-3 bg-yellow-100/50 dark:bg-yellow-900/20 rounded-xl shrink-0">

@@ -28,7 +28,7 @@ const ProjectExecute = () => {
 
   return (
     <ProjectLayout>
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-2.5 md:px-6 py-8">
         <div className="flex items-start gap-4 mb-8">
           <div className="p-3 bg-orange-100/50 dark:bg-orange-900/20 rounded-xl shrink-0">
             <ListTodo className="w-6 h-6 text-orange-600 dark:text-orange-400" />
