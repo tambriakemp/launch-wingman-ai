@@ -60,37 +60,26 @@ serve(async (req) => {
       adminEmail = userData.user.email;
       logStep("Auth via getUser");
     } else {
-      logStep("getUser failed, trying getClaims", { message: userError?.message });
+      logStep("getUser failed, trying manual JWT decode", { message: userError?.message });
       
-      // Strategy 2: getClaims
-      const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
-      if (!claimsError && claimsData?.claims?.sub) {
-        adminUserId = claimsData.claims.sub as string;
-        adminEmail = claimsData.claims.email as string;
-        logStep("Auth via getClaims");
-      } else {
-        logStep("getClaims failed, trying manual JWT decode", { message: claimsError?.message });
-        
-        // Strategy 3: Manual JWT decode + verify user exists via admin API
-        try {
-          const parts = token.split('.');
-          if (parts.length === 3) {
-            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-            if (payload.sub) {
-              // Verify user actually exists using admin API (no token needed)
-              const { data: adminUserData, error: adminUserError } = await supabaseClient.auth.admin.getUserById(payload.sub);
-              if (!adminUserError && adminUserData?.user) {
-                adminUserId = adminUserData.user.id;
-                adminEmail = adminUserData.user.email;
-                logStep("Auth via manual decode + admin verify");
-              } else {
-                logStep("Admin getUserById failed", { message: adminUserError?.message });
-              }
+      // Strategy 2: Manual JWT decode + verify user exists via admin API
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+          if (payload.sub) {
+            const { data: adminUserData, error: adminUserError } = await supabaseClient.auth.admin.getUserById(payload.sub);
+            if (!adminUserError && adminUserData?.user) {
+              adminUserId = adminUserData.user.id;
+              adminEmail = adminUserData.user.email;
+              logStep("Auth via manual decode + admin verify");
+            } else {
+              logStep("Admin getUserById failed", { message: adminUserError?.message });
             }
           }
-        } catch (decodeErr) {
-          logStep("Manual JWT decode failed", { message: String(decodeErr) });
         }
+      } catch (decodeErr) {
+        logStep("Manual JWT decode failed", { message: String(decodeErr) });
       }
     }
     
