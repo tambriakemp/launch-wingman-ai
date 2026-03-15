@@ -139,6 +139,10 @@ const LinkInBio = () => {
   const accent = branding.accent_color || "#C9A96E";
   const headingColor = branding.heading_text_color || "#FFFFFF";
   const bodyColor = branding.body_text_color || "#B0B0B0";
+  const headerNameColor = branding.header_name_color || headingColor;
+  const headerBioColor = branding.header_bio_color || bodyColor;
+  const headerIconColor = branding.header_icon_color || headingColor;
+  const headerIconBg = branding.header_icon_bg_color || "rgba(255,255,255,0.1)";
   const btnBg = branding.button_bg_color || "#FFFFFF";
   const btnText = branding.button_text_color || "#0A0A0A";
   const cardBorder = branding.card_border_color || "#333";
