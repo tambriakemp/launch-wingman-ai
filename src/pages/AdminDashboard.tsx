@@ -649,6 +649,12 @@ const AdminDashboard = () => {
               Brand Kit
             </Link>
           </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/link-in-bio">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Link-in-Bio
+            </Link>
+          </Button>
         </div>
 
         {/* Tabbed Content */}
