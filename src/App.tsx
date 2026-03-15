@@ -88,6 +88,7 @@ import Goals from "./pages/Goals";
 import BrainDump from "./pages/BrainDump";
 import WeeklyReview from "./pages/WeeklyReview";
 import LinkInBio from "./pages/LinkInBio";
+import AdminLinkInBio from "./pages/AdminLinkInBio";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -435,6 +436,14 @@ const App = () => (
               element={
                 <ProtectedAdminRoute>
                   <AdminBrandKit />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/link-in-bio"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLinkInBio />
                 </ProtectedAdminRoute>
               }
             />
