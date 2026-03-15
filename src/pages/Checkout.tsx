@@ -199,7 +199,7 @@ const Checkout = () => {
     
     try {
       const { data, error } = await supabase.functions.invoke('validate-coupon', {
-        body: { coupon_code: promoCode.trim().toUpperCase() }
+        body: { coupon_code: promoCode.trim(), tier: selectedTier }
       });
       
       if (error) throw error;

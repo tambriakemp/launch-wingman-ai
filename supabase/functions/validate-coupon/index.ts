@@ -19,11 +19,11 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const { coupon_code } = await req.json();
+    const { coupon_code, tier } = await req.json();
     if (!coupon_code) {
       throw new Error("Coupon code is required");
     }
-    logStep("Validating coupon", { code: coupon_code });
+    logStep("Validating coupon", { code: coupon_code, tier });
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
@@ -32,7 +32,7 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil" 
     });
 
-    // Try to retrieve the coupon by ID (coupon codes in Stripe are the coupon ID)
+    // Try to retrieve the coupon by ID (case-sensitive in Stripe)
     let coupon: Stripe.Coupon;
     try {
       coupon = await stripe.coupons.retrieve(coupon_code);
@@ -53,10 +53,12 @@ serve(async (req) => {
       );
     }
 
+    // Determine original price based on tier
+    const originalPrice = tier === 'content_vault' ? 7 : 25;
+
     // Build discount description
     let discountDescription = "";
     let discountedPrice: number | null = null;
-    const originalPrice = 25; // $25/month
 
     if (coupon.percent_off) {
       discountedPrice = originalPrice * (1 - coupon.percent_off / 100);
