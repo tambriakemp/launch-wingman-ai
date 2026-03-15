@@ -83,6 +83,38 @@ const PLATFORM_OPTIONS = [
   "Twitter/X", "LinkedIn", "Email", "Website", "Other",
 ];
 
+// ── Image Upload Button ────────────────────────────────────
+
+function ImageUploadButton({ onUploaded, folder = "cards" }: { onUploaded: (url: string) => void; folder?: string }) {
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please select an image file"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Image must be under 10MB"); return; }
+    setIsUploading(true);
+    try {
+      const url = await uploadImageToStorage(file, folder);
+      onUploaded(url);
+      toast.success("Image uploaded!");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  return (
+    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-border bg-background hover:bg-accent cursor-pointer transition-colors">
+      {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+      {isUploading ? "Uploading..." : "Upload Image"}
+      <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" disabled={isUploading} />
+    </label>
+  );
+}
+
 // ── AI Image Generator ─────────────────────────────────────
 
 function AiImageGenerator({ onGenerated }: { onGenerated: (url: string) => void }) {
