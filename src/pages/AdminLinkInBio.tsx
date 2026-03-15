@@ -18,7 +18,7 @@ import {
   Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink, ArrowUp, ArrowDown,
   Link2, Palette, Share2, Sparkles, Loader2, Image as ImageIcon, User, Type, Upload
 } from "lucide-react";
-import { v4 as uuidv4 } from "crypto";
+
 
 // ── Image Upload Helper ────────────────────────────────────
 
