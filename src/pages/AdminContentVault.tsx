@@ -5,6 +5,7 @@ import { VaultCsvUploader } from "@/components/admin/VaultCsvUploader";
 import { R2ManagementCard } from "@/components/admin/R2ManagementCard";
 import { CanvaManagementCard } from "@/components/admin/CanvaManagementCard";
 import { PromptBulkImporter } from "@/components/admin/PromptBulkImporter";
+import { FontBulkUploader } from "@/components/admin/FontBulkUploader";
 
 const AdminContentVault = () => {
   const navigate = useNavigate();
@@ -35,6 +36,7 @@ const AdminContentVault = () => {
         </div>
 
         <div className="space-y-6">
+          <FontBulkUploader />
           <PromptBulkImporter />
           <R2ManagementCard />
           <CanvaManagementCard />
