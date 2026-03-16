@@ -357,37 +357,6 @@ export const PlannerCalendarView = ({
     <div className="flex h-full overflow-hidden">
       {/* ===== LEFT SIDEBAR ===== */}
       <div className="hidden lg:flex flex-col w-[260px] shrink-0 border-r border-border bg-background overflow-y-auto">
-        {/* Categories section */}
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categories</span>
-            <button
-              className="text-[11px] text-primary hover:underline"
-              onClick={() => setShowCategoryManager(true)}
-            >
-              Manage
-            </button>
-          </div>
-          <div className="space-y-1">
-            {categories.map((cat: typeof DEFAULT_CATEGORIES[0]) => (
-              <button
-                key={cat.id}
-                className={cn(
-                  "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-accent/50 text-left",
-                  !activeCategories.includes(cat.id) && "opacity-40"
-                )}
-                onClick={() => toggleCategory(cat.id)}
-              >
-                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: cat.color }} />
-                <span className="flex-1 truncate">{cat.name}</span>
-                <span className="text-[10px] text-muted-foreground">
-                  {tasks.filter(t => t.category === cat.id).length}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Upcoming tasks list */}
         <div className="p-4">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-3">Upcoming</span>
@@ -481,6 +450,37 @@ export const PlannerCalendarView = ({
               })}
             </div>
           )}
+        </div>
+
+        {/* Categories section */}
+        <div className="p-4 border-t border-border">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categories</span>
+            <button
+              className="text-[11px] text-primary hover:underline"
+              onClick={() => setShowCategoryManager(true)}
+            >
+              Manage
+            </button>
+          </div>
+          <div className="space-y-1">
+            {categories.map((cat: typeof DEFAULT_CATEGORIES[0]) => (
+              <button
+                key={cat.id}
+                className={cn(
+                  "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-accent/50 text-left",
+                  !activeCategories.includes(cat.id) && "opacity-40"
+                )}
+                onClick={() => toggleCategory(cat.id)}
+              >
+                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: cat.color }} />
+                <span className="flex-1 truncate">{cat.name}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {tasks.filter(t => t.category === cat.id).length}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
