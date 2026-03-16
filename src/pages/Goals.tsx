@@ -184,22 +184,27 @@ const Goals = () => {
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
           {/* Header */}
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Goals</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                90-day sprints. Big picture. Stay on track.
-              </p>
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-violet-100/50 dark:bg-violet-900/20 rounded-xl shrink-0">
+              <Target className="w-6 h-6 text-violet-600 dark:text-violet-400" />
             </div>
-            <Button
-              onClick={() => {
-                setEditingGoal(null);
-                setDialogOpen(true);
-              }}
-              className="gap-2"
-            >
-              <Plus className="w-4 h-4" /> New Goal
-            </Button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl font-semibold text-foreground">Goals</h1>
+                  <p className="text-sm text-muted-foreground hidden sm:block">90-day sprints. Big picture. Stay on track.</p>
+                </div>
+                <Button
+                  onClick={() => {
+                    setEditingGoal(null);
+                    setDialogOpen(true);
+                  }}
+                  className="gap-2 shrink-0"
+                >
+                  <Plus className="w-4 h-4" /> New Goal
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* Stats */}

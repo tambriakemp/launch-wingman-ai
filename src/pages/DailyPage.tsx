@@ -210,6 +210,16 @@ const DailyPage = () => {
   return (
     <ProjectLayout>
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-28">
+        {/* Page header */}
+        <div className="flex items-start gap-4 mb-6">
+          <div className="p-3 bg-sky-100/50 dark:bg-sky-900/20 rounded-xl shrink-0">
+            <BookOpen className="w-6 h-6 text-sky-600 dark:text-sky-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Daily Page</h1>
+            <p className="text-sm text-muted-foreground hidden sm:block">Set intentions, track priorities, and reflect on your day.</p>
+          </div>
+        </div>
 
         <div className="pt-2">
 

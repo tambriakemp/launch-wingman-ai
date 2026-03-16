@@ -122,19 +122,26 @@ const BrainDump = () => {
     <ProjectLayout>
       <div className="flex-1 overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="px-4 sm:px-6 pt-8 pb-4 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Brain Dump</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Capture everything. Process later. Clear your head.
-            </p>
+        <div className="px-4 sm:px-6 pt-8 pb-4">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-teal-100/50 dark:bg-teal-900/20 rounded-xl shrink-0">
+              <Brain className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl font-semibold text-foreground">Brain Dump</h1>
+                  <p className="text-sm text-muted-foreground hidden sm:block">Capture everything. Process later. Clear your head.</p>
+                </div>
+                {processedCount > 0 && (
+                  <Button variant="outline" size="sm" onClick={handleClearProcessed} className="shrink-0">
+                    <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                    Clear processed ({processedCount})
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
-          {processedCount > 0 && (
-            <Button variant="outline" size="sm" onClick={handleClearProcessed}>
-              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-              Clear processed ({processedCount})
-            </Button>
-          )}
         </div>
 
         {/* Capture area */}

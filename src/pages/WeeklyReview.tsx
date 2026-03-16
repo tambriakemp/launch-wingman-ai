@@ -215,6 +215,17 @@ const WeeklyReview = () => {
   return (
     <ProjectLayout>
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-16">
+        {/* Page header */}
+        <div className="flex items-start gap-4 mb-6">
+          <div className="p-3 bg-emerald-100/50 dark:bg-emerald-900/20 rounded-xl shrink-0">
+            <RefreshCw className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Weekly Review</h1>
+            <p className="text-sm text-muted-foreground hidden sm:block">Reflect on your week, celebrate wins, and plan ahead.</p>
+          </div>
+        </div>
+
         <div className="space-y-8">
 
           {/* Date nav */}

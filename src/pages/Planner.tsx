@@ -205,8 +205,21 @@ const Planner = () => {
   return (
     <ProjectLayout>
       <div className="h-[calc(100vh-3.5rem)] overflow-hidden flex flex-col">
-        <div className="px-4 pt-4">
-          <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar")} className="mb-4">
+        <div className="px-4 pt-6 pb-2">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="p-3 bg-amber-100/50 dark:bg-amber-900/20 rounded-xl shrink-0">
+              <CalendarDays className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl font-semibold text-foreground">Calendar</h1>
+                  <p className="text-sm text-muted-foreground hidden sm:block">Plan your schedule, track tasks, and stay on top of your week.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar")}>
             <TabsList>
               <TabsTrigger value="list">List</TabsTrigger>
               <TabsTrigger value="calendar">Calendar</TabsTrigger>
