@@ -319,7 +319,7 @@ const LinkInBio = () => {
                       placeholder="Enter your email address"
                       required
                       className="w-full outline-none"
-                      style={{ height: 44, borderRadius: 8, border: `1px solid ${cardBorder}`, background: cardBg, padding: "0 14px", fontFamily: "'Inter', sans-serif", fontSize: 14, color: headingColor }}
+                      style={{ height: 44, borderRadius: 8, border: `1px solid ${cardBorder}`, background: "rgba(255,255,255,0.08)", padding: "0 14px", fontFamily: "'Inter', sans-serif", fontSize: 14, color: "#FFFFFF" }}
                     />
                     <button
                       type="submit"
