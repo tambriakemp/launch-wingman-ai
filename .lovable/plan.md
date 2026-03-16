@@ -1,16 +1,24 @@
 
 
-# Fix Sidebar Card Background & Week Grid Alignment
+## Fix Coupon Application on Checkout
 
-## Changes in `src/components/planner/PlannerCalendarView.tsx`
+### Problem 1: Case Sensitivity
+The `validate-coupon` edge function sends the coupon code exactly as typed to `stripe.coupons.retrieve()`. Stripe coupon IDs are case-sensitive. The coupon exists as `stephanie` but the user typed `STEPHANIE`.
 
-### 1. Card background color
-Change `bg-sidebar` on the three card containers (Mini Calendar, My List, Categories) to match the main navigation background. The nav uses `bg-sidebar` too — so the cards blend in. Use a slightly lighter shade like `bg-sidebar-accent` (which is `40 6% 15%`) to make cards distinct from the nav, or use `bg-[hsl(40,6%,12%)]` for a subtle lift.
+**Fix**: In `validate-coupon/index.ts`, convert the coupon code to lowercase before calling Stripe (since all your coupon IDs appear to be lowercase).
 
-Lines affected: ~205, ~273, ~295 — the three `rounded-xl bg-sidebar p-4` divs.
+### Problem 2: Stale Closure on Payment Intent Recreation
+In `Checkout.tsx`, `createPaymentIntent` uses `isCreatingIntent` state in its guard check. When called from `handleValidateCoupon`, the closure may have a stale `true` value, causing it to silently return without creating a new intent with the coupon applied.
 
-### 2. Vertical line alignment fix
-The day column headers are a fixed row above the scrollable time grid. The scrollbar in the time grid area takes up space, causing the columns below to be narrower than the headers. Fix by adding `overflow-y-scroll` (always show scrollbar space) to the scroll container, or better, add a matching right padding/margin to the header row to account for scrollbar width. The cleanest approach: wrap both header and grid in the same scroll container so they share the same width context.
+**Fix**: Use a `useRef` to track `isCreatingIntent` so the guard always reads the latest value regardless of closure staleness.
 
-**Approach**: Move the day column headers inside the `overflow-y-auto` scroll container (before the grid div), and make them sticky at top with `sticky top-0 z-10 bg-background`. This ensures headers and grid columns share the exact same width.
+### Changes
+
+**`supabase/functions/validate-coupon/index.ts`**
+- Convert `coupon_code` to lowercase before calling `stripe.coupons.retrieve()`
+
+**`src/pages/Checkout.tsx`**
+- Add `isCreatingIntentRef = useRef(false)` 
+- Use the ref for the guard check in `createPaymentIntent` instead of the state variable
+- Update ref alongside state changes
 
