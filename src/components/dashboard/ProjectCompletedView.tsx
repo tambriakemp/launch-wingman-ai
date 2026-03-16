@@ -90,18 +90,18 @@ export function ProjectCompletedView({
             className="w-full justify-between h-auto py-4 px-4"
             onClick={onNewProject}
           >
-            <div className="flex items-center gap-3 text-left">
-              <div className="p-2 rounded-lg bg-accent/10">
+            <div className="flex items-center gap-3 text-left min-w-0">
+              <div className="p-2 rounded-lg bg-accent/10 shrink-0">
                 <FolderPlus className="w-4 h-4 text-accent-foreground" />
               </div>
-              <div>
-                <p className="font-medium">Start a new project</p>
-                <p className="text-sm text-muted-foreground">
+              <div className="min-w-0">
+                <p className="font-medium break-words">Start a new project</p>
+                <p className="text-sm text-muted-foreground break-words">
                   Create a fresh launch with a new offer
                 </p>
               </div>
             </div>
-            <ArrowRight className="w-4 h-4 text-muted-foreground" />
+            <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
           </Button>
 
           <Button
