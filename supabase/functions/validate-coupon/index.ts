@@ -82,7 +82,7 @@ serve(async (req) => {
     }
 
     logStep("Coupon validated successfully", { 
-      code: coupon_code, 
+      code: normalizedCode, 
       percentOff: coupon.percent_off, 
       amountOff: coupon.amount_off,
       duration: coupon.duration 

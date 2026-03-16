@@ -120,7 +120,8 @@ const Checkout = () => {
   // Payment intent state
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
-  const [isCreatingIntent, setIsCreatingIntent] = useState(false);
+   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
+   const isCreatingIntentRef = useRef(false);
   const [intentError, setIntentError] = useState<string | null>(null);
 
   // Pre-fill name from profile if upgrading
