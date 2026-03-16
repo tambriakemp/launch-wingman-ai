@@ -37,9 +37,9 @@ serve(async (req) => {
     // Try to retrieve the coupon by ID (case-sensitive in Stripe)
     let coupon: Stripe.Coupon;
     try {
-      coupon = await stripe.coupons.retrieve(coupon_code);
+      coupon = await stripe.coupons.retrieve(normalizedCode);
     } catch (stripeError) {
-      logStep("Coupon not found", { code: coupon_code });
+      logStep("Coupon not found", { code: normalizedCode });
       return new Response(
         JSON.stringify({ valid: false, error: "Invalid coupon code" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
