@@ -23,7 +23,9 @@ serve(async (req) => {
     if (!coupon_code) {
       throw new Error("Coupon code is required");
     }
-    logStep("Validating coupon", { code: coupon_code, tier });
+    // Normalize to lowercase since all Stripe coupon IDs are lowercase
+    const normalizedCode = coupon_code.trim().toLowerCase();
+    logStep("Validating coupon", { code: normalizedCode, tier });
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
