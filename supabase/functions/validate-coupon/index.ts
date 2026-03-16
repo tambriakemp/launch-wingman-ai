@@ -48,7 +48,7 @@ serve(async (req) => {
 
     // Check if coupon is valid (not expired, still active)
     if (!coupon.valid) {
-      logStep("Coupon is not valid/expired", { code: coupon_code });
+      logStep("Coupon is not valid/expired", { code: normalizedCode });
       return new Response(
         JSON.stringify({ valid: false, error: "This coupon has expired" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
