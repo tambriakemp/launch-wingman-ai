@@ -262,7 +262,7 @@ const LinkInBio = () => {
         <div className="relative w-full" style={{ maxWidth: 480, margin: "0 auto" }}>
          <div className="relative w-full overflow-hidden" style={{ aspectRatio: "3/4", maxHeight: 520, background: pageBg }}>
             <img
-              src={branding.hero_image_url || "https://picsum.photos/seed/launchely-hero/600/800"}
+              src={isLoaded ? (branding.hero_image_url || "https://picsum.photos/seed/launchely-hero/600/800") : undefined}
               alt={branding.brand_name || "Launchely"}
               className="w-full h-full object-cover"
               style={{ opacity: 0, transition: "opacity 0.3s ease-in" }}
