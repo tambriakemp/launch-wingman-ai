@@ -104,12 +104,6 @@ function LinkCard({ card, branding, onCtaClick, children }: { card: LinkCardData
           )}
           <h3 className="font-bold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, color: headingColor, lineHeight: 1.3 }}>{card.title}</h3>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: bodyColor, lineHeight: 1.5 }}>{card.description}</p>
-          {(card.price_original || card.price_current) && (
-            <p style={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
-              {card.price_original && <span style={{ color: bodyColor, textDecoration: "line-through" }}>{card.price_original}</span>}
-              {card.price_current && <span style={{ color: headingColor, fontWeight: 700, marginLeft: 6 }}>{card.price_current}</span>}
-            </p>
-          )}
           {card.price_note && <p style={{ fontSize: 12, color: bodyColor, fontFamily: "'Inter', sans-serif" }}>{card.price_note}</p>}
           {children}
           {!children && (
@@ -118,10 +112,16 @@ function LinkCard({ card, branding, onCtaClick, children }: { card: LinkCardData
               target="_blank"
               rel="noopener noreferrer"
               onClick={onCtaClick}
-              className="block w-full text-center font-bold transition-transform duration-150 hover:scale-[0.98] active:scale-[0.96]"
-              style={{ background: btnBg, color: btnText, height: 44, lineHeight: "44px", borderRadius: 8, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 15 }}
+              className="flex items-center justify-center gap-2 w-full text-center font-bold transition-transform duration-150 hover:scale-[0.98] active:scale-[0.96]"
+              style={{ background: btnBg, color: btnText, height: 44, borderRadius: 8, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 15 }}
             >
               {card.cta_text}
+              {(card.price_original || card.price_current) && (
+                <span className="flex items-center gap-1" style={{ fontSize: 13, fontWeight: 400 }}>
+                  {card.price_original && <span style={{ textDecoration: "line-through", opacity: 0.6 }}>{card.price_original}</span>}
+                  {card.price_current && <span style={{ fontWeight: 700 }}>{card.price_current}</span>}
+                </span>
+              )}
             </a>
           )}
         </div>
@@ -141,12 +141,6 @@ function LinkCard({ card, branding, onCtaClick, children }: { card: LinkCardData
     >
       <h3 className="font-bold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, color: headingColor, lineHeight: 1.3 }}>{card.title}</h3>
       <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: bodyColor, lineHeight: 1.6 }}>{card.description}</p>
-      {(card.price_original || card.price_current) && (
-        <p style={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
-          {card.price_original && <span style={{ color: bodyColor, textDecoration: "line-through" }}>{card.price_original}</span>}
-          {card.price_current && <span style={{ color: headingColor, fontWeight: 700, marginLeft: 6 }}>{card.price_current}</span>}
-        </p>
-      )}
       {card.price_note && <p style={{ fontSize: 13, color: bodyColor, fontFamily: "'Inter', sans-serif" }}>{card.price_note}</p>}
       {children}
       {!children && (
@@ -155,10 +149,16 @@ function LinkCard({ card, branding, onCtaClick, children }: { card: LinkCardData
           target="_blank"
           rel="noopener noreferrer"
           onClick={onCtaClick}
-          className="block w-full text-center font-bold transition-transform duration-150 hover:scale-[0.98] active:scale-[0.96]"
-          style={{ background: btnBg, color: btnText, height: 44, lineHeight: "44px", borderRadius: 8, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 15 }}
+          className="flex items-center justify-center gap-2 w-full text-center font-bold transition-transform duration-150 hover:scale-[0.98] active:scale-[0.96]"
+          style={{ background: btnBg, color: btnText, height: 44, borderRadius: 8, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 15 }}
         >
           {card.cta_text}
+          {(card.price_original || card.price_current) && (
+            <span className="flex items-center gap-1" style={{ fontSize: 13, fontWeight: 400 }}>
+              {card.price_original && <span style={{ textDecoration: "line-through", opacity: 0.6 }}>{card.price_original}</span>}
+              {card.price_current && <span style={{ fontWeight: 700 }}>{card.price_current}</span>}
+            </span>
+          )}
         </a>
       )}
     </div>
