@@ -357,16 +357,6 @@ export const PlannerCalendarView = ({
     <div className="flex h-full overflow-hidden">
       {/* ===== LEFT SIDEBAR ===== */}
       <div className="hidden lg:flex flex-col w-[260px] shrink-0 border-r border-border bg-background overflow-y-auto">
-        {/* Mini calendar navigation */}
-        <div className="p-4 border-b border-border">
-          <Calendar
-            mode="single"
-            selected={currentDate}
-            onSelect={handleMiniDateSelect}
-            className="p-0 pointer-events-auto"
-          />
-        </div>
-
         {/* Categories section */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between mb-3">
