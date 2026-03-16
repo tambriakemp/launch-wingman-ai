@@ -63,7 +63,7 @@ export const ResourceEditDialog = ({
   });
 
   // Reset form when resource changes
-  useState(() => {
+  useEffect(() => {
     if (resource) {
       setFormData({
         title: resource.title,
@@ -76,7 +76,7 @@ export const ResourceEditDialog = ({
         tags: resource.tags?.join(", ") || "",
       });
     }
-  });
+  }, [resource]);
 
   const updateMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
