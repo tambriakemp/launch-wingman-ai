@@ -71,18 +71,18 @@ export function ProjectCompletedView({
             className="w-full justify-between h-auto py-4 px-4"
             onClick={handleRelaunch}
           >
-            <div className="flex items-center gap-3 text-left">
-              <div className="p-2 rounded-lg bg-primary/10">
+            <div className="flex items-center gap-3 text-left min-w-0">
+              <div className="p-2 rounded-lg bg-primary/10 shrink-0">
                 <RefreshCw className="w-4 h-4 text-primary" />
               </div>
-              <div>
-                <p className="font-medium">Relaunch this project</p>
-                <p className="text-sm text-muted-foreground">
+              <div className="min-w-0">
+                <p className="font-medium break-words">Relaunch this project</p>
+                <p className="text-sm text-muted-foreground break-words">
                   Reuse what still fits, revisit what needs attention
                 </p>
               </div>
             </div>
-            <ArrowRight className="w-4 h-4 text-muted-foreground" />
+            <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
           </Button>
 
           <Button
