@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Elements } from "@stripe/react-stripe-js";
@@ -120,7 +120,8 @@ const Checkout = () => {
   // Payment intent state
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
-  const [isCreatingIntent, setIsCreatingIntent] = useState(false);
+   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
+   const isCreatingIntentRef = useRef(false);
   const [intentError, setIntentError] = useState<string | null>(null);
 
   // Pre-fill name from profile if upgrading
@@ -144,13 +145,14 @@ const Checkout = () => {
 
   // Create payment intent immediately on page load
   const createPaymentIntent = useCallback(async (couponCode?: string) => {
-    if (isCreatingIntent) return;
+    if (isCreatingIntentRef.current) return;
     
+    isCreatingIntentRef.current = true;
     setIsCreatingIntent(true);
     setIntentError(null);
 
     try {
-      console.log("[Checkout] Creating payment intent on mount...", { tier: selectedTier });
+      console.log("[Checkout] Creating payment intent...", { tier: selectedTier, couponCode });
       const { data, error } = await supabase.functions.invoke('create-payment-intent-only', {
         body: { couponCode, tier: selectedTier }
       });
@@ -180,9 +182,10 @@ const Checkout = () => {
       setIntentError(errorMsg);
       toast.error(errorMsg);
     } finally {
+      isCreatingIntentRef.current = false;
       setIsCreatingIntent(false);
     }
-  }, [isCreatingIntent]);
+  }, [selectedTier]);
 
   // Create payment intent on page load
   useEffect(() => {

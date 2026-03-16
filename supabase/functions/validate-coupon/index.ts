@@ -23,7 +23,9 @@ serve(async (req) => {
     if (!coupon_code) {
       throw new Error("Coupon code is required");
     }
-    logStep("Validating coupon", { code: coupon_code, tier });
+    // Normalize to lowercase since all Stripe coupon IDs are lowercase
+    const normalizedCode = coupon_code.trim().toLowerCase();
+    logStep("Validating coupon", { code: normalizedCode, tier });
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
@@ -35,9 +37,9 @@ serve(async (req) => {
     // Try to retrieve the coupon by ID (case-sensitive in Stripe)
     let coupon: Stripe.Coupon;
     try {
-      coupon = await stripe.coupons.retrieve(coupon_code);
+      coupon = await stripe.coupons.retrieve(normalizedCode);
     } catch (stripeError) {
-      logStep("Coupon not found", { code: coupon_code });
+      logStep("Coupon not found", { code: normalizedCode });
       return new Response(
         JSON.stringify({ valid: false, error: "Invalid coupon code" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
@@ -46,7 +48,7 @@ serve(async (req) => {
 
     // Check if coupon is valid (not expired, still active)
     if (!coupon.valid) {
-      logStep("Coupon is not valid/expired", { code: coupon_code });
+      logStep("Coupon is not valid/expired", { code: normalizedCode });
       return new Response(
         JSON.stringify({ valid: false, error: "This coupon has expired" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
@@ -80,7 +82,7 @@ serve(async (req) => {
     }
 
     logStep("Coupon validated successfully", { 
-      code: coupon_code, 
+      code: normalizedCode, 
       percentOff: coupon.percent_off, 
       amountOff: coupon.amount_off,
       duration: coupon.duration 
