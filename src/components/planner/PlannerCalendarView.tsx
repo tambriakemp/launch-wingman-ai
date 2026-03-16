@@ -356,7 +356,7 @@ export const PlannerCalendarView = ({
   return (
     <div className="flex h-full overflow-hidden">
       {/* ===== LEFT SIDEBAR ===== */}
-      <div className="hidden xl:flex flex-col w-[260px] shrink-0 border-r border-border bg-background overflow-y-auto">
+      <div className="hidden lg:flex flex-col w-[260px] shrink-0 border-r border-border bg-background overflow-y-auto">
         {/* Mini calendar navigation */}
         <div className="p-4 border-b border-border">
           <Calendar
