@@ -168,15 +168,22 @@ const HabitTracker = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Habit Tracker</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Build consistency, one day at a time.</p>
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-orange-100/50 dark:bg-orange-900/20 rounded-xl shrink-0">
+            <Flame className="w-6 h-6 text-orange-600 dark:text-orange-400" />
           </div>
-          <Button onClick={() => { setEditingHabit(null); setDialogOpen(true); }} className="gap-2">
-            <Plus className="w-4 h-4" />
-            New Habit
-          </Button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-semibold text-foreground">Habit Tracker</h1>
+                <p className="text-sm text-muted-foreground hidden sm:block">Build consistency, one day at a time.</p>
+              </div>
+              <Button onClick={() => { setEditingHabit(null); setDialogOpen(true); }} className="gap-2 shrink-0">
+                <Plus className="w-4 h-4" />
+                New Habit
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Stats row */}
