@@ -106,8 +106,13 @@ Deno.serve(async (req) => {
       console.warn('Launchely list UUID not found in surecontact_config');
     }
 
-    // Attach tag
+    // Detach then reattach tag (ensures re-trigger for repeat submissions)
     if (tagUuid) {
+      const detachRes = await sureContactRequest(
+        `/contacts/${contactUuid}/tags/detach`, 'POST', sureContactApiKey,
+        { tag_uuids: [tagUuid] }
+      );
+      console.log(`Tag detach result: ${detachRes.status}`, JSON.stringify(detachRes.data));
       const tagRes = await sureContactRequest(
         `/contacts/${contactUuid}/tags/attach`, 'POST', sureContactApiKey,
         { tag_uuids: [tagUuid] }
@@ -148,6 +153,12 @@ Deno.serve(async (req) => {
           console.log(`Saved link-in-bio tag to config: ${resolvedTagUuid}`);
         }
         
+        // Detach first to ensure re-trigger
+        const detachRes2 = await sureContactRequest(
+          `/contacts/${contactUuid}/tags/detach`, 'POST', sureContactApiKey,
+          { tag_uuids: [resolvedTagUuid] }
+        );
+        console.log(`Tag detach result: ${detachRes2.status}`, JSON.stringify(detachRes2.data));
         const attachRes = await sureContactRequest(
           `/contacts/${contactUuid}/tags/attach`, 'POST', sureContactApiKey,
           { tag_uuids: [resolvedTagUuid] }
