@@ -1174,6 +1174,39 @@ export type Database = {
           },
         ]
       }
+      external_assets: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          public_url: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          public_url: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          public_url?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       funnel_asset_completions: {
         Row: {
           asset_id: string
