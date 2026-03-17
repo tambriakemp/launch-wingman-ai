@@ -98,7 +98,10 @@ Deno.serve(async (req) => {
         `/lists/${listUuid}/subscribers`, 'POST', sureContactApiKey,
         { contact_uuid: contactUuid }
       );
-      console.log(`List subscribe result: ${subRes.status}`);
+      console.log(`List subscribe result: ${subRes.status}`, JSON.stringify(subRes.data));
+      if (!subRes.success) {
+        console.error(`List subscribe failed for list ${listUuid}:`, subRes.error || subRes.data);
+      }
     } else {
       console.warn('Launchely list UUID not found in surecontact_config');
     }
