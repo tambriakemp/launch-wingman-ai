@@ -251,6 +251,9 @@ export function MarketingAssetsTab() {
 
   return (
     <div className="space-y-6">
+      {/* External Assets */}
+      <ExternalAssetsSection />
+
       {/* Header */}
       <Card>
         <CardHeader>
