@@ -76,30 +76,17 @@ const AdminBrandKit = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div>
       {/* Header */}
-      <div className="border-b border-border bg-card">
-        <div className="container max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => navigate('/admin')}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Brand Kit</h1>
-              <p className="text-sm text-muted-foreground">
-                Generate platform-specific social media brand assets
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Brand Kit</h1>
+        <p className="text-sm text-muted-foreground">
+          Generate platform-specific social media brand assets
+        </p>
       </div>
 
       {/* Main Content */}
-      <div className="container max-w-6xl mx-auto px-4 py-6">
+      <div>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full max-w-2xl grid-cols-5">
             <TabsTrigger value="source" className="flex items-center gap-2">

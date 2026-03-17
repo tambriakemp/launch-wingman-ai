@@ -648,32 +648,30 @@ function BrandingTab() {
 
 const AdminLinkInBio = () => {
   return (
-    <ProjectLayout>
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-xl font-bold text-foreground">Link-in-Bio Editor</h1>
-            <a href="/links" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <ExternalLink className="w-3.5 h-3.5" /> Preview
-              </Button>
-            </a>
-          </div>
-
-          <Tabs defaultValue="cards" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="cards" className="gap-1.5"><Link2 className="w-3.5 h-3.5" /> Cards</TabsTrigger>
-              <TabsTrigger value="social" className="gap-1.5"><Share2 className="w-3.5 h-3.5" /> Social Links</TabsTrigger>
-              <TabsTrigger value="branding" className="gap-1.5"><Palette className="w-3.5 h-3.5" /> Branding</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="cards"><CardsTab /></TabsContent>
-            <TabsContent value="social"><SocialLinksTab /></TabsContent>
-            <TabsContent value="branding"><BrandingTab /></TabsContent>
-          </Tabs>
+    <div className="flex-1 overflow-y-auto">
+      <div className="max-w-3xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl font-bold text-foreground">Link-in-Bio Editor</h1>
+          <a href="/links" target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <ExternalLink className="w-3.5 h-3.5" /> Preview
+            </Button>
+          </a>
         </div>
+
+        <Tabs defaultValue="cards" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="cards" className="gap-1.5"><Link2 className="w-3.5 h-3.5" /> Cards</TabsTrigger>
+            <TabsTrigger value="social" className="gap-1.5"><Share2 className="w-3.5 h-3.5" /> Social Links</TabsTrigger>
+            <TabsTrigger value="branding" className="gap-1.5"><Palette className="w-3.5 h-3.5" /> Branding</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="cards"><CardsTab /></TabsContent>
+          <TabsContent value="social"><SocialLinksTab /></TabsContent>
+          <TabsContent value="branding"><BrandingTab /></TabsContent>
+        </Tabs>
       </div>
-    </ProjectLayout>
+    </div>
   );
 };
 
