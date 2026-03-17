@@ -409,11 +409,68 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            {/* Admin routes - all wrapped in AdminLayout */}
             <Route
               path="/admin"
               element={
                 <ProtectedAdminRoute>
-                  <AdminDashboard />
+                  <AdminLayout><AdminOverview /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminDashboard defaultTab="users" /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/analytics"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminAnalytics /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/activity"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminActivityLogs /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/monitoring"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminMonitoring /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/coupons"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminCoupons /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/support"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminSupport /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/config"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminConfig /></AdminLayout>
                 </ProtectedAdminRoute>
               }
             />
@@ -421,23 +478,15 @@ const App = () => (
               path="/admin/content-vault"
               element={
                 <ProtectedAdminRoute>
-                  <AdminContentVault />
+                  <AdminLayout><AdminContentVault /></AdminLayout>
                 </ProtectedAdminRoute>
               }
             />
             <Route
-              path="/admin/docs"
+              path="/admin/assets"
               element={
                 <ProtectedAdminRoute>
-                  <AdminDocs />
-                </ProtectedAdminRoute>
-              }
-            />
-            <Route
-              path="/admin/video-instructions"
-              element={
-                <ProtectedAdminRoute>
-                  <AdminVideoInstructions />
+                  <AdminLayout><AdminAssets /></AdminLayout>
                 </ProtectedAdminRoute>
               }
             />
@@ -445,7 +494,7 @@ const App = () => (
               path="/admin/brand-kit"
               element={
                 <ProtectedAdminRoute>
-                  <AdminBrandKit />
+                  <AdminLayout><AdminBrandKit /></AdminLayout>
                 </ProtectedAdminRoute>
               }
             />
@@ -453,7 +502,23 @@ const App = () => (
               path="/admin/link-in-bio"
               element={
                 <ProtectedAdminRoute>
-                  <AdminLinkInBio />
+                  <AdminLayout><AdminLinkInBio /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/docs"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminDocs /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/video-instructions"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminVideoInstructions /></AdminLayout>
                 </ProtectedAdminRoute>
               }
             />
