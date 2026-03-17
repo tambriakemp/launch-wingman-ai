@@ -591,73 +591,8 @@ const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) =>
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-3 md:py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
-              <Shield className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-lg md:text-xl font-bold text-foreground">Admin Dashboard</h1>
-              <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">Manage users and subscriptions</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" asChild className="hidden sm:inline-flex">
-              <Link to="/app">← Back to App</Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild className="sm:hidden">
-              <Link to="/app">← Back</Link>
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleSignOut} className="hidden sm:inline-flex">
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-            <Button variant="outline" size="icon" onClick={handleSignOut} className="sm:hidden h-9 w-9">
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-4 md:py-8">
-        {/* Quick Actions */}
-        <div className="mb-4 md:mb-6 flex flex-wrap gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link to="/admin/content-vault">
-              <Package className="h-4 w-4 mr-2" />
-              Manage Content Vault
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/admin/docs">
-              <BookOpen className="h-4 w-4 mr-2" />
-              Training & Docs
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/admin/video-instructions">
-              <Video className="h-4 w-4 mr-2" />
-              Video Instructions
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/admin/brand-kit">
-              <Palette className="h-4 w-4 mr-2" />
-              Brand Kit
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/admin/link-in-bio">
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Link-in-Bio
-            </Link>
-          </Button>
-        </div>
-
-        {/* Tabbed Content */}
+    <div>
+      <main className="space-y-4 md:space-y-6">
         <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="mb-6 w-full justify-start overflow-x-auto">
             <TabsTrigger value="overview" className="gap-2">
