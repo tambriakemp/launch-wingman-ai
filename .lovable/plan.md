@@ -1,16 +1,23 @@
 
 
-# Fix Sidebar Card Background & Week Grid Alignment
+## Fix: Allow Repeat Email Submissions on Link in Bio
 
-## Changes in `src/components/planner/PlannerCalendarView.tsx`
+### Problem
+Two issues prevent the tag from being reapplied on a second submission:
 
-### 1. Card background color
-Change `bg-sidebar` on the three card containers (Mini Calendar, My List, Categories) to match the main navigation background. The nav uses `bg-sidebar` too — so the cards blend in. Use a slightly lighter shade like `bg-sidebar-accent` (which is `40 6% 15%`) to make cards distinct from the nav, or use `bg-[hsl(40,6%,12%)]` for a subtle lift.
+1. **Frontend blocks resubmission**: Once `submitState` is set to `"success"`, the submit button is disabled (`disabled={submitState !== "idle"}`), and the form never resets. The user literally cannot submit again.
 
-Lines affected: ~205, ~273, ~295 — the three `rounded-xl bg-sidebar p-4` divs.
+2. **Backend tag attach is idempotent**: SureContact's `/contacts/{uuid}/tags/attach` likely returns success but doesn't "re-trigger" anything if the tag is already attached. To force a re-application, we need to **detach then reattach** the tag.
 
-### 2. Vertical line alignment fix
-The day column headers are a fixed row above the scrollable time grid. The scrollbar in the time grid area takes up space, causing the columns below to be narrower than the headers. Fix by adding `overflow-y-scroll` (always show scrollbar space) to the scroll container, or better, add a matching right padding/margin to the header row to account for scrollbar width. The cleanest approach: wrap both header and grid in the same scroll container so they share the same width context.
+### Changes
 
-**Approach**: Move the day column headers inside the `overflow-y-auto` scroll container (before the grid div), and make them sticky at top with `sticky top-0 z-10 bg-background`. This ensures headers and grid columns share the exact same width.
+**`src/pages/LinkInBio.tsx`**
+- After showing the success message for ~3 seconds, reset `submitState` back to `"idle"` and clear the email input so the user can submit again.
+
+**`supabase/functions/linkinbio-subscribe/index.ts`**
+- Before attaching the `link-in-bio` tag, first call `POST /contacts/{contactUuid}/tags/detach` with `{ tag_uuids: [tagUuid] }` to remove it, then reattach. This ensures the tag event fires fresh in SureContact even for existing contacts.
+
+### Summary of Steps
+1. Add a detach-then-attach pattern for the tag in the edge function
+2. Reset the frontend form state after a short delay so repeat submissions are possible
 
