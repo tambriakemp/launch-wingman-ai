@@ -153,6 +153,12 @@ Deno.serve(async (req) => {
           console.log(`Saved link-in-bio tag to config: ${resolvedTagUuid}`);
         }
         
+        // Detach first to ensure re-trigger
+        const detachRes2 = await sureContactRequest(
+          `/contacts/${contactUuid}/tags/detach`, 'POST', sureContactApiKey,
+          { tag_uuids: [resolvedTagUuid] }
+        );
+        console.log(`Tag detach result: ${detachRes2.status}`, JSON.stringify(detachRes2.data));
         const attachRes = await sureContactRequest(
           `/contacts/${contactUuid}/tags/attach`, 'POST', sureContactApiKey,
           { tag_uuids: [resolvedTagUuid] }

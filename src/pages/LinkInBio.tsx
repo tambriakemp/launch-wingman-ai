@@ -203,9 +203,11 @@ const LinkInBio = () => {
       });
       if (error) throw error;
       setSubmitState("success");
+      setTimeout(() => { setSubmitState("idle"); setEmail(""); }, 3000);
     } catch (err) {
       console.error("Email subscribe error:", err);
-      setSubmitState("success"); // Still show success to user for UX
+      setSubmitState("success");
+      setTimeout(() => { setSubmitState("idle"); setEmail(""); }, 3000);
     }
   };
 
