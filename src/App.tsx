@@ -98,7 +98,6 @@ import Goals from "./pages/Goals";
 import BrainDump from "./pages/BrainDump";
 import WeeklyReview from "./pages/WeeklyReview";
 import LinkInBio from "./pages/LinkInBio";
-import AdminLinkInBio from "./pages/AdminLinkInBio";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
