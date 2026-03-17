@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { ArrowLeft, Video, Search, Save, Trash2, ExternalLink, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Video, Search, Save, Trash2, ExternalLink, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { TASK_TEMPLATES } from '@/data/taskTemplates';
 import { PHASE_LABELS, Phase } from '@/types/tasks';
 
@@ -187,14 +187,10 @@ const AdminVideoInstructions = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+    <div>
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <Link to="/admin" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Admin
-          </Link>
           <div className="flex items-center gap-3 mb-2">
             <Video className="h-8 w-8 text-primary" />
             <h1 className="text-3xl font-bold">Video Instructions Manager</h1>

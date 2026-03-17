@@ -276,7 +276,7 @@ const MobileUserCard = ({
   );
 };
 
-const AdminDashboard = () => {
+const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) => {
   const { session, signOut, startImpersonation, user: currentUser } = useAuth();
   const { isAdmin } = useAdmin();
   const navigate = useNavigate();
@@ -591,111 +591,19 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-3 md:py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
-              <Shield className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-lg md:text-xl font-bold text-foreground">Admin Dashboard</h1>
-              <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">Manage users and subscriptions</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" asChild className="hidden sm:inline-flex">
-              <Link to="/app">← Back to App</Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild className="sm:hidden">
-              <Link to="/app">← Back</Link>
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleSignOut} className="hidden sm:inline-flex">
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-            <Button variant="outline" size="icon" onClick={handleSignOut} className="sm:hidden h-9 w-9">
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-4 md:py-8">
-        {/* Quick Actions */}
-        <div className="mb-4 md:mb-6 flex flex-wrap gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link to="/admin/content-vault">
-              <Package className="h-4 w-4 mr-2" />
-              Manage Content Vault
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/admin/docs">
-              <BookOpen className="h-4 w-4 mr-2" />
-              Training & Docs
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/admin/video-instructions">
-              <Video className="h-4 w-4 mr-2" />
-              Video Instructions
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/admin/brand-kit">
-              <Palette className="h-4 w-4 mr-2" />
-              Brand Kit
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/admin/link-in-bio">
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Link-in-Bio
-            </Link>
-          </Button>
-        </div>
-
-        {/* Tabbed Content */}
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="mb-6 w-full justify-start overflow-x-auto">
-            <TabsTrigger value="overview" className="gap-2">
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">Overview</span>
-            </TabsTrigger>
-            <TabsTrigger value="users" className="gap-2">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Users</span>
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2">
-              <Activity className="h-4 w-4" />
-              <span className="hidden sm:inline">Analytics</span>
-            </TabsTrigger>
-            <TabsTrigger value="activity" className="gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Activity Logs</span>
-            </TabsTrigger>
-            <TabsTrigger value="monitoring" className="gap-2">
-              <Bell className="h-4 w-4" />
-              <span className="hidden sm:inline">Monitoring</span>
-            </TabsTrigger>
-            <TabsTrigger value="config" className="gap-2">
-              <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Config</span>
-            </TabsTrigger>
-            <TabsTrigger value="support" className="gap-2">
-              <Headphones className="h-4 w-4" />
-              <span className="hidden sm:inline">Support</span>
-            </TabsTrigger>
-            <TabsTrigger value="coupons" className="gap-2">
-              <Tag className="h-4 w-4" />
-              <span className="hidden sm:inline">Coupons</span>
-            </TabsTrigger>
-            <TabsTrigger value="assets" className="gap-2">
-              <ImageIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Assets</span>
-            </TabsTrigger>
+    <div>
+      <main className="space-y-4 md:space-y-6">
+        <Tabs defaultValue={defaultTab} className="w-full">
+          <TabsList className="sr-only">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="activity">Activity Logs</TabsTrigger>
+            <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
+            <TabsTrigger value="config">Config</TabsTrigger>
+            <TabsTrigger value="support">Support</TabsTrigger>
+            <TabsTrigger value="coupons">Coupons</TabsTrigger>
+            <TabsTrigger value="assets">Assets</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}

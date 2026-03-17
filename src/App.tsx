@@ -28,7 +28,17 @@ import AdminContentVault from "./pages/AdminContentVault";
 import AdminDocs from "./pages/AdminDocs";
 import AdminVideoInstructions from "./pages/AdminVideoInstructions";
 import AdminBrandKit from "./pages/AdminBrandKit";
-import NotFound from "./pages/NotFound";
+import AdminLinkInBio from "./pages/AdminLinkInBio";
+import AdminOverview from "./pages/admin/AdminOverview";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminActivityLogs from "./pages/admin/AdminActivityLogs";
+import AdminMonitoring from "./pages/admin/AdminMonitoring";
+import AdminConfig from "./pages/admin/AdminConfig";
+import AdminSupport from "./pages/admin/AdminSupport";
+import AdminCoupons from "./pages/admin/AdminCoupons";
+import AdminAssets from "./pages/admin/AdminAssets";
+import { AdminLayout } from "./components/layout/AdminLayout";
 import SalesFunnel from "./pages/SalesFunnel";
 import AITwinFormula from "./pages/AITwinFormula";
 import AITwinThankYou from "./pages/AITwinThankYou";
@@ -88,7 +98,7 @@ import Goals from "./pages/Goals";
 import BrainDump from "./pages/BrainDump";
 import WeeklyReview from "./pages/WeeklyReview";
 import LinkInBio from "./pages/LinkInBio";
-import AdminLinkInBio from "./pages/AdminLinkInBio";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -399,11 +409,68 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            {/* Admin routes - all wrapped in AdminLayout */}
             <Route
               path="/admin"
               element={
                 <ProtectedAdminRoute>
-                  <AdminDashboard />
+                  <AdminLayout><AdminOverview /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminDashboard defaultTab="users" /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/analytics"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminAnalytics /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/activity"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminActivityLogs /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/monitoring"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminMonitoring /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/coupons"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminCoupons /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/support"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminSupport /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/config"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminConfig /></AdminLayout>
                 </ProtectedAdminRoute>
               }
             />
@@ -411,23 +478,15 @@ const App = () => (
               path="/admin/content-vault"
               element={
                 <ProtectedAdminRoute>
-                  <AdminContentVault />
+                  <AdminLayout><AdminContentVault /></AdminLayout>
                 </ProtectedAdminRoute>
               }
             />
             <Route
-              path="/admin/docs"
+              path="/admin/assets"
               element={
                 <ProtectedAdminRoute>
-                  <AdminDocs />
-                </ProtectedAdminRoute>
-              }
-            />
-            <Route
-              path="/admin/video-instructions"
-              element={
-                <ProtectedAdminRoute>
-                  <AdminVideoInstructions />
+                  <AdminLayout><AdminAssets /></AdminLayout>
                 </ProtectedAdminRoute>
               }
             />
@@ -435,7 +494,7 @@ const App = () => (
               path="/admin/brand-kit"
               element={
                 <ProtectedAdminRoute>
-                  <AdminBrandKit />
+                  <AdminLayout><AdminBrandKit /></AdminLayout>
                 </ProtectedAdminRoute>
               }
             />
@@ -443,7 +502,23 @@ const App = () => (
               path="/admin/link-in-bio"
               element={
                 <ProtectedAdminRoute>
-                  <AdminLinkInBio />
+                  <AdminLayout><AdminLinkInBio /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/docs"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminDocs /></AdminLayout>
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/video-instructions"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout><AdminVideoInstructions /></AdminLayout>
                 </ProtectedAdminRoute>
               }
             />
