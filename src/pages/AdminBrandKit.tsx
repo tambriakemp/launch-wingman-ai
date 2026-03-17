@@ -11,7 +11,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { 
-  ArrowLeft, 
   Palette, 
   Settings2, 
   Image as ImageIcon, 

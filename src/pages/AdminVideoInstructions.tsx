@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { ArrowLeft, Video, Search, Save, Trash2, ExternalLink, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Video, Search, Save, Trash2, ExternalLink, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { TASK_TEMPLATES } from '@/data/taskTemplates';
 import { PHASE_LABELS, Phase } from '@/types/tasks';
 
