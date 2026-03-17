@@ -276,7 +276,7 @@ const MobileUserCard = ({
   );
 };
 
-const AdminDashboard = () => {
+const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) => {
   const { session, signOut, startImpersonation, user: currentUser } = useAuth();
   const { isAdmin } = useAdmin();
   const navigate = useNavigate();
