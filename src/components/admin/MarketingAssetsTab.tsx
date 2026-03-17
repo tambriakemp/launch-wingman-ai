@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { toPng } from 'html-to-image';
 import JSZip from 'jszip';
 import { MotionConfig } from 'framer-motion';
+import { ExternalAssetsSection } from './ExternalAssetsSection';
 
 // Import all mockup components
 import { DashboardMockup } from '@/components/landing/screenshots/DashboardMockup';
