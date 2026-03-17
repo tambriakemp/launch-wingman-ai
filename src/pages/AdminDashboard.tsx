@@ -658,7 +658,7 @@ const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) =>
         </div>
 
         {/* Tabbed Content */}
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="mb-6 w-full justify-start overflow-x-auto">
             <TabsTrigger value="overview" className="gap-2">
               <BarChart3 className="h-4 w-4" />
