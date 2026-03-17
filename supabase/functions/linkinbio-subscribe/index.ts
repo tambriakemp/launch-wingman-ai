@@ -98,7 +98,10 @@ Deno.serve(async (req) => {
         `/lists/${listUuid}/subscribers`, 'POST', sureContactApiKey,
         { contact_uuid: contactUuid }
       );
-      console.log(`List subscribe result: ${subRes.status}`);
+      console.log(`List subscribe result: ${subRes.status}`, JSON.stringify(subRes.data));
+      if (!subRes.success) {
+        console.error(`List subscribe failed for list ${listUuid}:`, subRes.error || subRes.data);
+      }
     } else {
       console.warn('Launchely list UUID not found in surecontact_config');
     }
@@ -109,20 +112,49 @@ Deno.serve(async (req) => {
         `/contacts/${contactUuid}/tags/attach`, 'POST', sureContactApiKey,
         { tag_uuids: [tagUuid] }
       );
-      console.log(`Tag attach result: ${tagRes.status}`);
+      console.log(`Tag attach result: ${tagRes.status}`, JSON.stringify(tagRes.data));
     } else {
-      // Auto-create the tag if it doesn't exist
-      console.log('link-in-bio tag not found, creating...');
-      const createTagRes = await sureContactRequest('/tags', 'POST', sureContactApiKey, { name: 'link-in-bio' });
-      if (createTagRes.success && createTagRes.data?.data?.uuid) {
-        const newTagUuid = createTagRes.data.data.uuid;
-        await supabase.from('surecontact_config').insert({
-          config_type: 'tag', name: 'link-in-bio', surecontact_uuid: newTagUuid,
+      // Auto-create the tag if it doesn't exist in config
+      console.log('link-in-bio tag not found in config, attempting to find or create in SureContact...');
+      
+      // First try to find existing tag by name
+      const searchTagRes = await sureContactRequest('/tags?search=link-in-bio', 'GET', sureContactApiKey);
+      console.log('Tag search result:', JSON.stringify(searchTagRes.data));
+      
+      let resolvedTagUuid: string | undefined;
+      
+      if (searchTagRes.success && searchTagRes.data?.data?.length > 0) {
+        const existingTag = searchTagRes.data.data.find((t: any) => t.name === 'link-in-bio');
+        if (existingTag?.uuid) {
+          resolvedTagUuid = existingTag.uuid;
+          console.log(`Found existing tag in SureContact: ${resolvedTagUuid}`);
+        }
+      }
+      
+      if (!resolvedTagUuid) {
+        const createTagRes = await sureContactRequest('/tags', 'POST', sureContactApiKey, { name: 'link-in-bio' });
+        console.log('Tag create result:', JSON.stringify(createTagRes.data));
+        resolvedTagUuid = createTagRes.data?.data?.uuid || createTagRes.data?.uuid;
+      }
+      
+      if (resolvedTagUuid) {
+        // Save to config for future lookups
+        const { error: insertError } = await supabase.from('surecontact_config').insert({
+          config_type: 'tag', name: 'link-in-bio', surecontact_uuid: resolvedTagUuid,
         });
-        await sureContactRequest(
+        if (insertError) {
+          console.warn('Failed to save tag config (may already exist):', insertError.message);
+        } else {
+          console.log(`Saved link-in-bio tag to config: ${resolvedTagUuid}`);
+        }
+        
+        const attachRes = await sureContactRequest(
           `/contacts/${contactUuid}/tags/attach`, 'POST', sureContactApiKey,
-          { tag_uuids: [newTagUuid] }
+          { tag_uuids: [resolvedTagUuid] }
         );
+        console.log(`Tag attach result: ${attachRes.status}`, JSON.stringify(attachRes.data));
+      } else {
+        console.error('Failed to find or create link-in-bio tag');
       }
     }
 
