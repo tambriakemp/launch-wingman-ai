@@ -594,43 +594,16 @@ const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) =>
     <div>
       <main className="space-y-4 md:space-y-6">
         <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="mb-6 w-full justify-start overflow-x-auto">
-            <TabsTrigger value="overview" className="gap-2">
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">Overview</span>
-            </TabsTrigger>
-            <TabsTrigger value="users" className="gap-2">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Users</span>
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2">
-              <Activity className="h-4 w-4" />
-              <span className="hidden sm:inline">Analytics</span>
-            </TabsTrigger>
-            <TabsTrigger value="activity" className="gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Activity Logs</span>
-            </TabsTrigger>
-            <TabsTrigger value="monitoring" className="gap-2">
-              <Bell className="h-4 w-4" />
-              <span className="hidden sm:inline">Monitoring</span>
-            </TabsTrigger>
-            <TabsTrigger value="config" className="gap-2">
-              <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Config</span>
-            </TabsTrigger>
-            <TabsTrigger value="support" className="gap-2">
-              <Headphones className="h-4 w-4" />
-              <span className="hidden sm:inline">Support</span>
-            </TabsTrigger>
-            <TabsTrigger value="coupons" className="gap-2">
-              <Tag className="h-4 w-4" />
-              <span className="hidden sm:inline">Coupons</span>
-            </TabsTrigger>
-            <TabsTrigger value="assets" className="gap-2">
-              <ImageIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Assets</span>
-            </TabsTrigger>
+          <TabsList className="sr-only">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="activity">Activity Logs</TabsTrigger>
+            <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
+            <TabsTrigger value="config">Config</TabsTrigger>
+            <TabsTrigger value="support">Support</TabsTrigger>
+            <TabsTrigger value="coupons">Coupons</TabsTrigger>
+            <TabsTrigger value="assets">Assets</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
