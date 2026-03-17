@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { toPng } from 'html-to-image';
 import JSZip from 'jszip';
 import { MotionConfig } from 'framer-motion';
+import { ExternalAssetsSection } from './ExternalAssetsSection';
 
 // Import all mockup components
 import { DashboardMockup } from '@/components/landing/screenshots/DashboardMockup';
@@ -250,6 +251,9 @@ export function MarketingAssetsTab() {
 
   return (
     <div className="space-y-6">
+      {/* External Assets */}
+      <ExternalAssetsSection />
+
       {/* Header */}
       <Card>
         <CardHeader>

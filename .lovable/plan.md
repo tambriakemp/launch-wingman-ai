@@ -1,41 +1,16 @@
 
 
-## Add External Assets Uploader to Admin Assets Tab
+# Fix Sidebar Card Background & Week Grid Alignment
 
-**Goal**: Allow admins to upload documents/files and get shareable public URLs that don't require authentication.
+## Changes in `src/components/planner/PlannerCalendarView.tsx`
 
-### Approach
+### 1. Card background color
+Change `bg-sidebar` on the three card containers (Mini Calendar, My List, Categories) to match the main navigation background. The nav uses `bg-sidebar` too — so the cards blend in. Use a slightly lighter shade like `bg-sidebar-accent` (which is `40 6% 15%`) to make cards distinct from the nav, or use `bg-[hsl(40,6%,12%)]` for a subtle lift.
 
-Add a new "External Assets" card to the existing `MarketingAssetsTab` component (the Assets tab in `/admin`). This will use the existing `brand-assets` public storage bucket with a new `external/` folder prefix.
+Lines affected: ~205, ~273, ~295 — the three `rounded-xl bg-sidebar p-4` divs.
 
-### Database
+### 2. Vertical line alignment fix
+The day column headers are a fixed row above the scrollable time grid. The scrollbar in the time grid area takes up space, causing the columns below to be narrower than the headers. Fix by adding `overflow-y-scroll` (always show scrollbar space) to the scroll container, or better, add a matching right padding/margin to the header row to account for scrollbar width. The cleanest approach: wrap both header and grid in the same scroll container so they share the same width context.
 
-- **New table `external_assets`**: Tracks uploaded files with metadata (name, file path, public URL, file size, mime type, uploaded_by). RLS: admin-only write, public read.
-
-### Storage
-
-- Use existing **`brand-assets`** bucket (already public) with an `external/` folder prefix.
-- Add RLS policy for admin uploads if not already covered.
-
-### UI Changes (`MarketingAssetsTab.tsx`)
-
-Add a new card section above or below the mockups grid:
-
-1. **Upload area** -- drag-and-drop or click to upload any file type (PDF, images, docs, etc.)
-2. **Uploaded files list** -- table/grid showing:
-   - File name
-   - File type badge
-   - File size
-   - Upload date
-   - **Copy Link** button (copies public URL to clipboard)
-   - **Open** button (opens in new tab)
-   - **Delete** button
-3. Files are uploaded to `brand-assets/external/{timestamp}-{filename}`
-4. Public URL is stored in `external_assets` table for easy retrieval
-
-### Steps
-
-1. Create `external_assets` table with RLS policies (admin write, public read)
-2. Add storage RLS policies for `brand-assets` bucket `external/` path if needed
-3. Build the upload + file list UI section within the Assets tab
+**Approach**: Move the day column headers inside the `overflow-y-auto` scroll container (before the grid div), and make them sticky at top with `sticky top-0 z-10 bg-background`. This ensures headers and grid columns share the exact same width.
 
