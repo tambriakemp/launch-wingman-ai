@@ -808,14 +808,9 @@ const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) =>
                           user={user}
                           isSelected={selectedUsers.has(user.id)}
                           onToggleSelect={() => toggleUserSelection(user.id)}
-                          onActivity={() => setActivityDialog({ open: true, user })}
-                          onEdit={() => setEditUserDialog({ open: true, user })}
                           onImpersonate={() => handleImpersonateClick(user)}
                           impersonateLoading={impersonateLoading}
                           currentUserId={currentUser?.id}
-                          accessToken={session?.access_token || ''}
-                          onRefresh={fetchUsers}
-                          isAdmin={isAdmin}
                         />
                       ))}
                     </div>
