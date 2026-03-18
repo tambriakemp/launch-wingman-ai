@@ -29,6 +29,7 @@ import AdminDocs from "./pages/AdminDocs";
 import AdminVideoInstructions from "./pages/AdminVideoInstructions";
 import AdminBrandKit from "./pages/AdminBrandKit";
 import AdminLinkInBio from "./pages/AdminLinkInBio";
+import AdminUserDetail from "./pages/admin/AdminUserDetail";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
