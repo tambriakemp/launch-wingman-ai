@@ -140,28 +140,19 @@ const MobileUserCard = ({
   user, 
   isSelected, 
   onToggleSelect, 
-  onActivity,
-  onEdit, 
   onImpersonate, 
   impersonateLoading, 
   currentUserId,
-  accessToken,
-  onRefresh,
-  isAdmin
 }: {
   user: User & { project_count: number };
   isSelected: boolean;
   onToggleSelect: () => void;
-  onActivity: () => void;
-  onEdit: () => void;
   onImpersonate: () => void;
   impersonateLoading: string | null;
   currentUserId: string | undefined;
-  accessToken: string;
-  onRefresh: () => void;
-  isAdmin: boolean;
 }) => {
   const isDisabled = user.banned_until && new Date(user.banned_until) > new Date();
+  const navigate = useNavigate();
   
   return (
     <Card className={cn("mb-3", isSelected && "ring-2 ring-primary", isDisabled && "opacity-75")}>
@@ -183,21 +174,14 @@ const MobileUserCard = ({
               <p className="text-sm text-muted-foreground truncate max-w-[180px]">{user.email}</p>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-1">
-            <Badge
-              variant={user.is_admin || user.is_manager ? 'default' : user.subscription_status === 'pro' ? 'default' : user.subscription_status === 'content_vault' ? 'default' : 'secondary'}
-              className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : user.subscription_status === 'content_vault' ? 'bg-green-500 hover:bg-green-600' : ''}
-            >
-              {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : user.subscription_status === 'content_vault' ? 'Vault' : 'Free'}
-            </Badge>
-            <PaymentSourceBadge paymentSource={user.payment_source} couponName={user.coupon_name} />
-          </div>
+          <Badge
+            variant={user.is_admin || user.is_manager || user.subscription_status !== 'free' ? 'default' : 'secondary'}
+            className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : user.subscription_status === 'content_vault' ? 'bg-green-500 hover:bg-green-600' : ''}
+          >
+            {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : user.subscription_status === 'content_vault' ? 'Vault' : 'Free'}
+          </Badge>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-sm mb-3">
-          <div>
-            <span className="text-muted-foreground">Projects:</span>{' '}
-            <span className="font-medium">{user.project_count}</span>
-          </div>
+        <div className="grid grid-cols-2 gap-2 text-sm mb-3">
           <div>
             <span className="text-muted-foreground">Joined:</span>{' '}
             {format(new Date(user.created_at), 'MMM d, yyyy')}
@@ -208,68 +192,25 @@ const MobileUserCard = ({
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={onActivity}>
-            <Activity className="h-4 w-4 mr-1" />
-            Activity
-          </Button>
-          <Button variant="outline" size="sm" onClick={onEdit}>
+          {user.id !== currentUserId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onImpersonate}
+              disabled={impersonateLoading === user.id}
+            >
+              {impersonateLoading === user.id ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Eye className="h-4 w-4 mr-1" />
+              )}
+              View As
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => navigate(`/admin/users/${user.id}`)}>
             <Pencil className="h-4 w-4 mr-1" />
             Edit
           </Button>
-          <UserProjectsDialog
-            userId={user.id}
-            userEmail={user.email}
-            userName={`${user.first_name || ''} ${user.last_name || ''}`.trim()}
-            accessToken={accessToken}
-          />
-          <ExportUserDataDialog
-            userId={user.id}
-            userEmail={user.email}
-            userName={`${user.first_name || ''} ${user.last_name || ''}`.trim()}
-            accessToken={accessToken}
-          />
-          {user.id !== currentUserId && (
-            <>
-              {isAdmin && (
-                <UserStatusToggle
-                  userId={user.id}
-                  userEmail={user.email}
-                  isDisabled={!!isDisabled}
-                  accessToken={accessToken}
-                  onStatusChanged={onRefresh}
-                />
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onImpersonate}
-                disabled={impersonateLoading === user.id}
-              >
-                {impersonateLoading === user.id ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Eye className="h-4 w-4 mr-1" />
-                )}
-                View
-              </Button>
-            </>
-          )}
-          <SubscriptionTierToggle
-            userId={user.id}
-            userEmail={user.email}
-            currentTier={user.subscription_status}
-            stripeSubscriptionId={user.stripe_subscription_id}
-            accessToken={accessToken}
-            onTierChanged={onRefresh}
-          />
-          {user.id !== currentUserId && isAdmin && (
-            <DeleteUserDialog
-              userId={user.id}
-              userEmail={user.email}
-              accessToken={accessToken}
-              onUserDeleted={onRefresh}
-            />
-          )}
         </div>
       </CardContent>
     </Card>
