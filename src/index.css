@@ -216,6 +216,14 @@
   .touch-target {
     @apply min-h-[44px] min-w-[44px];
   }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @keyframes fadeIn {
