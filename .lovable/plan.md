@@ -1,16 +1,46 @@
 
 
-# Fix Sidebar Card Background & Week Grid Alignment
+## Simplify User Table Rows with Edit Detail Page
 
-## Changes in `src/components/planner/PlannerCalendarView.tsx`
+### Problem
+Each user row currently has 7+ icon buttons (activity, edit email/password, view projects, export data, enable/disable, impersonate, subscription toggle, delete) plus inline role toggles and payment badges. It's visually cluttered and hard to scan.
 
-### 1. Card background color
-Change `bg-sidebar` on the three card containers (Mini Calendar, My List, Categories) to match the main navigation background. The nav uses `bg-sidebar` too — so the cards blend in. Use a slightly lighter shade like `bg-sidebar-accent` (which is `40 6% 15%`) to make cards distinct from the nav, or use `bg-[hsl(40,6%,12%)]` for a subtle lift.
+### Solution
+Strip the row down to essential info and a clean "Edit" button. Clicking Edit opens a dedicated detail page (`/admin/users/:id`) with all actions organized into clear sections.
 
-Lines affected: ~205, ~273, ~295 — the three `rounded-xl bg-sidebar p-4` divs.
+### Row columns (simplified)
+- Checkbox (for bulk actions)
+- User (name + email)
+- Status badge (Free/Pro/Vault/Admin/Manager)
+- Joined date
+- Last Active
+- View As button (impersonate — stays inline since it navigates away)
+- Edit button (opens detail page)
 
-### 2. Vertical line alignment fix
-The day column headers are a fixed row above the scrollable time grid. The scrollbar in the time grid area takes up space, causing the columns below to be narrower than the headers. Fix by adding `overflow-y-scroll` (always show scrollbar space) to the scroll container, or better, add a matching right padding/margin to the header row to account for scrollbar width. The cleanest approach: wrap both header and grid in the same scroll container so they share the same width context.
+Remove from row: activity log, edit email/password, projects dialog, export, status toggle, subscription toggle, delete, role toggle, payment source badge.
 
-**Approach**: Move the day column headers inside the `overflow-y-auto` scroll container (before the grid div), and make them sticky at top with `sticky top-0 z-10 bg-background`. This ensures headers and grid columns share the exact same width.
+### New User Detail Page (`/admin/users/:id`)
+A full page with sections:
+
+**Header** — User name, email, status badge, payment source badge
+
+**Account** — Update email, generate temp password (existing EditUserDialog content, but inline)
+
+**Subscription** — Current tier, payment info, change tier toggle
+
+**Roles & Access** — Admin/Manager role toggle, Enable/Disable account
+
+**Activity** — Activity log viewer, last active info
+
+**Projects** — Project list (existing UserProjectsDialog content)
+
+**Data & Danger Zone** — Export user data, Delete user
+
+### Files to create/modify
+
+1. **`src/pages/admin/AdminUserDetail.tsx`** (new) — Full detail page composing existing components (EditUserDialog content, AdminRoleToggle, SubscriptionTierToggle, UserStatusToggle, UserProjectsDialog, ExportUserDataDialog, DeleteUserDialog) into card sections instead of dialogs/icon buttons.
+
+2. **`src/pages/AdminDashboard.tsx`** — Strip the Actions column down to just View As + Edit (link to `/admin/users/:id`). Remove payment badge and role toggle from inline display.
+
+3. **`src/App.tsx`** — Add route for `/admin/users/:id`.
 
