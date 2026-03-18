@@ -428,6 +428,14 @@ const App = () => (
               }
             />
             <Route
+              path="/admin/users/:id"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminUserDetail />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
               path="/admin/analytics"
               element={
                 <ProtectedAdminRoute>
