@@ -141,7 +141,7 @@ const SidebarContent = ({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-3">
+      <nav className="flex-1 overflow-y-auto scrollbar-hide px-3 py-2 space-y-3">
         {navSections.map((section, sectionIndex) => (
           <div key={section.heading}>
             {sectionIndex > 0 && <Separator className="mb-3 bg-sidebar-border" />}
