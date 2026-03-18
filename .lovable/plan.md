@@ -1,16 +1,18 @@
 
 
-# Fix Sidebar Card Background & Week Grid Alignment
+## Remove Scrollbar from Sidebar Navigation
 
-## Changes in `src/components/planner/PlannerCalendarView.tsx`
+### Problem
+Both the admin and user sidebars use `overflow-y-auto` on the nav element, which shows a visible scrollbar that disrupts the clean design.
 
-### 1. Card background color
-Change `bg-sidebar` on the three card containers (Mini Calendar, My List, Categories) to match the main navigation background. The nav uses `bg-sidebar` too — so the cards blend in. Use a slightly lighter shade like `bg-sidebar-accent` (which is `40 6% 15%`) to make cards distinct from the nav, or use `bg-[hsl(40,6%,12%)]` for a subtle lift.
+### Solution
+Replace `overflow-y-auto` with `overflow-y-auto scrollbar-hide` using a custom CSS utility that hides the scrollbar while preserving scroll functionality. The nav will still scroll on overflow (via touch/trackpad/mousewheel) but without the visible scrollbar.
 
-Lines affected: ~205, ~273, ~295 — the three `rounded-xl bg-sidebar p-4` divs.
+### Changes
 
-### 2. Vertical line alignment fix
-The day column headers are a fixed row above the scrollable time grid. The scrollbar in the time grid area takes up space, causing the columns below to be narrower than the headers. Fix by adding `overflow-y-scroll` (always show scrollbar space) to the scroll container, or better, add a matching right padding/margin to the header row to account for scrollbar width. The cleanest approach: wrap both header and grid in the same scroll container so they share the same width context.
+1. **`src/index.css`** — Add a `.scrollbar-hide` utility class that uses webkit and Firefox CSS to hide the scrollbar.
 
-**Approach**: Move the day column headers inside the `overflow-y-auto` scroll container (before the grid div), and make them sticky at top with `sticky top-0 z-10 bg-background`. This ensures headers and grid columns share the exact same width.
+2. **`src/components/layout/AdminSidebar.tsx`** — Change `overflow-y-auto` to `overflow-y-auto scrollbar-hide` on the nav element (line 124).
+
+3. **`src/components/layout/ProjectSidebar.tsx`** — Same change on its nav element (line 144).
 
