@@ -691,6 +691,7 @@ const AdminUserDetail = () => {
         open={activityOpen}
         onOpenChange={setActivityOpen}
         user={user}
+        accessToken={accessToken}
       />
     </AdminLayout>
   );
