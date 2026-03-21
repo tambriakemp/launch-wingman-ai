@@ -52,6 +52,7 @@ import CampaignAnalytics from "./pages/CampaignAnalytics";
 import CampaignPlanner from "./pages/CampaignPlanner";
 import CampaignDetail from "./pages/CampaignDetail";
 import SocialPlanner from "./pages/SocialPlanner";
+import ContentIdeasBank from "./pages/ContentIdeasBank";
 
 // Feature pages
 import AssessmentsFeature from "./pages/features/AssessmentsFeature";
@@ -603,8 +604,15 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/ideas"
+              element={
+                <ProtectedRoute>
+                  <ContentIdeasBank />
+                </ProtectedRoute>
+              }
+            />
 
-            {/* Habits */}
             <Route
               path="/habits"
               element={

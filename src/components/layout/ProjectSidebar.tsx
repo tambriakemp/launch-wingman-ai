@@ -259,7 +259,8 @@ const SidebarContent = ({
            const marketingItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean; requiresProject?: boolean; isProOnly?: boolean }[] = [
             { label: "Campaigns", href: "/marketing-hub/campaigns", icon: Target, isProOnly: true },
             { label: "Social Planner", href: projectId ? `/projects/${projectId}/content` : "/social-planner", icon: MessageSquareText, isProOnly: true },
-            { label: "AI Studio", href: "/app/ai-studio", icon: Wand2, isProOnly: true },
+             { label: "Ideas Bank", href: "/ideas", icon: Lightbulb, isProOnly: true },
+             { label: "AI Studio", href: "/app/ai-studio", icon: Wand2, isProOnly: true },
             { label: "Analytics", href: "/marketing-hub/analytics", icon: BarChart3, isProOnly: true },
           ];
           const resourceItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; requiresProject?: boolean }[] = [

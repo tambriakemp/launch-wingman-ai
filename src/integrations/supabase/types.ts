@@ -1541,6 +1541,51 @@ export type Database = {
         }
         Relationships: []
       }
+      idea_bank: {
+        Row: {
+          category: string
+          created_at: string
+          format: string
+          hook: string | null
+          id: string
+          notes: string | null
+          platform: string
+          promoted_to: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          format?: string
+          hook?: string | null
+          id?: string
+          notes?: string | null
+          platform?: string
+          promoted_to?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          format?: string
+          hook?: string | null
+          id?: string
+          notes?: string | null
+          platform?: string
+          promoted_to?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       impersonation_logs: {
         Row: {
           action: string
