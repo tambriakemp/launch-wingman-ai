@@ -95,6 +95,7 @@ import HelpSupportTicket from "./pages/HelpSupportTicket";
 import Onboarding from "./pages/Onboarding";
 import AIStudio from "./pages/AIStudio";
 import Planner from "./pages/Planner";
+import PlannerHub from "./pages/PlannerHub";
 import HabitTracker from "./pages/HabitTracker";
 import DailyPage from "./pages/DailyPage";
 import Goals from "./pages/Goals";
@@ -588,6 +589,14 @@ const App = () => (
             />
 
             {/* Planner */}
+            <Route
+              path="/planner-hub"
+              element={
+                <ProtectedRoute>
+                  <PlannerHub />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/planner"
               element={
