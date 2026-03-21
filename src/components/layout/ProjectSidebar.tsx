@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Rocket,
   Kanban,
-  Lock,
   Crown,
   ClipboardCheck,
   BookOpen,
