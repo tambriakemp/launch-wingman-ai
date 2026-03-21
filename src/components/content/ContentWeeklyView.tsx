@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Instagram, Facebook, Linkedin, Clock } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   format,
   startOfWeek,
