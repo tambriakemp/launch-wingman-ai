@@ -604,7 +604,7 @@ export const ProjectSidebar = () => {
       <motion.aside
         initial={{ x: -20, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
-        className="fixed left-0 top-0 h-screen w-56 bg-sidebar border-r border-sidebar-border z-50 hidden md:flex"
+        className="fixed left-0 top-0 h-screen w-14 bg-sidebar border-r border-sidebar-border z-50 hidden md:flex"
       >
         <SidebarContent {...sidebarContentProps} />
       </motion.aside>
