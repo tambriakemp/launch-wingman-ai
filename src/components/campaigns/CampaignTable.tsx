@@ -102,6 +102,18 @@ export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
     queryClient.invalidateQueries({ queryKey: ["campaigns"] });
   };
 
+  const handleStatusChange = async (c: Campaign, newStatus: CampaignStatus) => {
+    if (!user?.id || !isUuid(c.id)) return;
+    const { error } = await supabase
+      .from("campaigns")
+      .update({ status: newStatus })
+      .eq("id", c.id)
+      .eq("user_id", user.id);
+    if (error) { toast.error("Failed to update status"); return; }
+    toast.success(`Campaign marked as ${newStatus}`);
+    queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+  };
+
   const handleDelete = async () => {
     if (!deleteTarget || !user?.id) return;
     if (!isUuid(deleteTarget.id)) { toast.error("Demo campaigns cannot be deleted"); setDeleteTarget(null); return; }
