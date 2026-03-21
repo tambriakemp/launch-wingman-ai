@@ -1,0 +1,1 @@
+ALTER TABLE public.content_planner ALTER COLUMN project_id DROP NOT NULL;

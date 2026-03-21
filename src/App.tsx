@@ -51,6 +51,7 @@ import UTMRedirect from "./pages/UTMRedirect";
 import CampaignAnalytics from "./pages/CampaignAnalytics";
 import CampaignPlanner from "./pages/CampaignPlanner";
 import CampaignDetail from "./pages/CampaignDetail";
+import SocialPlanner from "./pages/SocialPlanner";
 
 // Feature pages
 import AssessmentsFeature from "./pages/features/AssessmentsFeature";
@@ -591,6 +592,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Planner />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/social-planner"
+              element={
+                <ProtectedRoute>
+                  <SocialPlanner />
                 </ProtectedRoute>
               }
             />

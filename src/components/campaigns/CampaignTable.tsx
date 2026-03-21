@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Search, ArrowUpDown, ChevronLeft, ChevronRight, Pencil, Copy, Archive, Trash2 } from "lucide-react";
+import { MoreHorizontal, Search, ArrowUpDown, ChevronLeft, ChevronRight, Pencil, Copy, Archive, Trash2, PlayCircle, PauseCircle, CheckCircle2, Megaphone } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
@@ -99,6 +99,18 @@ export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
       return;
     }
     toast.success("Campaign archived");
+    queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+  };
+
+  const handleStatusChange = async (c: Campaign, newStatus: CampaignStatus) => {
+    if (!user?.id || !isUuid(c.id)) return;
+    const { error } = await supabase
+      .from("campaigns")
+      .update({ status: newStatus })
+      .eq("id", c.id)
+      .eq("user_id", user.id);
+    if (error) { toast.error("Failed to update status"); return; }
+    toast.success(`Campaign marked as ${newStatus}`);
     queryClient.invalidateQueries({ queryKey: ["campaigns"] });
   };
 
@@ -197,6 +209,19 @@ export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
                           <Archive className="w-3.5 h-3.5 mr-2" /> Archive
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleStatusChange(c, "draft")} disabled={c.status === "draft"} className="text-xs gap-2">
+                          <Pencil className="w-3.5 h-3.5" /> Mark as Draft
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(c, "live")} disabled={c.status === "live"} className="text-xs gap-2">
+                          <PlayCircle className="w-3.5 h-3.5" /> Mark as Live
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(c, "evergreen")} disabled={c.status === "evergreen"} className="text-xs gap-2">
+                          <PauseCircle className="w-3.5 h-3.5" /> Mark as Evergreen
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(c, "ended")} disabled={c.status === "ended"} className="text-xs gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Mark as Ended
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteTarget(c)}>
                           <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
                         </DropdownMenuItem>
@@ -206,6 +231,30 @@ export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
                 </td>
               </tr>
             ))}
+            {paginated.length === 0 && (
+              <tr>
+                <td colSpan={10}>
+                  <div className="flex flex-col items-center justify-center py-16 px-4">
+                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+                      <Megaphone className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-base font-semibold text-foreground mb-1">
+                      {search || statusFilter !== "all" ? "No campaigns match your filters" : "No campaigns yet"}
+                    </h3>
+                    <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">
+                      {search || statusFilter !== "all"
+                        ? "Try adjusting your search or filter."
+                        : "Create your first campaign to start tracking performance across channels."}
+                    </p>
+                    {!search && statusFilter === "all" && (
+                      <Button size="sm" onClick={onNewCampaign}>
+                        + Create your first campaign
+                      </Button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Instagram, Facebook, Linkedin, Clock } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   format,
   startOfWeek,
@@ -96,7 +97,7 @@ interface ContentPlannerItem {
 }
 
 interface ContentWeeklyViewProps {
-  projectId: string;
+  projectId: string | null;
   onCreatePost: () => void;
   onEditPost: (item: ContentPlannerItem) => void;
   onSchedulePost: (item: ContentPlannerItem) => void;
@@ -123,17 +124,22 @@ export const ContentWeeklyView = ({
   );
   const scrollRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: plannerItems = [] } = useQuery({
-    queryKey: ["content-planner", projectId],
+    queryKey: ["content-planner", projectId ?? "standalone"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("content_planner")
-        .select("*")
-        .eq("project_id", projectId);
+      let query = supabase.from("content_planner").select("*");
+      if (projectId) {
+        query = query.eq("project_id", projectId);
+      } else {
+        query = query.eq("user_id", user!.id);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data as ContentPlannerItem[];
     },
+    enabled: !!user?.id,
   });
 
   const weekDays = useMemo(() => {

@@ -801,7 +801,7 @@ export type Database = {
           media_type: string | null
           media_url: string | null
           phase: string
-          project_id: string
+          project_id: string | null
           publish_results: Json | null
           scheduled_at: string | null
           scheduled_platforms: string[] | null
@@ -823,7 +823,7 @@ export type Database = {
           media_type?: string | null
           media_url?: string | null
           phase: string
-          project_id: string
+          project_id?: string | null
           publish_results?: Json | null
           scheduled_at?: string | null
           scheduled_platforms?: string[] | null
@@ -845,7 +845,7 @@ export type Database = {
           media_type?: string | null
           media_url?: string | null
           phase?: string
-          project_id?: string
+          project_id?: string | null
           publish_results?: Json | null
           scheduled_at?: string | null
           scheduled_platforms?: string[] | null

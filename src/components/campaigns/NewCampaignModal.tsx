@@ -28,15 +28,25 @@ const platforms = [
   { name: "Facebook", icon: "📘" },
   { name: "Email", icon: "✉️" },
   { name: "YouTube", icon: "▶️" },
+  { name: "TikTok", icon: "🎵" },
+  { name: "LinkedIn", icon: "💼" },
+  { name: "X / Twitter", icon: "𝕏" },
+  { name: "Pinterest", icon: "📌" },
   { name: "Skool", icon: "🎓" },
+  { name: "Podcast", icon: "🎙️" },
+  { name: "Blog / SEO", icon: "✍️" },
   { name: "App", icon: "📱" },
 ];
 
 const goalLabels: Record<string, string> = {
   revenue: "Revenue",
-  leads: "Leads",
-  app_installs: "App Installs",
+  leads: "Leads / Email Signups",
+  webinar_signups: "Webinar Signups",
+  course_enrollments: "Course Enrollments",
   challenge_signups: "Challenge Signups",
+  followers: "Followers",
+  app_installs: "App Installs",
+  traffic: "Traffic",
 };
 
 export default function NewCampaignModal({ open, onOpenChange, onCreated }: Props) {
@@ -116,7 +126,13 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
           Facebook: "facebook",
           Email: "email",
           YouTube: "youtube",
+          TikTok: "tiktok",
+          LinkedIn: "linkedin",
+          "X / Twitter": "twitter",
+          Pinterest: "pinterest",
           Skool: "skool",
+          Podcast: "other",
+          "Blog / SEO": "other",
           App: "other",
         };
         const utmRows = selectedPlatforms.map((p) => {
@@ -209,9 +225,13 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
                 <SelectTrigger><SelectValue placeholder="Select goal" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="revenue">Revenue</SelectItem>
-                  <SelectItem value="leads">Leads</SelectItem>
-                  <SelectItem value="app_installs">App Installs</SelectItem>
+                  <SelectItem value="leads">Leads / Email Signups</SelectItem>
+                  <SelectItem value="webinar_signups">Webinar Signups</SelectItem>
+                  <SelectItem value="course_enrollments">Course Enrollments</SelectItem>
                   <SelectItem value="challenge_signups">Challenge Signups</SelectItem>
+                  <SelectItem value="followers">Followers / Audience Growth</SelectItem>
+                  <SelectItem value="app_installs">App Installs</SelectItem>
+                  <SelectItem value="traffic">Website Traffic</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -234,7 +254,10 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
               <div>
                 <Label className="text-sm font-medium">Goal Target *</Label>
                 <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">
-                  {goal === "revenue" ? "Target revenue for this campaign" : `Target number of ${goalLabels[goal]?.toLowerCase() || "conversions"}`}
+                  {goal === "revenue" ? "Target revenue ($)" :
+                    goal === "traffic" ? "Target number of visits" :
+                    goal === "followers" ? "Target follower count gain" :
+                    `Target number of ${goalLabels[goal]?.toLowerCase() || "conversions"}`}
                 </p>
                 <Input
                   type="number"
@@ -274,7 +297,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
                 </div>
                 <div>
                 <Label className="text-sm font-medium mb-3 block">Select platforms to track</Label>
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                   {platforms.map((p) => (
                     <button key={p.name} onClick={() => togglePlatform(p.name)}
                       className={cn(

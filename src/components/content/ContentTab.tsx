@@ -34,7 +34,7 @@ interface TalkingPoint {
 }
 
 interface ContentTabProps {
-  projectId: string;
+  projectId: string | null;
 }
 
 export const ContentTab = ({ projectId }: ContentTabProps) => {
@@ -58,11 +58,12 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
       const { data, error } = await supabase
         .from("projects")
         .select("active_phase, selected_funnel_type, name")
-        .eq("id", projectId)
+        .eq("id", projectId!)
         .single();
       if (error) throw error;
       return data;
     },
+    enabled: !!user?.id && !!projectId,
   });
 
   const { data: funnel } = useQuery({
@@ -71,11 +72,12 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
       const { data, error } = await supabase
         .from("funnels")
         .select("target_audience, desired_outcome, primary_pain_point, niche")
-        .eq("project_id", projectId)
+        .eq("project_id", projectId!)
         .maybeSingle();
       if (error) throw error;
       return data;
     },
+    enabled: !!user?.id && !!projectId,
   });
 
   const currentPhase = project?.active_phase || "planning";
