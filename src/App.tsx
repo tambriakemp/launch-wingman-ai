@@ -595,6 +595,14 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/social-planner"
+              element={
+                <ProtectedRoute>
+                  <SocialPlanner />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Habits */}
             <Route
