@@ -248,7 +248,10 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
               <div>
                 <Label className="text-sm font-medium">Goal Target *</Label>
                 <p className="text-xs text-muted-foreground mt-0.5 mb-1.5">
-                  {goal === "revenue" ? "Target revenue for this campaign" : `Target number of ${goalLabels[goal]?.toLowerCase() || "conversions"}`}
+                  {goal === "revenue" ? "Target revenue ($)" :
+                    goal === "traffic" ? "Target number of visits" :
+                    goal === "followers" ? "Target follower count gain" :
+                    `Target number of ${goalLabels[goal]?.toLowerCase() || "conversions"}`}
                 </p>
                 <Input
                   type="number"
