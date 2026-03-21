@@ -58,11 +58,12 @@ export const ContentTab = ({ projectId }: ContentTabProps) => {
       const { data, error } = await supabase
         .from("projects")
         .select("active_phase, selected_funnel_type, name")
-        .eq("id", projectId)
+        .eq("id", projectId!)
         .single();
       if (error) throw error;
       return data;
     },
+    enabled: !!user?.id && !!projectId,
   });
 
   const { data: funnel } = useQuery({
