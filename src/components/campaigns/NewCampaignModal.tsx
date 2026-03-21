@@ -40,9 +40,13 @@ const platforms = [
 
 const goalLabels: Record<string, string> = {
   revenue: "Revenue",
-  leads: "Leads",
-  app_installs: "App Installs",
+  leads: "Leads / Email Signups",
+  webinar_signups: "Webinar Signups",
+  course_enrollments: "Course Enrollments",
   challenge_signups: "Challenge Signups",
+  followers: "Followers",
+  app_installs: "App Installs",
+  traffic: "Traffic",
 };
 
 export default function NewCampaignModal({ open, onOpenChange, onCreated }: Props) {
