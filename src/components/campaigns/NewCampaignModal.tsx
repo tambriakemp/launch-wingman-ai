@@ -297,7 +297,7 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
                 </div>
                 <div>
                 <Label className="text-sm font-medium mb-3 block">Select platforms to track</Label>
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                   {platforms.map((p) => (
                     <button key={p.name} onClick={() => togglePlatform(p.name)}
                       className={cn(

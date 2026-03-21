@@ -1,5 +1,5 @@
 export type CampaignStatus = "draft" | "live" | "evergreen" | "ended";
-export type CampaignGoal = "revenue" | "leads" | "app_installs" | "challenge_signups";
+export type CampaignGoal = "revenue" | "leads" | "webinar_signups" | "course_enrollments" | "challenge_signups" | "followers" | "app_installs" | "traffic";
 
 export interface Campaign {
   id: string;
