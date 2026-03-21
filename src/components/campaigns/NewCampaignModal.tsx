@@ -126,7 +126,13 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
           Facebook: "facebook",
           Email: "email",
           YouTube: "youtube",
+          TikTok: "tiktok",
+          LinkedIn: "linkedin",
+          "X / Twitter": "twitter",
+          Pinterest: "pinterest",
           Skool: "skool",
+          Podcast: "other",
+          "Blog / SEO": "other",
           App: "other",
         };
         const utmRows = selectedPlatforms.map((p) => {
