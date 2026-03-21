@@ -604,8 +604,15 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/ideas"
+              element={
+                <ProtectedRoute>
+                  <ContentIdeasBank />
+                </ProtectedRoute>
+              }
+            />
 
-            {/* Habits */}
             <Route
               path="/habits"
               element={
