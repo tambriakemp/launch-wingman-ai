@@ -219,9 +219,13 @@ export default function NewCampaignModal({ open, onOpenChange, onCreated }: Prop
                 <SelectTrigger><SelectValue placeholder="Select goal" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="revenue">Revenue</SelectItem>
-                  <SelectItem value="leads">Leads</SelectItem>
-                  <SelectItem value="app_installs">App Installs</SelectItem>
+                  <SelectItem value="leads">Leads / Email Signups</SelectItem>
+                  <SelectItem value="webinar_signups">Webinar Signups</SelectItem>
+                  <SelectItem value="course_enrollments">Course Enrollments</SelectItem>
                   <SelectItem value="challenge_signups">Challenge Signups</SelectItem>
+                  <SelectItem value="followers">Followers / Audience Growth</SelectItem>
+                  <SelectItem value="app_installs">App Installs</SelectItem>
+                  <SelectItem value="traffic">Website Traffic</SelectItem>
                 </SelectContent>
               </Select>
             </div>
