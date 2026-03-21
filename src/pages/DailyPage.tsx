@@ -470,7 +470,7 @@ const DailyPage = () => {
           </div>
 
           {/* Progress summary bar */}
-          <div className="fixed bottom-0 left-0 right-0 md:left-56 border-t border-border bg-background/95 backdrop-blur-sm py-3 px-4 flex items-center justify-center gap-3 sm:gap-6 z-50">
+          <div className="fixed bottom-0 left-0 right-0 md:left-14 border-t border-border bg-background/95 backdrop-blur-sm py-3 px-4 flex items-center justify-center gap-3 sm:gap-6 z-50">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
               <span className="font-medium">{prioritiesDone}/{prioritiesSet || 3}</span>
