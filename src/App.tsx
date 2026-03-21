@@ -590,6 +590,14 @@ const App = () => (
 
             {/* Planner */}
             <Route
+              path="/planner-hub"
+              element={
+                <ProtectedRoute>
+                  <PlannerHub />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/planner"
               element={
                 <ProtectedRoute>
