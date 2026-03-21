@@ -97,7 +97,7 @@ interface ContentPlannerItem {
 }
 
 interface ContentWeeklyViewProps {
-  projectId: string;
+  projectId: string | null;
   onCreatePost: () => void;
   onEditPost: (item: ContentPlannerItem) => void;
   onSchedulePost: (item: ContentPlannerItem) => void;
