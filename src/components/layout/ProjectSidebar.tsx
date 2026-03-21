@@ -428,7 +428,7 @@ export const ProjectSidebar = () => {
       {/* Flyout backdrop */}
       {activeSection && (
         <div
-          className="fixed inset-0 z-30 hidden md:block"
+          className="fixed inset-0 z-30 hidden md:block bg-black/10"
           style={{ left: "56px" }}
           onClick={() => setOpenSection(null)}
         />
