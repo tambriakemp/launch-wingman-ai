@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Search, ArrowUpDown, ChevronLeft, ChevronRight, Pencil, Copy, Archive, Trash2 } from "lucide-react";
+import { MoreHorizontal, Search, ArrowUpDown, ChevronLeft, ChevronRight, Pencil, Copy, Archive, Trash2, PlayCircle, PauseCircle, CheckCircle2, Megaphone } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
