@@ -446,19 +446,17 @@ export const ProjectSidebar = () => {
             transition={{ duration: 0.15 }}
             className="fixed left-14 top-0 h-dvh w-52 bg-sidebar border-r border-sidebar-border z-40 hidden md:flex flex-col shadow-xl"
           >
+            {/* Project selector — always visible */}
+            <div className="px-3 py-2 border-b border-sidebar-border">
+              <ProjectSelector currentProjectId={effectiveProjectId} />
+            </div>
+
             {/* Section header */}
             <div className="px-4 py-3 border-b border-sidebar-border">
               <span className="text-[11px] font-bold uppercase tracking-widest text-sidebar-foreground/60">
                 {activeSection.label}
               </span>
             </div>
-
-            {/* Project selector */}
-            {activeSection.showProjectSelector && (
-              <div className="px-3 py-2 border-b border-sidebar-border">
-                <ProjectSelector currentProjectId={effectiveProjectId} />
-              </div>
-            )}
 
             {/* Nav items */}
             <nav className="flex-1 overflow-y-auto scrollbar-hide px-3 py-2 space-y-0.5">
