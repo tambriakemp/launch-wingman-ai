@@ -118,17 +118,22 @@ export const ContentCalendarView = ({
 }: ContentCalendarViewProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: plannerItems = [] } = useQuery({
-    queryKey: ["content-planner", projectId],
+    queryKey: ["content-planner", projectId ?? "standalone"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("content_planner")
-        .select("*")
-        .eq("project_id", projectId);
+      let query = supabase.from("content_planner").select("*");
+      if (projectId) {
+        query = query.eq("project_id", projectId);
+      } else {
+        query = query.eq("user_id", user!.id);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data as ContentPlannerItem[];
     },
+    enabled: !!user?.id,
   });
 
   // Get all days to display in the calendar grid
