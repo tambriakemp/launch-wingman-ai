@@ -64,7 +64,6 @@ const createSections = (projectId?: string): Section[] => [
     id: "launch",
     label: "Launch",
     icon: Rocket,
-    showProjectSelector: true,
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: projectId ? `/projects/${projectId}/dashboard` : "#", requiresProject: !projectId },
       { id: "tasks", label: "Tasks", icon: Kanban, href: projectId ? `/projects/${projectId}/tasks` : "#", requiresProject: !projectId },
