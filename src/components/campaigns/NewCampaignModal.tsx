@@ -28,7 +28,13 @@ const platforms = [
   { name: "Facebook", icon: "📘" },
   { name: "Email", icon: "✉️" },
   { name: "YouTube", icon: "▶️" },
+  { name: "TikTok", icon: "🎵" },
+  { name: "LinkedIn", icon: "💼" },
+  { name: "X / Twitter", icon: "𝕏" },
+  { name: "Pinterest", icon: "📌" },
   { name: "Skool", icon: "🎓" },
+  { name: "Podcast", icon: "🎙️" },
+  { name: "Blog / SEO", icon: "✍️" },
   { name: "App", icon: "📱" },
 ];
 
