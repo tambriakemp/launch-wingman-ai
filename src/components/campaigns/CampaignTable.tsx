@@ -209,6 +209,19 @@ export default function CampaignTable({ campaigns, onNewCampaign }: Props) {
                           <Archive className="w-3.5 h-3.5 mr-2" /> Archive
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleStatusChange(c, "draft")} disabled={c.status === "draft"} className="text-xs gap-2">
+                          <Pencil className="w-3.5 h-3.5" /> Mark as Draft
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(c, "live")} disabled={c.status === "live"} className="text-xs gap-2">
+                          <PlayCircle className="w-3.5 h-3.5" /> Mark as Live
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(c, "evergreen")} disabled={c.status === "evergreen"} className="text-xs gap-2">
+                          <PauseCircle className="w-3.5 h-3.5" /> Mark as Evergreen
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(c, "ended")} disabled={c.status === "ended"} className="text-xs gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Mark as Ended
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteTarget(c)}>
                           <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
                         </DropdownMenuItem>
