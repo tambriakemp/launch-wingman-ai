@@ -64,7 +64,6 @@ const createSections = (projectId?: string): Section[] => [
     id: "launch",
     label: "Launch",
     icon: Rocket,
-    showProjectSelector: true,
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: projectId ? `/projects/${projectId}/dashboard` : "#", requiresProject: !projectId },
       { id: "tasks", label: "Tasks", icon: Kanban, href: projectId ? `/projects/${projectId}/tasks` : "#", requiresProject: !projectId },
@@ -363,7 +362,7 @@ export const ProjectSidebar = () => {
         ref={railRef}
         initial={{ x: -20, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
-        className="fixed left-0 top-0 h-screen w-14 bg-sidebar border-r border-sidebar-border z-50 hidden md:flex flex-col items-center py-3"
+        className="fixed left-0 top-0 h-dvh w-14 bg-sidebar border-r border-sidebar-border z-50 hidden md:flex flex-col items-center py-3"
       >
         {/* Logo mark */}
         <Link to="/app" className="mb-4">
@@ -429,7 +428,7 @@ export const ProjectSidebar = () => {
       {/* Flyout backdrop */}
       {activeSection && (
         <div
-          className="fixed inset-0 z-30 hidden md:block"
+          className="fixed inset-0 z-30 hidden md:block bg-black/10"
           style={{ left: "56px" }}
           onClick={() => setOpenSection(null)}
         />
@@ -445,21 +444,19 @@ export const ProjectSidebar = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -8 }}
             transition={{ duration: 0.15 }}
-            className="fixed left-14 top-0 h-screen w-52 bg-sidebar border-r border-sidebar-border z-40 hidden md:flex flex-col shadow-xl"
+            className="fixed left-14 top-0 h-dvh w-52 bg-sidebar border-r border-sidebar-border z-40 hidden md:flex flex-col shadow-xl"
           >
+            {/* Project selector — always visible */}
+            <div className="px-3 py-2 border-b border-sidebar-border">
+              <ProjectSelector currentProjectId={effectiveProjectId} />
+            </div>
+
             {/* Section header */}
             <div className="px-4 py-3 border-b border-sidebar-border">
               <span className="text-[11px] font-bold uppercase tracking-widest text-sidebar-foreground/60">
                 {activeSection.label}
               </span>
             </div>
-
-            {/* Project selector */}
-            {activeSection.showProjectSelector && (
-              <div className="px-3 py-2 border-b border-sidebar-border">
-                <ProjectSelector currentProjectId={effectiveProjectId} />
-              </div>
-            )}
 
             {/* Nav items */}
             <nav className="flex-1 overflow-y-auto scrollbar-hide px-3 py-2 space-y-0.5">
