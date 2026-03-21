@@ -34,7 +34,7 @@ interface TalkingPoint {
 }
 
 interface ContentTabProps {
-  projectId: string;
+  projectId: string | null;
 }
 
 export const ContentTab = ({ projectId }: ContentTabProps) => {
