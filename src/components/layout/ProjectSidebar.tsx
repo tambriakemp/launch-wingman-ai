@@ -1,15 +1,13 @@
 import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { SubscriptionTier } from "@/lib/subscriptionTiers";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import {
   LayoutDashboard,
   Rocket,
   Kanban,
   Lock,
-  FileText,
-  FolderOpen,
   Crown,
   ClipboardCheck,
   BookOpen,
@@ -20,599 +18,460 @@ import {
   Settings,
   HelpCircle,
   Megaphone,
-  Link2,
   BarChart3,
-  ChevronDown,
+  ChevronRight,
   Target,
-  Cog,
-  FlaskConical,
-  Zap,
-  Plug,
-  Library,
-  PenTool,
-  ShoppingBag,
   Wand2,
   CalendarCheck,
   Flame,
   Brain,
   BarChart2,
+  FolderOpen,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
 import { LaunchelyLogo } from "@/components/ui/LaunchelyLogo";
-import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
-import { useAuth } from "@/contexts/AuthContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 
-interface NavItem {
+// ── Types ──
+
+interface SectionItem {
   id: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   href: string;
-  requiresStep?: string;
   isProOnly?: boolean;
-  isContentVaultOrPro?: boolean;
   requiresProject?: boolean;
 }
 
-interface NavSection {
-  heading: string;
-  items: NavItem[];
-  isProOnly?: boolean;
+interface Section {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  showProjectSelector?: boolean;
+  items: SectionItem[];
 }
 
-const createNavSections = (projectId?: string): NavSection[] => [
+// ── Section factory ──
+
+const createSections = (projectId?: string): Section[] => [
   {
-    heading: "Assessments",
-    items: [
-      { id: "assessments", label: "All Assessments", icon: ClipboardCheck, href: "/assessments" },
-    ],
-  },
-  {
-    heading: "Plan",
+    id: "launch",
+    label: "Launch",
+    icon: Rocket,
+    showProjectSelector: true,
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: projectId ? `/projects/${projectId}/dashboard` : "#", requiresProject: !projectId },
       { id: "tasks", label: "Tasks", icon: Kanban, href: projectId ? `/projects/${projectId}/tasks` : "#", requiresProject: !projectId },
       { id: "summary", label: "Launch Brief", icon: BookMarked, href: projectId ? `/projects/${projectId}/summary` : "#", requiresProject: !projectId },
-      { id: "playbook", label: "Playbook", icon: BookOpen, href: `/playbook` },
+      { id: "playbook", label: "Playbook", icon: BookOpen, href: "/playbook" },
       { id: "insights", label: "Insights", icon: Lightbulb, href: projectId ? `/projects/${projectId}/insights` : "#", isProOnly: true, requiresProject: !projectId },
-      
+    ],
+  },
+  {
+    id: "planner",
+    label: "Planner",
+    icon: CalendarCheck,
+    items: [
+      { id: "planner-hub", label: "My Planner", icon: LayoutDashboard, href: "/planner-hub" },
+      { id: "calendar", label: "Calendar", icon: CalendarCheck, href: "/planner", isProOnly: true },
+      { id: "daily", label: "Daily Page", icon: BookOpen, href: "/daily", isProOnly: true },
+      { id: "habits", label: "Habits", icon: Flame, href: "/habits", isProOnly: true },
+      { id: "goals", label: "Goals", icon: Target, href: "/goals", isProOnly: true },
+      { id: "brain-dump", label: "Brain Dump", icon: Brain, href: "/brain-dump", isProOnly: true },
+      { id: "weekly", label: "Weekly Review", icon: BarChart2, href: "/weekly", isProOnly: true },
+    ],
+  },
+  {
+    id: "marketing",
+    label: "Marketing",
+    icon: Megaphone,
+    items: [
+      { id: "campaigns", label: "Campaigns", icon: Target, href: "/marketing-hub/campaigns", isProOnly: true },
+      { id: "social-planner", label: "Social Planner", icon: MessageSquareText, href: projectId ? `/projects/${projectId}/content` : "/social-planner", isProOnly: true },
+      { id: "ideas", label: "Ideas Bank", icon: Lightbulb, href: "/ideas", isProOnly: true },
+      { id: "ai-studio", label: "AI Studio", icon: Wand2, href: "/app/ai-studio", isProOnly: true },
+      { id: "analytics", label: "Analytics", icon: BarChart3, href: "/marketing-hub/analytics", isProOnly: true },
+    ],
+  },
+  {
+    id: "resources",
+    label: "Resources",
+    icon: Package,
+    items: [
+      { id: "content-vault", label: "Content Vault", icon: Package, href: "/content-vault" },
+      { id: "library", label: "Library", icon: FolderOpen, href: projectId ? `/projects/${projectId}/library` : "#", requiresProject: !projectId },
+      { id: "assessments", label: "Assessments", icon: ClipboardCheck, href: "/assessments" },
     ],
   },
 ];
 
-interface StepCompletion {
-  offers: boolean;
+// ── Helper: find which section owns a path ──
+
+function findActiveSection(sections: Section[], pathname: string): string | null {
+  for (const section of sections) {
+    for (const item of section.items) {
+      if (item.href === "#") continue;
+      if (pathname === item.href || pathname.startsWith(item.href + "/")) return section.id;
+    }
+  }
+  return null;
 }
 
-const SidebarContent = ({ 
-  projectId, 
-  navSections, 
-  stepCompletion, 
-  isStepAccessible, 
-  getLockedMessage, 
-  isActiveRoute,
-  onNavigate,
-  tier,
-  onUpgradeClick,
-  hasAdminAccess
-}: {
-  projectId?: string;
-  navSections: NavSection[];
-  stepCompletion: StepCompletion;
-  isStepAccessible: (requiresStep?: string) => boolean;
-  getLockedMessage: (requiresStep?: string) => string;
-  isActiveRoute: (href: string) => boolean;
-  onNavigate?: () => void;
-  tier: SubscriptionTier;
-  onUpgradeClick: (feature: string) => void;
-  hasAdminAccess: boolean;
-}) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  // Determine access levels based on tier
-  const isPro = tier === 'pro' || tier === 'admin';
-  const isContentVaultOrProAccess = tier === 'content_vault' || tier === 'pro' || tier === 'admin';
+// ── Flyout nav item renderer ──
 
-  const handleNavClick = (href: string) => {
-    onNavigate?.();
-    navigate(href);
-  };
+interface FlyoutItemProps {
+  item: SectionItem;
+  isActive: boolean;
+  isPro: boolean;
+  hasAdminAccess: boolean;
+  onNavigate: (href: string) => void;
+  onUpgradeClick: (feature: string) => void;
+}
+
+const FlyoutNavItem = ({ item, isActive, isPro, hasAdminAccess, onNavigate, onUpgradeClick }: FlyoutItemProps) => {
+  const isProLocked = item.isProOnly && !isPro && !hasAdminAccess;
+
+  if (item.requiresProject) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground/40 cursor-not-allowed">
+            <item.icon className="w-4 h-4" />
+            <span>{item.label}</span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="right"><p>Select a project first</p></TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  if (isProLocked) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => onUpgradeClick(item.label)}
+            className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm w-full text-left text-sidebar-foreground/40 hover:bg-sidebar-accent/30 cursor-pointer"
+          >
+            <item.icon className="w-4 h-4" />
+            <span className="flex-1">{item.label}</span>
+            <Crown className="w-3 h-3 text-primary" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right"><p>Pro feature – Upgrade to access</p></TooltipContent>
+      </Tooltip>
+    );
+  }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Logo */}
-      <div className="px-4 py-3 border-b border-sidebar-border">
-        <Link to="/app" onClick={onNavigate}>
-          <LaunchelyLogo size="md" textClassName="text-sidebar-accent-foreground text-base" />
-        </Link>
-      </div>
-
-      {/* Project Selector */}
-      <div className="px-3 py-2 border-b border-sidebar-border">
-        <ProjectSelector currentProjectId={projectId} />
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto scrollbar-hide px-3 py-2 space-y-3">
-        {navSections.map((section, sectionIndex) => (
-          <div key={section.heading}>
-            {sectionIndex > 0 && <Separator className="mb-3 bg-sidebar-border" />}
-            <div className="mb-1.5 px-2 flex items-center gap-1.5">
-              <span className="text-[11px] font-semibold text-sidebar-foreground uppercase tracking-wider">
-                {section.heading}
-              </span>
-              {section.isProOnly && !isPro && (
-                <Crown className="w-3 h-3 text-primary" />
-              )}
-            </div>
-            <div className="space-y-0.5">
-              {section.items.map((item) => {
-                const isActive = isActiveRoute(item.href);
-                const isAccessible = isStepAccessible(item.requiresStep);
-                const isLocked = !isAccessible;
-                const isProLocked = item.isProOnly && !isPro;
-                const isVaultLocked = item.isContentVaultOrPro && !isContentVaultOrProAccess;
-                const isFeatureLocked = isProLocked || isVaultLocked;
-                const requiresProject = item.requiresProject;
-
-                // Requires project selection
-                if (requiresProject) {
-                  return (
-                    <Tooltip key={item.id}>
-                      <TooltipTrigger asChild>
-                        <div
-                          className={cn(
-                            "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm cursor-not-allowed",
-                            "text-sidebar-foreground/40"
-                          )}
-                        >
-                          <item.icon className="w-4 h-4" />
-                          <span>{item.label}</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>Select a project first</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                }
-
-                // Feature-locked items (Pro or Content Vault tier required)
-                if (isFeatureLocked) {
-                  const upgradeMessage = isProLocked 
-                    ? "Pro feature - Upgrade to access" 
-                    : "Content Vault feature - Upgrade to access";
-                  return (
-                    <Tooltip key={item.id}>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => onUpgradeClick(item.label)}
-                          className={cn(
-                            "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm w-full text-left",
-                            "text-sidebar-foreground/40 hover:bg-sidebar-accent/30 cursor-pointer"
-                          )}
-                        >
-                          <item.icon className="w-4 h-4" />
-                          <span className="flex-1">{item.label}</span>
-                          <Crown className="w-3 h-3 text-yellow-500" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>{upgradeMessage}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                }
-
-                // Step-locked items
-                if (isLocked) {
-                  return (
-                    <Tooltip key={item.id}>
-                      <TooltipTrigger asChild>
-                        <div
-                          className={cn(
-                            "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm cursor-not-allowed",
-                            "text-sidebar-foreground/40"
-                          )}
-                        >
-                          <Lock className="w-4 h-4" />
-                          <span>{item.label}</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>{getLockedMessage(item.requiresStep)}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                }
-
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNavClick(item.href)}
-                    className={cn(
-                      "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
-                      isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                    )}
-                  >
-                    <item.icon className={cn("w-4 h-4", isActive && "text-sidebar-primary")} />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-
-        {/* Marketing Hub section */}
-        {(() => {
-           const marketingItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean; requiresProject?: boolean; isProOnly?: boolean }[] = [
-            { label: "Campaigns", href: "/marketing-hub/campaigns", icon: Target, isProOnly: true },
-            { label: "Social Planner", href: projectId ? `/projects/${projectId}/content` : "/social-planner", icon: MessageSquareText, isProOnly: true },
-             { label: "Ideas Bank", href: "/ideas", icon: Lightbulb, isProOnly: true },
-             { label: "AI Studio", href: "/app/ai-studio", icon: Wand2, isProOnly: true },
-            { label: "Analytics", href: "/marketing-hub/analytics", icon: BarChart3, isProOnly: true },
-          ];
-          const resourceItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; requiresProject?: boolean }[] = [
-            { label: "Content Vault", href: "/content-vault", icon: Package },
-            { label: "Library", href: projectId ? `/projects/${projectId}/library` : "#", icon: FolderOpen, requiresProject: !projectId },
-          ];
-          return (
-            <div>
-              <Separator className="mb-3 bg-sidebar-border" />
-              <div className="mb-1.5 px-2">
-                <span className="text-[11px] font-semibold text-sidebar-foreground uppercase tracking-wider">Marketing Hub</span>
-              </div>
-              <div className="space-y-0.5">
-                {marketingItems.map((item) => {
-                  const isProLocked = item.isProOnly && !isPro && !hasAdminAccess;
-                  
-                  if (item.requiresProject) {
-                    return (
-                      <Tooltip key={item.label}>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground/40 cursor-not-allowed w-full">
-                            <item.icon className="w-4 h-4" />
-                            <span>{item.label}</span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="right"><p>Select a project first</p></TooltipContent>
-                      </Tooltip>
-                    );
-                  }
-                  if (isProLocked) {
-                    return (
-                      <Tooltip key={item.label}>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => onUpgradeClick(item.label)}
-                            className={cn(
-                              "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm w-full text-left",
-                              "text-sidebar-foreground/40 hover:bg-sidebar-accent/30 cursor-pointer"
-                            )}
-                          >
-                            <item.icon className="w-4 h-4" />
-                            <span className="flex-1">{item.label}</span>
-                            <Crown className="w-3 h-3 text-primary" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right"><p>Pro feature - Upgrade to access</p></TooltipContent>
-                      </Tooltip>
-                    );
-                  }
-                  if (item.disabled) {
-                    return (
-                      <Tooltip key={item.label}>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground/40 cursor-not-allowed w-full">
-                            <item.icon className="w-4 h-4" />
-                            <span>{item.label}</span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="right"><p>Coming soon</p></TooltipContent>
-                      </Tooltip>
-                    );
-                  }
-                  const isActive = location.pathname === item.href || location.pathname.startsWith(item.href);
-                  return (
-                    <button
-                      key={item.label}
-                      onClick={() => handleNavClick(item.href)}
-                      className={cn(
-                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
-                        isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                      )}
-                    >
-                      <item.icon className={cn("w-4 h-4", isActive && "text-sidebar-primary")} />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <Separator className="my-2 bg-sidebar-border" />
-              <div className="mb-1.5 px-2">
-                <span className="text-[11px] font-semibold text-sidebar-foreground uppercase tracking-wider">Planner</span>
-              </div>
-              <div className="space-y-0.5">
-                {[
-                  { label: "Calendar", href: "/planner", icon: CalendarCheck, isProOnly: true },
-                  { label: "Habits", href: "/habits", icon: Flame, isProOnly: true },
-                  { label: "Daily Page", href: "/daily", icon: BookOpen, isProOnly: true },
-                  { label: "Goals", href: "/goals", icon: Target, isProOnly: true },
-                  { label: "Brain Dump", href: "/brain-dump", icon: Brain, isProOnly: true },
-                  { label: "Weekly Review", href: "/weekly", icon: BarChart2, isProOnly: true },
-                ].map((item) => {
-                  const isProLocked = item.isProOnly && !isPro && !hasAdminAccess;
-                  if (isProLocked) {
-                    return (
-                      <Tooltip key={item.label}>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => onUpgradeClick(item.label)}
-                            className={cn(
-                              "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm w-full text-left",
-                              "text-sidebar-foreground/40 hover:bg-sidebar-accent/30 cursor-pointer"
-                            )}
-                          >
-                            <item.icon className="w-4 h-4" />
-                            <span className="flex-1">{item.label}</span>
-                            <Crown className="w-3 h-3 text-primary" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right"><p>Pro feature - Upgrade to access</p></TooltipContent>
-                      </Tooltip>
-                    );
-                  }
-                  const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + "/");
-                  return (
-                    <button
-                      key={item.label}
-                      onClick={() => handleNavClick(item.href)}
-                      className={cn(
-                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
-                        isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                      )}
-                    >
-                      <item.icon className={cn("w-4 h-4", isActive && "text-sidebar-primary")} />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <Separator className="my-2 bg-sidebar-border" />
-              <div className="mb-1.5 px-2">
-                <span className="text-[11px] font-semibold text-sidebar-foreground uppercase tracking-wider">Resources</span>
-              </div>
-              <div className="space-y-0.5">
-                {resourceItems.map((item) => {
-                  if (item.requiresProject) {
-                    return (
-                      <Tooltip key={item.label}>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground/40 cursor-not-allowed w-full">
-                            <item.icon className="w-4 h-4" />
-                            <span>{item.label}</span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="right"><p>Select a project first</p></TooltipContent>
-                      </Tooltip>
-                    );
-                  }
-                  const isActive = location.pathname === item.href || location.pathname.startsWith(item.href);
-                  return (
-                    <button
-                      key={item.label}
-                      onClick={() => handleNavClick(item.href)}
-                      className={cn(
-                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
-                        isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                      )}
-                    >
-                      <item.icon className={cn("w-4 h-4", isActive && "text-sidebar-primary")} />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
-      </nav>
-      {/* Sticky footer links */}
-      <div className="mt-auto px-3 py-3 border-t border-sidebar-border space-y-0.5">
-        <button
-          onClick={() => handleNavClick("/help")}
-          className={cn(
-            "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
-            isActiveRoute("/help")
-              ? "text-sidebar-accent-foreground font-medium"
-              : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-          )}
-        >
-          <HelpCircle className={cn("w-4 h-4", isActiveRoute("/help") && "text-sidebar-primary")} />
-          <span>Help & Support</span>
-        </button>
-        <button
-          onClick={() => handleNavClick("/settings")}
-          className={cn(
-            "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
-            isActiveRoute("/settings")
-              ? "text-sidebar-accent-foreground font-medium"
-              : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-          )}
-        >
-          <Settings className={cn("w-4 h-4", isActiveRoute("/settings") && "text-sidebar-primary")} />
-          <span>Settings</span>
-        </button>
-      </div>
-    </div>
+    <button
+      onClick={() => onNavigate(item.href)}
+      className={cn(
+        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
+        isActive
+          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+          : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+      )}
+    >
+      <item.icon className={cn("w-4 h-4", isActive && "text-sidebar-primary")} />
+      <span>{item.label}</span>
+    </button>
   );
 };
 
+// ══════════════════════════════════════════
+// MAIN COMPONENT
+// ══════════════════════════════════════════
+
 export const ProjectSidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { id: projectId } = useParams();
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState("");
   const isMobile = useIsMobile();
   const { isOpen, close } = useMobileSidebar();
   const { hasAdminAccess, tier } = useFeatureAccess();
+  const isPro = tier === "pro" || tier === "admin";
 
-  // Use the projectId from params, or try to get from localStorage for global pages
-  const [storedProjectId, setStoredProjectId] = useState<string | undefined>(undefined);
-  
+  // ── Stored project id ──
+  const [storedProjectId, setStoredProjectId] = useState<string | undefined>();
   useEffect(() => {
     const stored = localStorage.getItem("lastProjectInfo");
     if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setStoredProjectId(parsed.id);
-      } catch {
-        // Ignore parse errors
-      }
+      try { setStoredProjectId(JSON.parse(stored).id); } catch { /* ignore */ }
     }
   }, []);
-
-  // Use URL projectId if available, otherwise fall back to stored projectId
   const effectiveProjectId = projectId || storedProjectId;
 
-  // Fetch offers data to determine offers step completion
-  const { data: offers } = useQuery({
-    queryKey: ['offers', effectiveProjectId],
-    queryFn: async () => {
-      if (!effectiveProjectId) return [];
-      const { data, error } = await supabase
-        .from('offers')
-        .select('title')
-        .eq('project_id', effectiveProjectId);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!effectiveProjectId,
-  });
-
-  // Fetch project data for saving to localStorage
+  // ── Project queries ──
   const { data: project } = useQuery({
-    queryKey: ['project', projectId],
+    queryKey: ["project", projectId],
     queryFn: async () => {
       if (!projectId) return null;
-      const { data, error } = await supabase
-        .from('projects')
-        .select('name')
-        .eq('id', projectId)
-        .single();
+      const { data, error } = await supabase.from("projects").select("name").eq("id", projectId).single();
       if (error) throw error;
       return data;
     },
     enabled: !!projectId,
   });
 
-  // Save current project to localStorage when on a project page
   useEffect(() => {
     if (projectId && project?.name) {
-      const projectInfo = { id: projectId, name: project.name };
-      localStorage.setItem("lastProjectInfo", JSON.stringify(projectInfo));
+      localStorage.setItem("lastProjectInfo", JSON.stringify({ id: projectId, name: project.name }));
       setStoredProjectId(projectId);
     }
   }, [projectId, project?.name]);
 
-  // Always create nav sections, passing effectiveProjectId to determine which items need project
-  const navSections = createNavSections(effectiveProjectId);
+  // ── Sections ──
+  const sections = createSections(effectiveProjectId);
 
-  // Determine step completion status
-  const stepCompletion: StepCompletion = {
-    offers: (offers && offers.length > 0) ?? false,
-  };
+  // ── Open section state (desktop flyout) ──
+  const [openSection, setOpenSection] = useState<string | null>(null);
 
-  const isStepAccessible = (requiresStep?: string): boolean => {
-    if (!requiresStep) return true;
-    return stepCompletion[requiresStep as keyof StepCompletion] ?? false;
-  };
+  // Auto-open section based on route
+  useEffect(() => {
+    const active = findActiveSection(sections, location.pathname);
+    setOpenSection(active);
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const getLockedMessage = (requiresStep?: string): string => {
-    switch (requiresStep) {
-      case "offers":
-        return "Complete Offer Stack first";
-      default:
-        return "Complete previous step first";
-    }
-  };
-
-  const isActiveRoute = (href: string) => {
-    if (href === '#') return false;
-    if (href === '/app') return location.pathname === href;
-    return location.pathname === href || location.pathname.startsWith(href + '/');
-  };
-
-  const handleUpgradeClick = (feature: string) => {
+  const handleUpgradeClick = useCallback((feature: string) => {
     setUpgradeFeature(feature);
     setShowUpgradeDialog(true);
+  }, []);
+
+  const isActiveRoute = useCallback((href: string) => {
+    if (href === "#") return false;
+    if (href === "/app") return location.pathname === href;
+    return location.pathname === href || location.pathname.startsWith(href + "/");
+  }, [location.pathname]);
+
+  // ── Outside-click handling for desktop flyout ──
+  const railRef = useRef<HTMLDivElement>(null);
+  const flyoutRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!openSection) return;
+    const handler = (e: MouseEvent) => {
+      if (railRef.current?.contains(e.target as Node)) return;
+      if (flyoutRef.current?.contains(e.target as Node)) return;
+      setOpenSection(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [openSection]);
+
+  const handleDesktopNav = (href: string) => {
+    setOpenSection(null);
+    navigate(href);
   };
 
-  const sidebarContentProps = {
-    projectId: effectiveProjectId,
-    navSections,
-    stepCompletion,
-    isStepAccessible,
-    getLockedMessage,
-    tier,
-    isActiveRoute,
-    onUpgradeClick: handleUpgradeClick,
-    hasAdminAccess,
+  // ── Mobile accordion state ──
+  const [mobileOpenSection, setMobileOpenSection] = useState<string | null>(() =>
+    findActiveSection(sections, location.pathname)
+  );
+
+  const handleMobileNav = (href: string) => {
+    close();
+    navigate(href);
   };
 
-  // Mobile: render as Sheet
+  // ══════════ MOBILE ══════════
   if (isMobile) {
     return (
       <TooltipProvider>
         <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
-          <SheetContent 
-            side="left" 
-            className="w-[280px] p-0 bg-sidebar border-r border-sidebar-border"
-          >
-            <SidebarContent {...sidebarContentProps} onNavigate={close} />
+          <SheetContent side="left" className="w-[280px] p-0 bg-sidebar border-r border-sidebar-border">
+            <div className="h-full flex flex-col">
+              {/* Logo */}
+              <div className="px-4 py-3 border-b border-sidebar-border">
+                <Link to="/app" onClick={close}>
+                  <LaunchelyLogo size="md" textClassName="text-sidebar-accent-foreground text-base" />
+                </Link>
+              </div>
+
+              {/* Accordion sections */}
+              <nav className="flex-1 overflow-y-auto scrollbar-hide px-2 py-2 space-y-1">
+                {sections.map((section) => {
+                  const isExpanded = mobileOpenSection === section.id;
+                  return (
+                    <div key={section.id}>
+                      <button
+                        onClick={() => setMobileOpenSection(isExpanded ? null : section.id)}
+                        className="flex items-center gap-2.5 w-full px-2 py-2 rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+                      >
+                        <section.icon className="w-4 h-4 text-sidebar-foreground/70" />
+                        <span className="flex-1 text-left">{section.label}</span>
+                        <ChevronRight className={cn("w-4 h-4 text-sidebar-foreground/40 transition-transform duration-200", isExpanded && "rotate-90")} />
+                      </button>
+
+                      {isExpanded && (
+                        <div className="pl-6 space-y-0.5 mt-0.5 mb-1">
+                          {section.showProjectSelector && (
+                            <div className="px-1 py-1.5">
+                              <ProjectSelector currentProjectId={effectiveProjectId} />
+                            </div>
+                          )}
+                          {section.items.map((item) => (
+                            <FlyoutNavItem
+                              key={item.id}
+                              item={item}
+                              isActive={isActiveRoute(item.href)}
+                              isPro={isPro}
+                              hasAdminAccess={hasAdminAccess}
+                              onNavigate={handleMobileNav}
+                              onUpgradeClick={handleUpgradeClick}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </nav>
+
+              {/* Footer */}
+              <div className="px-3 py-3 border-t border-sidebar-border space-y-0.5">
+                <button onClick={() => handleMobileNav("/help")} className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 w-full text-left">
+                  <HelpCircle className="w-4 h-4" /> Help & Support
+                </button>
+                <button onClick={() => handleMobileNav("/settings")} className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 w-full text-left">
+                  <Settings className="w-4 h-4" /> Settings
+                </button>
+              </div>
+            </div>
           </SheetContent>
         </Sheet>
-        <UpgradeDialog 
-          open={showUpgradeDialog} 
-          onOpenChange={setShowUpgradeDialog} 
-          feature={upgradeFeature}
-        />
+        <UpgradeDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog} feature={upgradeFeature} />
       </TooltipProvider>
     );
   }
 
-  // Desktop: render as fixed sidebar
+  // ══════════ DESKTOP ══════════
+  const activeSection = sections.find((s) => s.id === openSection);
+
   return (
     <TooltipProvider>
-      <motion.aside
+      {/* Icon Rail */}
+      <motion.div
+        ref={railRef}
         initial={{ x: -20, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
-        className="fixed left-0 top-0 h-screen w-14 bg-sidebar border-r border-sidebar-border z-50 hidden md:flex"
+        className="fixed left-0 top-0 h-screen w-14 bg-sidebar border-r border-sidebar-border z-50 hidden md:flex flex-col items-center py-3"
       >
-        <SidebarContent {...sidebarContentProps} />
-      </motion.aside>
-      <UpgradeDialog 
-        open={showUpgradeDialog} 
-        onOpenChange={setShowUpgradeDialog} 
-        feature={upgradeFeature}
-      />
+        {/* Logo mark */}
+        <Link to="/app" className="mb-4">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-sm">L</span>
+          </div>
+        </Link>
+
+        {/* Section icons */}
+        <div className="flex-1 flex flex-col items-center gap-1.5">
+          {sections.map((section) => {
+            const isOpen = openSection === section.id;
+            const isActive = isOpen || findActiveSection([section], location.pathname) === section.id;
+            return (
+              <Tooltip key={section.id}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setOpenSection(isOpen ? null : section.id)}
+                    className={cn("relative h-11 w-full flex items-center justify-center")}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="rail-indicator"
+                        className="absolute left-0 top-2 bottom-2 w-0.5 bg-primary rounded-r-full"
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      />
+                    )}
+                    <div className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+                      isActive ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    )}>
+                      <section.icon className="w-[18px] h-[18px]" />
+                    </div>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="text-xs">{section.label}</TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </div>
+
+        {/* Bottom icons */}
+        <div className="flex flex-col items-center gap-1 mt-auto">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button onClick={() => navigate("/help")} className={cn("h-9 w-9 rounded-lg flex items-center justify-center transition-colors", isActiveRoute("/help") ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground")}>
+                <HelpCircle className="w-[18px] h-[18px]" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="text-xs">Help & Support</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button onClick={() => navigate("/settings")} className={cn("h-9 w-9 rounded-lg flex items-center justify-center transition-colors", isActiveRoute("/settings") ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground")}>
+                <Settings className="w-[18px] h-[18px]" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="text-xs">Settings</TooltipContent>
+          </Tooltip>
+        </div>
+      </motion.div>
+
+      {/* Flyout Panel */}
+      <AnimatePresence>
+        {activeSection && (
+          <motion.div
+            ref={flyoutRef}
+            key={activeSection.id}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.15 }}
+            className="fixed left-14 top-0 h-screen w-52 bg-sidebar border-r border-sidebar-border z-40 hidden md:flex flex-col"
+          >
+            {/* Section header */}
+            <div className="px-4 py-3 border-b border-sidebar-border">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-sidebar-foreground/60">
+                {activeSection.label}
+              </span>
+            </div>
+
+            {/* Project selector */}
+            {activeSection.showProjectSelector && (
+              <div className="px-3 py-2 border-b border-sidebar-border">
+                <ProjectSelector currentProjectId={effectiveProjectId} />
+              </div>
+            )}
+
+            {/* Nav items */}
+            <nav className="flex-1 overflow-y-auto scrollbar-hide px-3 py-2 space-y-0.5">
+              {activeSection.items.map((item) => (
+                <FlyoutNavItem
+                  key={item.id}
+                  item={item}
+                  isActive={isActiveRoute(item.href)}
+                  isPro={isPro}
+                  hasAdminAccess={hasAdminAccess}
+                  onNavigate={handleDesktopNav}
+                  onUpgradeClick={handleUpgradeClick}
+                />
+              ))}
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <UpgradeDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog} feature={upgradeFeature} />
     </TooltipProvider>
   );
 };
