@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 import { ChevronLeft, ChevronRight, Instagram, Facebook, Linkedin } from "lucide-react";
 import {
   format,
