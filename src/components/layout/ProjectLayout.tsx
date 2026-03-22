@@ -16,7 +16,7 @@ export const ProjectLayout = ({ children }: ProjectLayoutProps) => {
       <ImpersonationBanner />
       <div className={`min-h-screen bg-background flex w-full ${isImpersonating ? 'pt-10' : ''}`}>
         <ProjectSidebar />
-        <div className="flex-1 md:ml-14 flex flex-col min-w-0 relative">
+        <div className="flex-1 flex flex-col min-w-0 relative">
           <TopBar />
           <main className="flex-1 px-2.5 py-4 md:p-6 overflow-auto bg-muted/30">{children}</main>
         </div>
