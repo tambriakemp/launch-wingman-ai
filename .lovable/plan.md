@@ -1,33 +1,40 @@
 
 
-## Fix Flyout Sidebar Issues
+## Fix: Flyout Pushes Content + Project Selector Visible
 
-### Problem 1: Flyout overlapping content
-The transparent backdrop overlay has no visual tint, so users can't tell the flyout is a modal layer. Add a subtle semi-transparent background to the backdrop so it dims the content behind the flyout.
+### Root Cause
+The sidebar renders only `fixed`-position elements (rail + flyout). Fixed elements don't participate in document flow, so the main content's `md:ml-14` margin only accounts for the rail. The flyout overlaps because nothing pushes the content over. The project selector IS rendered in the flyout but gets hidden behind the page content due to z-index/overlap issues.
 
-**Change in `ProjectSidebar.tsx`**: On the backdrop div (line 432), add `bg-black/10` to the className so users see a slight dim effect.
+### Solution: Spacer div pattern
+Wrap the desktop sidebar output in a non-fixed "spacer" div that changes width based on whether the flyout is open. This div participates in flex flow and naturally pushes the main content over. The fixed rail and flyout render inside it visually but the spacer ensures the layout reserves the right amount of space.
 
-### Problem 2: Flyout not full height
-The flyout uses `h-screen` but may be clipped by parent stacking contexts. The issue is likely the `hidden md:flex` classes — the flyout div starts as `hidden` and only shows at `md:`. Change to ensure the height is computed correctly by using `h-dvh` (dynamic viewport height) instead of `h-screen`, and also apply it to the rail.
+### Changes
 
-**Change in `ProjectSidebar.tsx`**:
-- Rail (line 366): `h-screen` → `h-dvh`
-- Flyout (line 448): `h-screen` → `h-dvh`
+**`src/components/layout/ProjectSidebar.tsx`** (desktop section only):
 
-### Problem 3: Project switcher should be pinned above all sections
-Currently the ProjectSelector only appears when the "Launch" section flyout is open. Move it to a permanent position at the top of the icon rail area (below the logo) so it's always accessible regardless of which section is active.
+1. Wrap the entire desktop return in a `div` spacer with a dynamic width class:
+   - Flyout closed: `w-14` (56px, rail only)
+   - Flyout open: `w-[264px]` (56px rail + 208px flyout)
+   - Add `transition-all duration-200` for smooth push animation
+   - This div is `hidden md:block shrink-0` so it only affects desktop layout
 
-**Changes in `ProjectSidebar.tsx`**:
-- Remove `showProjectSelector` from the Launch section definition
-- Remove the project selector block from inside the flyout (lines 458-462)
-- Add a compact project selector below the logo in the rail. Since the rail is only 56px wide, render a small clickable avatar/icon that opens the ProjectSelector in a Popover. Alternatively, move it to the top of the flyout panel as a persistent element that shows regardless of which section is open — render it above the section header in the flyout, always visible when any flyout is open.
+2. Remove the backdrop overlay div entirely (no more dimming overlay since content pushes over, not covered)
 
-**Recommended approach**: Place the ProjectSelector at the top of every flyout panel (above the section label), making it persistent whenever the flyout is open. This keeps it accessible without cluttering the narrow rail.
+3. Remove the outside-click `useEffect` for closing the flyout — instead, the flyout stays open until the user clicks a different rail icon or navigates. Navigation already closes it via `handleDesktopNav`.
 
-- In the flyout panel (after line 449, before the section header), add the ProjectSelector in a `px-3 py-2 border-b border-sidebar-border` div — unconditionally, not gated by `showProjectSelector`.
-- Remove the conditional `showProjectSelector` block (lines 458-462).
-- Remove `showProjectSelector: true` from the Launch section definition.
+4. Keep the flyout `fixed` positioned so it doesn't scroll with page content, but the spacer ensures content is pushed over.
+
+**`src/components/layout/ProjectLayout.tsx`**:
+
+1. Remove `md:ml-14` from the main content div — the spacer div now handles horizontal spacing via flex layout. The content div just needs `flex-1 flex flex-col min-w-0 relative`.
+
+### Result
+- Flyout opens: content smoothly slides right by 208px
+- Flyout closes: content slides back
+- Project selector at top of flyout is fully visible and accessible
+- No overlay/backdrop needed since content is never covered
 
 ### Files modified
-- `src/components/layout/ProjectSidebar.tsx` — all three fixes
+- `src/components/layout/ProjectSidebar.tsx`
+- `src/components/layout/ProjectLayout.tsx`
 
