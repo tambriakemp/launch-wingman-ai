@@ -348,124 +348,118 @@ export const ProjectSidebar = () => {
 
   return (
     <TooltipProvider>
-      {/* Icon Rail */}
-      <motion.div
-        ref={railRef}
-        initial={{ x: -20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        className="fixed left-0 top-0 h-dvh w-14 bg-sidebar border-r border-sidebar-border z-50 hidden md:flex flex-col items-center py-3"
-      >
-        {/* Logo mark */}
-        <Link to="/app" className="mb-4">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">L</span>
+      {/* Spacer div — participates in flex flow to push content */}
+      <div className={cn("hidden md:block shrink-0 transition-all duration-200", activeSection ? "w-[264px]" : "w-14")}>
+        {/* Icon Rail */}
+        <motion.div
+          ref={railRef}
+          initial={{ x: -20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          className="fixed left-0 top-0 h-dvh w-14 bg-sidebar border-r border-sidebar-border z-50 flex flex-col items-center py-3"
+        >
+          {/* Logo mark */}
+          <Link to="/app" className="mb-4">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">L</span>
+            </div>
+          </Link>
+
+          {/* Section icons */}
+          <div className="flex-1 flex flex-col items-center gap-1.5">
+            {sections.map((section) => {
+              const isOpen = openSection === section.id;
+              const isActive = isOpen || findActiveSection([section], location.pathname) === section.id;
+              return (
+                <Tooltip key={section.id}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setOpenSection(isOpen ? null : section.id)}
+                      className={cn("relative h-11 w-full flex items-center justify-center")}
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="rail-indicator"
+                          className="absolute left-0 top-2 bottom-2 w-0.5 bg-primary rounded-r-full"
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        />
+                      )}
+                      <div className={cn(
+                        "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+                        isActive ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                      )}>
+                        <section.icon className="w-[18px] h-[18px]" />
+                      </div>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="text-xs">{section.label}</TooltipContent>
+                </Tooltip>
+              );
+            })}
           </div>
-        </Link>
 
-        {/* Section icons */}
-        <div className="flex-1 flex flex-col items-center gap-1.5">
-          {sections.map((section) => {
-            const isOpen = openSection === section.id;
-            const isActive = isOpen || findActiveSection([section], location.pathname) === section.id;
-            return (
-              <Tooltip key={section.id}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setOpenSection(isOpen ? null : section.id)}
-                    className={cn("relative h-11 w-full flex items-center justify-center")}
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="rail-indicator"
-                        className="absolute left-0 top-2 bottom-2 w-0.5 bg-primary rounded-r-full"
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      />
-                    )}
-                    <div className={cn(
-                      "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-                      isActive ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                    )}>
-                      <section.icon className="w-[18px] h-[18px]" />
-                    </div>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="text-xs">{section.label}</TooltipContent>
-              </Tooltip>
-            );
-          })}
-        </div>
+          {/* Bottom icons */}
+          <div className="flex flex-col items-center gap-1 mt-auto">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button onClick={() => navigate("/help")} className={cn("h-9 w-9 rounded-lg flex items-center justify-center transition-colors", isActiveRoute("/help") ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground")}>
+                  <HelpCircle className="w-[18px] h-[18px]" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="text-xs">Help & Support</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button onClick={() => navigate("/settings")} className={cn("h-9 w-9 rounded-lg flex items-center justify-center transition-colors", isActiveRoute("/settings") ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground")}>
+                  <Settings className="w-[18px] h-[18px]" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="text-xs">Settings</TooltipContent>
+            </Tooltip>
+          </div>
+        </motion.div>
 
-        {/* Bottom icons */}
-        <div className="flex flex-col items-center gap-1 mt-auto">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button onClick={() => navigate("/help")} className={cn("h-9 w-9 rounded-lg flex items-center justify-center transition-colors", isActiveRoute("/help") ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground")}>
-                <HelpCircle className="w-[18px] h-[18px]" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="text-xs">Help & Support</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button onClick={() => navigate("/settings")} className={cn("h-9 w-9 rounded-lg flex items-center justify-center transition-colors", isActiveRoute("/settings") ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground")}>
-                <Settings className="w-[18px] h-[18px]" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="text-xs">Settings</TooltipContent>
-          </Tooltip>
-        </div>
-      </motion.div>
+        {/* Flyout Panel */}
+        <AnimatePresence>
+          {activeSection && (
+            <motion.div
+              ref={flyoutRef}
+              key={activeSection.id}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              transition={{ duration: 0.15 }}
+              className="fixed left-14 top-0 h-dvh w-52 bg-sidebar border-r border-sidebar-border z-40 flex flex-col shadow-xl"
+            >
+              {/* Project selector — always visible */}
+              <div className="px-3 py-2 border-b border-sidebar-border">
+                <ProjectSelector currentProjectId={effectiveProjectId} />
+              </div>
 
-      {/* Flyout backdrop */}
-      {activeSection && (
-        <div
-          className="fixed inset-0 z-30 hidden md:block bg-black/10"
-          style={{ left: "56px" }}
-          onClick={() => setOpenSection(null)}
-        />
-      )}
+              {/* Section header */}
+              <div className="px-4 py-3 border-b border-sidebar-border">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-sidebar-foreground/60">
+                  {activeSection.label}
+                </span>
+              </div>
 
-      {/* Flyout Panel */}
-      <AnimatePresence>
-        {activeSection && (
-          <motion.div
-            ref={flyoutRef}
-            key={activeSection.id}
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -8 }}
-            transition={{ duration: 0.15 }}
-            className="fixed left-14 top-0 h-dvh w-52 bg-sidebar border-r border-sidebar-border z-40 hidden md:flex flex-col shadow-xl"
-          >
-            {/* Project selector — always visible */}
-            <div className="px-3 py-2 border-b border-sidebar-border">
-              <ProjectSelector currentProjectId={effectiveProjectId} />
-            </div>
-
-            {/* Section header */}
-            <div className="px-4 py-3 border-b border-sidebar-border">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-sidebar-foreground/60">
-                {activeSection.label}
-              </span>
-            </div>
-
-            {/* Nav items */}
-            <nav className="flex-1 overflow-y-auto scrollbar-hide px-3 py-2 space-y-0.5">
-              {activeSection.items.map((item) => (
-                <FlyoutNavItem
-                  key={item.id}
-                  item={item}
-                  isActive={isActiveRoute(item.href)}
-                  isPro={isPro}
-                  hasAdminAccess={hasAdminAccess}
-                  onNavigate={handleDesktopNav}
-                  onUpgradeClick={handleUpgradeClick}
-                />
-              ))}
-            </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              {/* Nav items */}
+              <nav className="flex-1 overflow-y-auto scrollbar-hide px-3 py-2 space-y-0.5">
+                {activeSection.items.map((item) => (
+                  <FlyoutNavItem
+                    key={item.id}
+                    item={item}
+                    isActive={isActiveRoute(item.href)}
+                    isPro={isPro}
+                    hasAdminAccess={hasAdminAccess}
+                    onNavigate={handleDesktopNav}
+                    onUpgradeClick={handleUpgradeClick}
+                  />
+                ))}
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       <UpgradeDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog} feature={upgradeFeature} />
     </TooltipProvider>
