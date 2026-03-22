@@ -255,16 +255,7 @@ export const ProjectSidebar = () => {
   const railRef = useRef<HTMLDivElement>(null);
   const flyoutRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!openSection) return;
-    const handler = (e: MouseEvent) => {
-      if (railRef.current?.contains(e.target as Node)) return;
-      if (flyoutRef.current?.contains(e.target as Node)) return;
-      setOpenSection(null);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [openSection]);
+  // Outside-click removed — flyout closes on nav or rail toggle
 
   const handleDesktopNav = (href: string) => {
     setOpenSection(null);
