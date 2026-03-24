@@ -365,34 +365,36 @@ export const ProjectSidebar = () => {
           </Link>
 
           {/* Section icons */}
-          <div className="flex-1 flex flex-col items-center gap-1.5">
+          <div className="flex-1 flex flex-col items-center gap-1">
             {sections.map((section) => {
               const isOpen = openSection === section.id;
               const isActive = isOpen || findActiveSection([section], location.pathname) === section.id;
               return (
-                <Tooltip key={section.id}>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => setOpenSection(isOpen ? null : section.id)}
-                      className={cn("relative h-11 w-full flex items-center justify-center")}
-                    >
-                      {isActive && (
-                        <motion.div
-                          layoutId="rail-indicator"
-                          className="absolute left-0 top-2 bottom-2 w-0.5 bg-primary rounded-r-full"
-                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                        />
-                      )}
-                      <div className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-                        isActive ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                      )}>
-                        <section.icon className="w-[18px] h-[18px]" />
-                      </div>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="text-xs">{section.label}</TooltipContent>
-                </Tooltip>
+                <button
+                  key={section.id}
+                  onClick={() => setOpenSection(isOpen ? null : section.id)}
+                  className={cn("relative w-full flex flex-col items-center justify-center py-2 gap-1")}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="rail-indicator"
+                      className="absolute left-0 top-1 bottom-1 w-0.5 bg-primary rounded-r-full"
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    />
+                  )}
+                  <div className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+                    isActive ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  )}>
+                    <section.icon className="w-[18px] h-[18px]" />
+                  </div>
+                  <span className={cn(
+                    "text-[10px] leading-tight transition-colors",
+                    isActive ? "text-sidebar-foreground font-medium" : "text-sidebar-foreground/60"
+                  )}>
+                    {section.label}
+                  </span>
+                </button>
               );
             })}
           </div>
