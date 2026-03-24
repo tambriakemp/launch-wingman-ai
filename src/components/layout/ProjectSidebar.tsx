@@ -349,7 +349,7 @@ export const ProjectSidebar = () => {
   return (
     <TooltipProvider>
       {/* Spacer div — participates in flex flow to push content */}
-      <div className={cn("hidden md:block shrink-0 transition-all duration-200", activeSection ? "w-[264px]" : "w-14")}>
+      <div className={cn("hidden md:block shrink-0 transition-all duration-200", activeSection ? "w-[280px]" : "w-[72px]")}>
         {/* Icon Rail */}
         <motion.div
           ref={railRef}
