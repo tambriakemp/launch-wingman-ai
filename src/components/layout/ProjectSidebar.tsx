@@ -172,7 +172,7 @@ const FlyoutNavItem = ({ item, isActive, isPro, hasAdminAccess, onNavigate, onUp
     <button
       onClick={() => onNavigate(item.href)}
       className={cn(
-        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
+        "flex items-center gap-2 px-2 rounded-md text-sm transition-colors w-full text-left py-[14px]",
         isActive
           ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
           : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
