@@ -436,8 +436,8 @@ export const ProjectSidebar = () => {
               </div>
 
               {/* Section header */}
-              <div className="px-4 py-3.5 border-b border-sidebar-border">
-                <span className="text-xs font-bold uppercase tracking-widest text-sidebar-foreground/70">
+              <div className="px-4 border-b border-sidebar-border mx-0 py-[20px] my-0">
+                <span className="font-bold uppercase tracking-widest text-sidebar-foreground/70 text-sm">
                   {activeSection.label}
                 </span>
               </div>
