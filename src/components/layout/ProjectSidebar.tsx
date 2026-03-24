@@ -430,7 +430,7 @@ export const ProjectSidebar = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -8 }}
               transition={{ duration: 0.15 }}
-              className="fixed left-14 top-0 h-dvh w-52 bg-sidebar border-r border-sidebar-border z-40 flex flex-col shadow-xl"
+              className="fixed left-[72px] top-0 h-dvh w-52 bg-sidebar border-r border-sidebar-border z-40 flex flex-col shadow-xl"
             >
               {/* Project selector — always visible */}
               <div className="px-3 py-2 border-b border-sidebar-border">
