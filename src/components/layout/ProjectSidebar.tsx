@@ -436,14 +436,14 @@ export const ProjectSidebar = () => {
               </div>
 
               {/* Section header */}
-              <div className="px-4 py-3 border-b border-sidebar-border">
-                <span className="text-[11px] font-bold uppercase tracking-widest text-sidebar-foreground/60">
+              <div className="px-4 py-3.5 border-b border-sidebar-border">
+                <span className="text-xs font-bold uppercase tracking-widest text-sidebar-foreground/70">
                   {activeSection.label}
                 </span>
               </div>
 
               {/* Nav items */}
-              <nav className="flex-1 overflow-y-auto scrollbar-hide px-3 py-2 space-y-0.5">
+              <nav className="flex-1 overflow-y-auto scrollbar-hide px-3 py-3 space-y-1">
                 {activeSection.items.map((item) => (
                   <FlyoutNavItem
                     key={item.id}
