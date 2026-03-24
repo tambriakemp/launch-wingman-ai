@@ -368,7 +368,9 @@ export const ProjectSidebar = () => {
           <div className="flex-1 flex flex-col items-center gap-1">
             {sections.map((section) => {
               const isOpen = openSection === section.id;
-              const isActive = isOpen || findActiveSection([section], location.pathname) === section.id;
+              const isActive = openSection
+                ? isOpen
+                : findActiveSection([section], location.pathname) === section.id;
               return (
                 <button
                   key={section.id}
