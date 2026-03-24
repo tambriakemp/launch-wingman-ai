@@ -172,7 +172,7 @@ const FlyoutNavItem = ({ item, isActive, isPro, hasAdminAccess, onNavigate, onUp
     <button
       onClick={() => onNavigate(item.href)}
       className={cn(
-        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors w-full text-left",
+        "flex items-center gap-2 px-2 rounded-md text-sm transition-colors w-full text-left py-[14px]",
         isActive
           ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
           : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
@@ -436,8 +436,8 @@ export const ProjectSidebar = () => {
               </div>
 
               {/* Section header */}
-              <div className="px-4 py-3.5 border-b border-sidebar-border">
-                <span className="text-xs font-bold uppercase tracking-widest text-sidebar-foreground/70">
+              <div className="px-4 border-b border-sidebar-border mx-0 py-[20px] my-0">
+                <span className="font-bold uppercase tracking-widest text-sidebar-foreground/70 text-sm">
                   {activeSection.label}
                 </span>
               </div>
