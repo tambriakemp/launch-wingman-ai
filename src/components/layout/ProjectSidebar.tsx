@@ -355,7 +355,7 @@ export const ProjectSidebar = () => {
           ref={railRef}
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          className="fixed left-0 top-0 h-dvh w-14 bg-sidebar border-r border-sidebar-border z-50 flex flex-col items-center py-3"
+          className="fixed left-0 top-0 h-dvh w-[72px] bg-sidebar border-r border-sidebar-border z-50 flex flex-col items-center py-3"
         >
           {/* Logo mark */}
           <Link to="/app" className="mb-4">
