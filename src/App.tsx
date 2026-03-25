@@ -53,6 +53,7 @@ import CampaignPlanner from "./pages/CampaignPlanner";
 import CampaignDetail from "./pages/CampaignDetail";
 import SocialPlanner from "./pages/SocialPlanner";
 import ContentIdeasBank from "./pages/ContentIdeasBank";
+import HookGenerator from "./pages/HookGenerator";
 
 // Feature pages
 import AssessmentsFeature from "./pages/features/AssessmentsFeature";
@@ -618,6 +619,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ContentIdeasBank />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/app/ai-studio/hooks"
+              element={
+                <ProtectedRoute>
+                  <HookGenerator />
                 </ProtectedRoute>
               }
             />
