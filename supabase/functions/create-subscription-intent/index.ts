@@ -36,8 +36,12 @@ serve(async (req) => {
       auth: { persistSession: false }
     });
 
-    const { email, firstName, lastName, password, couponCode, isUpgrade, userId } = await req.json();
-    logStep("Received request", { email, firstName, lastName, isUpgrade, hasCoupon: !!couponCode });
+    const { email, firstName, lastName, password, couponCode, isUpgrade, userId, tier } = await req.json();
+    logStep("Received request", { email, firstName, lastName, isUpgrade, hasCoupon: !!couponCode, tier });
+
+    // Determine which price ID to use
+    const selectedTier = (tier && PRICE_IDS[tier]) ? tier : 'pro';
+    const selectedPriceId = PRICE_IDS[selectedTier];
 
     if (!email) throw new Error("Email is required");
     if (!isUpgrade && !password) throw new Error("Password is required for new users");
@@ -116,10 +120,10 @@ serve(async (req) => {
     }
 
     // Get the price details to calculate amount
-    const price = await stripe.prices.retrieve(PRO_PRICE_ID);
+    const price = await stripe.prices.retrieve(selectedPriceId);
     let amount = price.unit_amount || 0;
     const currency = price.currency || 'usd';
-    logStep("Retrieved price", { priceId: PRO_PRICE_ID, amount, currency });
+    logStep("Retrieved price", { priceId: selectedPriceId, amount, currency });
 
     // Check if coupon applies and calculate final amount
     let appliedCoupon: string | undefined;
@@ -153,7 +157,7 @@ serve(async (req) => {
         setup_future_usage: 'off_session',
         metadata: {
           supabase_user_id: supabaseUserId || '',
-          price_id: PRO_PRICE_ID,
+          price_id: selectedPriceId,
           is_upgrade: isUpgrade ? 'true' : 'false',
         },
       });
@@ -171,7 +175,7 @@ serve(async (req) => {
     // Build subscription options
     const subscriptionOptions: Stripe.SubscriptionCreateParams = {
       customer: stripeCustomerId,
-      items: [{ price: PRO_PRICE_ID }],
+      items: [{ price: selectedPriceId }],
       payment_behavior: 'default_incomplete',
       payment_settings: {
         save_default_payment_method: 'on_subscription',

@@ -364,7 +364,7 @@ export const ProjectSidebar = () => {
             </div>
           </SheetContent>
         </Sheet>
-        <UpgradeDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog} feature={upgradeFeature} />
+        <UpgradeDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog} feature={upgradeFeature} targetTier={upgradeTargetTier} />
       </TooltipProvider>
     );
   }
@@ -492,7 +492,7 @@ export const ProjectSidebar = () => {
         </AnimatePresence>
       </div>
 
-      <UpgradeDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog} feature={upgradeFeature} />
+      <UpgradeDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog} feature={upgradeFeature} targetTier={upgradeTargetTier} />
     </TooltipProvider>
   );
 };
