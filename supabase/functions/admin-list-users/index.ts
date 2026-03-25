@@ -171,7 +171,7 @@ serve(async (req) => {
                   const priceId = subscription.items.data[0]?.price?.id;
                   const tier = getTierFromPriceId(priceId);
                   
-                  if (tier === 'pro' || (tier === 'content_vault' && subscriptionStatus !== 'pro')) {
+                  if ((TIER_PRIORITY[tier] || 0) > (TIER_PRIORITY[subscriptionStatus] || 0)) {
                     subscriptionStatus = tier;
                     subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
                     stripeSubscriptionId = subscription.id;
