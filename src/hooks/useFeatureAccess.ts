@@ -14,7 +14,12 @@ export type FeatureKey =
   | 'unlimited_ideas'
   | 'unlimited_drafts'
   | 'content_vault'
-  | 'social_calendar';
+  | 'social_calendar'
+  | 'campaigns'
+  | 'ideas_bank'
+  | 'ai_studio'
+  | 'marketing_analytics'
+  | 'social_planner';
 
 // Limits for free plan
 export const FREE_PLAN_LIMITS = {
@@ -24,7 +29,7 @@ export const FREE_PLAN_LIMITS = {
   salesCopySections: ['headline', 'core_promise', 'cta'], // Limited sections
 };
 
-// Pro features list (Content Vault users don't get these)
+// Pro features list (available to Pro, Advanced, Admin)
 export const PRO_FEATURES: FeatureKey[] = [
   'unlimited_projects',
   'relaunch_mode',
@@ -36,6 +41,15 @@ export const PRO_FEATURES: FeatureKey[] = [
   'unlimited_ideas',
   'unlimited_drafts',
   'social_calendar',
+];
+
+// Advanced-only features (Marketing section — only Advanced and Admin)
+export const ADVANCED_ONLY_FEATURES: FeatureKey[] = [
+  'campaigns',
+  'ideas_bank',
+  'ai_studio',
+  'marketing_analytics',
+  'social_planner',
 ];
 
 // Content Vault tier features (subset that content_vault users get)
@@ -56,6 +70,11 @@ export const FEATURE_DISPLAY_NAMES: Record<FeatureKey, string> = {
   unlimited_drafts: 'Unlimited Content Drafts',
   content_vault: 'Content Vault',
   social_calendar: 'Social Media Calendar',
+  campaigns: 'Campaigns',
+  ideas_bank: 'Ideas Bank',
+  ai_studio: 'AI Studio',
+  marketing_analytics: 'Marketing Analytics',
+  social_planner: 'Social Planner',
 };
 
 // Re-export SubscriptionTier for convenience
@@ -79,21 +98,27 @@ export const useFeatureAccess = () => {
     // Admins and managers always have full access
     if (hasAdminAccess) return true;
     
-    // Pro users have access to everything
-    if (tier === 'pro') return true;
+    // Advanced users have access to everything
+    if (tier === 'advanced') return true;
+    
+    // Pro users have access to PRO_FEATURES but NOT ADVANCED_ONLY_FEATURES
+    if (tier === 'pro') {
+      if (ADVANCED_ONLY_FEATURES.includes(feature)) return false;
+      return true;
+    }
     
     // Content Vault users only get content_vault feature
     if (tier === 'content_vault') {
       return CONTENT_VAULT_FEATURES.includes(feature);
     }
     
-    // Free users don't have access to Pro or Content Vault features
-    return !PRO_FEATURES.includes(feature) && !CONTENT_VAULT_FEATURES.includes(feature);
+    // Free users don't have access to Pro, Advanced, or Content Vault features
+    return !PRO_FEATURES.includes(feature) && !ADVANCED_ONLY_FEATURES.includes(feature) && !CONTENT_VAULT_FEATURES.includes(feature);
   };
 
-  // Get limits for free plan (returns null for Pro/Admin/Manager users = unlimited)
+  // Get limits for free plan (returns null for Pro/Advanced/Admin/Manager users = unlimited)
   const getLimit = (limitKey: keyof typeof FREE_PLAN_LIMITS): number | string[] | null => {
-    if (hasAdminAccess || isSubscribed) return null; // No limits for Pro/Admin/Manager
+    if (hasAdminAccess || isSubscribed) return null; // No limits for paid tiers
     return FREE_PLAN_LIMITS[limitKey];
   };
 
@@ -115,13 +140,13 @@ export const useFeatureAccess = () => {
     return FREE_PLAN_LIMITS.salesCopySections.includes(sectionId);
   };
 
-  // Get remaining daily ideas (returns null for Pro/Admin/Manager = unlimited)
+  // Get remaining daily ideas (returns null for paid tiers = unlimited)
   const getRemainingDailyIdeas = (usedToday: number): number | null => {
     if (hasAdminAccess || isSubscribed) return null;
     return Math.max(0, FREE_PLAN_LIMITS.dailyIdeas - usedToday);
   };
 
-  // Get remaining drafts (returns null for Pro/Admin/Manager = unlimited)
+  // Get remaining drafts (returns null for paid tiers = unlimited)
   const getRemainingDrafts = (currentCount: number): number | null => {
     if (hasAdminAccess || isSubscribed) return null;
     return Math.max(0, FREE_PLAN_LIMITS.maxDrafts - currentCount);

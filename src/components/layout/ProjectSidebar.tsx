@@ -46,6 +46,7 @@ interface SectionItem {
   icon: React.ComponentType<{ className?: string }>;
   href: string;
   isProOnly?: boolean;
+  isAdvancedOnly?: boolean;
   requiresProject?: boolean;
 }
 
@@ -91,11 +92,11 @@ const createSections = (projectId?: string): Section[] => [
     label: "Marketing",
     icon: Megaphone,
     items: [
-      { id: "campaigns", label: "Campaigns", icon: Target, href: "/marketing-hub/campaigns", isProOnly: true },
-      { id: "social-planner", label: "Social Planner", icon: MessageSquareText, href: projectId ? `/projects/${projectId}/content` : "/social-planner", isProOnly: true },
-      { id: "ideas", label: "Ideas Bank", icon: Lightbulb, href: "/ideas", isProOnly: true },
-      { id: "ai-studio", label: "AI Studio", icon: Wand2, href: "/app/ai-studio", isProOnly: true },
-      { id: "analytics", label: "Analytics", icon: BarChart3, href: "/marketing-hub/analytics", isProOnly: true },
+      { id: "campaigns", label: "Campaigns", icon: Target, href: "/marketing-hub/campaigns", isAdvancedOnly: true },
+      { id: "social-planner", label: "Social Planner", icon: MessageSquareText, href: projectId ? `/projects/${projectId}/content` : "/social-planner", isAdvancedOnly: true },
+      { id: "ideas", label: "Ideas Bank", icon: Lightbulb, href: "/ideas", isAdvancedOnly: true },
+      { id: "ai-studio", label: "AI Studio", icon: Wand2, href: "/app/ai-studio", isAdvancedOnly: true },
+      { id: "analytics", label: "Analytics", icon: BarChart3, href: "/marketing-hub/analytics", isAdvancedOnly: true },
     ],
   },
   {
@@ -128,13 +129,15 @@ interface FlyoutItemProps {
   item: SectionItem;
   isActive: boolean;
   isPro: boolean;
+  isAdvanced: boolean;
   hasAdminAccess: boolean;
   onNavigate: (href: string) => void;
-  onUpgradeClick: (feature: string) => void;
+  onUpgradeClick: (feature: string, targetTier?: 'pro' | 'advanced') => void;
 }
 
-const FlyoutNavItem = ({ item, isActive, isPro, hasAdminAccess, onNavigate, onUpgradeClick }: FlyoutItemProps) => {
-  const isProLocked = item.isProOnly && !isPro && !hasAdminAccess;
+const FlyoutNavItem = ({ item, isActive, isPro, isAdvanced, hasAdminAccess, onNavigate, onUpgradeClick }: FlyoutItemProps) => {
+  const isProLocked = item.isProOnly && !isPro && !isAdvanced && !hasAdminAccess;
+  const isAdvancedLocked = item.isAdvancedOnly && !isAdvanced && !hasAdminAccess;
 
   if (item.requiresProject) {
     return (
@@ -150,12 +153,30 @@ const FlyoutNavItem = ({ item, isActive, isPro, hasAdminAccess, onNavigate, onUp
     );
   }
 
+  if (isAdvancedLocked) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => onUpgradeClick(item.label, 'advanced')}
+            className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm w-full text-left text-sidebar-foreground/40 hover:bg-sidebar-accent/30 cursor-pointer"
+          >
+            <item.icon className="w-4 h-4" />
+            <span className="flex-1">{item.label}</span>
+            <Crown className="w-3 h-3 text-primary" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right"><p>Advanced feature — Upgrade to access</p></TooltipContent>
+      </Tooltip>
+    );
+  }
+
   if (isProLocked) {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
           <button
-            onClick={() => onUpgradeClick(item.label)}
+            onClick={() => onUpgradeClick(item.label, 'pro')}
             className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm w-full text-left text-sidebar-foreground/40 hover:bg-sidebar-accent/30 cursor-pointer"
           >
             <item.icon className="w-4 h-4" />
@@ -197,7 +218,8 @@ export const ProjectSidebar = () => {
   const isMobile = useIsMobile();
   const { isOpen, close } = useMobileSidebar();
   const { hasAdminAccess, tier } = useFeatureAccess();
-  const isPro = tier === "pro" || tier === "admin";
+  const isPro = tier === "pro" || tier === "advanced" || tier === "admin";
+  const isAdvanced = tier === "advanced" || tier === "admin";
 
   // ── Stored project id ──
   const [storedProjectId, setStoredProjectId] = useState<string | undefined>();
