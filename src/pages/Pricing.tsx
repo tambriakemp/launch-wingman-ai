@@ -32,13 +32,8 @@ const plans = [
       { name: "Phase Snapshot (View Only)", included: true },
       { name: "Full Library Access", included: true },
       { name: "Content Vault", included: false },
-      { name: "Multiple Offers per Sales Page", included: false },
       { name: "Unlimited Projects", included: false },
-      { name: "Relaunch Mode", included: false },
-      { name: "Insights & Analytics", included: false },
-      { name: "Social Media Scheduling", included: false },
-      { name: "Export Phase Snapshot", included: false },
-      { name: "Full Sales Copy Builder", included: false },
+      { name: "Marketing Tools", included: false },
     ],
   },
   {
@@ -56,15 +51,9 @@ const plans = [
       { name: "Premium Templates & Guides", included: true },
       { name: "Canva Templates Library", included: true },
       { name: "Swipe Files & Examples", included: true },
-      { name: "Multiple Offers per Sales Page", included: false },
       { name: "Unlimited Projects", included: false },
-      { name: "Social Media Scheduling", included: false },
-      { name: "Relaunch Mode", included: false },
-      { name: "Insights & Analytics", included: false },
-      { name: "Export Phase Snapshot", included: false },
       { name: "Full Sales Copy Builder", included: false },
-      { name: "Unlimited AI Ideas", included: false },
-      { name: "Unlimited Drafts", included: false },
+      { name: "Marketing Tools", included: false },
     ],
   },
   {
@@ -75,24 +64,38 @@ const plans = [
     cta: "Go Pro",
     ctaVariant: "default" as const,
     ctaLink: "/checkout",
-    popular: true,
     features: [
       { name: "Unlimited Projects", included: true },
-      { name: "Full Planning & Messaging Tasks", included: true },
-      { name: "Funnel Type Selection", included: true },
-      { name: "Offer Stack Mapping", included: true },
-      { name: "Branding & Visual Direction", included: true },
       { name: "Unlimited AI Content Ideas", included: true },
       { name: "Unlimited Saved Drafts", included: true },
       { name: "Full Sales Copy Builder", included: true },
       { name: "Multiple Offers per Sales Page", included: true },
       { name: "Social Media Scheduling", included: true },
       { name: "Phase Snapshot + Export", included: true },
-      { name: "Full Library Access", included: true },
       { name: "Relaunch Mode", included: true },
       { name: "Insights & Analytics History", included: true },
-      { name: "Cross-Project Content Visibility", included: true },
       { name: "Content Vault Access", included: true },
+      { name: "Campaigns & Marketing Tools", included: false },
+      { name: "AI Studio", included: false },
+    ],
+  },
+  {
+    name: "Advanced",
+    price: "$49",
+    period: "/month",
+    description: "Full marketing suite for scaling your business",
+    cta: "Go Advanced",
+    ctaVariant: "default" as const,
+    ctaLink: "/checkout?tier=advanced",
+    popular: true,
+    features: [
+      { name: "Everything in Pro", included: true, highlight: true },
+      { name: "Campaigns Manager", included: true },
+      { name: "Social Planner", included: true },
+      { name: "Ideas Bank", included: true },
+      { name: "AI Studio", included: true },
+      { name: "Marketing Analytics", included: true },
+      { name: "Advanced Marketing Tools", included: true },
       { name: "Priority Support", included: true },
     ],
   },
@@ -117,7 +120,7 @@ const faqs = [
   },
   {
     question: "How does billing work?",
-    answer: "Both Pro ($25/month) and Content Vault ($7/month) are billed monthly. You can cancel anytime, and you'll keep access until the end of your billing period. No long-term contracts or hidden fees.",
+    answer: "Pro ($25/month), Advanced ($49/month), and Content Vault ($7/month) are billed monthly. You can cancel anytime, and you'll keep access until the end of your billing period. No long-term contracts or hidden fees.",
   },
   {
     question: "Do you offer refunds?",
@@ -151,7 +154,7 @@ const Pricing = () => {
       {/* Pricing Cards */}
       <section className="py-20 -mt-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {plans.map((plan, index) => (
               <motion.div
                 key={plan.name}
