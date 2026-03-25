@@ -85,7 +85,7 @@ interface User {
   first_name: string | null;
   last_name: string | null;
   created_at: string;
-  subscription_status: 'free' | 'content_vault' | 'pro';
+  subscription_status: 'free' | 'content_vault' | 'pro' | 'advanced';
   subscription_end: string | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
@@ -239,7 +239,7 @@ const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) =>
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userDateFrom, setUserDateFrom] = useState<Date | undefined>(undefined);
   const [userDateTo, setUserDateTo] = useState<Date | undefined>(undefined);
-  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'free' | 'content_vault' | 'pro' | 'admin' | 'manager'>('all');
+  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'free' | 'content_vault' | 'pro' | 'advanced' | 'admin' | 'manager'>('all');
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<'all' | 'card' | 'coupon_full' | 'manual'>('all');
   const [userCurrentPage, setUserCurrentPage] = useState(1);
 

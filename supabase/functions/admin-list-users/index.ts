@@ -8,14 +8,18 @@ const corsHeaders = {
 };
 
 // Subscription tier price IDs
-const PRICE_IDS = {
+const PRICE_IDS: Record<string, string> = {
   content_vault: 'price_1StiayF2gaEq7adwKHe9AbQF',
   pro: 'price_1SipMGF2gaEq7adwAGMICdO5',
+  advanced: 'price_1TEznFF2gaEq7adwpTfGefLX',
 };
 
+const TIER_PRIORITY: Record<string, number> = { free: 0, content_vault: 1, pro: 2, advanced: 3 };
+
 // Determine subscription tier from price ID
-const getTierFromPriceId = (priceId: string | null): 'free' | 'content_vault' | 'pro' => {
+const getTierFromPriceId = (priceId: string | null): 'free' | 'content_vault' | 'pro' | 'advanced' => {
   if (!priceId) return 'free';
+  if (priceId === PRICE_IDS.advanced) return 'advanced';
   if (priceId === PRICE_IDS.content_vault) return 'content_vault';
   if (priceId === PRICE_IDS.pro) return 'pro';
   return 'pro'; // Default to pro for any other paid subscription
@@ -141,7 +145,7 @@ serve(async (req) => {
         const isAdmin = userRolesForUser.some(r => r.role === 'admin');
         const isManager = userRolesForUser.some(r => r.role === 'manager');
         
-        let subscriptionStatus: 'free' | 'content_vault' | 'pro' = 'free';
+        let subscriptionStatus: 'free' | 'content_vault' | 'pro' | 'advanced' = 'free';
         let subscriptionEnd = null;
         let stripeCustomerId = null;
         let stripeSubscriptionId = null;
