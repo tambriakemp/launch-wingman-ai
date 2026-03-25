@@ -9,7 +9,7 @@ export interface AdminUser {
   first_name: string | null;
   last_name: string | null;
   created_at: string;
-  subscription_status: 'free' | 'content_vault' | 'pro';
+  subscription_status: 'free' | 'content_vault' | 'pro' | 'advanced';
   subscription_end: string | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;

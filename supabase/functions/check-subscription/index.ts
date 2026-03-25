@@ -11,6 +11,7 @@ const corsHeaders = {
 const PRICE_IDS = {
   content_vault: 'price_1StiayF2gaEq7adwKHe9AbQF',
   pro: 'price_1SipMGF2gaEq7adwAGMICdO5',
+  advanced: 'price_1TEznFF2gaEq7adwpTfGefLX',
 };
 
 const logStep = (step: string, details?: any) => {
@@ -18,13 +19,17 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Determine subscription tier from price ID
-const getTierFromPriceId = (priceId: string | null): 'free' | 'content_vault' | 'pro' => {
+// Determine subscription tier from price ID (priority: advanced > pro > content_vault > free)
+const getTierFromPriceId = (priceId: string | null): 'free' | 'content_vault' | 'pro' | 'advanced' => {
   if (!priceId) return 'free';
-  if (priceId === PRICE_IDS.content_vault) return 'content_vault';
+  if (priceId === PRICE_IDS.advanced) return 'advanced';
   if (priceId === PRICE_IDS.pro) return 'pro';
+  if (priceId === PRICE_IDS.content_vault) return 'content_vault';
   return 'pro'; // Default to pro for any other paid subscription
 };
+
+// Tier priority for comparison
+const TIER_PRIORITY: Record<string, number> = { free: 0, content_vault: 1, pro: 2, advanced: 3 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -100,7 +105,7 @@ serve(async (req) => {
       logStep("User has staff role - granting full access", { role: roleData[0].role });
       return new Response(JSON.stringify({
         subscribed: true,
-        subscription_tier: 'pro',
+        subscription_tier: 'advanced',
         subscription_end: null,
         source: "role"
       }), {
@@ -126,12 +131,12 @@ serve(async (req) => {
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: "active",
-      limit: 10, // Get all active subscriptions to find the highest tier
+      limit: 10,
     });
 
     const hasActiveSub = subscriptions.data.length > 0;
     let subscriptionEnd: string | null = null;
-    let subscriptionTier: 'free' | 'content_vault' | 'pro' = 'free';
+    let subscriptionTier: 'free' | 'content_vault' | 'pro' | 'advanced' = 'free';
     let priceId: string | null = null;
 
     if (hasActiveSub) {
@@ -140,22 +145,8 @@ serve(async (req) => {
         const subPriceId = subscription.items.data[0]?.price?.id || null;
         const subTier = getTierFromPriceId(subPriceId);
         
-        // Priority: pro > content_vault > free
-        if (subTier === 'pro') {
-          subscriptionTier = 'pro';
-          priceId = subPriceId;
-          
-          // Get subscription end date
-          let periodEnd = subscription.current_period_end;
-          if (!periodEnd && subscription.items?.data?.[0]?.current_period_end) {
-            periodEnd = subscription.items.data[0].current_period_end;
-          }
-          if (periodEnd && typeof periodEnd === 'number') {
-            subscriptionEnd = new Date(periodEnd * 1000).toISOString();
-          }
-          break; // Pro is highest tier
-        } else if (subTier === 'content_vault' && subscriptionTier === 'free') {
-          subscriptionTier = 'content_vault';
+        if ((TIER_PRIORITY[subTier] || 0) > (TIER_PRIORITY[subscriptionTier] || 0)) {
+          subscriptionTier = subTier;
           priceId = subPriceId;
           
           let periodEnd = subscription.current_period_end;
@@ -165,6 +156,8 @@ serve(async (req) => {
           if (periodEnd && typeof periodEnd === 'number') {
             subscriptionEnd = new Date(periodEnd * 1000).toISOString();
           }
+          
+          if (subTier === 'advanced') break; // Advanced is highest tier
         }
       }
       

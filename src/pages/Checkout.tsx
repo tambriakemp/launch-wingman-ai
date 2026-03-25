@@ -67,8 +67,18 @@ const contentVaultFeatures = [
   "Resource downloads",
 ];
 
+const advancedFeatures = [
+  "Everything in Pro",
+  "Campaigns manager",
+  "Social Planner",
+  "Ideas Bank",
+  "AI Studio",
+  "Marketing Analytics",
+  "Advanced marketing tools",
+];
+
 // Plan configuration
-const PLAN_CONFIG = {
+const PLAN_CONFIG: Record<string, { name: string; price: number; features: string[]; headline: string; upgradeHeadline: string }> = {
   content_vault: {
     name: "Content Vault",
     price: 7,
@@ -83,6 +93,13 @@ const PLAN_CONFIG = {
     headline: "Start Your Pro Journey",
     upgradeHeadline: "Upgrade to Pro",
   },
+  advanced: {
+    name: "Advanced Plan",
+    price: 49,
+    features: advancedFeatures,
+    headline: "Unlock Advanced Marketing",
+    upgradeHeadline: "Upgrade to Advanced",
+  },
 };
 
 const Checkout = () => {
@@ -93,7 +110,7 @@ const Checkout = () => {
   
   // Determine which tier to checkout
   const tierParam = searchParams.get("tier");
-  const selectedTier = tierParam === 'content_vault' ? 'content_vault' : 'pro';
+  const selectedTier = tierParam && PLAN_CONFIG[tierParam] ? tierParam : 'pro';
   const planConfig = PLAN_CONFIG[selectedTier];
   
   // Form state

@@ -32,13 +32,8 @@ const plans = [
       { name: "Phase Snapshot (View Only)", included: true },
       { name: "Full Library Access", included: true },
       { name: "Content Vault", included: false },
-      { name: "Multiple Offers per Sales Page", included: false },
       { name: "Unlimited Projects", included: false },
-      { name: "Relaunch Mode", included: false },
-      { name: "Insights & Analytics", included: false },
-      { name: "Social Media Scheduling", included: false },
-      { name: "Export Phase Snapshot", included: false },
-      { name: "Full Sales Copy Builder", included: false },
+      { name: "Marketing Tools", included: false },
     ],
   },
   {
@@ -56,15 +51,9 @@ const plans = [
       { name: "Premium Templates & Guides", included: true },
       { name: "Canva Templates Library", included: true },
       { name: "Swipe Files & Examples", included: true },
-      { name: "Multiple Offers per Sales Page", included: false },
       { name: "Unlimited Projects", included: false },
-      { name: "Social Media Scheduling", included: false },
-      { name: "Relaunch Mode", included: false },
-      { name: "Insights & Analytics", included: false },
-      { name: "Export Phase Snapshot", included: false },
       { name: "Full Sales Copy Builder", included: false },
-      { name: "Unlimited AI Ideas", included: false },
-      { name: "Unlimited Drafts", included: false },
+      { name: "Marketing Tools", included: false },
     ],
   },
   {
@@ -75,24 +64,38 @@ const plans = [
     cta: "Go Pro",
     ctaVariant: "default" as const,
     ctaLink: "/checkout",
-    popular: true,
     features: [
       { name: "Unlimited Projects", included: true },
-      { name: "Full Planning & Messaging Tasks", included: true },
-      { name: "Funnel Type Selection", included: true },
-      { name: "Offer Stack Mapping", included: true },
-      { name: "Branding & Visual Direction", included: true },
       { name: "Unlimited AI Content Ideas", included: true },
       { name: "Unlimited Saved Drafts", included: true },
       { name: "Full Sales Copy Builder", included: true },
       { name: "Multiple Offers per Sales Page", included: true },
       { name: "Social Media Scheduling", included: true },
       { name: "Phase Snapshot + Export", included: true },
-      { name: "Full Library Access", included: true },
       { name: "Relaunch Mode", included: true },
       { name: "Insights & Analytics History", included: true },
-      { name: "Cross-Project Content Visibility", included: true },
       { name: "Content Vault Access", included: true },
+      { name: "Campaigns & Marketing Tools", included: false },
+      { name: "AI Studio", included: false },
+    ],
+  },
+  {
+    name: "Advanced",
+    price: "$49",
+    period: "/month",
+    description: "Full marketing suite for scaling your business",
+    cta: "Go Advanced",
+    ctaVariant: "default" as const,
+    ctaLink: "/checkout?tier=advanced",
+    popular: true,
+    features: [
+      { name: "Everything in Pro", included: true, highlight: true },
+      { name: "Campaigns Manager", included: true },
+      { name: "Social Planner", included: true },
+      { name: "Ideas Bank", included: true },
+      { name: "AI Studio", included: true },
+      { name: "Marketing Analytics", included: true },
+      { name: "Advanced Marketing Tools", included: true },
       { name: "Priority Support", included: true },
     ],
   },
@@ -117,7 +120,7 @@ const faqs = [
   },
   {
     question: "How does billing work?",
-    answer: "Both Pro ($25/month) and Content Vault ($7/month) are billed monthly. You can cancel anytime, and you'll keep access until the end of your billing period. No long-term contracts or hidden fees.",
+    answer: "Pro ($25/month), Advanced ($49/month), and Content Vault ($7/month) are billed monthly. You can cancel anytime, and you'll keep access until the end of your billing period. No long-term contracts or hidden fees.",
   },
   {
     question: "Do you offer refunds?",
@@ -151,7 +154,7 @@ const Pricing = () => {
       {/* Pricing Cards */}
       <section className="py-20 -mt-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {plans.map((plan, index) => (
               <motion.div
                 key={plan.name}
@@ -249,63 +252,42 @@ const Pricing = () => {
                     </div>
                   </th>
                   <th className="text-center py-4 px-4 font-semibold text-foreground">Pro</th>
+                  <th className="text-center py-4 px-4 font-semibold text-foreground">Advanced</th>
                 </tr>
               </thead>
               <tbody>
                 {[
-                  { feature: "Active Projects", free: "1", vault: "1", pro: "Unlimited" },
-                  { feature: "Planning & Messaging Tasks", free: true, vault: true, pro: true },
-                  { feature: "Funnel Type Selection", free: true, vault: true, pro: true },
-                  { feature: "Offer Stack", free: true, vault: true, pro: true },
-                  { feature: "Branding & Visual Direction", free: true, vault: true, pro: true },
-                  { feature: "AI Content Ideas", free: "5/day", vault: "5/day", pro: "Unlimited" },
-                  { feature: "Saved Drafts", free: "5 max", vault: "5 max", pro: "Unlimited" },
-                  { feature: "Sales Copy", free: "Basic", vault: "Basic", pro: "Full Builder" },
-                  { feature: "Content Vault Access", free: false, vault: true, pro: true },
-                  { feature: "Multiple Offers per Sales Page", free: false, vault: false, pro: true },
-                  { feature: "Social Media Scheduling", free: false, vault: false, pro: true },
-                  { feature: "Phase Snapshot", free: "View Only", vault: "View Only", pro: "View + Export" },
-                  { feature: "Library Access", free: true, vault: true, pro: true },
-                  { feature: "Relaunch Mode", free: false, vault: false, pro: true },
-                  { feature: "Insights & Analytics", free: false, vault: false, pro: true },
-                  { feature: "Cross-Project Visibility", free: false, vault: false, pro: true },
-                  { feature: "Priority Support", free: false, vault: false, pro: true },
+                  { feature: "Active Projects", free: "1", vault: "1", pro: "Unlimited", advanced: "Unlimited" },
+                  { feature: "Planning & Messaging Tasks", free: true, vault: true, pro: true, advanced: true },
+                  { feature: "AI Content Ideas", free: "5/day", vault: "5/day", pro: "Unlimited", advanced: "Unlimited" },
+                  { feature: "Saved Drafts", free: "5 max", vault: "5 max", pro: "Unlimited", advanced: "Unlimited" },
+                  { feature: "Sales Copy", free: "Basic", vault: "Basic", pro: "Full Builder", advanced: "Full Builder" },
+                  { feature: "Content Vault Access", free: false, vault: true, pro: true, advanced: true },
+                  { feature: "Social Media Scheduling", free: false, vault: false, pro: true, advanced: true },
+                  { feature: "Relaunch Mode", free: false, vault: false, pro: true, advanced: true },
+                  { feature: "Insights & Analytics", free: false, vault: false, pro: true, advanced: true },
+                  { feature: "Campaigns", free: false, vault: false, pro: false, advanced: true },
+                  { feature: "Social Planner", free: false, vault: false, pro: false, advanced: true },
+                  { feature: "Ideas Bank", free: false, vault: false, pro: false, advanced: true },
+                  { feature: "AI Studio", free: false, vault: false, pro: false, advanced: true },
+                  { feature: "Marketing Analytics", free: false, vault: false, pro: false, advanced: true },
+                  { feature: "Priority Support", free: false, vault: false, pro: false, advanced: true },
                 ].map((row, index) => (
                   <tr key={index} className="border-b border-border/50">
                     <td className="py-4 px-4 text-foreground">{row.feature}</td>
-                    <td className="py-4 px-4 text-center">
-                      {typeof row.free === "boolean" ? (
-                        row.free ? (
-                          <Check className="w-5 h-5 text-accent mx-auto" />
+                    {(['free', 'vault', 'pro', 'advanced'] as const).map((col) => (
+                      <td key={col} className="py-4 px-4 text-center">
+                        {typeof row[col] === "boolean" ? (
+                          row[col] ? (
+                            <Check className="w-5 h-5 text-accent mx-auto" />
+                          ) : (
+                            <X className="w-5 h-5 text-muted-foreground/40 mx-auto" />
+                          )
                         ) : (
-                          <X className="w-5 h-5 text-muted-foreground/40 mx-auto" />
-                        )
-                      ) : (
-                        <span className="text-foreground">{row.free}</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      {typeof row.vault === "boolean" ? (
-                        row.vault ? (
-                          <Check className="w-5 h-5 text-accent mx-auto" />
-                        ) : (
-                          <X className="w-5 h-5 text-muted-foreground/40 mx-auto" />
-                        )
-                      ) : (
-                        <span className="text-foreground">{row.vault}</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      {typeof row.pro === "boolean" ? (
-                        row.pro ? (
-                          <Check className="w-5 h-5 text-accent mx-auto" />
-                        ) : (
-                          <X className="w-5 h-5 text-muted-foreground/40 mx-auto" />
-                        )
-                      ) : (
-                        <span className="text-foreground font-medium">{row.pro}</span>
-                      )}
-                    </td>
+                          <span className={`text-foreground ${col === 'advanced' ? 'font-medium' : ''}`}>{row[col]}</span>
+                        )}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>

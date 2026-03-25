@@ -85,7 +85,7 @@ interface User {
   first_name: string | null;
   last_name: string | null;
   created_at: string;
-  subscription_status: 'free' | 'content_vault' | 'pro';
+  subscription_status: 'free' | 'content_vault' | 'pro' | 'advanced';
   subscription_end: string | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
@@ -176,9 +176,9 @@ const MobileUserCard = ({
           </div>
           <Badge
             variant={user.is_admin || user.is_manager || user.subscription_status !== 'free' ? 'default' : 'secondary'}
-            className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : user.subscription_status === 'content_vault' ? 'bg-green-500 hover:bg-green-600' : ''}
+            className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'advanced' ? 'bg-violet-500 hover:bg-violet-600' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : user.subscription_status === 'content_vault' ? 'bg-green-500 hover:bg-green-600' : ''}
           >
-            {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : user.subscription_status === 'content_vault' ? 'Vault' : 'Free'}
+            {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'advanced' ? 'Advanced' : user.subscription_status === 'pro' ? 'Pro' : user.subscription_status === 'content_vault' ? 'Vault' : 'Free'}
           </Badge>
         </div>
         <div className="grid grid-cols-2 gap-2 text-sm mb-3">
@@ -239,7 +239,7 @@ const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) =>
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userDateFrom, setUserDateFrom] = useState<Date | undefined>(undefined);
   const [userDateTo, setUserDateTo] = useState<Date | undefined>(undefined);
-  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'free' | 'content_vault' | 'pro' | 'admin' | 'manager'>('all');
+  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'free' | 'content_vault' | 'pro' | 'advanced' | 'admin' | 'manager'>('all');
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<'all' | 'card' | 'coupon_full' | 'manual'>('all');
   const [userCurrentPage, setUserCurrentPage] = useState(1);
 
@@ -248,7 +248,7 @@ const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) =>
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [bulkConfirmDialog, setBulkConfirmDialog] = useState<{
     open: boolean;
-    action: 'cancel' | 'grant_pro' | 'grant_content_vault';
+    action: 'cancel' | 'grant_pro' | 'grant_advanced' | 'grant_content_vault';
   }>({ open: false, action: 'grant_pro' });
 
   // Activity dialog state
@@ -338,7 +338,7 @@ const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) =>
         `"${user.first_name || ''} ${user.last_name || ''}".trim() || '—'`,
         `"${user.email}"`,
         format(new Date(user.created_at), 'yyyy-MM-dd'),
-        user.subscription_status === 'pro' ? 'Pro' : 'Free',
+        user.subscription_status === 'advanced' ? 'Advanced' : user.subscription_status === 'pro' ? 'Pro' : user.subscription_status === 'content_vault' ? 'Vault' : 'Free',
         user.subscription_end ? format(new Date(user.subscription_end), 'yyyy-MM-dd') : '—',
         user.last_active ? format(new Date(user.last_active), 'yyyy-MM-dd HH:mm') : 'Never'
       ].join(','))
@@ -380,11 +380,12 @@ const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) =>
     setSelectedUsers(new Set());
   };
 
-  const getEligibleUsers = (action: 'cancel' | 'grant_pro' | 'grant_content_vault') => {
+  const getEligibleUsers = (action: 'cancel' | 'grant_pro' | 'grant_advanced' | 'grant_content_vault') => {
     return paginatedUsers.filter(user => {
       if (!selectedUsers.has(user.id)) return false;
-      if (action === 'cancel') return user.subscription_status === 'pro' || user.subscription_status === 'content_vault';
+      if (action === 'cancel') return user.subscription_status === 'pro' || user.subscription_status === 'advanced' || user.subscription_status === 'content_vault';
       if (action === 'grant_pro') return user.subscription_status === 'free';
+      if (action === 'grant_advanced') return user.subscription_status === 'free' || user.subscription_status === 'pro' || user.subscription_status === 'content_vault';
       if (action === 'grant_content_vault') return user.subscription_status === 'free';
       return false;
     });
@@ -525,6 +526,7 @@ const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) =>
   const stats = {
     totalUsers: users.length,
     proUsers: users.filter(u => u.subscription_status === 'pro').length,
+    advancedUsers: users.filter(u => u.subscription_status === 'advanced').length,
     vaultUsers: users.filter(u => u.subscription_status === 'content_vault').length,
     freeUsers: users.filter(u => u.subscription_status === 'free').length,
     mrrCents: users.reduce((sum, u) => sum + (u.subscription_amount_cents || 0), 0),
@@ -661,7 +663,9 @@ const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) =>
                       <SelectContent>
                         <SelectItem value="all">All</SelectItem>
                         <SelectItem value="free">Free</SelectItem>
+                        <SelectItem value="content_vault">Vault</SelectItem>
                         <SelectItem value="pro">Pro</SelectItem>
+                        <SelectItem value="advanced">Advanced</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                         <SelectItem value="manager">Manager</SelectItem>
                       </SelectContent>
@@ -862,9 +866,9 @@ const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) =>
                                 <TableCell>
                                   <Badge
                                     variant={user.is_admin || user.is_manager || user.subscription_status !== 'free' ? 'default' : 'secondary'}
-                                    className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : user.subscription_status === 'content_vault' ? 'bg-green-500 hover:bg-green-600' : ''}
+                                    className={user.is_admin ? 'bg-purple-600 hover:bg-purple-700' : user.is_manager ? 'bg-blue-600 hover:bg-blue-700' : user.subscription_status === 'advanced' ? 'bg-violet-500 hover:bg-violet-600' : user.subscription_status === 'pro' ? 'bg-amber-500 hover:bg-amber-600' : user.subscription_status === 'content_vault' ? 'bg-green-500 hover:bg-green-600' : ''}
                                   >
-                                    {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'pro' ? 'Pro' : user.subscription_status === 'content_vault' ? 'Vault' : 'Free'}
+                                    {user.is_admin ? 'Admin' : user.is_manager ? 'Manager' : user.subscription_status === 'advanced' ? 'Advanced' : user.subscription_status === 'pro' ? 'Pro' : user.subscription_status === 'content_vault' ? 'Vault' : 'Free'}
                                   </Badge>
                                 </TableCell>
                                 <TableCell>
