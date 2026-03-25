@@ -54,6 +54,7 @@ import CampaignDetail from "./pages/CampaignDetail";
 import SocialPlanner from "./pages/SocialPlanner";
 import ContentIdeasBank from "./pages/ContentIdeasBank";
 import HookGenerator from "./pages/HookGenerator";
+import SalesPageWriter from "./pages/SalesPageWriter";
 
 // Feature pages
 import AssessmentsFeature from "./pages/features/AssessmentsFeature";
@@ -627,6 +628,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <HookGenerator />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/app/ai-studio/sales-page"
+              element={
+                <ProtectedRoute>
+                  <SalesPageWriter />
                 </ProtectedRoute>
               }
             />

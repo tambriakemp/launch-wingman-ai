@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, Loader2, Check } from "lucide-react";
+import { ArrowLeft, Clock, Loader2, Check, Zap, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { toast } from "sonner";
 import { useTaskEngine } from "@/hooks/useTaskEngine";
 import { PHASE_LABELS } from "@/types/tasks";
@@ -19,6 +20,8 @@ export default function SalesCopyTask() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const taskId = 'messaging_sales_copy';
+  const { tier, hasAdminAccess } = useFeatureAccess();
+  const isAdvanced = tier === 'advanced' || hasAdminAccess;
   
   const [completedCriteria, setCompletedCriteria] = useState<string[]>([]);
   const [salesCopyCount, setSalesCopyCount] = useState(0);
@@ -220,6 +223,38 @@ export default function SalesCopyTask() {
             Your response
           </h2>
           
+          {isAdvanced ? (
+            <div className="flex items-center justify-between gap-4 mb-4 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+                <p className="text-xs text-foreground/80 leading-relaxed">
+                  Pro tip: Use the AI-powered Sales Page Writer to generate a full draft in seconds, then refine it section by section below.
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/app/ai-studio/sales-page')}
+                className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline shrink-0 whitespace-nowrap"
+              >
+                Open AI Writer <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-4 mb-4 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+                <p className="text-xs text-foreground/80 leading-relaxed">
+                  Want AI to write your full sales page draft in seconds?
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/pricing')}
+                className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline shrink-0 whitespace-nowrap"
+              >
+                Upgrade to Advanced <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
           {projectId && (
             <SalesPageCopyTab projectId={projectId} />
           )}
