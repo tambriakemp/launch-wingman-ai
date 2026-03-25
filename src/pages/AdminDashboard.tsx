@@ -248,7 +248,7 @@ const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) =>
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [bulkConfirmDialog, setBulkConfirmDialog] = useState<{
     open: boolean;
-    action: 'cancel' | 'grant_pro' | 'grant_content_vault';
+    action: 'cancel' | 'grant_pro' | 'grant_advanced' | 'grant_content_vault';
   }>({ open: false, action: 'grant_pro' });
 
   // Activity dialog state
