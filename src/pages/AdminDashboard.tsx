@@ -661,7 +661,9 @@ const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) =>
                       <SelectContent>
                         <SelectItem value="all">All</SelectItem>
                         <SelectItem value="free">Free</SelectItem>
+                        <SelectItem value="content_vault">Vault</SelectItem>
                         <SelectItem value="pro">Pro</SelectItem>
+                        <SelectItem value="advanced">Advanced</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                         <SelectItem value="manager">Manager</SelectItem>
                       </SelectContent>
