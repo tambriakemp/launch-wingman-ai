@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import ProjectLayout from "@/components/layout/ProjectLayout";
+import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { supabase } from "@/integrations/supabase/client";
 
 const PLATFORMS = ["Any Platform", "Instagram", "TikTok", "LinkedIn", "X / Twitter", "YouTube", "Email"];
