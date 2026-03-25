@@ -380,7 +380,7 @@ const AdminDashboard = ({ defaultTab = "overview" }: { defaultTab?: string }) =>
     setSelectedUsers(new Set());
   };
 
-  const getEligibleUsers = (action: 'cancel' | 'grant_pro' | 'grant_content_vault') => {
+  const getEligibleUsers = (action: 'cancel' | 'grant_pro' | 'grant_advanced' | 'grant_content_vault') => {
     return paginatedUsers.filter(user => {
       if (!selectedUsers.has(user.id)) return false;
       if (action === 'cancel') return user.subscription_status === 'pro' || user.subscription_status === 'advanced' || user.subscription_status === 'content_vault';
