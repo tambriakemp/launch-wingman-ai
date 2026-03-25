@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import ProjectLayout from "@/components/layout/ProjectLayout";
+import { ProjectLayout } from "@/components/layout/ProjectLayout";
 
 const SECTION_ORDER = [
   "opening-headline",
