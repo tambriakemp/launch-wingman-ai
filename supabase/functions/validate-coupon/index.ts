@@ -56,7 +56,7 @@ serve(async (req) => {
     }
 
     // Determine original price based on tier
-    const originalPrice = tier === 'content_vault' ? 7 : 25;
+    const originalPrice = tier === 'content_vault' ? 7 : tier === 'advanced' ? 49 : 25;
 
     // Build discount description
     let discountDescription = "";

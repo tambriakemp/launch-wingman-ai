@@ -262,8 +262,11 @@ export const ProjectSidebar = () => {
     setOpenSection(active);
   }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleUpgradeClick = useCallback((feature: string) => {
+  const [upgradeTargetTier, setUpgradeTargetTier] = useState<'pro' | 'advanced'>('pro');
+
+  const handleUpgradeClick = useCallback((feature: string, targetTier?: 'pro' | 'advanced') => {
     setUpgradeFeature(feature);
+    setUpgradeTargetTier(targetTier || 'pro');
     setShowUpgradeDialog(true);
   }, []);
 
@@ -336,6 +339,7 @@ export const ProjectSidebar = () => {
                               item={item}
                               isActive={isActiveRoute(item.href)}
                               isPro={isPro}
+                              isAdvanced={isAdvanced}
                               hasAdminAccess={hasAdminAccess}
                               onNavigate={handleMobileNav}
                               onUpgradeClick={handleUpgradeClick}
@@ -476,6 +480,7 @@ export const ProjectSidebar = () => {
                     item={item}
                     isActive={isActiveRoute(item.href)}
                     isPro={isPro}
+                    isAdvanced={isAdvanced}
                     hasAdminAccess={hasAdminAccess}
                     onNavigate={handleDesktopNav}
                     onUpgradeClick={handleUpgradeClick}

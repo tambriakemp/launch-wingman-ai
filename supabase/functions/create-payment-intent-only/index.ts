@@ -12,9 +12,10 @@ const logStep = (step: string, details?: unknown) => {
 };
 
 // Price IDs for subscription tiers
-const PRICE_IDS = {
+const PRICE_IDS: Record<string, string> = {
   content_vault: 'price_1StiayF2gaEq7adwKHe9AbQF',
   pro: 'price_1SipMGF2gaEq7adwAGMICdO5',
+  advanced: 'price_1TEznFF2gaEq7adwpTfGefLX',
 };
 
 serve(async (req) => {
@@ -33,7 +34,7 @@ serve(async (req) => {
     const { couponCode, tier } = await req.json().catch(() => ({}));
     
     // Determine which price ID to use based on tier parameter
-    const selectedTier = tier === 'content_vault' ? 'content_vault' : 'pro';
+    const selectedTier = (tier && PRICE_IDS[tier]) ? tier : 'pro';
     const priceId = PRICE_IDS[selectedTier];
     
     logStep("Received request", { hasCoupon: !!couponCode, tier: selectedTier, priceId });

@@ -12,8 +12,12 @@ const logStep = (step: string, details?: unknown) => {
   console.log(`[CREATE-SUBSCRIPTION-INTENT] ${step}${detailsStr}`);
 };
 
-// Pro plan price ID
-const PRO_PRICE_ID = "price_1SipMGF2gaEq7adwAGMICdO5";
+// Price IDs for subscription tiers
+const PRICE_IDS: Record<string, string> = {
+  content_vault: 'price_1StiayF2gaEq7adwKHe9AbQF',
+  pro: 'price_1SipMGF2gaEq7adwAGMICdO5',
+  advanced: 'price_1TEznFF2gaEq7adwpTfGefLX',
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

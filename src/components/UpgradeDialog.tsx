@@ -13,6 +13,7 @@ interface UpgradeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   feature?: string;
+  targetTier?: 'pro' | 'advanced';
 }
 
 const proFeatures = [
@@ -30,12 +31,28 @@ const proFeatures = [
   "Priority support",
 ];
 
-export const UpgradeDialog = ({ open, onOpenChange, feature }: UpgradeDialogProps) => {
+const advancedFeatures = [
+  "Everything in Pro",
+  "Campaigns manager",
+  "Social Planner",
+  "Ideas Bank",
+  "AI Studio",
+  "Marketing Analytics",
+  "Advanced marketing tools",
+];
+
+export const UpgradeDialog = ({ open, onOpenChange, feature, targetTier = 'pro' }: UpgradeDialogProps) => {
   const navigate = useNavigate();
+
+  const isAdvanced = targetTier === 'advanced';
+  const features = isAdvanced ? advancedFeatures : proFeatures;
+  const price = isAdvanced ? 49 : 25;
+  const tierName = isAdvanced ? 'Advanced' : 'Pro';
+  const checkoutLink = isAdvanced ? '/checkout?tier=advanced' : '/checkout?upgrade=true';
 
   const handleUpgrade = () => {
     onOpenChange(false);
-    navigate("/checkout?upgrade=true");
+    navigate(checkoutLink);
   };
 
   return (
@@ -45,11 +62,11 @@ export const UpgradeDialog = ({ open, onOpenChange, feature }: UpgradeDialogProp
           <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
             <Crown className="w-6 h-6 text-primary" />
           </div>
-          <DialogTitle className="text-xl">Upgrade to Pro</DialogTitle>
+          <DialogTitle className="text-xl">Upgrade to {tierName}</DialogTitle>
           <DialogDescription>
             {feature 
-              ? `${feature} is a Pro feature. Upgrade to unlock it and more!`
-              : "Unlock all features and take your launches to the next level."
+              ? `${feature} is ${isAdvanced ? 'an Advanced' : 'a Pro'} feature. Upgrade to unlock it and more!`
+              : `Unlock all ${isAdvanced ? 'marketing tools and ' : ''}features and take your launches to the next level.`
             }
           </DialogDescription>
         </DialogHeader>
@@ -57,12 +74,12 @@ export const UpgradeDialog = ({ open, onOpenChange, feature }: UpgradeDialogProp
         <div className="space-y-4 py-4">
           {/* Pricing Display */}
           <div className="flex items-baseline justify-center gap-2">
-            <span className="text-4xl font-bold text-foreground">$25</span>
+            <span className="text-4xl font-bold text-foreground">${price}</span>
             <span className="text-muted-foreground">/month</span>
           </div>
 
           <ul className="space-y-2">
-            {proFeatures.map((item, i) => (
+            {features.map((item, i) => (
               <li key={i} className="flex items-center gap-2 text-sm">
                 <Check className="w-4 h-4 text-primary flex-shrink-0" />
                 <span className="text-foreground">{item}</span>
