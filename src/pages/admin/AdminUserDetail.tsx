@@ -413,6 +413,15 @@ const AdminUserDetail = () => {
                   <PaymentSourceBadge paymentSource={user.payment_source} couponName={user.coupon_name} />
                 </div>
               )}
+              {user.card_last4 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Card on File</span>
+                  <span className="text-sm font-mono flex items-center gap-1.5">
+                    <CreditCard className="h-3.5 w-3.5" />
+                    {user.card_brand ? `${user.card_brand} ` : ''}•••• {user.card_last4}
+                  </span>
+                </div>
+              )}
               {user.subscription_amount_cents > 0 && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Amount</span>

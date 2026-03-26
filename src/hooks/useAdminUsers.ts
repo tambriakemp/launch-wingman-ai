@@ -22,6 +22,8 @@ export interface AdminUser {
   is_manager: boolean;
   project_count: number;
   banned_until: string | null;
+  card_last4: string | null;
+  card_brand: string | null;
 }
 
 export const useAdminUsers = () => {
