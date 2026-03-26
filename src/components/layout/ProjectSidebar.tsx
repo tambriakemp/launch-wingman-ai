@@ -100,6 +100,7 @@ const createSections = (projectId?: string): Section[] => [
       { id: "social-planner", label: "Social Planner", icon: MessageSquareText, href: projectId ? `/projects/${projectId}/content` : "/social-planner", isAdvancedOnly: true },
       { id: "ideas", label: "Ideas Bank", icon: Lightbulb, href: "/ideas", isAdvancedOnly: true },
       { id: "hooks", label: "Hook Generator", icon: Zap, href: "/app/ai-studio/hooks", isAdvancedOnly: true },
+      { id: "carousel-builder", label: "Carousel Builder", icon: Layers, href: "/carousel-builder", isAdvancedOnly: true },
       { id: "sales-page", label: "Sales Page Writer", icon: FileText, href: "/app/ai-studio/sales-page", isAdvancedOnly: true },
       { id: "email-sequence", label: "Email Sequence", icon: Mail, href: "/app/ai-studio/email-sequence", isAdvancedOnly: true },
       { id: "ai-studio", label: "AI Studio", icon: Wand2, href: "/app/ai-studio", isAdvancedOnly: true },

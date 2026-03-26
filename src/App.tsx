@@ -649,6 +649,14 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/carousel-builder"
+              element={
+                <ProtectedRoute>
+                  <CarouselBuilder />
+                </ProtectedRoute>
+              }
+            />
 
             <Route
               path="/habits"
