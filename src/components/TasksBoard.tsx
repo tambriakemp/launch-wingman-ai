@@ -620,59 +620,74 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
           projectId={projectId}
           label="Planning"
           icon={ClipboardList}
-          tasks={getPlanningTasks()}
-        />
-        <PhaseSection
-          projectId={projectId}
-          label="Messaging"
-          icon={MessageSquare}
-          tasks={getMessagingTasks()}
-          prerequisiteTasks={getPlanningTasks()}
-        />
-        <PhaseSection
-          projectId={projectId}
-          label="Build"
-          icon={Wrench}
-          tasks={getBuildTasksForFunnel(currentFunnelType)}
-          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks()]}
-          isProOnly
+          tasks={getPlanningTasks(currentFunnelType)}
         />
 
-        <PhaseSection
-          projectId={projectId}
-          label="Content"
-          icon={PenTool}
-          tasks={getContentTasksForFunnel(currentFunnelType)}
-          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasksForFunnel(currentFunnelType)]}
-          isProOnly
-        />
+        {!currentFunnelType ? (
+          <div className="rounded-xl border border-dashed border-border bg-muted/20 p-6 text-center">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+              <Rocket className="w-5 h-5 text-primary" />
+            </div>
+            <p className="text-sm font-semibold text-foreground mb-1">Complete Planning to unlock your full task list</p>
+            <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+              Once you choose how you'll sell your offer in the Planning phase, your personalized tasks for Build, Content, and Launch will appear here — tailored to your path.
+            </p>
+          </div>
+        ) : (
+          <>
+            <PhaseSection
+              projectId={projectId}
+              label="Messaging"
+              icon={MessageSquare}
+              tasks={getMessagingTasks(currentFunnelType)}
+              prerequisiteTasks={getPlanningTasks(currentFunnelType)}
+            />
+            <PhaseSection
+              projectId={projectId}
+              label="Build"
+              icon={Wrench}
+              tasks={getBuildTasksForFunnel(currentFunnelType)}
+              prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType)]}
+              isProOnly
+            />
 
-        <PhaseSection
-          projectId={projectId}
-          label="Pre-Launch"
-          icon={Sparkles}
-          tasks={getPreLaunchTasks()}
-          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType)]}
-          isProOnly
-        />
+            <PhaseSection
+              projectId={projectId}
+              label="Content"
+              icon={PenTool}
+              tasks={getContentTasksForFunnel(currentFunnelType)}
+              prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType), ...getBuildTasksForFunnel(currentFunnelType)]}
+              isProOnly
+            />
 
-        <PhaseSection
-          projectId={projectId}
-          label="Launch"
-          icon={Rocket}
-          tasks={getLaunchTasksForFunnel(currentFunnelType)}
-          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType), ...getPreLaunchTasks()]}
-          isProOnly
-        />
+            <PhaseSection
+              projectId={projectId}
+              label="Pre-Launch"
+              icon={Sparkles}
+              tasks={getPreLaunchTasks(currentFunnelType)}
+              prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType)]}
+              isProOnly
+            />
 
-        <PhaseSection
-          projectId={projectId}
-          label="Post-Launch"
-          icon={Flag}
-          tasks={getPostLaunchTasks()}
-          prerequisiteTasks={[...getPlanningTasks(), ...getMessagingTasks(), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType), ...getPreLaunchTasks(), ...getLaunchTasksForFunnel(currentFunnelType)]}
-          isProOnly
-        />
+            <PhaseSection
+              projectId={projectId}
+              label="Launch"
+              icon={Rocket}
+              tasks={getLaunchTasksForFunnel(currentFunnelType)}
+              prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType), ...getPreLaunchTasks(currentFunnelType)]}
+              isProOnly
+            />
+
+            <PhaseSection
+              projectId={projectId}
+              label="Post-Launch"
+              icon={Flag}
+              tasks={getPostLaunchTasks(currentFunnelType)}
+              prerequisiteTasks={[...getPlanningTasks(currentFunnelType), ...getMessagingTasks(currentFunnelType), ...getBuildTasksForFunnel(currentFunnelType), ...getContentTasksForFunnel(currentFunnelType), ...getPreLaunchTasks(currentFunnelType), ...getLaunchTasksForFunnel(currentFunnelType)]}
+              isProOnly
+            />
+          </>
+        )}
 
         {/* Planner redirect card */}
         <div className="border border-border rounded-lg p-4 bg-muted/20 flex items-center justify-between">
