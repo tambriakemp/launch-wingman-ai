@@ -1,29 +1,34 @@
 
 
-## Simplify Project Creation: Remove Funnel Selection from Wizard
+## Offer Tab → Smart Redirect with Dependency Gate
 
-### Problem
-The 2-step project creation wizard asks users to pick a funnel type before they even have a project. Users who want marketing features or other non-funnel features get stuck or skip, and when they skip, the project name doesn't get created (bug). The funnel selection already exists as a task (`planning_choose_launch_path`) inside the Planning phase — it should be the only place to choose.
+### What happens now
+The `/projects/:id/offer` route redirects to `/projects/:id/dashboard` (legacy redirect in App.tsx).
 
-### Solution
-1. **Simplify `AppRedirect.tsx`** — Remove step 2 entirely. The wizard becomes a single-step "name your project" flow. On submit, create the project with `selected_funnel_type: null` and navigate to the dashboard. No funnel tasks are injected at creation time (they get injected later when the user completes the `planning_choose_launch_path` task, which already works via `useTaskEngine`).
-
-2. **No changes needed to TasksBoard or PhaseSection** — The existing flow already handles the "no funnel selected" state correctly: it shows the Planning phase with the "Choose how you'll sell" task, and once that task is completed, the `useTaskEngine` hook injects the funnel-specific tasks. The callout banner at line 626-635 already tells users to complete Planning first.
+### What we'll build
+When the user clicks "Offer" in the sidebar:
+1. **If all dependencies for `planning_offer_stack` are completed** → redirect to `/projects/:id/tasks/planning_offer_stack` (the offer stack task page)
+2. **If dependencies are NOT met** → show a dialog explaining they need to complete prerequisite tasks first, with a button that navigates to the next task they need to complete
 
 ### Changes
 
-**`src/pages/AppRedirect.tsx`**
-- Remove all step 2 code: the `step` state, `selectedFunnelType` state, `FUNNEL_OPTIONS` array, `FREE_FUNNEL_TYPES`, `isPro`, the `FunnelDiagram` / `RadioGroup` / `Crown` imports, and the entire step 2 JSX block
-- Remove funnel-related logic from `handleCreateProject`: no more `funnelToUse`, no `planning_choose_launch_path` insert, no `funnels` insert, no delta task injection
-- The "Next" button on step 1 becomes "Create Project" and directly calls `handleCreateProject`
-- Keep everything else: onboarding check, redirect logic, localStorage, notification email
+**1. Create `src/pages/project/OfferGate.tsx`** (new file)
+- A small page component that uses `useTaskEngine` to check the status of `planning_offer_stack` dependencies
+- On mount:
+  - Get the `planning_offer_stack` template and its dependencies
+  - Check if all dependency tasks have `status === 'completed'` in `projectTasks`
+  - If yes → `navigate` to `/projects/${id}/tasks/planning_offer_stack`, replace: true
+  - If no → render an `AlertDialog` (auto-open) with:
+    - Title: "Complete previous tasks first"
+    - Description: "You need to finish the prerequisite tasks before you can access your Offer Stack."
+    - A "Go to Next Task" button that navigates to `nextBestTask.route`
+    - A "Back" button that navigates back / closes
 
-**`src/components/ProjectSelector.tsx`**
-- No changes needed (already navigates to `/app?new=1`)
+**2. Update `src/App.tsx`**
+- Replace the existing `/projects/:id/offer` route (currently `<Navigate to="../dashboard" replace />`) with the new `OfferGate` component wrapped in `ProtectedRoute`
 
-### What stays the same
-- The `planning_choose_launch_path` task in the Planning phase still handles funnel selection
-- `useTaskEngine` still handles task injection when that task is completed
-- The TasksBoard still shows the "Complete Planning" callout when no funnel is selected
-- Pro gating on funnel types still works inside the task detail page
+### Technical details
+- `useTaskEngine` already provides `projectTasks`, `nextBestTask`, and `getTaskTemplate` — all needed for the dependency check
+- The `planning_offer_stack` task has `dependencies: ['planning_choose_launch_path']`, so the gate checks if that setup task is done
+- Uses existing `AlertDialog` components from `@/components/ui/alert-dialog`
 
