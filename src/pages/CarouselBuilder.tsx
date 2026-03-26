@@ -41,16 +41,6 @@ interface Slide {
   slideType: string;
 }
 
-interface ExistingOffer {
-  id: string;
-  title: string | null;
-  target_audience: string | null;
-  primary_pain_point: string | null;
-  transformation_statement: string | null;
-  price: number | null;
-  price_type: string | null;
-  offer_type: string;
-}
 
 // ── Constants ──
 
