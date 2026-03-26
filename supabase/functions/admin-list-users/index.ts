@@ -154,11 +154,32 @@ serve(async (req) => {
         let couponName: string | null = null;
         let netAmountCents = 0;
 
+        let cardLast4: string | null = null;
+        let cardBrand: string | null = null;
+
         if (user.email) {
           try {
             const customers = await stripe.customers.list({ email: user.email, limit: 1 });
             if (customers.data.length > 0) {
               stripeCustomerId = customers.data[0].id;
+
+              // Fetch card details from default payment method
+              try {
+                const customer = await stripe.customers.retrieve(stripeCustomerId, {
+                  expand: ['invoice_settings.default_payment_method', 'default_source'],
+                }) as Stripe.Customer;
+
+                const pm = customer.invoice_settings?.default_payment_method;
+                if (pm && typeof pm === 'object' && pm.card) {
+                  cardLast4 = pm.card.last4;
+                  cardBrand = pm.card.brand;
+                } else if (customer.default_source && typeof customer.default_source === 'object' && 'last4' in customer.default_source) {
+                  cardLast4 = (customer.default_source as any).last4;
+                  cardBrand = (customer.default_source as any).brand;
+                }
+              } catch (_) {
+                // Card details are best-effort
+              }
               const subscriptions = await stripe.subscriptions.list({
                 customer: stripeCustomerId,
                 status: "active",
@@ -238,6 +259,8 @@ serve(async (req) => {
           is_manager: isManager,
           project_count: projectCounts[user.id] || 0,
           banned_until: profile?.banned_until || null,
+          card_last4: cardLast4,
+          card_brand: cardBrand,
         };
       })
     );
