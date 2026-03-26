@@ -1,37 +1,57 @@
 
 
-## Add Card-on-File Indicator to Admin User Detail
+## Checkout Flow Bug Analysis and Fixes
 
-### Overview
-Show the last 4 digits and brand of the credit card on file in the Subscription section of the admin user detail page. This provides a quick visual indicator that a user is genuinely paying vs. manually upgraded.
+### Root Cause Found
 
-### Changes
+The `create-subscription-intent` edge function has a critical architectural bug: it creates **both** a standalone PaymentIntent **and** a Subscription with `payment_behavior: 'default_incomplete'` in the same call. These two objects are completely disconnected in Stripe:
 
-#### 1. Edge function: `supabase/functions/admin-list-users/index.ts`
-After fetching subscriptions for a user, also retrieve the default payment method from the Stripe customer to get card details.
+1. The PaymentIntent charges the card successfully ($25)
+2. The Subscription creates its own invoice expecting a separate payment
+3. That invoice never gets paid → subscription stays `incomplete` → eventually expires to `incomplete_expired`
 
-- After finding `stripeCustomerId`, fetch default payment method: `stripe.customers.retrieve(stripeCustomerId, { expand: ['default_source', 'invoice_settings.default_payment_method'] })`
-- Extract `card_last4` and `card_brand` from the payment method or default source
-- Add both fields to the returned user object (default `null`)
+**This is exactly what happened to bree33@cre8visions.com**: she was charged 3 times via standalone PaymentIntents, but no active subscription was ever created because the subscription's invoice was never fulfilled.
 
-#### 2. Hook: `src/hooks/useAdminUsers.ts`
-Add `card_last4: string | null` and `card_brand: string | null` to the `AdminUser` interface.
+### Current vs Old Flow
 
-#### 3. UI: `src/pages/admin/AdminUserDetail.tsx`
-In the Subscription card, after the Payment row and before the Amount row, add a new row:
+The **current** checkout flow (in `Checkout.tsx`) uses the correct two-step approach:
+1. `create-payment-intent-only` → just creates a PaymentIntent
+2. `complete-subscription-checkout` → after payment succeeds, attaches payment method and creates a subscription properly
 
-```tsx
-{user.card_last4 && (
-  <div className="flex items-center justify-between">
-    <span className="text-sm text-muted-foreground">Card on File</span>
-    <span className="text-sm font-mono flex items-center gap-1.5">
-      <CreditCard className="h-3.5 w-3.5" />
-      {user.card_brand ? `${user.card_brand} ` : ''}•••• {user.card_last4}
-    </span>
-  </div>
-)}
+The **old** `create-subscription-intent` function is still deployed and could still be called. It should be removed or disabled.
+
+### Cancellation Analysis
+
+Cancellation is working correctly:
+- **User-initiated**: `customer-portal` opens Stripe Billing Portal → user cancels → Stripe fires `customer.subscription.deleted` webhook → `stripe-webhook` logs `plan_cancelled` activity and notifies admins
+- **Admin-initiated**: `admin-manage-subscription` with `action: 'cancel'` calls `stripe.subscriptions.cancel()` directly, logs to `admin_action_logs` and `user_activity`
+
+No bugs found in the cancellation flow.
+
+### Proposed Changes
+
+#### 1. Delete `create-subscription-intent` edge function
+Remove `supabase/functions/create-subscription-intent/index.ts` entirely. It is no longer used by the current checkout flow and creates broken subscription states when called.
+
+#### 2. Add subscription validation to `complete-subscription-checkout`
+Add a check at the end to verify the created subscription is actually `active` (not `incomplete`). If it's not active, log an error with details so failed completions are visible.
+
+#### 3. Fix for bree33 specifically
+This is a data issue, not a code fix. You should:
+- Either refund the 3 standalone payments and have her re-subscribe through the current (fixed) checkout flow
+- Or manually create an active subscription for her in Stripe via the admin panel's "Grant Pro" action
+
+### Technical Detail
+
+The disconnect happens at line 176-194 of `create-subscription-intent`:
+```
+// Creates subscription with payment_behavior: 'default_incomplete'
+// This generates its own invoice that expects payment
+// But the PaymentIntent created at line 152 is NOT linked to this invoice
 ```
 
-### Technical detail
-The Stripe API exposes card info via `customer.invoice_settings.default_payment_method` (expanded) or `customer.default_source`. We expand both and check for card details. If no payment method is on file, the fields remain `null` and nothing renders in the UI.
+The `complete-subscription-checkout` function (the current flow) avoids this by:
+1. First attaching the payment method to the customer
+2. Setting it as the default payment method
+3. Creating the subscription WITHOUT `payment_behavior: 'default_incomplete'` — so Stripe auto-charges the default payment method
 
