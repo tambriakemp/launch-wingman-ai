@@ -447,7 +447,8 @@ const CarouselBuilder = () => {
       offscreen.style.left = "-9999px";
       offscreen.style.top = "0";
       offscreen.style.width = "1080px";
-      offscreen.style.height = "1080px";
+      const exportHeight = slideSize.split("x")[1];
+      offscreen.style.height = `${exportHeight}px`;
       document.body.appendChild(offscreen);
 
       for (let i = 0; i < slides.length; i++) {
@@ -456,7 +457,7 @@ const CarouselBuilder = () => {
         // Create a temporary render container
         const wrapper = document.createElement("div");
         wrapper.style.width = "1080px";
-        wrapper.style.height = "1080px";
+        wrapper.style.height = `${exportHeight}px`;
         wrapper.style.position = "relative";
         offscreen.innerHTML = "";
         offscreen.appendChild(wrapper);
@@ -524,7 +525,7 @@ const CarouselBuilder = () => {
         }
 
         wrapper.innerHTML = `
-          <div style="width:1080px;height:1080px;background:${layout === "Gradient" ? "transparent" : themeBg};color:${themeText};font-family:${bodyFont},sans-serif;position:relative;display:flex;flex-direction:column;overflow:hidden;border-radius:0">
+          <div style="width:1080px;height:${exportHeight}px;background:${layout === "Gradient" ? "transparent" : themeBg};color:${themeText};font-family:${bodyFont},sans-serif;position:relative;display:flex;flex-direction:column;overflow:hidden;border-radius:0">
             ${handlePosition === "top" ? handleHtml : ""}
             <div style="flex:1;position:relative;display:flex;align-items:center;justify-content:center">
               ${slideTypeBadge}
@@ -539,7 +540,7 @@ const CarouselBuilder = () => {
 
         const blob = await toBlob(wrapper, {
           width: 1080,
-          height: 1080,
+          height: parseInt(exportHeight),
           pixelRatio: 1,
           cacheBust: true,
           style: { margin: "0", padding: "0" },
@@ -730,7 +731,7 @@ const CarouselBuilder = () => {
                 </div>
               </div>
 
-              {/* Layout + Handle position */}
+              {/* Layout + Size + Handle position */}
               <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Layout</span>
@@ -739,6 +740,17 @@ const CarouselBuilder = () => {
                     <SelectContent>
                       {LAYOUTS.map((l) => (
                         <SelectItem key={l} value={l}>{l}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Size</span>
+                  <Select value={slideSize} onValueChange={(v) => setSlideSize(v as SlideSize)}>
+                    <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SLIDE_SIZES.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label} ({s.value})</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -781,6 +793,7 @@ const CarouselBuilder = () => {
                 isDarkBg={isDarkBg}
                 socialHandle={socialHandle}
                 handlePosition={handlePosition}
+                slideSize={slideSize}
                 containerRef={previewRef}
               />
 
