@@ -689,19 +689,6 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
           </>
         )}
 
-        {/* Planner redirect card */}
-        <div className="border border-border rounded-lg p-4 bg-muted/20 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium">Your personal tasks have moved to Planner</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Manage your to-do list, events, and calendar in one place.</p>
-          </div>
-          <Link to="/planner">
-            <Button variant="outline" size="sm" className="gap-1.5 shrink-0">
-              <ListTodo className="w-4 h-4" />
-              Open Planner
-            </Button>
-          </Link>
-        </div>
       </div>
 
       {/* Checklist View */}
