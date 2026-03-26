@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronsUpDown, Plus, Check, Loader2, Crown } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ChevronsUpDown, Plus, Check, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Command,
   CommandEmpty,
@@ -23,17 +21,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { toast } from "sonner";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
-import { trackProjectCreation } from "@/lib/analytics";
 
 interface ProjectSelectorProps {
   currentProjectId?: string;
@@ -42,14 +30,11 @@ interface ProjectSelectorProps {
 
 export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelectorProps) => {
   const [open, setOpen] = useState(false);
-  const [showNameDialog, setShowNameDialog] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
-  const [projectName, setProjectName] = useState("");
   const navigate = useNavigate();
   const { user, isSubscribed } = useAuth();
   const { hasAdminAccess } = useFeatureAccess();
   const hasFullAccess = isSubscribed || hasAdminAccess;
-  const queryClient = useQueryClient();
 
   const { data: projects, isLoading } = useQuery({
     queryKey: ["projects-selector", user?.id],
@@ -66,52 +51,6 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
     enabled: !!user,
   });
 
-  const createProjectMutation = useMutation({
-    mutationFn: async (name: string) => {
-      const trimmedName = name.trim();
-      if (!trimmedName) throw new Error("Project name is required");
-      if (trimmedName.length > 100) throw new Error("Project name must be less than 100 characters");
-
-      const { data: project, error } = await supabase
-        .from("projects")
-        .insert({
-          name: trimmedName,
-          user_id: user!.id,
-          status: "active",
-          project_type: "launch",
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return project;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["projects-selector"] });
-      resetDialog();
-      navigate(`/projects/${data.id}/dashboard`);
-      toast.success("Project created successfully");
-      
-      trackProjectCreation(data.name);
-      
-      supabase.functions.invoke("send-notification-email", {
-        body: {
-          email_type: "project_created",
-          user_id: user!.id,
-          data: { projectId: data.id, projectName: data.name },
-        },
-      }).catch((err) => console.error("Failed to send project created email:", err));
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to create project");
-    },
-  });
-
-  const resetDialog = () => {
-    setShowNameDialog(false);
-    setProjectName("");
-  };
-
   const currentProject = projects?.find((p) => p.id === currentProjectId);
 
   const handleSelectProject = (projectId: string) => {
@@ -121,22 +60,13 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
 
   const handleOpenCreateDialog = () => {
     setOpen(false);
-    
+
     if (!hasFullAccess && projects && projects.length >= 1) {
       setShowUpgradeDialog(true);
       return;
     }
-    
-    setProjectName("");
-    setShowNameDialog(true);
-  };
 
-  const handleCreateProject = () => {
-    if (!projectName.trim()) {
-      toast.error("Please enter a project name");
-      return;
-    }
-    createProjectMutation.mutate(projectName);
+    navigate('/app?new=1');
   };
 
   const getProjectInitial = (name: string) => {
@@ -217,67 +147,6 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
         </PopoverContent>
       </Popover>
 
-      {/* Create Project Dialog */}
-      <Dialog open={showNameDialog} onOpenChange={(open) => {
-        if (!open) resetDialog();
-        else setShowNameDialog(true);
-      }}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Create New Project</DialogTitle>
-            <DialogDescription>
-              Give your project a name to get started
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="project-name">Project Name</Label>
-              <Input
-                id="project-name"
-                placeholder="e.g., Spring Launch 2025"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                maxLength={100}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && projectName.trim()) {
-                    handleCreateProject();
-                  }
-                }}
-                autoFocus
-              />
-              <p className="text-xs text-muted-foreground">
-                {projectName.length}/100 characters
-              </p>
-            </div>
-          </div>
-
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowNameDialog(false)}
-              disabled={createProjectMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreateProject}
-              disabled={!projectName.trim() || createProjectMutation.isPending}
-            >
-              {createProjectMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                "Create Project"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Upgrade Dialog for Project Limit */}
       <UpgradeDialog 
         open={showUpgradeDialog} 
         onOpenChange={setShowUpgradeDialog} 
