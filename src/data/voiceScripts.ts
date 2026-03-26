@@ -66,4 +66,32 @@ export const VOICE_SCRIPTS: Record<string, string> = {
   // Sales copy
   messaging_sales_copy:
     "Your sales page is where everything comes together — your message, your offer, and your audience. You don't need to be a copywriter to write something meaningful. This section-by-section approach breaks it down into manageable pieces. Focus on one block at a time, and trust that clarity sells better than clever tricks.",
+
+  // Pricing
+  planning_set_price:
+    "Pricing is one of the most paralyzing parts of launching. But here's what most people get wrong — they try to find the perfect price instead of a confident starting price. Your first price is not your forever price. It's just the price you can stand behind today. Think about what your offer is worth to someone who gets the result — and start there.",
+
+  // Content-to-offer tasks
+  build_link_in_bio:
+    "For content-to-offer, your link in bio is the bridge between your content and your offer. If someone loves what you posted and wants to learn more — this is where they go. One clear destination is almost always better than a menu of options. Where do you want people to land when they're ready to say yes?",
+
+  // Freebie email tasks
+  build_welcome_email:
+    "Your welcome email is the first thing someone receives after opting in. It sets the tone for everything that follows. The most important job of this email is simple — deliver exactly what you promised, and make the person feel good about signing up. Warmth, clarity, and brevity go a long way here.",
+
+  build_nurture_sequence:
+    "Most people won't buy the first time they hear about your offer. They need to see value, build trust, and feel like you understand them. Your nurture sequence gives them that time. Think of it less like a campaign and more like a conversation — each email doing one small job, over a few days.",
+
+  // Launch tasks
+  build_launch_email_sequence:
+    "Your launch email sequence is where most of your sales actually happen. People see one social post and scroll past it. But people who receive clear, well-timed emails across a launch window have multiple chances to decide. Your job isn't to pressure them — it's to keep showing up with clarity until they're ready. The last email before close is almost always the highest-converting one.",
+
+  prelaunch_build_waitlist:
+    "A waitlist is one of the simplest things you can do to improve your launch results. When people raise their hand before your cart opens, they're already warm. They're expecting to hear from you. Launching to a waitlist of even 20 people almost always outperforms launching cold to hundreds.",
+
+  prelaunch_warmup_content:
+    "Pre-launch content does the warming so your launch content can do the selling. You're not pitching anything yet — you're just starting conversations, planting ideas, and creating context. When your launch day comes, your audience won't feel like it came out of nowhere.",
+
+  content_selling_post_structure:
+    "Content-to-offer works when your posts naturally create interest — not when they feel like ads. The structure is simple: lead with something valuable, end with one clear next step. You're not convincing anyone. You're just making it easy for people who are already interested to take action.",
 };

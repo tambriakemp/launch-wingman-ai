@@ -86,6 +86,120 @@ export const FREEBIE_EMAIL_OFFER_DELTA_TASKS: TaskTemplate[] = [
     route: '/projects/:id/tasks/build_freebie_delivery',
   },
 
+  {
+    taskId: 'build_welcome_email',
+    title: 'Write your welcome email',
+    phase: 'build',
+    funnelTypes: ['freebie_email_offer'],
+    order: 2.5,
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 30,
+    blocking: true,
+    dependencies: ['build_freebie_delivery'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Your welcome email delivers the freebie',
+      'It sets a warm, clear tone for what comes next',
+    ],
+    whyItMatters: 'Your welcome email is the first impression after someone opts in. It should deliver what you promised, introduce yourself briefly, and let them know what to expect — without overwhelming them.',
+    instructions: [
+      'Include the freebie link or access instructions clearly at the top',
+      'Introduce yourself in one or two sentences — not a full bio',
+      'Tell them what\'s coming next so they look out for your emails',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'welcome_subject', 
+          label: 'What is the subject line of your welcome email?', 
+          type: 'text', 
+          required: true, 
+          placeholder: 'e.g., "Here\'s your [freebie name] 🎉"',
+          helperText: 'Keep it clear and direct — it should match exactly what they signed up for.'
+        },
+        { 
+          name: 'welcome_body_notes', 
+          label: 'What will you include in the email body?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'e.g., freebie link, brief intro, what\'s coming next...',
+          helperText: 'You\'re not writing the full email here — just planning the key elements.'
+        },
+      ],
+    },
+    aiAssistModes: ['examples', 'help_me_choose', 'simplify'],
+    route: '/projects/:id/tasks/build_welcome_email',
+  },
+  {
+    taskId: 'build_nurture_sequence',
+    title: 'Plan your nurture sequence',
+    phase: 'build',
+    funnelTypes: ['freebie_email_offer'],
+    order: 2.6,
+    priority: 1,
+    estimatedMinutesMin: 20,
+    estimatedMinutesMax: 40,
+    blocking: true,
+    dependencies: ['build_welcome_email'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have a simple sequence planned',
+      'Each email has a clear purpose',
+    ],
+    whyItMatters: 'Your nurture sequence builds trust between the freebie and the offer. People rarely buy the first time they hear about something. These emails give them time to see the value — without pressure.',
+    instructions: [
+      'Plan 3–5 emails that build trust before mentioning your offer',
+      'Each email should have one clear purpose — educate, relate, or invite',
+      'The final email can introduce your paid offer naturally',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'email_2_purpose', 
+          label: 'Email 2 — What\'s the focus?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'e.g., A quick win or tip related to the freebie topic...',
+          helperText: 'Deliver value before you mention anything to sell.'
+        },
+        { 
+          name: 'email_3_purpose', 
+          label: 'Email 3 — What\'s the focus?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'e.g., A story, common mistake, or reframe...',
+          helperText: 'This is where you deepen the relationship.'
+        },
+        { 
+          name: 'email_4_purpose', 
+          label: 'Email 4 — What\'s the focus?', 
+          type: 'textarea', 
+          required: false, 
+          placeholder: 'e.g., Social proof, a result, or addressing a common objection...',
+          sectionLabel: 'Optional emails (recommended)',
+          helperText: 'Optional but powerful — this is where trust compounds.'
+        },
+        { 
+          name: 'email_5_offer', 
+          label: 'Final email — How will you introduce your offer?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'e.g., "If you\'ve found this helpful, here\'s how to go deeper..."',
+          helperText: 'This should feel like a natural invitation, not a pitch.'
+        },
+      ],
+    },
+    aiAssistModes: ['examples', 'help_me_choose', 'simplify'],
+    route: '/projects/:id/tasks/build_nurture_sequence',
+  },
+
   // CONTENT Phase Additions
   {
     taskId: 'content_freebie_invitation',
@@ -1356,6 +1470,159 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
     route: '/projects/:id/tasks/build_launch_access',
   },
 
+  {
+    taskId: 'build_launch_email_sequence',
+    title: 'Plan your launch email sequence',
+    phase: 'build',
+    funnelTypes: ['launch'],
+    order: 3.5,
+    priority: 1,
+    estimatedMinutesMin: 20,
+    estimatedMinutesMax: 45,
+    blocking: true,
+    dependencies: ['build_launch_access'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You have a sequence mapped from cart open to close',
+      'Each email has a clear role',
+    ],
+    whyItMatters: 'Your launch email sequence is where most of your sales happen. People who see one social post may scroll past it. People who receive 5–7 emails over a launch window have more touchpoints to decide. This is the engine of your launch.',
+    instructions: [
+      'Plan one email per day or every other day across your launch window',
+      'Each email should do one thing — introduce, educate, address objections, or create urgency',
+      'The final 1–2 emails are your most important — don\'t skip them',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'cart_open_email', 
+          label: 'Cart open email — What will you say when doors open?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'e.g., Announce what\'s available, who it\'s for, and what\'s included...',
+          helperText: 'This is your first impression — clarity over hype.'
+        },
+        { 
+          name: 'value_emails', 
+          label: 'Middle emails — What will you cover between open and close?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'e.g., what\'s inside, a story, FAQ, objection handling, a win from a past student...',
+          helperText: 'Plan 2–4 emails that deepen interest and handle doubt.'
+        },
+        { 
+          name: 'close_email', 
+          label: 'Closing email — How will you close the cart?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'e.g., Cart closes tonight, last chance, what happens after close...',
+          helperText: 'Your close email is often your highest-converting email — don\'t skip it.'
+        },
+      ],
+    },
+    aiAssistModes: ['examples', 'help_me_choose', 'simplify'],
+    route: '/projects/:id/tasks/build_launch_email_sequence',
+  },
+
+  // ==================== PRE-LAUNCH Phase Additions ====================
+  {
+    taskId: 'prelaunch_build_waitlist',
+    title: 'Build your interest list',
+    phase: 'pre-launch',
+    funnelTypes: ['launch'],
+    order: 0.5,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['content_phase_review'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'People can express interest before you launch',
+      'You have a way to follow up with interested people',
+    ],
+    whyItMatters: 'A launch to a waitlist almost always outperforms a cold launch. People who raised their hand before your cart opens are already warm — they\'re expecting you to share.',
+    instructions: [
+      'Create a simple way for people to say "I\'m interested" before you launch',
+      'This can be a waitlist form, a DM keyword, or a reply to an email',
+      'Share it at least once before launch day',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'waitlist_method', 
+          label: 'How will people express interest before your launch?', 
+          type: 'select', 
+          required: true,
+          options: [
+            { value: '', label: 'Choose an approach...' },
+            { value: 'waitlist_form', label: 'A waitlist signup form' },
+            { value: 'dm_keyword', label: 'DM me a keyword' },
+            { value: 'email_reply', label: 'Reply to my email' },
+            { value: 'comment', label: 'Comment on a post' },
+          ]
+        },
+        { 
+          name: 'waitlist_shared', 
+          label: 'Where will you share this?', 
+          type: 'textarea', 
+          required: false, 
+          placeholder: 'e.g., Instagram stories, email list, TikTok bio...',
+          sectionLabel: 'Optional: Where you\'ll share it',
+          helperText: 'Pick one or two places — not everywhere at once.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'examples'],
+    route: '/projects/:id/tasks/prelaunch_build_waitlist',
+  },
+  {
+    taskId: 'prelaunch_warmup_content',
+    title: 'Share pre-launch warmup content',
+    phase: 'pre-launch',
+    funnelTypes: ['launch'],
+    order: 0.6,
+    priority: 1,
+    estimatedMinutesMin: 15,
+    estimatedMinutesMax: 30,
+    blocking: true,
+    dependencies: ['prelaunch_build_waitlist'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You\'ve shared at least one piece of pre-launch content',
+      'Your audience has context before you open the cart',
+    ],
+    whyItMatters: 'Audiences who see 3–5 pieces of relevant content before a launch are more likely to buy than those who only see launch announcements. Pre-launch content does the warming — so launch week can do the selling.',
+    instructions: [
+      'Share content that relates to the problem your offer solves',
+      'You don\'t need to mention the launch yet — just warm up the conversation',
+      'Aim for 2–3 posts or emails in the week before you launch',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'warmup_content_plan', 
+          label: 'What 2–3 pieces of content will you share before launch?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'e.g., a personal story, a tip related to the offer topic, a common mistake your audience makes...',
+          helperText: 'These posts plant seeds — not pitches.'
+        },
+      ],
+    },
+    aiAssistModes: ['examples', 'help_me_choose'],
+    route: '/projects/:id/tasks/prelaunch_warmup_content',
+  },
+
   // ==================== CONTENT Phase Additions ====================
   {
     taskId: 'content_decision_support',
@@ -1442,11 +1709,205 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
 ];
 
 // ============================================
+// CONTENT TO OFFER DELTA TASKS
+// ============================================
+// Path: Social content → direct offer (no injection)
+// These tasks are specific to the content-to-offer funnel type.
+
+export const CONTENT_TO_OFFER_DELTA_TASKS: TaskTemplate[] = [
+  // ==================== BUILD Phase Additions ====================
+  {
+    taskId: 'build_link_in_bio',
+    title: 'Set up your link in bio',
+    phase: 'build',
+    funnelTypes: ['content_to_offer'],
+    order: 4.5,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['build_simple_launch_page'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Your link in bio points somewhere useful',
+      'Someone clicking it would know what to do next',
+    ],
+    whyItMatters: 'For content-to-offer, your link in bio is the bridge between your content and your offer. If it doesn\'t exist or leads nowhere, your content can\'t convert.',
+    instructions: [
+      'Choose one destination — your sales page, landing page, or direct DM',
+      'Update your bio across the platforms you\'ll use',
+      'Test it yourself to make sure it works',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'link_destination', 
+          label: 'Where does your link in bio point?', 
+          type: 'text', 
+          required: true, 
+          placeholder: 'e.g., sales page URL, Linktree, DM trigger...',
+          helperText: 'One clear destination is better than many options.'
+        },
+        { 
+          name: 'bio_updated', 
+          label: 'Which platforms have you updated?', 
+          type: 'textarea', 
+          required: false, 
+          placeholder: 'e.g., Instagram, TikTok, Twitter...',
+          sectionLabel: 'Optional: Helpful context',
+          helperText: 'Focus on where your audience actually is.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'simplify'],
+    route: '/projects/:id/tasks/build_link_in_bio',
+  },
+  {
+    taskId: 'build_dm_response',
+    title: 'Prepare your DM response',
+    phase: 'build',
+    funnelTypes: ['content_to_offer'],
+    order: 4.6,
+    priority: 2,
+    estimatedMinutesMin: 5,
+    estimatedMinutesMax: 15,
+    blocking: false,
+    dependencies: ['build_link_in_bio'],
+    canSkip: true,
+    skipReasonRequired: true,
+    completionCriteria: [
+      'You have a simple response ready when someone asks',
+      'It feels natural, not scripted',
+    ],
+    whyItMatters: 'When your content works, people will DM you. Having a warm, clear response ready means you never miss a potential sale because you didn\'t know what to say.',
+    instructions: [
+      'Write 2–3 sentences you could paste or adapt when someone shows interest',
+      'Include what the offer is, who it\'s for, and a clear next step',
+      'Keep it conversational — not copy-pasted sales language',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'dm_response', 
+          label: 'What will you say when someone DMs asking about your offer?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'e.g., "Hey! Yes, [offer name] is a [short description]. It\'s for [audience]. Here\'s the link: [link]"',
+          helperText: 'Write it the way you would actually talk — not like a brochure.'
+        },
+      ],
+    },
+    aiAssistModes: ['examples', 'simplify'],
+    route: '/projects/:id/tasks/build_dm_response',
+  },
+
+  // ==================== CONTENT Phase Additions ====================
+  {
+    taskId: 'content_selling_post_structure',
+    title: 'Plan your selling post structure',
+    phase: 'content',
+    funnelTypes: ['content_to_offer'],
+    order: 0.5,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['build_phase_review'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You understand how your content leads to your offer',
+      'The structure feels natural, not salesy',
+    ],
+    whyItMatters: 'Content-to-offer works when your posts naturally create interest — not when they feel like ads. This step helps you understand the simple structure behind content that converts.',
+    instructions: [
+      'Think about content that teaches or resonates — then invites',
+      'Your CTA should be one clear next step, not a pitch',
+      'You\'ll write the actual posts in the next task',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'value_angle', 
+          label: 'What will your content teach, share, or show?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'e.g., common mistakes, behind-the-scenes, quick wins, perspective shifts...',
+          helperText: 'Value-first content earns the right to mention your offer.'
+        },
+        { 
+          name: 'cta_style', 
+          label: 'How will you invite people to take the next step?', 
+          type: 'select', 
+          required: false,
+          sectionLabel: 'Optional: Your call to action style',
+          helperText: 'Choose the approach that feels most natural.',
+          options: [
+            { value: '', label: 'Select an approach...' },
+            { value: 'link_in_bio', label: 'Link in bio' },
+            { value: 'dm_me', label: 'DM me a keyword' },
+            { value: 'comment', label: 'Comment to get the link' },
+            { value: 'direct_link', label: 'Direct link in post or caption' },
+          ]
+        },
+      ],
+    },
+    aiAssistModes: ['examples', 'help_me_choose'],
+    route: '/projects/:id/tasks/content_selling_post_structure',
+  },
+
+  // ==================== LAUNCH Phase Additions ====================
+  {
+    taskId: 'launch_content_to_offer_share',
+    title: 'Share content that leads to your offer',
+    phase: 'launch',
+    funnelTypes: ['content_to_offer'],
+    order: 1,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['prelaunch_share_signal'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You\'ve posted content that naturally mentions your offer',
+      'One post is enough to start',
+    ],
+    whyItMatters: 'This is the simplest version of launching — share something valuable, then let people know how to go deeper. You don\'t need a campaign. One post with a clear next step is a real launch.',
+    instructions: [
+      'Share content that connects to the problem your offer solves',
+      'At the end, invite people to take one clear next step',
+      'Post it and let it land — no immediate follow-up required',
+    ],
+    inputType: 'selection',
+    inputSchema: {
+      type: 'radio',
+      options: [
+        { value: 'value_post_cta', label: 'A value post with a clear CTA', description: 'Teach or share something useful, then invite people to learn more.' },
+        { value: 'personal_story', label: 'A personal story that leads to your offer', description: 'Share a relevant experience and connect it to how your offer helps.' },
+        { value: 'problem_solution', label: 'A problem-to-solution post', description: 'Name the problem your audience faces, then position your offer as the next step.' },
+        { value: 'direct_announcement', label: 'A direct offer announcement', description: 'Simply tell people what you have, who it\'s for, and how to get it.' },
+      ],
+    },
+    aiAssistModes: ['examples', 'simplify'],
+    route: '/projects/:id/tasks/launch_content_to_offer_share',
+  },
+];
+
+// ============================================
 // DELTA TASK CONFIGURATION
 // ============================================
 
 export interface FunnelDeltaConfig {
-  funnelType: Exclude<FunnelType, 'all' | 'content_to_offer'>;
+  funnelType: Exclude<FunnelType, 'all'>;
   deltaTasks: TaskTemplate[];
   modifiedTasks: TaskModification[];
 }
@@ -1458,6 +1919,25 @@ export interface TaskModification {
 
 // Define which universal tasks are modified for each funnel type
 export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
+  {
+    funnelType: 'content_to_offer',
+    deltaTasks: CONTENT_TO_OFFER_DELTA_TASKS,
+    modifiedTasks: [
+      {
+        taskId: 'build_email_platform',
+        changes: {
+          whyItMatters: 'For content-to-offer, email helps you stay connected with people who showed interest. It\'s not required to launch, but it extends your reach beyond the first post.',
+        },
+      },
+      {
+        taskId: 'launch_share_offer_once',
+        changes: {
+          title: 'Share your first selling post',
+          whyItMatters: 'Your launch is one clear post that teaches, resonates, or tells a story — and then invites people to take one next step. That\'s all this needs to be.',
+        },
+      },
+    ],
+  },
   {
     funnelType: 'freebie_email_offer',
     deltaTasks: FREEBIE_EMAIL_OFFER_DELTA_TASKS,
@@ -1650,7 +2130,7 @@ export const FUNNEL_DELTA_CONFIGS: FunnelDeltaConfig[] = [
 
 // Helper function to get delta config for a funnel type
 export function getFunnelDeltaConfig(funnelType: FunnelType): FunnelDeltaConfig | null {
-  if (funnelType === 'all' || funnelType === 'content_to_offer') {
+  if (funnelType === 'all') {
     return null;
   }
   return FUNNEL_DELTA_CONFIGS.find(config => config.funnelType === funnelType) || null;

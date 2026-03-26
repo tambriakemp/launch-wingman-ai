@@ -85,8 +85,7 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
       return { success: false, injectedCount: 0, error: 'Not authenticated' };
     }
 
-    // content_to_offer is the baseline - no injection needed
-    if (funnelType === 'content_to_offer' || funnelType === 'all') {
+    if (funnelType === 'all') {
       // Just ensure universal tasks for later phases exist
       return await ensureUniversalTasksExist(existingTasks);
     }
@@ -257,7 +256,7 @@ export function useFunnelTaskInjection({ projectId }: UseFunnelTaskInjectionOpti
   ): TaskTemplate[] => {
     const universalTasks = getUniversalTasks();
     
-    if (!funnelType || funnelType === 'content_to_offer' || funnelType === 'all') {
+    if (!funnelType || funnelType === 'all') {
       return universalTasks;
     }
 
