@@ -103,4 +103,13 @@ export const VOICE_SCRIPTS: Record<string, string> = {
 
   prelaunch_prepare_response:
     "When you share your offer, people will reach out. They'll have questions, they'll be curious, and some will be ready to buy — if you respond well. Having a simple, natural message ready means you never miss a warm lead because you didn't know what to say. It doesn't need to be a script. Just two or three sentences that feel like you.",
+
+  postlaunch_confirm_delivery:
+    "The moment after purchase is when your relationship with a buyer really begins. Before you move into reflection or celebration, take five minutes to confirm that everyone who bought actually received what they paid for. A broken delivery link or missing email is fixable — but only if you catch it quickly.",
+
+  postlaunch_follow_up_interested:
+    "The people who asked questions, clicked your link, or replied to your content but didn't buy are your warmest leads. They were interested — something just got in the way. A short, genuine check-in is often the only difference between a missed sale and a conversion. You're not chasing anyone. You're just continuing a conversation.",
+
+  postlaunch_buyer_check_in:
+    "Most creators disappear after the sale. A simple check-in a few days after purchase — just asking how someone is getting on — is rare enough to be memorable. You're not asking for a testimonial. You're not upselling. You're just showing that you care about their result as much as you cared about getting the sale.",
 };
