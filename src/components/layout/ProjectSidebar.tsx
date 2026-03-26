@@ -5,6 +5,7 @@ import { SubscriptionTier } from "@/lib/subscriptionTiers";
 import { useEffect, useState, useRef, useCallback } from "react";
 import {
   LayoutDashboard,
+  ShoppingBag,
   Rocket,
   Kanban,
   Crown,
@@ -72,6 +73,7 @@ const createSections = (projectId?: string): Section[] => [
     items: [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: projectId ? `/projects/${projectId}/dashboard` : "#", requiresProject: !projectId },
       { id: "tasks", label: "Tasks", icon: Kanban, href: projectId ? `/projects/${projectId}/tasks` : "#", requiresProject: !projectId },
+      { id: "offer", label: "Offer", icon: ShoppingBag, href: projectId ? `/projects/${projectId}/offer` : "#", requiresProject: !projectId },
       { id: "summary", label: "Launch Brief", icon: BookMarked, href: projectId ? `/projects/${projectId}/summary` : "#", requiresProject: !projectId },
       { id: "playbook", label: "Playbook", icon: BookOpen, href: "/playbook" },
       { id: "insights", label: "Insights", icon: Lightbulb, href: projectId ? `/projects/${projectId}/insights` : "#", isProOnly: true, requiresProject: !projectId },
