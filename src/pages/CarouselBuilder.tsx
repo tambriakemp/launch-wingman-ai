@@ -65,32 +65,31 @@ const FRAMEWORKS = [
   { name: "Launch Countdown", desc: "Urgency-driven launch content", sample: "48 hours left. Here's everything inside." },
 ];
 
-const THEMES: Record<string, { bg: string; text: string; accent: string; label: string; isDark: boolean }> = {
-  luxury_beige: { bg: "#1a1410", text: "#f5e6c8", accent: "#c9a96e", label: "Luxury Beige", isDark: true },
-  soft_feminine: { bg: "#1f1520", text: "#f7d6e0", accent: "#d4a5c0", label: "Soft Feminine", isDark: true },
-  bold_contrast: { bg: "#000000", text: "#ffffff", accent: "#f5c842", label: "Bold Contrast", isDark: true },
-  minimal_bw: { bg: "#111111", text: "#eeeeee", accent: "#888888", label: "Minimal B&W", isDark: true },
-  digital_neon: { bg: "#0a0a1a", text: "#e0f0ff", accent: "#00d4ff", label: "Digital Neon", isDark: true },
-  midnight_purple: { bg: "#0d0a1a", text: "#e8e0ff", accent: "#9b6dff", label: "Midnight Purple", isDark: true },
-  deep_ocean: { bg: "#061220", text: "#c0e8ff", accent: "#0088cc", label: "Deep Ocean", isDark: true },
-  warm_neutral: { bg: "#faf7f2", text: "#2c2016", accent: "#c9a96e", label: "Warm Neutral", isDark: false },
-  cool_gray: { bg: "#f5f5f7", text: "#1a1a2e", accent: "#6b7280", label: "Cool Gray", isDark: false },
-  sage_green: { bg: "#f4f7f4", text: "#1a2e1a", accent: "#5a8a5a", label: "Sage Green", isDark: false },
-  warm_coral: { bg: "#fff8f5", text: "#2e1a14", accent: "#e06040", label: "Warm Coral", isDark: false },
-  soft_lavender: { bg: "#f8f5ff", text: "#1a1428", accent: "#7c5cbf", label: "Soft Lavender", isDark: false },
-  clean_white: { bg: "#ffffff", text: "#18181b", accent: "#f5c842", label: "Clean White", isDark: false },
-  sky_blue: { bg: "#f0f8ff", text: "#0a1628", accent: "#2970cc", label: "Sky Blue", isDark: false },
-};
+const THEME_PRESETS: { label: string; bg: string; text: string; accent: string }[] = [
+  { label: "Luxury Beige", bg: "#1a1410", text: "#f5e6c8", accent: "#c9a96e" },
+  { label: "Soft Feminine", bg: "#1f1520", text: "#f7d6e0", accent: "#d4a5c0" },
+  { label: "Bold Contrast", bg: "#000000", text: "#ffffff", accent: "#f5c842" },
+  { label: "Minimal B&W", bg: "#111111", text: "#eeeeee", accent: "#888888" },
+  { label: "Digital Neon", bg: "#0a0a1a", text: "#e0f0ff", accent: "#00d4ff" },
+  { label: "Midnight Purple", bg: "#0d0a1a", text: "#e8e0ff", accent: "#9b6dff" },
+  { label: "Deep Ocean", bg: "#061220", text: "#c0e8ff", accent: "#0088cc" },
+  { label: "Warm Neutral", bg: "#faf7f2", text: "#2c2016", accent: "#c9a96e" },
+  { label: "Cool Gray", bg: "#f5f5f7", text: "#1a1a2e", accent: "#6b7280" },
+  { label: "Sage Green", bg: "#f4f7f4", text: "#1a2e1a", accent: "#5a8a5a" },
+  { label: "Warm Coral", bg: "#fff8f5", text: "#2e1a14", accent: "#e06040" },
+  { label: "Soft Lavender", bg: "#f8f5ff", text: "#1a1428", accent: "#7c5cbf" },
+  { label: "Clean White", bg: "#ffffff", text: "#18181b", accent: "#f5c842" },
+  { label: "Sky Blue", bg: "#f0f8ff", text: "#0a1628", accent: "#2970cc" },
+];
 
-const FONT_PAIRS = [
-  "Playfair+Inter",
-  "Montserrat+OpenSans",
-  "Poppins+Lato",
-  "DMSerif+DMSans",
-  "Raleway+Roboto",
-  "Lora+SourceSans",
-  "BebasNeue+Barlow",
-  "SpaceGrotesk",
+const GOOGLE_FONTS = [
+  "Playfair Display", "Inter", "Montserrat", "Open Sans", "Poppins", "Lato",
+  "DM Serif Display", "DM Sans", "Raleway", "Roboto", "Lora", "Source Sans 3",
+  "Bebas Neue", "Barlow", "Space Grotesk", "Merriweather", "Oswald", "Nunito",
+  "PT Serif", "Libre Baskerville", "Cormorant Garamond", "Crimson Text",
+  "Work Sans", "Bitter", "Archivo", "Manrope", "Plus Jakarta Sans",
+  "Outfit", "Sora", "Lexend", "Urbanist", "Bricolage Grotesque",
+  "Fraunces", "Instrument Serif", "Noto Serif", "Spectral",
 ];
 
 const LAYOUTS = ["Centered", "Split", "Quote", "List", "Gradient", "Card", "Magazine"];
@@ -160,8 +159,11 @@ const CarouselBuilder = () => {
   const [editingSlide, setEditingSlide] = useState<number | null>(null);
   const [editHeadline, setEditHeadline] = useState("");
   const [editBody, setEditBody] = useState("");
-  const [theme, setTheme] = useState("luxury_beige");
-  const [fontPair, setFontPair] = useState("Playfair+Inter");
+  const [themeBg, setThemeBg] = useState("#1a1410");
+  const [themeText, setThemeText] = useState("#f5e6c8");
+  const [themeAccent, setThemeAccent] = useState("#c9a96e");
+  const [headingFont, setHeadingFont] = useState("Playfair Display");
+  const [bodyFont, setBodyFont] = useState("Inter");
   const [layout, setLayout] = useState("Centered");
   const [copiedSlide, setCopiedSlide] = useState<number | null>(null);
   const [loadingMsg, setLoadingMsg] = useState(0);
@@ -269,9 +271,29 @@ const CarouselBuilder = () => {
     toast.success("Exported text copied — paste into Canva");
   };
 
-  const currentTheme = THEMES[theme] || THEMES.luxury_beige;
-  const headingFont = fontPair.split("+")[0] || "serif";
-  const bodyFont = fontPair.split("+")[1] || headingFont;
+  // Load Google Fonts dynamically
+  useEffect(() => {
+    const families = [...new Set([headingFont, bodyFont])].map(f => f.replace(/ /g, '+')).join('&family=');
+    const link = document.getElementById('carousel-google-fonts') as HTMLLinkElement | null;
+    const href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
+    if (link) {
+      link.href = href;
+    } else {
+      const el = document.createElement('link');
+      el.id = 'carousel-google-fonts';
+      el.rel = 'stylesheet';
+      el.href = href;
+      document.head.appendChild(el);
+    }
+  }, [headingFont, bodyFont]);
+
+  const isDarkBg = (() => {
+    const hex = themeBg.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 < 128;
+  })();
 
   const canGenerate = offer.trim() && audience.trim() && painPoint.trim() && framework;
 
@@ -354,46 +376,73 @@ const CarouselBuilder = () => {
           <div className="flex-1 overflow-y-auto">
             {/* Controls bar */}
             <div className="border-b border-border px-4 py-3 space-y-3">
-              {/* Themes */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mr-1">Theme</span>
-                {Object.entries(THEMES).map(([key, t]) => (
-                  <button
-                    key={key}
-                    onClick={() => setTheme(key)}
-                    className={`w-7 h-7 rounded-full border-2 transition-transform ${theme === key ? "border-foreground scale-110" : "border-transparent"}`}
-                    style={{ backgroundColor: t.bg }}
-                    title={t.label}
-                  />
-                ))}
+              {/* Theme: Presets + Custom colors */}
+              <div className="space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Theme Presets</span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {THEME_PRESETS.map((t, i) => (
+                    <button
+                      key={i}
+                      onClick={() => { setThemeBg(t.bg); setThemeText(t.text); setThemeAccent(t.accent); }}
+                      className={`w-7 h-7 rounded-full border-2 transition-transform ${themeBg === t.bg && themeText === t.text ? "border-foreground scale-110" : "border-transparent"}`}
+                      style={{ backgroundColor: t.bg }}
+                      title={t.label}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center gap-4 flex-wrap">
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    Background
+                    <input type="color" value={themeBg} onChange={(e) => setThemeBg(e.target.value)} className="w-7 h-7 rounded border border-border cursor-pointer" />
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    Font Color
+                    <input type="color" value={themeText} onChange={(e) => setThemeText(e.target.value)} className="w-7 h-7 rounded border border-border cursor-pointer" />
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    Accent
+                    <input type="color" value={themeAccent} onChange={(e) => setThemeAccent(e.target.value)} className="w-7 h-7 rounded border border-border cursor-pointer" />
+                  </label>
+                </div>
               </div>
 
-              {/* Font pairs */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mr-1">Font</span>
-                {FONT_PAIRS.map((fp) => (
-                  <button
-                    key={fp}
-                    onClick={() => setFontPair(fp)}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-medium border transition-colors ${fontPair === fp ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-                  >
-                    {fp.replace("+", " + ")}
-                  </button>
-                ))}
+              {/* Fonts */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Header</span>
+                  <Select value={headingFont} onValueChange={setHeadingFont}>
+                    <SelectTrigger className="w-44 h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {GOOGLE_FONTS.map((f) => (
+                        <SelectItem key={f} value={f}>{f}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Body</span>
+                  <Select value={bodyFont} onValueChange={setBodyFont}>
+                    <SelectTrigger className="w-44 h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {GOOGLE_FONTS.map((f) => (
+                        <SelectItem key={f} value={f}>{f}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              {/* Layouts */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mr-1">Layout</span>
-                {LAYOUTS.map((l) => (
-                  <button
-                    key={l}
-                    onClick={() => setLayout(l)}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-medium border transition-colors ${layout === l ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-                  >
-                    {l}
-                  </button>
-                ))}
+              {/* Layout */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Layout</span>
+                <Select value={layout} onValueChange={setLayout}>
+                  <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {LAYOUTS.map((l) => (
+                      <SelectItem key={l} value={l}>{l}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Action buttons */}
@@ -409,7 +458,7 @@ const CarouselBuilder = () => {
             <div className="p-6 flex flex-col items-center">
               <div
                 className="aspect-square max-w-sm w-full rounded-2xl overflow-hidden relative flex items-center justify-center p-8"
-                style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, fontFamily: bodyFont }}
+                style={{ backgroundColor: themeBg, color: themeText, fontFamily: bodyFont }}
               >
                 {layout === "Centered" && (
                   <div className="text-center space-y-4">
@@ -419,7 +468,7 @@ const CarouselBuilder = () => {
                 )}
                 {layout === "Split" && (
                   <div className="flex w-full h-full">
-                    <div className="w-1/2 flex items-center justify-center" style={{ backgroundColor: currentTheme.accent + "33" }} />
+                    <div className="w-1/2 flex items-center justify-center" style={{ backgroundColor: themeAccent + "33" }} />
                     <div className="w-1/2 flex flex-col justify-center px-4 space-y-3">
                       <h2 className="text-xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{current.headline}</h2>
                       <p className="text-xs opacity-80 leading-relaxed">{current.body}</p>
@@ -428,7 +477,7 @@ const CarouselBuilder = () => {
                 )}
                 {layout === "Quote" && (
                   <div className="text-center space-y-3 px-4">
-                    <span className="text-5xl opacity-30" style={{ color: currentTheme.accent }}>"</span>
+                    <span className="text-5xl opacity-30" style={{ color: themeAccent }}>"</span>
                     <h2 className="text-xl font-bold leading-tight italic" style={{ fontFamily: headingFont }}>{current.headline}</h2>
                     <p className="text-xs opacity-70 leading-relaxed">{current.body}</p>
                   </div>
@@ -438,34 +487,35 @@ const CarouselBuilder = () => {
                     <h2 className="text-xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{current.headline}</h2>
                     {current.body.split(". ").map((item, i) => (
                       <p key={i} className="text-xs opacity-80 flex items-start gap-2">
-                        <span style={{ color: currentTheme.accent }}>•</span> {item.trim()}
+                        <span style={{ color: themeAccent }}>•</span> {item.trim()}
                       </p>
                     ))}
                   </div>
                 )}
                 {layout === "Gradient" && (
-                  <div className="text-center space-y-4 relative z-10">
-                    <div className="absolute inset-0 -z-10 rounded-2xl" style={{ background: `linear-gradient(135deg, ${currentTheme.accent}44, ${currentTheme.bg})` }} />
-                    <h2 className="text-2xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{current.headline}</h2>
-                    <p className="text-sm opacity-80 leading-relaxed">{current.body}</p>
+                  <div className="absolute inset-0 flex items-center justify-center p-8" style={{ background: `linear-gradient(135deg, ${themeAccent}, ${themeBg})` }}>
+                    <div className="text-center space-y-4">
+                      <h2 className="text-2xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{current.headline}</h2>
+                      <p className="text-sm opacity-80 leading-relaxed">{current.body}</p>
+                    </div>
                   </div>
                 )}
                 {layout === "Card" && (
-                  <div className="rounded-xl p-6 shadow-lg space-y-3" style={{ backgroundColor: currentTheme.isDark ? "#ffffff11" : "#00000008" }}>
+                  <div className="rounded-xl p-6 shadow-lg space-y-3" style={{ backgroundColor: isDarkBg ? "#ffffff11" : "#00000008" }}>
                     <h2 className="text-xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{current.headline}</h2>
                     <p className="text-xs opacity-80 leading-relaxed">{current.body}</p>
                   </div>
                 )}
                 {layout === "Magazine" && (
                   <div className="w-full h-full flex flex-col justify-between relative">
-                    <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: currentTheme.accent }} />
+                    <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: themeAccent }} />
                     <h2 className="text-2xl font-bold leading-tight pl-4 pt-2" style={{ fontFamily: headingFont }}>{current.headline}</h2>
                     <p className="text-xs opacity-80 leading-relaxed pl-4 pb-2">{current.body}</p>
                   </div>
                 )}
 
                 {/* Slide number badge */}
-                <div className="absolute top-3 left-3 text-[9px] font-bold uppercase px-2 py-1 rounded-full" style={{ backgroundColor: currentTheme.accent + "33", color: currentTheme.accent }}>
+                <div className="absolute top-3 left-3 text-[9px] font-bold uppercase px-2 py-1 rounded-full" style={{ backgroundColor: themeAccent + "33", color: themeAccent }}>
                   {current.slideType}
                 </div>
               </div>
