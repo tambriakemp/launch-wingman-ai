@@ -32,11 +32,25 @@ const PhaseProgressRail = ({
   phases,
   phaseStatuses,
   activePhase,
+  projectTasks,
+  getTaskTemplate,
 }: {
   phases: readonly Phase[];
   phaseStatuses: Record<Phase, PhaseStatus>;
   activePhase: Phase;
+  projectTasks: { taskId: string; status: string }[];
+  getTaskTemplate: (taskId: string) => { phase: Phase; canSkip: boolean } | undefined;
 }) => {
+  const getPhaseCounts = (phase: Phase) => {
+    const phaseTasks = projectTasks.filter(pt => {
+      const template = getTaskTemplate(pt.taskId);
+      return template?.phase === phase && !template?.canSkip;
+    });
+    const completed = phaseTasks.filter(pt =>
+      pt.status === "completed" || pt.status === "skipped"
+    ).length;
+    return { completed, total: phaseTasks.length };
+  };
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="flex items-center justify-between overflow-x-auto gap-0">
@@ -44,7 +58,8 @@ const PhaseProgressRail = ({
           const status = phaseStatuses[phase];
           const isComplete = status === "complete";
           const isActive = phase === activePhase;
-
+          const { completed, total } = getPhaseCounts(phase);
+          const showCount = total > 0 && !isComplete;
           return (
             <div key={phase} className="flex items-center flex-1 min-w-0 last:flex-none">
               <div className="flex flex-col items-center gap-1 min-w-0">
@@ -52,41 +67,23 @@ const PhaseProgressRail = ({
                   {isComplete ? (
                     <CheckCircle2 className="w-5 h-5 text-primary" />
                   ) : (
-                    <Circle
-                      className={`w-5 h-5 ${
-                        isActive
-                          ? "text-primary fill-primary/20"
-                          : "text-muted-foreground/40"
-                      }`}
-                    />
+                    <Circle className={`w-5 h-5 ${isActive ? "text-primary fill-primary/20" : "text-muted-foreground/40"}`} />
                   )}
                 </div>
-                <span
-                  className={`text-[10px] leading-tight text-center whitespace-nowrap hidden sm:block ${
-                    isActive
-                      ? "text-primary font-semibold"
-                      : isComplete
-                      ? "text-foreground font-medium"
-                      : "text-muted-foreground"
-                  }`}
-                >
+                <span className={`text-[10px] leading-tight text-center whitespace-nowrap hidden sm:block ${isActive ? "text-primary font-semibold" : isComplete ? "text-foreground font-medium" : "text-muted-foreground"}`}>
                   {PHASE_LABELS[phase] || phase}
                 </span>
-                <span className={`text-[9px] leading-tight text-center block sm:hidden truncate max-w-[32px] ${
-                  isComplete ? "text-primary font-semibold"
-                  : isActive ? "text-foreground font-medium"
-                  : "text-muted-foreground"
-                }`}>
+                <span className={`text-[9px] leading-tight text-center block sm:hidden truncate max-w-[32px] ${isComplete ? "text-primary font-semibold" : isActive ? "text-foreground font-medium" : "text-muted-foreground"}`}>
                   {(PHASE_LABELS[phase] || phase).split(" ")[0]}
                 </span>
+                {showCount && (
+                  <span className={`text-[9px] leading-none tabular-nums ${isActive ? "text-primary" : "text-muted-foreground/50"}`}>
+                    {completed}/{total}
+                  </span>
+                )}
               </div>
-
               {index < phases.length - 1 && (
-                <div
-                  className={`flex-1 h-px mx-1.5 mt-[-12px] ${
-                    isComplete ? "bg-primary" : "bg-border"
-                  }`}
-                />
+                <div className={`flex-1 h-px mx-1.5 mt-[-12px] ${isComplete ? "bg-primary" : "bg-border"}`} />
               )}
             </div>
           );
@@ -332,6 +329,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     nextBestTask,
     activePhase,
     phaseStatuses,
+    projectTasks,
+    getTaskTemplate,
   } = useTaskEngine({ projectId });
 
   // Fetch user profile
@@ -605,6 +604,8 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
           phases={PHASES.filter(p => p !== 'setup')}
           phaseStatuses={phaseStatuses}
           activePhase={activePhase}
+          projectTasks={projectTasks}
+          getTaskTemplate={getTaskTemplate}
         />
 
         {/* Phase celebration */}
