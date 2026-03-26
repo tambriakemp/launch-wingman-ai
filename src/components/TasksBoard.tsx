@@ -27,7 +27,7 @@ import { FUNNEL_CONFIGS } from "@/data/funnelConfigs";
 import { getFunnelConfigKey } from "@/lib/funnelUtils";
 import { AssetChecklist } from "@/components/funnel/AssetChecklist";
 import { PhaseSection } from "@/components/PhaseSection";
-import { getPlanningTasks, getMessagingTasks, getBuildTasksForFunnel, getContentTasksForFunnel, getLaunchTasksForFunnel, getPostLaunchTasks, getPreLaunchTasks } from "@/data/taskTemplates";
+import { getPlanningTasks, getMessagingTasks, getBuildTasksForFunnel, getContentTasksForFunnel, getLaunchTasksForFunnel, getPostLaunchTasks, getPreLaunchTasks, getSetupTasks } from "@/data/taskTemplates";
 import { ClipboardList, MessageSquare, Wrench, PenTool, Rocket, Flag, Sparkles } from "lucide-react";
 
 const COLUMNS = [
@@ -618,9 +618,17 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
       <div className="space-y-4 mb-6">
         <PhaseSection
           projectId={projectId}
+          label="Setup"
+          icon={Sparkles}
+          tasks={getSetupTasks()}
+        />
+
+        <PhaseSection
+          projectId={projectId}
           label="Planning"
           icon={ClipboardList}
           tasks={getPlanningTasks(currentFunnelType)}
+          prerequisiteTasks={getSetupTasks()}
         />
 
         {!currentFunnelType ? (
@@ -628,9 +636,9 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
               <Rocket className="w-5 h-5 text-primary" />
             </div>
-            <p className="text-sm font-semibold text-foreground mb-1">Complete Planning to unlock your full task list</p>
+            <p className="text-sm font-semibold text-foreground mb-1">Complete the setup step above to unlock your full task list</p>
             <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-              Once you choose how you'll sell your offer in the Planning phase, your personalized tasks for Build, Content, and Launch will appear here — tailored to your path.
+              Once you choose how you'll sell your offer in the Setup phase, your personalized tasks for Planning, Build, Content, and Launch will appear here — tailored to your path.
             </p>
           </div>
         ) : (

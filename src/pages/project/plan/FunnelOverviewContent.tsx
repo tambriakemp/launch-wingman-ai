@@ -542,7 +542,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
   );
   const mostRecentlyCompletedPhase =
     completedPhases.length > 0 && completedPhases.length < PHASES.length
-      ? completedPhases[completedPhases.length - 1]
+      ? completedPhases.filter(p => p !== 'setup')[completedPhases.filter(p => p !== 'setup').length - 1] ?? null
       : null;
 
   // Get next phase after the most recently completed phase
@@ -602,7 +602,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
 
         {/* Phase Progress Rail */}
         <PhaseProgressRail
-          phases={PHASES}
+          phases={PHASES.filter(p => p !== 'setup')}
           phaseStatuses={phaseStatuses}
           activePhase={activePhase}
         />

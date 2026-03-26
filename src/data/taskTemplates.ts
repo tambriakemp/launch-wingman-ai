@@ -1782,3 +1782,10 @@ export function getPostLaunchTasks(funnelType?: string | null): TaskTemplate[] {
 export function getTasksByPhase(phase: string): TaskTemplate[] {
   return TASK_TEMPLATES.filter(task => task.phase === phase);
 }
+
+// Get setup phase tasks
+export function getSetupTasks(): TaskTemplate[] {
+  return TASK_TEMPLATES
+    .filter(task => task.phase === 'setup')
+    .sort((a, b) => a.order - b.order);
+}
