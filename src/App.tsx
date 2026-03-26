@@ -80,6 +80,7 @@ import ProjectPlan from "./pages/project/ProjectPlan";
 
 
 import ProjectExecute from "./pages/project/ProjectExecute";
+import OfferGate from "./pages/project/OfferGate";
 import TaskDetail from "./pages/project/TaskDetail";
 import OfferSnapshotTask from "./pages/project/OfferSnapshotTask";
 import SocialBioTask from "./pages/project/SocialBioTask";
