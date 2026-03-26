@@ -133,7 +133,7 @@ export default function SalesPageWriter() {
       const { data, error } = await supabase
         .from("offers")
         .select(
-          "id, title, slot_type, price, price_type, offer_type, target_audience, transformation_statement, primary_pain_point, niche, main_deliverables, main_objections, guarantee"
+          "id, title, slot_type, price, price_type, offer_type, target_audience, transformation_statement, primary_pain_point, niche, main_deliverables"
         )
         .eq("project_id", selectedProjectId)
         .order("slot_position");
