@@ -168,7 +168,6 @@ const SlidePreview = ({
       ref={containerRef}
       className="max-w-sm w-full rounded-2xl overflow-hidden relative flex flex-col"
       style={{ aspectRatio: sizeConfig.ratio, backgroundColor: themeBg, color: themeText, fontFamily: bodyFont }}
-      >
     >
       {/* Social handle — top */}
       {handlePosition === "top" && handleBar}
