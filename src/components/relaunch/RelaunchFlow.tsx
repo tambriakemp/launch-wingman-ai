@@ -81,6 +81,13 @@ export function RelaunchFlow({ projectId, projectName, onCancel }: RelaunchFlowP
   const [revisitSections, setRevisitSections] = useState<RelaunchSection[]>([]);
   const [skipMemory, setSkipMemory] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [previousLaunchLearnings, setPreviousLaunchLearnings] = useState<{
+    whatWorked: string[];
+    feltChallenging: string | null;
+    whatToChange: string | null;
+    revenue: string | null;
+    buyers: string | null;
+  } | null>(null);
 
   // Track relaunch flow start
   useEffect(() => {
@@ -163,6 +170,34 @@ export function RelaunchFlow({ projectId, projectName, onCancel }: RelaunchFlowP
         .single();
 
       if (projectError) throw projectError;
+
+      // Fetch post-launch reflection answers from previous launch
+      const { data: postLaunchTasks } = await supabase
+        .from("project_tasks")
+        .select("task_id, input_data")
+        .eq("project_id", projectId)
+        .eq("status", "completed")
+        .in("task_id", [
+          "postlaunch_what_worked",
+          "postlaunch_reflection",
+          "postlaunch_launch_debrief",
+        ]);
+
+      const whatWorked = (postLaunchTasks?.find(t => t.task_id === "postlaunch_what_worked")?.input_data as any);
+      const reflection = (postLaunchTasks?.find(t => t.task_id === "postlaunch_reflection")?.input_data as any);
+      const debrief = (postLaunchTasks?.find(t => t.task_id === "postlaunch_launch_debrief")?.input_data as any);
+      const learnings = {
+        whatWorked: [
+          whatWorked?.what_worked_1,
+          whatWorked?.what_worked_2,
+          whatWorked?.what_worked_3,
+        ].filter(Boolean) as string[],
+        feltChallenging: reflection?.felt_more_challenging || null,
+        whatToChange: debrief?.what_to_change || null,
+        revenue: debrief?.launch_revenue || null,
+        buyers: debrief?.launch_buyers || null,
+      };
+      setPreviousLaunchLearnings(learnings);
 
       // 2. Fetch original funnel data
       const { data: originalFunnel } = await supabase
@@ -423,6 +458,7 @@ export function RelaunchFlow({ projectId, projectName, onCancel }: RelaunchFlowP
           onConfirm={handleConfirmRelaunch}
           onBack={() => setStep("selection")}
           skipMemory={skipMemory}
+          previousLaunchLearnings={previousLaunchLearnings}
         />
       )}
     </AnimatePresence>

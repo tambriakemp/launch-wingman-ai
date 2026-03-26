@@ -12,6 +12,13 @@ interface RelaunchSummaryScreenProps {
   onConfirm: () => void;
   onBack: () => void;
   skipMemory?: boolean;
+  previousLaunchLearnings?: {
+    whatWorked: string[];
+    feltChallenging: string | null;
+    whatToChange: string | null;
+    revenue: string | null;
+    buyers: string | null;
+  } | null;
 }
 
 const SECTION_LABELS: Record<RelaunchSection, string> = {
@@ -34,6 +41,7 @@ export function RelaunchSummaryScreen({
   onConfirm,
   onBack,
   skipMemory = false,
+  previousLaunchLearnings,
 }: RelaunchSummaryScreenProps) {
   // Fresh start mode - skip all memory
   if (skipMemory) {
@@ -183,6 +191,61 @@ export function RelaunchSummaryScreen({
                 </li>
               ))}
             </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Post-launch learnings */}
+      {previousLaunchLearnings && (
+        previousLaunchLearnings.whatWorked.length > 0 ||
+        previousLaunchLearnings.feltChallenging ||
+        previousLaunchLearnings.whatToChange ||
+        previousLaunchLearnings.revenue ||
+        previousLaunchLearnings.buyers
+      ) && (
+        <Card className="border-amber-200/50 bg-amber-50/30 dark:border-amber-900/30 dark:bg-amber-950/10">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2 text-amber-700 dark:text-amber-400">
+              <Sparkles className="w-4 h-4" />
+              From your last launch
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {previousLaunchLearnings.whatWorked.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1">What worked</p>
+                <ul className="space-y-1">
+                  {previousLaunchLearnings.whatWorked.map((item, i) => (
+                    <li key={i} className="text-xs text-foreground/80 flex items-start gap-1.5">
+                      <span className="text-primary mt-0.5">•</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {previousLaunchLearnings.whatToChange && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1">What to change next time</p>
+                <p className="text-xs text-foreground/80">{previousLaunchLearnings.whatToChange}</p>
+              </div>
+            )}
+            {(previousLaunchLearnings.revenue || previousLaunchLearnings.buyers) && (
+              <div className="flex gap-4">
+                {previousLaunchLearnings.buyers && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">Buyers</p>
+                    <p className="text-sm font-semibold text-foreground">{previousLaunchLearnings.buyers}</p>
+                  </div>
+                )}
+                {previousLaunchLearnings.revenue && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">Revenue</p>
+                    <p className="text-sm font-semibold text-foreground">${previousLaunchLearnings.revenue}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
