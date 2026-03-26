@@ -65,32 +65,31 @@ const FRAMEWORKS = [
   { name: "Launch Countdown", desc: "Urgency-driven launch content", sample: "48 hours left. Here's everything inside." },
 ];
 
-const THEMES: Record<string, { bg: string; text: string; accent: string; label: string; isDark: boolean }> = {
-  luxury_beige: { bg: "#1a1410", text: "#f5e6c8", accent: "#c9a96e", label: "Luxury Beige", isDark: true },
-  soft_feminine: { bg: "#1f1520", text: "#f7d6e0", accent: "#d4a5c0", label: "Soft Feminine", isDark: true },
-  bold_contrast: { bg: "#000000", text: "#ffffff", accent: "#f5c842", label: "Bold Contrast", isDark: true },
-  minimal_bw: { bg: "#111111", text: "#eeeeee", accent: "#888888", label: "Minimal B&W", isDark: true },
-  digital_neon: { bg: "#0a0a1a", text: "#e0f0ff", accent: "#00d4ff", label: "Digital Neon", isDark: true },
-  midnight_purple: { bg: "#0d0a1a", text: "#e8e0ff", accent: "#9b6dff", label: "Midnight Purple", isDark: true },
-  deep_ocean: { bg: "#061220", text: "#c0e8ff", accent: "#0088cc", label: "Deep Ocean", isDark: true },
-  warm_neutral: { bg: "#faf7f2", text: "#2c2016", accent: "#c9a96e", label: "Warm Neutral", isDark: false },
-  cool_gray: { bg: "#f5f5f7", text: "#1a1a2e", accent: "#6b7280", label: "Cool Gray", isDark: false },
-  sage_green: { bg: "#f4f7f4", text: "#1a2e1a", accent: "#5a8a5a", label: "Sage Green", isDark: false },
-  warm_coral: { bg: "#fff8f5", text: "#2e1a14", accent: "#e06040", label: "Warm Coral", isDark: false },
-  soft_lavender: { bg: "#f8f5ff", text: "#1a1428", accent: "#7c5cbf", label: "Soft Lavender", isDark: false },
-  clean_white: { bg: "#ffffff", text: "#18181b", accent: "#f5c842", label: "Clean White", isDark: false },
-  sky_blue: { bg: "#f0f8ff", text: "#0a1628", accent: "#2970cc", label: "Sky Blue", isDark: false },
-};
+const THEME_PRESETS: { label: string; bg: string; text: string; accent: string }[] = [
+  { label: "Luxury Beige", bg: "#1a1410", text: "#f5e6c8", accent: "#c9a96e" },
+  { label: "Soft Feminine", bg: "#1f1520", text: "#f7d6e0", accent: "#d4a5c0" },
+  { label: "Bold Contrast", bg: "#000000", text: "#ffffff", accent: "#f5c842" },
+  { label: "Minimal B&W", bg: "#111111", text: "#eeeeee", accent: "#888888" },
+  { label: "Digital Neon", bg: "#0a0a1a", text: "#e0f0ff", accent: "#00d4ff" },
+  { label: "Midnight Purple", bg: "#0d0a1a", text: "#e8e0ff", accent: "#9b6dff" },
+  { label: "Deep Ocean", bg: "#061220", text: "#c0e8ff", accent: "#0088cc" },
+  { label: "Warm Neutral", bg: "#faf7f2", text: "#2c2016", accent: "#c9a96e" },
+  { label: "Cool Gray", bg: "#f5f5f7", text: "#1a1a2e", accent: "#6b7280" },
+  { label: "Sage Green", bg: "#f4f7f4", text: "#1a2e1a", accent: "#5a8a5a" },
+  { label: "Warm Coral", bg: "#fff8f5", text: "#2e1a14", accent: "#e06040" },
+  { label: "Soft Lavender", bg: "#f8f5ff", text: "#1a1428", accent: "#7c5cbf" },
+  { label: "Clean White", bg: "#ffffff", text: "#18181b", accent: "#f5c842" },
+  { label: "Sky Blue", bg: "#f0f8ff", text: "#0a1628", accent: "#2970cc" },
+];
 
-const FONT_PAIRS = [
-  "Playfair+Inter",
-  "Montserrat+OpenSans",
-  "Poppins+Lato",
-  "DMSerif+DMSans",
-  "Raleway+Roboto",
-  "Lora+SourceSans",
-  "BebasNeue+Barlow",
-  "SpaceGrotesk",
+const GOOGLE_FONTS = [
+  "Playfair Display", "Inter", "Montserrat", "Open Sans", "Poppins", "Lato",
+  "DM Serif Display", "DM Sans", "Raleway", "Roboto", "Lora", "Source Sans 3",
+  "Bebas Neue", "Barlow", "Space Grotesk", "Merriweather", "Oswald", "Nunito",
+  "PT Serif", "Libre Baskerville", "Cormorant Garamond", "Crimson Text",
+  "Work Sans", "Bitter", "Archivo", "Manrope", "Plus Jakarta Sans",
+  "Outfit", "Sora", "Lexend", "Urbanist", "Bricolage Grotesque",
+  "Fraunces", "Instrument Serif", "Noto Serif", "Spectral",
 ];
 
 const LAYOUTS = ["Centered", "Split", "Quote", "List", "Gradient", "Card", "Magazine"];
