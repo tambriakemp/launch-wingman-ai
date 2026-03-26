@@ -165,14 +165,12 @@ export default function SalesPageWriter() {
       );
     }
     if (offer.offer_type) setOfferType(offer.offer_type);
-    if (offer.main_objections) setStoppedBefore(offer.main_objections);
     if (offer.main_deliverables) {
       const deliverables = Array.isArray(offer.main_deliverables)
         ? offer.main_deliverables.join("\n")
         : String(offer.main_deliverables);
       setBonuses(deliverables);
     }
-    if (offer.guarantee) setGuarantee(offer.guarantee);
   };
 
   const clearOffer = () => {
