@@ -195,6 +195,26 @@ serve(async (req) => {
     const subscription = await stripe.subscriptions.create(subscriptionOptions);
     logStep("Created subscription", { subscriptionId: subscription.id, status: subscription.status });
 
+    // Validate subscription is actually active
+    if (subscription.status !== 'active' && subscription.status !== 'trialing') {
+      logStep("WARNING: Subscription not active after creation", {
+        subscriptionId: subscription.id,
+        status: subscription.status,
+        customerId: stripeCustomerId,
+        userId: supabaseUserId,
+      });
+      // Try to retrieve updated status after a brief moment
+      const refreshed = await stripe.subscriptions.retrieve(subscription.id);
+      if (refreshed.status !== 'active' && refreshed.status !== 'trialing') {
+        logStep("ERROR: Subscription still not active after refresh", {
+          subscriptionId: refreshed.id,
+          status: refreshed.status,
+        });
+        throw new Error(`Subscription created but not active. Status: ${refreshed.status}. Please contact support.`);
+      }
+      logStep("Subscription became active after refresh", { status: refreshed.status });
+    }
+
     logStep("Checkout completed successfully", {
       subscriptionId: subscription.id,
       customerId: stripeCustomerId,
