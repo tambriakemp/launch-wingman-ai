@@ -283,7 +283,19 @@ export const ProjectSidebar = () => {
   const isActiveRoute = useCallback((href: string) => {
     if (href === "#") return false;
     if (href === "/app") return location.pathname === href;
-    return location.pathname === href || location.pathname.startsWith(href + "/");
+    // Exact match always wins
+    if (location.pathname === href) return true;
+    // For prefix matching, only match if no sibling route is a more specific match
+    if (location.pathname.startsWith(href + "/")) {
+      // Check if any other known route is a better (longer) prefix match
+      const allHrefs = sections.flatMap(s => s.items.map(i => i.href)).filter(h => h !== "#");
+      const hasBetterMatch = allHrefs.some(
+        other => other !== href && other.length > href.length &&
+          (location.pathname === other || location.pathname.startsWith(other + "/"))
+      );
+      return !hasBetterMatch;
+    }
+    return false;
   }, [location.pathname]);
 
   // ── Outside-click handling for desktop flyout ──
