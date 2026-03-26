@@ -568,7 +568,7 @@ const CarouselBuilder = () => {
     } finally {
       setIsDownloading(false);
     }
-  }, [slides, themeBg, themeText, themeAccent, headingFont, bodyFont, layout, socialHandle, handlePosition]);
+  }, [slides, themeBg, themeText, themeAccent, headingFont, bodyFont, layout, socialHandle, handlePosition, slideSize]);
 
   // Load Google Fonts dynamically
   useEffect(() => {
