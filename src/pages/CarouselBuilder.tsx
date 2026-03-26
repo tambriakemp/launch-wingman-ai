@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import JSZip from "jszip";
 import {
   FileText,
   Layers,
@@ -24,6 +25,7 @@ import {
   Plus,
   Zap,
   Download,
+  Globe,
 } from "lucide-react";
 
 // ── Types ──
@@ -122,6 +124,122 @@ const LOADING_MESSAGES = [
   "Polishing final slides...",
 ];
 
+// ── Slide Preview Component ──
+
+const SlidePreview = ({
+  slide,
+  themeBg,
+  themeText,
+  themeAccent,
+  headingFont,
+  bodyFont,
+  layout,
+  isDarkBg,
+  socialHandle,
+  handlePosition,
+  containerRef,
+}: {
+  slide: Slide;
+  themeBg: string;
+  themeText: string;
+  themeAccent: string;
+  headingFont: string;
+  bodyFont: string;
+  layout: string;
+  isDarkBg: boolean;
+  socialHandle: string;
+  handlePosition: "top" | "bottom";
+  containerRef?: React.Ref<HTMLDivElement>;
+}) => {
+  const handleBar = socialHandle ? (
+    <div
+      className="text-center py-2 text-[10px] font-medium tracking-wide opacity-70"
+      style={{ color: themeText, fontFamily: bodyFont }}
+    >
+      {socialHandle}
+    </div>
+  ) : null;
+
+  return (
+    <div
+      ref={containerRef}
+      className="aspect-square max-w-sm w-full rounded-2xl overflow-hidden relative flex flex-col"
+      style={{ backgroundColor: themeBg, color: themeText, fontFamily: bodyFont }}
+    >
+      {/* Social handle — top */}
+      {handlePosition === "top" && handleBar}
+
+      {/* Main content area */}
+      <div className="flex-1 relative flex items-center justify-center p-8">
+        {layout === "Centered" && (
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{slide.headline}</h2>
+            <p className="text-sm opacity-80 leading-relaxed">{slide.body}</p>
+          </div>
+        )}
+        {layout === "Split" && (
+          <div className="flex w-full h-full absolute inset-0">
+            <div className="w-1/2 flex items-center justify-center" style={{ backgroundColor: themeAccent + "33" }} />
+            <div className="w-1/2 flex flex-col justify-center px-4 space-y-3">
+              <h2 className="text-xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{slide.headline}</h2>
+              <p className="text-xs opacity-80 leading-relaxed">{slide.body}</p>
+            </div>
+          </div>
+        )}
+        {layout === "Quote" && (
+          <div className="text-center space-y-3 px-4">
+            <span className="text-5xl opacity-30" style={{ color: themeAccent }}>"</span>
+            <h2 className="text-xl font-bold leading-tight italic" style={{ fontFamily: headingFont }}>{slide.headline}</h2>
+            <p className="text-xs opacity-70 leading-relaxed">{slide.body}</p>
+          </div>
+        )}
+        {layout === "List" && (
+          <div className="space-y-3 px-2 w-full">
+            <h2 className="text-xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{slide.headline}</h2>
+            {slide.body.split(". ").filter(Boolean).map((item, i) => (
+              <p key={i} className="text-xs opacity-80 flex items-start gap-2">
+                <span style={{ color: themeAccent }}>•</span> {item.trim()}
+              </p>
+            ))}
+          </div>
+        )}
+        {layout === "Gradient" && (
+          <div className="absolute inset-0 flex items-center justify-center p-8" style={{ background: `linear-gradient(135deg, ${themeAccent}, ${themeBg})` }}>
+            <div className="text-center space-y-4">
+              <h2 className="text-2xl font-bold leading-tight" style={{ fontFamily: headingFont, color: themeText }}>{slide.headline}</h2>
+              <p className="text-sm opacity-80 leading-relaxed" style={{ color: themeText }}>{slide.body}</p>
+            </div>
+          </div>
+        )}
+        {layout === "Card" && (
+          <div className="rounded-xl p-6 shadow-lg space-y-3" style={{ backgroundColor: isDarkBg ? "#ffffff11" : "#00000008" }}>
+            <h2 className="text-xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{slide.headline}</h2>
+            <p className="text-xs opacity-80 leading-relaxed">{slide.body}</p>
+          </div>
+        )}
+        {layout === "Magazine" && (
+          <div className="absolute inset-0 flex flex-col p-8">
+            <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: themeAccent }} />
+            <div className="flex-1 flex flex-col justify-center pl-4 space-y-4">
+              <h2 className="text-2xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{slide.headline}</h2>
+              <div className="w-12 h-0.5" style={{ backgroundColor: themeAccent }} />
+              <p className="text-sm opacity-80 leading-relaxed">{slide.body}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Slide type badge */}
+        <div className="absolute top-3 left-3 text-[9px] font-bold uppercase px-2 py-1 rounded-full z-10" style={{ backgroundColor: themeAccent + "33", color: themeAccent }}>
+          {slide.slideType}
+        </div>
+      </div>
+
+      {/* Social handle — bottom */}
+      {handlePosition === "bottom" && handleBar}
+    </div>
+  );
+};
+
 // ── Component ──
 
 const CarouselBuilder = () => {
@@ -146,6 +264,7 @@ const CarouselBuilder = () => {
   const [framework, setFramework] = useState("");
   const [showInspiration, setShowInspiration] = useState(false);
   const [inspirationText, setInspirationText] = useState("");
+  const [socialHandle, setSocialHandle] = useState("");
 
   // Tone
   const [tone, setTone] = useState("Mentor");
@@ -167,6 +286,10 @@ const CarouselBuilder = () => {
   const [layout, setLayout] = useState("Centered");
   const [copiedSlide, setCopiedSlide] = useState<number | null>(null);
   const [loadingMsg, setLoadingMsg] = useState(0);
+  const [handlePosition, setHandlePosition] = useState<"top" | "bottom">("bottom");
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const previewRef = useRef<HTMLDivElement>(null);
 
   // Fetch offers
   useEffect(() => {
@@ -203,18 +326,8 @@ const CarouselBuilder = () => {
     try {
       const { data, error } = await supabase.functions.invoke("generate-carousel", {
         body: {
-          offer,
-          audience,
-          painPoint,
-          cta,
-          slideCount,
-          funnelStage,
-          buyerTemp,
-          framework,
-          tone,
-          voiceModifier,
-          conversionBoost,
-          inspirationText,
+          offer, audience, painPoint, cta, slideCount, funnelStage, buyerTemp, framework,
+          tone, voiceModifier, conversionBoost, inspirationText,
         },
       });
       if (error) throw error;
@@ -270,6 +383,143 @@ const CarouselBuilder = () => {
     copyToClipboard(text);
     toast.success("Exported text copied — paste into Canva");
   };
+
+  // Download all slides as PNG in a zip
+  const handleDownloadSlides = useCallback(async () => {
+    setIsDownloading(true);
+    toast.info("Rendering slides...");
+
+    try {
+      const { toBlob } = await import("html-to-image");
+      const zip = new JSZip();
+
+      // Create an offscreen container
+      const offscreen = document.createElement("div");
+      offscreen.style.position = "fixed";
+      offscreen.style.left = "-9999px";
+      offscreen.style.top = "0";
+      offscreen.style.width = "1080px";
+      offscreen.style.height = "1080px";
+      document.body.appendChild(offscreen);
+
+      for (let i = 0; i < slides.length; i++) {
+        const slide = slides[i];
+
+        // Create a temporary render container
+        const wrapper = document.createElement("div");
+        wrapper.style.width = "1080px";
+        wrapper.style.height = "1080px";
+        wrapper.style.position = "relative";
+        offscreen.innerHTML = "";
+        offscreen.appendChild(wrapper);
+
+        // Render slide content into wrapper using innerHTML for capture
+        const handleHtml = socialHandle
+          ? `<div style="text-align:center;padding:16px 0;font-size:14px;font-weight:500;opacity:0.7;color:${themeText};font-family:${bodyFont},sans-serif;letter-spacing:0.05em">${socialHandle}</div>`
+          : "";
+
+        const slideTypeBadge = `<div style="position:absolute;top:20px;left:20px;font-size:12px;font-weight:700;text-transform:uppercase;padding:6px 14px;border-radius:999px;background:${themeAccent}33;color:${themeAccent};z-index:10">${slide.slideType}</div>`;
+
+        let contentHtml = "";
+
+        if (layout === "Centered") {
+          contentHtml = `<div style="text-align:center;display:flex;flex-direction:column;gap:24px;align-items:center;justify-content:center;height:100%;padding:48px">
+            <h2 style="font-size:48px;font-weight:700;line-height:1.15;font-family:${headingFont},sans-serif">${slide.headline}</h2>
+            <p style="font-size:20px;opacity:0.8;line-height:1.6">${slide.body}</p>
+          </div>`;
+        } else if (layout === "Split") {
+          contentHtml = `<div style="display:flex;width:100%;height:100%">
+            <div style="width:50%;background:${themeAccent}33"></div>
+            <div style="width:50%;display:flex;flex-direction:column;justify-content:center;padding:32px;gap:16px">
+              <h2 style="font-size:40px;font-weight:700;line-height:1.15;font-family:${headingFont},sans-serif">${slide.headline}</h2>
+              <p style="font-size:18px;opacity:0.8;line-height:1.6">${slide.body}</p>
+            </div>
+          </div>`;
+        } else if (layout === "Quote") {
+          contentHtml = `<div style="text-align:center;display:flex;flex-direction:column;gap:16px;align-items:center;justify-content:center;height:100%;padding:48px">
+            <span style="font-size:80px;opacity:0.3;color:${themeAccent}">"</span>
+            <h2 style="font-size:40px;font-weight:700;line-height:1.2;font-style:italic;font-family:${headingFont},sans-serif">${slide.headline}</h2>
+            <p style="font-size:18px;opacity:0.7;line-height:1.6">${slide.body}</p>
+          </div>`;
+        } else if (layout === "List") {
+          const items = slide.body.split(". ").filter(Boolean).map(item =>
+            `<p style="font-size:18px;opacity:0.8;display:flex;align-items:flex-start;gap:12px"><span style="color:${themeAccent}">•</span>${item.trim()}</p>`
+          ).join("");
+          contentHtml = `<div style="display:flex;flex-direction:column;gap:16px;padding:48px;justify-content:center;height:100%">
+            <h2 style="font-size:40px;font-weight:700;line-height:1.15;font-family:${headingFont},sans-serif">${slide.headline}</h2>
+            ${items}
+          </div>`;
+        } else if (layout === "Gradient") {
+          contentHtml = `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:48px;background:linear-gradient(135deg,${themeAccent},${themeBg})">
+            <div style="text-align:center;display:flex;flex-direction:column;gap:24px">
+              <h2 style="font-size:48px;font-weight:700;line-height:1.15;font-family:${headingFont},sans-serif;color:${themeText}">${slide.headline}</h2>
+              <p style="font-size:20px;opacity:0.8;line-height:1.6;color:${themeText}">${slide.body}</p>
+            </div>
+          </div>`;
+        } else if (layout === "Card") {
+          const cardBg = isDarkBg ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.03)";
+          contentHtml = `<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:48px">
+            <div style="background:${cardBg};border-radius:16px;padding:40px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;flex-direction:column;gap:16px">
+              <h2 style="font-size:40px;font-weight:700;line-height:1.15;font-family:${headingFont},sans-serif">${slide.headline}</h2>
+              <p style="font-size:18px;opacity:0.8;line-height:1.6">${slide.body}</p>
+            </div>
+          </div>`;
+        } else if (layout === "Magazine") {
+          contentHtml = `<div style="position:absolute;inset:0;display:flex;flex-direction:column;padding:48px">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:6px;background:${themeAccent}"></div>
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding-left:24px;gap:24px">
+              <h2 style="font-size:48px;font-weight:700;line-height:1.15;font-family:${headingFont},sans-serif">${slide.headline}</h2>
+              <div style="width:60px;height:3px;background:${themeAccent}"></div>
+              <p style="font-size:20px;opacity:0.8;line-height:1.6">${slide.body}</p>
+            </div>
+          </div>`;
+        }
+
+        wrapper.innerHTML = `
+          <div style="width:1080px;height:1080px;background:${layout === "Gradient" ? "transparent" : themeBg};color:${themeText};font-family:${bodyFont},sans-serif;position:relative;display:flex;flex-direction:column;overflow:hidden;border-radius:0">
+            ${handlePosition === "top" ? handleHtml : ""}
+            <div style="flex:1;position:relative;display:flex;align-items:center;justify-content:center">
+              ${slideTypeBadge}
+              ${contentHtml}
+            </div>
+            ${handlePosition === "bottom" ? handleHtml : ""}
+          </div>
+        `;
+
+        // Wait for fonts to render
+        await new Promise(r => setTimeout(r, 200));
+
+        const blob = await toBlob(wrapper, {
+          width: 1080,
+          height: 1080,
+          pixelRatio: 1,
+          cacheBust: true,
+          style: { margin: "0", padding: "0" },
+        });
+
+        if (blob) {
+          zip.file(`slide-${String(i + 1).padStart(2, "0")}.png`, blob);
+        }
+      }
+
+      document.body.removeChild(offscreen);
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "carousel-slides.zip";
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast.success(`Downloaded ${slides.length} slides as ZIP`);
+    } catch (err: any) {
+      console.error("Download error:", err);
+      toast.error("Failed to download slides: " + (err.message || "Unknown error"));
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [slides, themeBg, themeText, themeAccent, headingFont, bodyFont, layout, socialHandle, handlePosition]);
 
   // Load Google Fonts dynamically
   useEffect(() => {
@@ -432,17 +682,31 @@ const CarouselBuilder = () => {
                 </div>
               </div>
 
-              {/* Layout */}
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Layout</span>
-                <Select value={layout} onValueChange={setLayout}>
-                  <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {LAYOUTS.map((l) => (
-                      <SelectItem key={l} value={l}>{l}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Layout + Handle position */}
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Layout</span>
+                  <Select value={layout} onValueChange={setLayout}>
+                    <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {LAYOUTS.map((l) => (
+                        <SelectItem key={l} value={l}>{l}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {socialHandle && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Handle Position</span>
+                    <Select value={handlePosition} onValueChange={(v) => setHandlePosition(v as "top" | "bottom")}>
+                      <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="top">Top Center</SelectItem>
+                        <SelectItem value="bottom">Bottom Center</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               {/* Action buttons */}
@@ -450,75 +714,27 @@ const CarouselBuilder = () => {
                 <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={copyAllText}><Copy className="w-3 h-3" /> Copy All Text</Button>
                 <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={exportForCanva}><Download className="w-3 h-3" /> Export for Canva</Button>
                 <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={handleGenerate}><RefreshCw className="w-3 h-3" /> Remix Carousel</Button>
-                <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={() => toast.info("Coming soon — download will be available soon")}><Download className="w-3 h-3" /> Download Slides</Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={handleDownloadSlides} disabled={isDownloading}>
+                  <Download className="w-3 h-3" /> {isDownloading ? "Downloading..." : "Download Slides"}
+                </Button>
               </div>
             </div>
 
             {/* Slide Preview */}
             <div className="p-6 flex flex-col items-center">
-              <div
-                className="aspect-square max-w-sm w-full rounded-2xl overflow-hidden relative flex items-center justify-center p-8"
-                style={{ backgroundColor: themeBg, color: themeText, fontFamily: bodyFont }}
-              >
-                {layout === "Centered" && (
-                  <div className="text-center space-y-4">
-                    <h2 className="text-2xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{current.headline}</h2>
-                    <p className="text-sm opacity-80 leading-relaxed">{current.body}</p>
-                  </div>
-                )}
-                {layout === "Split" && (
-                  <div className="flex w-full h-full">
-                    <div className="w-1/2 flex items-center justify-center" style={{ backgroundColor: themeAccent + "33" }} />
-                    <div className="w-1/2 flex flex-col justify-center px-4 space-y-3">
-                      <h2 className="text-xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{current.headline}</h2>
-                      <p className="text-xs opacity-80 leading-relaxed">{current.body}</p>
-                    </div>
-                  </div>
-                )}
-                {layout === "Quote" && (
-                  <div className="text-center space-y-3 px-4">
-                    <span className="text-5xl opacity-30" style={{ color: themeAccent }}>"</span>
-                    <h2 className="text-xl font-bold leading-tight italic" style={{ fontFamily: headingFont }}>{current.headline}</h2>
-                    <p className="text-xs opacity-70 leading-relaxed">{current.body}</p>
-                  </div>
-                )}
-                {layout === "List" && (
-                  <div className="space-y-3 px-2 w-full">
-                    <h2 className="text-xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{current.headline}</h2>
-                    {current.body.split(". ").map((item, i) => (
-                      <p key={i} className="text-xs opacity-80 flex items-start gap-2">
-                        <span style={{ color: themeAccent }}>•</span> {item.trim()}
-                      </p>
-                    ))}
-                  </div>
-                )}
-                {layout === "Gradient" && (
-                  <div className="absolute inset-0 flex items-center justify-center p-8" style={{ background: `linear-gradient(135deg, ${themeAccent}, ${themeBg})` }}>
-                    <div className="text-center space-y-4">
-                      <h2 className="text-2xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{current.headline}</h2>
-                      <p className="text-sm opacity-80 leading-relaxed">{current.body}</p>
-                    </div>
-                  </div>
-                )}
-                {layout === "Card" && (
-                  <div className="rounded-xl p-6 shadow-lg space-y-3" style={{ backgroundColor: isDarkBg ? "#ffffff11" : "#00000008" }}>
-                    <h2 className="text-xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{current.headline}</h2>
-                    <p className="text-xs opacity-80 leading-relaxed">{current.body}</p>
-                  </div>
-                )}
-                {layout === "Magazine" && (
-                  <div className="w-full h-full flex flex-col justify-between relative">
-                    <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: themeAccent }} />
-                    <h2 className="text-2xl font-bold leading-tight pl-4 pt-2" style={{ fontFamily: headingFont }}>{current.headline}</h2>
-                    <p className="text-xs opacity-80 leading-relaxed pl-4 pb-2">{current.body}</p>
-                  </div>
-                )}
-
-                {/* Slide number badge */}
-                <div className="absolute top-3 left-3 text-[9px] font-bold uppercase px-2 py-1 rounded-full" style={{ backgroundColor: themeAccent + "33", color: themeAccent }}>
-                  {current.slideType}
-                </div>
-              </div>
+              <SlidePreview
+                slide={current}
+                themeBg={themeBg}
+                themeText={themeText}
+                themeAccent={themeAccent}
+                headingFont={headingFont}
+                bodyFont={bodyFont}
+                layout={layout}
+                isDarkBg={isDarkBg}
+                socialHandle={socialHandle}
+                handlePosition={handlePosition}
+                containerRef={previewRef}
+              />
 
               {/* Navigation */}
               <div className="flex items-center gap-4 mt-4">
@@ -687,6 +903,20 @@ const CarouselBuilder = () => {
             <div>
               <Label>CTA (optional)</Label>
               <Input value={cta} onChange={(e) => setCta(e.target.value)} placeholder="e.g. DM 'READY' to grab yours" />
+            </div>
+
+            {/* Social Handle / Website */}
+            <div>
+              <Label className="flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-muted-foreground" />
+                Website or Social Handle (optional)
+              </Label>
+              <Input
+                value={socialHandle}
+                onChange={(e) => setSocialHandle(e.target.value)}
+                placeholder="e.g. @yourbrand or yourbrand.com"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">Displayed on each slide if provided</p>
             </div>
 
             {/* Slide count */}
