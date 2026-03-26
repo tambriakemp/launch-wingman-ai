@@ -200,7 +200,7 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [projectTasks, setProjectTasks] = useState<ProjectTask[]>([]);
-  const [activePhase, setActivePhase] = useState<Phase>('planning');
+  const [activePhase, setActivePhase] = useState<Phase>('setup');
   const [phaseStatuses, setPhaseStatuses] = useState<Record<Phase, PhaseStatus>>(DEFAULT_PHASE_STATUSES);
   const [selectedFunnelType, setSelectedFunnelType] = useState<FunnelType | null>(null);
 
@@ -351,7 +351,7 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
   // Update phase statuses based on completion
   const recalculatePhases = useCallback(async () => {
     const newStatuses: Record<Phase, PhaseStatus> = { ...DEFAULT_PHASE_STATUSES };
-    let newActivePhase: Phase = 'planning'; // Track locally to avoid stale state
+    let newActivePhase: Phase = 'setup'; // Track locally to avoid stale state
     let foundActive = false;
 
     for (const phase of PHASES) {
