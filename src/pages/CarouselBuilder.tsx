@@ -159,8 +159,11 @@ const CarouselBuilder = () => {
   const [editingSlide, setEditingSlide] = useState<number | null>(null);
   const [editHeadline, setEditHeadline] = useState("");
   const [editBody, setEditBody] = useState("");
-  const [theme, setTheme] = useState("luxury_beige");
-  const [fontPair, setFontPair] = useState("Playfair+Inter");
+  const [themeBg, setThemeBg] = useState("#1a1410");
+  const [themeText, setThemeText] = useState("#f5e6c8");
+  const [themeAccent, setThemeAccent] = useState("#c9a96e");
+  const [headingFont, setHeadingFont] = useState("Playfair Display");
+  const [bodyFont, setBodyFont] = useState("Inter");
   const [layout, setLayout] = useState("Centered");
   const [copiedSlide, setCopiedSlide] = useState<number | null>(null);
   const [loadingMsg, setLoadingMsg] = useState(0);
