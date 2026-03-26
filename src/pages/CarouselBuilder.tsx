@@ -291,6 +291,7 @@ const CarouselBuilder = () => {
   const [loadingMsg, setLoadingMsg] = useState(0);
   const [handlePosition, setHandlePosition] = useState<"top" | "bottom">("bottom");
   const [isDownloading, setIsDownloading] = useState(false);
+  const [slideSize, setSlideSize] = useState<SlideSize>("1080x1080");
 
   const previewRef = useRef<HTMLDivElement>(null);
 
