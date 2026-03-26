@@ -83,6 +83,7 @@ export default function TaskDetail() {
     startTask,
     completeTask,
     projectTasks,
+    nextBestTask,
   } = useTaskEngine({ projectId: projectId || "" });
 
   // Get task template
@@ -505,6 +506,22 @@ export default function TaskDetail() {
     // Mark as initialized after loading data
     isInitialized.current = true;
   }, [projectTask, taskTemplate]);
+
+  // Redirect to next best task if dependencies aren't met (e.g. navigated here from sidebar)
+  useEffect(() => {
+    if (!taskId || !taskTemplate || engineLoading || !projectId) return;
+    if (taskTemplate.dependencies.length === 0) return;
+    const allDepsMet = taskTemplate.dependencies.every(depId => {
+      const depTask = projectTasks.find(t => t.taskId === depId);
+      return depTask?.status === 'completed';
+    });
+    if (!allDepsMet) {
+      const destination = nextBestTask
+        ? nextBestTask.route
+        : `/projects/${projectId}/dashboard`;
+      navigate(destination, { replace: true });
+    }
+  }, [taskId, taskTemplate, engineLoading, projectTasks, nextBestTask, projectId, navigate]);
 
   // Mark task as started when user opens it
   useEffect(() => {
