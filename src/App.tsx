@@ -80,6 +80,7 @@ import ProjectPlan from "./pages/project/ProjectPlan";
 
 
 import ProjectExecute from "./pages/project/ProjectExecute";
+import OfferGate from "./pages/project/OfferGate";
 import TaskDetail from "./pages/project/TaskDetail";
 import OfferSnapshotTask from "./pages/project/OfferSnapshotTask";
 import SocialBioTask from "./pages/project/SocialBioTask";
@@ -213,10 +214,14 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            {/* Legacy redirect from /offer to /dashboard */}
+            {/* Offer gate — checks deps before showing offer stack */}
             <Route
               path="/projects/:id/offer"
-              element={<Navigate to="../dashboard" replace />}
+              element={
+                <ProtectedRoute>
+                  <OfferGate />
+                </ProtectedRoute>
+              }
             />
             {/* Execute routes */}
             <Route
