@@ -89,6 +89,13 @@ const GOOGLE_FONTS = [
 
 const LAYOUTS = ["Centered", "Split", "Quote", "List", "Gradient", "Card", "Magazine"];
 
+type SlideSize = "1080x1080" | "1080x1350" | "1080x1920";
+const SLIDE_SIZES: { value: SlideSize; label: string; ratio: string }[] = [
+  { value: "1080x1080", label: "Square", ratio: "1/1" },
+  { value: "1080x1350", label: "Portrait", ratio: "1080/1350" },
+  { value: "1080x1920", label: "Story", ratio: "1080/1920" },
+];
+
 const TONES = [
   { emoji: "🔥", label: "Bold" },
   { emoji: "🎯", label: "Mentor" },
@@ -130,6 +137,7 @@ const SlidePreview = ({
   isDarkBg,
   socialHandle,
   handlePosition,
+  slideSize,
   containerRef,
 }: {
   slide: Slide;
@@ -142,8 +150,10 @@ const SlidePreview = ({
   isDarkBg: boolean;
   socialHandle: string;
   handlePosition: "top" | "bottom";
+  slideSize: SlideSize;
   containerRef?: React.Ref<HTMLDivElement>;
 }) => {
+  const sizeConfig = SLIDE_SIZES.find(s => s.value === slideSize) || SLIDE_SIZES[0];
   const handleBar = socialHandle ? (
     <div
       className="text-center py-2 text-[10px] font-medium tracking-wide opacity-70"
@@ -156,8 +166,8 @@ const SlidePreview = ({
   return (
     <div
       ref={containerRef}
-      className="aspect-square max-w-sm w-full rounded-2xl overflow-hidden relative flex flex-col"
-      style={{ backgroundColor: themeBg, color: themeText, fontFamily: bodyFont }}
+      className="max-w-sm w-full rounded-2xl overflow-hidden relative flex flex-col"
+      style={{ aspectRatio: sizeConfig.ratio, backgroundColor: themeBg, color: themeText, fontFamily: bodyFont }}
     >
       {/* Social handle — top */}
       {handlePosition === "top" && handleBar}
@@ -281,6 +291,7 @@ const CarouselBuilder = () => {
   const [loadingMsg, setLoadingMsg] = useState(0);
   const [handlePosition, setHandlePosition] = useState<"top" | "bottom">("bottom");
   const [isDownloading, setIsDownloading] = useState(false);
+  const [slideSize, setSlideSize] = useState<SlideSize>("1080x1080");
 
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -436,7 +447,8 @@ const CarouselBuilder = () => {
       offscreen.style.left = "-9999px";
       offscreen.style.top = "0";
       offscreen.style.width = "1080px";
-      offscreen.style.height = "1080px";
+      const exportHeight = slideSize.split("x")[1];
+      offscreen.style.height = `${exportHeight}px`;
       document.body.appendChild(offscreen);
 
       for (let i = 0; i < slides.length; i++) {
@@ -445,7 +457,7 @@ const CarouselBuilder = () => {
         // Create a temporary render container
         const wrapper = document.createElement("div");
         wrapper.style.width = "1080px";
-        wrapper.style.height = "1080px";
+        wrapper.style.height = `${exportHeight}px`;
         wrapper.style.position = "relative";
         offscreen.innerHTML = "";
         offscreen.appendChild(wrapper);
@@ -513,7 +525,7 @@ const CarouselBuilder = () => {
         }
 
         wrapper.innerHTML = `
-          <div style="width:1080px;height:1080px;background:${layout === "Gradient" ? "transparent" : themeBg};color:${themeText};font-family:${bodyFont},sans-serif;position:relative;display:flex;flex-direction:column;overflow:hidden;border-radius:0">
+          <div style="width:1080px;height:${exportHeight}px;background:${layout === "Gradient" ? "transparent" : themeBg};color:${themeText};font-family:${bodyFont},sans-serif;position:relative;display:flex;flex-direction:column;overflow:hidden;border-radius:0">
             ${handlePosition === "top" ? handleHtml : ""}
             <div style="flex:1;position:relative;display:flex;align-items:center;justify-content:center">
               ${slideTypeBadge}
@@ -528,7 +540,7 @@ const CarouselBuilder = () => {
 
         const blob = await toBlob(wrapper, {
           width: 1080,
-          height: 1080,
+          height: parseInt(exportHeight),
           pixelRatio: 1,
           cacheBust: true,
           style: { margin: "0", padding: "0" },
@@ -556,7 +568,7 @@ const CarouselBuilder = () => {
     } finally {
       setIsDownloading(false);
     }
-  }, [slides, themeBg, themeText, themeAccent, headingFont, bodyFont, layout, socialHandle, handlePosition]);
+  }, [slides, themeBg, themeText, themeAccent, headingFont, bodyFont, layout, socialHandle, handlePosition, slideSize]);
 
   // Load Google Fonts dynamically
   useEffect(() => {
@@ -719,7 +731,7 @@ const CarouselBuilder = () => {
                 </div>
               </div>
 
-              {/* Layout + Handle position */}
+              {/* Layout + Size + Handle position */}
               <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Layout</span>
@@ -728,6 +740,17 @@ const CarouselBuilder = () => {
                     <SelectContent>
                       {LAYOUTS.map((l) => (
                         <SelectItem key={l} value={l}>{l}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Size</span>
+                  <Select value={slideSize} onValueChange={(v) => setSlideSize(v as SlideSize)}>
+                    <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SLIDE_SIZES.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label} ({s.value})</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -770,6 +793,7 @@ const CarouselBuilder = () => {
                 isDarkBg={isDarkBg}
                 socialHandle={socialHandle}
                 handlePosition={handlePosition}
+                slideSize={slideSize}
                 containerRef={previewRef}
               />
 
