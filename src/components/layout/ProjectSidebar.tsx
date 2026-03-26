@@ -29,6 +29,7 @@ import {
   Zap,
   FileText,
   Mail,
+  Layers,
 } from "lucide-react";
 import { ProjectSelector } from "@/components/ProjectSelector";
 import { LaunchelyLogo } from "@/components/ui/LaunchelyLogo";
