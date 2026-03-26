@@ -55,7 +55,7 @@ export const ProjectSelector = ({ currentProjectId, onCreateNew }: ProjectSelect
 
   const handleSelectProject = (projectId: string) => {
     setOpen(false);
-    navigate(`/projects/${projectId}`);
+    navigate(`/projects/${projectId}/dashboard`);
   };
 
   const handleOpenCreateDialog = () => {
