@@ -299,14 +299,14 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
   {
     taskId: 'planning_choose_launch_path',
     title: 'Choose how you\'ll sell your offer',
-    phase: 'planning',
+    phase: 'setup',
     funnelTypes: ['all'],
-    order: 6,
+    order: 1,
     priority: 1,
     estimatedMinutesMin: 10,
     estimatedMinutesMax: 20,
     blocking: true,
-    dependencies: ['planning_perceived_likelihood'],
+    dependencies: [],
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [

@@ -185,7 +185,8 @@ interface UseTaskEngineReturn {
 }
 
 const DEFAULT_PHASE_STATUSES: Record<Phase, PhaseStatus> = {
-  planning: 'active',
+  setup: 'active',
+  planning: 'locked',
   messaging: 'locked',
   build: 'locked',
   content: 'locked',
@@ -473,7 +474,7 @@ export function useTaskEngine({ projectId }: UseTaskEngineOptions): UseTaskEngin
 
     // Create tasks for universal templates (planning AND messaging phases)
     const universalTasks = getUniversalTasks().filter(
-      t => t.phase === 'planning' || t.phase === 'messaging'
+      t => t.phase === 'setup' || t.phase === 'planning' || t.phase === 'messaging'
     );
     
     for (const template of universalTasks) {
