@@ -112,4 +112,20 @@ export const VOICE_SCRIPTS: Record<string, string> = {
 
   postlaunch_buyer_check_in:
     "Most creators disappear after the sale. A simple check-in a few days after purchase — just asking how someone is getting on — is rare enough to be memorable. You're not asking for a testimonial. You're not upselling. You're just showing that you care about their result as much as you cared about getting the sale.",
+
+  // Funnel-specific delta task voice scripts
+  prelaunch_freebie_test_optin:
+    "For a freebie funnel, the opt-in and delivery flow is everything. If someone signs up and the freebie never arrives, you lose the subscriber, the trust, and the relationship — all at once. Take ten minutes to go through the full flow yourself. Submit the form, check your inbox, and make sure everything arrives cleanly.",
+
+  postlaunch_training_send_replay:
+    "Most people who registered for your training didn't attend. Life got in the way. The replay email is your second chance to reach them — and it's often more watched than the live session was attended. Send it within 24 hours while the topic is still fresh, and include a clear, natural invitation to your offer.",
+
+  postlaunch_challenge_pitch_completers:
+    "The people who completed your challenge are your hottest leads. They showed up every day. They did the work. They've already experienced your method and proven they follow through. This is the moment the whole challenge was building toward — not as a hard sell, but as a natural invitation to go deeper.",
+
+  postlaunch_launch_debrief:
+    "A launch debrief doesn't need to be a spreadsheet. Ten minutes of honest reflection — what worked, what you'd change, what the numbers actually were — is enough to make your next launch meaningfully better. The creators who improve fastest are the ones who take notes, not the ones who run the most launches.",
+
+  postlaunch_membership_onboard_personally:
+    "Your first members are your most important members. How they experience the first week determines whether they stay past month one. Automated emails are fine — but a personal message from you is different. It creates belonging. That feeling of being genuinely welcomed is what turns a trial member into a long-term one.",
 };
