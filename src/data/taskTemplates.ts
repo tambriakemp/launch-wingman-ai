@@ -1432,14 +1432,22 @@ export function getUniversalTasks(): TaskTemplate[] {
 }
 
 // Get planning phase tasks specifically
-export function getPlanningTasks(): TaskTemplate[] {
-  return TASK_TEMPLATES.filter(task => task.phase === 'planning');
+export function getPlanningTasks(funnelType?: string | null): TaskTemplate[] {
+  return TASK_TEMPLATES
+    .filter(task => task.phase === 'planning' && (
+      task.funnelTypes.includes('all') ||
+      (funnelType && task.funnelTypes.includes(funnelType as any))
+    ))
+    .sort((a, b) => a.order - b.order);
 }
 
 // Get messaging phase tasks specifically
-export function getMessagingTasks(): TaskTemplate[] {
+export function getMessagingTasks(funnelType?: string | null): TaskTemplate[] {
   return TASK_TEMPLATES
-    .filter(task => task.phase === 'messaging')
+    .filter(task => task.phase === 'messaging' && (
+      task.funnelTypes.includes('all') ||
+      (funnelType && task.funnelTypes.includes(funnelType as any))
+    ))
     .sort((a, b) => a.order - b.order);
 }
 
@@ -1489,13 +1497,23 @@ export function getLaunchTasksForFunnel(funnelType: string | null): TaskTemplate
 }
 
 // Get pre-launch phase tasks specifically
-export function getPreLaunchTasks(): TaskTemplate[] {
-  return TASK_TEMPLATES.filter(task => task.phase === 'pre-launch' && task.funnelTypes.includes('all'));
+export function getPreLaunchTasks(funnelType?: string | null): TaskTemplate[] {
+  return TASK_TEMPLATES
+    .filter(task => task.phase === 'pre-launch' && (
+      task.funnelTypes.includes('all') ||
+      (funnelType && task.funnelTypes.includes(funnelType as any))
+    ))
+    .sort((a, b) => a.order - b.order);
 }
 
 // Get post-launch phase tasks specifically
-export function getPostLaunchTasks(): TaskTemplate[] {
-  return TASK_TEMPLATES.filter(task => task.phase === 'post-launch' && task.funnelTypes.includes('all'));
+export function getPostLaunchTasks(funnelType?: string | null): TaskTemplate[] {
+  return TASK_TEMPLATES
+    .filter(task => task.phase === 'post-launch' && (
+      task.funnelTypes.includes('all') ||
+      (funnelType && task.funnelTypes.includes(funnelType as any))
+    ))
+    .sort((a, b) => a.order - b.order);
 }
 
 // Get tasks by phase
