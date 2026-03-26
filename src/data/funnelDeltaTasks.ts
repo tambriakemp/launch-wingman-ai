@@ -1709,6 +1709,200 @@ export const LAUNCH_DELTA_TASKS: TaskTemplate[] = [
 ];
 
 // ============================================
+// CONTENT TO OFFER DELTA TASKS
+// ============================================
+// Path: Social content → direct offer (no injection)
+// These tasks are specific to the content-to-offer funnel type.
+
+export const CONTENT_TO_OFFER_DELTA_TASKS: TaskTemplate[] = [
+  // ==================== BUILD Phase Additions ====================
+  {
+    taskId: 'build_link_in_bio',
+    title: 'Set up your link in bio',
+    phase: 'build',
+    funnelTypes: ['content_to_offer'],
+    order: 4.5,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['build_simple_launch_page'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'Your link in bio points somewhere useful',
+      'Someone clicking it would know what to do next',
+    ],
+    whyItMatters: 'For content-to-offer, your link in bio is the bridge between your content and your offer. If it doesn\'t exist or leads nowhere, your content can\'t convert.',
+    instructions: [
+      'Choose one destination — your sales page, landing page, or direct DM',
+      'Update your bio across the platforms you\'ll use',
+      'Test it yourself to make sure it works',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'link_destination', 
+          label: 'Where does your link in bio point?', 
+          type: 'text', 
+          required: true, 
+          placeholder: 'e.g., sales page URL, Linktree, DM trigger...',
+          helperText: 'One clear destination is better than many options.'
+        },
+        { 
+          name: 'bio_updated', 
+          label: 'Which platforms have you updated?', 
+          type: 'textarea', 
+          required: false, 
+          placeholder: 'e.g., Instagram, TikTok, Twitter...',
+          sectionLabel: 'Optional: Helpful context',
+          helperText: 'Focus on where your audience actually is.'
+        },
+      ],
+    },
+    aiAssistModes: ['help_me_choose', 'simplify'],
+    route: '/projects/:id/tasks/build_link_in_bio',
+  },
+  {
+    taskId: 'build_dm_response',
+    title: 'Prepare your DM response',
+    phase: 'build',
+    funnelTypes: ['content_to_offer'],
+    order: 4.6,
+    priority: 2,
+    estimatedMinutesMin: 5,
+    estimatedMinutesMax: 15,
+    blocking: false,
+    dependencies: ['build_link_in_bio'],
+    canSkip: true,
+    skipReasonRequired: true,
+    completionCriteria: [
+      'You have a simple response ready when someone asks',
+      'It feels natural, not scripted',
+    ],
+    whyItMatters: 'When your content works, people will DM you. Having a warm, clear response ready means you never miss a potential sale because you didn\'t know what to say.',
+    instructions: [
+      'Write 2–3 sentences you could paste or adapt when someone shows interest',
+      'Include what the offer is, who it\'s for, and a clear next step',
+      'Keep it conversational — not copy-pasted sales language',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'dm_response', 
+          label: 'What will you say when someone DMs asking about your offer?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'e.g., "Hey! Yes, [offer name] is a [short description]. It\'s for [audience]. Here\'s the link: [link]"',
+          helperText: 'Write it the way you would actually talk — not like a brochure.'
+        },
+      ],
+    },
+    aiAssistModes: ['examples', 'simplify'],
+    route: '/projects/:id/tasks/build_dm_response',
+  },
+
+  // ==================== CONTENT Phase Additions ====================
+  {
+    taskId: 'content_selling_post_structure',
+    title: 'Plan your selling post structure',
+    phase: 'content',
+    funnelTypes: ['content_to_offer'],
+    order: 0.5,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['build_phase_review'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You understand how your content leads to your offer',
+      'The structure feels natural, not salesy',
+    ],
+    whyItMatters: 'Content-to-offer works when your posts naturally create interest — not when they feel like ads. This step helps you understand the simple structure behind content that converts.',
+    instructions: [
+      'Think about content that teaches or resonates — then invites',
+      'Your CTA should be one clear next step, not a pitch',
+      'You\'ll write the actual posts in the next task',
+    ],
+    inputType: 'form',
+    inputSchema: {
+      type: 'form',
+      fields: [
+        { 
+          name: 'value_angle', 
+          label: 'What will your content teach, share, or show?', 
+          type: 'textarea', 
+          required: true, 
+          placeholder: 'e.g., common mistakes, behind-the-scenes, quick wins, perspective shifts...',
+          helperText: 'Value-first content earns the right to mention your offer.'
+        },
+        { 
+          name: 'cta_style', 
+          label: 'How will you invite people to take the next step?', 
+          type: 'select', 
+          required: false,
+          sectionLabel: 'Optional: Your call to action style',
+          helperText: 'Choose the approach that feels most natural.',
+          options: [
+            { value: '', label: 'Select an approach...' },
+            { value: 'link_in_bio', label: 'Link in bio' },
+            { value: 'dm_me', label: 'DM me a keyword' },
+            { value: 'comment', label: 'Comment to get the link' },
+            { value: 'direct_link', label: 'Direct link in post or caption' },
+          ]
+        },
+      ],
+    },
+    aiAssistModes: ['examples', 'help_me_choose'],
+    route: '/projects/:id/tasks/content_selling_post_structure',
+  },
+
+  // ==================== LAUNCH Phase Additions ====================
+  {
+    taskId: 'launch_content_to_offer_share',
+    title: 'Share content that leads to your offer',
+    phase: 'launch',
+    funnelTypes: ['content_to_offer'],
+    order: 1,
+    priority: 1,
+    estimatedMinutesMin: 10,
+    estimatedMinutesMax: 20,
+    blocking: true,
+    dependencies: ['prelaunch_share_signal'],
+    canSkip: false,
+    skipReasonRequired: false,
+    completionCriteria: [
+      'You\'ve posted content that naturally mentions your offer',
+      'One post is enough to start',
+    ],
+    whyItMatters: 'This is the simplest version of launching — share something valuable, then let people know how to go deeper. You don\'t need a campaign. One post with a clear next step is a real launch.',
+    instructions: [
+      'Share content that connects to the problem your offer solves',
+      'At the end, invite people to take one clear next step',
+      'Post it and let it land — no immediate follow-up required',
+    ],
+    inputType: 'selection',
+    inputSchema: {
+      type: 'radio',
+      options: [
+        { value: 'value_post_cta', label: 'A value post with a clear CTA', description: 'Teach or share something useful, then invite people to learn more.' },
+        { value: 'personal_story', label: 'A personal story that leads to your offer', description: 'Share a relevant experience and connect it to how your offer helps.' },
+        { value: 'problem_solution', label: 'A problem-to-solution post', description: 'Name the problem your audience faces, then position your offer as the next step.' },
+        { value: 'direct_announcement', label: 'A direct offer announcement', description: 'Simply tell people what you have, who it\'s for, and how to get it.' },
+      ],
+    },
+    aiAssistModes: ['examples', 'simplify'],
+    route: '/projects/:id/tasks/launch_content_to_offer_share',
+  },
+];
+
+// ============================================
 // DELTA TASK CONFIGURATION
 // ============================================
 
