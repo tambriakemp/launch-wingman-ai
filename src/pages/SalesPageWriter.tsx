@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, ArrowLeft, Loader2, Copy, Check, ExternalLink } from "lucide-react";
+import { FileText, ArrowLeft, Copy, Check, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +15,9 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 
 const SECTION_ORDER = [
   "opening-headline",
@@ -62,6 +65,7 @@ const LOADING_MESSAGES = [
 
 export default function SalesPageWriter() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
   // Form state
@@ -76,11 +80,68 @@ export default function SalesPageWriter() {
   const [guarantee, setGuarantee] = useState("");
   const [tone, setTone] = useState("Warm and Conversational");
 
+  // Offer pull state
+  const [offerPullOpen, setOfferPullOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
+
   // Output state
   const [sections, setSections] = useState<Record<string, string>>({});
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
+
+  // Load projects
+  const { data: projects } = useQuery({
+    queryKey: ["user-projects-sales-page"],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  // Set default project
+  useEffect(() => {
+    if (projects?.length && !selectedProjectId) {
+      const stored = localStorage.getItem("lastProjectInfo");
+      if (stored) {
+        try {
+          const { id } = JSON.parse(stored);
+          if (projects.some((p) => p.id === id)) {
+            setSelectedProjectId(id);
+            return;
+          }
+        } catch {}
+      }
+      setSelectedProjectId(projects[0].id);
+    }
+  }, [projects, selectedProjectId]);
+
+  // Load offers for selected project
+  const { data: offers } = useQuery({
+    queryKey: ["offers-sales-page", selectedProjectId],
+    queryFn: async () => {
+      if (!selectedProjectId) return [];
+      const { data, error } = await supabase
+        .from("offers")
+        .select(
+          "id, title, slot_type, price, price_type, offer_type, target_audience, transformation_statement, primary_pain_point, niche, main_deliverables"
+        )
+        .eq("project_id", selectedProjectId)
+        .order("slot_position");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!selectedProjectId,
+  });
 
   useEffect(() => {
     if (step !== 2) return;
@@ -89,6 +150,41 @@ export default function SalesPageWriter() {
     }, 1500);
     return () => clearInterval(interval);
   }, [step]);
+
+  const useOffer = (offer: any) => {
+    setSelectedOfferId(offer.id);
+    setOfferName(offer.title || "");
+    setWhoItsFor(offer.target_audience || "");
+    setBigResult(offer.transformation_statement || "");
+    setPainPoint(offer.primary_pain_point || "");
+    if (offer.price) {
+      setPrice(
+        offer.price_type === "recurring"
+          ? `$${offer.price}/mo`
+          : `$${offer.price}`
+      );
+    }
+    if (offer.offer_type) setOfferType(offer.offer_type);
+    if (offer.main_deliverables) {
+      const deliverables = Array.isArray(offer.main_deliverables)
+        ? offer.main_deliverables.join("\n")
+        : String(offer.main_deliverables);
+      setBonuses(deliverables);
+    }
+  };
+
+  const clearOffer = () => {
+    setSelectedOfferId(null);
+    setOfferName("");
+    setWhoItsFor("");
+    setBigResult("");
+    setPainPoint("");
+    setPrice("");
+    setOfferType("Online Course");
+    setStoppedBefore("");
+    setBonuses("");
+    setGuarantee("");
+  };
 
   const canGenerate = offerName.trim() && bigResult.trim() && whoItsFor.trim() && painPoint.trim();
 
@@ -200,6 +296,103 @@ export default function SalesPageWriter() {
 
               {/* Form */}
               <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
+                {/* Offer pull (collapsible) */}
+                <div>
+                  <button
+                    onClick={() => setOfferPullOpen(!offerPullOpen)}
+                    className="inline-flex items-center gap-1.5 text-sm text-primary font-medium hover:underline"
+                  >
+                    <Package className="w-4 h-4" />
+                    Pull from my offers {offerPullOpen ? "↑" : "↓"}
+                  </button>
+
+                  {offerPullOpen && (
+                    <div className="mt-3 space-y-3">
+                      {projects && projects.length > 0 ? (
+                        <>
+                          <Select
+                            value={selectedProjectId || ""}
+                            onValueChange={setSelectedProjectId}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select project" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {projects.map((p) => (
+                                <SelectItem key={p.id} value={p.id}>
+                                  {p.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          {offers && offers.length > 0 ? (
+                            <div className="space-y-2">
+                              {offers.map((offer) => (
+                                <button
+                                  key={offer.id}
+                                  onClick={() => useOffer(offer)}
+                                  className={cn(
+                                    "w-full text-left px-3 py-2.5 rounded-xl border transition-colors text-sm",
+                                    selectedOfferId === offer.id
+                                      ? "border-primary bg-primary/5"
+                                      : "border-border hover:border-primary/30"
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-foreground flex-1 truncate">
+                                      {offer.title || "Untitled offer"}
+                                    </span>
+                                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                      {offer.slot_type}
+                                    </span>
+                                    {offer.price && (
+                                      <span className="text-xs text-muted-foreground">
+                                        ${offer.price}
+                                      </span>
+                                    )}
+                                  </div>
+                                </button>
+                              ))}
+                              {selectedOfferId && (
+                                <div className="flex items-center gap-3">
+                                  <span className="text-xs text-green-600 font-medium">
+                                    ✓ Offer context loaded
+                                  </span>
+                                  <button
+                                    onClick={clearOffer}
+                                    className="text-xs text-muted-foreground hover:text-foreground"
+                                  >
+                                    Clear
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ) : selectedProjectId ? (
+                            <p className="text-sm text-muted-foreground">
+                              No offers found for this project.
+                            </p>
+                          ) : null}
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          No projects found. Fill in the details manually below.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {offerPullOpen && (
+                  <div className="relative flex items-center gap-3">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                      or fill in manually
+                    </span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                )}
+
                 {/* About Your Offer */}
                 <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">
                   About Your Offer
