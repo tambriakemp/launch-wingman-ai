@@ -181,9 +181,10 @@ export function RelaunchFlow({ projectId, projectName, onCancel }: RelaunchFlowP
       const startingPhase = determineStartingPhase(keptSections, revisitSections);
 
       // 5. Create phase statuses based on starting phase
-      const phaseOrder: Phase[] = ["planning", "messaging", "build", "content", "pre-launch", "launch", "post-launch"];
+      const phaseOrder: Phase[] = ["setup", "planning", "messaging", "build", "content", "pre-launch", "launch", "post-launch"];
       const startIndex = phaseOrder.indexOf(startingPhase);
       const phaseStatuses: Record<Phase, string> = {
+        setup: "complete",
         planning: "complete",
         messaging: "complete",
         build: "complete",

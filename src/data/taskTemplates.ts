@@ -299,14 +299,14 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
   {
     taskId: 'planning_choose_launch_path',
     title: 'Choose how you\'ll sell your offer',
-    phase: 'planning',
+    phase: 'setup',
     funnelTypes: ['all'],
-    order: 6,
+    order: 1,
     priority: 1,
     estimatedMinutesMin: 10,
     estimatedMinutesMax: 20,
     blocking: true,
-    dependencies: ['planning_perceived_likelihood'],
+    dependencies: [],
     canSkip: false,
     skipReasonRequired: false,
     completionCriteria: [
@@ -1781,4 +1781,11 @@ export function getPostLaunchTasks(funnelType?: string | null): TaskTemplate[] {
 // Get tasks by phase
 export function getTasksByPhase(phase: string): TaskTemplate[] {
   return TASK_TEMPLATES.filter(task => task.phase === phase);
+}
+
+// Get setup phase tasks
+export function getSetupTasks(): TaskTemplate[] {
+  return TASK_TEMPLATES
+    .filter(task => task.phase === 'setup')
+    .sort((a, b) => a.order - b.order);
 }

@@ -18,6 +18,12 @@ const PHASE_CELEBRATIONS: Record<Phase, {
   message: string;
   color: string;
 }> = {
+  setup: {
+    icon: Sparkles,
+    title: "Setup Complete!",
+    message: "You've chosen your launch path. Now let's plan the details!",
+    color: "text-primary",
+  },
   planning: {
     icon: Sparkles,
     title: "Planning Complete!",
