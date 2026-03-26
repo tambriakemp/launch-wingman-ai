@@ -89,6 +89,13 @@ const GOOGLE_FONTS = [
 
 const LAYOUTS = ["Centered", "Split", "Quote", "List", "Gradient", "Card", "Magazine"];
 
+type SlideSize = "1080x1080" | "1080x1350" | "1080x1920";
+const SLIDE_SIZES: { value: SlideSize; label: string; ratio: string }[] = [
+  { value: "1080x1080", label: "Square", ratio: "1/1" },
+  { value: "1080x1350", label: "Portrait", ratio: "1080/1350" },
+  { value: "1080x1920", label: "Story", ratio: "1080/1920" },
+];
+
 const TONES = [
   { emoji: "🔥", label: "Bold" },
   { emoji: "🎯", label: "Mentor" },
@@ -130,6 +137,7 @@ const SlidePreview = ({
   isDarkBg,
   socialHandle,
   handlePosition,
+  slideSize,
   containerRef,
 }: {
   slide: Slide;
@@ -142,8 +150,10 @@ const SlidePreview = ({
   isDarkBg: boolean;
   socialHandle: string;
   handlePosition: "top" | "bottom";
+  slideSize: SlideSize;
   containerRef?: React.Ref<HTMLDivElement>;
 }) => {
+  const sizeConfig = SLIDE_SIZES.find(s => s.value === slideSize) || SLIDE_SIZES[0];
   const handleBar = socialHandle ? (
     <div
       className="text-center py-2 text-[10px] font-medium tracking-wide opacity-70"
@@ -156,8 +166,9 @@ const SlidePreview = ({
   return (
     <div
       ref={containerRef}
-      className="aspect-square max-w-sm w-full rounded-2xl overflow-hidden relative flex flex-col"
-      style={{ backgroundColor: themeBg, color: themeText, fontFamily: bodyFont }}
+      className="max-w-sm w-full rounded-2xl overflow-hidden relative flex flex-col"
+      style={{ aspectRatio: sizeConfig.ratio, backgroundColor: themeBg, color: themeText, fontFamily: bodyFont }}
+      >
     >
       {/* Social handle — top */}
       {handlePosition === "top" && handleBar}
