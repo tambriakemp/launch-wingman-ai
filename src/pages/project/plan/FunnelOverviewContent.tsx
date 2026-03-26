@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { isToday, isTomorrow, parseISO, startOfWeek, endOfWeek } from "date-fns";
+import { getFunnelConfig } from "@/lib/funnelUtils";
 import {
   GreetingHeader,
   NextBestTaskCard,
@@ -27,6 +28,72 @@ interface Props {
 }
 
 // --- Inline Components ---
+
+const PHASE_WEEK_ESTIMATES: Partial<Record<Phase, { weeks: number; label: string }>> = {
+  planning: { weeks: 1, label: 'Planning' },
+  messaging: { weeks: 1, label: 'Messaging' },
+  build: { weeks: 2, label: 'Build' },
+  content: { weeks: 1, label: 'Content' },
+  'pre-launch': { weeks: 1, label: 'Pre-Launch' },
+  launch: { weeks: 1, label: 'Launch' },
+  'post-launch': { weeks: 1, label: 'Post-Launch' },
+};
+
+const LaunchTimelineInline = ({
+  phaseStatuses,
+  activePhase,
+  funnelType,
+}: {
+  phaseStatuses: Record<Phase, PhaseStatus>;
+  activePhase: Phase;
+  funnelType: string | null;
+}) => {
+  if (!funnelType) return null;
+
+  const visiblePhases: Phase[] = ['planning', 'messaging', 'build', 'content', 'pre-launch', 'launch'];
+  let weekCursor = 1;
+
+  const funnelConfig = getFunnelConfig(funnelType);
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          Launch Timeline
+        </p>
+        {funnelConfig?.typicalSetupTime && (
+          <span className="text-[10px] text-muted-foreground">
+            ~{funnelConfig.typicalSetupTime} total
+          </span>
+        )}
+      </div>
+      <div className="flex items-start gap-1 overflow-x-auto">
+        {visiblePhases.map((phase) => {
+          const est = PHASE_WEEK_ESTIMATES[phase];
+          if (!est) return null;
+          const status = phaseStatuses[phase];
+          const isComplete = status === 'complete';
+          const isActive = phase === activePhase;
+          const startWeek = weekCursor;
+          const endWeek = weekCursor + est.weeks - 1;
+          weekCursor += est.weeks;
+
+          return (
+            <div key={phase} className="flex-1 min-w-0 text-center">
+              <div className={`h-1.5 rounded-full mb-1 ${isComplete ? 'bg-primary' : isActive ? 'bg-primary/40' : 'bg-border'}`} />
+              <p className={`text-[10px] leading-tight truncate ${isActive ? 'text-primary font-semibold' : isComplete ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                {est.label}
+              </p>
+              <p className="text-[9px] text-muted-foreground/60">
+                {startWeek === endWeek ? `Wk ${startWeek}` : `Wk ${startWeek}–${endWeek}`}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 const PhaseProgressRail = ({
   phases,
@@ -331,6 +398,7 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
     phaseStatuses,
     projectTasks,
     getTaskTemplate,
+    selectedFunnelType,
   } = useTaskEngine({ projectId });
 
   // Fetch user profile
@@ -607,6 +675,15 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
           projectTasks={projectTasks}
           getTaskTemplate={getTaskTemplate}
         />
+
+        {/* Launch Timeline */}
+        {phaseStatuses['setup'] === 'complete' && (
+          <LaunchTimelineInline
+            phaseStatuses={phaseStatuses}
+            activePhase={activePhase}
+            funnelType={selectedFunnelType}
+          />
+        )}
 
         {/* Phase celebration */}
         {mostRecentlyCompletedPhase &&
