@@ -26,7 +26,10 @@ import {
   Zap,
   Download,
   Globe,
+  Package,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 // ── Types ──
 
@@ -38,16 +41,6 @@ interface Slide {
   slideType: string;
 }
 
-interface ExistingOffer {
-  id: string;
-  title: string | null;
-  target_audience: string | null;
-  primary_pain_point: string | null;
-  transformation_statement: string | null;
-  price: number | null;
-  price_type: string | null;
-  offer_type: string;
-}
 
 // ── Constants ──
 
@@ -248,10 +241,10 @@ const CarouselBuilder = () => {
   // Phase
   const [phase, setPhase] = useState<"brief" | "tone" | "studio">("brief");
 
-  // Offer source
-  const [offerSource, setOfferSource] = useState<"existing" | "manual">("manual");
+  // Offer pull state
+  const [offerPullOpen, setOfferPullOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
-  const [existingOffers, setExistingOffers] = useState<ExistingOffer[]>([]);
 
   // Brief
   const [offer, setOffer] = useState("");
@@ -291,18 +284,57 @@ const CarouselBuilder = () => {
 
   const previewRef = useRef<HTMLDivElement>(null);
 
-  // Fetch offers
+  // Load projects
+  const { data: projects } = useQuery({
+    queryKey: ["user-projects-carousel"],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  // Set default project
   useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("offers")
-      .select("id, title, target_audience, primary_pain_point, transformation_statement, price, price_type, offer_type")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        if (data) setExistingOffers(data as ExistingOffer[]);
-      });
-  }, [user]);
+    if (projects?.length && !selectedProjectId) {
+      const stored = localStorage.getItem("lastProjectInfo");
+      if (stored) {
+        try {
+          const { id } = JSON.parse(stored);
+          if (projects.some((p) => p.id === id)) {
+            setSelectedProjectId(id);
+            return;
+          }
+        } catch {}
+      }
+      setSelectedProjectId(projects[0].id);
+    }
+  }, [projects, selectedProjectId]);
+
+  // Load offers for selected project
+  const { data: offers } = useQuery({
+    queryKey: ["offers-carousel", selectedProjectId],
+    queryFn: async () => {
+      if (!selectedProjectId) return [];
+      const { data, error } = await supabase
+        .from("offers")
+        .select(
+          "id, title, slot_type, price, price_type, offer_type, target_audience, transformation_statement, primary_pain_point, main_deliverables"
+        )
+        .eq("project_id", selectedProjectId)
+        .order("slot_position");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!selectedProjectId,
+  });
 
   // Loading message cycling
   useEffect(() => {
@@ -311,13 +343,18 @@ const CarouselBuilder = () => {
     return () => clearInterval(interval);
   }, [isGenerating]);
 
-  const handleSelectOffer = (offerId: string) => {
-    const o = existingOffers.find((x) => x.id === offerId);
-    if (!o) return;
-    setSelectedOfferId(offerId);
-    setOffer(o.title || "");
-    setAudience(o.target_audience || "");
-    setPainPoint(o.primary_pain_point || "");
+  const handleSelectOffer = (offer: any) => {
+    setSelectedOfferId(offer.id);
+    setOffer(offer.title || "");
+    setAudience(offer.target_audience || "");
+    setPainPoint(offer.primary_pain_point || "");
+  };
+
+  const clearOffer = () => {
+    setSelectedOfferId(null);
+    setOffer("");
+    setAudience("");
+    setPainPoint("");
   };
 
   const handleGenerate = async () => {
@@ -854,41 +891,107 @@ const CarouselBuilder = () => {
               <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">The Brief</h2>
             </div>
 
-            {/* Offer source toggle */}
-            <div className="flex gap-2">
-              {(["existing", "manual"] as const).map((src) => (
-                <button
-                  key={src}
-                  onClick={() => setOfferSource(src)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium border transition-colors ${offerSource === src ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-                >
-                  {src === "existing" ? "Use Existing Offer" : "Enter Manually"}
-                </button>
-              ))}
+            {/* Pull from my offers */}
+            <div>
+              <button
+                onClick={() => setOfferPullOpen(!offerPullOpen)}
+                className="inline-flex items-center gap-1.5 text-sm text-primary font-medium hover:underline"
+              >
+                <Package className="w-4 h-4" />
+                Pull from my offers {offerPullOpen ? "↑" : "↓"}
+              </button>
+
+              {offerPullOpen && (
+                <div className="mt-3 space-y-3">
+                  {projects && projects.length > 0 ? (
+                    <>
+                      <Select
+                        value={selectedProjectId || ""}
+                        onValueChange={setSelectedProjectId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select project" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {projects.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {offers && offers.length > 0 ? (
+                        <div className="space-y-2">
+                          {offers.map((offer) => (
+                            <button
+                              key={offer.id}
+                              onClick={() => handleSelectOffer(offer)}
+                              className={cn(
+                                "w-full text-left px-3 py-2.5 rounded-xl border transition-colors text-sm",
+                                selectedOfferId === offer.id
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border hover:border-primary/30"
+                              )}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-foreground flex-1 truncate">
+                                  {offer.title || "Untitled offer"}
+                                </span>
+                                <span className="text-[10px] uppercase tracking-wide text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                  {offer.slot_type}
+                                </span>
+                                {offer.price && (
+                                  <span className="text-xs text-muted-foreground">
+                                    ${offer.price}
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                          {selectedOfferId && (
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-green-600 font-medium">
+                                ✓ Offer context loaded
+                              </span>
+                              <button
+                                onClick={clearOffer}
+                                className="text-xs text-muted-foreground hover:text-foreground"
+                              >
+                                Clear
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : selectedProjectId ? (
+                        <p className="text-sm text-muted-foreground">
+                          No offers found for this project.
+                        </p>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No projects found. Fill in the details manually below.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
-            {offerSource === "existing" ? (
-              <div className="space-y-3">
-                <Select onValueChange={handleSelectOffer} value={selectedOfferId || undefined}>
-                  <SelectTrigger><SelectValue placeholder="Select an offer" /></SelectTrigger>
-                  <SelectContent>
-                    {existingOffers.map((o) => (
-                      <SelectItem key={o.id} value={o.id}>{o.title || "Untitled"} — {o.offer_type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {selectedOfferId && (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-full">
-                    <Check className="w-3 h-3" /> Loaded from your offers
-                  </span>
-                )}
-              </div>
-            ) : (
-              <div>
-                <Label>Offer description *</Label>
-                <Input value={offer} onChange={(e) => setOffer(e.target.value)} placeholder="Describe your offer in one sentence" />
+            {offerPullOpen && (
+              <div className="relative flex items-center gap-3">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  or fill in manually
+                </span>
+                <div className="flex-1 h-px bg-border" />
               </div>
             )}
+
+            <div>
+              <Label>Offer description *</Label>
+              <Input value={offer} onChange={(e) => setOffer(e.target.value)} placeholder="Describe your offer in one sentence" />
+            </div>
 
             <div>
               <Label>Audience</Label>
