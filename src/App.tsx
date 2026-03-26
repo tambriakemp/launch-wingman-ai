@@ -213,10 +213,14 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            {/* Legacy redirect from /offer to /dashboard */}
+            {/* Offer gate — checks deps before showing offer stack */}
             <Route
               path="/projects/:id/offer"
-              element={<Navigate to="../dashboard" replace />}
+              element={
+                <ProtectedRoute>
+                  <OfferGate />
+                </ProtectedRoute>
+              }
             />
             {/* Execute routes */}
             <Route

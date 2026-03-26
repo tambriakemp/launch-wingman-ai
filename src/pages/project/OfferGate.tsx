@@ -15,7 +15,7 @@ import {
 const OfferGate = () => {
   const { id: projectId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isLoading, projectTasks, nextBestTask, getTaskTemplate } = useTaskEngine(projectId);
+  const { isLoading, projectTasks, nextBestTask, getTaskTemplate } = useTaskEngine({ projectId: projectId || '' });
   const [showDialog, setShowDialog] = useState(false);
 
   useEffect(() => {
