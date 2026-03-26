@@ -639,6 +639,14 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/app/ai-studio/email-sequence"
+              element={
+                <ProtectedRoute>
+                  <EmailSequenceGenerator />
+                </ProtectedRoute>
+              }
+            />
 
             <Route
               path="/habits"
