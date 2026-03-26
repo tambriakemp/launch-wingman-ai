@@ -6,12 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Loader2, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { ProjectLayout } from '@/components/layout/ProjectLayout';
-import { Input } from '@/components/ui/input';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Plus, Loader2, Rocket } from 'lucide-react';
-import { toast } from 'sonner';
 
 interface LastProjectInfo {
   id: string;
