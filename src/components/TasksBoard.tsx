@@ -705,21 +705,13 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
       </div>
 
       {/* Checklist View */}
-      {currentFunnelType ? (
+      {currentFunnelType && (
         <AssetChecklist
           funnelType={currentFunnelType}
           offers={offers}
           completedAssets={completedAssets}
           onToggleAsset={handleToggleAsset}
         />
-      ) : (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <CheckSquare className="w-12 h-12 text-muted-foreground/30 mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">No funnel configured</h3>
-          <p className="text-muted-foreground text-sm mb-6 max-w-md">
-            Set up your funnel first to see the asset checklist.
-          </p>
-        </div>
       )}
 
       {/* Task Dialog */}
