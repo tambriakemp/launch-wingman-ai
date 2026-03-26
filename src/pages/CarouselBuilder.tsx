@@ -271,9 +271,29 @@ const CarouselBuilder = () => {
     toast.success("Exported text copied — paste into Canva");
   };
 
-  const currentTheme = THEMES[theme] || THEMES.luxury_beige;
-  const headingFont = fontPair.split("+")[0] || "serif";
-  const bodyFont = fontPair.split("+")[1] || headingFont;
+  // Load Google Fonts dynamically
+  useEffect(() => {
+    const families = [...new Set([headingFont, bodyFont])].map(f => f.replace(/ /g, '+')).join('&family=');
+    const link = document.getElementById('carousel-google-fonts') as HTMLLinkElement | null;
+    const href = `https://fonts.googleapis.com/css2?family=${families}&display=swap`;
+    if (link) {
+      link.href = href;
+    } else {
+      const el = document.createElement('link');
+      el.id = 'carousel-google-fonts';
+      el.rel = 'stylesheet';
+      el.href = href;
+      document.head.appendChild(el);
+    }
+  }, [headingFont, bodyFont]);
+
+  const isDarkBg = (() => {
+    const hex = themeBg.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 < 128;
+  })();
 
   const canGenerate = offer.trim() && audience.trim() && painPoint.trim() && framework;
 
@@ -356,46 +376,73 @@ const CarouselBuilder = () => {
           <div className="flex-1 overflow-y-auto">
             {/* Controls bar */}
             <div className="border-b border-border px-4 py-3 space-y-3">
-              {/* Themes */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mr-1">Theme</span>
-                {Object.entries(THEMES).map(([key, t]) => (
-                  <button
-                    key={key}
-                    onClick={() => setTheme(key)}
-                    className={`w-7 h-7 rounded-full border-2 transition-transform ${theme === key ? "border-foreground scale-110" : "border-transparent"}`}
-                    style={{ backgroundColor: t.bg }}
-                    title={t.label}
-                  />
-                ))}
+              {/* Theme: Presets + Custom colors */}
+              <div className="space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Theme Presets</span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {THEME_PRESETS.map((t, i) => (
+                    <button
+                      key={i}
+                      onClick={() => { setThemeBg(t.bg); setThemeText(t.text); setThemeAccent(t.accent); }}
+                      className={`w-7 h-7 rounded-full border-2 transition-transform ${themeBg === t.bg && themeText === t.text ? "border-foreground scale-110" : "border-transparent"}`}
+                      style={{ backgroundColor: t.bg }}
+                      title={t.label}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center gap-4 flex-wrap">
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    Background
+                    <input type="color" value={themeBg} onChange={(e) => setThemeBg(e.target.value)} className="w-7 h-7 rounded border border-border cursor-pointer" />
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    Font Color
+                    <input type="color" value={themeText} onChange={(e) => setThemeText(e.target.value)} className="w-7 h-7 rounded border border-border cursor-pointer" />
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    Accent
+                    <input type="color" value={themeAccent} onChange={(e) => setThemeAccent(e.target.value)} className="w-7 h-7 rounded border border-border cursor-pointer" />
+                  </label>
+                </div>
               </div>
 
-              {/* Font pairs */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mr-1">Font</span>
-                {FONT_PAIRS.map((fp) => (
-                  <button
-                    key={fp}
-                    onClick={() => setFontPair(fp)}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-medium border transition-colors ${fontPair === fp ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-                  >
-                    {fp.replace("+", " + ")}
-                  </button>
-                ))}
+              {/* Fonts */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Header</span>
+                  <Select value={headingFont} onValueChange={setHeadingFont}>
+                    <SelectTrigger className="w-44 h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {GOOGLE_FONTS.map((f) => (
+                        <SelectItem key={f} value={f}>{f}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Body</span>
+                  <Select value={bodyFont} onValueChange={setBodyFont}>
+                    <SelectTrigger className="w-44 h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {GOOGLE_FONTS.map((f) => (
+                        <SelectItem key={f} value={f}>{f}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              {/* Layouts */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mr-1">Layout</span>
-                {LAYOUTS.map((l) => (
-                  <button
-                    key={l}
-                    onClick={() => setLayout(l)}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-medium border transition-colors ${layout === l ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-                  >
-                    {l}
-                  </button>
-                ))}
+              {/* Layout */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Layout</span>
+                <Select value={layout} onValueChange={setLayout}>
+                  <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {LAYOUTS.map((l) => (
+                      <SelectItem key={l} value={l}>{l}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Action buttons */}
@@ -411,7 +458,7 @@ const CarouselBuilder = () => {
             <div className="p-6 flex flex-col items-center">
               <div
                 className="aspect-square max-w-sm w-full rounded-2xl overflow-hidden relative flex items-center justify-center p-8"
-                style={{ backgroundColor: currentTheme.bg, color: currentTheme.text, fontFamily: bodyFont }}
+                style={{ backgroundColor: themeBg, color: themeText, fontFamily: bodyFont }}
               >
                 {layout === "Centered" && (
                   <div className="text-center space-y-4">
@@ -421,7 +468,7 @@ const CarouselBuilder = () => {
                 )}
                 {layout === "Split" && (
                   <div className="flex w-full h-full">
-                    <div className="w-1/2 flex items-center justify-center" style={{ backgroundColor: currentTheme.accent + "33" }} />
+                    <div className="w-1/2 flex items-center justify-center" style={{ backgroundColor: themeAccent + "33" }} />
                     <div className="w-1/2 flex flex-col justify-center px-4 space-y-3">
                       <h2 className="text-xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{current.headline}</h2>
                       <p className="text-xs opacity-80 leading-relaxed">{current.body}</p>
@@ -430,7 +477,7 @@ const CarouselBuilder = () => {
                 )}
                 {layout === "Quote" && (
                   <div className="text-center space-y-3 px-4">
-                    <span className="text-5xl opacity-30" style={{ color: currentTheme.accent }}>"</span>
+                    <span className="text-5xl opacity-30" style={{ color: themeAccent }}>"</span>
                     <h2 className="text-xl font-bold leading-tight italic" style={{ fontFamily: headingFont }}>{current.headline}</h2>
                     <p className="text-xs opacity-70 leading-relaxed">{current.body}</p>
                   </div>
@@ -440,34 +487,35 @@ const CarouselBuilder = () => {
                     <h2 className="text-xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{current.headline}</h2>
                     {current.body.split(". ").map((item, i) => (
                       <p key={i} className="text-xs opacity-80 flex items-start gap-2">
-                        <span style={{ color: currentTheme.accent }}>•</span> {item.trim()}
+                        <span style={{ color: themeAccent }}>•</span> {item.trim()}
                       </p>
                     ))}
                   </div>
                 )}
                 {layout === "Gradient" && (
-                  <div className="text-center space-y-4 relative z-10">
-                    <div className="absolute inset-0 -z-10 rounded-2xl" style={{ background: `linear-gradient(135deg, ${currentTheme.accent}44, ${currentTheme.bg})` }} />
-                    <h2 className="text-2xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{current.headline}</h2>
-                    <p className="text-sm opacity-80 leading-relaxed">{current.body}</p>
+                  <div className="absolute inset-0 flex items-center justify-center p-8" style={{ background: `linear-gradient(135deg, ${themeAccent}, ${themeBg})` }}>
+                    <div className="text-center space-y-4">
+                      <h2 className="text-2xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{current.headline}</h2>
+                      <p className="text-sm opacity-80 leading-relaxed">{current.body}</p>
+                    </div>
                   </div>
                 )}
                 {layout === "Card" && (
-                  <div className="rounded-xl p-6 shadow-lg space-y-3" style={{ backgroundColor: currentTheme.isDark ? "#ffffff11" : "#00000008" }}>
+                  <div className="rounded-xl p-6 shadow-lg space-y-3" style={{ backgroundColor: isDarkBg ? "#ffffff11" : "#00000008" }}>
                     <h2 className="text-xl font-bold leading-tight" style={{ fontFamily: headingFont }}>{current.headline}</h2>
                     <p className="text-xs opacity-80 leading-relaxed">{current.body}</p>
                   </div>
                 )}
                 {layout === "Magazine" && (
                   <div className="w-full h-full flex flex-col justify-between relative">
-                    <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: currentTheme.accent }} />
+                    <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: themeAccent }} />
                     <h2 className="text-2xl font-bold leading-tight pl-4 pt-2" style={{ fontFamily: headingFont }}>{current.headline}</h2>
                     <p className="text-xs opacity-80 leading-relaxed pl-4 pb-2">{current.body}</p>
                   </div>
                 )}
 
                 {/* Slide number badge */}
-                <div className="absolute top-3 left-3 text-[9px] font-bold uppercase px-2 py-1 rounded-full" style={{ backgroundColor: currentTheme.accent + "33", color: currentTheme.accent }}>
+                <div className="absolute top-3 left-3 text-[9px] font-bold uppercase px-2 py-1 rounded-full" style={{ backgroundColor: themeAccent + "33", color: themeAccent }}>
                   {current.slideType}
                 </div>
               </div>
