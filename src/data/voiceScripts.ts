@@ -94,4 +94,13 @@ export const VOICE_SCRIPTS: Record<string, string> = {
 
   content_selling_post_structure:
     "Content-to-offer works when your posts naturally create interest — not when they feel like ads. The structure is simple: lead with something valuable, end with one clear next step. You're not convincing anyone. You're just making it easy for people who are already interested to take action.",
+
+  prelaunch_test_tech:
+    "Most launch failures aren't strategy problems — they're broken links and checkout errors that take ten minutes to catch. Before you share anything, walk through the entire experience yourself as if you're a buyer. Click every link. Test checkout. Confirm your email arrives. One hour of testing can save you from days of frustration.",
+
+  prelaunch_social_proof:
+    "You don't need a wall of five-star reviews to launch. One real result from one real person is often enough to help someone make a decision. Think about who has already benefited from your content, your method, or a beta version of your offer. A simple, honest response from them carries more weight than anything you could write yourself.",
+
+  prelaunch_prepare_response:
+    "When you share your offer, people will reach out. They'll have questions, they'll be curious, and some will be ready to buy — if you respond well. Having a simple, natural message ready means you never miss a warm lead because you didn't know what to say. It doesn't need to be a script. Just two or three sentences that feel like you.",
 };
