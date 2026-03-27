@@ -273,6 +273,45 @@ export const LIBRARY_CATEGORIES: LibraryCategory[] = [
           simpleWayToThink: "Application filters for fit. The call creates clarity. The offer comes after the conversation. Not everyone needs to apply.",
           reassurance: "You don't need to \"sell on the call\" — the conversation itself creates clarity."
         }
+      },
+      {
+        id: "challenge-funnel",
+        title: "Challenge",
+        descriptor: "A short, focused experience that builds momentum",
+        category: "funnels-launch",
+        content: {
+          whatThisIs: "A challenge is a short, time-bound experience where people commit to taking action over a defined period — usually 3 to 7 days.\n\nYou guide participants through daily prompts, tasks, or content, and they work through something meaningful together.\n\nAt the end, you invite people into your next offer — but only if it makes sense for where they are.",
+          whyThisMattersHere: "Challenges work because they create momentum. When people take action and feel results, they're more open to continuing with you.\n\nThis path exists to help you build trust and connection before making an offer — without pressure.",
+          simpleWayToThink: "The challenge creates energy. Daily action builds belief. The offer is a natural next step. Completion matters more than size.",
+          example: "A 5-day challenge might guide people to write one piece of content each day. By day 5, they've made progress they're proud of — and your offer helps them keep going.",
+          reassurance: "Your challenge doesn't need a big audience to work. Ten engaged participants can create more momentum than a hundred passive ones."
+        }
+      },
+      {
+        id: "membership-funnel",
+        title: "Membership",
+        descriptor: "Ongoing support instead of a one-time outcome",
+        category: "funnels-launch",
+        content: {
+          whatThisIs: "A membership is an ongoing subscription where people pay regularly to stay connected to your content, community, or support.\n\nUnlike a course or workshop, a membership isn't about delivering one outcome. It's about providing consistent value over time.\n\nIn Launchely, this path is about sustainability — for you and for your members.",
+          whyThisMattersHere: "Memberships work best when the value grows over time — through community, fresh content, or ongoing guidance.\n\nThis path exists to help you think clearly about what you're delivering month to month before you invite people in.",
+          simpleWayToThink: "Members stay because they keep getting value. Monthly doesn't mean massive. Consistency beats volume. Sustainable is better than impressive.",
+          example: "A monthly membership might include a live call, a resource library, and a community space. Members stay because they feel supported — not because they're locked in.",
+          reassurance: "You don't need to create something new every week. Your job is to show up consistently and keep the value real."
+        }
+      },
+      {
+        id: "launch-funnel",
+        title: "Launch",
+        descriptor: "A focused window to introduce and sell your offer",
+        category: "funnels-launch",
+        content: {
+          whatThisIs: "A launch is a time-limited window where you open enrollment or availability for your offer, actively invite people in, and then close it.\n\nYou build anticipation before the window opens, promote clearly while it's open, and close with a final reminder.\n\nIn Launchely, a launch is a focused event — not an ongoing campaign.",
+          whyThisMattersHere: "Launches create natural urgency and give your audience a clear moment to decide. They also give you a focused period to promote — and then rest.\n\nThis path exists to help you plan and execute a launch without burning out or winging it.",
+          simpleWayToThink: "Pre-launch warms people up. Cart open is the announcement. The window gives people time to decide. Cart close creates the finish line.",
+          example: "A 7-day launch window: you spend the week before sharing value and building anticipation, open enrollment on Monday, send 3–4 emails during the week, and close on Sunday evening.",
+          reassurance: "A launch doesn't need to be loud or complicated. A clear offer, consistent messaging, and a defined close date is enough."
+        }
       }
     ]
   },
