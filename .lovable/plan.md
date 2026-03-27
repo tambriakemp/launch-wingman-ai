@@ -1,34 +1,49 @@
 
 
-## Offer Tab → Smart Redirect with Dependency Gate
+## Add Carousel Usage Tracking to Admin Heatmap
 
-### What happens now
-The `/projects/:id/offer` route redirects to `/projects/:id/dashboard` (legacy redirect in App.tsx).
+### Problem
+The Carousel Builder generates content on-the-fly without persisting anything to the database, so there's nothing to count.
 
-### What we'll build
-When the user clicks "Offer" in the sidebar:
-1. **If all dependencies for `planning_offer_stack` are completed** → redirect to `/projects/:id/tasks/planning_offer_stack` (the offer stack task page)
-2. **If dependencies are NOT met** → show a dialog explaining they need to complete prerequisite tasks first, with a button that navigates to the next task they need to complete
+### Approach
+1. **Create a `carousel_generations` tracking table** via migration — simple table with `id`, `user_id`, `created_at`, `slide_count`
+2. **Insert a row in CarouselBuilder.tsx** when a carousel is successfully generated (after the `generate-carousel` edge function returns)
+3. **Add the count query** to the edge function, type, and heatmap config
 
 ### Changes
 
-**1. Create `src/pages/project/OfferGate.tsx`** (new file)
-- A small page component that uses `useTaskEngine` to check the status of `planning_offer_stack` dependencies
-- On mount:
-  - Get the `planning_offer_stack` template and its dependencies
-  - Check if all dependency tasks have `status === 'completed'` in `projectTasks`
-  - If yes → `navigate` to `/projects/${id}/tasks/planning_offer_stack`, replace: true
-  - If no → render an `AlertDialog` (auto-open) with:
-    - Title: "Complete previous tasks first"
-    - Description: "You need to finish the prerequisite tasks before you can access your Offer Stack."
-    - A "Go to Next Task" button that navigates to `nextBestTask.route`
-    - A "Back" button that navigates back / closes
+#### Migration — new `carousel_generations` table
+```sql
+CREATE TABLE public.carousel_generations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  slide_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE public.carousel_generations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can insert own" ON public.carousel_generations FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can read own" ON public.carousel_generations FOR SELECT TO authenticated USING (auth.uid() = user_id);
+```
 
-**2. Update `src/App.tsx`**
-- Replace the existing `/projects/:id/offer` route (currently `<Navigate to="../dashboard" replace />`) with the new `OfferGate` component wrapped in `ProtectedRoute`
+#### `src/pages/CarouselBuilder.tsx`
+After successful carousel generation (where `setSlides(data.slides)` is called), insert a tracking row:
+```ts
+await supabase.from("carousel_generations").insert({ user_id: user.id, slide_count: data.slides.length });
+```
 
-### Technical details
-- `useTaskEngine` already provides `projectTasks`, `nextBestTask`, and `getTaskTemplate` — all needed for the dependency check
-- The `planning_offer_stack` task has `dependencies: ['planning_choose_launch_path']`, so the gate checks if that setup task is done
-- Uses existing `AlertDialog` components from `@/components/ui/alert-dialog`
+#### `supabase/functions/admin-platform-stats/index.ts`
+Add to Promise.all:
+```ts
+supabaseClient.from('carousel_generations').select('*', { count: 'exact', head: true }),
+```
+Add to featureUsage: `carousels: carouselResult.count || 0`
+
+#### `src/hooks/useAdminPlatformStats.ts`
+Add `carousels: number` to FeatureUsage interface.
+
+#### `src/components/admin/FeatureUsageHeatmap.tsx`
+Add to featureConfig in the Tools category:
+```ts
+{ key: 'carousels', label: 'Carousels', category: 'Tools' },
+```
 
