@@ -11,13 +11,60 @@ import {
   Pencil,
   ArrowLeft,
   Loader2,
+  Lightbulb,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePlaybookData, PatternInsight } from "@/hooks/usePlaybookData";
+
+// Phase-keyed wisdom from experienced creators
+const PHASE_WISDOM: Record<string, { tip: string; source: string }[]> = {
+  setup: [
+    { tip: "Choosing your launch path early prevents scope creep. The path shapes everything — your pages, your emails, your content. Pick one and commit.", source: "On getting started" },
+    { tip: "Most creators who struggle with launches never made a clear decision about how they'd sell. You're already ahead by choosing a path.", source: "On clarity" },
+  ],
+  planning: [
+    { tip: "The more specific your audience, the easier every other decision becomes. Vague audiences lead to vague offers, vague messaging, and vague results.", source: "On audience clarity" },
+    { tip: "You don't need to have your offer fully built to start planning. The plan shapes the build — not the other way around.", source: "On sequencing" },
+    { tip: "Most launches fail in the planning phase — not because of bad execution, but because the audience and problem weren't specific enough.", source: "On foundations" },
+  ],
+  messaging: [
+    { tip: "Your transformation statement is often more powerful than your offer description. Lead with the change, not the content.", source: "On messaging" },
+    { tip: "Write your messaging for the person who almost didn't buy — not the one who was already sold. Address the hesitation directly.", source: "On objections" },
+    { tip: "The best messaging sounds like something your audience would say to a friend — not like a sales page.", source: "On voice" },
+  ],
+  build: [
+    { tip: "A simple page that clearly explains the offer, the audience, and the next step will always outperform a complex page that tries to do everything.", source: "On simplicity" },
+    { tip: "Test everything before you launch — every link, every button, every email. One broken checkout can cost you the entire window.", source: "On tech" },
+    { tip: "Your delivery mechanism is a trust signal. How someone receives your product affects how they feel about the purchase.", source: "On delivery" },
+  ],
+  content: [
+    { tip: "Content that teaches builds more trust than content that sells. Save the selling for launch week — use the content phase to warm people up.", source: "On content strategy" },
+    { tip: "You don't need 30 pieces of content. You need 5–7 that each do one specific job: build awareness, create curiosity, or address an objection.", source: "On volume" },
+    { tip: "The best pre-launch content makes people feel understood before you've asked them for anything.", source: "On connection" },
+  ],
+  'pre-launch': [
+    { tip: "People who heard about your offer multiple times before launch day are far more likely to buy. Repetition isn't annoying — it's necessary.", source: "On warming up" },
+    { tip: "Share one small signal before you launch. It makes the announcement feel like a continuation, not a cold pitch.", source: "On preparation" },
+    { tip: "If you only do one thing in pre-launch, test your tech. A broken checkout on launch day is the most common and most avoidable launch failure.", source: "On testing" },
+  ],
+  launch: [
+    { tip: "Most sales happen on the last day of the launch window. If you close early, you leave money on the table. Send the close email.", source: "On close day" },
+    { tip: "People who DM with questions are often your warmest leads. Answer them personally. One conversation can convert better than ten posts.", source: "On DMs" },
+    { tip: "Don't interpret early silence as failure. Most people decide in the last 24–48 hours of a launch window.", source: "On patience" },
+  ],
+  'post-launch': [
+    { tip: "The most important thing after a launch isn't the revenue number. It's what you learned about your audience and your offer.", source: "On reflection" },
+    { tip: "Follow up with people who showed interest but didn't buy. A simple check-in — not a pitch — is often enough to convert them.", source: "On follow-up" },
+    { tip: "Every launch teaches you something the next one can use. The creators who improve fastest are the ones who take time to write it down.", source: "On learning" },
+  ],
+};
 
 // Insight card component
 function InsightCard({ insight, delay }: { insight: PatternInsight; delay: number }) {
@@ -94,38 +141,98 @@ function PlaybookSection({
   );
 }
 
+// Wisdom card component
+function WisdomCard({ tip, source, delay }: { tip: string; source: string; delay: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+    >
+      <Card className="border-border/40 bg-card/60 backdrop-blur-sm">
+        <CardContent className="pt-4 pb-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <p className="text-sm text-foreground leading-relaxed">
+                {tip}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">{source}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
 // Empty state for users without enough completed projects
-function PlaybookEmptyState() {
+function PlaybookEmptyState({ wisdomCards, currentPhase }: { wisdomCards: { tip: string; source: string }[]; currentPhase: string | null }) {
   const navigate = useNavigate();
-  
+  const phaseLabels: Record<string, string> = {
+    setup: 'Setup', planning: 'Planning', messaging: 'Messaging', build: 'Build',
+    content: 'Content', 'pre-launch': 'Pre-Launch', launch: 'Launch', 'post-launch': 'Post-Launch',
+  };
+
   return (
     <ProjectLayout>
-      <div className="max-w-xl mx-auto py-16 px-4 text-center space-y-6">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
+      <div className="max-w-7xl mx-auto px-2.5 md:px-6 py-8 space-y-8">
+        <motion.header
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
         >
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
-            <BookMarked className="w-8 h-8 text-primary" />
+          <div className="flex items-start gap-4 mb-8">
+            <div className="p-3 bg-violet-100/50 dark:bg-violet-900/20 rounded-xl shrink-0">
+              <BookMarked className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">
+                Your Launch Playbook
+              </h1>
+              <p className="text-muted-foreground">
+                Patterns and insights will appear here as you complete projects. In the meantime, here's what experienced creators know about where you are right now.
+              </p>
+            </div>
           </div>
-          
-          <h1 className="text-2xl font-semibold text-foreground mb-3">
-            Your Launch Playbook will grow over time
-          </h1>
-          
-          <p className="text-muted-foreground max-w-md mx-auto">
-            Once you've completed a couple of projects, Launchely will start reflecting patterns back to you here.
-          </p>
-          
-          <Button
-            onClick={() => navigate('/app')}
-            className="mt-8 gap-2"
-            variant="outline"
+        </motion.header>
+
+        {wisdomCards.length > 0 && (
+          <div className="space-y-3">
+            <motion.h2
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="text-sm font-medium text-muted-foreground uppercase tracking-wider px-1"
+            >
+              {currentPhase && phaseLabels[currentPhase] ? `What helps in the ${phaseLabels[currentPhase]} phase` : 'What experienced creators know'}
+            </motion.h2>
+            <div className="space-y-3">
+              {wisdomCards.map((card, i) => (
+                <WisdomCard key={i} tip={card.tip} source={card.source} delay={0.15 + i * 0.05} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {wisdomCards.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-8"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Back to projects
-          </Button>
-        </motion.div>
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
+              <BookMarked className="w-8 h-8 text-primary" />
+            </div>
+            <h2 className="text-lg font-semibold text-foreground mb-3">
+              Your Playbook will grow as you launch
+            </h2>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              Once you've completed a project, Launchely will reflect your patterns back to you here.
+            </p>
+          </motion.div>
+        )}
       </div>
     </ProjectLayout>
   );
@@ -239,13 +346,39 @@ function ReflectionPrompt() {
 
 export default function Playbook() {
   const { data, isLoading } = usePlaybookData();
-  
+  const { user } = useAuth();
+
+  const { data: activePhaseData } = useQuery({
+    queryKey: ["playbook-active-phase", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from("projects")
+        .select("active_phase")
+        .eq("user_id", user.id)
+        .eq("status", "in_progress")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data?.active_phase || null;
+    },
+    enabled: !!user?.id,
+  });
+
+  const currentPhase = activePhaseData as string | null;
+  const wisdomCards = currentPhase ? (PHASE_WISDOM[currentPhase] || []) : [];
+
+  const phaseLabels: Record<string, string> = {
+    setup: 'Setup', planning: 'Planning', messaging: 'Messaging', build: 'Build',
+    content: 'Content', 'pre-launch': 'Pre-Launch', launch: 'Launch', 'post-launch': 'Post-Launch',
+  };
+
   if (isLoading) {
     return <PlaybookSkeleton />;
   }
   
   if (!data?.hasEnoughData) {
-    return <PlaybookEmptyState />;
+    return <PlaybookEmptyState wisdomCards={wisdomCards} currentPhase={currentPhase} />;
   }
   
   return (
@@ -292,6 +425,25 @@ export default function Playbook() {
             ))}
           </div>
         </div>
+
+        {/* Phase Wisdom Section */}
+        {wisdomCards.length > 0 && (
+          <div className="space-y-3">
+            <motion.h2
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.25 }}
+              className="text-sm font-medium text-muted-foreground uppercase tracking-wider px-1"
+            >
+              {currentPhase && phaseLabels[currentPhase] ? `What helps in the ${phaseLabels[currentPhase]} phase` : 'What experienced creators know'}
+            </motion.h2>
+            <div className="space-y-3">
+              {wisdomCards.map((card, i) => (
+                <WisdomCard key={i} tip={card.tip} source={card.source} delay={0.3 + i * 0.05} />
+              ))}
+            </div>
+          </div>
+        )}
         
         {/* Messaging Patterns - Conditional */}
         {data.messagingPatterns.toneDescription && (
