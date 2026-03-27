@@ -625,6 +625,27 @@ export type Database = {
           },
         ]
       }
+      carousel_generations: {
+        Row: {
+          created_at: string | null
+          id: string
+          slide_count: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          slide_count?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          slide_count?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       check_in_preferences: {
         Row: {
           cadence: string
