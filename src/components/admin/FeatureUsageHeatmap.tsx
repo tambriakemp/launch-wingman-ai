@@ -25,10 +25,20 @@ const featureConfig: FeatureItem[] = [
   { key: 'contentDrafts', label: 'Content Drafts', category: 'Content' },
   { key: 'scheduledPosts', label: 'Scheduled Posts', category: 'Content' },
   { key: 'socialBios', label: 'Social Bios', category: 'Content' },
-  { key: 'salesPageCopy', label: 'Sales Page Copy', category: 'Sales' },
+  { key: 'salesPageCopy', label: 'Sales Page Copy', category: 'Tools' },
+  { key: 'emailSequences', label: 'Email Sequences', category: 'Tools' },
+  { key: 'deliverableCopy', label: 'Deliverable Copy', category: 'Tools' },
+  { key: 'carousels', label: 'Carousels', category: 'Tools' },
+  { key: 'aiStudioProjects', label: 'AI Projects', category: 'AI Studio' },
+  { key: 'aiStudioEnvironments', label: 'AI Environments', category: 'AI Studio' },
+  { key: 'campaigns', label: 'Campaigns', category: 'Marketing' },
+  { key: 'utmLinks', label: 'UTM Links', category: 'Marketing' },
+  { key: 'utmClicks', label: 'UTM Clicks', category: 'Marketing' },
+  { key: 'campaignConversions', label: 'Conversions', category: 'Marketing' },
   { key: 'launchSnapshots', label: 'Launch Snapshots', category: 'Insights' },
   { key: 'metricUpdates', label: 'Metric Updates', category: 'Insights' },
   { key: 'checkIns', label: 'Check-ins', category: 'Engagement' },
+  { key: 'contentVaultResources', label: 'Vault Resources', category: 'Engagement' },
 ];
 
 const getHeatColor = (value: number, max: number): string => {

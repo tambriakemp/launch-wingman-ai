@@ -101,6 +101,16 @@ serve(async (req) => {
       launchEventsResult,
       checkInsResult,
       relaunchProjectsResult,
+      emailSequencesResult,
+      deliverableCopyResult,
+      aiStudioProjectsResult,
+      aiStudioEnvironmentsResult,
+      campaignsResult,
+      utmLinksResult,
+      utmClickEventsResult,
+      campaignConversionsResult,
+      contentVaultResourcesResult,
+      carouselGenerationsResult,
     ] = await Promise.all([
       // Projects (using active_phase instead of current_phase)
       supabaseClient.from('projects').select('id, status, active_phase, user_id'),
@@ -137,6 +147,17 @@ serve(async (req) => {
       supabaseClient.from('check_ins').select('*', { count: 'exact', head: true }),
       // Relaunch projects
       supabaseClient.from('projects').select('id, skip_memory, relaunch_kept_sections, relaunch_revisit_sections, status').eq('is_relaunch', true),
+      // New feature tracking
+      supabaseClient.from('email_sequences').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('deliverable_copy').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('ai_studio_projects').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('ai_studio_environments').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('campaigns').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('utm_links').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('utm_click_events').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('campaign_conversions').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('content_vault_resources').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('carousel_generations').select('*', { count: 'exact', head: true }),
     ]);
 
     // Extract data from results
@@ -270,6 +291,16 @@ serve(async (req) => {
       contentDrafts: contentDraftsCount || 0,
       scheduledPosts: scheduledPostsCount || 0,
       offers: offersCount || 0,
+      emailSequences: emailSequencesResult.count || 0,
+      deliverableCopy: deliverableCopyResult.count || 0,
+      aiStudioProjects: aiStudioProjectsResult.count || 0,
+      aiStudioEnvironments: aiStudioEnvironmentsResult.count || 0,
+      campaigns: campaignsResult.count || 0,
+      utmLinks: utmLinksResult.count || 0,
+      utmClicks: utmClickEventsResult.count || 0,
+      campaignConversions: campaignConversionsResult.count || 0,
+      contentVaultResources: contentVaultResourcesResult.count || 0,
+      carousels: carouselGenerationsResult.count || 0,
     };
     logStep("Feature usage stats calculated");
 

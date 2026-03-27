@@ -70,6 +70,16 @@ export interface FeatureUsage {
   contentDrafts: number;
   scheduledPosts: number;
   offers: number;
+  emailSequences: number;
+  deliverableCopy: number;
+  aiStudioProjects: number;
+  aiStudioEnvironments: number;
+  campaigns: number;
+  utmLinks: number;
+  utmClicks: number;
+  campaignConversions: number;
+  contentVaultResources: number;
+  carousels: number;
 }
 
 export interface RelaunchStats {
