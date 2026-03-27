@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO, isPast, isToday } from "date-fns";
-import { MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, X, Settings, ListChecks, Search, AlertTriangle, RefreshCw, CheckSquare, FileText, ChevronDown, ChevronRight } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Calendar, Plus, ListTodo, X, Settings, ListChecks, Search, AlertTriangle, RefreshCw, CheckSquare, FileText, ChevronDown, ChevronRight, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -86,6 +86,7 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
   // Checklist view data
   const [offers, setOffers] = useState<any[]>([]);
   const [completedAssets, setCompletedAssets] = useState<Set<string>>(new Set());
+  const [planningComplete, setPlanningComplete] = useState(false);
 
   const fetchTasks = useCallback(async () => {
     if (!projectId) return;
@@ -151,9 +152,14 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
       // Fetch project data including selected_funnel_type and snapshot
       const { data: project } = await supabase
         .from('projects')
-        .select('funnel_type_snapshot, selected_funnel_type')
+        .select('funnel_type_snapshot, selected_funnel_type, active_phase')
         .eq('id', projectId)
         .single();
+
+      const postPlanningPhases = ['messaging', 'build', 'content', 'pre-launch', 'launch', 'post-launch'];
+      if (project?.active_phase && postPlanningPhases.includes(project.active_phase)) {
+        setPlanningComplete(true);
+      }
 
       // Backfill check: if selected_funnel_type is null, check the planning task
       let selectedFunnelType = project?.selected_funnel_type;
@@ -698,6 +704,24 @@ export const TasksBoard = ({ projectId, projectType }: TasksBoardProps) => {
         )}
 
       </div>
+
+      {planningComplete && (
+        <Link
+          to={`/projects/${projectId}/summary`}
+          className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 mb-6 hover:bg-primary/10 transition-colors group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <FileText className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Your Launch Brief is building</p>
+              <p className="text-xs text-muted-foreground">Your planning answers are collecting here — see what's in it</p>
+            </div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-primary shrink-0 group-hover:translate-x-0.5 transition-transform" />
+        </Link>
+      )}
 
       {/* Checklist View */}
       {currentFunnelType && (
