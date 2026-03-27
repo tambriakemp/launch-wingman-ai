@@ -291,6 +291,16 @@ serve(async (req) => {
       contentDrafts: contentDraftsCount || 0,
       scheduledPosts: scheduledPostsCount || 0,
       offers: offersCount || 0,
+      emailSequences: emailSequencesResult.count || 0,
+      deliverableCopy: deliverableCopyResult.count || 0,
+      aiStudioProjects: aiStudioProjectsResult.count || 0,
+      aiStudioEnvironments: aiStudioEnvironmentsResult.count || 0,
+      campaigns: campaignsResult.count || 0,
+      utmLinks: utmLinksResult.count || 0,
+      utmClicks: utmClickEventsResult.count || 0,
+      campaignConversions: campaignConversionsResult.count || 0,
+      contentVaultResources: contentVaultResourcesResult.count || 0,
+      carousels: carouselGenerationsResult.count || 0,
     };
     logStep("Feature usage stats calculated");
 
