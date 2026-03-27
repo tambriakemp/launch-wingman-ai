@@ -101,6 +101,16 @@ serve(async (req) => {
       launchEventsResult,
       checkInsResult,
       relaunchProjectsResult,
+      emailSequencesResult,
+      deliverableCopyResult,
+      aiStudioProjectsResult,
+      aiStudioEnvironmentsResult,
+      campaignsResult,
+      utmLinksResult,
+      utmClickEventsResult,
+      campaignConversionsResult,
+      contentVaultResourcesResult,
+      carouselGenerationsResult,
     ] = await Promise.all([
       // Projects (using active_phase instead of current_phase)
       supabaseClient.from('projects').select('id, status, active_phase, user_id'),
@@ -133,7 +143,6 @@ serve(async (req) => {
       supabaseClient.from('launch_snapshots').select('*', { count: 'exact', head: true }),
       supabaseClient.from('metric_updates').select('*', { count: 'exact', head: true }),
       supabaseClient.from('content_planner').select('*', { count: 'exact', head: true }),
-      supabase/functions/admin-platform-stats queries continued
       supabaseClient.from('launch_events').select('*', { count: 'exact', head: true }),
       supabaseClient.from('check_ins').select('*', { count: 'exact', head: true }),
       // Relaunch projects
