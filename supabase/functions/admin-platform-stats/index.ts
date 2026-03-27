@@ -133,10 +133,22 @@ serve(async (req) => {
       supabaseClient.from('launch_snapshots').select('*', { count: 'exact', head: true }),
       supabaseClient.from('metric_updates').select('*', { count: 'exact', head: true }),
       supabaseClient.from('content_planner').select('*', { count: 'exact', head: true }),
+      supabase/functions/admin-platform-stats queries continued
       supabaseClient.from('launch_events').select('*', { count: 'exact', head: true }),
       supabaseClient.from('check_ins').select('*', { count: 'exact', head: true }),
       // Relaunch projects
       supabaseClient.from('projects').select('id, skip_memory, relaunch_kept_sections, relaunch_revisit_sections, status').eq('is_relaunch', true),
+      // New feature tracking
+      supabaseClient.from('email_sequences').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('deliverable_copy').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('ai_studio_projects').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('ai_studio_environments').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('campaigns').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('utm_links').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('utm_click_events').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('campaign_conversions').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('content_vault_resources').select('*', { count: 'exact', head: true }),
+      supabaseClient.from('carousel_generations').select('*', { count: 'exact', head: true }),
     ]);
 
     // Extract data from results
