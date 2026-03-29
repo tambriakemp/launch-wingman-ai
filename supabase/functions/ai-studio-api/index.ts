@@ -14,6 +14,8 @@ const VALID_ACTIONS = [
   "check_video_status",
   "list_projects",
   "get_project",
+  "list_character_references",
+  "list_environment_references",
 ] as const;
 
 type Action = typeof VALID_ACTIONS[number];
