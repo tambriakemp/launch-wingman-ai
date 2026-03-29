@@ -84,10 +84,12 @@ serve(async (req) => {
       userId = claimsData.claims.sub as string;
     }
 
-    // Create a supabase client scoped to the resolved user for DB queries
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
+    // For API key auth, use service role client; for JWT auth, use user's token
+    const supabase = token.startsWith("lw_sk_")
+      ? createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!)
+      : createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          global: { headers: { Authorization: `Bearer ${token}` } },
+        });
 
     const body = await req.json();
     const action = body.action as Action;
