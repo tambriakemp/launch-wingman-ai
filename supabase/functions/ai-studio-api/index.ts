@@ -35,18 +35,54 @@ serve(async (req) => {
       });
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    let userId: string;
+
+    // Check if this is a personal API key (lw_sk_...)
+    if (token.startsWith("lw_sk_")) {
+      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+      // Hash the key
+      const encoder = new TextEncoder();
+      const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(token));
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const keyHash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
+      const { data: keyRow, error: keyError } = await serviceClient
+        .from("personal_api_keys")
+        .select("user_id")
+        .eq("key_hash", keyHash)
+        .maybeSingle();
+
+      if (keyError || !keyRow) {
+        return new Response(JSON.stringify({ error: "Invalid API key" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      userId = keyRow.user_id;
+
+      // Update last_used_at (fire and forget)
+      serviceClient
+        .from("personal_api_keys")
+        .update({ last_used_at: new Date().toISOString() })
+        .eq("key_hash", keyHash)
+        .then(() => {});
+    } else {
+      // Standard JWT auth
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
       });
+
+      const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+      if (claimsError || !claimsData?.claims) {
+        return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      userId = claimsData.claims.sub as string;
     }
-    const userId = claimsData.claims.sub as string;
 
     // --- Parse body ---
     const body = await req.json();
