@@ -137,6 +137,37 @@ const docs = {
       requiredFields: ["action", "projectId"],
       example: { action: "get_project", projectId: "uuid-here" },
     },
+
+    list_character_references: {
+      description: "List the user's saved character reference images (up to 3 slots). Returns public URLs for each occupied slot.",
+      method: "POST",
+      requiredFields: ["action"],
+      exampleResponse: {
+        references: [
+          { slot: 0, url: "https://storage.example.com/characters/user_id/saved-reference-0.png" },
+          { slot: 1, url: "https://storage.example.com/characters/user_id/saved-reference-1.png" },
+        ],
+      },
+      example: { action: "list_character_references" },
+    },
+
+    list_environment_references: {
+      description: "List all saved environment reference image groups and their images. Returns groups with public URLs.",
+      method: "POST",
+      requiredFields: ["action"],
+      exampleResponse: {
+        groups: [
+          {
+            id: "uuid",
+            name: "Kitchen",
+            images: [
+              { id: "uuid", label: "kitchen1.png", url: "https://storage.example.com/environments/user_id/group_id/kitchen1.png" },
+            ],
+          },
+        ],
+      },
+      example: { action: "list_environment_references" },
+    },
   },
 
   appConfigSchema: {

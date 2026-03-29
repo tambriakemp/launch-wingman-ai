@@ -128,6 +128,48 @@ serve(async (req) => {
       return json({ project: data });
     }
 
+    if (action === "list_character_references") {
+      const references: { slot: number; url: string }[] = [];
+      for (let i = 0; i < 3; i++) {
+        const filePath = `characters/${userId}/saved-reference-${i}.png`;
+        const { data } = await supabase.storage.from("ai-studio").list(`characters/${userId}`, {
+          search: `saved-reference-${i}.png`,
+        });
+        if (data && data.length > 0) {
+          const { data: urlData } = supabase.storage.from("ai-studio").getPublicUrl(filePath);
+          references.push({ slot: i, url: urlData.publicUrl });
+        }
+      }
+      return json({ references });
+    }
+
+    if (action === "list_environment_references") {
+      const { data: groups, error: groupsError } = await supabase
+        .from("ai_studio_environment_groups")
+        .select("id, name, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      if (groupsError) throw groupsError;
+
+      const { data: environments, error: envsError } = await supabase
+        .from("ai_studio_environments")
+        .select("id, label, file_path, group_id")
+        .eq("user_id", userId);
+      if (envsError) throw envsError;
+
+      const result = (groups || []).map((group) => {
+        const images = (environments || [])
+          .filter((env) => env.group_id === group.id)
+          .map((env) => {
+            const { data: urlData } = supabase.storage.from("ai-studio").getPublicUrl(env.file_path);
+            return { id: env.id, label: env.label, url: urlData.publicUrl };
+          });
+        return { id: group.id, name: group.name, images };
+      });
+
+      return json({ groups: result });
+    }
+
     // --- Proxy actions to existing edge functions ---
     const functionMap: Record<string, string> = {
       generate_storyboard: "generate-storyboard",
