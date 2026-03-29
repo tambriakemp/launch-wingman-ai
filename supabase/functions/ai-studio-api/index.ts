@@ -1,0 +1,220 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+const VALID_ACTIONS = [
+  "generate_storyboard",
+  "generate_character_preview",
+  "generate_scene_image",
+  "generate_video",
+  "check_video_status",
+  "list_projects",
+  "get_project",
+] as const;
+
+type Action = typeof VALID_ACTIONS[number];
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+  try {
+    // --- Auth ---
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized. Provide Authorization: Bearer <token>" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId = claimsData.claims.sub as string;
+
+    // --- Parse body ---
+    const body = await req.json();
+    const action = body.action as Action;
+
+    if (!action || !VALID_ACTIONS.includes(action)) {
+      return new Response(JSON.stringify({
+        error: `Invalid action. Must be one of: ${VALID_ACTIONS.join(", ")}`,
+        docs: `GET ${SUPABASE_URL}/functions/v1/ai-studio-api-docs for full documentation`,
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // --- Direct DB actions ---
+    if (action === "list_projects") {
+      const { data, error } = await supabase
+        .from("ai_studio_projects")
+        .select("id, name, mode, status, created_at, updated_at")
+        .eq("user_id", userId)
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      return json({ projects: data });
+    }
+
+    if (action === "get_project") {
+      const { projectId } = body;
+      if (!projectId) return json({ error: "projectId is required" }, 400);
+      const { data, error } = await supabase
+        .from("ai_studio_projects")
+        .select("*")
+        .eq("id", projectId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return json({ error: "Project not found" }, 404);
+      return json({ project: data });
+    }
+
+    // --- Proxy actions to existing edge functions ---
+    const functionMap: Record<string, string> = {
+      generate_storyboard: "generate-storyboard",
+      generate_character_preview: "generate-character-preview",
+      generate_scene_image: "generate-scene-image",
+      generate_video: "generate-video",
+      check_video_status: "check-video-status",
+    };
+
+    const targetFunction = functionMap[action];
+    if (!targetFunction) {
+      return json({ error: "Unknown action" }, 400);
+    }
+
+    // Build the payload for the downstream function
+    const downstreamBody = buildDownstreamBody(action, body);
+
+    const targetUrl = `${SUPABASE_URL}/functions/v1/${targetFunction}`;
+    console.log(`[ai-studio-api] Proxying ${action} → ${targetFunction}`);
+
+    const proxyResponse = await fetch(targetUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": authHeader,
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify(downstreamBody),
+    });
+
+    // Forward the response as-is (status + body)
+    const responseBody = await proxyResponse.text();
+    return new Response(responseBody, {
+      status: proxyResponse.status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[ai-studio-api] Error:", message);
+    return json({ error: message }, 500);
+  }
+});
+
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+    },
+  });
+}
+
+/**
+ * Maps the unified API request body to the format expected by each downstream function.
+ */
+function buildDownstreamBody(action: string, body: Record<string, unknown>): Record<string, unknown> {
+  switch (action) {
+    case "generate_storyboard": {
+      // generate-storyboard expects: action ("brainstorm"|"generate"), config, referenceImageUrl, productImageUrl, environmentImageUrl, environmentImageUrls
+      const payload: Record<string, unknown> = {
+        action: body.storyboardAction || "generate",
+        config: body.config,
+      };
+      // Support both single and array URL forms
+      if (body.referenceImageUrls) {
+        const urls = body.referenceImageUrls as string[];
+        payload.referenceImageUrl = urls[0] || null;
+      } else if (body.referenceImageUrl) {
+        payload.referenceImageUrl = body.referenceImageUrl;
+      }
+      if (body.productImageUrl) payload.productImageUrl = body.productImageUrl;
+      if (body.environmentImageUrls) {
+        payload.environmentImageUrls = body.environmentImageUrls;
+      } else if (body.environmentImageUrl) {
+        payload.environmentImageUrl = body.environmentImageUrl;
+      }
+      return payload;
+    }
+
+    case "generate_character_preview": {
+      // generate-character-preview expects: referenceImageUrls, environmentImageUrls, config, isFinalLook, identityAnchorUrl, environmentLabel
+      return {
+        referenceImageUrls: body.referenceImageUrls || [],
+        environmentImageUrls: body.environmentImageUrls || [],
+        config: body.config,
+        isFinalLook: body.isFinalLook || false,
+        identityAnchorUrl: body.identityAnchorUrl || null,
+        environmentLabel: body.environmentLabel || null,
+      };
+    }
+
+    case "generate_scene_image": {
+      // generate-scene-image expects: prompt, config, previewCharacter, environmentImages (URLs), lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, previousSceneImageUrl, environmentLabel, etc.
+      return {
+        prompt: body.prompt,
+        config: body.config,
+        previewCharacter: body.previewCharacter || null,
+        environmentImages: body.environmentImageUrls || body.environmentImages || [],
+        lockedRefs: body.lockedRefs || [],
+        isFinalLook: body.isFinalLook || false,
+        isUpscale: body.isUpscale || false,
+        baseImageUrl: body.baseImageUrl || null,
+        anchorImageUrl: body.anchorImageUrl || null,
+        previousSceneImageUrl: body.previousSceneImageUrl || null,
+        environmentLabel: body.environmentLabel || null,
+        sceneNumber: body.sceneNumber || null,
+        totalScenes: body.totalScenes || null,
+      };
+    }
+
+    case "generate_video": {
+      // generate-video expects: imageUrl, videoPrompt, aspectRatio
+      return {
+        imageUrl: body.imageUrl,
+        videoPrompt: body.videoPrompt,
+        aspectRatio: body.aspectRatio || "9:16",
+      };
+    }
+
+    case "check_video_status": {
+      // check-video-status expects: requestId, statusUrl, responseUrl
+      return {
+        requestId: body.requestId,
+        statusUrl: body.statusUrl,
+        responseUrl: body.responseUrl || null,
+      };
+    }
+
+    default:
+      return body;
+  }
+}
