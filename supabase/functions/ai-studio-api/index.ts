@@ -84,7 +84,11 @@ serve(async (req) => {
       userId = claimsData.claims.sub as string;
     }
 
-    // --- Parse body ---
+    // Create a supabase client scoped to the resolved user for DB queries
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+
     const body = await req.json();
     const action = body.action as Action;
 
