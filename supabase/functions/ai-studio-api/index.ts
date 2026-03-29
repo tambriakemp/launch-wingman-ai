@@ -146,10 +146,15 @@ serve(async (req) => {
     const targetUrl = `${SUPABASE_URL}/functions/v1/${targetFunction}`;
     console.log(`[ai-studio-api] Proxying ${action} → ${targetFunction}`);
 
+    // For API key auth, use service role key to call downstream functions
+    const proxyAuthHeader = token.startsWith("lw_sk_")
+      ? `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`
+      : authHeader;
+
     const proxyResponse = await fetch(targetUrl, {
       method: "POST",
       headers: {
-        "Authorization": authHeader,
+        "Authorization": proxyAuthHeader,
         "Content-Type": "application/json",
         "apikey": SUPABASE_ANON_KEY,
       },
