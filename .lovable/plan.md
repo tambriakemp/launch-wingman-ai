@@ -1,39 +1,29 @@
 
 
-## Expose Saved Character & Environment References via API
+## Fix AI Studio Character Reference Upload/Delete
 
-### Summary
-Add two new actions to the `ai-studio-api` edge function: `list_character_references` and `list_environment_references`. These return the user's saved reference image URLs so automation scripts can use them directly in generation calls.
+### Root Cause
+The storage RLS policies for the `ai-studio` bucket compare `auth.uid()` against `(storage.foldername(name))[1]`, which returns `'characters'` (the first folder in the path). The actual user ID is at index `[2]` since paths are `characters/{userId}/saved-reference-0.png`.
 
-### Changes
+This breaks:
+- **Delete** — policy rejects because `auth.uid() != 'characters'`
+- **Upload (upsert)** — upsert requires UPDATE permission, which also fails
+- **3-slot grid** — never appears because no photos can be saved successfully
 
-#### 1. `supabase/functions/ai-studio-api/index.ts`
-- Add `"list_character_references"` and `"list_environment_references"` to `VALID_ACTIONS`
-- Add two new direct DB/storage action handlers:
+### Fix
+One database migration to drop and recreate the UPDATE and DELETE policies with the correct array index `[2]`:
 
-**`list_character_references`** — Lists up to 3 saved character reference images from storage (`characters/{userId}/saved-reference-{0,1,2}.png`). Returns an array of public URLs for slots that have files.
+```sql
+DROP POLICY "Users can update their own AI studio assets" ON storage.objects;
+CREATE POLICY "Users can update their own AI studio assets"
+ON storage.objects FOR UPDATE TO public
+USING (bucket_id = 'ai-studio' AND (auth.uid())::text = (storage.foldername(name))[2]);
 
-**`list_environment_references`** — Queries `ai_studio_environment_groups` and `ai_studio_environments` for the user. Returns groups with their images as public URLs:
-```json
-{
-  "groups": [
-    {
-      "id": "...",
-      "name": "Kitchen",
-      "images": [
-        { "id": "...", "label": "kitchen1.png", "url": "https://..." }
-      ]
-    }
-  ]
-}
+DROP POLICY "Users can delete their own AI studio assets" ON storage.objects;
+CREATE POLICY "Users can delete their own AI studio assets"
+ON storage.objects FOR DELETE TO public
+USING (bucket_id = 'ai-studio' AND (auth.uid())::text = (storage.foldername(name))[2]);
 ```
 
-#### 2. `supabase/functions/ai-studio-api-docs/index.ts`
-- Add documentation entries for both new actions with example responses.
-
-### Implementation details
-- Character refs use storage listing (same pattern as `SavedCharacter.tsx` — check `characters/{userId}/` for `saved-reference-{0,1,2}` files, return public URLs with labels)
-- Environment refs use DB queries to `ai_studio_environment_groups` + `ai_studio_environments`, then build public URLs from `file_path` via storage
-- For API key auth, the service role client is already set up, so both queries will work
-- No new tables or migrations needed
+No code changes needed — `SavedCharacter.tsx` logic is correct. Once the policies are fixed, uploads will succeed, the 3-slot grid will appear after the first photo, and deletes will work.
 
