@@ -21,6 +21,7 @@ import { CheckInSettings } from "@/components/check-in";
 import { ToneSettings } from "@/components/settings/ToneSettings";
 import { EmailPreferencesSettings } from "@/components/settings/EmailPreferencesSettings";
 import { AiSettingsCard } from "@/components/settings/AiSettingsCard";
+import { ApiKeysCard } from "@/components/settings/ApiKeysCard";
 import { ExportMyDataDialog } from "@/components/settings/ExportMyDataDialog";
 import { DeleteMyAccountDialog } from "@/components/settings/DeleteMyAccountDialog";
 import { FacebookPageSelector } from "@/components/settings/FacebookPageSelector";
@@ -1009,6 +1010,11 @@ const Settings = () => {
               {/* AI Settings Card */}
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
                 <AiSettingsCard />
+              </motion.div>
+
+              {/* Personal API Keys Card */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                <ApiKeysCard />
               </motion.div>
             </TabsContent>
 
