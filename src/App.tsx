@@ -692,6 +692,14 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/goals/:goalId"
+              element={
+                <ProtectedRoute>
+                  <GoalDetail />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Brain Dump */}
             <Route
