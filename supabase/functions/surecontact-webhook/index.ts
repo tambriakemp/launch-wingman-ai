@@ -751,11 +751,15 @@ Deno.serve(async (req) => {
       console.log(`Syncing order ${order_id} for ${email}`);
 
       // First, find or create the contact
+      // Determine tier from price_id if provided, otherwise default to pro
+      const orderPriceId = body.price_id || '';
+      const orderTier: SubscriptionTier = PRICE_ID_TO_TIER[orderPriceId] || 'pro';
+
       const contactResult = await findOrCreateContact(sureContactApiKey, {
         email,
         first_name: first_name || '',
         last_name: last_name || '',
-        subscription_status: 'pro', // Orders imply pro status
+        subscription_status: orderTier,
         event_type: 'order',
       }, config);
 
