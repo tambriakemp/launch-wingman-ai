@@ -667,14 +667,6 @@ const FunnelOverviewContent = ({ projectId }: Props) => {
           }
         />
 
-        {/* Phase Progress Rail */}
-        <PhaseProgressRail
-          phases={PHASES.filter(p => p !== 'setup')}
-          phaseStatuses={phaseStatuses}
-          activePhase={activePhase}
-          projectTasks={projectTasks}
-          getTaskTemplate={getTaskTemplate}
-        />
 
         {/* Launch Timeline */}
         {phaseStatuses['setup'] === 'complete' && (
