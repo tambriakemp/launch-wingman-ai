@@ -18,7 +18,7 @@ interface ContactPayload {
   email: string;
   first_name: string;
   last_name: string;
-  subscription_status: 'free' | 'pro';
+  subscription_status: 'free' | 'content_vault' | 'pro' | 'advanced';
   event_type: string;
   stripe_customer_id?: string;
   signup_date?: string;
@@ -209,6 +209,16 @@ function buildCustomFields(
 }
 
 // Manage tags for a contact
+// Tier-specific tag mapping
+const TIER_TAG_MAP: Record<string, string> = {
+  free: 'launchely: free-subscriber',
+  content_vault: 'launchely: vault-subscriber',
+  pro: 'launchely: pro-subscriber',
+  advanced: 'launchely: advanced-subscriber',
+};
+
+const ALL_TIER_TAG_NAMES = Object.values(TIER_TAG_MAP);
+
 async function manageTags(
   apiKey: string,
   contactUuid: string,
@@ -218,44 +228,47 @@ async function manageTags(
   const tagsAdded: string[] = [];
   const tagsRemoved: string[] = [];
 
-  // Determine which subscription tag to use
-  const subscriptionTag = payload.subscription_status === 'pro' ? 'pro-subscriber' : 'free-user';
-  const oppositeTag = payload.subscription_status === 'pro' ? 'free-user' : 'pro-subscriber';
+  // Determine the correct tier tag
+  const correctTagName = TIER_TAG_MAP[payload.subscription_status] || TIER_TAG_MAP.free;
 
-  // Get tag UUIDs
-  const subscriptionTagConfig = config.get(`tag:${subscriptionTag}`);
-  const oppositeTagConfig = config.get(`tag:${oppositeTag}`);
-
-  // Remove opposite subscription tag first
-  if (oppositeTagConfig) {
+  // Remove all OTHER tier tags
+  const tagsToRemove = ALL_TIER_TAG_NAMES.filter(t => t !== correctTagName);
+  const removeUuids: string[] = [];
+  for (const tagName of tagsToRemove) {
+    const tagConfig = config.get(`tag:${tagName}`);
+    if (tagConfig) {
+      removeUuids.push(tagConfig.surecontact_uuid);
+    }
+  }
+  if (removeUuids.length > 0) {
     const detachResult = await sureContactRequest(
       `/contacts/${contactUuid}/tags/detach`,
       'POST',
       apiKey,
-      { tag_uuids: [oppositeTagConfig.surecontact_uuid] }
+      { tag_uuids: removeUuids }
     );
     if (detachResult.success) {
-      tagsRemoved.push(oppositeTag);
+      tagsRemoved.push(...tagsToRemove);
     }
   }
 
-  // Add correct subscription tag
-  if (subscriptionTagConfig) {
+  // Add correct tier tag
+  const correctTagConfig = config.get(`tag:${correctTagName}`);
+  if (correctTagConfig) {
     const attachResult = await sureContactRequest(
       `/contacts/${contactUuid}/tags/attach`,
       'POST',
       apiKey,
-      { tag_uuids: [subscriptionTagConfig.surecontact_uuid] }
+      { tag_uuids: [correctTagConfig.surecontact_uuid] }
     );
     if (attachResult.success) {
-      tagsAdded.push(subscriptionTag);
+      tagsAdded.push(correctTagName);
     }
   }
 
-  // Add event tag based on event type - using correct SureContact tag names
+  // Add event tag based on event type
   const eventTagMap: Record<string, string> = {
     signup: 'new-signup',
-    subscription_started: 'upgraded-to-pro',
     subscription_cancelled: 'churned',
     reactivated: 'reactivated',
   };
@@ -319,10 +332,19 @@ async function addToMasterList(
   return false;
 }
 
+// Price ID to tier mapping (matches subscriptionTiers.ts)
+const PRICE_ID_TO_TIER: Record<string, 'content_vault' | 'pro' | 'advanced'> = {
+  'price_1StiayF2gaEq7adwKHe9AbQF': 'content_vault',
+  'price_1SipMGF2gaEq7adwAGMICdO5': 'pro',
+  'price_1TEznFF2gaEq7adwpTfGefLX': 'advanced',
+};
+
+type SubscriptionTier = 'free' | 'content_vault' | 'pro' | 'advanced';
+
 async function getSubscriptionStatus(
   stripe: Stripe | null,
   email: string
-): Promise<{ status: 'free' | 'pro'; customerId?: string; plan?: string; startDate?: string }> {
+): Promise<{ status: SubscriptionTier; customerId?: string; plan?: string; startDate?: string }> {
   if (!stripe) return { status: 'free' };
 
   try {
@@ -338,12 +360,11 @@ async function getSubscriptionStatus(
 
     if (subscriptions.data.length > 0) {
       const sub = subscriptions.data[0];
-      const plan = sub.items.data[0]?.price?.nickname || 
-                   sub.items.data[0]?.price?.id || 
-                   'pro';
-      // Get subscription start date from Stripe
+      const priceId = sub.items.data[0]?.price?.id || '';
+      const plan = sub.items.data[0]?.price?.nickname || priceId || 'pro';
+      const tier: SubscriptionTier = PRICE_ID_TO_TIER[priceId] || 'pro';
       const startDate = new Date(sub.start_date * 1000).toISOString().split('T')[0];
-      return { status: 'pro', customerId: customer.id, plan, startDate };
+      return { status: tier, customerId: customer.id, plan, startDate };
     }
 
     return { status: 'free', customerId: customer.id };
@@ -730,11 +751,15 @@ Deno.serve(async (req) => {
       console.log(`Syncing order ${order_id} for ${email}`);
 
       // First, find or create the contact
+      // Determine tier from price_id if provided, otherwise default to pro
+      const orderPriceId = body.price_id || '';
+      const orderTier: SubscriptionTier = PRICE_ID_TO_TIER[orderPriceId] || 'pro';
+
       const contactResult = await findOrCreateContact(sureContactApiKey, {
         email,
         first_name: first_name || '',
         last_name: last_name || '',
-        subscription_status: 'pro', // Orders imply pro status
+        subscription_status: orderTier,
         event_type: 'order',
       }, config);
 
@@ -743,7 +768,7 @@ Deno.serve(async (req) => {
         await logWebhookResult(supabase, {
           email,
           event_type: 'order',
-          subscription_status: 'pro',
+          subscription_status: orderTier,
           success: false,
           response_status: 500,
           error_message: contactResult.error || 'Failed to find/create contact',
@@ -826,7 +851,7 @@ Deno.serve(async (req) => {
           await logWebhookResult(supabase, {
             email,
             event_type: 'order',
-            subscription_status: 'pro',
+            subscription_status: orderTier,
             success: updateResult.success,
             response_status: updateResult.status,
             error_message: updateResult.error,
@@ -842,7 +867,7 @@ Deno.serve(async (req) => {
           await logWebhookResult(supabase, {
             email,
             event_type: 'order',
-            subscription_status: 'pro',
+            subscription_status: orderTier,
             success: true,
             response_status: 200,
           });
@@ -852,7 +877,7 @@ Deno.serve(async (req) => {
         await logWebhookResult(supabase, {
           email,
           event_type: 'order',
-          subscription_status: 'pro',
+          subscription_status: orderTier,
           success: orderResult.success,
           response_status: orderResult.status,
           error_message: orderResult.error,

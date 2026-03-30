@@ -51,6 +51,7 @@ interface OrderData {
   status: 'completed' | 'refunded' | 'pending';
   products: Array<{ name: string; price_id: string; quantity: number; amount: number }>;
   created_at: string;
+  price_id?: string;
 }
 
 async function triggerSureContactOrderSync(orderData: OrderData) {
@@ -276,6 +277,7 @@ serve(async (req) => {
           EdgeRuntime.waitUntil(fireIncomingWebhooks(supabaseClient, 'pro_signup', customerEmail, firstName, lastName));
           try {
             const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+            const firstPriceId = lineItems.data[0]?.price?.id || '';
             const orderData: OrderData = {
               email: customerEmail,
               order_id: `STR-${session.id.substring(0, 20)}`,
@@ -288,7 +290,8 @@ serve(async (req) => {
                 quantity: item.quantity || 1,
                 amount: (item.amount_total || 0) / 100
               })),
-              created_at: new Date(session.created * 1000).toISOString()
+              created_at: new Date(session.created * 1000).toISOString(),
+              price_id: firstPriceId,
             };
             EdgeRuntime.waitUntil(triggerSureContactOrderSync(orderData));
           } catch (lineItemsError) {
@@ -368,6 +371,7 @@ serve(async (req) => {
 
           // Sync renewal order to SureContact E-Commerce tab
           if (customerEmail && invoice.lines?.data?.length > 0) {
+            const renewalPriceId = invoice.lines.data[0]?.price?.id || '';
             const orderData: OrderData = {
               email: customerEmail,
               order_id: `STR-INV-${invoice.id?.substring(0, 15) || Date.now()}`,
@@ -380,7 +384,8 @@ serve(async (req) => {
                 quantity: line.quantity || 1,
                 amount: (line.amount || 0) / 100
               })),
-              created_at: new Date((invoice.created || Date.now() / 1000) * 1000).toISOString()
+              created_at: new Date((invoice.created || Date.now() / 1000) * 1000).toISOString(),
+              price_id: renewalPriceId,
             };
             EdgeRuntime.waitUntil(triggerSureContactOrderSync(orderData));
           }
