@@ -19,10 +19,35 @@ export interface Goal {
   why_statement: string | null;
   target_date: string | null;
   status: string;
-  quarter: string | null;
   created_at: string;
 }
 
+export interface GoalTarget {
+  id: string;
+  goal_id: string;
+  user_id: string;
+  name: string;
+  target_type: string; // 'number' | 'currency' | 'true_false' | 'tasks'
+  unit: string | null;
+  start_value: number;
+  target_value: number;
+  current_value: number;
+  is_done: boolean;
+  position: number;
+  created_at: string;
+}
+
+export interface GoalTargetUpdate {
+  id: string;
+  target_id: string;
+  user_id: string;
+  previous_value: number;
+  new_value: number;
+  note: string | null;
+  created_at: string;
+}
+
+// Keep for backward compat imports
 export interface GoalMilestone {
   id: string;
   goal_id: string;
@@ -44,7 +69,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 const Goals = () => {
   const { user } = useAuth();
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [milestones, setMilestones] = useState<GoalMilestone[]>([]);
+  const [targets, setTargets] = useState<GoalTarget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -62,22 +87,25 @@ const Goals = () => {
     setIsLoading(false);
   }, [user]);
 
-  const fetchMilestones = useCallback(async () => {
+  const fetchTargets = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
-      .from("goal_milestones" as any)
+      .from("goal_targets" as any)
       .select("*")
       .eq("user_id", user.id)
       .order("position", { ascending: true });
-    setMilestones((data as unknown as GoalMilestone[]) || []);
+    setTargets((data as unknown as GoalTarget[]) || []);
   }, [user]);
 
   useEffect(() => {
     fetchGoals();
-    fetchMilestones();
-  }, [fetchGoals, fetchMilestones]);
+    fetchTargets();
+  }, [fetchGoals, fetchTargets]);
 
-  const handleCreateGoal = async (data: Partial<Goal>, newMilestones: Partial<GoalMilestone>[]) => {
+  const handleCreateGoal = async (
+    data: Partial<Goal>,
+    newTargets: Partial<GoalTarget>[]
+  ) => {
     if (!user) return;
     const { data: created, error } = await supabase
       .from("goals" as any)
@@ -90,7 +118,6 @@ const Goals = () => {
         why_statement: data.why_statement || null,
         target_date: data.target_date || null,
         status: "active",
-        quarter: data.quarter || null,
       })
       .select()
       .single();
@@ -98,22 +125,30 @@ const Goals = () => {
       toast.error("Failed to create goal");
       return;
     }
-    if (newMilestones.length > 0 && created) {
-      await supabase.from("goal_milestones" as any).insert(
-        newMilestones.map((m, i) => ({
+    if (newTargets.length > 0 && created) {
+      await supabase.from("goal_targets" as any).insert(
+        newTargets.map((t, i) => ({
           goal_id: (created as any).id,
           user_id: user.id,
-          title: m.title!,
+          name: t.name!,
+          target_type: t.target_type || "number",
+          unit: t.unit || null,
+          start_value: t.start_value ?? 0,
+          target_value: t.target_value ?? 1,
+          current_value: t.start_value ?? 0,
           position: i,
         }))
       );
     }
     toast.success("Goal created");
     fetchGoals();
-    fetchMilestones();
+    fetchTargets();
   };
 
-  const handleUpdateGoal = async (data: Partial<Goal>, updatedMilestones: Partial<GoalMilestone>[]) => {
+  const handleUpdateGoal = async (
+    data: Partial<Goal>,
+    updatedTargets: Partial<GoalTarget>[]
+  ) => {
     if (!editingGoal || !user) return;
     await supabase
       .from("goals" as any)
@@ -121,21 +156,30 @@ const Goals = () => {
         title: data.title,
         description: data.description || null,
         category: data.category,
-        color: CATEGORY_COLORS[data.category || "business"] || editingGoal.color,
+        color:
+          CATEGORY_COLORS[data.category || "business"] || editingGoal.color,
         why_statement: data.why_statement || null,
         target_date: data.target_date || null,
-        quarter: data.quarter || null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", editingGoal.id);
-    await supabase.from("goal_milestones" as any).delete().eq("goal_id", editingGoal.id);
-    if (updatedMilestones.length > 0) {
-      await supabase.from("goal_milestones" as any).insert(
-        updatedMilestones.map((m, i) => ({
+    // Delete old targets and re-insert
+    await supabase
+      .from("goal_targets" as any)
+      .delete()
+      .eq("goal_id", editingGoal.id);
+    if (updatedTargets.length > 0) {
+      await supabase.from("goal_targets" as any).insert(
+        updatedTargets.map((t, i) => ({
           goal_id: editingGoal.id,
           user_id: user.id,
-          title: m.title!,
-          is_done: m.is_done || false,
+          name: t.name!,
+          target_type: t.target_type || "number",
+          unit: t.unit || null,
+          start_value: t.start_value ?? 0,
+          target_value: t.target_value ?? 1,
+          current_value: t.current_value ?? t.start_value ?? 0,
+          is_done: t.is_done || false,
           position: i,
         }))
       );
@@ -143,14 +187,7 @@ const Goals = () => {
     toast.success("Goal updated");
     setEditingGoal(null);
     fetchGoals();
-    fetchMilestones();
-  };
-
-  const handleToggleMilestone = async (milestoneId: string, isDone: boolean) => {
-    await supabase.from("goal_milestones" as any).update({ is_done: !isDone }).eq("id", milestoneId);
-    setMilestones((prev) =>
-      prev.map((m) => (m.id === milestoneId ? { ...m, is_done: !isDone } : m))
-    );
+    fetchTargets();
   };
 
   const handleCompleteGoal = async (goalId: string) => {
@@ -163,21 +200,24 @@ const Goals = () => {
   };
 
   const handleArchiveGoal = async (goalId: string) => {
-    await supabase.from("goals" as any).update({ status: "archived" }).eq("id", goalId);
+    await supabase
+      .from("goals" as any)
+      .update({ status: "archived" })
+      .eq("id", goalId);
     fetchGoals();
   };
 
   const filteredGoals = useMemo(() => {
     return goals.filter((g) => {
       if (filterStatus !== "all" && g.status !== filterStatus) return false;
-      if (filterCategory !== "all" && g.category !== filterCategory) return false;
+      if (filterCategory !== "all" && g.category !== filterCategory)
+        return false;
       return true;
     });
   }, [goals, filterCategory, filterStatus]);
 
   const activeGoals = goals.filter((g) => g.status === "active").length;
   const completedGoals = goals.filter((g) => g.status === "completed").length;
-  const currentQuarter = `Q${Math.ceil((new Date().getMonth() + 1) / 3)} ${new Date().getFullYear()}`;
 
   return (
     <ProjectLayout>
@@ -191,8 +231,12 @@ const Goals = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-semibold text-foreground">Goals</h1>
-                  <p className="text-sm text-muted-foreground hidden sm:block">90-day sprints. Big picture. Stay on track.</p>
+                  <h1 className="text-2xl font-semibold text-foreground">
+                    Goals
+                  </h1>
+                  <p className="text-sm text-muted-foreground hidden sm:block">
+                    Set measurable targets and track progress.
+                  </p>
                 </div>
                 <Button
                   onClick={() => {
@@ -237,8 +281,10 @@ const Goals = () => {
                   <Zap className="w-4 h-4 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Current Sprint</p>
-                  <p className="text-lg font-semibold text-foreground">{currentQuarter}</p>
+                  <p className="text-xs text-muted-foreground">Total Targets</p>
+                  <p className="text-lg font-semibold text-foreground">
+                    {targets.length}
+                  </p>
                 </div>
               </div>
             </div>
@@ -262,7 +308,14 @@ const Goals = () => {
                 </button>
               ))}
               <div className="w-px h-4 bg-border mx-1" />
-              {["all", "business", "personal", "health", "finance", "mindset"].map((c) => (
+              {[
+                "all",
+                "business",
+                "personal",
+                "health",
+                "finance",
+                "mindset",
+              ].map((c) => (
                 <button
                   key={c}
                   onClick={() => setFilterCategory(c)}
@@ -285,9 +338,12 @@ const Goals = () => {
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                 <Target className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground">No goals yet</h3>
+              <h3 className="text-lg font-semibold text-foreground">
+                No goals yet
+              </h3>
               <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                Set your first goal and break it into milestones. Your 90-day sprint starts here.
+                Set your first goal with measurable targets and track your
+                progress over time.
               </p>
               <Button onClick={() => setDialogOpen(true)} className="gap-2 mt-4">
                 <Plus className="w-4 h-4" /> Create First Goal
@@ -301,12 +357,11 @@ const Goals = () => {
               <GoalCard
                 key={goal.id}
                 goal={goal}
-                milestones={milestones.filter((m) => m.goal_id === goal.id)}
+                targets={targets.filter((t) => t.goal_id === goal.id)}
                 onEdit={() => {
                   setEditingGoal(goal);
                   setDialogOpen(true);
                 }}
-                onToggleMilestone={handleToggleMilestone}
                 onComplete={() => handleCompleteGoal(goal.id)}
                 onArchive={() => handleArchiveGoal(goal.id)}
               />
@@ -323,8 +378,10 @@ const Goals = () => {
         }}
         onSubmit={editingGoal ? handleUpdateGoal : handleCreateGoal}
         editGoal={editingGoal}
-        existingMilestones={
-          editingGoal ? milestones.filter((m) => m.goal_id === editingGoal.id) : []
+        existingTargets={
+          editingGoal
+            ? targets.filter((t) => t.goal_id === editingGoal.id)
+            : []
         }
       />
     </ProjectLayout>
