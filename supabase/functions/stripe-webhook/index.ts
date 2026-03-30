@@ -371,6 +371,7 @@ serve(async (req) => {
 
           // Sync renewal order to SureContact E-Commerce tab
           if (customerEmail && invoice.lines?.data?.length > 0) {
+            const renewalPriceId = invoice.lines.data[0]?.price?.id || '';
             const orderData: OrderData = {
               email: customerEmail,
               order_id: `STR-INV-${invoice.id?.substring(0, 15) || Date.now()}`,
@@ -383,7 +384,8 @@ serve(async (req) => {
                 quantity: line.quantity || 1,
                 amount: (line.amount || 0) / 100
               })),
-              created_at: new Date((invoice.created || Date.now() / 1000) * 1000).toISOString()
+              created_at: new Date((invoice.created || Date.now() / 1000) * 1000).toISOString(),
+              price_id: renewalPriceId,
             };
             EdgeRuntime.waitUntil(triggerSureContactOrderSync(orderData));
           }
