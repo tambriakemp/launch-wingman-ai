@@ -104,6 +104,7 @@ import PlannerHub from "./pages/PlannerHub";
 import HabitTracker from "./pages/HabitTracker";
 import DailyPage from "./pages/DailyPage";
 import Goals from "./pages/Goals";
+import GoalDetail from "./pages/GoalDetail";
 import BrainDump from "./pages/BrainDump";
 import WeeklyReview from "./pages/WeeklyReview";
 import LinkInBio from "./pages/LinkInBio";
