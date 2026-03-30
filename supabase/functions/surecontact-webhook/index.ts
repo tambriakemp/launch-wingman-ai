@@ -18,7 +18,7 @@ interface ContactPayload {
   email: string;
   first_name: string;
   last_name: string;
-  subscription_status: 'free' | 'pro';
+  subscription_status: 'free' | 'content_vault' | 'pro' | 'advanced';
   event_type: string;
   stripe_customer_id?: string;
   signup_date?: string;
