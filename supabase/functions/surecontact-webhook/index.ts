@@ -768,7 +768,7 @@ Deno.serve(async (req) => {
         await logWebhookResult(supabase, {
           email,
           event_type: 'order',
-          subscription_status: 'pro',
+          subscription_status: orderTier,
           success: false,
           response_status: 500,
           error_message: contactResult.error || 'Failed to find/create contact',
