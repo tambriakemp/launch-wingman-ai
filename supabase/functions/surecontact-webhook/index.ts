@@ -209,6 +209,16 @@ function buildCustomFields(
 }
 
 // Manage tags for a contact
+// Tier-specific tag mapping
+const TIER_TAG_MAP: Record<string, string> = {
+  free: 'launchely: free-subscriber',
+  content_vault: 'launchely: vault-subscriber',
+  pro: 'launchely: pro-subscriber',
+  advanced: 'launchely: advanced-subscriber',
+};
+
+const ALL_TIER_TAG_NAMES = Object.values(TIER_TAG_MAP);
+
 async function manageTags(
   apiKey: string,
   contactUuid: string,
@@ -218,44 +228,47 @@ async function manageTags(
   const tagsAdded: string[] = [];
   const tagsRemoved: string[] = [];
 
-  // Determine which subscription tag to use
-  const subscriptionTag = payload.subscription_status === 'pro' ? 'pro-subscriber' : 'free-user';
-  const oppositeTag = payload.subscription_status === 'pro' ? 'free-user' : 'pro-subscriber';
+  // Determine the correct tier tag
+  const correctTagName = TIER_TAG_MAP[payload.subscription_status] || TIER_TAG_MAP.free;
 
-  // Get tag UUIDs
-  const subscriptionTagConfig = config.get(`tag:${subscriptionTag}`);
-  const oppositeTagConfig = config.get(`tag:${oppositeTag}`);
-
-  // Remove opposite subscription tag first
-  if (oppositeTagConfig) {
+  // Remove all OTHER tier tags
+  const tagsToRemove = ALL_TIER_TAG_NAMES.filter(t => t !== correctTagName);
+  const removeUuids: string[] = [];
+  for (const tagName of tagsToRemove) {
+    const tagConfig = config.get(`tag:${tagName}`);
+    if (tagConfig) {
+      removeUuids.push(tagConfig.surecontact_uuid);
+    }
+  }
+  if (removeUuids.length > 0) {
     const detachResult = await sureContactRequest(
       `/contacts/${contactUuid}/tags/detach`,
       'POST',
       apiKey,
-      { tag_uuids: [oppositeTagConfig.surecontact_uuid] }
+      { tag_uuids: removeUuids }
     );
     if (detachResult.success) {
-      tagsRemoved.push(oppositeTag);
+      tagsRemoved.push(...tagsToRemove);
     }
   }
 
-  // Add correct subscription tag
-  if (subscriptionTagConfig) {
+  // Add correct tier tag
+  const correctTagConfig = config.get(`tag:${correctTagName}`);
+  if (correctTagConfig) {
     const attachResult = await sureContactRequest(
       `/contacts/${contactUuid}/tags/attach`,
       'POST',
       apiKey,
-      { tag_uuids: [subscriptionTagConfig.surecontact_uuid] }
+      { tag_uuids: [correctTagConfig.surecontact_uuid] }
     );
     if (attachResult.success) {
-      tagsAdded.push(subscriptionTag);
+      tagsAdded.push(correctTagName);
     }
   }
 
-  // Add event tag based on event type - using correct SureContact tag names
+  // Add event tag based on event type
   const eventTagMap: Record<string, string> = {
     signup: 'new-signup',
-    subscription_started: 'upgraded-to-pro',
     subscription_cancelled: 'churned',
     reactivated: 'reactivated',
   };
