@@ -877,7 +877,7 @@ Deno.serve(async (req) => {
         await logWebhookResult(supabase, {
           email,
           event_type: 'order',
-          subscription_status: 'pro',
+          subscription_status: orderTier,
           success: orderResult.success,
           response_status: orderResult.status,
           error_message: orderResult.error,
