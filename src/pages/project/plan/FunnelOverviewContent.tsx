@@ -120,7 +120,7 @@ const PhaseProgressRail = ({
   };
   return (
     <div className="rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center justify-between overflow-x-auto gap-0">
+      <div className="flex items-center justify-between overflow-x-auto overflow-y-hidden gap-0">
         {phases.map((phase, index) => {
           const status = phaseStatuses[phase];
           const isComplete = status === "complete";
