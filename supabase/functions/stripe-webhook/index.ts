@@ -51,6 +51,7 @@ interface OrderData {
   status: 'completed' | 'refunded' | 'pending';
   products: Array<{ name: string; price_id: string; quantity: number; amount: number }>;
   created_at: string;
+  price_id?: string;
 }
 
 async function triggerSureContactOrderSync(orderData: OrderData) {
