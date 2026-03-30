@@ -1521,6 +1521,97 @@ export type Database = {
           },
         ]
       }
+      goal_target_updates: {
+        Row: {
+          created_at: string
+          id: string
+          new_value: number
+          note: string | null
+          previous_value: number
+          target_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_value: number
+          note?: string | null
+          previous_value: number
+          target_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_value?: number
+          note?: string | null
+          previous_value?: number
+          target_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_target_updates_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "goal_targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goal_targets: {
+        Row: {
+          created_at: string
+          current_value: number
+          goal_id: string
+          id: string
+          is_done: boolean
+          name: string
+          position: number
+          start_value: number
+          target_type: string
+          target_value: number
+          unit: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: number
+          goal_id: string
+          id?: string
+          is_done?: boolean
+          name: string
+          position?: number
+          start_value?: number
+          target_type?: string
+          target_value?: number
+          unit?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: number
+          goal_id?: string
+          id?: string
+          is_done?: boolean
+          name?: string
+          position?: number
+          start_value?: number
+          target_type?: string
+          target_value?: number
+          unit?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_targets_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goals: {
         Row: {
           category: string
@@ -1528,7 +1619,6 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
-          quarter: string | null
           status: string
           target_date: string | null
           title: string
@@ -1542,7 +1632,6 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
-          quarter?: string | null
           status?: string
           target_date?: string | null
           title: string
@@ -1556,7 +1645,6 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
-          quarter?: string | null
           status?: string
           target_date?: string | null
           title?: string
