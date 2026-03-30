@@ -1,15 +1,12 @@
-import { useState } from "react";
-import { format, differenceInDays, parseISO } from "date-fns";
+import { useNavigate } from "react-router-dom";
+import { differenceInDays, parseISO } from "date-fns";
 import {
-  CheckCircle2,
-  Circle,
   MoreHorizontal,
   Pencil,
   Trophy,
   Archive,
-  ChevronDown,
-  ChevronRight,
   CalendarDays,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -18,31 +15,29 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Goal, GoalMilestone } from "@/pages/Goals";
+import type { Goal, GoalTarget } from "@/pages/Goals";
 
 interface GoalCardProps {
   goal: Goal;
-  milestones: GoalMilestone[];
+  targets: GoalTarget[];
   onEdit: () => void;
-  onToggleMilestone: (id: string, isDone: boolean) => void;
   onComplete: () => void;
   onArchive: () => void;
 }
 
 export function GoalCard({
   goal,
-  milestones,
+  targets,
   onEdit,
-  onToggleMilestone,
   onComplete,
   onArchive,
 }: GoalCardProps) {
-  const [expanded, setExpanded] = useState(true);
+  const navigate = useNavigate();
 
-  const doneMilestones = milestones.filter((m) => m.is_done).length;
-  const totalMilestones = milestones.length;
+  const doneTargets = targets.filter((t) => t.is_done).length;
+  const totalTargets = targets.length;
   const progress =
-    totalMilestones > 0 ? Math.round((doneMilestones / totalMilestones) * 100) : 0;
+    totalTargets > 0 ? Math.round((doneTargets / totalTargets) * 100) : 0;
 
   const daysLeft = goal.target_date
     ? differenceInDays(parseISO(goal.target_date), new Date())
@@ -52,9 +47,12 @@ export function GoalCard({
 
   return (
     <div
+      onClick={() => navigate(`/goals/${goal.id}`)}
       className={cn(
-        "rounded-xl border bg-card overflow-hidden transition-all",
-        isCompleted ? "border-border/50 opacity-70" : "border-border hover:shadow-sm"
+        "rounded-xl border bg-card overflow-hidden transition-all cursor-pointer group",
+        isCompleted
+          ? "border-border/50 opacity-70"
+          : "border-border hover:shadow-md hover:border-primary/20"
       )}
     >
       {/* Color bar */}
@@ -63,17 +61,6 @@ export function GoalCard({
       <div className="p-4 space-y-3">
         {/* Header row */}
         <div className="flex items-start gap-3">
-          <button
-            onClick={() => setExpanded((e) => !e)}
-            className="mt-0.5 shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {expanded ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )}
-          </button>
-
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h3
@@ -87,11 +74,6 @@ export function GoalCard({
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">
                 {goal.category}
               </span>
-              {goal.quarter && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                  {goal.quarter}
-                </span>
-              )}
               {isCompleted && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
                   Completed ✓
@@ -107,7 +89,7 @@ export function GoalCard({
 
             {/* Progress + date row */}
             <div className="flex items-center gap-4 mt-2">
-              {totalMilestones > 0 && (
+              {totalTargets > 0 && (
                 <div className="flex items-center gap-2">
                   <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
@@ -116,7 +98,7 @@ export function GoalCard({
                     />
                   </div>
                   <span className="text-[10px] text-muted-foreground">
-                    {doneMilestones}/{totalMilestones}
+                    {doneTargets}/{totalTargets} targets
                   </span>
                 </div>
               )}
@@ -140,57 +122,84 @@ export function GoalCard({
           </div>
 
           {/* Actions menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
-                <MoreHorizontal className="w-4 h-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onEdit}>
-                <Pencil className="w-3.5 h-3.5 mr-2" /> Edit
-              </DropdownMenuItem>
-              {goal.status === "active" && (
-                <DropdownMenuItem onClick={onComplete}>
-                  <Trophy className="w-3.5 h-3.5 mr-2" /> Mark Complete
+          <div className="flex items-center gap-1">
+            <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  onClick={(e) => e.stopPropagation()}
+                  className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit();
+                  }}
+                >
+                  <Pencil className="w-3.5 h-3.5 mr-2" /> Edit
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={onArchive}>
-                <Archive className="w-3.5 h-3.5 mr-2" /> Archive
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {goal.status === "active" && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onComplete();
+                    }}
+                  >
+                    <Trophy className="w-3.5 h-3.5 mr-2" /> Mark Complete
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onArchive();
+                  }}
+                >
+                  <Archive className="w-3.5 h-3.5 mr-2" /> Archive
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
-        {/* Milestones */}
-        {expanded && totalMilestones > 0 && (
-          <div className="pl-7 space-y-0.5">
-            {milestones.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => onToggleMilestone(m.id, m.is_done)}
-                className="flex items-center gap-2.5 w-full text-left group hover:bg-muted/30 rounded-lg px-2 py-1.5 transition-colors"
-              >
-                {m.is_done ? (
-                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-                ) : (
-                  <Circle className="w-4 h-4 text-muted-foreground/40 group-hover:text-muted-foreground shrink-0" />
-                )}
-                <span
-                  className={cn(
-                    "text-sm flex-1",
-                    m.is_done && "line-through text-muted-foreground"
-                  )}
-                >
-                  {m.title}
-                </span>
-                {m.due_date && (
-                  <span className="text-[10px] text-muted-foreground">
-                    {format(parseISO(m.due_date), "MMM d")}
+        {/* Target previews */}
+        {totalTargets > 0 && (
+          <div className="space-y-1.5 pl-0">
+            {targets.slice(0, 3).map((t) => {
+              const range = t.target_value - t.start_value;
+              const current = t.current_value - t.start_value;
+              const pct = range > 0 ? Math.min(100, Math.round((current / range) * 100)) : (t.is_done ? 100 : 0);
+              return (
+                <div key={t.id} className="flex items-center gap-2.5">
+                  <div className="w-20 h-1 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all",
+                        t.is_done ? "bg-primary" : "bg-primary/60"
+                      )}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground truncate flex-1">
+                    {t.name}
                   </span>
-                )}
-              </button>
-            ))}
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {t.target_type === "currency" ? "$" : ""}
+                    {Number(t.current_value).toLocaleString()}
+                    {t.unit ? ` ${t.unit}` : ""} / {t.target_type === "currency" ? "$" : ""}
+                    {Number(t.target_value).toLocaleString()}
+                  </span>
+                </div>
+              );
+            })}
+            {totalTargets > 3 && (
+              <p className="text-[10px] text-muted-foreground pl-[90px]">
+                +{totalTargets - 3} more target{totalTargets - 3 > 1 ? "s" : ""}
+              </p>
+            )}
           </div>
         )}
       </div>

@@ -26,7 +26,7 @@ import {
 import { format, parseISO } from "date-fns";
 import { CalendarIcon, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Goal, GoalMilestone } from "@/pages/Goals";
+import type { Goal, GoalTarget } from "@/pages/Goals";
 
 const CATEGORIES = [
   { id: "business", label: "Business" },
@@ -37,20 +37,32 @@ const CATEGORIES = [
   { id: "mindset", label: "Mindset" },
 ];
 
-const QUARTERS = [
-  "Q1 2025", "Q2 2025", "Q3 2025", "Q4 2025",
-  "Q1 2026", "Q2 2026", "Q3 2026", "Q4 2026",
+const TARGET_TYPES = [
+  { id: "number", label: "Number" },
+  { id: "currency", label: "Currency" },
+  { id: "true_false", label: "True / False" },
+  { id: "tasks", label: "Tasks" },
 ];
+
+interface TargetDraft {
+  name: string;
+  target_type: string;
+  unit: string;
+  start_value: number;
+  target_value: number;
+  current_value: number;
+  is_done: boolean;
+}
 
 interface GoalDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (
     data: Partial<Goal>,
-    milestones: Partial<GoalMilestone>[]
+    targets: Partial<GoalTarget>[]
   ) => Promise<void>;
   editGoal?: Goal | null;
-  existingMilestones?: GoalMilestone[];
+  existingTargets?: GoalTarget[];
 }
 
 export function GoalDialog({
@@ -58,21 +70,22 @@ export function GoalDialog({
   onOpenChange,
   onSubmit,
   editGoal,
-  existingMilestones = [],
+  existingTargets = [],
 }: GoalDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("business");
   const [whyStatement, setWhyStatement] = useState("");
   const [targetDate, setTargetDate] = useState<Date | undefined>(undefined);
-  const [quarter, setQuarter] = useState("");
-  const [milestones, setMilestones] = useState<
-    { title: string; is_done: boolean; due_date?: string }[]
-  >([]);
-  const [newMilestone, setNewMilestone] = useState("");
+  const [targets, setTargets] = useState<TargetDraft[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const currentQuarter = `Q${Math.ceil((new Date().getMonth() + 1) / 3)} ${new Date().getFullYear()}`;
+  // New target form
+  const [newName, setNewName] = useState("");
+  const [newType, setNewType] = useState("number");
+  const [newUnit, setNewUnit] = useState("");
+  const [newStartValue, setNewStartValue] = useState("0");
+  const [newTargetValue, setNewTargetValue] = useState("");
 
   useEffect(() => {
     if (editGoal) {
@@ -83,12 +96,15 @@ export function GoalDialog({
       setTargetDate(
         editGoal.target_date ? parseISO(editGoal.target_date) : undefined
       );
-      setQuarter(editGoal.quarter || "");
-      setMilestones(
-        existingMilestones.map((m) => ({
-          title: m.title,
-          is_done: m.is_done,
-          due_date: m.due_date || undefined,
+      setTargets(
+        existingTargets.map((t) => ({
+          name: t.name,
+          target_type: t.target_type,
+          unit: t.unit || "",
+          start_value: Number(t.start_value),
+          target_value: Number(t.target_value),
+          current_value: Number(t.current_value),
+          is_done: t.is_done,
         }))
       );
     } else {
@@ -97,23 +113,39 @@ export function GoalDialog({
       setCategory("business");
       setWhyStatement("");
       setTargetDate(undefined);
-      setQuarter(currentQuarter);
-      setMilestones([]);
+      setTargets([]);
     }
-    setNewMilestone("");
+    resetNewTarget();
   }, [editGoal, open]);
 
-  const addMilestone = () => {
-    if (!newMilestone.trim()) return;
-    setMilestones((prev) => [
-      ...prev,
-      { title: newMilestone.trim(), is_done: false },
-    ]);
-    setNewMilestone("");
+  const resetNewTarget = () => {
+    setNewName("");
+    setNewType("number");
+    setNewUnit("");
+    setNewStartValue("0");
+    setNewTargetValue("");
   };
 
-  const removeMilestone = (idx: number) =>
-    setMilestones((prev) => prev.filter((_, i) => i !== idx));
+  const addTarget = () => {
+    if (!newName.trim()) return;
+    const isTrueFalse = newType === "true_false";
+    setTargets((prev) => [
+      ...prev,
+      {
+        name: newName.trim(),
+        target_type: newType,
+        unit: isTrueFalse ? "" : newUnit.trim(),
+        start_value: isTrueFalse ? 0 : Number(newStartValue) || 0,
+        target_value: isTrueFalse ? 1 : Number(newTargetValue) || 1,
+        current_value: isTrueFalse ? 0 : Number(newStartValue) || 0,
+        is_done: false,
+      },
+    ]);
+    resetNewTarget();
+  };
+
+  const removeTarget = (idx: number) =>
+    setTargets((prev) => prev.filter((_, i) => i !== idx));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,15 +159,17 @@ export function GoalDialog({
           category,
           why_statement: whyStatement.trim() || null,
           target_date: targetDate ? format(targetDate, "yyyy-MM-dd") : null,
-          quarter: quarter || null,
         } as Partial<Goal>,
-        milestones
+        targets
       );
       onOpenChange(false);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const typeLabel = (type: string) =>
+    TARGET_TYPES.find((t) => t.id === type)?.label || type;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -177,7 +211,7 @@ export function GoalDialog({
               />
             </div>
 
-            {/* Category + Quarter row */}
+            {/* Category + Target date */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">
@@ -198,96 +232,132 @@ export function GoalDialog({
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">
-                  Sprint / Quarter
+                  Target Date
                 </Label>
-                <Select value={quarter} onValueChange={setQuarter}>
-                  <SelectTrigger className="h-10">
-                    <SelectValue placeholder="Select quarter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {QUARTERS.map((q) => (
-                      <SelectItem key={q} value={q}>
-                        {q}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal h-10",
+                        !targetDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {targetDate
+                        ? format(targetDate, "MMM d, yyyy")
+                        : "Pick date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={targetDate}
+                      onSelect={setTargetDate}
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
-            {/* Target date */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Target Date
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal h-10",
-                      !targetDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {targetDate ? format(targetDate, "PPP") : "Pick a target date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={targetDate}
-                    onSelect={setTargetDate}
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Milestones */}
+            {/* Targets */}
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground">
-                Milestones
+                Targets
               </Label>
-              <div className="space-y-1.5">
-                {milestones.map((m, idx) => (
-                  <div key={idx} className="flex items-center gap-2 group">
-                    <div className="w-4 h-4 rounded border border-border flex-shrink-0" />
-                    <span className="flex-1 text-sm text-foreground">
-                      {m.title}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removeMilestone(idx)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+
+              {/* Existing targets */}
+              {targets.length > 0 && (
+                <div className="space-y-1.5">
+                  {targets.map((t, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 group rounded-lg border border-border px-3 py-2"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {t.name}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {typeLabel(t.target_type)}
+                          {t.target_type === "true_false"
+                            ? ""
+                            : ` · ${t.start_value} → ${t.target_value}`}
+                          {t.unit ? ` ${t.unit}` : ""}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeTarget(idx)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add target form */}
+              <div className="space-y-2 rounded-lg border border-dashed border-border p-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="Target name..."
+                    className="h-9 text-sm"
+                    maxLength={200}
+                  />
+                  <Select value={newType} onValueChange={setNewType}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TARGET_TYPES.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {newType !== "true_false" && (
+                  <div className="grid grid-cols-3 gap-2">
+                    <Input
+                      type="number"
+                      value={newStartValue}
+                      onChange={(e) => setNewStartValue(e.target.value)}
+                      placeholder="Start"
+                      className="h-9 text-sm"
+                    />
+                    <Input
+                      type="number"
+                      value={newTargetValue}
+                      onChange={(e) => setNewTargetValue(e.target.value)}
+                      placeholder="Target"
+                      className="h-9 text-sm"
+                    />
+                    <Input
+                      value={newUnit}
+                      onChange={(e) => setNewUnit(e.target.value)}
+                      placeholder="Unit (opt)"
+                      className="h-9 text-sm"
+                      maxLength={30}
+                    />
                   </div>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  value={newMilestone}
-                  onChange={(e) => setNewMilestone(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addMilestone();
-                    }
-                  }}
-                  placeholder="Add a milestone..."
-                  className="h-9 text-sm"
-                  maxLength={200}
-                />
+                )}
+
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={addMilestone}
-                  className="h-9 px-3"
+                  onClick={addTarget}
+                  disabled={!newName.trim()}
+                  className="h-8 gap-1.5 text-xs"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-3 h-3" /> Add Target
                 </Button>
               </div>
             </div>
