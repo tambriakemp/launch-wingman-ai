@@ -332,10 +332,19 @@ async function addToMasterList(
   return false;
 }
 
+// Price ID to tier mapping (matches subscriptionTiers.ts)
+const PRICE_ID_TO_TIER: Record<string, 'content_vault' | 'pro' | 'advanced'> = {
+  'price_1StiayF2gaEq7adwKHe9AbQF': 'content_vault',
+  'price_1SipMGF2gaEq7adwAGMICdO5': 'pro',
+  'price_1TEznFF2gaEq7adwpTfGefLX': 'advanced',
+};
+
+type SubscriptionTier = 'free' | 'content_vault' | 'pro' | 'advanced';
+
 async function getSubscriptionStatus(
   stripe: Stripe | null,
   email: string
-): Promise<{ status: 'free' | 'pro'; customerId?: string; plan?: string; startDate?: string }> {
+): Promise<{ status: SubscriptionTier; customerId?: string; plan?: string; startDate?: string }> {
   if (!stripe) return { status: 'free' };
 
   try {
@@ -351,12 +360,11 @@ async function getSubscriptionStatus(
 
     if (subscriptions.data.length > 0) {
       const sub = subscriptions.data[0];
-      const plan = sub.items.data[0]?.price?.nickname || 
-                   sub.items.data[0]?.price?.id || 
-                   'pro';
-      // Get subscription start date from Stripe
+      const priceId = sub.items.data[0]?.price?.id || '';
+      const plan = sub.items.data[0]?.price?.nickname || priceId || 'pro';
+      const tier: SubscriptionTier = PRICE_ID_TO_TIER[priceId] || 'pro';
       const startDate = new Date(sub.start_date * 1000).toISOString().split('T')[0];
-      return { status: 'pro', customerId: customer.id, plan, startDate };
+      return { status: tier, customerId: customer.id, plan, startDate };
     }
 
     return { status: 'free', customerId: customer.id };
