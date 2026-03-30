@@ -276,6 +276,7 @@ serve(async (req) => {
           EdgeRuntime.waitUntil(fireIncomingWebhooks(supabaseClient, 'pro_signup', customerEmail, firstName, lastName));
           try {
             const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+            const firstPriceId = lineItems.data[0]?.price?.id || '';
             const orderData: OrderData = {
               email: customerEmail,
               order_id: `STR-${session.id.substring(0, 20)}`,
@@ -288,7 +289,8 @@ serve(async (req) => {
                 quantity: item.quantity || 1,
                 amount: (item.amount_total || 0) / 100
               })),
-              created_at: new Date(session.created * 1000).toISOString()
+              created_at: new Date(session.created * 1000).toISOString(),
+              price_id: firstPriceId,
             };
             EdgeRuntime.waitUntil(triggerSureContactOrderSync(orderData));
           } catch (lineItemsError) {
