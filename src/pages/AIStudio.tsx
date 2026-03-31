@@ -140,11 +140,26 @@ const AIStudio = () => {
                 }
               });
 
-              // Always anchor to canonical character preview, NOT previous scene output
-              // This prevents identity drift across scenes
-              const activePreviewForAnchor = task.step.is_final_look && currentPreviewFinalLook
-                ? currentPreviewFinalLook : currentPreviewCharacter;
-              const anchorImageUrl: string | undefined = activePreviewForAnchor || undefined;
+              // For carousel mode: use Scene 1's generated image as anchor for slides 2+
+              // This ensures all slides share the same visual world as the first generated image
+              const isCarousel = task.config.creationMode === 'carousel';
+              let anchorImageUrl: string | undefined;
+              if (isCarousel && task.index > 0) {
+                const scene1Image = currentGeneratedMedia[0]?.imageUrl;
+                if (!scene1Image) {
+                  // Scene 1 not ready yet — re-queue this task at the end
+                  console.log(`[Carousel] Scene ${task.index + 1} waiting for Scene 1 — re-queuing`);
+                  setQueue(prev => [...prev.slice(1), prev[0]]);
+                  await new Promise(r => setTimeout(r, 2000));
+                  continue;
+                }
+                anchorImageUrl = scene1Image;
+              } else {
+                // Standard behavior: anchor to canonical character preview
+                const activePreviewForAnchor = task.step.is_final_look && currentPreviewFinalLook
+                  ? currentPreviewFinalLook : currentPreviewCharacter;
+                anchorImageUrl = activePreviewForAnchor || undefined;
+              }
 
               const activePreview = task.step.is_final_look && currentPreviewFinalLook
                 ? currentPreviewFinalLook : currentPreviewCharacter;
@@ -973,9 +988,13 @@ const AIStudio = () => {
                 <h2 className="text-sm font-bold text-foreground">Storyboard · {storyboard.steps.length} scenes</h2>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => {
-                    const tasks: QueueItem[] = storyboard.steps
+                    let tasks: QueueItem[] = storyboard.steps
                       .map((s, idx) => ({ id: Math.random().toString(), type: 'generate' as const, index: idx, step: s, config: { ...config } }))
                       .filter(t => !generatedMedia[t.index]?.imageUrl);
+                    // For carousel: ensure scene 1 is first so it can anchor the rest
+                    if (config.creationMode === 'carousel' && tasks.length > 0) {
+                      tasks.sort((a, b) => a.index - b.index);
+                    }
                     if (tasks.length > 0) addToQueue(tasks);
                   }}>
                     <ImageIcon className="h-3.5 w-3.5 mr-1.5" /> Generate All Images

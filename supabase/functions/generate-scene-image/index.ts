@@ -229,7 +229,17 @@ serve(async (req) => {
       // Continuity chaining instruction when previous scene image is provided
       let continuityInstruction = "";
       if (previousSceneImageUrl) {
-        continuityInstruction = `\nSCENE CONTINUITY: A previous scene image from this sequence has been provided. Maintain visual continuity — similar lighting, time of day, and spatial awareness. The person should appear to be continuing naturally from the previous scene. However, keep identity anchored to the canonical character preview. Create a DISTINCT composition and pose that matches THIS scene's description, NOT a copy of the previous scene.`;
+        if (config.creationMode === 'carousel') {
+          continuityInstruction = `\nCAROUSEL SLIDE CONTINUITY: The previous slide's image has been provided. This is part of a COHESIVE carousel set. Maintain EXACT visual continuity — the subject's hair (style, position, flow), ALL accessories (rings, bracelets, necklaces, earrings), nail color, outfit details, and every visible element MUST be IDENTICAL to the previous slide. Only the SHOT ANGLE and FRAMING should change. Do NOT add, remove, or modify any detail.`;
+        } else {
+          continuityInstruction = `\nSCENE CONTINUITY: A previous scene image from this sequence has been provided. Maintain visual continuity — similar lighting, time of day, and spatial awareness. The person should appear to be continuing naturally from the previous scene. However, keep identity anchored to the canonical character preview. Create a DISTINCT composition and pose that matches THIS scene's description, NOT a copy of the previous scene.`;
+        }
+      }
+
+      // Carousel-specific consistency block
+      let carouselConsistencyInstruction = "";
+      if (config.creationMode === 'carousel') {
+        carouselConsistencyInstruction = `\nCAROUSEL CONSISTENCY (CRITICAL): This image is part of a cohesive carousel set. The subject's hair (exact style, length, position — down, up, ponytail, etc.), ALL accessories (rings, bracelets, necklaces, earrings, watches), nail color, jewelry, and every visible detail MUST remain IDENTICAL to the reference/anchor image. Do NOT add, remove, or change ANY accessories, hairstyle, or detail between slides. If the anchor shows hair down with no rings, EVERY slide must show hair down with no rings. Only the shot angle, framing, and composition should differ.`;
       }
 
       // Build prompt as EDIT instruction when preview exists, otherwise generate from scratch
@@ -257,6 +267,7 @@ Style: editorial fashion photography, professional lighting, tasteful, fully clo
 ${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmentImage ? "The subject should interact naturally with the environment, not pose at the camera." : "")}
 ${envFidelityInstruction}
 ${continuityInstruction}
+${carouselConsistencyInstruction}
 ${config.ultraRealistic ? 'Ultra-realistic, shot on a real iPhone Pro back-facing camera, 8K resolution, natural perspective. Skin appears hyper-realistic with visible pores, natural texture, and subtle imperfections, showcasing real-world skin detail. Enhancing realism without looking overdone. Photorealistic color grading, sharp facial focus, true-to-life contrast, no artificial smoothing, no filters, no stylization. No text, logos, captions, or overlays anywhere in the image.' : ''}`;
       } else {
         // GENERATE FROM SCRATCH MODE (no preview available)
@@ -280,6 +291,7 @@ Style: editorial fashion photography, professional lighting, tasteful, fully clo
 ${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmentImage ? "The subject should interact naturally with the environment, not pose at the camera." : "")}
 ${envFidelityInstruction}
 ${continuityInstruction}
+${carouselConsistencyInstruction}
 ${config.ultraRealistic ? 'Ultra-realistic, shot on a real iPhone Pro back-facing camera, 8K resolution, natural perspective. Skin appears hyper-realistic with visible pores, natural texture, and subtle imperfections, showcasing real-world skin detail. Enhancing realism without looking overdone. Photorealistic color grading, sharp facial focus, true-to-life contrast, no artificial smoothing, no filters, no stylization. No text, logos, captions, or overlays anywhere in the image.' : ''}`;
       }
 
