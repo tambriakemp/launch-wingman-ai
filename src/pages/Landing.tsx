@@ -9,7 +9,7 @@ import { DashboardMockup } from "@/components/landing/screenshots/DashboardMocku
 import { TransformationMockup } from "@/components/landing/screenshots/TransformationMockup";
 import { TasksMockup } from "@/components/landing/screenshots/TasksMockup";
 import { PlannerMockup } from "@/components/landing/screenshots/PlannerMockup";
-import { SalesCopyMockup } from "@/components/landing/screenshots/SalesCopyMockup";
+import { AIStudioMockup } from "@/components/landing/screenshots/AIStudioMockup";
 import { SocialHubMockup } from "@/components/landing/screenshots/SocialHubMockup";
 
 import { ContentVaultMockup } from "@/components/landing/screenshots/ContentVaultMockup";
@@ -37,6 +37,7 @@ import {
   BookOpen,
   Palette,
   Video,
+  Film,
   Mail,
   PenTool,
   Layers,
@@ -77,12 +78,13 @@ const launchFeatures = [
 ];
 
 const marketingFeatures = [
-  { icon: FileText, text: "Full AI sales copy — headlines, bullets, CTAs, guarantees" },
-  { icon: Brain, text: "Transformation statements in multiple styles" },
-  { icon: Calendar, text: "30-day social content planner with daily prompts" },
-  { icon: Mail, text: "Email sequences — welcome, launch, cart-close" },
-  { icon: PenTool, text: "Hook generator and carousel builder" },
-  { icon: Lightbulb, text: "Content idea bank with format and platform tags" },
+  { icon: Film, text: "AI Studio — generate talking-head vlogs from a script with your own avatar and voice" },
+  { icon: FileText, text: "AI sales copy for every funnel page — headlines, bullets, CTAs, and guarantees" },
+  { icon: PenTool, text: "Hook generator and carousel builder with psychological frameworks" },
+  { icon: Calendar, text: "30-day social content planner with daily prompts and scheduling" },
+  { icon: Mail, text: "Email sequence generator — welcome, launch, nurture, and cart-close flows" },
+  { icon: Lightbulb, text: "Content idea bank — save hooks, formats, and platform-tagged ideas" },
+  { icon: Brain, text: "Transformation statements and messaging pulled from your offer data" },
 ];
 
 const resourceFeatures = [
@@ -477,7 +479,7 @@ const Landing = () => {
                 className="order-2 lg:order-1"
               >
                 <div className="space-y-8">
-                  <SalesCopyMockup />
+                  <AIStudioMockup />
                   <SocialHubMockup />
                 </div>
               </motion.div>
@@ -489,10 +491,10 @@ const Landing = () => {
               >
                 <span className="inline-block bg-accent/20 text-accent-foreground font-semibold text-sm px-4 py-1.5 rounded-full mb-4">Marketing</span>
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-5 leading-tight">
-                  Write Copy That Converts. Content That <span className="text-accent">Connects.</span>
+                  Create Content That Converts. Videos That <span className="text-accent">Connect.</span>
                 </h2>
                 <p className="text-lg text-muted-foreground mb-8">
-                  Your sales page, emails, and social posts shouldn't take weeks. Launchely's AI writes high-converting copy from your audience data — then organizes it into a 30-day content calendar.
+                  From AI-generated vlogs to full sales pages, Launchely's marketing suite writes, designs, and schedules your launch content — all powered by your audience data and offer details.
                 </p>
                 <ul className="space-y-4">
                   {marketingFeatures.map((f, i) => (
