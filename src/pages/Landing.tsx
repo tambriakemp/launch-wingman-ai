@@ -5,7 +5,7 @@ import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { MarqueeStrip } from "@/components/landing/MarqueeStrip";
 import { DashboardMockup } from "@/components/landing/screenshots/DashboardMockup";
-import { FunnelBuilderMockup } from "@/components/landing/screenshots/FunnelBuilderMockup";
+
 import { TransformationMockup } from "@/components/landing/screenshots/TransformationMockup";
 import { TasksMockup } from "@/components/landing/screenshots/TasksMockup";
 import { SalesCopyMockup } from "@/components/landing/screenshots/SalesCopyMockup";
