@@ -69,14 +69,14 @@ export const LandingHeader = () => {
             >
               How It Works
             </button>
-            <Link
-              to="/pricing"
+            <button
+              onClick={() => scrollToSection("pricing")}
               className={`font-medium transition-colors ${
                 showWhiteHeader ? "text-foreground/70 hover:text-foreground" : "text-primary-foreground/80 hover:text-primary-foreground"
               }`}
             >
               Pricing
-            </Link>
+            </button>
           </nav>
 
           {/* Desktop CTA */}
