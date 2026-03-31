@@ -46,6 +46,13 @@ const TYPE_LABELS: Record<string, string> = {
   tasks: "Tasks",
 };
 
+const TARGET_TYPES = [
+  { id: "number", label: "Number" },
+  { id: "currency", label: "Currency" },
+  { id: "true_false", label: "True / False" },
+  { id: "tasks", label: "Tasks" },
+];
+
 const GoalDetail = () => {
   const { goalId } = useParams<{ goalId: string }>();
   const navigate = useNavigate();
