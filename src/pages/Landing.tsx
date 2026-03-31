@@ -11,7 +11,7 @@ import { TasksMockup } from "@/components/landing/screenshots/TasksMockup";
 import { PlannerMockup } from "@/components/landing/screenshots/PlannerMockup";
 import { SalesCopyMockup } from "@/components/landing/screenshots/SalesCopyMockup";
 import { SocialHubMockup } from "@/components/landing/screenshots/SocialHubMockup";
-import { BrandingMockup } from "@/components/landing/screenshots/BrandingMockup";
+
 import { ContentVaultMockup } from "@/components/landing/screenshots/ContentVaultMockup";
 import {
   Accordion,
