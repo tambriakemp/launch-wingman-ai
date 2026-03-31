@@ -3,7 +3,7 @@ import { AppConfig, AspectRatio } from './types';
 import {
   MAKEUP_STYLES, COMPLEXION_OPTIONS, UNDERTONE_OPTIONS,
   NAIL_STYLES, OUTFIT_TYPES, HAIRSTYLE_GROUPS, CAMERA_MOVEMENTS,
-  VLOG_CATEGORIES, TOPIC_PLACEHOLDERS, QUICK_LOOK_PRESETS
+  VLOG_CATEGORIES, TOPIC_PLACEHOLDERS, QUICK_LOOK_PRESETS, CAROUSEL_AESTHETICS
 } from './constants';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ChevronDown, ChevronRight, Palette, User, Settings2, Sparkles, MapPin, Check, RectangleVertical, RectangleHorizontal, Square } from 'lucide-react';
