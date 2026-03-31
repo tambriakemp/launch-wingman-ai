@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ArrowLeft,
   Target,
   CalendarDays,
@@ -38,6 +45,13 @@ const TYPE_LABELS: Record<string, string> = {
   tasks: "Tasks",
 };
 
+const TARGET_TYPES = [
+  { id: "number", label: "Number" },
+  { id: "currency", label: "Currency" },
+  { id: "true_false", label: "True / False" },
+  { id: "tasks", label: "Tasks" },
+];
+
 const GoalDetail = () => {
   const { goalId } = useParams<{ goalId: string }>();
   const navigate = useNavigate();
@@ -53,6 +67,15 @@ const GoalDetail = () => {
   const [updateValue, setUpdateValue] = useState("");
   const [updateNote, setUpdateNote] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Add target form state
+  const [showAddTarget, setShowAddTarget] = useState(false);
+  const [newTargetName, setNewTargetName] = useState("");
+  const [newTargetType, setNewTargetType] = useState("number");
+  const [newTargetUnit, setNewTargetUnit] = useState("");
+  const [newTargetStart, setNewTargetStart] = useState("0");
+  const [newTargetValue, setNewTargetValue] = useState("");
+  const [isAddingTarget, setIsAddingTarget] = useState(false);
 
   const fetchGoal = useCallback(async () => {
     if (!user || !goalId) return;
@@ -147,6 +170,36 @@ const GoalDetail = () => {
     setIsUpdating(false);
     fetchTargets();
     fetchUpdates();
+  };
+
+  const handleAddTarget = async () => {
+    if (!user || !goalId || !newTargetName.trim()) return;
+    setIsAddingTarget(true);
+    const isTrueFalse = newTargetType === "true_false";
+    const { error } = await supabase.from("goal_targets" as any).insert({
+      goal_id: goalId,
+      user_id: user.id,
+      name: newTargetName.trim(),
+      target_type: newTargetType,
+      unit: isTrueFalse ? null : newTargetUnit.trim() || null,
+      start_value: isTrueFalse ? 0 : Number(newTargetStart) || 0,
+      target_value: isTrueFalse ? 1 : Number(newTargetValue) || 1,
+      current_value: isTrueFalse ? 0 : Number(newTargetStart) || 0,
+      position: targets.length,
+    });
+    if (error) {
+      toast.error("Failed to add target");
+    } else {
+      toast.success("Target added");
+      setNewTargetName("");
+      setNewTargetType("number");
+      setNewTargetUnit("");
+      setNewTargetStart("0");
+      setNewTargetValue("");
+      setShowAddTarget(false);
+      fetchTargets();
+    }
+    setIsAddingTarget(false);
   };
 
   if (isLoading) {
@@ -274,14 +327,94 @@ const GoalDetail = () => {
 
           {/* Targets */}
           <div className="space-y-3">
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Target className="w-4 h-4" />
-              Targets
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Target className="w-4 h-4" />
+                Targets
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddTarget(!showAddTarget)}
+                className="gap-1.5 h-8 text-xs"
+              >
+                <Plus className="w-3 h-3" /> Add Target
+              </Button>
+            </div>
 
-            {targets.length === 0 && (
+            {/* Add target inline form */}
+            {showAddTarget && (
+              <div className="rounded-xl border border-dashed border-border bg-card p-4 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    value={newTargetName}
+                    onChange={(e) => setNewTargetName(e.target.value)}
+                    placeholder="Target name..."
+                    className="h-9 text-sm"
+                    maxLength={200}
+                  />
+                  <Select value={newTargetType} onValueChange={setNewTargetType}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TARGET_TYPES.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {newTargetType !== "true_false" && (
+                  <div className="grid grid-cols-3 gap-2">
+                    <Input
+                      type="number"
+                      value={newTargetStart}
+                      onChange={(e) => setNewTargetStart(e.target.value)}
+                      placeholder="Start"
+                      className="h-9 text-sm"
+                    />
+                    <Input
+                      type="number"
+                      value={newTargetValue}
+                      onChange={(e) => setNewTargetValue(e.target.value)}
+                      placeholder="Target"
+                      className="h-9 text-sm"
+                    />
+                    <Input
+                      value={newTargetUnit}
+                      onChange={(e) => setNewTargetUnit(e.target.value)}
+                      placeholder="Unit (opt)"
+                      className="h-9 text-sm"
+                      maxLength={30}
+                    />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleAddTarget}
+                    disabled={!newTargetName.trim() || isAddingTarget}
+                    className="h-8 text-xs"
+                  >
+                    {isAddingTarget ? "Adding..." : "Save Target"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowAddTarget(false)}
+                    className="h-8 text-xs"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {targets.length === 0 && !showAddTarget && (
               <p className="text-sm text-muted-foreground py-4 text-center">
-                No targets yet. Edit this goal to add measurable targets.
+                No targets yet. Add a measurable target above.
               </p>
             )}
 
