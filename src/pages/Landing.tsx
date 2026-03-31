@@ -11,7 +11,7 @@ import { TasksMockup } from "@/components/landing/screenshots/TasksMockup";
 import { PlannerMockup } from "@/components/landing/screenshots/PlannerMockup";
 import { SalesCopyMockup } from "@/components/landing/screenshots/SalesCopyMockup";
 import { SocialHubMockup } from "@/components/landing/screenshots/SocialHubMockup";
-import { BrandingMockup } from "@/components/landing/screenshots/BrandingMockup";
+
 import { ContentVaultMockup } from "@/components/landing/screenshots/ContentVaultMockup";
 import {
   Accordion,
@@ -86,9 +86,10 @@ const marketingFeatures = [
 ];
 
 const resourceFeatures = [
-  { icon: BookOpen, text: "Content Vault — templates, presets, ebooks, and swipe files" },
-  { icon: Palette, text: "Brand Kit — logos, colors, fonts, and photo library" },
-  { icon: Video, text: "AI Studio — generate branded graphics and carousels" },
+  { icon: BookOpen, text: "Browse categories like Social Media, Email Marketing, Branding, and more" },
+  { icon: Palette, text: "Ready-to-use Canva templates, swipe files, ebooks, and checklists" },
+  { icon: Sparkles, text: "AI image and video prompts you can copy and use instantly" },
+  { icon: Lightbulb, text: "New resources added regularly — your vault keeps growing" },
 ];
 
 const planningFeatures = [
@@ -519,10 +520,10 @@ const Landing = () => {
               >
                 <span className="inline-block bg-accent/20 text-accent-foreground font-semibold text-sm px-4 py-1.5 rounded-full mb-4">Resources</span>
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-5 leading-tight">
-                  Templates, Presets, and <span className="text-accent">Done-For-You</span> Assets.
+                  Your <span className="text-accent">Content Vault.</span> Always Growing.
                 </h2>
                 <p className="text-lg text-muted-foreground mb-8">
-                  Stop creating everything from scratch. Access a growing library of launch templates, social media presets, ebooks, and brand-ready visuals — all included.
+                  Stop creating everything from scratch. The Content Vault gives you a growing library of templates, guides, AI prompts, and done-for-you assets organized by category — all included with your plan.
                 </p>
                 <ul className="space-y-4">
                   {resourceFeatures.map((f, i) => (
@@ -540,10 +541,7 @@ const Landing = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
               >
-                <div className="space-y-8">
-                  <BrandingMockup />
-                  <ContentVaultMockup />
-                </div>
+                <ContentVaultMockup />
               </motion.div>
             </div>
           </div>
