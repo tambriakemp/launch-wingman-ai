@@ -172,14 +172,14 @@ export function GoalDialog({
     TARGET_TYPES.find((t) => t.id === type)?.label || type;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto p-0">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader className="px-6 pt-6 pb-2">
-            <DialogTitle>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full sm:max-w-lg p-0 flex flex-col">
+        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+          <SheetHeader className="px-6 pt-6 pb-2">
+            <SheetTitle>
               {editGoal ? "Edit Goal" : "New Goal"}
-            </DialogTitle>
-          </DialogHeader>
+            </SheetTitle>
+          </SheetHeader>
 
           <div className="px-6 py-4 space-y-4">
             {/* Title */}
