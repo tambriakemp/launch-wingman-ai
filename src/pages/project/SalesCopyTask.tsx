@@ -247,7 +247,7 @@ export default function SalesCopyTask() {
                 </p>
               </div>
               <button
-                onClick={() => navigate('/pricing')}
+                onClick={() => navigate('/#pricing')}
                 className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline shrink-0 whitespace-nowrap"
               >
                 Upgrade to Advanced <ExternalLink className="w-3 h-3" />

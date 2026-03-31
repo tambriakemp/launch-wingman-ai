@@ -282,7 +282,7 @@ const HowItWorks = () => {
                 variant="outline"
                 className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10"
               >
-                <Link to="/pricing">View Pricing</Link>
+                <Link to="/#pricing">View Pricing</Link>
               </Button>
             </div>
           </motion.div>

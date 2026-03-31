@@ -12,7 +12,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { initGA, trackPageView } from "@/lib/analytics";
 import Landing from "./pages/Landing";
 import HowItWorks from "./pages/HowItWorks";
-import Pricing from "./pages/Pricing";
+
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Auth from "./pages/Auth";
 import Checkout from "./pages/Checkout";
@@ -149,7 +149,7 @@ const App = () => (
             {/* Public marketing pages */}
             <Route path="/" element={<Landing />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
-            <Route path="/pricing" element={<Pricing />} />
+            
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/about" element={<About />} />

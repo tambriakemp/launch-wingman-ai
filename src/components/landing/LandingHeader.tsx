@@ -69,14 +69,14 @@ export const LandingHeader = () => {
             >
               How It Works
             </button>
-            <Link
-              to="/pricing"
+            <button
+              onClick={() => scrollToSection("pricing")}
               className={`font-medium transition-colors ${
                 showWhiteHeader ? "text-foreground/70 hover:text-foreground" : "text-primary-foreground/80 hover:text-primary-foreground"
               }`}
             >
               Pricing
-            </Link>
+            </button>
           </nav>
 
           {/* Desktop CTA */}
@@ -144,9 +144,12 @@ export const LandingHeader = () => {
               >
                 How It Works
               </button>
-              <Link to="/pricing" className="block py-2 text-foreground font-medium" onClick={() => setMobileMenuOpen(false)}>
+              <button
+                className="block w-full text-left py-2 text-foreground font-medium"
+                onClick={() => scrollToSection("pricing")}
+              >
                 Pricing
-              </Link>
+              </button>
 
               <div className="pt-4 border-t border-border space-y-2">
                 {user ? (
