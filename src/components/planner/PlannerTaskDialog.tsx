@@ -505,7 +505,7 @@ export const PlannerTaskDialog = ({
           </div>
 
           {/* Footer */}
-          <DialogFooter className="px-6 py-4 border-t border-border flex-col sm:flex-row gap-2">
+          <SheetFooter className="px-6 py-4 border-t border-border flex-col sm:flex-row gap-2">
             {editTask && isScheduled && (
               <Button
                 type="button"
@@ -521,9 +521,9 @@ export const PlannerTaskDialog = ({
             )}
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving..." : editTask ? "Update" : "Create"}</Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 };
