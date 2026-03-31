@@ -396,7 +396,7 @@ const Checkout = () => {
       {/* Back link */}
       <div className="absolute top-4 left-4 z-10">
         <Link
-          to={isUpgrade ? "/settings" : "/pricing"}
+          to={isUpgrade ? "/settings" : "/#pricing"}
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />

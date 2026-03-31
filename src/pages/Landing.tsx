@@ -880,7 +880,7 @@ const Landing = () => {
                 <Link to="/auth?tab=signup">Start Free Today</Link>
               </Button>
               <Button asChild size="lg" className="border-2 border-primary-foreground/30 text-primary-foreground bg-transparent hover:bg-primary-foreground/10 text-lg">
-                <Link to="/pricing">View Pricing</Link>
+                <a href="#pricing">View Pricing</a>
               </Button>
             </div>
           </motion.div>

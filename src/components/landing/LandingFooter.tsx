@@ -4,7 +4,7 @@ import { LaunchelyLogo } from "@/components/ui/LaunchelyLogo";
 const footerLinks = {
   product: [
     { name: "Features", href: "/features/plan" },
-    { name: "Pricing", href: "/pricing" },
+    { name: "Pricing", href: "/#pricing" },
     { name: "Assessments", href: "/features/assessments" },
   ],
   features: [
