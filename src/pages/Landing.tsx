@@ -68,10 +68,10 @@ const oldVsNew = {
 };
 
 const launchFeatures = [
-  { icon: Layers, text: "8+ funnel types — webinars, challenges, tripwires, and more" },
-  { icon: Target, text: "Offer stack builder with pricing, bonuses, and urgency" },
-  { icon: CheckSquare, text: "Launch readiness assessments and coaching quizzes" },
-  { icon: BarChart3, text: "Audience profiling with AI-powered sub-audience generation" },
+  { icon: Layers, text: "Choose from 7 proven funnel paths — freebie, webinar, challenge, and more" },
+  { icon: Target, text: "Configure your offer stack with pricing, bonuses, and urgency built in" },
+  { icon: CheckSquare, text: "Follow a phase-by-phase checklist tailored to your funnel type" },
+  { icon: BarChart3, text: "Validate launch readiness with assessments before you go live" },
 ];
 
 const marketingFeatures = [
