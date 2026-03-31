@@ -291,6 +291,7 @@ Style: editorial fashion photography, professional lighting, tasteful, fully clo
 ${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmentImage ? "The subject should interact naturally with the environment, not pose at the camera." : "")}
 ${envFidelityInstruction}
 ${continuityInstruction}
+${carouselConsistencyInstruction}
 ${config.ultraRealistic ? 'Ultra-realistic, shot on a real iPhone Pro back-facing camera, 8K resolution, natural perspective. Skin appears hyper-realistic with visible pores, natural texture, and subtle imperfections, showcasing real-world skin detail. Enhancing realism without looking overdone. Photorealistic color grading, sharp facial focus, true-to-life contrast, no artificial smoothing, no filters, no stylization. No text, logos, captions, or overlays anywhere in the image.' : ''}`;
       }
 
