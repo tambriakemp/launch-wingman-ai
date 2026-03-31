@@ -28,7 +28,6 @@ import {
   Hash,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays } from "date-fns";
 import type { Goal, GoalTarget, GoalTargetUpdate } from "@/pages/Goals";
 
