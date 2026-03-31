@@ -520,10 +520,10 @@ const Landing = () => {
               >
                 <span className="inline-block bg-accent/20 text-accent-foreground font-semibold text-sm px-4 py-1.5 rounded-full mb-4">Resources</span>
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-5 leading-tight">
-                  Templates, Presets, and <span className="text-accent">Done-For-You</span> Assets.
+                  Your <span className="text-accent">Content Vault.</span> Always Growing.
                 </h2>
                 <p className="text-lg text-muted-foreground mb-8">
-                  Stop creating everything from scratch. Access a growing library of launch templates, social media presets, ebooks, and brand-ready visuals — all included.
+                  Stop creating everything from scratch. The Content Vault gives you a growing library of templates, guides, AI prompts, and done-for-you assets organized by category — all included with your plan.
                 </p>
                 <ul className="space-y-4">
                   {resourceFeatures.map((f, i) => (
