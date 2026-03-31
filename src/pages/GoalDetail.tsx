@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ArrowLeft,
   Target,
   CalendarDays,
@@ -20,6 +27,7 @@ import {
   ListChecks,
   Hash,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays } from "date-fns";
 import type { Goal, GoalTarget, GoalTargetUpdate } from "@/pages/Goals";
