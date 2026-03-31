@@ -323,10 +323,10 @@ const Landing = () => {
               >
                 <span className="inline-block bg-accent/20 text-accent-foreground font-semibold text-sm px-4 py-1.5 rounded-full mb-4">Launch</span>
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-5 leading-tight">
-                  Build Your Funnel. Define Your Offer. <span className="text-accent">Go Live.</span>
+                  Your Step-by-Step Launch Plan. <span className="text-accent">No Course Required.</span>
                 </h2>
                 <p className="text-lg text-muted-foreground mb-8">
-                  Stop guessing which funnel to build. Launchely walks you through choosing the right model, configuring your offer stack, and validating your readiness — before you spend a dime on ads.
+                  Stop buying courses that leave you overwhelmed. Launchely guides you through every step — pick your funnel path, configure your offer, check off each phase, and validate you're ready before you go live. It's like having a launch strategist built into your dashboard.
                 </p>
                 <ul className="space-y-4">
                   {launchFeatures.map((f, i) => (
