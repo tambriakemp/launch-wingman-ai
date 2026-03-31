@@ -69,6 +69,15 @@ const GoalDetail = () => {
   const [updateNote, setUpdateNote] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // Add target form state
+  const [showAddTarget, setShowAddTarget] = useState(false);
+  const [newTargetName, setNewTargetName] = useState("");
+  const [newTargetType, setNewTargetType] = useState("number");
+  const [newTargetUnit, setNewTargetUnit] = useState("");
+  const [newTargetStart, setNewTargetStart] = useState("0");
+  const [newTargetValue, setNewTargetValue] = useState("");
+  const [isAddingTarget, setIsAddingTarget] = useState(false);
+
   const fetchGoal = useCallback(async () => {
     if (!user || !goalId) return;
     const { data } = await supabase
