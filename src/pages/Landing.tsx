@@ -490,10 +490,10 @@ const Landing = () => {
               >
                 <span className="inline-block bg-accent/20 text-accent-foreground font-semibold text-sm px-4 py-1.5 rounded-full mb-4">Marketing</span>
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-5 leading-tight">
-                  Write Copy That Converts. Content That <span className="text-accent">Connects.</span>
+                  Create Content That Converts. Videos That <span className="text-accent">Connect.</span>
                 </h2>
                 <p className="text-lg text-muted-foreground mb-8">
-                  Your sales page, emails, and social posts shouldn't take weeks. Launchely's AI writes high-converting copy from your audience data — then organizes it into a 30-day content calendar.
+                  From AI-generated vlogs to full sales pages, Launchely's marketing suite writes, designs, and schedules your launch content — all powered by your audience data and offer details.
                 </p>
                 <ul className="space-y-4">
                   {marketingFeatures.map((f, i) => (
