@@ -558,7 +558,7 @@ const Landing = () => {
                 viewport={{ once: true }}
                 className="order-2 lg:order-1"
               >
-                <TasksMockup />
+                <PlannerMockup />
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
