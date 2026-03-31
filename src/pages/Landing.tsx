@@ -86,9 +86,10 @@ const marketingFeatures = [
 ];
 
 const resourceFeatures = [
-  { icon: BookOpen, text: "Content Vault — templates, presets, ebooks, and swipe files" },
-  { icon: Palette, text: "Brand Kit — logos, colors, fonts, and photo library" },
-  { icon: Video, text: "AI Studio — generate branded graphics and carousels" },
+  { icon: BookOpen, text: "Browse categories like Social Media, Email Marketing, Branding, and more" },
+  { icon: Palette, text: "Ready-to-use Canva templates, swipe files, ebooks, and checklists" },
+  { icon: Sparkles, text: "AI image and video prompts you can copy and use instantly" },
+  { icon: Lightbulb, text: "New resources added regularly — your vault keeps growing" },
 ];
 
 const planningFeatures = [
