@@ -478,7 +478,7 @@ const Landing = () => {
                 className="order-2 lg:order-1"
               >
                 <div className="space-y-8">
-                  <SalesCopyMockup />
+                  <AIStudioMockup />
                   <SocialHubMockup />
                 </div>
               </motion.div>
