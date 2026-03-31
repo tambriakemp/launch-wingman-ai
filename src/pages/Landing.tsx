@@ -84,7 +84,7 @@ const marketingFeatures = [
   { icon: Calendar, text: "30-day social content planner with daily prompts and scheduling" },
   { icon: Mail, text: "Email sequence generator — welcome, launch, nurture, and cart-close flows" },
   { icon: Lightbulb, text: "Content idea bank — save hooks, formats, and platform-tagged ideas" },
-  { icon: Brain, text: "Transformation statements and messaging pulled from your offer data" },
+  { icon: Brain, text: "Carousel builder — create multi-slide carousels with templates, brand colors, and one-click export" },
 ];
 
 const resourceFeatures = [
