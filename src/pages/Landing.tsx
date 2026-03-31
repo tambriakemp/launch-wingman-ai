@@ -8,6 +8,7 @@ import { DashboardMockup } from "@/components/landing/screenshots/DashboardMocku
 
 import { TransformationMockup } from "@/components/landing/screenshots/TransformationMockup";
 import { TasksMockup } from "@/components/landing/screenshots/TasksMockup";
+import { PlannerMockup } from "@/components/landing/screenshots/PlannerMockup";
 import { SalesCopyMockup } from "@/components/landing/screenshots/SalesCopyMockup";
 import { SocialHubMockup } from "@/components/landing/screenshots/SocialHubMockup";
 import { BrandingMockup } from "@/components/landing/screenshots/BrandingMockup";
@@ -91,12 +92,12 @@ const resourceFeatures = [
 ];
 
 const planningFeatures = [
-  { icon: CheckSquare, text: "Kanban task board with drag-and-drop" },
-  { icon: Target, text: "ClickUp-style goals with quantifiable targets" },
-  { icon: Calendar, text: "Planner calendar and milestone tracker" },
-  { icon: BarChart3, text: "Habits, daily pages, and weekly reviews" },
-  { icon: Brain, text: "Brain dump — capture ideas and promote to tasks" },
-  { icon: Lightbulb, text: "Insights dashboard — revenue, followers, growth" },
+  { icon: Calendar, text: "Weekly calendar view — schedule tasks, events, and deadlines" },
+  { icon: Target, text: "Set measurable goals with quantifiable targets you can track over time" },
+  { icon: CheckSquare, text: "Daily priorities and to-do lists to keep every day focused" },
+  { icon: BarChart3, text: "Habit tracker with streaks — build routines that stick" },
+  { icon: Brain, text: "Brain dump — capture ideas on the fly and promote them to tasks" },
+  { icon: Lightbulb, text: "Daily pages and weekly reviews to reflect and plan ahead" },
 ];
 
 const aiFeatures = [
@@ -558,7 +559,7 @@ const Landing = () => {
                 viewport={{ once: true }}
                 className="order-2 lg:order-1"
               >
-                <TasksMockup />
+                <PlannerMockup />
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
@@ -571,7 +572,7 @@ const Landing = () => {
                   Stay Organized. Stay On Track. <span className="text-accent">Stay Accountable.</span>
                 </h2>
                 <p className="text-lg text-muted-foreground mb-8">
-                  Launching is a marathon, not a sprint. Launchely gives you a full project management suite — tasks, goals, habits, and insights — designed specifically for launches.
+                  Launching is a marathon, not a sprint. Launchely's built-in planner keeps your lifestyle, habits, and business in order — so nothing falls through the cracks.
                 </p>
                 <ul className="space-y-4">
                   {planningFeatures.map((f, i) => (
