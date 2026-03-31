@@ -89,6 +89,40 @@ export const TOPIC_PLACEHOLDERS: Record<string, string> = {
   "Custom": "Describe your specific video concept..."
 };
 
+export const CAROUSEL_AESTHETICS = [
+  "Luxury / Soft Life",
+  "Clean Girl / Minimal",
+  "Dark Academia",
+  "Y2K / Baddie",
+  "Cozy / Warm Tones",
+  "Professional / Corporate",
+  "Street Style / Urban",
+  "Cottagecore / Feminine",
+  "Moody / Editorial",
+  "Bright / Colorful",
+  "Neutral / Earthy",
+  "Custom",
+];
+
+export const CAROUSEL_SHOT_PALETTE = [
+  "Wide establishing shot — full body, subject + environment both visible",
+  "3/4 shot — subject from mid-thigh up, slight angle, confident pose",
+  "Close-up face — direct eye contact, tight crop from shoulders up",
+  "Extreme close-up — just eyes, lips, or a single detail",
+  "Over-the-shoulder — camera behind subject looking forward",
+  "Low angle — camera below subject looking up, powerful framing",
+  "High angle — camera above looking down, intimate or vulnerable feel",
+  "Profile shot — subject facing sideways, strong silhouette",
+  "Detail shot — hands, jewelry, accessories, nails, shoes, bag",
+  "Flat lay — objects arranged on a surface with no person",
+  "Environmental detail — textures, background elements, mood-setting objects",
+  "Reflection shot — mirror, window, or reflective surface",
+  "Motion blur — subject slightly in motion, dynamic energy",
+  "Candid moment — subject not looking at camera, caught in a moment",
+  "Text-space composition — subject positioned left or right to leave room for overlay text",
+  "Framed shot — subject viewed through a doorway, window, or architectural element",
+];
+
 export const INITIAL_CONFIG: AppConfig = {
   vlogCategory: VLOG_CATEGORIES[0],
   vlogTopic: "",
@@ -98,6 +132,10 @@ export const INITIAL_CONFIG: AppConfig = {
   avatarDescription: "",
   productDescription: "",
   ugcPrompt: "",
+  carouselVibe: "",
+  carouselMessage: "",
+  carouselAesthetic: CAROUSEL_AESTHETICS[0],
+  carouselSlideCount: 6,
   useProductAsHair: false,
   exactMatch: true,
   matchFace: true,

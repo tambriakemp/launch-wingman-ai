@@ -169,6 +169,33 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             </div>
           )}
 
+          {config.creationMode === 'carousel' && (
+            <div className="space-y-3">
+              <div>
+                <Label label="Aesthetic / Mood" />
+                <SelectField
+                  value={config.carouselAesthetic}
+                  onChange={(v) => setConfig(c => ({ ...c, carouselAesthetic: v }))}
+                  options={CAROUSEL_AESTHETICS}
+                />
+              </div>
+              <div>
+                <Label label="Number of Slides" />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min={4}
+                    max={12}
+                    value={config.carouselSlideCount}
+                    onChange={(e) => setConfig(c => ({ ...c, carouselSlideCount: parseInt(e.target.value) }))}
+                    className="flex-1 accent-primary"
+                  />
+                  <span className="text-xs font-bold text-foreground w-4">{config.carouselSlideCount}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Camera Movement */}
           <div>
             <Label label="Camera Movement" />

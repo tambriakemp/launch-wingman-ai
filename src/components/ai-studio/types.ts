@@ -36,6 +36,10 @@ export interface AppConfig {
   creationMode: CreationMode;
   avatarDescription: string;
   ugcPrompt: string;
+  carouselVibe: string;
+  carouselMessage: string;
+  carouselAesthetic: string;
+  carouselSlideCount: number;
   productDescription: string;
   useProductAsHair: boolean;
   exactMatch: boolean;
