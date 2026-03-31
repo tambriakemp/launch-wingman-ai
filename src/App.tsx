@@ -12,7 +12,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { initGA, trackPageView } from "@/lib/analytics";
 import Landing from "./pages/Landing";
 import HowItWorks from "./pages/HowItWorks";
-import Pricing from "./pages/Pricing";
+
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Auth from "./pages/Auth";
 import Checkout from "./pages/Checkout";
