@@ -315,7 +315,7 @@ const AIStudio = () => {
   };
 
   const handleGenerateTopicIdeas = async () => {
-    if (!config.vlogCategory) return;
+    if (config.creationMode !== 'carousel' && !config.vlogCategory) return;
     setIsGeneratingTopic(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-storyboard', {
@@ -323,7 +323,18 @@ const AIStudio = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      setConfig(prev => ({ ...prev, vlogTopic: data.topic }));
+
+      if (config.creationMode === 'carousel' && data.ideas) {
+        const firstIdea = data.ideas[0] || '';
+        const parts = firstIdea.split(' — ');
+        if (parts.length >= 2) {
+          setConfig(prev => ({ ...prev, carouselVibe: parts[0].trim(), carouselMessage: parts.slice(1).join(' — ').trim() }));
+        } else {
+          setConfig(prev => ({ ...prev, carouselVibe: firstIdea }));
+        }
+      } else {
+        setConfig(prev => ({ ...prev, vlogTopic: data.topic }));
+      }
     } catch (e: any) {
       toast({ title: "Error", description: getUserFriendlyErrorMessage(e), variant: "destructive" });
     } finally {
@@ -381,6 +392,10 @@ const AIStudio = () => {
 
   const handleGenerateStoryboard = async () => {
     if (!referenceImage) return;
+    if (config.creationMode === 'carousel' && !config.carouselVibe.trim()) {
+      toast({ title: "Setting Required", description: "Please describe the setting and environment for your carousel.", variant: "destructive" });
+      return;
+    }
     if (!previewCharacterImage) {
       toast({ title: "Character Preview Required", description: "Please generate and review the character preview first.", variant: "destructive" });
       return;
@@ -845,6 +860,37 @@ const AIStudio = () => {
                     className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] mt-2 focus:ring-1 focus:ring-primary" />
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Carousel Input */}
+          {config.creationMode === 'carousel' && !storyboard && (
+            <div className="bg-card border border-border rounded-xl p-4 my-3 space-y-3">
+              <div>
+                <div className="flex justify-between items-center">
+                  <label className="block text-[10px] font-bold uppercase text-muted-foreground">Setting / Environment</label>
+                  <button onClick={handleGenerateTopicIdeas} disabled={isGeneratingTopic}
+                    className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1 disabled:opacity-50">
+                    {isGeneratingTopic ? <span className="animate-pulse">Thinking...</span> : <><Sparkles className="h-3 w-3" /> Brainstorm</>}
+                  </button>
+                </div>
+                <textarea
+                  placeholder="Where is this carousel set? e.g. Inside a luxury Lamborghini with orange interior, parked on a sunny LA highway..."
+                  value={config.carouselVibe}
+                  onChange={(e) => setConfig(c => ({ ...c, carouselVibe: e.target.value }))}
+                  className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary mt-1.5"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-muted-foreground mb-1.5">Message / Theme</label>
+                <textarea
+                  placeholder="What's the message or story thread? e.g. Your content isn't failing — it's just painfully average..."
+                  value={config.carouselMessage}
+                  onChange={(e) => setConfig(c => ({ ...c, carouselMessage: e.target.value }))}
+                  className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[50px] focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground/60">Aesthetic is set in the Create menu. All slides will share the same character, setting, lighting, and outfit — only the shot angle and framing will vary.</p>
             </div>
           )}
 

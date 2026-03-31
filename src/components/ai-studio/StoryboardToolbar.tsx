@@ -3,7 +3,7 @@ import { AppConfig, AspectRatio } from './types';
 import {
   MAKEUP_STYLES, COMPLEXION_OPTIONS, UNDERTONE_OPTIONS,
   NAIL_STYLES, OUTFIT_TYPES, HAIRSTYLE_GROUPS, CAMERA_MOVEMENTS,
-  VLOG_CATEGORIES, TOPIC_PLACEHOLDERS, QUICK_LOOK_PRESETS
+  VLOG_CATEGORIES, TOPIC_PLACEHOLDERS, QUICK_LOOK_PRESETS, CAROUSEL_AESTHETICS
 } from './constants';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ChevronDown, ChevronRight, Palette, User, Settings2, Sparkles, MapPin, Check, RectangleVertical, RectangleHorizontal, Square } from 'lucide-react';
@@ -145,7 +145,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
           {/* Creation Mode */}
           <div>
             <Label label="Creation Mode" />
-            <div className="grid grid-cols-2 gap-1 bg-muted p-0.5 rounded-md">
+            <div className="grid grid-cols-3 gap-1 bg-muted p-0.5 rounded-md">
               <button onClick={() => setConfig(c => ({ ...c, creationMode: 'vlog' }))}
                 className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'vlog' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}>
                 VLOG
@@ -153,6 +153,10 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               <button onClick={() => setConfig(c => ({ ...c, creationMode: 'ugc' }))}
                 className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'ugc' ? 'bg-accent text-accent-foreground shadow' : 'text-muted-foreground'}`}>
                 UGC
+              </button>
+              <button onClick={() => setConfig(c => ({ ...c, creationMode: 'carousel' }))}
+                className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'carousel' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}>
+                CAROUSEL
               </button>
             </div>
           </div>
@@ -162,6 +166,33 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             <div>
               <Label label="Vlog Category" />
               <SelectField value={config.vlogCategory} onChange={(v) => setConfig(c => ({ ...c, vlogCategory: v }))} options={VLOG_CATEGORIES} />
+            </div>
+          )}
+
+          {config.creationMode === 'carousel' && (
+            <div className="space-y-3">
+              <div>
+                <Label label="Aesthetic / Mood" />
+                <SelectField
+                  value={config.carouselAesthetic}
+                  onChange={(v) => setConfig(c => ({ ...c, carouselAesthetic: v }))}
+                  options={CAROUSEL_AESTHETICS}
+                />
+              </div>
+              <div>
+                <Label label="Number of Slides" />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min={4}
+                    max={12}
+                    value={config.carouselSlideCount}
+                    onChange={(e) => setConfig(c => ({ ...c, carouselSlideCount: parseInt(e.target.value) }))}
+                    className="flex-1 accent-primary"
+                  />
+                  <span className="text-xs font-bold text-foreground w-4">{config.carouselSlideCount}</span>
+                </div>
+              </div>
             </div>
           )}
 
