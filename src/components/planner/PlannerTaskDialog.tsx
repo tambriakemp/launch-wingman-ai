@@ -268,20 +268,20 @@ export const PlannerTaskDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto p-0">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full sm:max-w-[480px] overflow-y-auto p-0">
         <form onSubmit={handleSubmit}>
           {/* Header with icon */}
-          <DialogHeader className="px-6 pt-6 pb-4 space-y-3">
+          <SheetHeader className="px-6 pt-6 pb-4 space-y-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                 <CalendarCheck className="w-5 h-5 text-primary" />
               </div>
-              <DialogTitle className="text-lg">
+              <SheetTitle className="text-lg">
                 {editTask ? "Edit" : "Create"} {taskType === "event" ? "Event" : "Schedule"}
-              </DialogTitle>
+              </SheetTitle>
             </div>
-          </DialogHeader>
+          </SheetHeader>
 
           <div className="px-6 space-y-4 pb-2">
             {/* Title */}
