@@ -91,12 +91,12 @@ const resourceFeatures = [
 ];
 
 const planningFeatures = [
-  { icon: CheckSquare, text: "Kanban task board with drag-and-drop" },
-  { icon: Target, text: "ClickUp-style goals with quantifiable targets" },
-  { icon: Calendar, text: "Planner calendar and milestone tracker" },
-  { icon: BarChart3, text: "Habits, daily pages, and weekly reviews" },
-  { icon: Brain, text: "Brain dump — capture ideas and promote to tasks" },
-  { icon: Lightbulb, text: "Insights dashboard — revenue, followers, growth" },
+  { icon: Calendar, text: "Weekly calendar view — schedule tasks, events, and deadlines" },
+  { icon: Target, text: "Set measurable goals with quantifiable targets you can track over time" },
+  { icon: CheckSquare, text: "Daily priorities and to-do lists to keep every day focused" },
+  { icon: BarChart3, text: "Habit tracker with streaks — build routines that stick" },
+  { icon: Brain, text: "Brain dump — capture ideas on the fly and promote them to tasks" },
+  { icon: Lightbulb, text: "Daily pages and weekly reviews to reflect and plan ahead" },
 ];
 
 const aiFeatures = [
