@@ -172,6 +172,36 @@ const GoalDetail = () => {
     fetchUpdates();
   };
 
+  const handleAddTarget = async () => {
+    if (!user || !goalId || !newTargetName.trim()) return;
+    setIsAddingTarget(true);
+    const isTrueFalse = newTargetType === "true_false";
+    const { error } = await supabase.from("goal_targets" as any).insert({
+      goal_id: goalId,
+      user_id: user.id,
+      name: newTargetName.trim(),
+      target_type: newTargetType,
+      unit: isTrueFalse ? null : newTargetUnit.trim() || null,
+      start_value: isTrueFalse ? 0 : Number(newTargetStart) || 0,
+      target_value: isTrueFalse ? 1 : Number(newTargetValue) || 1,
+      current_value: isTrueFalse ? 0 : Number(newTargetStart) || 0,
+      position: targets.length,
+    });
+    if (error) {
+      toast.error("Failed to add target");
+    } else {
+      toast.success("Target added");
+      setNewTargetName("");
+      setNewTargetType("number");
+      setNewTargetUnit("");
+      setNewTargetStart("0");
+      setNewTargetValue("");
+      setShowAddTarget(false);
+      fetchTargets();
+    }
+    setIsAddingTarget(false);
+  };
+
   if (isLoading) {
     return (
       <ProjectLayout>
