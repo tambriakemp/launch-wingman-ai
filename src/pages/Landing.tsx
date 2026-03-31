@@ -8,83 +8,46 @@ import { DashboardMockup } from "@/components/landing/screenshots/DashboardMocku
 import { FunnelBuilderMockup } from "@/components/landing/screenshots/FunnelBuilderMockup";
 import { TransformationMockup } from "@/components/landing/screenshots/TransformationMockup";
 import { TasksMockup } from "@/components/landing/screenshots/TasksMockup";
+import { SalesCopyMockup } from "@/components/landing/screenshots/SalesCopyMockup";
+import { SocialHubMockup } from "@/components/landing/screenshots/SocialHubMockup";
+import { BrandingMockup } from "@/components/landing/screenshots/BrandingMockup";
+import { ContentVaultMockup } from "@/components/landing/screenshots/ContentVaultMockup";
 import {
-  ClipboardCheck,
-  Layout,
-  Palette,
-  MessageSquare,
-  MessageSquareText,
-  Rocket,
-  Sparkles,
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   X,
   Check,
   ArrowRight,
   Zap,
   Target,
   Users,
+  Sparkles,
+  Brain,
   FileText,
   Wand2,
-  Brain,
-  Package,
+  Calendar,
+  CheckSquare,
   BarChart3,
-  RefreshCw,
+  Lightbulb,
+  BookOpen,
+  Palette,
+  Video,
+  Mail,
+  PenTool,
+  Layers,
 } from "lucide-react";
 
-const features = [
-  {
-    icon: ClipboardCheck,
-    title: "Assessments",
-    description: "Know where you stand with launch readiness quizzes and coaching style assessments.",
-    href: "/features/assessments",
-  },
-  {
-    icon: Layout,
-    title: "Plan",
-    description: "Build your funnel foundation with AI-powered audience insights and offer configuration.",
-    href: "/features/plan",
-  },
-  {
-    icon: Palette,
-    title: "Branding",
-    description: "Organize your logos, colors, fonts, and photos in one professional brand hub.",
-    href: "/features/branding",
-  },
-  {
-    icon: MessageSquare,
-    title: "Messaging",
-    description: "Generate sales copy, social bios, and email sequences with AI that gets your voice.",
-    href: "/features/messaging",
-  },
-  {
-    icon: Rocket,
-    title: "Execute",
-    description: "Manage tasks, schedule social posts, and track your launch timeline visually.",
-    href: "/features/execute",
-  },
-  {
-    icon: MessageSquareText,
-    title: "Social Planner",
-    description: "Plan, schedule, and publish your launch content directly to Pinterest, Instagram, and Facebook.",
-    href: "/features/execute",
-  },
-  {
-    icon: Package,
-    title: "Content Vault",
-    description: "Access ready-to-use templates, social posts, ebooks, presets, and more.",
-    href: "/features/content-vault",
-  },
-  {
-    icon: BarChart3,
-    title: "Insights",
-    description: "Track your launch metrics, compare results, and see your growth over time.",
-    href: "/features/insights",
-  },
-  {
-    icon: RefreshCw,
-    title: "Relaunch",
-    description: "Launch again smarter by keeping what worked and iterating on what didn't.",
-    href: "/features/relaunch",
-  },
+const painPoints = [
+  { emoji: "😩", text: "Bought a course but never finished it" },
+  { emoji: "🤯", text: "Overwhelmed by all the steps to launch" },
+  { emoji: "💸", text: "Spent thousands and still feel stuck" },
+  { emoji: "😤", text: "Can't write sales copy that converts" },
+  { emoji: "🕳️", text: "No clue what funnel type to use" },
+  { emoji: "⏰", text: "Wasting hours on things AI could do in seconds" },
 ];
 
 const oldVsNew = {
@@ -104,190 +67,206 @@ const oldVsNew = {
   ],
 };
 
+const launchFeatures = [
+  { icon: Layers, text: "8+ funnel types — webinars, challenges, tripwires, and more" },
+  { icon: Target, text: "Offer stack builder with pricing, bonuses, and urgency" },
+  { icon: CheckSquare, text: "Launch readiness assessments and coaching quizzes" },
+  { icon: BarChart3, text: "Audience profiling with AI-powered sub-audience generation" },
+];
+
+const marketingFeatures = [
+  { icon: FileText, text: "Full AI sales copy — headlines, bullets, CTAs, guarantees" },
+  { icon: Brain, text: "Transformation statements in multiple styles" },
+  { icon: Calendar, text: "30-day social content planner with daily prompts" },
+  { icon: Mail, text: "Email sequences — welcome, launch, cart-close" },
+  { icon: PenTool, text: "Hook generator and carousel builder" },
+  { icon: Lightbulb, text: "Content idea bank with format and platform tags" },
+];
+
+const resourceFeatures = [
+  { icon: BookOpen, text: "Content Vault — templates, presets, ebooks, and swipe files" },
+  { icon: Palette, text: "Brand Kit — logos, colors, fonts, and photo library" },
+  { icon: Video, text: "AI Studio — generate branded graphics and carousels" },
+];
+
+const planningFeatures = [
+  { icon: CheckSquare, text: "Kanban task board with drag-and-drop" },
+  { icon: Target, text: "ClickUp-style goals with quantifiable targets" },
+  { icon: Calendar, text: "Launch calendar and milestone tracker" },
+  { icon: BarChart3, text: "Habits, daily pages, and weekly reviews" },
+  { icon: Brain, text: "Brain dump — capture ideas and promote to tasks" },
+  { icon: Lightbulb, text: "Insights dashboard — revenue, followers, growth" },
+];
+
 const aiFeatures = [
-  {
-    icon: Brain,
-    title: "AI Transformation Statements",
-    description: "Generate compelling transformation language in multiple styles—punchy for bios, detailed for sales pages.",
-  },
-  {
-    icon: FileText,
-    title: "AI Sales Copy",
-    description: "Complete sales page copy generated from your audience data and transformation statement.",
-  },
-  {
-    icon: Users,
-    title: "AI Audience Insights",
-    description: "Refine your target audience and generate sub-audience variations with AI suggestions.",
-  },
-  {
-    icon: Wand2,
-    title: "AI Offer Ideas",
-    description: "Get AI-generated offer titles and descriptions based on your funnel type and audience.",
-  },
+  { icon: Brain, title: "Transformation Statements", description: "Generate punchy bios and detailed sales page language from your offer data." },
+  { icon: FileText, title: "Sales Copy Generator", description: "Complete sales page copy — headlines, bullets, objections, CTAs — all from your funnel." },
+  { icon: Users, title: "Audience Insights", description: "AI-generated sub-audiences, pain points, and buying triggers for sharper targeting." },
+  { icon: Wand2, title: "Content & Offer Ideas", description: "Offer titles, content hooks, social post drafts, and email subject lines on demand." },
 ];
 
 const steps = [
-  {
-    number: "01",
-    title: "Define Your Offer",
-    description: "Choose your funnel type, define your audience, and configure your offer stack.",
-  },
-  {
-    number: "02",
-    title: "Generate Your Assets",
-    description: "Use AI to create transformation statements, sales copy, and marketing content.",
-  },
-  {
-    number: "03",
-    title: "Launch With Confidence",
-    description: "Execute with a clear checklist, task list, and launch calendar.",
-  },
+  { number: "01", title: "Take the Assessment", description: "Answer a few questions about your business, audience, and offer. We'll identify your launch readiness." },
+  { number: "02", title: "Follow Your Plan", description: "Launchely builds your personalized launch roadmap — funnel, copy, content calendar, and task list." },
+  { number: "03", title: "Launch With Confidence", description: "Execute step-by-step with AI-generated assets, brand-ready visuals, and a clear timeline." },
+];
+
+const audiences = [
+  "Online Coaches", "Course Creators", "Digital Product Sellers", "Membership Owners",
+  "Consultants", "Service Providers", "Community Builders", "Content Creators",
+];
+
+const faqs = [
+  { q: "Is Launchely really free to start?", a: "Yes! The free plan gives you access to assessments, one project, and core planning tools. Upgrade anytime for AI features, unlimited projects, and the Content Vault." },
+  { q: "Do I need tech skills to use this?", a: "Not at all. Launchely is designed for non-technical coaches and creators. If you can fill out a form, you can launch." },
+  { q: "How is this different from a launch course?", a: "Courses teach you theory. Launchely does the work with you — AI writes your copy, builds your plan, and gives you a checklist to follow." },
+  { q: "Can I use my own branding?", a: "Absolutely. Upload your logos, set your colors and fonts, and every generated asset will match your brand." },
+  { q: "What if I've already launched before?", a: "Even better. Use the Relaunch feature to analyze what worked, keep winning assets, and iterate for your next launch." },
+  { q: "Does it replace my funnel software?", a: "No — Launchely plans and prepares your launch. You'll still use your funnel platform (Kajabi, ThriveCart, etc.) to build the actual pages." },
 ];
 
 const Landing = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background scroll-smooth">
       <LandingHeader />
 
-      {/* Hero Section */}
+      {/* ===== HERO (dark) ===== */}
       <section className="pt-32 pb-20 lg:pt-40 lg:pb-32 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-5xl mx-auto text-center">
-            <div>
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6">
-                <motion.span 
-                  className="block mb-2 md:mb-4"
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
+            <motion.h1
+              className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <span className="block mb-2 md:mb-4">Stop Buying Courses.</span>
+              <span className="inline-flex items-baseline gap-3 md:gap-4">
+                <span>Start</span>
+                <motion.span
+                  className="bg-accent text-accent-foreground px-4 py-1 rounded-lg"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: 0.4, type: "spring", stiffness: 200 }}
                 >
-                  Stop Buying Courses.
+                  Launching.
                 </motion.span>
-                <span className="inline-flex items-baseline gap-3 md:gap-4">
-                  <motion.span
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
-                  >
-                    Start
-                  </motion.span>
-                  <motion.span 
-                    className="bg-accent text-accent-foreground px-4 py-1 rounded-lg"
-                    initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
-                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                    transition={{ 
-                      duration: 0.5, 
-                      delay: 0.5, 
-                      ease: "easeOut",
-                      scale: { type: "spring", stiffness: 200, damping: 15 }
-                    }}
-                  >
-                    Launching.
-                  </motion.span>
-                </span>
-              </h1>
-              
-              <motion.p 
-                className="text-xl md:text-2xl text-primary-foreground/70 mb-8 max-w-3xl mx-auto"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.7 }}
-              >
-                The AI-powered platform that replaces expensive launch courses. Plan, brand, write, and execute your next digital product launch—all in one place.
-              </motion.p>
+              </span>
+            </motion.h1>
 
-              {/* Stats */}
-              <motion.div 
-                className="flex flex-wrap justify-center gap-4 md:gap-6 mb-10"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.9 }}
-              >
-                <div className="flex items-center gap-2 bg-primary-foreground/10 px-4 py-2 rounded-full">
-                  <Zap className="w-5 h-5 text-accent" />
-                  <span className="text-sm font-medium">AI-Powered</span>
-                </div>
-                <div className="flex items-center gap-2 bg-primary-foreground/10 px-4 py-2 rounded-full">
-                  <Target className="w-5 h-5 text-accent" />
-                  <span className="text-sm font-medium">8+ Funnel Types</span>
-                </div>
-                <div className="flex items-center gap-2 bg-primary-foreground/10 px-4 py-2 rounded-full">
-                  <Users className="w-5 h-5 text-accent" />
-                  <span className="text-sm font-medium">Built for Coaches</span>
-                </div>
-              </motion.div>
+            <motion.p
+              className="text-xl md:text-2xl text-primary-foreground/70 mb-8 max-w-3xl mx-auto"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+            >
+              The AI-powered platform that replaces expensive launch courses. Plan, brand, write, and execute your next digital product launch—all in one place.
+            </motion.p>
 
-              {/* CTAs */}
-              <motion.div 
-                className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 1.1 }}
-              >
-                <Button
-                  asChild
-                  size="lg"
-                  className="!bg-[#FACC15] !text-black hover:!bg-[#EAB308] text-lg px-8"
-                >
-                  <Link to="/auth?tab=signup">Start Free Today</Link>
-                </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  className="border-2 border-white text-white bg-transparent hover:bg-white/10 text-lg px-8"
-                >
-                  <Link to="/how-it-works" className="flex items-center gap-2">
-                    See How It Works <ArrowRight className="w-5 h-5" />
-                  </Link>
-                </Button>
-              </motion.div>
-            </div>
+            <motion.div
+              className="flex flex-wrap justify-center gap-4 md:gap-6 mb-10"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+            >
+              {[
+                { icon: Zap, text: "AI-Powered" },
+                { icon: Target, text: "8+ Funnel Types" },
+                { icon: Users, text: "Built for Coaches" },
+              ].map((badge) => (
+                <div key={badge.text} className="flex items-center gap-2 bg-primary-foreground/10 px-4 py-2 rounded-full">
+                  <badge.icon className="w-5 h-5 text-accent" />
+                  <span className="text-sm font-medium">{badge.text}</span>
+                </div>
+              ))}
+            </motion.div>
 
-            {/* Hero Screenshot */}
+            <motion.div
+              className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9 }}
+            >
+              <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 text-lg px-8">
+                <Link to="/auth?tab=signup">Start Free Today</Link>
+              </Button>
+              <Button asChild size="lg" className="border-2 border-primary-foreground/30 text-primary-foreground bg-transparent hover:bg-primary-foreground/10 text-lg px-8">
+                <a href="#features" className="flex items-center gap-2">
+                  See Features <ArrowRight className="w-5 h-5" />
+                </a>
+              </Button>
+            </motion.div>
+
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
               className="max-w-4xl mx-auto mt-8"
             >
-              <div className="transform perspective-1000 rotate-x-2 hover:rotate-x-0 transition-transform duration-500">
-                <DashboardMockup />
-              </div>
+              <DashboardMockup />
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Marquee Strip */}
+      {/* ===== MARQUEE ===== */}
       <MarqueeStrip />
 
-      {/* No More Courses Section */}
-      <section className="py-20 lg:py-32 bg-muted/30">
+      {/* ===== PAIN POINTS (white) ===== */}
+      <section className="py-20 lg:py-28 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-14"
+          >
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
+              Sound <span className="bg-accent text-accent-foreground px-3 py-1 rounded-lg">Familiar?</span>
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              You're not alone. Most coaches and creators hit these walls before their first launch.
+            </p>
+          </motion.div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-4xl mx-auto">
+            {painPoints.map((p, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.07 }}
+                viewport={{ once: true }}
+                className="bg-card border border-border rounded-xl p-5 flex items-start gap-4"
+              >
+                <span className="text-2xl">{p.emoji}</span>
+                <span className="text-foreground font-medium">{p.text}</span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== OLD VS NEW (white) ===== */}
+      <section className="py-20 lg:py-28 bg-background">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+            className="text-center mb-14"
           >
             <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
               Everything You Need.{" "}
               <span className="bg-accent text-accent-foreground px-3 py-1 rounded-lg">Nothing</span>{" "}
               You Don't.
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Launch courses taught you what to do. Launchely helps you actually do it.
-            </p>
           </motion.div>
-
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Old Way */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4 }}
               viewport={{ once: true }}
               className="bg-card border border-border rounded-2xl p-8"
             >
@@ -298,20 +277,17 @@ const Landing = () => {
                 <h3 className="text-xl font-bold text-foreground">The Old Way</h3>
               </div>
               <ul className="space-y-4">
-                {oldVsNew.old.map((item, index) => (
-                  <li key={index} className="flex items-start gap-3">
+                {oldVsNew.old.map((item, i) => (
+                  <li key={i} className="flex items-start gap-3">
                     <X className="w-5 h-5 text-destructive/60 flex-shrink-0 mt-0.5" />
                     <span className="text-muted-foreground">{item}</span>
                   </li>
                 ))}
               </ul>
             </motion.div>
-
-            {/* New Way */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
               viewport={{ once: true }}
               className="bg-primary text-primary-foreground rounded-2xl p-8"
             >
@@ -322,8 +298,8 @@ const Landing = () => {
                 <h3 className="text-xl font-bold">The Launchely Way</h3>
               </div>
               <ul className="space-y-4">
-                {oldVsNew.new.map((item, index) => (
-                  <li key={index} className="flex items-start gap-3">
+                {oldVsNew.new.map((item, i) => (
+                  <li key={i} className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
                     <span className="text-primary-foreground/80">{item}</span>
                   </li>
@@ -334,200 +310,319 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="py-20 lg:py-32 bg-accent">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-5xl font-bold text-accent-foreground mb-4">
-              One Platform. Complete Launch System.
-            </h2>
-            <p className="text-xl text-accent-foreground/70 max-w-2xl mx-auto">
-              From initial planning to execution—everything you need to launch successfully.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {features.map((feature, index) => (
+      {/* ===== FEATURE PILLARS ===== */}
+      <div id="features">
+        {/* LAUNCH (white) */}
+        <section className="py-20 lg:py-28 bg-background">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
               <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
               >
-                <Link
-                  to={feature.href}
-                  className="block bg-card border border-border rounded-2xl p-6 h-full hover:shadow-lg transition-all hover:-translate-y-1 group"
-                >
-                  <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                    <feature.icon className="w-6 h-6 text-accent" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
-                </Link>
+                <span className="inline-block bg-accent/20 text-accent-foreground font-semibold text-sm px-4 py-1.5 rounded-full mb-4">Launch</span>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-5 leading-tight">
+                  Build Your Funnel. Define Your Offer. <span className="text-accent">Go Live.</span>
+                </h2>
+                <p className="text-lg text-muted-foreground mb-8">
+                  Stop guessing which funnel to build. Launchely walks you through choosing the right model, configuring your offer stack, and validating your readiness — before you spend a dime on ads.
+                </p>
+                <ul className="space-y-4">
+                  {launchFeatures.map((f, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <f.icon className="w-4 h-4 text-accent-foreground" />
+                      </div>
+                      <span className="text-foreground">{f.text}</span>
+                    </li>
+                  ))}
+                </ul>
               </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="py-20 lg:py-32">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
-              How It <span className="bg-accent text-accent-foreground px-3 py-1 rounded-lg">Works</span>
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Three simple steps from idea to launch.
-            </p>
-          </motion.div>
-
-          <div className="space-y-20 max-w-5xl mx-auto">
-            {/* Step 1 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              viewport={{ once: true }}
-              className="grid md:grid-cols-2 gap-8 items-center"
-            >
-              <div className="text-center md:text-left">
-                <div className="text-6xl font-bold text-accent/20 mb-4">01</div>
-                <h3 className="text-2xl font-semibold text-foreground mb-3">Define Your Offer</h3>
-                <p className="text-muted-foreground text-lg">Choose your funnel type, define your audience, and configure your offer stack with AI-powered suggestions.</p>
-              </div>
-              <div className="transform hover:scale-[1.02] transition-transform duration-300">
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+              >
                 <FunnelBuilderMockup />
-              </div>
-            </motion.div>
-
-            {/* Step 2 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              viewport={{ once: true }}
-              className="grid md:grid-cols-2 gap-8 items-center"
-            >
-              <div className="order-2 md:order-1 transform hover:scale-[1.02] transition-transform duration-300">
-                <TransformationMockup />
-              </div>
-              <div className="order-1 md:order-2 text-center md:text-left">
-                <div className="text-6xl font-bold text-accent/20 mb-4">02</div>
-                <h3 className="text-2xl font-semibold text-foreground mb-3">Generate Your Assets</h3>
-                <p className="text-muted-foreground text-lg">Use AI to create transformation statements, sales copy, and marketing content that converts.</p>
-              </div>
-            </motion.div>
-
-            {/* Step 3 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-              viewport={{ once: true }}
-              className="grid md:grid-cols-2 gap-8 items-center"
-            >
-              <div className="text-center md:text-left">
-                <div className="text-6xl font-bold text-accent/20 mb-4">03</div>
-                <h3 className="text-2xl font-semibold text-foreground mb-3">Launch With Confidence</h3>
-                <p className="text-muted-foreground text-lg">Execute with a clear checklist, task list, and launch calendar that keeps everything on track.</p>
-              </div>
-              <div className="transform hover:scale-[1.02] transition-transform duration-300">
-                <TasksMockup />
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* AI Features */}
-      <section className="py-20 lg:py-32 bg-primary text-primary-foreground">
+        {/* MARKETING (light gray) */}
+        <section className="py-20 lg:py-28 bg-muted/40">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="order-2 lg:order-1"
+              >
+                <div className="space-y-8">
+                  <SalesCopyMockup />
+                  <SocialHubMockup />
+                </div>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="order-1 lg:order-2"
+              >
+                <span className="inline-block bg-accent/20 text-accent-foreground font-semibold text-sm px-4 py-1.5 rounded-full mb-4">Marketing</span>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-5 leading-tight">
+                  Write Copy That Converts. Content That <span className="text-accent">Connects.</span>
+                </h2>
+                <p className="text-lg text-muted-foreground mb-8">
+                  Your sales page, emails, and social posts shouldn't take weeks. Launchely's AI writes high-converting copy from your audience data — then organizes it into a 30-day content calendar.
+                </p>
+                <ul className="space-y-4">
+                  {marketingFeatures.map((f, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <f.icon className="w-4 h-4 text-accent-foreground" />
+                      </div>
+                      <span className="text-foreground">{f.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* RESOURCES (white) */}
+        <section className="py-20 lg:py-28 bg-background">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+              >
+                <span className="inline-block bg-accent/20 text-accent-foreground font-semibold text-sm px-4 py-1.5 rounded-full mb-4">Resources</span>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-5 leading-tight">
+                  Templates, Presets, and <span className="text-accent">Done-For-You</span> Assets.
+                </h2>
+                <p className="text-lg text-muted-foreground mb-8">
+                  Stop creating everything from scratch. Access a growing library of launch templates, social media presets, ebooks, and brand-ready visuals — all included.
+                </p>
+                <ul className="space-y-4">
+                  {resourceFeatures.map((f, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <f.icon className="w-4 h-4 text-accent-foreground" />
+                      </div>
+                      <span className="text-foreground">{f.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+              >
+                <div className="space-y-8">
+                  <BrandingMockup />
+                  <ContentVaultMockup />
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* PLANNING (light gray) */}
+        <section className="py-20 lg:py-28 bg-muted/40">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="order-2 lg:order-1"
+              >
+                <TasksMockup />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="order-1 lg:order-2"
+              >
+                <span className="inline-block bg-accent/20 text-accent-foreground font-semibold text-sm px-4 py-1.5 rounded-full mb-4">Planning</span>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-5 leading-tight">
+                  Stay Organized. Stay On Track. <span className="text-accent">Stay Accountable.</span>
+                </h2>
+                <p className="text-lg text-muted-foreground mb-8">
+                  Launching is a marathon, not a sprint. Launchely gives you a full project management suite — tasks, goals, habits, and insights — designed specifically for launches.
+                </p>
+                <ul className="space-y-4">
+                  {planningFeatures.map((f, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <f.icon className="w-4 h-4 text-accent-foreground" />
+                      </div>
+                      <span className="text-foreground">{f.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* ===== AI SECTION (dark) ===== */}
+      <section className="py-20 lg:py-28 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-14"
           >
             <div className="inline-flex items-center gap-2 bg-accent/20 text-accent px-4 py-2 rounded-full mb-6">
               <Sparkles className="w-5 h-5" />
               <span className="font-medium">Powered by AI</span>
             </div>
             <h2 className="text-3xl md:text-5xl font-bold mb-4">
-              AI That Actually{" "}
-              <span className="bg-accent text-accent-foreground px-3 py-1 rounded-lg">Helps</span>
+              Your AI <span className="bg-accent text-accent-foreground px-3 py-1 rounded-lg">Launch Team</span>
             </h2>
             <p className="text-xl text-primary-foreground/70 max-w-2xl mx-auto">
               Not just buzzwords. Real AI tools that save you hours of work on every launch.
             </p>
           </motion.div>
-
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {aiFeatures.map((feature, index) => (
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-16">
+            {aiFeatures.map((f, i) => (
               <motion.div
-                key={index}
+                key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
+                transition={{ delay: i * 0.1 }}
                 viewport={{ once: true }}
                 className="bg-primary-foreground/5 border border-primary-foreground/10 rounded-2xl p-6"
               >
                 <div className="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-accent" />
+                  <f.icon className="w-6 h-6 text-accent" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-primary-foreground/70">{feature.description}</p>
+                <h3 className="text-xl font-semibold mb-2">{f.title}</h3>
+                <p className="text-primary-foreground/70">{f.description}</p>
+              </motion.div>
+            ))}
+          </div>
+          <div className="max-w-3xl mx-auto">
+            <TransformationMockup />
+          </div>
+        </div>
+      </section>
+
+      {/* ===== HOW IT WORKS (white) ===== */}
+      <section id="how-it-works" className="py-20 lg:py-28 bg-background">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-14"
+          >
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
+              How It <span className="bg-accent text-accent-foreground px-3 py-1 rounded-lg">Works</span>
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Three simple steps from idea to launch.</p>
+          </motion.div>
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {steps.map((s, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.15 }}
+                viewport={{ once: true }}
+                className="text-center bg-card border border-border rounded-2xl p-8"
+              >
+                <div className="text-5xl font-bold text-accent/30 mb-4">{s.number}</div>
+                <h3 className="text-xl font-semibold text-foreground mb-3">{s.title}</h3>
+                <p className="text-muted-foreground">{s.description}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-20 lg:py-32 bg-accent">
+      {/* ===== BUILT FOR (white) ===== */}
+      <section className="py-20 lg:py-28 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-5xl font-bold text-accent-foreground mb-4">
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-8">
+              Built For <span className="text-accent">You</span>
+            </h2>
+            <div className="flex flex-wrap justify-center gap-3 max-w-3xl mx-auto mb-12">
+              {audiences.map((a) => (
+                <span key={a} className="bg-accent/10 text-foreground font-medium px-5 py-2.5 rounded-full text-sm border border-accent/20">
+                  {a}
+                </span>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ===== FAQ (white) ===== */}
+      <section className="py-20 lg:py-28 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-14"
+          >
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
+              Frequently Asked <span className="bg-accent text-accent-foreground px-3 py-1 rounded-lg">Questions</span>
+            </h2>
+          </motion.div>
+          <div className="max-w-3xl mx-auto">
+            <Accordion type="single" collapsible className="space-y-3">
+              {faqs.map((faq, i) => (
+                <AccordionItem key={i} value={`faq-${i}`} className="bg-card border border-border rounded-xl px-6 overflow-hidden">
+                  <AccordionTrigger className="text-left font-semibold text-foreground hover:no-underline">
+                    {faq.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    {faq.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FINAL CTA (dark) ===== */}
+      <section className="py-20 lg:py-28 bg-primary text-primary-foreground">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
               Ready to Launch Without the Learning Curve?
             </h2>
-            <p className="text-xl text-accent-foreground/70 mb-8 max-w-2xl mx-auto">
-              Join thousands of coaches and creators who are launching smarter, not harder.
+            <p className="text-xl text-primary-foreground/70 mb-8 max-w-2xl mx-auto">
+              Join coaches and creators who are launching smarter, not harder.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                asChild
-                size="lg"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 text-lg px-8"
-              >
+              <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 text-lg px-8">
                 <Link to="/auth?tab=signup">Start Free Today</Link>
               </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-accent-foreground/20 text-accent-foreground hover:bg-accent-foreground/10 text-lg"
-              >
+              <Button asChild size="lg" className="border-2 border-primary-foreground/30 text-primary-foreground bg-transparent hover:bg-primary-foreground/10 text-lg">
                 <Link to="/pricing">View Pricing</Link>
               </Button>
             </div>
