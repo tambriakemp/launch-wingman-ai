@@ -39,6 +39,7 @@ import {
   Mail,
   PenTool,
   Layers,
+  Package,
 } from "lucide-react";
 
 const painPoints = [
