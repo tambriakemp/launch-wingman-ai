@@ -149,7 +149,7 @@ const App = () => (
             {/* Public marketing pages */}
             <Route path="/" element={<Landing />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
-            <Route path="/pricing" element={<Pricing />} />
+            
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/about" element={<About />} />
