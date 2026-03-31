@@ -234,7 +234,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
         {/* Video Panel */}
         <div className="flex flex-col gap-2">
           <h4 className="text-xs font-bold text-muted-foreground uppercase">Generated Video</h4>
-          <div className="relative w-full bg-black overflow-hidden rounded-lg border border-border" style={{ aspectRatio: cssAspectRatio }}>
+          <div className="relative w-full bg-muted overflow-hidden rounded-lg border border-border" style={{ aspectRatio: cssAspectRatio }}>
             {media.videoUrl ? (
               <video src={media.videoUrl} controls autoPlay loop muted className="w-full h-full object-cover" />
             ) : (
