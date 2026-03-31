@@ -181,7 +181,7 @@ export function GoalDialog({
             </SheetTitle>
           </SheetHeader>
 
-          <div className="px-6 py-4 space-y-4">
+          <div className="px-6 py-4 space-y-4 flex-1 overflow-y-auto">
             {/* Title */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">
