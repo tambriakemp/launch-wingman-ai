@@ -9,7 +9,7 @@ import { DashboardMockup } from "@/components/landing/screenshots/DashboardMocku
 import { TransformationMockup } from "@/components/landing/screenshots/TransformationMockup";
 import { TasksMockup } from "@/components/landing/screenshots/TasksMockup";
 import { PlannerMockup } from "@/components/landing/screenshots/PlannerMockup";
-import { SalesCopyMockup } from "@/components/landing/screenshots/SalesCopyMockup";
+import { AIStudioMockup } from "@/components/landing/screenshots/AIStudioMockup";
 import { SocialHubMockup } from "@/components/landing/screenshots/SocialHubMockup";
 
 import { ContentVaultMockup } from "@/components/landing/screenshots/ContentVaultMockup";
