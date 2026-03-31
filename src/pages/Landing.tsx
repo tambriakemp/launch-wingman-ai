@@ -77,12 +77,13 @@ const launchFeatures = [
 ];
 
 const marketingFeatures = [
-  { icon: FileText, text: "Full AI sales copy — headlines, bullets, CTAs, guarantees" },
-  { icon: Brain, text: "Transformation statements in multiple styles" },
-  { icon: Calendar, text: "30-day social content planner with daily prompts" },
-  { icon: Mail, text: "Email sequences — welcome, launch, cart-close" },
-  { icon: PenTool, text: "Hook generator and carousel builder" },
-  { icon: Lightbulb, text: "Content idea bank with format and platform tags" },
+  { icon: Film, text: "AI Studio — generate talking-head vlogs from a script with your own avatar and voice" },
+  { icon: FileText, text: "AI sales copy for every funnel page — headlines, bullets, CTAs, and guarantees" },
+  { icon: PenTool, text: "Hook generator and carousel builder with psychological frameworks" },
+  { icon: Calendar, text: "30-day social content planner with daily prompts and scheduling" },
+  { icon: Mail, text: "Email sequence generator — welcome, launch, nurture, and cart-close flows" },
+  { icon: Lightbulb, text: "Content idea bank — save hooks, formats, and platform-tagged ideas" },
+  { icon: Brain, text: "Transformation statements and messaging pulled from your offer data" },
 ];
 
 const resourceFeatures = [
