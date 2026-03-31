@@ -37,6 +37,7 @@ import {
   BookOpen,
   Palette,
   Video,
+  Film,
   Mail,
   PenTool,
   Layers,
