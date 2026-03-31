@@ -988,9 +988,13 @@ const AIStudio = () => {
                 <h2 className="text-sm font-bold text-foreground">Storyboard · {storyboard.steps.length} scenes</h2>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => {
-                    const tasks: QueueItem[] = storyboard.steps
+                    let tasks: QueueItem[] = storyboard.steps
                       .map((s, idx) => ({ id: Math.random().toString(), type: 'generate' as const, index: idx, step: s, config: { ...config } }))
                       .filter(t => !generatedMedia[t.index]?.imageUrl);
+                    // For carousel: ensure scene 1 is first so it can anchor the rest
+                    if (config.creationMode === 'carousel' && tasks.length > 0) {
+                      tasks.sort((a, b) => a.index - b.index);
+                    }
                     if (tasks.length > 0) addToQueue(tasks);
                   }}>
                     <ImageIcon className="h-3.5 w-3.5 mr-1.5" /> Generate All Images
