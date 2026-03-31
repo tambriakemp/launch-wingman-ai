@@ -24,7 +24,7 @@ export interface VlogStoryboard {
   steps: VlogStep[];
 }
 
-export type CreationMode = 'vlog' | 'ugc';
+export type CreationMode = 'vlog' | 'ugc' | 'carousel';
 export type AspectRatio = '1:1' | '9:16' | '16:9';
 export type AppPhase = 'setup' | 'preview' | 'storyboard';
 
