@@ -93,7 +93,7 @@ const resourceFeatures = [
 const planningFeatures = [
   { icon: CheckSquare, text: "Kanban task board with drag-and-drop" },
   { icon: Target, text: "ClickUp-style goals with quantifiable targets" },
-  { icon: Calendar, text: "Launch calendar and milestone tracker" },
+  { icon: Calendar, text: "Planner calendar and milestone tracker" },
   { icon: BarChart3, text: "Habits, daily pages, and weekly reviews" },
   { icon: Brain, text: "Brain dump — capture ideas and promote to tasks" },
   { icon: Lightbulb, text: "Insights dashboard — revenue, followers, growth" },
