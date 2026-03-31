@@ -344,7 +344,7 @@ const Landing = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
               >
-                <FunnelBuilderMockup />
+                <TasksMockup />
               </motion.div>
             </div>
           </div>
