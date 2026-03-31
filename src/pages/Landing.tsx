@@ -541,10 +541,7 @@ const Landing = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
               >
-                <div className="space-y-8">
-                  <BrandingMockup />
-                  <ContentVaultMockup />
-                </div>
+                <ContentVaultMockup />
               </motion.div>
             </div>
           </div>
