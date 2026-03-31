@@ -688,6 +688,149 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* ===== PRICING (white) ===== */}
+      <section id="pricing" className="py-20 lg:py-28 bg-background">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-14"
+          >
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
+              Simple, <span className="bg-accent text-accent-foreground px-3 py-1 rounded-lg">Transparent</span> Pricing
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              No hidden fees. No surprise charges. Just straightforward pricing for launching smarter.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            {plans.map((plan, index) => (
+              <motion.div
+                key={plan.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className={`relative bg-card rounded-2xl border-2 p-6 lg:p-8 ${
+                  plan.popular ? "border-accent shadow-xl" : "border-border"
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                    <span className="bg-accent text-accent-foreground text-sm font-semibold px-4 py-1 rounded-full flex items-center gap-1">
+                      <Sparkles className="w-4 h-4" />
+                      Most Popular
+                    </span>
+                  </div>
+                )}
+
+                <div className="text-center mb-6">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    {plan.icon && <plan.icon className="w-5 h-5 text-primary" />}
+                    <h3 className="text-xl lg:text-2xl font-bold text-foreground">{plan.name}</h3>
+                  </div>
+                  <div className="mb-2">
+                    <span className="text-4xl lg:text-5xl font-bold text-foreground">{plan.price}</span>
+                    <span className="text-muted-foreground">{plan.period}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{plan.description}</p>
+                </div>
+
+                <ul className="space-y-3 mb-6">
+                  {plan.features.slice(0, 10).map((feature) => (
+                    <li key={feature.name} className="flex items-center gap-2">
+                      {feature.included ? (
+                        <Check className="w-4 h-4 text-accent flex-shrink-0" />
+                      ) : (
+                        <X className="w-4 h-4 text-muted-foreground/40 flex-shrink-0" />
+                      )}
+                      <span className={`text-sm ${feature.included ? "text-foreground" : "text-muted-foreground/60"}`}>
+                        {feature.name}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  asChild
+                  className={`w-full ${
+                    plan.popular
+                      ? "bg-accent text-accent-foreground hover:bg-accent/90"
+                      : ""
+                  }`}
+                  variant={plan.ctaVariant}
+                  size="lg"
+                >
+                  <Link to={plan.ctaLink}>
+                    {plan.cta}
+                  </Link>
+                </Button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== COMPARE PLANS (light gray) ===== */}
+      <section className="py-20 lg:py-28 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Compare Plans
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              See exactly what you get with each plan
+            </p>
+          </motion.div>
+
+          <div className="max-w-4xl mx-auto overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-4 px-4 font-semibold text-foreground">Feature</th>
+                  <th className="text-center py-4 px-4 font-semibold text-foreground">Free</th>
+                  <th className="text-center py-4 px-4 font-semibold text-foreground">
+                    <div className="flex items-center justify-center gap-1">
+                      <Package className="w-4 h-4" />
+                      Vault
+                    </div>
+                  </th>
+                  <th className="text-center py-4 px-4 font-semibold text-foreground">Pro</th>
+                  <th className="text-center py-4 px-4 font-semibold text-foreground">Advanced</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonRows.map((row, index) => (
+                  <tr key={index} className="border-b border-border/50">
+                    <td className="py-4 px-4 text-foreground">{row.feature}</td>
+                    {(['free', 'vault', 'pro', 'advanced'] as const).map((col) => (
+                      <td key={col} className="py-4 px-4 text-center">
+                        {typeof row[col] === "boolean" ? (
+                          row[col] ? (
+                            <Check className="w-5 h-5 text-accent mx-auto" />
+                          ) : (
+                            <X className="w-5 h-5 text-muted-foreground/40 mx-auto" />
+                          )
+                        ) : (
+                          <span className={`text-foreground ${col === 'advanced' ? 'font-medium' : ''}`}>{row[col]}</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       {/* ===== FAQ (white) ===== */}
       <section className="py-20 lg:py-28 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
