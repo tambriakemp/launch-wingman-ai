@@ -392,6 +392,10 @@ const AIStudio = () => {
 
   const handleGenerateStoryboard = async () => {
     if (!referenceImage) return;
+    if (config.creationMode === 'carousel' && !config.carouselVibe.trim()) {
+      toast({ title: "Setting Required", description: "Please describe the setting and environment for your carousel.", variant: "destructive" });
+      return;
+    }
     if (!previewCharacterImage) {
       toast({ title: "Character Preview Required", description: "Please generate and review the character preview first.", variant: "destructive" });
       return;
