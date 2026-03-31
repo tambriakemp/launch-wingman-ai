@@ -5,7 +5,7 @@ import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { MarqueeStrip } from "@/components/landing/MarqueeStrip";
 import { DashboardMockup } from "@/components/landing/screenshots/DashboardMockup";
-import { FunnelBuilderMockup } from "@/components/landing/screenshots/FunnelBuilderMockup";
+
 import { TransformationMockup } from "@/components/landing/screenshots/TransformationMockup";
 import { TasksMockup } from "@/components/landing/screenshots/TasksMockup";
 import { SalesCopyMockup } from "@/components/landing/screenshots/SalesCopyMockup";
@@ -68,10 +68,10 @@ const oldVsNew = {
 };
 
 const launchFeatures = [
-  { icon: Layers, text: "8+ funnel types — webinars, challenges, tripwires, and more" },
-  { icon: Target, text: "Offer stack builder with pricing, bonuses, and urgency" },
-  { icon: CheckSquare, text: "Launch readiness assessments and coaching quizzes" },
-  { icon: BarChart3, text: "Audience profiling with AI-powered sub-audience generation" },
+  { icon: Layers, text: "Choose from 7 proven funnel paths — freebie, webinar, challenge, and more" },
+  { icon: Target, text: "Configure your offer stack with pricing, bonuses, and urgency built in" },
+  { icon: CheckSquare, text: "Follow a phase-by-phase checklist tailored to your funnel type" },
+  { icon: BarChart3, text: "Validate launch readiness with assessments before you go live" },
 ];
 
 const marketingFeatures = [
@@ -323,10 +323,10 @@ const Landing = () => {
               >
                 <span className="inline-block bg-accent/20 text-accent-foreground font-semibold text-sm px-4 py-1.5 rounded-full mb-4">Launch</span>
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-5 leading-tight">
-                  Build Your Funnel. Define Your Offer. <span className="text-accent">Go Live.</span>
+                  Your Step-by-Step Launch Plan. <span className="text-accent">No Course Required.</span>
                 </h2>
                 <p className="text-lg text-muted-foreground mb-8">
-                  Stop guessing which funnel to build. Launchely walks you through choosing the right model, configuring your offer stack, and validating your readiness — before you spend a dime on ads.
+                  Stop buying courses that leave you overwhelmed. Launchely guides you through every step — pick your funnel path, configure your offer, check off each phase, and validate you're ready before you go live. It's like having a launch strategist built into your dashboard.
                 </p>
                 <ul className="space-y-4">
                   {launchFeatures.map((f, i) => (
@@ -344,7 +344,7 @@ const Landing = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
               >
-                <FunnelBuilderMockup />
+                <TasksMockup />
               </motion.div>
             </div>
           </div>
