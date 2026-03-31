@@ -571,7 +571,7 @@ const Landing = () => {
                   Stay Organized. Stay On Track. <span className="text-accent">Stay Accountable.</span>
                 </h2>
                 <p className="text-lg text-muted-foreground mb-8">
-                  Launching is a marathon, not a sprint. Launchely gives you a full project management suite — tasks, goals, habits, and insights — designed specifically for launches.
+                  Launching is a marathon, not a sprint. Launchely's built-in planner keeps your lifestyle, habits, and business in order — so nothing falls through the cracks.
                 </p>
                 <ul className="space-y-4">
                   {planningFeatures.map((f, i) => (
