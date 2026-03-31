@@ -363,7 +363,7 @@ export function GoalDialog({
             </div>
           </div>
 
-          <DialogFooter className="px-6 py-4 border-t border-border gap-2">
+          <SheetFooter className="px-6 py-4 border-t border-border gap-2 mt-auto">
             <Button
               type="button"
               variant="outline"
@@ -378,9 +378,9 @@ export function GoalDialog({
                 ? "Update Goal"
                 : "Create Goal"}
             </Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
