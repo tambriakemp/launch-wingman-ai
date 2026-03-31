@@ -145,7 +145,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
           {/* Creation Mode */}
           <div>
             <Label label="Creation Mode" />
-            <div className="grid grid-cols-2 gap-1 bg-muted p-0.5 rounded-md">
+            <div className="grid grid-cols-3 gap-1 bg-muted p-0.5 rounded-md">
               <button onClick={() => setConfig(c => ({ ...c, creationMode: 'vlog' }))}
                 className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'vlog' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}>
                 VLOG
@@ -153,6 +153,10 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               <button onClick={() => setConfig(c => ({ ...c, creationMode: 'ugc' }))}
                 className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'ugc' ? 'bg-accent text-accent-foreground shadow' : 'text-muted-foreground'}`}>
                 UGC
+              </button>
+              <button onClick={() => setConfig(c => ({ ...c, creationMode: 'carousel' }))}
+                className={`py-1.5 text-xs font-medium rounded transition-all ${config.creationMode === 'carousel' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground'}`}>
+                CAROUSEL
               </button>
             </div>
           </div>
