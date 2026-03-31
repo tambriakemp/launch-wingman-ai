@@ -91,6 +91,76 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
         </div>
       )}
 
+      {/* Thumbnail Filmstrip + Navigation */}
+      <div className="mb-4">
+        <ScrollArea className="w-full">
+          <div ref={filmstripRef} className="flex items-center gap-2 pb-2 px-1">
+            {storyboard.steps.map((s, idx) => {
+              const m = generatedMedia[idx];
+              const isActive = idx === currentSceneIndex;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentSceneIndex(idx)}
+                  className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                    isActive
+                      ? 'border-primary ring-2 ring-primary/30 scale-105'
+                      : m?.imageUrl
+                      ? 'border-border hover:border-primary/50'
+                      : 'border-border/50 hover:border-border'
+                  }`}
+                >
+                  {m?.imageUrl ? (
+                    <img src={m.imageUrl} alt={s.step_name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-muted-foreground">{idx + 1}</span>
+                    </div>
+                  )}
+                  {m?.isGeneratingImage && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                  <span className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] font-bold px-1 rounded ${
+                    isActive ? 'bg-primary text-primary-foreground' : 'bg-black/50 text-white'
+                  }`}>
+                    {idx + 1}
+                  </span>
+                </button>
+              );
+            })}
+            <button
+              onClick={() => { onAddBlankScene(); setCurrentSceneIndex(totalScenes); }}
+              className="flex-shrink-0 w-16 h-16 rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex items-center justify-center transition-colors"
+            >
+              <Plus className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+
+        <div className="flex items-center justify-between mt-2">
+          <Button
+            variant="outline" size="sm"
+            disabled={currentSceneIndex === 0}
+            onClick={() => setCurrentSceneIndex(prev => prev - 1)}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" /> Prev
+          </Button>
+          <span className="text-xs text-muted-foreground font-medium">
+            Scene {currentSceneIndex + 1} of {totalScenes}
+          </span>
+          <Button
+            variant="outline" size="sm"
+            disabled={currentSceneIndex >= totalScenes - 1}
+            onClick={() => setCurrentSceneIndex(prev => prev + 1)}
+          >
+            Next <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      </div>
+
       {/* Scene Card */}
       <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
         <SceneCard
@@ -138,80 +208,6 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
           onUpdateAction={(newAction) => onUpdateAction?.(currentSceneIndex, newAction)}
           onUpdateDetail={(newDetail) => onUpdateDetail?.(currentSceneIndex, newDetail)}
         />
-      </div>
-
-      {/* Thumbnail Filmstrip */}
-      <div className="mt-4">
-        <ScrollArea className="w-full">
-          <div ref={filmstripRef} className="flex items-center gap-2 pb-2 px-1">
-            {storyboard.steps.map((s, idx) => {
-              const m = generatedMedia[idx];
-              const isActive = idx === currentSceneIndex;
-              return (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentSceneIndex(idx)}
-                  className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                    isActive
-                      ? 'border-primary ring-2 ring-primary/30 scale-105'
-                      : m?.imageUrl
-                      ? 'border-border hover:border-primary/50'
-                      : 'border-border/50 hover:border-border'
-                  }`}
-                >
-                  {m?.imageUrl ? (
-                    <img src={m.imageUrl} alt={s.step_name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <span className="text-[10px] font-bold text-muted-foreground">{idx + 1}</span>
-                    </div>
-                  )}
-                  {m?.isGeneratingImage && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                      <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    </div>
-                  )}
-                  <span className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] font-bold px-1 rounded ${
-                    isActive ? 'bg-primary text-primary-foreground' : 'bg-black/50 text-white'
-                  }`}>
-                    {idx + 1}
-                  </span>
-                </button>
-              );
-            })}
-            {/* Add Scene button in filmstrip */}
-            <button
-              onClick={() => { onAddBlankScene(); setCurrentSceneIndex(totalScenes); }}
-              className="flex-shrink-0 w-16 h-16 rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex items-center justify-center transition-colors"
-            >
-              <Plus className="h-4 w-4 text-muted-foreground" />
-            </button>
-          </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
-      </div>
-
-      {/* Navigation */}
-      <div className="flex items-center justify-between mt-2">
-        <Button
-          variant="outline" size="sm"
-          disabled={currentSceneIndex === 0}
-          onClick={() => setCurrentSceneIndex(prev => prev - 1)}
-        >
-          <ChevronLeft className="h-4 w-4 mr-1" /> Prev
-        </Button>
-
-        <span className="text-xs text-muted-foreground font-medium">
-          Scene {currentSceneIndex + 1} of {totalScenes}
-        </span>
-
-        <Button
-          variant="outline" size="sm"
-          disabled={currentSceneIndex >= totalScenes - 1}
-          onClick={() => setCurrentSceneIndex(prev => prev + 1)}
-        >
-          Next <ChevronRight className="h-4 w-4 ml-1" />
-        </Button>
       </div>
     </div>
   );
