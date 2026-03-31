@@ -8,6 +8,7 @@ import { DashboardMockup } from "@/components/landing/screenshots/DashboardMocku
 
 import { TransformationMockup } from "@/components/landing/screenshots/TransformationMockup";
 import { TasksMockup } from "@/components/landing/screenshots/TasksMockup";
+import { PlannerMockup } from "@/components/landing/screenshots/PlannerMockup";
 import { SalesCopyMockup } from "@/components/landing/screenshots/SalesCopyMockup";
 import { SocialHubMockup } from "@/components/landing/screenshots/SocialHubMockup";
 import { BrandingMockup } from "@/components/landing/screenshots/BrandingMockup";
