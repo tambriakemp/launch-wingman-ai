@@ -71,9 +71,9 @@ const SelectField: React.FC<{ value: string; onChange: (v: string) => void; opti
 const CollapsibleSection: React.FC<{ title: string; defaultOpen?: boolean; children: React.ReactNode; statusActive?: boolean }> = ({ title, defaultOpen = false, children, statusActive }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger className="flex items-center justify-between w-full py-2.5 text-sm font-bold text-foreground hover:text-primary transition-colors">
-        <span className="flex items-center gap-2">
+    <Collapsible open={open} onOpenChange={setOpen} className="bg-muted/30 rounded-lg px-4 py-1">
+      <CollapsibleTrigger className="flex items-center justify-between w-full py-3 text-sm font-bold text-foreground hover:text-primary transition-colors">
+        <span className="flex items-center gap-2 text-base">
           {title}
           {statusActive !== undefined && <StatusDot active={statusActive} />}
         </span>
@@ -121,7 +121,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             <SheetTitle className="text-base">Creation Settings</SheetTitle>
           </SheetHeader>
 
-          <div className="px-6 py-4 space-y-1 divide-y divide-border">
+          <div className="px-6 py-4 space-y-3">
             {/* Section 1: Creation Mode */}
             <CollapsibleSection title="🎬 Creation Mode" defaultOpen statusActive={true}>
               <div className="space-y-3">
@@ -337,7 +337,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
 
             {/* Section 5: Topic / Message (last) */}
             <CollapsibleSection
-              title={config.creationMode === 'carousel' ? '💬 Setting & Message' : config.creationMode === 'ugc' ? '💬 Marketing Goal' : '💬 Topic & Script'}
+              title={config.creationMode === 'carousel' ? '🎬 Set the Scene' : config.creationMode === 'ugc' ? '💬 Marketing Goal' : '💬 Topic & Script'}
               defaultOpen
               statusActive={!!(config.vlogTopic || config.carouselVibe || config.ugcPrompt)}
             >
@@ -358,7 +358,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                         placeholder={TOPIC_PLACEHOLDERS[config.vlogCategory] || "Describe your video concept..."}
                         value={config.vlogTopic}
                         onChange={(e) => setConfig(c => ({ ...c, vlogTopic: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary"
+                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary"
                       />
                     </div>
                     <div className="pt-2 border-t border-border">
@@ -370,7 +370,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                       {config.useOwnScript && (
                         <textarea placeholder="Paste your script here..."
                           value={config.userScript} onChange={(e) => setConfig(c => ({ ...c, userScript: e.target.value.slice(0, 5000) }))}
-                          className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] mt-2 focus:ring-1 focus:ring-primary" />
+                          className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] mt-2 focus:ring-1 focus:ring-primary" />
                       )}
                     </div>
                   </>
@@ -392,7 +392,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                         placeholder="Describe the world of your carousel — location, vibe, lighting, props, e.g. 'Cozy coffee shop with warm golden light, plants on shelves, latte art on the table...'"
                         value={config.carouselVibe}
                         onChange={(e) => setConfig(c => ({ ...c, carouselVibe: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary"
+                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary"
                       />
                     </div>
                     <div>
@@ -401,7 +401,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                         placeholder="What narrative ties the slides together? e.g. 'Morning routine that changed my productivity — each slide shows a different step...'"
                         value={config.carouselMessage}
                         onChange={(e) => setConfig(c => ({ ...c, carouselMessage: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[50px] focus:ring-1 focus:ring-primary"
+                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary"
                       />
                     </div>
                     <p className="text-[10px] text-muted-foreground/60">All slides share the same character, setting, lighting, and outfit — only the shot angle and framing will vary.</p>
@@ -413,7 +413,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                     <Label label="Marketing Goal" />
                     <textarea placeholder="e.g. Promoting a new matte lipstick..."
                       value={config.ugcPrompt} onChange={(e) => setConfig(c => ({ ...c, ugcPrompt: e.target.value }))}
-                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary" />
+                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary" />
                   </div>
                 )}
               </div>
