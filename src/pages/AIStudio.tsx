@@ -663,7 +663,6 @@ const AIStudio = () => {
     setCurrentProjectName(undefined);
     setMergedReelUrl(null);
     setReelStoragePath(null);
-    setShowResetConfirmation(false);
   };
 
   const handleSaveProject = async (name: string) => {
