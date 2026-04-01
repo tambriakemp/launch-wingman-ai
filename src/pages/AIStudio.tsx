@@ -702,16 +702,6 @@ const AIStudio = () => {
               <p className="text-sm text-muted-foreground hidden sm:block">Create AI-powered video content for your brand.</p>
               <p className="text-xs text-muted-foreground/70 hidden sm:block mt-0.5">Upload a character, configure your look, then generate. Use lock icons on images to keep consistency across scenes.</p>
             </div>
-            {(queue.length > 0 || isProcessing) && (
-              <div className="flex items-center gap-3 px-3 py-1 bg-muted rounded-full border border-border ml-auto">
-                <Loader2 className="h-3 w-3 animate-spin text-primary" />
-                <span className="text-xs text-muted-foreground font-mono">{queueStatusText()}</span>
-                <button onClick={clearQueue} className="text-xs text-destructive hover:text-destructive/80 underline uppercase font-bold ml-2">Cancel</button>
-              </div>
-            )}
-            {storyboard && (
-              <span className="text-xs text-muted-foreground ml-auto">{imagesGenerated}/{totalScenes} images</span>
-            )}
           </div>
         </div>
 
