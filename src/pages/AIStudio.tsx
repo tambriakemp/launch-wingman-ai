@@ -381,7 +381,20 @@ const AIStudio = () => {
       toast({ title: "Setting Required", description: "Please describe the setting and environment for your carousel.", variant: "destructive" });
       return;
     }
-    // No longer require previewCharacterImage — Scene 1 will become the anchor
+    // Auto-reset if a storyboard already exists (implicit "new project")
+    if (storyboard) {
+      setStoryboard(null);
+      setGeneratedMedia({});
+      setQueue([]);
+      setEnlargedImageIndex(null);
+      setIsProcessing(false);
+      setCurrentProjectId(null);
+      setCurrentProjectName(undefined);
+      setMergedReelUrl(null);
+      setReelStoragePath(null);
+      setPreviewCharacterImage(null);
+      setPreviewFinalLookImage(null);
+    }
     setIsGeneratingStoryboard(true);
     try {
       // Images are already URLs (uploaded on selection) — pass directly
