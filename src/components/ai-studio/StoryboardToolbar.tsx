@@ -358,7 +358,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                         placeholder={TOPIC_PLACEHOLDERS[config.vlogCategory] || "Describe your video concept..."}
                         value={config.vlogTopic}
                         onChange={(e) => setConfig(c => ({ ...c, vlogTopic: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary"
+                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary"
                       />
                     </div>
                     <div className="pt-2 border-t border-border">
@@ -370,7 +370,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                       {config.useOwnScript && (
                         <textarea placeholder="Paste your script here..."
                           value={config.userScript} onChange={(e) => setConfig(c => ({ ...c, userScript: e.target.value.slice(0, 5000) }))}
-                          className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] mt-2 focus:ring-1 focus:ring-primary" />
+                          className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] mt-2 focus:ring-1 focus:ring-primary" />
                       )}
                     </div>
                   </>
