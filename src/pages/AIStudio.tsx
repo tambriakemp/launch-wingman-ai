@@ -590,10 +590,9 @@ const AIStudio = () => {
         recorder.onstop = () => resolve(new Blob(chunks, { type: 'video/webm' }));
       });
 
-      recorder.start();
       setMergeProgress(10);
 
-      // Preload all videos in parallel before playback
+      // Preload all videos in parallel BEFORE starting recorder
       console.log(`[Reel] Preloading ${videoEntries.length} videos...`);
       const preloadedVideos = await Promise.all(
         videoEntries.map((entry, idx) =>
@@ -611,6 +610,9 @@ const AIStudio = () => {
         )
       );
       console.log(`[Reel] All ${preloadedVideos.length} videos preloaded`);
+
+      // Start recording AFTER all videos are preloaded (no blank frames)
+      recorder.start();
 
       // Play each preloaded video sequentially on the canvas
       for (let i = 0; i < preloadedVideos.length; i++) {
