@@ -252,8 +252,8 @@ const SceneCard: React.FC<SceneCardProps> = ({
             )}
             {isVideoLoading && (
               <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-30 backdrop-blur-sm">
-                <Loader2 className="h-6 w-6 text-primary animate-spin" />
-                <p className="mt-2 text-xs text-primary animate-pulse uppercase font-bold tracking-wider">Generating Video...</p>
+                <Loader2 className="h-6 w-6 text-white animate-spin" />
+                <p className="mt-2 text-xs text-white animate-pulse uppercase font-bold tracking-wider">Generating Video...</p>
               </div>
             )}
             {media.videoError && !isVideoLoading && !media.videoUrl && (
