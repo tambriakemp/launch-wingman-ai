@@ -583,7 +583,7 @@ const AIStudio = () => {
       console.log('[Reel] Reading output...');
 
       const outputData = await ffmpeg.readFile('output.mp4');
-      const blob = new Blob([outputData instanceof Uint8Array ? outputData : new Uint8Array(outputData as ArrayBuffer)], { type: 'video/mp4' });
+      const blob = new Blob([outputData instanceof Uint8Array ? new Uint8Array(outputData.buffer, outputData.byteOffset, outputData.byteLength) as unknown as BlobPart : outputData as unknown as BlobPart], { type: 'video/mp4' });
       const url = URL.createObjectURL(blob);
       setMergedReelUrl(url);
       setShowReelDialog(true);
