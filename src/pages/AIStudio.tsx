@@ -44,7 +44,6 @@ const AIStudio = () => {
     setShowSafetyTerms(true);
   };
   const [showHelp, setShowHelp] = useState(false);
-  const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [isGeneratingTopic, setIsGeneratingTopic] = useState(false);
   const [enlargedImageIndex, setEnlargedImageIndex] = useState<number | null>(null);
   const [previewLightbox, setPreviewLightbox] = useState<string | null>(null);
