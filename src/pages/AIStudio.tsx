@@ -538,14 +538,31 @@ const AIStudio = () => {
     try {
       const ffmpeg = new FFmpeg();
       ffmpeg.on('progress', ({ progress }) => {
-        setMergeProgress(Math.round(progress * 100));
+        const pct = Math.round(progress * 100);
+        if (pct > 0) setMergeProgress(Math.min(95, 35 + pct * 0.6));
       });
-      await ffmpeg.load();
+      ffmpeg.on('log', ({ message }) => {
+        console.log('[ffmpeg]', message);
+      });
+
+      setMergeProgress(5);
+      console.log('[Reel] Loading ffmpeg.wasm...');
+
+      // Load ffmpeg with explicit CDN URLs using toBlobURL for CORS
+      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+      });
+      console.log('[Reel] ffmpeg loaded successfully');
+
+      setMergeProgress(15);
 
       // Download and write each video to ffmpeg's virtual FS
       const fileNames: string[] = [];
       for (let i = 0; i < videoUrls.length; i++) {
-        setMergeProgress(Math.round((i / videoUrls.length) * 30)); // 0-30% = downloading
+        setMergeProgress(15 + Math.round((i / videoUrls.length) * 20));
+        console.log(`[Reel] Fetching video ${i + 1}/${videoUrls.length}...`);
         const fileName = `vid${i}.mp4`;
         const data = await fetchFile(videoUrls[i]);
         await ffmpeg.writeFile(fileName, data);
@@ -557,15 +574,16 @@ const AIStudio = () => {
       await ffmpeg.writeFile('list.txt', concatList);
 
       setMergeProgress(35);
+      console.log('[Reel] Starting concat...');
 
-      // Concat with stream copy first (fast, works if same codec)
+      // Concat with stream copy (fast, works if same codec)
       await ffmpeg.exec(['-f', 'concat', '-safe', '0', '-i', 'list.txt', '-c', 'copy', 'output.mp4']);
 
-      setMergeProgress(90);
+      setMergeProgress(95);
+      console.log('[Reel] Reading output...');
 
       const outputData = await ffmpeg.readFile('output.mp4');
-      const outputBytes = outputData as unknown as ArrayBuffer;
-      const blob = new Blob([new Uint8Array(outputBytes)], { type: 'video/mp4' });
+      const blob = new Blob([outputData instanceof Uint8Array ? outputData : new Uint8Array(outputData as ArrayBuffer)], { type: 'video/mp4' });
       const url = URL.createObjectURL(blob);
       setMergedReelUrl(url);
       setShowReelDialog(true);
@@ -573,7 +591,7 @@ const AIStudio = () => {
 
       toast({ title: "Reel created!", description: "Your scenes have been merged into one video." });
     } catch (e: any) {
-      console.error('Merge error:', e);
+      console.error('[Reel] Merge error:', e);
       toast({ title: "Merge failed", description: e?.message || "Could not merge videos. Try again.", variant: "destructive" });
     } finally {
       setIsMergingVideos(false);
