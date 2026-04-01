@@ -886,7 +886,6 @@ const AIStudio = () => {
             onDownloadAll={handleDownloadAll}
             hasStoryboard={!!storyboard}
             onHelp={() => setShowHelp(true)}
-            onHelp={() => setShowHelp(true)}
             showSafetyTerms={showSafetyTerms}
             onGenerateStoryboard={handleGenerateStoryboard}
             isGeneratingStoryboard={isGeneratingStoryboard}
