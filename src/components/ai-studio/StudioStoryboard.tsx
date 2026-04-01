@@ -97,9 +97,9 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
           <button
             disabled={currentSceneIndex === 0}
             onClick={() => setCurrentSceneIndex(prev => prev - 1)}
-            className="flex-shrink-0 w-8 h-16 rounded-lg border border-border hover:border-primary/50 flex items-center justify-center transition-colors disabled:opacity-30 disabled:pointer-events-none"
+            className="flex-shrink-0 w-8 h-16 rounded-lg border border-border bg-muted/60 hover:border-primary/50 hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-30 disabled:pointer-events-none"
           >
-            <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+            <ChevronLeft className="h-4 w-4 text-foreground/60" />
           </button>
 
           <ScrollArea className="flex-1">
@@ -152,9 +152,9 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
           <button
             disabled={currentSceneIndex >= totalScenes - 1}
             onClick={() => setCurrentSceneIndex(prev => prev + 1)}
-            className="flex-shrink-0 w-8 h-16 rounded-lg border border-border hover:border-primary/50 flex items-center justify-center transition-colors disabled:opacity-30 disabled:pointer-events-none"
+            className="flex-shrink-0 w-8 h-16 rounded-lg border border-border bg-muted/60 hover:border-primary/50 hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-30 disabled:pointer-events-none"
           >
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronRight className="h-4 w-4 text-foreground/60" />
           </button>
         </div>
       </div>

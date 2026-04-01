@@ -119,7 +119,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   const hasAnyConfig = hasCharacter || hasEnvironment || hasLookCustomized || !!config.vlogTopic || !!config.carouselVibe;
 
   return (
-    <div className="flex items-center gap-2 flex-wrap py-3 px-1">
+    <div className="flex items-center gap-2 flex-wrap py-3 px-1 mb-3">
       {/* Single "Create" button that opens the Sheet */}
       <button
         onClick={() => setSheetOpen(true)}
@@ -522,16 +522,31 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Separator orientation="vertical" className="h-6 mx-1" />
-              <button onClick={onSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 rounded-lg transition-colors disabled:opacity-50">
-                {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Save
-              </button>
             </>
           )}
           <div className="ml-auto">
-            <button onClick={onProjects} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 border border-foreground rounded-lg transition-colors">
-              <FolderOpen className="h-3.5 w-3.5" /> Projects
-            </button>
+            <div className="flex items-center">
+              <button onClick={onProjects} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 rounded-l-lg transition-colors border-r border-background/20">
+                <FolderOpen className="h-3.5 w-3.5" /> Projects
+              </button>
+              {hasStoryboard && onSave && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center justify-center px-1.5 py-1.5 h-full text-xs font-medium bg-foreground text-background hover:bg-foreground/90 rounded-r-lg transition-colors">
+                      <ChevronDown className="h-3 w-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={onSave} disabled={isSaving}>
+                      {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-2" />} Save Project
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              {(!hasStoryboard || !onSave) && (
+                <span className="w-px" />
+              )}
+            </div>
           </div>
         </>
       )}
