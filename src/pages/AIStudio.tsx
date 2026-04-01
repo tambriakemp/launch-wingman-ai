@@ -959,58 +959,6 @@ const AIStudio = () => {
               {/* Contextual batch actions header */}
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-bold text-foreground">Storyboard · {storyboard.steps.length} scenes</h2>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => {
-                    let tasks: QueueItem[] = storyboard.steps
-                      .map((s, idx) => ({ id: Math.random().toString(), type: 'generate' as const, index: idx, step: s, config: { ...config } }))
-                      .filter(t => !generatedMedia[t.index]?.imageUrl);
-                    // For carousel: ensure scene 1 is first so it can anchor the rest
-                    if (config.creationMode === 'carousel' && tasks.length > 0) {
-                      tasks.sort((a, b) => a.index - b.index);
-                    }
-                    if (tasks.length > 0) addToQueue(tasks);
-                  }}>
-                    <ImageIcon className="h-3.5 w-3.5 mr-1.5" /> Generate All Images
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => {
-                    const tasks: QueueItem[] = storyboard.steps
-                      .map((s, idx) => ({ id: Math.random().toString(), type: 'generate_video' as const, index: idx, step: s, config: { ...config }, baseImageUrl: generatedMedia[idx]?.imageUrl }))
-                      .filter(t => t.baseImageUrl && !generatedMedia[t.index]?.videoUrl);
-                    if (tasks.length > 0) addToQueue(tasks);
-                  }}>
-                    <Video className="h-3.5 w-3.5 mr-1.5" /> Generate All Videos
-                  </Button>
-                  {(() => {
-                    const videoCount = Object.values(generatedMedia).filter(m => m.videoUrl).length;
-                    const anyGenerating = Object.values(generatedMedia).some(m => m.isGeneratingVideo);
-                    return videoCount >= 2 && !anyGenerating ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="sm" variant="outline" disabled={isMergingVideos}>
-                            {isMergingVideos ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Film className="h-3.5 w-3.5 mr-1.5" />}
-                            {isMergingVideos ? 'Creating...' : 'Reel'}
-                            <ChevronDown className="h-3 w-3 ml-1" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={handleCreateReel}>
-                            <Film className="h-3.5 w-3.5 mr-2" /> {mergedReelUrl ? 'Re-create Reel' : 'Create Reel'}
-                          </DropdownMenuItem>
-                          {mergedReelUrl && (
-                            <>
-                              <DropdownMenuItem onClick={() => setShowReelDialog(true)}>
-                                <Eye className="h-3.5 w-3.5 mr-2" /> View Reel
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={handleDownloadReel}>
-                                <Download className="h-3.5 w-3.5 mr-2" /> Download Reel
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : null;
-                  })()}
-                </div>
               </div>
               <StudioStoryboard
                 config={config}
