@@ -892,6 +892,30 @@ const AIStudio = () => {
             showSafetyTerms={showSafetyTerms}
             onGenerateStoryboard={handleGenerateStoryboard}
             isGeneratingStoryboard={isGeneratingStoryboard}
+            onGenerateAllImages={() => {
+              if (!storyboard) return;
+              let tasks: QueueItem[] = storyboard.steps
+                .map((s, idx) => ({ id: Math.random().toString(), type: 'generate' as const, index: idx, step: s, config: { ...config } }))
+                .filter(t => !generatedMedia[t.index]?.imageUrl);
+              if (config.creationMode === 'carousel' && tasks.length > 0) {
+                tasks.sort((a, b) => a.index - b.index);
+              }
+              if (tasks.length > 0) addToQueue(tasks);
+            }}
+            onGenerateAllVideos={() => {
+              if (!storyboard) return;
+              const tasks: QueueItem[] = storyboard.steps
+                .map((s, idx) => ({ id: Math.random().toString(), type: 'generate_video' as const, index: idx, step: s, config: { ...config }, baseImageUrl: generatedMedia[idx]?.imageUrl }))
+                .filter(t => t.baseImageUrl && !generatedMedia[t.index]?.videoUrl);
+              if (tasks.length > 0) addToQueue(tasks);
+            }}
+            onCreateReel={handleCreateReel}
+            onViewReel={() => setShowReelDialog(true)}
+            onDownloadReel={handleDownloadReel}
+            isMergingVideos={isMergingVideos}
+            mergedReelUrl={mergedReelUrl}
+            videoCount={Object.values(generatedMedia).filter(m => m.videoUrl).length}
+            anyGeneratingVideo={Object.values(generatedMedia).some(m => m.isGeneratingVideo)}
           />
 
           {/* Safety Terms Banner (shown once, before first generation) */}
