@@ -679,10 +679,10 @@ const AIStudio = () => {
       if (mergedReelUrl) row.reel_created_at = new Date().toISOString();
 
       if (currentProjectId) {
-        const { error } = await supabase.from('ai_studio_projects').update(row).eq('id', currentProjectId);
+        const { error } = await supabase.from('ai_studio_projects').update(row as any).eq('id', currentProjectId);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from('ai_studio_projects').insert(row).select('id').single();
+        const { data, error } = await supabase.from('ai_studio_projects').insert(row as any).select('id').single();
         if (error) throw error;
         setCurrentProjectId(data.id);
       }
