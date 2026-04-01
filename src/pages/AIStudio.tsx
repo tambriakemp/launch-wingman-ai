@@ -835,6 +835,37 @@ const AIStudio = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Reel Preview Dialog */}
+        <Dialog open={showReelDialog} onOpenChange={(open) => { setShowReelDialog(open); if (!open && mergedReelUrl) { URL.revokeObjectURL(mergedReelUrl); setMergedReelUrl(null); } }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Your Reel is Ready</DialogTitle>
+              <DialogDescription>All scene videos have been merged into one continuous reel.</DialogDescription>
+            </DialogHeader>
+            {mergedReelUrl && (
+              <video src={mergedReelUrl} controls className="w-full rounded-lg border border-border" />
+            )}
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setShowReelDialog(false)}>Close</Button>
+              <Button onClick={handleDownloadReel}>
+                <Download className="h-4 w-4 mr-2" /> Download Reel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Merge Progress Overlay */}
+        {isMergingVideos && (
+          <div className="fixed bottom-6 right-6 z-50 bg-card border border-border rounded-xl p-4 shadow-2xl w-72">
+            <div className="flex items-center gap-3 mb-2">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-sm font-medium text-foreground">Creating Reel...</span>
+            </div>
+            <Progress value={mergeProgress} className="h-2" indicatorClassName="bg-primary" />
+            <p className="text-xs text-muted-foreground mt-1">{mergeProgress}% complete</p>
+          </div>
+        )}
+
         <main className="max-w-7xl mx-auto px-4 py-4">
           {/* Toolbar */}
           <StoryboardToolbar
