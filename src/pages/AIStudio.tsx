@@ -932,7 +932,17 @@ const AIStudio = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Reel Preview Dialog */}
+        {/* Reel Settings Dialog */}
+        <ReelSettingsDialog
+          open={showReelSettings}
+          onOpenChange={setShowReelSettings}
+          clips={storyboard ? storyboard.steps
+            .map((s, idx) => ({ index: idx, imageUrl: generatedMedia[idx]?.imageUrl, stepName: s.step_name }))
+            .filter((_, idx) => !!generatedMedia[idx]?.videoUrl) : []}
+          onGenerate={(durations) => handleCreateReel(durations)}
+          isGenerating={isMergingVideos}
+        />
+
         <Dialog open={showReelDialog} onOpenChange={setShowReelDialog}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
