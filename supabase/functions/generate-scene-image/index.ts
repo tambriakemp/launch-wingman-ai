@@ -86,7 +86,18 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel, previousScenePrompt, nextScenePrompt, previousSceneImageUrl, sceneNumber, totalScenes } = await req.json();
+    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel, previousScenePrompt, nextScenePrompt, previousSceneImageUrl, sceneNumber, totalScenes, aspectRatio } = await req.json();
+
+    // Build aspect ratio orientation instruction
+    const getOrientationInstruction = (ar: string): string => {
+      switch (ar) {
+        case '9:16': return '\nOUTPUT FORMAT (CRITICAL): Generate a PORTRAIT oriented image (9:16 aspect ratio, TALLER than wide). The image MUST be in vertical/portrait orientation.';
+        case '16:9': return '\nOUTPUT FORMAT (CRITICAL): Generate a LANDSCAPE oriented image (16:9 aspect ratio, WIDER than tall). The image MUST be in horizontal/landscape orientation.';
+        case '1:1': return '\nOUTPUT FORMAT (CRITICAL): Generate a SQUARE image (1:1 aspect ratio). The image MUST have equal width and height.';
+        default: return '';
+      }
+    };
+    const orientationInstruction = getOrientationInstruction(aspectRatio || config?.aspectRatio || '9:16');
 
     const isUrl = (img: string): boolean => /^https?:\/\//i.test(img?.trim() || "");
 
