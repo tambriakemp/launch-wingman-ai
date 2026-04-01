@@ -308,8 +308,5 @@ function buildDownstreamBody(action: string, body: Record<string, unknown>): Rec
 
     default:
       return body;
-
-    default:
-      return body;
   }
 }

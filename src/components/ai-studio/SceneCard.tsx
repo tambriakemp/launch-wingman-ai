@@ -151,7 +151,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
           >
             {media.imageUrl && !isLoading && (
               <TooltipProvider delayDuration={300}>
-                <div className="absolute top-2 right-2 flex flex-col gap-2 z-[60]" onClick={(e) => e.stopPropagation()}>
+                <div className="absolute top-2 right-2 flex flex-col gap-2 z-10" onClick={(e) => e.stopPropagation()}>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button onClick={(e) => { e.stopPropagation(); onToggleLock('character'); }}

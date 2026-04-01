@@ -211,7 +211,8 @@ const AIStudio = () => {
                     previousSceneImageUrl,
                     environmentLabel: environmentLabel || undefined,
                     sceneNumber: task.index + 1,
-                    totalScenes: currentStoryboard?.steps.length
+                    totalScenes: currentStoryboard?.steps.length,
+                    aspectRatio: task.config.aspectRatio
                   },
                 });
 
