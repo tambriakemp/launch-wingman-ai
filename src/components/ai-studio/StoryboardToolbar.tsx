@@ -413,7 +413,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                     <Label label="Marketing Goal" />
                     <textarea placeholder="e.g. Promoting a new matte lipstick..."
                       value={config.ugcPrompt} onChange={(e) => setConfig(c => ({ ...c, ugcPrompt: e.target.value }))}
-                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary" />
+                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary" />
                   </div>
                 )}
               </div>
