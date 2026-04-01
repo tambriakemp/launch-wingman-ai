@@ -645,17 +645,33 @@ const AIStudio = () => {
       recorder.stop();
       setMergeProgress(85);
       const blob = await reelDone;
-      console.log(`[Reel] Merged blob size: ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
+      console.log(`[Reel] Merged WebM blob size: ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
+
+      // Convert WebM → MP4 using FFmpeg WASM
+      setMergeProgress(86);
+      console.log('[Reel] Loading FFmpeg for MP4 conversion...');
+      const { FFmpeg } = await import('@ffmpeg/ffmpeg');
+      const { fetchFile } = await import('@ffmpeg/util');
+      const ffmpeg = new FFmpeg();
+      await ffmpeg.load();
+      setMergeProgress(88);
+
+      console.log('[Reel] Converting to MP4...');
+      await ffmpeg.writeFile('input.webm', await fetchFile(blob));
+      await ffmpeg.exec(['-i', 'input.webm', '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', 'output.mp4']);
+      const mp4Data = await ffmpeg.readFile('output.mp4') as Uint8Array;
+      const mp4Blob = new Blob([mp4Data.buffer], { type: 'video/mp4' });
+      console.log(`[Reel] MP4 blob size: ${(mp4Blob.size / 1024 / 1024).toFixed(1)}MB`);
 
       // Upload to storage
-      setMergeProgress(90);
+      setMergeProgress(92);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const storagePath = `reels/${user.id}/${Date.now()}.${fileExt}`;
+      const storagePath = `reels/${user.id}/${Date.now()}.mp4`;
       const { error: uploadErr } = await supabase.storage
         .from('ai-studio')
-        .upload(storagePath, blob, { contentType, upsert: true });
+        .upload(storagePath, mp4Blob, { contentType: 'video/mp4', upsert: true });
       if (uploadErr) throw uploadErr;
 
       const { data: urlData } = supabase.storage.from('ai-studio').getPublicUrl(storagePath);
@@ -675,7 +691,7 @@ const AIStudio = () => {
       setShowReelDialog(true);
       setMergeProgress(100);
 
-      toast({ title: "Reel created!", description: "Your scenes have been merged into a video." });
+      toast({ title: "Reel created!", description: "Your scenes have been merged into an MP4 video." });
     } catch (e: any) {
       console.error('[Reel] Merge error:', e);
       toast({ title: "Merge failed", description: e?.message || "Could not merge videos. Try again.", variant: "destructive" });
