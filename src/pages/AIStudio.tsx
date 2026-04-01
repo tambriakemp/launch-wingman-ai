@@ -538,17 +538,22 @@ const AIStudio = () => {
   };
 
   // Create Reel — client-side Canvas + MediaRecorder merge
-  const handleCreateReel = async () => {
+  const handleCreateReel = async (clipDurations?: (number | null)[]) => {
     if (!storyboard) return;
-    const videoUrls: string[] = [];
+    const videoEntries: { url: string; maxDuration: number | null }[] = [];
+    let clipIdx = 0;
     for (let i = 0; i < storyboard.steps.length; i++) {
       const url = generatedMedia[i]?.videoUrl;
-      if (url) videoUrls.push(url);
+      if (url) {
+        videoEntries.push({ url, maxDuration: clipDurations?.[clipIdx] ?? null });
+        clipIdx++;
+      }
     }
-    if (videoUrls.length < 2) {
+    if (videoEntries.length < 2) {
       toast({ title: "Need more videos", description: "At least 2 scene videos are required to create a reel.", variant: "destructive" });
       return;
     }
+    setShowReelSettings(false);
 
     const DIMS: Record<string, { w: number; h: number }> = {
       "9:16": { w: 1080, h: 1920 },
