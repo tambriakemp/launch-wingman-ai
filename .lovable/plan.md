@@ -1,38 +1,33 @@
 
 
-## Reel Duration Control — Pre-Generation Settings Dialog
+## Force MP4 Download for Reels
 
-### Approach
-When the user clicks "Generate Reel" or "Regenerate Reel", show a **dialog** before merging starts. The dialog offers two modes:
+### Problem
+`MediaRecorder` in most browsers only supports WebM (not MP4). The current code checks `isTypeSupported('video/mp4')` but it almost always fails, resulting in `.webm` files.
 
-1. **Target Duration** (simple) — Pick a total reel length (7s, 10s, 15s, 30s, or "Full Length"). The system auto-divides time across clips evenly, trimming each to fit.
-2. **Per-Clip Control** (advanced) — Shows each clip as a small thumbnail with a seconds input. User can set exact duration per clip. Defaults to each clip's full length.
+### Solution
+Use **FFmpeg WASM** to convert the WebM blob to MP4 client-side after recording completes.
 
-A toggle or tabs switch between the two modes. "Full Length" is the default (current behavior — no trimming).
+### Changes
 
-### How clip trimming works
-During the Canvas playback loop, instead of playing each video to completion (`vid.onended`), use a per-clip `maxDuration` value:
-- If `maxDuration` is set, start a timer on play and pause/end the video after that many seconds.
-- The clip plays from the beginning and is cut at the specified time.
-- For "Target Duration" mode: `perClipDuration = targetSeconds / numberOfClips`, capped at each clip's actual length.
+**Install dependency**
+- `@ffmpeg/ffmpeg` and `@ffmpeg/util`
 
-### UI Design
-The dialog includes:
-- **Mode selector**: "Target Duration" / "Per-Clip" tabs
-- **Target Duration tab**: Preset buttons (7s, 10s, 15s, 30s, Full Length) + estimated per-clip duration display
-- **Per-Clip tab**: Grid of clip thumbnails (using scene images as proxies) with a number input (seconds) beside each. A "Reset to Full" button.
-- **Generate button** at the bottom
+**`src/pages/AIStudio.tsx`** (~lines 652-680)
 
-### Files to change
+After `recorder.stop()` and getting the WebM blob:
 
-| File | Change |
-|------|--------|
-| `src/components/ai-studio/ReelSettingsDialog.tsx` | **New** — Dialog component with duration mode selection, thumbnail grid, and per-clip inputs |
-| `src/pages/AIStudio.tsx` | Show dialog on reel click instead of calling `handleCreateReel` directly. Pass clip durations array into `handleCreateReel`. Update the video playback loop to respect `maxDuration` per clip. |
-| `src/components/ai-studio/StoryboardToolbar.tsx` | No changes needed — `onCreateReel` callback stays the same; the dialog is triggered from `AIStudio.tsx` |
+1. Import and load FFmpeg WASM (`@ffmpeg/ffmpeg`)
+2. Write the WebM blob to FFmpeg's virtual filesystem
+3. Run `ffmpeg -i input.webm -c:v libx264 -preset ultrafast -pix_fmt yuv420p output.mp4`
+4. Read the resulting MP4 file
+5. Upload the MP4 blob (with `contentType: 'video/mp4'`) and use `.mp4` extension
+6. Remove the format detection logic — always output MP4 regardless of `MediaRecorder` format
 
-### Technical details
-- Clip trimming: In the sequential playback loop, replace `vid.onended` with a `setTimeout` that pauses the video and resolves the promise after `clipDurations[i]` seconds (or falls through to `onended` if duration >= actual length).
-- Thumbnail source: Use `generatedMedia[i].imageUrl` (the scene image) as the thumbnail preview in the dialog.
-- The dialog state lives in `AIStudio.tsx` as `showReelSettings: boolean` and `clipDurations: (number | null)[]`.
+Additionally update the progress indicator to show "Converting to MP4..." during the conversion step (between merge completion and upload).
+
+### Technical notes
+- FFmpeg WASM loads ~30MB on first use (cached afterward). A loading message should inform the user.
+- The `MediaRecorder` still records in WebM (whatever the browser supports), but the final output is always MP4.
+- `@ffmpeg/ffmpeg` v0.12+ uses SharedArrayBuffer which requires specific headers. If that's an issue, we can use the single-threaded build (`@ffmpeg/ffmpeg/dist/umd/ffmpeg.js`).
 
