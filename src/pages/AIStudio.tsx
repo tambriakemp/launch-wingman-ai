@@ -646,6 +646,8 @@ const AIStudio = () => {
     setShowSafetyTerms(false);
     setCurrentProjectId(null);
     setCurrentProjectName(undefined);
+    setMergedReelUrl(null);
+    setReelStoragePath(null);
     setShowResetConfirmation(false);
   };
 
