@@ -1,35 +1,32 @@
 
 
-## Fix Z-Index Overlap & Video Orientation Issues
+## Fix Reel Orientation — Fill Instead of Letterbox
 
-### Issue 1: Z-Index — Scene card icons appear on top of modals
+### Problem
+The reel merger uses aspect-**fit** scaling (`Math.min`), which places landscape source videos inside a portrait canvas with large black bars. Even though the aspect ratio fix was applied to image generation, existing videos were generated before the fix and remain landscape. The reel looks wrong because of the letterboxing.
 
-The lock/overlay icons in `SceneCard.tsx` use `z-[60]`, which is higher than the dialog overlay's `z-50`. They bleed through modals.
+### Solution
+Two changes:
 
-**Fix in `src/components/ai-studio/SceneCard.tsx`** (line 154):
-- Change `z-[60]` to `z-10` — the icons only need to be above their parent image, not above page-level modals.
+1. **Use aspect-fill (crop) instead of aspect-fit (letterbox)** in the reel Canvas renderer — change `Math.min` to `Math.max` so each video fills the entire canvas, cropping overflow rather than showing black bars. This makes the reel look correct regardless of source video orientation.
 
-### Issue 2: Video orientation — landscape videos in portrait project
+2. **Add audio tracks to the reel** — Currently `vid.muted = true` means the reel has no audio. The MediaRecorder stream only captures the canvas video. To include audio, we'd need to mix audio tracks into the stream. This is a separate concern — keep muted for now.
 
-The root cause is that **scene images are generated without any aspect ratio constraint**. The `generate-scene-image` edge function uses Gemini's image generation (`google/gemini-3-pro-image-preview`) but never specifies output dimensions or orientation. Gemini defaults to whatever it chooses (often square or landscape). When these images are fed to Kling for video generation, even though `aspect_ratio: "9:16"` is passed, the landscape source image influences Kling to produce landscape-oriented video.
+### Changes
 
-**Fix in two places:**
+**`src/pages/AIStudio.tsx`** (line ~605)
 
-1. **`supabase/functions/generate-scene-image/index.ts`** — Add aspect ratio to the prompt text so Gemini generates images matching the project orientation. The function needs to receive `aspectRatio` from the client and append an instruction like:
-   - For 9:16: "OUTPUT FORMAT: Generate a PORTRAIT oriented image (9:16 aspect ratio, taller than wide)."
-   - For 16:9: "OUTPUT FORMAT: Generate a LANDSCAPE oriented image (16:9 aspect ratio, wider than tall)."
-   - For 1:1: "OUTPUT FORMAT: Generate a SQUARE image (1:1 aspect ratio)."
+Change the scaling from aspect-fit to aspect-fill:
+```js
+// Before (aspect-fit — black bars)
+const scale = Math.min(dims.w / vid.videoWidth, dims.h / vid.videoHeight);
 
-2. **`supabase/functions/ai-studio-api/index.ts`** — Pass `aspectRatio` through in the `generate_scene_image` action mapping (currently it's not forwarded).
+// After (aspect-fill — crop to fill)
+const scale = Math.max(dims.w / vid.videoWidth, dims.h / vid.videoHeight);
+```
 
-3. **`src/pages/AIStudio.tsx`** — Ensure `aspectRatio` is included in the body when calling `generate-scene-image` (check if `config.aspectRatio` is already sent; if not, add it).
+This single-line change ensures landscape videos fill the portrait canvas (cropping sides) instead of floating in the middle with black bars.
 
-### Changes summary
-
-| File | Change |
-|------|--------|
-| `src/components/ai-studio/SceneCard.tsx` | `z-[60]` → `z-10` |
-| `supabase/functions/generate-scene-image/index.ts` | Read `aspectRatio` from request body, append orientation instruction to prompt |
-| `supabase/functions/ai-studio-api/index.ts` | Forward `aspectRatio` in `generate_scene_image` case |
-| `src/pages/AIStudio.tsx` | Verify `aspectRatio` is sent with scene image generation requests |
+### Result
+Landscape source videos will be center-cropped to fill the portrait frame. Once the user regenerates images with the new aspect ratio fix, the cropping will be minimal or none.
 
