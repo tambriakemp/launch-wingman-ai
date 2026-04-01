@@ -71,9 +71,9 @@ const SelectField: React.FC<{ value: string; onChange: (v: string) => void; opti
 const CollapsibleSection: React.FC<{ title: string; defaultOpen?: boolean; children: React.ReactNode; statusActive?: boolean }> = ({ title, defaultOpen = false, children, statusActive }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger className="flex items-center justify-between w-full py-2.5 text-sm font-bold text-foreground hover:text-primary transition-colors">
-        <span className="flex items-center gap-2">
+    <Collapsible open={open} onOpenChange={setOpen} className="bg-muted/30 rounded-lg px-4 py-1">
+      <CollapsibleTrigger className="flex items-center justify-between w-full py-3 text-sm font-bold text-foreground hover:text-primary transition-colors">
+        <span className="flex items-center gap-2 text-base">
           {title}
           {statusActive !== undefined && <StatusDot active={statusActive} />}
         </span>
