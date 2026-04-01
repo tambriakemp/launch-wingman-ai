@@ -9,7 +9,10 @@ import ImageLightbox from '@/components/ai-studio/ImageLightbox';
 import SavedProjectsGrid from '@/components/ai-studio/SavedProjectsGrid';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Loader2, HelpCircle, RotateCcw, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, X, ShieldCheck, Film, Eye } from 'lucide-react';
+import { Loader2, HelpCircle, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, X, ShieldCheck, Film, Eye, ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { VLOG_CATEGORIES } from '@/components/ai-studio/constants';
 import { toast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
