@@ -832,7 +832,7 @@ const AIStudio = () => {
         </Dialog>
 
         {/* Reel Preview Dialog */}
-        <Dialog open={showReelDialog} onOpenChange={(open) => { setShowReelDialog(open); if (!open && mergedReelUrl) { URL.revokeObjectURL(mergedReelUrl); setMergedReelUrl(null); } }}>
+        <Dialog open={showReelDialog} onOpenChange={setShowReelDialog}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Your Reel is Ready</DialogTitle>
