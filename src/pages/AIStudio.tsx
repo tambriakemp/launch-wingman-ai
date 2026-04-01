@@ -659,10 +659,10 @@ const AIStudio = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const storagePath = `reels/${user.id}/${Date.now()}.webm`;
+      const storagePath = `reels/${user.id}/${Date.now()}.${fileExt}`;
       const { error: uploadErr } = await supabase.storage
         .from('ai-studio')
-        .upload(storagePath, blob, { contentType: 'video/webm', upsert: true });
+        .upload(storagePath, blob, { contentType, upsert: true });
       if (uploadErr) throw uploadErr;
 
       const { data: urlData } = supabase.storage.from('ai-studio').getPublicUrl(storagePath);
