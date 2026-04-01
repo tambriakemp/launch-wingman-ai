@@ -602,7 +602,7 @@ const AIStudio = () => {
             const drawFrame = () => {
               if (vid.paused || vid.ended) return;
               // Draw with aspect-fit (center, black bars)
-              const scale = Math.min(dims.w / vid.videoWidth, dims.h / vid.videoHeight);
+              const scale = Math.max(dims.w / vid.videoWidth, dims.h / vid.videoHeight);
               const dw = vid.videoWidth * scale;
               const dh = vid.videoHeight * scale;
               ctx.fillStyle = '#000';
