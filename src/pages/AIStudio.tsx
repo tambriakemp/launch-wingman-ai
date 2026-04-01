@@ -214,6 +214,15 @@ const AIStudio = () => {
                 ...prev,
                 [task.index]: { ...prev[task.index], imageUrl: data.imageUrl, isGeneratingImage: false, isUpscaling: false, error: undefined }
               }));
+
+              // Auto-set character preview from Scene 1 so subsequent scenes have an identity anchor
+              if (task.index === 0 && data.imageUrl) {
+                setPreviewCharacterImage(data.imageUrl);
+              }
+              // For GRWM: set final look preview when the last (final look) scene generates
+              if (task.step.is_final_look && data.imageUrl) {
+                setPreviewFinalLookImage(data.imageUrl);
+              }
               } finally {
                 clearTimeout(timeoutId);
               }
