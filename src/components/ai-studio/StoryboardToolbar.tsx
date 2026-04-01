@@ -143,6 +143,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                     ))}
                   </div>
                 </div>
+                <div>
                   <Label label="Mode" />
                   <div className="grid grid-cols-3 gap-1 bg-muted p-0.5 rounded-md">
                     <button onClick={() => setConfig(c => ({ ...c, creationMode: 'vlog' }))}
