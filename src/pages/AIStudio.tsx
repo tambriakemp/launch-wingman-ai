@@ -795,19 +795,8 @@ const AIStudio = () => {
 
         <StudioHelp open={showHelp} onClose={() => setShowHelp(false)} />
 
-        {/* Reset Confirmation */}
-        {showResetConfirmation && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="bg-card border border-border rounded-2xl max-w-md w-full p-6 shadow-2xl">
-              <h3 className="text-xl font-bold text-foreground mb-2">Start New Project?</h3>
-              <p className="text-muted-foreground mb-6">All current progress and generated images will be lost.</p>
-              <div className="flex justify-end gap-3">
-                <Button variant="ghost" onClick={() => setShowResetConfirmation(false)}>Cancel</Button>
-                <Button variant="destructive" onClick={confirmNewProject}>Start New</Button>
-              </div>
-            </div>
-          </div>
-        )}
+
+
 
         {/* Save Dialog */}
         <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
