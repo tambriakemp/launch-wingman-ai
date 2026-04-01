@@ -9,7 +9,7 @@ import ImageLightbox from '@/components/ai-studio/ImageLightbox';
 import SavedProjectsGrid from '@/components/ai-studio/SavedProjectsGrid';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Loader2, HelpCircle, RotateCcw, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, X, ShieldCheck } from 'lucide-react';
+import { Loader2, HelpCircle, RotateCcw, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, X, ShieldCheck, Film } from 'lucide-react';
 import { VLOG_CATEGORIES } from '@/components/ai-studio/constants';
 import { toast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
@@ -18,6 +18,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile } from '@ffmpeg/util';
+import { Progress } from '@/components/ui/progress';
 
 const AIStudio = () => {
   const [config, setConfig] = useState<AppConfig>({ ...INITIAL_CONFIG });
@@ -57,6 +60,12 @@ const AIStudio = () => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [showProjectsDialog, setShowProjectsDialog] = useState(false);
+
+  // Create Reel state
+  const [isMergingVideos, setIsMergingVideos] = useState(false);
+  const [mergeProgress, setMergeProgress] = useState(0);
+  const [mergedReelUrl, setMergedReelUrl] = useState<string | null>(null);
+  const [showReelDialog, setShowReelDialog] = useState(false);
 
   // Refs to avoid stale closures in the queue processor
   const previewCharacterRef = useRef(previewCharacterImage);
@@ -511,6 +520,76 @@ const AIStudio = () => {
     addToQueue(tasks);
   };
 
+  // Create Reel — merge all scene videos client-side using ffmpeg.wasm
+  const handleCreateReel = async () => {
+    if (!storyboard) return;
+    const videoUrls: string[] = [];
+    for (let i = 0; i < storyboard.steps.length; i++) {
+      const url = generatedMedia[i]?.videoUrl;
+      if (url) videoUrls.push(url);
+    }
+    if (videoUrls.length < 2) {
+      toast({ title: "Need more videos", description: "At least 2 scene videos are required to create a reel.", variant: "destructive" });
+      return;
+    }
+
+    setIsMergingVideos(true);
+    setMergeProgress(0);
+    try {
+      const ffmpeg = new FFmpeg();
+      ffmpeg.on('progress', ({ progress }) => {
+        setMergeProgress(Math.round(progress * 100));
+      });
+      await ffmpeg.load();
+
+      // Download and write each video to ffmpeg's virtual FS
+      const fileNames: string[] = [];
+      for (let i = 0; i < videoUrls.length; i++) {
+        setMergeProgress(Math.round((i / videoUrls.length) * 30)); // 0-30% = downloading
+        const fileName = `vid${i}.mp4`;
+        const data = await fetchFile(videoUrls[i]);
+        await ffmpeg.writeFile(fileName, data);
+        fileNames.push(fileName);
+      }
+
+      // Write concat list
+      const concatList = fileNames.map(f => `file '${f}'`).join('\n');
+      await ffmpeg.writeFile('list.txt', concatList);
+
+      setMergeProgress(35);
+
+      // Concat with stream copy first (fast, works if same codec)
+      await ffmpeg.exec(['-f', 'concat', '-safe', '0', '-i', 'list.txt', '-c', 'copy', 'output.mp4']);
+
+      setMergeProgress(90);
+
+      const outputData = await ffmpeg.readFile('output.mp4');
+      const outputBytes = outputData as unknown as ArrayBuffer;
+      const blob = new Blob([new Uint8Array(outputBytes)], { type: 'video/mp4' });
+      const url = URL.createObjectURL(blob);
+      setMergedReelUrl(url);
+      setShowReelDialog(true);
+      setMergeProgress(100);
+
+      toast({ title: "Reel created!", description: "Your scenes have been merged into one video." });
+    } catch (e: any) {
+      console.error('Merge error:', e);
+      toast({ title: "Merge failed", description: e?.message || "Could not merge videos. Try again.", variant: "destructive" });
+    } finally {
+      setIsMergingVideos(false);
+    }
+  };
+
+  const handleDownloadReel = () => {
+    if (!mergedReelUrl) return;
+    const link = document.createElement('a');
+    link.href = mergedReelUrl;
+    link.download = `reel-${Date.now()}.mp4`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const generateScriptContent = () => {
     if (!storyboard) return "";
     let content = `PROJECT: ${config.creationMode === 'vlog' ? config.vlogCategory : 'UGC'}\nTOPIC: ${config.creationMode === 'vlog' ? config.vlogTopic : config.ugcPrompt}\nDATE: ${new Date().toLocaleDateString()}\n\n`;
@@ -756,6 +835,37 @@ const AIStudio = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Reel Preview Dialog */}
+        <Dialog open={showReelDialog} onOpenChange={(open) => { setShowReelDialog(open); if (!open && mergedReelUrl) { URL.revokeObjectURL(mergedReelUrl); setMergedReelUrl(null); } }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Your Reel is Ready</DialogTitle>
+              <DialogDescription>All scene videos have been merged into one continuous reel.</DialogDescription>
+            </DialogHeader>
+            {mergedReelUrl && (
+              <video src={mergedReelUrl} controls className="w-full rounded-lg border border-border" />
+            )}
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setShowReelDialog(false)}>Close</Button>
+              <Button onClick={handleDownloadReel}>
+                <Download className="h-4 w-4 mr-2" /> Download Reel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Merge Progress Overlay */}
+        {isMergingVideos && (
+          <div className="fixed bottom-6 right-6 z-50 bg-card border border-border rounded-xl p-4 shadow-2xl w-72">
+            <div className="flex items-center gap-3 mb-2">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-sm font-medium text-foreground">Creating Reel...</span>
+            </div>
+            <Progress value={mergeProgress} className="h-2" indicatorClassName="bg-primary" />
+            <p className="text-xs text-muted-foreground mt-1">{mergeProgress}% complete</p>
+          </div>
+        )}
+
         <main className="max-w-7xl mx-auto px-4 py-4">
           {/* Toolbar */}
           <StoryboardToolbar
@@ -848,6 +958,16 @@ const AIStudio = () => {
                   }}>
                     <Video className="h-3.5 w-3.5 mr-1.5" /> Generate All Videos
                   </Button>
+                  {(() => {
+                    const videoCount = Object.values(generatedMedia).filter(m => m.videoUrl).length;
+                    const anyGenerating = Object.values(generatedMedia).some(m => m.isGeneratingVideo);
+                    return videoCount >= 2 && !anyGenerating ? (
+                      <Button size="sm" variant="outline" onClick={handleCreateReel} disabled={isMergingVideos}>
+                        {isMergingVideos ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Film className="h-3.5 w-3.5 mr-1.5" />}
+                        {isMergingVideos ? 'Creating Reel...' : 'Create Reel'}
+                      </Button>
+                    ) : null;
+                  })()}
                 </div>
               </div>
               <StudioStoryboard
