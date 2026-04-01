@@ -422,6 +422,24 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               </div>
             </CollapsibleSection>
           </div>
+
+          {/* Generate Storyboard Button */}
+          {onGenerateStoryboard && !hasStoryboard && (
+            <div className="px-6 py-4 border-t border-border">
+              <button
+                onClick={() => { onGenerateStoryboard(); setSheetOpen(false); }}
+                disabled={!showSafetyTerms || !referenceImage || isGeneratingStoryboard}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-xl bg-primary text-primary-foreground shadow-md hover:bg-primary/90 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none"
+              >
+                {isGeneratingStoryboard ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Generating Storyboard...</>
+                ) : (
+                  <><Sparkles className="h-4 w-4" /> Generate Storyboard</>
+                )}
+              </button>
+              <p className="text-[10px] text-muted-foreground text-center mt-1.5">Generation can take 1–2 minutes.</p>
+            </div>
+          )}
         </SheetContent>
       </Sheet>
 
