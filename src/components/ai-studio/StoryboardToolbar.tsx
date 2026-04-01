@@ -168,20 +168,9 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 )}
 
                 {config.creationMode === 'carousel' && (
-                  <div className="space-y-3">
-                    <div>
-                      <Label label="Aesthetic / Mood" />
-                      <SelectField value={config.carouselAesthetic} onChange={(v) => setConfig(c => ({ ...c, carouselAesthetic: v }))} options={CAROUSEL_AESTHETICS} />
-                    </div>
-                    <div>
-                      <Label label="Number of Slides" />
-                      <div className="flex items-center gap-2">
-                        <input type="range" min={4} max={12} value={config.carouselSlideCount}
-                          onChange={(e) => setConfig(c => ({ ...c, carouselSlideCount: parseInt(e.target.value) }))}
-                          className="flex-1 accent-primary" />
-                        <span className="text-xs font-bold text-foreground w-4">{config.carouselSlideCount}</span>
-                      </div>
-                    </div>
+                  <div>
+                    <Label label="Aesthetic / Mood" />
+                    <SelectField value={config.carouselAesthetic} onChange={(v) => setConfig(c => ({ ...c, carouselAesthetic: v }))} options={CAROUSEL_AESTHETICS} />
                   </div>
                 )}
 
@@ -206,91 +195,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               </div>
             </CollapsibleSection>
 
-            {/* Section 2: Topic / Message */}
-            <CollapsibleSection
-              title={config.creationMode === 'carousel' ? '💬 Setting & Message' : config.creationMode === 'ugc' ? '💬 Marketing Goal' : '💬 Topic & Script'}
-              defaultOpen
-              statusActive={!!(config.vlogTopic || config.carouselVibe || config.ugcPrompt)}
-            >
-              <div className="space-y-3">
-                {config.creationMode === 'vlog' && (
-                  <>
-                    <div>
-                      <div className="flex justify-between items-center mb-1.5">
-                        <Label label="Vlog Topic" />
-                        {onGenerateTopicIdeas && (
-                          <button onClick={onGenerateTopicIdeas} disabled={isGeneratingTopic}
-                            className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1 disabled:opacity-50">
-                            {isGeneratingTopic ? <span className="animate-pulse">Thinking...</span> : <><Sparkles className="h-3 w-3" /> Brainstorm</>}
-                          </button>
-                        )}
-                      </div>
-                      <textarea
-                        placeholder={TOPIC_PLACEHOLDERS[config.vlogCategory] || "Describe your video concept..."}
-                        value={config.vlogTopic}
-                        onChange={(e) => setConfig(c => ({ ...c, vlogTopic: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary"
-                      />
-                    </div>
-                    <div className="pt-2 border-t border-border">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={config.useOwnScript} onChange={(e) => setConfig(c => ({ ...c, useOwnScript: e.target.checked }))}
-                          className="rounded border-border text-primary focus:ring-primary bg-muted" />
-                        <span className="text-xs font-medium text-foreground">Use own script ✍️</span>
-                      </label>
-                      {config.useOwnScript && (
-                        <textarea placeholder="Paste your script here..."
-                          value={config.userScript} onChange={(e) => setConfig(c => ({ ...c, userScript: e.target.value.slice(0, 5000) }))}
-                          className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] mt-2 focus:ring-1 focus:ring-primary" />
-                      )}
-                    </div>
-                  </>
-                )}
-
-                {config.creationMode === 'carousel' && (
-                  <>
-                    <div>
-                      <div className="flex justify-between items-center mb-1.5">
-                        <Label label="Setting / Environment" />
-                        {onGenerateTopicIdeas && (
-                          <button onClick={onGenerateTopicIdeas} disabled={isGeneratingTopic}
-                            className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1 disabled:opacity-50">
-                            {isGeneratingTopic ? <span className="animate-pulse">Thinking...</span> : <><Sparkles className="h-3 w-3" /> Brainstorm</>}
-                          </button>
-                        )}
-                      </div>
-                      <textarea
-                        placeholder="Where is this carousel set? e.g. Inside a luxury Lamborghini with orange interior, parked on a sunny LA highway..."
-                        value={config.carouselVibe}
-                        onChange={(e) => setConfig(c => ({ ...c, carouselVibe: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary"
-                      />
-                    </div>
-                    <div>
-                      <Label label="Message / Theme" />
-                      <textarea
-                        placeholder="What's the message or story thread? e.g. Your content isn't failing — it's just painfully average..."
-                        value={config.carouselMessage}
-                        onChange={(e) => setConfig(c => ({ ...c, carouselMessage: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[50px] focus:ring-1 focus:ring-primary"
-                      />
-                    </div>
-                    <p className="text-[10px] text-muted-foreground/60">All slides share the same character, setting, lighting, and outfit — only the shot angle and framing will vary.</p>
-                  </>
-                )}
-
-                {config.creationMode === 'ugc' && (
-                  <div>
-                    <Label label="Marketing Goal" />
-                    <textarea placeholder="e.g. Promoting a new matte lipstick..."
-                      value={config.ugcPrompt} onChange={(e) => setConfig(c => ({ ...c, ugcPrompt: e.target.value }))}
-                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary" />
-                  </div>
-                )}
-              </div>
-            </CollapsibleSection>
-
-            {/* Section 3: Character */}
+            {/* Section 2: Character */}
             <CollapsibleSection title="👤 Character" statusActive={hasCharacter}>
               <div className="space-y-4">
                 {setReferenceImage && (
@@ -427,6 +332,90 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 <div className="pt-2 border-t border-border">
                   <SavedLooks config={config} setConfig={setConfig} />
                 </div>
+              </div>
+            </CollapsibleSection>
+
+            {/* Section 5: Topic / Message (last) */}
+            <CollapsibleSection
+              title={config.creationMode === 'carousel' ? '💬 Setting & Message' : config.creationMode === 'ugc' ? '💬 Marketing Goal' : '💬 Topic & Script'}
+              defaultOpen
+              statusActive={!!(config.vlogTopic || config.carouselVibe || config.ugcPrompt)}
+            >
+              <div className="space-y-3">
+                {config.creationMode === 'vlog' && (
+                  <>
+                    <div>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <Label label="Vlog Topic" />
+                        {onGenerateTopicIdeas && (
+                          <button onClick={onGenerateTopicIdeas} disabled={isGeneratingTopic}
+                            className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1 disabled:opacity-50">
+                            {isGeneratingTopic ? <span className="animate-pulse">Thinking...</span> : <><Sparkles className="h-3 w-3" /> Brainstorm</>}
+                          </button>
+                        )}
+                      </div>
+                      <textarea
+                        placeholder={TOPIC_PLACEHOLDERS[config.vlogCategory] || "Describe your video concept..."}
+                        value={config.vlogTopic}
+                        onChange={(e) => setConfig(c => ({ ...c, vlogTopic: e.target.value }))}
+                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                    <div className="pt-2 border-t border-border">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={config.useOwnScript} onChange={(e) => setConfig(c => ({ ...c, useOwnScript: e.target.checked }))}
+                          className="rounded border-border text-primary focus:ring-primary bg-muted" />
+                        <span className="text-xs font-medium text-foreground">Use own script ✍️</span>
+                      </label>
+                      {config.useOwnScript && (
+                        <textarea placeholder="Paste your script here..."
+                          value={config.userScript} onChange={(e) => setConfig(c => ({ ...c, userScript: e.target.value.slice(0, 5000) }))}
+                          className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] mt-2 focus:ring-1 focus:ring-primary" />
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {config.creationMode === 'carousel' && (
+                  <>
+                    <div>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <Label label="Scene Description" />
+                        {onGenerateTopicIdeas && (
+                          <button onClick={onGenerateTopicIdeas} disabled={isGeneratingTopic}
+                            className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1 disabled:opacity-50">
+                            {isGeneratingTopic ? <span className="animate-pulse">Thinking...</span> : <><Sparkles className="h-3 w-3" /> Brainstorm</>}
+                          </button>
+                        )}
+                      </div>
+                      <textarea
+                        placeholder="Describe the world of your carousel — location, vibe, lighting, props, e.g. 'Cozy coffee shop with warm golden light, plants on shelves, latte art on the table...'"
+                        value={config.carouselVibe}
+                        onChange={(e) => setConfig(c => ({ ...c, carouselVibe: e.target.value }))}
+                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <Label label="Story / Caption Theme" />
+                      <textarea
+                        placeholder="What narrative ties the slides together? e.g. 'Morning routine that changed my productivity — each slide shows a different step...'"
+                        value={config.carouselMessage}
+                        onChange={(e) => setConfig(c => ({ ...c, carouselMessage: e.target.value }))}
+                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[50px] focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground/60">All slides share the same character, setting, lighting, and outfit — only the shot angle and framing will vary.</p>
+                  </>
+                )}
+
+                {config.creationMode === 'ugc' && (
+                  <div>
+                    <Label label="Marketing Goal" />
+                    <textarea placeholder="e.g. Promoting a new matte lipstick..."
+                      value={config.ugcPrompt} onChange={(e) => setConfig(c => ({ ...c, ugcPrompt: e.target.value }))}
+                      className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary" />
+                  </div>
+                )}
               </div>
             </CollapsibleSection>
           </div>
