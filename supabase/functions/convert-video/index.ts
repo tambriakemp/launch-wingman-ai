@@ -10,52 +10,85 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { inputUrl, outputPath, userId } = await req.json();
+    const { inputUrl, outputPath } = await req.json();
     if (!inputUrl || !outputPath) {
-      return new Response(JSON.stringify({ error: "inputUrl and outputPath required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "inputUrl and outputPath required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Download the WebM
-    const inputRes = await fetch(inputUrl);
-    if (!inputRes.ok) throw new Error("Failed to fetch input video");
-    const inputBuffer = await inputRes.arrayBuffer();
+    const apiKey = Deno.env.get("CLOUDCONVERT_API_KEY");
+    if (!apiKey) throw new Error("CLOUDCONVERT_API_KEY not configured");
 
-    // Write input to temp file
-    const tmpInput = await Deno.makeTempFile({ suffix: ".webm" });
-    const tmpOutput = await Deno.makeTempFile({ suffix: ".mp4" });
-    await Deno.writeFile(tmpInput, new Uint8Array(inputBuffer));
+    const headers = {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    };
 
-    // Run ffmpeg
-    const cmd = new Deno.Command("ffmpeg", {
-      args: [
-        "-y",
-        "-i", tmpInput,
-        "-c:v", "libx264",
-        "-preset", "ultrafast",
-        "-pix_fmt", "yuv420p",
-        "-movflags", "+faststart",
-        "-an",
-        tmpOutput
-      ],
-      stdout: "piped",
-      stderr: "piped",
+    // 1. Create job
+    const jobRes = await fetch("https://api.cloudconvert.com/v2/jobs", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        tasks: {
+          "import-webm": { operation: "import/url", url: inputUrl },
+          "convert-to-mp4": {
+            operation: "convert",
+            input: "import-webm",
+            output_format: "mp4",
+            video_codec: "x264",
+            fps: 30,
+          },
+          "export-result": { operation: "export/url", input: "convert-to-mp4" },
+        },
+      }),
     });
 
-    const { code, stderr } = await cmd.output();
-    if (code !== 0) {
-      const errText = new TextDecoder().decode(stderr);
-      console.error("FFmpeg error:", errText);
-      throw new Error(`FFmpeg conversion failed: ${errText.slice(-200)}`);
+    if (!jobRes.ok) {
+      const errBody = await jobRes.text();
+      throw new Error(`CloudConvert job creation failed [${jobRes.status}]: ${errBody}`);
     }
 
-    // Read output
-    const mp4Data = await Deno.readFile(tmpOutput);
-    
-    // Clean up temp files
-    await Deno.remove(tmpInput).catch(() => {});
-    await Deno.remove(tmpOutput).catch(() => {});
+    const job = await jobRes.json();
+    const jobId = job.data.id;
+    console.log(`[convert-video] CloudConvert job created: ${jobId}`);
 
-    // Upload to Supabase storage
+    // 2. Poll until finished (max 120s)
+    const maxWait = 120_000;
+    const interval = 3_000;
+    const start = Date.now();
+    let finishedJob: any = null;
+
+    while (Date.now() - start < maxWait) {
+      await new Promise((r) => setTimeout(r, interval));
+      const pollRes = await fetch(`https://api.cloudconvert.com/v2/jobs/${jobId}`, { headers });
+      const pollData = await pollRes.json();
+      const status = pollData.data.status;
+
+      if (status === "finished") {
+        finishedJob = pollData.data;
+        break;
+      }
+      if (status === "error") {
+        const failedTask = pollData.data.tasks?.find((t: any) => t.status === "error");
+        throw new Error(`CloudConvert job failed: ${failedTask?.message || "unknown error"}`);
+      }
+    }
+
+    if (!finishedJob) throw new Error("CloudConvert job timed out after 120s");
+
+    // 3. Get export URL
+    const exportTask = finishedJob.tasks.find((t: any) => t.name === "export-result");
+    const exportUrl = exportTask?.result?.files?.[0]?.url;
+    if (!exportUrl) throw new Error("No export URL in finished job");
+
+    // 4. Download MP4
+    const mp4Res = await fetch(exportUrl);
+    if (!mp4Res.ok) throw new Error("Failed to download converted MP4");
+    const mp4Buffer = await mp4Res.arrayBuffer();
+    console.log(`[convert-video] Downloaded MP4: ${(mp4Buffer.byteLength / 1024 / 1024).toFixed(1)}MB`);
+
+    // 5. Upload to Supabase storage
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -63,7 +96,7 @@ serve(async (req) => {
 
     const { error: uploadErr } = await supabase.storage
       .from("ai-studio")
-      .upload(outputPath, mp4Data, { contentType: "video/mp4", upsert: true });
+      .upload(outputPath, new Uint8Array(mp4Buffer), { contentType: "video/mp4", upsert: true });
 
     if (uploadErr) throw uploadErr;
 
@@ -73,7 +106,6 @@ serve(async (req) => {
       JSON.stringify({ publicUrl: urlData.publicUrl }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
   } catch (e) {
     console.error("convert-video error:", e);
     return new Response(
