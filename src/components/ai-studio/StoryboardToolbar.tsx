@@ -73,7 +73,7 @@ const CollapsibleSection: React.FC<{ title: string; defaultOpen?: boolean; child
   const [open, setOpen] = useState(defaultOpen);
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger className="flex items-center justify-between w-full py-2 text-xs font-bold text-foreground hover:text-primary transition-colors">
+      <CollapsibleTrigger className="flex items-center justify-between w-full py-2.5 text-sm font-bold text-foreground hover:text-primary transition-colors">
         <span className="flex items-center gap-2">
           {title}
           {statusActive !== undefined && <StatusDot active={statusActive} />}
