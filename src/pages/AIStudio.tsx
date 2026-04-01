@@ -373,10 +373,7 @@ const AIStudio = () => {
       toast({ title: "Setting Required", description: "Please describe the setting and environment for your carousel.", variant: "destructive" });
       return;
     }
-    if (!previewCharacterImage) {
-      toast({ title: "Character Preview Required", description: "Please generate and review the character preview first.", variant: "destructive" });
-      return;
-    }
+    // No longer require previewCharacterImage — Scene 1 will become the anchor
     setIsGeneratingStoryboard(true);
     try {
       // Images are already URLs (uploaded on selection) — pass directly
