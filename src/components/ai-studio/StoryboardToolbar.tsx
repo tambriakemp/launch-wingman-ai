@@ -95,7 +95,8 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   productImage, setProductImage,
   showSafetyTerms, setShowSafetyTerms,
   isProcessing,
-  onProjects, onSave, isSaving, onDownloadScript, onDownloadAll, hasStoryboard, onHelp, onNew
+  onProjects, onSave, isSaving, onDownloadScript, onDownloadAll, hasStoryboard, onHelp, onNew,
+  onGenerateStoryboard, isGeneratingStoryboard
 }) => {
   const [sheetOpen, setSheetOpen] = useState(false);
 
