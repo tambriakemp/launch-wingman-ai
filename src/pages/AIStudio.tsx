@@ -791,6 +791,9 @@ const AIStudio = () => {
             hasStoryboard={!!storyboard}
             onHelp={() => setShowHelp(true)}
             onNew={() => setShowResetConfirmation(true)}
+            showSafetyTerms={showSafetyTerms}
+            onGenerateStoryboard={handleGenerateStoryboard}
+            isGeneratingStoryboard={isGeneratingStoryboard}
           />
 
           {/* Safety Terms Banner (shown once, before first generation) */}
