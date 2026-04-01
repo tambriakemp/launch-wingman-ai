@@ -45,6 +45,15 @@ interface StoryboardToolbarProps {
   onHelp?: () => void;
   onGenerateStoryboard?: () => void;
   isGeneratingStoryboard?: boolean;
+  onGenerateAllImages?: () => void;
+  onGenerateAllVideos?: () => void;
+  onCreateReel?: () => void;
+  onViewReel?: () => void;
+  onDownloadReel?: () => void;
+  isMergingVideos?: boolean;
+  mergedReelUrl?: string | null;
+  videoCount?: number;
+  anyGeneratingVideo?: boolean;
 }
 
 const StatusDot: React.FC<{ active: boolean }> = ({ active }) => (
