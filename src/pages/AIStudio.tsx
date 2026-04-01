@@ -520,7 +520,74 @@ const AIStudio = () => {
     addToQueue(tasks);
   };
 
-  const generateScriptContent = () => {
+  // Create Reel — merge all scene videos client-side using ffmpeg.wasm
+  const handleCreateReel = async () => {
+    if (!storyboard) return;
+    const videoUrls: string[] = [];
+    for (let i = 0; i < storyboard.steps.length; i++) {
+      const url = generatedMedia[i]?.videoUrl;
+      if (url) videoUrls.push(url);
+    }
+    if (videoUrls.length < 2) {
+      toast({ title: "Need more videos", description: "At least 2 scene videos are required to create a reel.", variant: "destructive" });
+      return;
+    }
+
+    setIsMergingVideos(true);
+    setMergeProgress(0);
+    try {
+      const ffmpeg = new FFmpeg();
+      ffmpeg.on('progress', ({ progress }) => {
+        setMergeProgress(Math.round(progress * 100));
+      });
+      await ffmpeg.load();
+
+      // Download and write each video to ffmpeg's virtual FS
+      const fileNames: string[] = [];
+      for (let i = 0; i < videoUrls.length; i++) {
+        setMergeProgress(Math.round((i / videoUrls.length) * 30)); // 0-30% = downloading
+        const fileName = `vid${i}.mp4`;
+        const data = await fetchFile(videoUrls[i]);
+        await ffmpeg.writeFile(fileName, data);
+        fileNames.push(fileName);
+      }
+
+      // Write concat list
+      const concatList = fileNames.map(f => `file '${f}'`).join('\n');
+      await ffmpeg.writeFile('list.txt', concatList);
+
+      setMergeProgress(35);
+
+      // Concat with stream copy first (fast, works if same codec)
+      await ffmpeg.exec(['-f', 'concat', '-safe', '0', '-i', 'list.txt', '-c', 'copy', 'output.mp4']);
+
+      setMergeProgress(90);
+
+      const outputData = await ffmpeg.readFile('output.mp4');
+      const blob = new Blob([outputData], { type: 'video/mp4' });
+      const url = URL.createObjectURL(blob);
+      setMergedReelUrl(url);
+      setShowReelDialog(true);
+      setMergeProgress(100);
+
+      toast({ title: "Reel created!", description: "Your scenes have been merged into one video." });
+    } catch (e: any) {
+      console.error('Merge error:', e);
+      toast({ title: "Merge failed", description: e?.message || "Could not merge videos. Try again.", variant: "destructive" });
+    } finally {
+      setIsMergingVideos(false);
+    }
+  };
+
+  const handleDownloadReel = () => {
+    if (!mergedReelUrl) return;
+    const link = document.createElement('a');
+    link.href = mergedReelUrl;
+    link.download = `reel-${Date.now()}.mp4`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
     if (!storyboard) return "";
     let content = `PROJECT: ${config.creationMode === 'vlog' ? config.vlogCategory : 'UGC'}\nTOPIC: ${config.creationMode === 'vlog' ? config.vlogTopic : config.ugcPrompt}\nDATE: ${new Date().toLocaleDateString()}\n\n`;
     storyboard.steps.forEach(step => {
