@@ -119,7 +119,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   const hasAnyConfig = hasCharacter || hasEnvironment || hasLookCustomized || !!config.vlogTopic || !!config.carouselVibe;
 
   return (
-    <div className="flex items-center gap-2 flex-wrap py-3 px-1">
+    <div className="flex items-center gap-2 flex-wrap py-3 px-1 mb-3">
       {/* Single "Create" button that opens the Sheet */}
       <button
         onClick={() => setSheetOpen(true)}
