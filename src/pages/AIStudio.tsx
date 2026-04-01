@@ -593,19 +593,33 @@ const AIStudio = () => {
       recorder.start();
       setMergeProgress(10);
 
-      // Play each video sequentially on the canvas
-      for (let i = 0; i < videoEntries.length; i++) {
-        setMergeProgress(10 + Math.round((i / videoEntries.length) * 70));
-        console.log(`[Reel] Playing video ${i + 1}/${videoEntries.length}, maxDuration=${videoEntries[i].maxDuration}`);
+      // Preload all videos in parallel before playback
+      console.log(`[Reel] Preloading ${videoEntries.length} videos...`);
+      const preloadedVideos = await Promise.all(
+        videoEntries.map((entry, idx) =>
+          new Promise<HTMLVideoElement>((resolve, reject) => {
+            const vid = document.createElement('video');
+            vid.crossOrigin = 'anonymous';
+            vid.muted = true;
+            vid.playsInline = true;
+            vid.preload = 'auto';
+            vid.src = entry.url;
+            vid.oncanplaythrough = () => resolve(vid);
+            vid.onerror = () => reject(new Error(`Failed to preload video ${idx + 1}`));
+            vid.load();
+          })
+        )
+      );
+      console.log(`[Reel] All ${preloadedVideos.length} videos preloaded`);
+
+      // Play each preloaded video sequentially on the canvas
+      for (let i = 0; i < preloadedVideos.length; i++) {
+        setMergeProgress(10 + Math.round((i / preloadedVideos.length) * 70));
+        const vid = preloadedVideos[i];
+        const maxDur = videoEntries[i].maxDuration;
+        console.log(`[Reel] Playing video ${i + 1}/${preloadedVideos.length}, maxDuration=${maxDur}`);
 
         await new Promise<void>((resolve, reject) => {
-          const vid = document.createElement('video');
-          vid.crossOrigin = 'anonymous';
-          vid.muted = true;
-          vid.playsInline = true;
-          vid.preload = 'auto';
-          vid.src = videoEntries[i].url;
-          const maxDur = videoEntries[i].maxDuration;
           let timer: ReturnType<typeof setTimeout> | null = null;
 
           const finish = () => {
@@ -615,30 +629,36 @@ const AIStudio = () => {
             resolve();
           };
 
-          vid.onloadeddata = () => {
-            vid.play().catch(reject);
-          };
+          // Draw the first frame of this clip immediately to avoid any flash
+          const scale = Math.max(dims.w / vid.videoWidth, dims.h / vid.videoHeight);
+          const dw = vid.videoWidth * scale;
+          const dh = vid.videoHeight * scale;
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, 0, dims.w, dims.h);
+          ctx.drawImage(vid, (dims.w - dw) / 2, (dims.h - dh) / 2, dw, dh);
 
           vid.onplay = () => {
-            // Start trim timer if maxDuration is set and shorter than actual
             if (maxDur !== null && maxDur > 0 && maxDur < vid.duration) {
               timer = setTimeout(finish, maxDur * 1000);
             }
             const drawFrame = () => {
               if (vid.paused || vid.ended) return;
-              const scale = Math.max(dims.w / vid.videoWidth, dims.h / vid.videoHeight);
-              const dw = vid.videoWidth * scale;
-              const dh = vid.videoHeight * scale;
+              const s = Math.max(dims.w / vid.videoWidth, dims.h / vid.videoHeight);
+              const w = vid.videoWidth * s;
+              const h = vid.videoHeight * s;
               ctx.fillStyle = '#000';
               ctx.fillRect(0, 0, dims.w, dims.h);
-              ctx.drawImage(vid, (dims.w - dw) / 2, (dims.h - dh) / 2, dw, dh);
+              ctx.drawImage(vid, (dims.w - w) / 2, (dims.h - h) / 2, w, h);
               requestAnimationFrame(drawFrame);
             };
             drawFrame();
           };
 
           vid.onended = finish;
-          vid.onerror = () => reject(new Error(`Failed to load video ${i + 1}`));
+          vid.onerror = () => reject(new Error(`Failed to play video ${i + 1}`));
+
+          // Already preloaded — play immediately
+          vid.play().catch(reject);
         });
       }
 
