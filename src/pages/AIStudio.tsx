@@ -700,15 +700,22 @@ const AIStudio = () => {
     }
   };
 
-  const handleDownloadReel = () => {
+  const handleDownloadReel = async () => {
     if (!mergedReelUrl) return;
-    const link = document.createElement('a');
-    link.href = mergedReelUrl;
-    link.download = `reel-${Date.now()}.mp4`;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const response = await fetch(mergedReelUrl);
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(new Blob([blob], { type: 'video/mp4' }));
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = `reel-${Date.now()}.mp4`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+    } catch (e: any) {
+      toast({ title: "Download failed", description: "Could not download the reel. Try right-clicking and saving.", variant: "destructive" });
+    }
   };
 
   const generateScriptContent = () => {
