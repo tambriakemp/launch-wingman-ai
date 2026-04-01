@@ -695,7 +695,8 @@ const AIStudio = () => {
     if (!mergedReelUrl) return;
     const link = document.createElement('a');
     link.href = mergedReelUrl;
-    link.download = `reel-${Date.now()}.webm`;
+    const ext = mergedReelUrl.includes('.mp4') ? 'mp4' : 'webm';
+    link.download = `reel-${Date.now()}.${ext}`;
     link.target = '_blank';
     document.body.appendChild(link);
     link.click();
