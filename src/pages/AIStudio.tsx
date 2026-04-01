@@ -665,7 +665,7 @@ const AIStudio = () => {
         };
       });
 
-      const row = {
+      const row: Record<string, any> = {
         user_id: user.id, name, mode: config.creationMode,
         config: config as any, storyboard: storyboard as any,
         generated_media: persistMedia as any,
@@ -673,6 +673,10 @@ const AIStudio = () => {
         final_look_preview_url: previewFinalLookImage,
         status: 'saved', updated_at: new Date().toISOString(),
       };
+      // Persist reel data if available
+      if (mergedReelUrl) row.reel_url = mergedReelUrl;
+      if (reelStoragePath) row.reel_path = reelStoragePath;
+      if (mergedReelUrl) row.reel_created_at = new Date().toISOString();
 
       if (currentProjectId) {
         const { error } = await supabase.from('ai_studio_projects').update(row).eq('id', currentProjectId);
