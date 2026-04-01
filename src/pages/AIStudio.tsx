@@ -407,8 +407,17 @@ const AIStudio = () => {
       board.steps.forEach((_, idx) => { initialMedia[idx] = { ...DEFAULT_MEDIA }; });
       setGeneratedMedia(initialMedia);
 
-      // Text-only generation: do NOT auto-queue images.
-      // User reviews/edits scene text, then generates images manually.
+      // Auto-queue Scene 1 image generation so it becomes the character anchor
+      if (board.steps.length > 0) {
+        const scene1Task: QueueItem = {
+          id: Math.random().toString(),
+          type: 'generate',
+          index: 0,
+          step: board.steps[0],
+          config: { ...config }
+        };
+        addToQueue([scene1Task]);
+      }
     } catch (e: any) {
       toast({ title: "Error", description: getUserFriendlyErrorMessage(e), variant: "destructive" });
     } finally {
@@ -782,6 +791,9 @@ const AIStudio = () => {
             hasStoryboard={!!storyboard}
             onHelp={() => setShowHelp(true)}
             onNew={() => setShowResetConfirmation(true)}
+            showSafetyTerms={showSafetyTerms}
+            onGenerateStoryboard={handleGenerateStoryboard}
+            isGeneratingStoryboard={isGeneratingStoryboard}
           />
 
           {/* Safety Terms Banner (shown once, before first generation) */}
@@ -804,30 +816,17 @@ const AIStudio = () => {
 
           {/* Topic/Message inputs moved to Create sheet panel */}
 
-          {/* Generate Storyboard CTA */}
+          {/* Generate Storyboard CTA moved to Create sheet panel */}
           {!storyboard && (
             <div className="my-4">
               <div className="bg-card border border-border rounded-xl p-6 text-center">
-                <p className="text-sm text-muted-foreground mb-3">
+                <p className="text-sm text-muted-foreground">
                   {!referenceImage
                     ? "Upload a character photo in the Create panel to get started."
                     : !showSafetyTerms
                     ? "Accept the safety terms above to continue."
-                    : "Configure your look and generate your storyboard."}
+                    : "Open the Create panel, configure your settings, and generate your storyboard."}
                 </p>
-                <Button
-                  onClick={handleGenerateStoryboard}
-                  disabled={!showSafetyTerms || !referenceImage || isGeneratingStoryboard}
-                  className="px-8"
-                  size="lg"
-                >
-                  {isGeneratingStoryboard ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating Storyboard...</>
-                  ) : (
-                    <><Sparkles className="h-4 w-4 mr-2" /> Generate Storyboard</>
-                  )}
-                </Button>
-                <p className="text-[11px] text-muted-foreground mt-1.5">Generation can take 1–2 minutes. Please be patient.</p>
               </div>
             </div>
           )}
