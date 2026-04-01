@@ -647,63 +647,47 @@ const AIStudio = () => {
       const blob = await reelDone;
       console.log(`[Reel] Merged WebM blob size: ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
 
-      // Convert WebM → MP4 using FFmpeg WASM (properly configured)
+      // Upload WebM to temp storage for server-side conversion
       setMergeProgress(86);
-      console.log('[Reel] Loading FFmpeg WASM...');
-      const { FFmpeg } = await import('@ffmpeg/ffmpeg');
-      const { fetchFile, toBlobURL } = await import('@ffmpeg/util');
-      const ffmpeg = new FFmpeg();
-
-      // Must load core + wasm explicitly from CDN for v0.12
-      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-      await ffmpeg.load({
-        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-      });
-      setMergeProgress(88);
-
-      console.log('[Reel] Converting WebM to MP4...');
-      await ffmpeg.writeFile('input.webm', await fetchFile(blob));
-      await ffmpeg.exec([
-        '-i', 'input.webm',
-        '-c:v', 'libx264',
-        '-preset', 'ultrafast',
-        '-pix_fmt', 'yuv420p',
-        '-movflags', '+faststart',
-        '-an',
-        'output.mp4'
-      ]);
-      const mp4Data = await ffmpeg.readFile('output.mp4');
-      const mp4Uint8 = mp4Data instanceof Uint8Array ? mp4Data : new Uint8Array((mp4Data as any).buffer);
-      const mp4Blob = new Blob([mp4Uint8], { type: 'video/mp4' });
-      console.log(`[Reel] MP4 blob size: ${(mp4Blob.size / 1024 / 1024).toFixed(1)}MB`);
-      if (mp4Blob.size < 1000) throw new Error('MP4 conversion produced empty file — FFmpeg may have failed silently');
-
-      // Upload to storage
-      setMergeProgress(92);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const storagePath = `reels/${user.id}/${Date.now()}.mp4`;
-      const { error: uploadErr } = await supabase.storage
+      const tempPath = `reels/${user.id}/temp_${Date.now()}.webm`;
+      const { error: tempUploadErr } = await supabase.storage
         .from('ai-studio')
-        .upload(storagePath, mp4Blob, { contentType: 'video/mp4', upsert: true });
-      if (uploadErr) throw uploadErr;
+        .upload(tempPath, blob, { contentType: 'video/webm', upsert: true });
+      if (tempUploadErr) throw tempUploadErr;
 
-      const { data: urlData } = supabase.storage.from('ai-studio').getPublicUrl(storagePath);
-      const reelUrl = urlData.publicUrl;
+      const { data: tempUrlData } = supabase.storage.from('ai-studio').getPublicUrl(tempPath);
+      const tempWebmUrl = tempUrlData.publicUrl;
+      setMergeProgress(88);
+
+      // Convert via edge function
+      console.log('[Reel] Converting WebM to MP4 via server...');
+      const outputPath = `reels/${user.id}/${Date.now()}.mp4`;
+      const { data: convertData, error: convertError } = await supabase.functions.invoke('convert-video', {
+        body: { inputUrl: tempWebmUrl, outputPath, userId: user.id }
+      });
+      if (convertError) throw convertError;
+      if (convertData?.error) throw new Error(convertData.error);
+
+      const reelUrl = convertData.publicUrl;
+      setMergeProgress(92);
+
+      // Clean up temp WebM
+      await supabase.storage.from('ai-studio').remove([tempPath]);
 
       // Persist to project
       if (currentProjectId) {
         await supabase.from('ai_studio_projects').update({
           reel_url: reelUrl,
-          reel_path: storagePath,
+          reel_path: outputPath,
           reel_created_at: new Date().toISOString(),
         }).eq('id', currentProjectId);
       }
 
       setMergedReelUrl(reelUrl);
-      setReelStoragePath(storagePath);
+      setReelStoragePath(outputPath);
       setShowReelDialog(true);
       setMergeProgress(100);
 
