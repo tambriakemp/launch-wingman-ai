@@ -804,74 +804,31 @@ const AIStudio = () => {
 
           {/* Topic/Message inputs moved to Create sheet panel */}
 
-          {/* Inline Character Preview Bar */}
-          <div className="my-4">
-            {!previewCharacterImage ? (
+          {/* Generate Storyboard CTA */}
+          {!storyboard && (
+            <div className="my-4">
               <div className="bg-card border border-border rounded-xl p-6 text-center">
                 <p className="text-sm text-muted-foreground mb-3">
                   {!referenceImage
-                    ? "Upload a character photo in the Character tab to get started."
+                    ? "Upload a character photo in the Create panel to get started."
                     : !showSafetyTerms
                     ? "Accept the safety terms above to continue."
-                    : "Generate a character preview to start building your storyboard."}
+                    : "Configure your look and generate your storyboard."}
                 </p>
                 <Button
-                  onClick={handleGeneratePreview}
-                  disabled={!showSafetyTerms || !referenceImage || isPreviewGenerating}
+                  onClick={handleGenerateStoryboard}
+                  disabled={!showSafetyTerms || !referenceImage || isGeneratingStoryboard}
+                  className="px-8"
+                  size="lg"
                 >
-                  {isPreviewGenerating ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> {previewStep || 'Generating Preview...'}</>
+                  {isGeneratingStoryboard ? (
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating Storyboard...</>
                   ) : (
-                    <><Sparkles className="h-4 w-4 mr-2" /> Generate Character Preview</>
+                    <><Sparkles className="h-4 w-4 mr-2" /> Generate Storyboard</>
                   )}
                 </Button>
+                <p className="text-[11px] text-muted-foreground mt-1.5">Generation can take 1–2 minutes. Please be patient.</p>
               </div>
-           ) : (
-              <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
-                <div className="flex gap-3">
-                  <div className="relative cursor-pointer" onClick={() => setPreviewLightbox(previewCharacterImage)}>
-                    <img src={previewCharacterImage} alt="Character Preview" className="w-16 h-24 rounded-lg object-cover border border-border hover:opacity-80 transition-opacity" />
-                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[8px] px-1.5 py-0.5 rounded-full font-bold">
-                      <Check className="h-2.5 w-2.5" />
-                    </span>
-                  </div>
-                  {previewFinalLookImage && (
-                    <div className="relative cursor-pointer" onClick={() => setPreviewLightbox(previewFinalLookImage)}>
-                      <img src={previewFinalLookImage} alt="Final Look" className="w-16 h-24 rounded-lg object-cover border border-accent/30 hover:opacity-80 transition-opacity" />
-                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground text-[7px] px-1.5 py-0.5 rounded-full font-bold whitespace-nowrap">
-                        Final Look
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">Character Ready</p>
-                  <p className="text-xs text-muted-foreground">{config.outfitType} · {config.hairstyle} · {config.makeup}</p>
-                </div>
-                <Button variant="outline" size="sm" onClick={handleGeneratePreview} disabled={isPreviewGenerating}>
-                  {isPreviewGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RotateCcw className="h-3.5 w-3.5 mr-1" />}
-                  Regenerate
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Generate Storyboard - Inline CTA (replaces fixed bottom bar) */}
-          {!storyboard && previewCharacterImage && (
-            <div className="flex flex-col items-center my-4">
-              <Button
-                onClick={handleGenerateStoryboard}
-                disabled={!previewCharacterImage || isGeneratingStoryboard}
-                className="px-8"
-                size="lg"
-              >
-                {isGeneratingStoryboard ? (
-                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating Storyboard...</>
-                ) : (
-                  <><ArrowRight className="h-4 w-4 mr-2" /> Generate Storyboard</>
-                )}
-              </Button>
-              <p className="text-[11px] text-muted-foreground mt-1.5">Generation can take 1–5 minutes. Please be patient.</p>
             </div>
           )}
 
