@@ -61,6 +61,12 @@ const AIStudio = () => {
   const [projectName, setProjectName] = useState('');
   const [showProjectsDialog, setShowProjectsDialog] = useState(false);
 
+  // Create Reel state
+  const [isMergingVideos, setIsMergingVideos] = useState(false);
+  const [mergeProgress, setMergeProgress] = useState(0);
+  const [mergedReelUrl, setMergedReelUrl] = useState<string | null>(null);
+  const [showReelDialog, setShowReelDialog] = useState(false);
+
   // Refs to avoid stale closures in the queue processor
   const previewCharacterRef = useRef(previewCharacterImage);
   const previewFinalLookRef = useRef(previewFinalLookImage);
