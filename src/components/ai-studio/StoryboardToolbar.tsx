@@ -526,13 +526,13 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
           )}
           <div className="ml-auto">
             <div className="flex items-center">
-              <button onClick={onProjects} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 rounded-l-lg transition-colors border-r border-background/20">
+              <button onClick={onProjects} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 transition-colors ${hasStoryboard && onSave ? 'rounded-l-lg border-r border-background/20' : 'rounded-lg'}`}>
                 <FolderOpen className="h-3.5 w-3.5" /> Projects
               </button>
               {hasStoryboard && onSave && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center justify-center px-1.5 py-1.5 h-full text-xs font-medium bg-foreground text-background hover:bg-foreground/90 rounded-r-lg transition-colors">
+                    <button className="flex items-center justify-center px-2.5 py-1.5 h-full text-xs font-medium bg-foreground/80 text-background hover:bg-foreground/70 rounded-r-lg transition-colors">
                       <ChevronDown className="h-3 w-3" />
                     </button>
                   </DropdownMenuTrigger>
@@ -542,9 +542,6 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              )}
-              {(!hasStoryboard || !onSave) && (
-                <span className="w-px" />
               )}
             </div>
           </div>
