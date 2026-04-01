@@ -105,31 +105,6 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
 
   return (
     <div className="flex items-center gap-2 flex-wrap py-3 px-1">
-      {/* Aspect Ratio Dropdown */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted hover:bg-muted/80 border border-border rounded-lg transition-colors">
-            {config.aspectRatio === '9:16' ? <RectangleVertical className="h-3.5 w-3.5" /> : config.aspectRatio === '16:9' ? <RectangleHorizontal className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
-            <span>{config.aspectRatio === '9:16' ? 'Portrait' : config.aspectRatio === '16:9' ? 'Landscape' : 'Square'}</span>
-            <ChevronDown className="h-3 w-3" />
-          </button>
-        </PopoverTrigger>
-        <PopoverContent className="w-44 p-1" align="start">
-          {([
-            { value: '9:16' as AspectRatio, label: 'Portrait', Icon: RectangleVertical },
-            { value: '16:9' as AspectRatio, label: 'Landscape', Icon: RectangleHorizontal },
-            { value: '1:1' as AspectRatio, label: 'Square', Icon: Square },
-          ]).map(({ value, label, Icon }) => (
-            <button key={value} onClick={() => setConfig(c => ({ ...c, aspectRatio: value }))}
-              className={`flex items-center gap-2 w-full px-3 py-2 text-xs rounded-md transition-colors ${config.aspectRatio === value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}>
-              <Icon className="h-4 w-4" />
-              <span>{label}</span>
-              <span className="ml-auto text-[10px] opacity-60">{value}</span>
-            </button>
-          ))}
-        </PopoverContent>
-      </Popover>
-
       {/* Single "Create" button that opens the Sheet */}
       <button
         onClick={() => setSheetOpen(true)}
