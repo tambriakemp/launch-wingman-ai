@@ -9,7 +9,7 @@ import ImageLightbox from '@/components/ai-studio/ImageLightbox';
 import SavedProjectsGrid from '@/components/ai-studio/SavedProjectsGrid';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Loader2, HelpCircle, RotateCcw, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, Check, ArrowRight, X, ShieldCheck } from 'lucide-react';
+import { Loader2, HelpCircle, RotateCcw, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, X, ShieldCheck } from 'lucide-react';
 import { VLOG_CATEGORIES } from '@/components/ai-studio/constants';
 import { toast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
@@ -29,8 +29,7 @@ const AIStudio = () => {
   const [environmentLabel, setEnvironmentLabel] = useState<string | null>(null);
   const [previewCharacterImage, setPreviewCharacterImage] = useState<string | null>(null);
   const [previewFinalLookImage, setPreviewFinalLookImage] = useState<string | null>(null);
-  const [isPreviewGenerating, setIsPreviewGenerating] = useState(false);
-  const [previewStep, setPreviewStep] = useState<string | null>(null);
+  // isPreviewGenerating and previewStep removed — Scene 1 serves as character anchor
   const [storyboard, setStoryboard] = useState<VlogStoryboard | null>(null);
   const [generatedMedia, setGeneratedMedia] = useState<Record<number, GeneratedMedia>>({});
   const [isProcessing, setIsProcessing] = useState(false);
@@ -215,6 +214,15 @@ const AIStudio = () => {
                 ...prev,
                 [task.index]: { ...prev[task.index], imageUrl: data.imageUrl, isGeneratingImage: false, isUpscaling: false, error: undefined }
               }));
+
+              // Auto-set character preview from Scene 1 so subsequent scenes have an identity anchor
+              if (task.index === 0 && data.imageUrl) {
+                setPreviewCharacterImage(data.imageUrl);
+              }
+              // For GRWM: set final look preview when the last (final look) scene generates
+              if (task.step.is_final_look && data.imageUrl) {
+                setPreviewFinalLookImage(data.imageUrl);
+              }
               } finally {
                 clearTimeout(timeoutId);
               }
@@ -357,53 +365,7 @@ const AIStudio = () => {
     }
   };
 
-  const handleGeneratePreview = async () => {
-    if (!referenceImage) { toast({ title: "Upload Required", description: "Please upload a reference avatar first.", variant: "destructive" }); return; }
-    if (!showSafetyTerms) { toast({ title: "Terms Required", description: "Please accept the safety terms in Settings.", variant: "destructive" }); return; }
-    setIsPreviewGenerating(true);
-    try {
-      // Images are already URLs (uploaded on selection) — pass directly, no re-upload needed
-      setPreviewStep('Preparing...');
-
-      const allRefUrls = referenceImages.length > 0 ? referenceImages : (referenceImage ? [referenceImage] : []);
-      const allEnvUrls = environmentImages.length > 0 ? environmentImages : (environmentImage ? [environmentImage] : []);
-
-      const previewBody = {
-        referenceImageUrls: allRefUrls.length > 0 ? allRefUrls : undefined,
-        environmentImageUrls: allEnvUrls.length > 0 ? allEnvUrls : undefined,
-        environmentLabel: environmentLabel || undefined,
-        config,
-        isFinalLook: false
-      };
-      const isGRWM = config.vlogCategory === 'Get Ready With Me' && config.creationMode === 'vlog';
-
-      if (isGRWM) {
-        setPreviewStep('Generating Default Look (1/2)...');
-        const defaultResult = await supabase.functions.invoke('generate-character-preview', { body: previewBody });
-        if (defaultResult.error) throw defaultResult.error;
-        if (defaultResult.data?.error) throw new Error(defaultResult.data.error);
-        const defaultLookUrl = defaultResult.data.imageUrl;
-        setPreviewCharacterImage(defaultLookUrl);
-
-        setPreviewStep('Generating Final Look (2/2)...');
-        const finalResult = await supabase.functions.invoke('generate-character-preview', { body: { ...previewBody, isFinalLook: true, identityAnchorUrl: defaultLookUrl } });
-        if (finalResult.error) throw finalResult.error;
-        if (finalResult.data?.error) throw new Error(finalResult.data.error);
-        setPreviewFinalLookImage(finalResult.data.imageUrl);
-      } else {
-        setPreviewStep('Generating Preview...');
-        const result = await supabase.functions.invoke('generate-character-preview', { body: previewBody });
-        if (result.error) throw result.error;
-        if (result.data?.error) throw new Error(result.data.error);
-        setPreviewCharacterImage(result.data.imageUrl);
-      }
-    } catch (e: any) {
-      toast({ title: "Error", description: getUserFriendlyErrorMessage(e), variant: "destructive" });
-    } finally {
-      setIsPreviewGenerating(false);
-      setPreviewStep(null);
-    }
-  };
+  // handleGeneratePreview removed — Scene 1's generated image now serves as the character anchor
 
   const handleGenerateStoryboard = async () => {
     if (!referenceImage) return;
@@ -411,10 +373,7 @@ const AIStudio = () => {
       toast({ title: "Setting Required", description: "Please describe the setting and environment for your carousel.", variant: "destructive" });
       return;
     }
-    if (!previewCharacterImage) {
-      toast({ title: "Character Preview Required", description: "Please generate and review the character preview first.", variant: "destructive" });
-      return;
-    }
+    // No longer require previewCharacterImage — Scene 1 will become the anchor
     setIsGeneratingStoryboard(true);
     try {
       // Images are already URLs (uploaded on selection) — pass directly
@@ -845,74 +804,31 @@ const AIStudio = () => {
 
           {/* Topic/Message inputs moved to Create sheet panel */}
 
-          {/* Inline Character Preview Bar */}
-          <div className="my-4">
-            {!previewCharacterImage ? (
+          {/* Generate Storyboard CTA */}
+          {!storyboard && (
+            <div className="my-4">
               <div className="bg-card border border-border rounded-xl p-6 text-center">
                 <p className="text-sm text-muted-foreground mb-3">
                   {!referenceImage
-                    ? "Upload a character photo in the Character tab to get started."
+                    ? "Upload a character photo in the Create panel to get started."
                     : !showSafetyTerms
                     ? "Accept the safety terms above to continue."
-                    : "Generate a character preview to start building your storyboard."}
+                    : "Configure your look and generate your storyboard."}
                 </p>
                 <Button
-                  onClick={handleGeneratePreview}
-                  disabled={!showSafetyTerms || !referenceImage || isPreviewGenerating}
+                  onClick={handleGenerateStoryboard}
+                  disabled={!showSafetyTerms || !referenceImage || isGeneratingStoryboard}
+                  className="px-8"
+                  size="lg"
                 >
-                  {isPreviewGenerating ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> {previewStep || 'Generating Preview...'}</>
+                  {isGeneratingStoryboard ? (
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating Storyboard...</>
                   ) : (
-                    <><Sparkles className="h-4 w-4 mr-2" /> Generate Character Preview</>
+                    <><Sparkles className="h-4 w-4 mr-2" /> Generate Storyboard</>
                   )}
                 </Button>
+                <p className="text-[11px] text-muted-foreground mt-1.5">Generation can take 1–2 minutes. Please be patient.</p>
               </div>
-           ) : (
-              <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
-                <div className="flex gap-3">
-                  <div className="relative cursor-pointer" onClick={() => setPreviewLightbox(previewCharacterImage)}>
-                    <img src={previewCharacterImage} alt="Character Preview" className="w-16 h-24 rounded-lg object-cover border border-border hover:opacity-80 transition-opacity" />
-                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[8px] px-1.5 py-0.5 rounded-full font-bold">
-                      <Check className="h-2.5 w-2.5" />
-                    </span>
-                  </div>
-                  {previewFinalLookImage && (
-                    <div className="relative cursor-pointer" onClick={() => setPreviewLightbox(previewFinalLookImage)}>
-                      <img src={previewFinalLookImage} alt="Final Look" className="w-16 h-24 rounded-lg object-cover border border-accent/30 hover:opacity-80 transition-opacity" />
-                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground text-[7px] px-1.5 py-0.5 rounded-full font-bold whitespace-nowrap">
-                        Final Look
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">Character Ready</p>
-                  <p className="text-xs text-muted-foreground">{config.outfitType} · {config.hairstyle} · {config.makeup}</p>
-                </div>
-                <Button variant="outline" size="sm" onClick={handleGeneratePreview} disabled={isPreviewGenerating}>
-                  {isPreviewGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RotateCcw className="h-3.5 w-3.5 mr-1" />}
-                  Regenerate
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Generate Storyboard - Inline CTA (replaces fixed bottom bar) */}
-          {!storyboard && previewCharacterImage && (
-            <div className="flex flex-col items-center my-4">
-              <Button
-                onClick={handleGenerateStoryboard}
-                disabled={!previewCharacterImage || isGeneratingStoryboard}
-                className="px-8"
-                size="lg"
-              >
-                {isGeneratingStoryboard ? (
-                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating Storyboard...</>
-                ) : (
-                  <><ArrowRight className="h-4 w-4 mr-2" /> Generate Storyboard</>
-                )}
-              </Button>
-              <p className="text-[11px] text-muted-foreground mt-1.5">Generation can take 1–5 minutes. Please be patient.</p>
             </div>
           )}
 
@@ -976,11 +892,6 @@ const AIStudio = () => {
                 selectionCount={getSelectionCount()}
               />
             </>
-          ) : !previewCharacterImage ? (
-            <div className="bg-card border border-border rounded-xl p-12 text-center">
-              <p className="text-muted-foreground text-sm mb-2">No storyboard yet</p>
-              <p className="text-xs text-muted-foreground">Generate a character preview, then create your storyboard.</p>
-            </div>
           ) : null}
         </main>
 
