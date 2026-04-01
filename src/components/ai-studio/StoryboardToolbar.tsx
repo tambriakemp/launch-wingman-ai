@@ -43,7 +43,6 @@ interface StoryboardToolbarProps {
   onDownloadAll?: () => void;
   hasStoryboard?: boolean;
   onHelp?: () => void;
-  onNew?: () => void;
   onGenerateStoryboard?: () => void;
   isGeneratingStoryboard?: boolean;
 }
