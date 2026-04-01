@@ -574,27 +574,20 @@ const AIStudio = () => {
       ctx.fillRect(0, 0, dims.w, dims.h);
 
       const stream = canvas.captureStream(30);
-      // Prefer MP4 if browser supports it, otherwise fall back to WebM
-      const preferredMime = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')
-        ? 'video/mp4;codecs=avc1'
-        : MediaRecorder.isTypeSupported('video/mp4')
-          ? 'video/mp4'
-          : MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-            ? 'video/webm;codecs=vp9'
-            : 'video/webm';
-      const isMP4 = preferredMime.startsWith('video/mp4');
-      const fileExt = isMP4 ? 'mp4' : 'webm';
-      const contentType = isMP4 ? 'video/mp4' : 'video/webm';
-      console.log(`[Reel] Using mimeType: ${preferredMime}, ext: ${fileExt}`);
+      // Always record in WebM (best browser support); convert to MP4 after
+      const recMime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+        ? 'video/webm;codecs=vp9'
+        : 'video/webm';
+      console.log(`[Reel] Recording mimeType: ${recMime}, will convert to MP4`);
       const recorder = new MediaRecorder(stream, {
-        mimeType: preferredMime,
+        mimeType: recMime,
         videoBitsPerSecond: 8_000_000,
       });
       const chunks: Blob[] = [];
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
 
       const reelDone = new Promise<Blob>((resolve) => {
-        recorder.onstop = () => resolve(new Blob(chunks, { type: contentType }));
+        recorder.onstop = () => resolve(new Blob(chunks, { type: 'video/webm' }));
       });
 
       recorder.start();
