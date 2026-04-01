@@ -126,7 +126,23 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             {/* Section 1: Creation Mode */}
             <CollapsibleSection title="🎬 Creation Mode" defaultOpen statusActive={true}>
               <div className="space-y-3">
+                {/* Orientation */}
                 <div>
+                  <Label label="Orientation" />
+                  <div className="grid grid-cols-3 gap-1 bg-muted p-0.5 rounded-md">
+                    {([
+                      { value: '9:16' as AspectRatio, label: 'Portrait', Icon: RectangleVertical },
+                      { value: '16:9' as AspectRatio, label: 'Landscape', Icon: RectangleHorizontal },
+                      { value: '1:1' as AspectRatio, label: 'Square', Icon: Square },
+                    ]).map(({ value, label, Icon }) => (
+                      <button key={value} onClick={() => setConfig(c => ({ ...c, aspectRatio: value }))}
+                        className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded transition-all ${config.aspectRatio === value ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}>
+                        <Icon className="h-3.5 w-3.5" />
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
                   <Label label="Mode" />
                   <div className="grid grid-cols-3 gap-1 bg-muted p-0.5 rounded-md">
                     <button onClick={() => setConfig(c => ({ ...c, creationMode: 'vlog' }))}
