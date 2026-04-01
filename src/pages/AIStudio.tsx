@@ -636,7 +636,7 @@ const AIStudio = () => {
     if (!mergedReelUrl) return;
     const link = document.createElement('a');
     link.href = mergedReelUrl;
-    link.download = `reel-${Date.now()}.mp4`;
+    link.download = `reel-${Date.now()}.webm`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
