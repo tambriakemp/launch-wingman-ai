@@ -574,27 +574,20 @@ const AIStudio = () => {
       ctx.fillRect(0, 0, dims.w, dims.h);
 
       const stream = canvas.captureStream(30);
-      // Prefer MP4 if browser supports it, otherwise fall back to WebM
-      const preferredMime = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')
-        ? 'video/mp4;codecs=avc1'
-        : MediaRecorder.isTypeSupported('video/mp4')
-          ? 'video/mp4'
-          : MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-            ? 'video/webm;codecs=vp9'
-            : 'video/webm';
-      const isMP4 = preferredMime.startsWith('video/mp4');
-      const fileExt = isMP4 ? 'mp4' : 'webm';
-      const contentType = isMP4 ? 'video/mp4' : 'video/webm';
-      console.log(`[Reel] Using mimeType: ${preferredMime}, ext: ${fileExt}`);
+      // Always record in WebM (best browser support); convert to MP4 after
+      const recMime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+        ? 'video/webm;codecs=vp9'
+        : 'video/webm';
+      console.log(`[Reel] Recording mimeType: ${recMime}, will convert to MP4`);
       const recorder = new MediaRecorder(stream, {
-        mimeType: preferredMime,
+        mimeType: recMime,
         videoBitsPerSecond: 8_000_000,
       });
       const chunks: Blob[] = [];
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
 
       const reelDone = new Promise<Blob>((resolve) => {
-        recorder.onstop = () => resolve(new Blob(chunks, { type: contentType }));
+        recorder.onstop = () => resolve(new Blob(chunks, { type: 'video/webm' }));
       });
 
       recorder.start();
@@ -652,17 +645,33 @@ const AIStudio = () => {
       recorder.stop();
       setMergeProgress(85);
       const blob = await reelDone;
-      console.log(`[Reel] Merged blob size: ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
+      console.log(`[Reel] Merged WebM blob size: ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
+
+      // Convert WebM → MP4 using FFmpeg WASM
+      setMergeProgress(86);
+      console.log('[Reel] Loading FFmpeg for MP4 conversion...');
+      const { FFmpeg } = await import('@ffmpeg/ffmpeg');
+      const { fetchFile } = await import('@ffmpeg/util');
+      const ffmpeg = new FFmpeg();
+      await ffmpeg.load();
+      setMergeProgress(88);
+
+      console.log('[Reel] Converting to MP4...');
+      await ffmpeg.writeFile('input.webm', await fetchFile(blob));
+      await ffmpeg.exec(['-i', 'input.webm', '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', 'output.mp4']);
+      const mp4Data = await ffmpeg.readFile('output.mp4');
+      const mp4Blob = new Blob([(mp4Data as any).slice().buffer], { type: 'video/mp4' });
+      console.log(`[Reel] MP4 blob size: ${(mp4Blob.size / 1024 / 1024).toFixed(1)}MB`);
 
       // Upload to storage
-      setMergeProgress(90);
+      setMergeProgress(92);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const storagePath = `reels/${user.id}/${Date.now()}.${fileExt}`;
+      const storagePath = `reels/${user.id}/${Date.now()}.mp4`;
       const { error: uploadErr } = await supabase.storage
         .from('ai-studio')
-        .upload(storagePath, blob, { contentType, upsert: true });
+        .upload(storagePath, mp4Blob, { contentType: 'video/mp4', upsert: true });
       if (uploadErr) throw uploadErr;
 
       const { data: urlData } = supabase.storage.from('ai-studio').getPublicUrl(storagePath);
@@ -682,7 +691,7 @@ const AIStudio = () => {
       setShowReelDialog(true);
       setMergeProgress(100);
 
-      toast({ title: "Reel created!", description: "Your scenes have been merged into a video." });
+      toast({ title: "Reel created!", description: "Your scenes have been merged into an MP4 video." });
     } catch (e: any) {
       console.error('[Reel] Merge error:', e);
       toast({ title: "Merge failed", description: e?.message || "Could not merge videos. Try again.", variant: "destructive" });
@@ -695,8 +704,7 @@ const AIStudio = () => {
     if (!mergedReelUrl) return;
     const link = document.createElement('a');
     link.href = mergedReelUrl;
-    const ext = mergedReelUrl.includes('.mp4') ? 'mp4' : 'webm';
-    link.download = `reel-${Date.now()}.${ext}`;
+    link.download = `reel-${Date.now()}.mp4`;
     link.target = '_blank';
     document.body.appendChild(link);
     link.click();
@@ -979,7 +987,9 @@ const AIStudio = () => {
           <div className="fixed bottom-6 right-6 z-50 bg-card border border-border rounded-xl p-4 shadow-2xl w-72">
             <div className="flex items-center gap-3 mb-2">
               <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              <span className="text-sm font-medium text-foreground">Creating Reel...</span>
+              <span className="text-sm font-medium text-foreground">
+                {mergeProgress < 85 ? 'Merging scenes...' : mergeProgress < 92 ? 'Converting to MP4...' : mergeProgress < 100 ? 'Uploading...' : 'Done!'}
+              </span>
             </div>
             <Progress value={mergeProgress} className="h-2" indicatorClassName="bg-primary" />
             <p className="text-xs text-muted-foreground mt-1">{mergeProgress}% complete</p>
