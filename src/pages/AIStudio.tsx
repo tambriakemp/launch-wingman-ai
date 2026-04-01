@@ -711,6 +711,9 @@ const AIStudio = () => {
       setCurrentProjectId(data.id);
       setCurrentProjectName(data.name);
       setShowSafetyTerms(true);
+      // Restore reel data
+      setMergedReelUrl((data as any).reel_url || null);
+      setReelStoragePath((data as any).reel_path || null);
 
       const restoredMedia: Record<number, GeneratedMedia> = {};
       if (loadedStoryboard?.steps) {
