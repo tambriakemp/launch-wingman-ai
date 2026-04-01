@@ -1,41 +1,41 @@
 
 
-## Fix Carousel Image Generation: Scene 1 as Base + Stronger Visual Consistency
+## Consolidate AI Studio Settings into a Single Slide-Out Panel
 
-### Problem
-1. **Scene 1 should be the base/first image** — currently all scenes generate independently from the character preview. Scene 1's generated image should serve as the anchor for subsequent slides.
-2. **Visual inconsistency across carousel slides** — hair, accessories, rings change between slides because each image is generated independently with only the character preview as reference. The carousel mode needs much stricter identity locking.
+### Summary
+Replace the 4 separate toolbar popover dropdowns (Create, Character, Environment, Look) with a single "Create" button that opens a right-side Sheet panel. This panel contains all settings in collapsible sections, plus the vlog topic / carousel message inputs (currently inline on the page). The inline topic/carousel blocks on AIStudio.tsx get removed.
 
 ### Changes
 
-**1. `src/pages/AIStudio.tsx` — Use Scene 1's output as anchor for carousel scenes 2+**
+**1. `src/components/ai-studio/StoryboardToolbar.tsx` — Major refactor**
 
-In the queue processing logic (~line 143-164), add carousel-specific anchoring:
-- When `config.creationMode === 'carousel'` and `task.index > 0`, use `currentGeneratedMedia[0]?.imageUrl` as `anchorImageUrl` instead of the character preview
-- This makes Scene 1 the visual anchor for all subsequent carousel slides, ensuring consistency
-- Scene 1 still uses the character preview as its anchor (existing behavior)
+- Import `Sheet, SheetContent, SheetHeader, SheetTitle` from `@/components/ui/sheet`
+- Add a `open` / `setOpen` state for the sheet
+- Replace the 4 `ToolbarButton` popovers (Aspect Ratio stays as-is) with a single button labeled "Create" (or "Settings") that opens the Sheet
+- Inside the Sheet, organize content into collapsible sections:
+  1. **Creation Mode** — vlog/ugc/carousel toggle, vlog category, carousel aesthetic + slide count, camera movement, scene count
+  2. **Topic / Message** — vlog topic + brainstorm + own script (when vlog), carousel setting/environment + message/theme + brainstorm (when carousel), UGC marketing goal (when ugc)
+  3. **Character** — saved characters + upload zone
+  4. **Environment** — saved environments
+  5. **Look** — exact match, ultra-realistic, quick presets, product upload (ugc), outfit, final look (GRWM), hairstyle, makeup, skin & nails, saved looks
+- The Sheet should be `w-full sm:max-w-[480px] overflow-y-auto`
+- Keep the Aspect Ratio popover, Projects, Save, Script, All, New buttons in the toolbar as they are
 
-**2. `supabase/functions/generate-scene-image/index.ts` — Add carousel-specific consistency prompts**
+**2. `src/pages/AIStudio.tsx` — Remove inline topic/carousel blocks**
 
-In the prompt construction (~line 236-286), add a carousel branch:
-- When `config.creationMode === 'carousel'`, append stronger consistency instructions to the prompt:
-  - "CAROUSEL CONSISTENCY (CRITICAL): This image is part of a cohesive carousel set. The subject's hair, accessories, jewelry, rings, nail color, and every visible detail MUST remain IDENTICAL to the reference/anchor image. Do NOT add, remove, or change ANY accessories, hairstyle, or detail. If the anchor shows hair down with no rings, EVERY slide must show hair down with no rings."
-- When `previousSceneImageUrl` is provided in carousel mode, strengthen the continuity instruction to explicitly call out detail matching (hair position, accessories, rings, nails)
+- Remove the inline vlog topic block (lines ~847-879)
+- Remove the inline carousel input block (lines ~882-910)
+- These inputs now live inside the Sheet panel in StoryboardToolbar
+- Pass `handleGenerateTopicIdeas` and `isGeneratingTopic` through to the toolbar (already passed as props)
+- Import `Sparkles` is already in the toolbar
 
-**3. `src/pages/AIStudio.tsx` — Generate All Images sequentially for carousel**
+**3. Props — minor additions to `StoryboardToolbarProps`**
 
-Currently "Generate All Images" creates tasks for all scenes that haven't been generated. For carousel mode, ensure scene 1 is always generated first:
-- In the "Generate All Images" button handler (~line 975-979), when `config.creationMode === 'carousel'`:
-  - If scene 1 hasn't been generated yet, only queue scene 1 first
-  - After scene 1 completes, the user can click "Generate All Images" again to queue the rest (which will now have scene 1 as anchor)
-  - Alternative: queue all but process scene 1 first, then use its output for the rest — this requires checking in the queue processor if scene 1 is done before processing scene 2+
+- No new props needed — `onGenerateTopicIdeas` and `isGeneratingTopic` are already passed
+- The toolbar already has all config/setConfig access needed for topic/carousel fields
 
-The simplest approach: in the queue processor (~line 140-200), when processing a carousel task where `task.index > 0` and `currentGeneratedMedia[0]?.imageUrl` doesn't exist yet, skip the task and re-queue it at the end. This naturally ensures scene 1 generates first.
-
-### Technical details
-
-- `anchorImageUrl` is already passed to the edge function and used as a strong identity reference
-- `previousSceneImageUrl` provides the preceding scene's image for continuity chaining
-- For carousel, we override `anchorImageUrl` to always point to Scene 1 (not the preview) for slides 2+
-- The edge function prompt gets an additional carousel-specific block demanding exact accessory/hair/detail matching
+### Technical notes
+- `ToolbarButton` component stays for potential future use but the 4 main popovers are replaced by the single Sheet
+- `CollapsibleSection` component already exists in the toolbar and will be reused for organizing sections inside the Sheet
+- The `StatusDot` indicators move into section headers inside the Sheet to show configuration status
 
