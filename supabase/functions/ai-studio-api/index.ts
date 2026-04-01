@@ -12,6 +12,7 @@ const VALID_ACTIONS = [
   "generate_scene_image",
   "generate_video",
   "check_video_status",
+  "merge_videos",
   "list_projects",
   "get_project",
   "list_character_references",
