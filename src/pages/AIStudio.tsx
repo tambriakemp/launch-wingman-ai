@@ -365,53 +365,7 @@ const AIStudio = () => {
     }
   };
 
-  const handleGeneratePreview = async () => {
-    if (!referenceImage) { toast({ title: "Upload Required", description: "Please upload a reference avatar first.", variant: "destructive" }); return; }
-    if (!showSafetyTerms) { toast({ title: "Terms Required", description: "Please accept the safety terms in Settings.", variant: "destructive" }); return; }
-    setIsPreviewGenerating(true);
-    try {
-      // Images are already URLs (uploaded on selection) — pass directly, no re-upload needed
-      setPreviewStep('Preparing...');
-
-      const allRefUrls = referenceImages.length > 0 ? referenceImages : (referenceImage ? [referenceImage] : []);
-      const allEnvUrls = environmentImages.length > 0 ? environmentImages : (environmentImage ? [environmentImage] : []);
-
-      const previewBody = {
-        referenceImageUrls: allRefUrls.length > 0 ? allRefUrls : undefined,
-        environmentImageUrls: allEnvUrls.length > 0 ? allEnvUrls : undefined,
-        environmentLabel: environmentLabel || undefined,
-        config,
-        isFinalLook: false
-      };
-      const isGRWM = config.vlogCategory === 'Get Ready With Me' && config.creationMode === 'vlog';
-
-      if (isGRWM) {
-        setPreviewStep('Generating Default Look (1/2)...');
-        const defaultResult = await supabase.functions.invoke('generate-character-preview', { body: previewBody });
-        if (defaultResult.error) throw defaultResult.error;
-        if (defaultResult.data?.error) throw new Error(defaultResult.data.error);
-        const defaultLookUrl = defaultResult.data.imageUrl;
-        setPreviewCharacterImage(defaultLookUrl);
-
-        setPreviewStep('Generating Final Look (2/2)...');
-        const finalResult = await supabase.functions.invoke('generate-character-preview', { body: { ...previewBody, isFinalLook: true, identityAnchorUrl: defaultLookUrl } });
-        if (finalResult.error) throw finalResult.error;
-        if (finalResult.data?.error) throw new Error(finalResult.data.error);
-        setPreviewFinalLookImage(finalResult.data.imageUrl);
-      } else {
-        setPreviewStep('Generating Preview...');
-        const result = await supabase.functions.invoke('generate-character-preview', { body: previewBody });
-        if (result.error) throw result.error;
-        if (result.data?.error) throw new Error(result.data.error);
-        setPreviewCharacterImage(result.data.imageUrl);
-      }
-    } catch (e: any) {
-      toast({ title: "Error", description: getUserFriendlyErrorMessage(e), variant: "destructive" });
-    } finally {
-      setIsPreviewGenerating(false);
-      setPreviewStep(null);
-    }
-  };
+  // handleGeneratePreview removed — Scene 1's generated image now serves as the character anchor
 
   const handleGenerateStoryboard = async () => {
     if (!referenceImage) return;
