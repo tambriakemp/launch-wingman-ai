@@ -647,21 +647,37 @@ const AIStudio = () => {
       const blob = await reelDone;
       console.log(`[Reel] Merged WebM blob size: ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
 
-      // Convert WebM → MP4 using FFmpeg WASM
+      // Convert WebM → MP4 using FFmpeg WASM (properly configured)
       setMergeProgress(86);
-      console.log('[Reel] Loading FFmpeg for MP4 conversion...');
+      console.log('[Reel] Loading FFmpeg WASM...');
       const { FFmpeg } = await import('@ffmpeg/ffmpeg');
-      const { fetchFile } = await import('@ffmpeg/util');
+      const { fetchFile, toBlobURL } = await import('@ffmpeg/util');
       const ffmpeg = new FFmpeg();
-      await ffmpeg.load();
+
+      // Must load core + wasm explicitly from CDN for v0.12
+      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+      });
       setMergeProgress(88);
 
-      console.log('[Reel] Converting to MP4...');
+      console.log('[Reel] Converting WebM to MP4...');
       await ffmpeg.writeFile('input.webm', await fetchFile(blob));
-      await ffmpeg.exec(['-i', 'input.webm', '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', 'output.mp4']);
+      await ffmpeg.exec([
+        '-i', 'input.webm',
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',
+        '-pix_fmt', 'yuv420p',
+        '-movflags', '+faststart',
+        '-an',
+        'output.mp4'
+      ]);
       const mp4Data = await ffmpeg.readFile('output.mp4');
-      const mp4Blob = new Blob([(mp4Data as any).slice().buffer], { type: 'video/mp4' });
+      const mp4Uint8 = mp4Data instanceof Uint8Array ? mp4Data : new Uint8Array((mp4Data as any).buffer);
+      const mp4Blob = new Blob([mp4Uint8], { type: 'video/mp4' });
       console.log(`[Reel] MP4 blob size: ${(mp4Blob.size / 1024 / 1024).toFixed(1)}MB`);
+      if (mp4Blob.size < 1000) throw new Error('MP4 conversion produced empty file — FFmpeg may have failed silently');
 
       // Upload to storage
       setMergeProgress(92);
