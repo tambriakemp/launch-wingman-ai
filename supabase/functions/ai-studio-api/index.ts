@@ -284,6 +284,7 @@ function buildDownstreamBody(action: string, body: Record<string, unknown>): Rec
         environmentLabel: body.environmentLabel || null,
         sceneNumber: body.sceneNumber || null,
         totalScenes: body.totalScenes || null,
+        aspectRatio: body.aspectRatio || "9:16",
       };
     }
 
