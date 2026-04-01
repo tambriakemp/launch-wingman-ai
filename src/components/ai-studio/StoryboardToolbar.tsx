@@ -10,7 +10,10 @@ import { ChevronDown, ChevronRight, Palette, User, Settings2, Sparkles, MapPin, 
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
-import { FolderOpen, Save, FileText, Download, HelpCircle, RotateCcw, Loader2 } from 'lucide-react';
+import { FolderOpen, Save, FileText, Download, HelpCircle, RotateCcw, Loader2, MoreHorizontal } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import SavedCharacter from './SavedCharacter';
 import SavedEnvironments from './SavedEnvironments';
 import SavedLooks from './SavedLooks';
