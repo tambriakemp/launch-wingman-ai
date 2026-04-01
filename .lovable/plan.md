@@ -1,50 +1,63 @@
 
 
-## Skip Character Preview — Use Scene 1 as the Character Anchor
+## Combine Scene Videos into a Single Reel
 
 ### Summary
-Remove the separate "Generate Character Preview" step. Instead, when the user clicks "Generate Storyboard", the storyboard is generated immediately (text-only as it already is), and Scene 1's generated image becomes the character preview / identity anchor for all subsequent scenes. This eliminates the two-step flow (preview → storyboard) and makes it a single action.
+Add a "Create Reel" button that stitches all generated scene videos into one continuous video. This requires a new edge function that uses ffmpeg to concatenate the video URLs, and a UI button to trigger it.
+
+### Approach
+
+**New edge function: `supabase/functions/merge-scene-videos/index.ts`**
+- Accepts an array of video URLs (ordered by scene number) + userId
+- Downloads each video to temp storage
+- Uses ffmpeg (via Deno subprocess) to concatenate them using the concat demuxer
+- Uploads the merged MP4 to the `ai-studio` storage bucket under `reels/{userId}/{timestamp}.mp4`
+- Returns the public URL of the merged video
+- Auth: standard JWT + BYOK personal API key support (same pattern as other functions)
+
+**`src/pages/AIStudio.tsx`**
+- Add a "Create Reel" button in the toolbar area (visible when 2+ scenes have videos)
+- Add state: `isMergingVideos`, `mergedReelUrl`
+- On click: collect all `generatedMedia[i].videoUrl` values in scene order, call the edge function
+- On success: show a dialog/toast with download link and inline video preview
+
+**`src/components/ai-studio/StoryboardToolbar.tsx`** (or inline on the page)
+- Add the "Create Reel" button near the existing action buttons
+- Disable when videos are still generating or fewer than 2 scenes have videos
+
+**`supabase/functions/ai-studio-api/index.ts`**
+- Add `merge_videos` to the valid actions list and proxy config
+
+### Technical details
+
+The edge function approach:
+1. Download each video URL to `/tmp/` in the Deno runtime
+2. Write a concat list file: `file '/tmp/vid0.mp4'\nfile '/tmp/vid1.mp4'...`
+3. Run ffmpeg: `ffmpeg -f concat -safe 0 -i list.txt -c copy output.mp4` (stream copy, no re-encoding for speed)
+4. If videos have different codecs/resolutions, fall back to re-encoding: `ffmpeg -f concat -safe 0 -i list.txt -c:v libx264 -preset fast output.mp4`
+5. Upload merged file to storage bucket, return public URL
+
+Edge function runtime consideration: Deno Deploy (Supabase Edge Functions) does NOT have ffmpeg available. So instead, we use **fal.ai's ffmpeg endpoint** or handle it client-side using a WebAssembly ffmpeg library (`@ffmpeg/ffmpeg`).
+
+**Revised approach — client-side merge using ffmpeg.wasm:**
+- Install `@ffmpeg/ffmpeg` and `@ffmpeg/util` 
+- When user clicks "Create Reel", load ffmpeg.wasm in the browser
+- Fetch each video as a blob, write to ffmpeg's virtual filesystem
+- Run concat command in-browser
+- Output merged MP4 as a downloadable blob
+- This avoids needing server-side ffmpeg and keeps it simple
 
 ### Changes
 
-**1. `src/pages/AIStudio.tsx`**
+| File | What |
+|------|------|
+| `src/pages/AIStudio.tsx` | Add "Create Reel" button, merge logic using ffmpeg.wasm, download handler |
+| `package.json` | Add `@ffmpeg/ffmpeg` and `@ffmpeg/util` dependencies |
 
-**Remove preview gating:**
-- Remove the `handleGeneratePreview` function entirely
-- Remove the `previewCharacterImage` requirement check in `handleGenerateStoryboard` (line 414-417)
-- Remove `isPreviewGenerating`, `previewStep` state variables
-- Keep `previewCharacterImage` state — it will now be set automatically when Scene 1 finishes generating
-
-**Replace the inline Character Preview Bar (lines 848-898):**
-- Remove the "Generate Character Preview" button and the preview bar UI
-- Replace with a simpler "Generate Storyboard" CTA that only requires a reference image + safety terms acceptance
-- The storyboard generation button (lines 900-917) moves up to replace the preview block
-
-**Update the "Generate Storyboard" button conditions:**
-- Only require `referenceImage` and `showSafetyTerms` (no longer require `previewCharacterImage`)
-
-**Auto-set character preview from Scene 1:**
-- In the queue processor (line ~214), after Scene 1's image is generated successfully, also call `setPreviewCharacterImage(data.imageUrl)` so the identity anchor is set for subsequent scenes
-- This means scenes 2+ will use Scene 1's image as their `anchorImageUrl` (the existing logic at lines 157-161 already falls back to `previewCharacterImage`)
-
-**For GRWM (Get Ready With Me) vlog mode:**
-- Scene 1 serves as the default look preview
-- The final-look scene (last scene) serves as the final look preview — set `previewFinalLookImage` when it generates
-
-**2. Queue processor anchor logic (lines 143-162):**
-- For non-carousel: Scene 1 has no anchor (uses raw reference images), scenes 2+ anchor to Scene 1's generated image via `previewCharacterImage`
-- For carousel: already works this way (Scene 1 generates first, slides 2+ wait for it)
-- The existing code mostly handles this — just need to ensure `previewCharacterImage` gets populated from Scene 1
-
-**3. Cleanup:**
-- Remove `previewStep` state and its usage
-- Remove `StudioPreview` import if still present
-- Keep save/load logic for `character_preview_url` — it will now store Scene 1's image
-
-### What stays the same
-- The storyboard text generation flow
-- The scene image generation queue
-- The edge functions (no changes needed)
-- Save/load project functionality
-- The "Regenerate" capability can remain — it would regenerate Scene 1 and update the anchor
+### UX Flow
+1. User generates storyboard and scene videos as normal
+2. When 2+ scenes have videos, a "Create Reel" button appears (Film icon + label)
+3. Click triggers client-side video concatenation with a progress indicator
+4. On completion, a download dialog appears with the merged MP4 and inline preview
+5. User can download or dismiss
 
