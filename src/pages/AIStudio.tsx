@@ -589,9 +589,9 @@ const AIStudio = () => {
       setMergeProgress(10);
 
       // Play each video sequentially on the canvas
-      for (let i = 0; i < videoUrls.length; i++) {
-        setMergeProgress(10 + Math.round((i / videoUrls.length) * 70));
-        console.log(`[Reel] Playing video ${i + 1}/${videoUrls.length}`);
+      for (let i = 0; i < videoEntries.length; i++) {
+        setMergeProgress(10 + Math.round((i / videoEntries.length) * 70));
+        console.log(`[Reel] Playing video ${i + 1}/${videoEntries.length}, maxDuration=${videoEntries[i].maxDuration}`);
 
         await new Promise<void>((resolve, reject) => {
           const vid = document.createElement('video');
@@ -599,16 +599,28 @@ const AIStudio = () => {
           vid.muted = true;
           vid.playsInline = true;
           vid.preload = 'auto';
-          vid.src = videoUrls[i];
+          vid.src = videoEntries[i].url;
+          const maxDur = videoEntries[i].maxDuration;
+          let timer: ReturnType<typeof setTimeout> | null = null;
+
+          const finish = () => {
+            if (timer) clearTimeout(timer);
+            vid.pause();
+            vid.remove();
+            resolve();
+          };
 
           vid.onloadeddata = () => {
             vid.play().catch(reject);
           };
 
           vid.onplay = () => {
+            // Start trim timer if maxDuration is set and shorter than actual
+            if (maxDur !== null && maxDur > 0 && maxDur < vid.duration) {
+              timer = setTimeout(finish, maxDur * 1000);
+            }
             const drawFrame = () => {
               if (vid.paused || vid.ended) return;
-              // Draw with aspect-fit (center, black bars)
               const scale = Math.max(dims.w / vid.videoWidth, dims.h / vid.videoHeight);
               const dw = vid.videoWidth * scale;
               const dh = vid.videoHeight * scale;
@@ -620,10 +632,7 @@ const AIStudio = () => {
             drawFrame();
           };
 
-          vid.onended = () => {
-            vid.remove();
-            resolve();
-          };
+          vid.onended = finish;
           vid.onerror = () => reject(new Error(`Failed to load video ${i + 1}`));
         });
       }
