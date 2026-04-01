@@ -1,33 +1,54 @@
 
 
-## Force MP4 Download for Reels
+## Replace FFmpeg with CloudConvert for WebM→MP4 Conversion
 
-### Problem
-`MediaRecorder` in most browsers only supports WebM (not MP4). The current code checks `isTypeSupported('video/mp4')` but it almost always fails, resulting in `.webm` files.
+### Why
+The edge function runtime doesn't have `ffmpeg` installed, so the current approach fails. You already have a `CLOUDCONVERT_API_KEY` secret configured — CloudConvert's API can handle WebM→MP4 conversion reliably.
 
-### Solution
-Use **FFmpeg WASM** to convert the WebM blob to MP4 client-side after recording completes.
+### How CloudConvert works
+1. **Create a job** with 3 tasks: `import/url` (fetch the WebM), `convert` (WebM→MP4), `export/url` (get a download link)
+2. **Poll** the job until it's `finished`
+3. **Download** the resulting MP4 from the export URL
+4. **Upload** to Supabase storage
 
 ### Changes
 
-**Install dependency**
-- `@ffmpeg/ffmpeg` and `@ffmpeg/util`
+**`supabase/functions/convert-video/index.ts`** — Full rewrite
 
-**`src/pages/AIStudio.tsx`** (~lines 652-680)
+Replace the ffmpeg-based logic with CloudConvert API calls:
 
-After `recorder.stop()` and getting the WebM blob:
+```
+1. Read inputUrl, outputPath from request body
+2. Create CloudConvert job:
+   POST https://api.cloudconvert.com/v2/jobs
+   {
+     tasks: {
+       "import-webm": { operation: "import/url", url: inputUrl },
+       "convert-to-mp4": {
+         operation: "convert",
+         input: "import-webm",
+         output_format: "mp4",
+         video_codec: "x264",
+         fps: 30
+       },
+       "export-result": {
+         operation: "export/url",
+         input: "convert-to-mp4"
+       }
+     }
+   }
+3. Poll GET /v2/jobs/{id} every 3 seconds until status === "finished" (timeout after 120s)
+4. Extract the export URL from the finished job's export task
+5. Fetch the MP4 data from the export URL
+6. Upload to Supabase storage at outputPath
+7. Return the public URL
+```
 
-1. Import and load FFmpeg WASM (`@ffmpeg/ffmpeg`)
-2. Write the WebM blob to FFmpeg's virtual filesystem
-3. Run `ffmpeg -i input.webm -c:v libx264 -preset ultrafast -pix_fmt yuv420p output.mp4`
-4. Read the resulting MP4 file
-5. Upload the MP4 blob (with `contentType: 'video/mp4'`) and use `.mp4` extension
-6. Remove the format detection logic — always output MP4 regardless of `MediaRecorder` format
+No changes needed in `AIStudio.tsx` — the edge function's interface (request/response) stays the same.
 
-Additionally update the progress indicator to show "Converting to MP4..." during the conversion step (between merge completion and upload).
+### Summary
 
-### Technical notes
-- FFmpeg WASM loads ~30MB on first use (cached afterward). A loading message should inform the user.
-- The `MediaRecorder` still records in WebM (whatever the browser supports), but the final output is always MP4.
-- `@ffmpeg/ffmpeg` v0.12+ uses SharedArrayBuffer which requires specific headers. If that's an issue, we can use the single-threaded build (`@ffmpeg/ffmpeg/dist/umd/ffmpeg.js`).
+| File | Change |
+|------|--------|
+| `supabase/functions/convert-video/index.ts` | Replace ffmpeg with CloudConvert API |
 
