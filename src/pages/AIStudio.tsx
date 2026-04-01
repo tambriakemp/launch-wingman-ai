@@ -960,17 +960,30 @@ const AIStudio = () => {
                     const videoCount = Object.values(generatedMedia).filter(m => m.videoUrl).length;
                     const anyGenerating = Object.values(generatedMedia).some(m => m.isGeneratingVideo);
                     return videoCount >= 2 && !anyGenerating ? (
-                      <>
-                        <Button size="sm" variant="outline" onClick={handleCreateReel} disabled={isMergingVideos}>
-                          {isMergingVideos ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Film className="h-3.5 w-3.5 mr-1.5" />}
-                          {isMergingVideos ? 'Creating...' : mergedReelUrl ? 'Re-create Reel' : 'Create Reel'}
-                        </Button>
-                        {mergedReelUrl && (
-                          <Button size="sm" variant="outline" onClick={() => setShowReelDialog(true)}>
-                            <Eye className="h-3.5 w-3.5 mr-1.5" /> View Reel
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="outline" disabled={isMergingVideos}>
+                            {isMergingVideos ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Film className="h-3.5 w-3.5 mr-1.5" />}
+                            {isMergingVideos ? 'Creating...' : 'Reel'}
+                            <ChevronDown className="h-3 w-3 ml-1" />
                           </Button>
-                        )}
-                      </>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={handleCreateReel}>
+                            <Film className="h-3.5 w-3.5 mr-2" /> {mergedReelUrl ? 'Re-create Reel' : 'Create Reel'}
+                          </DropdownMenuItem>
+                          {mergedReelUrl && (
+                            <>
+                              <DropdownMenuItem onClick={() => setShowReelDialog(true)}>
+                                <Eye className="h-3.5 w-3.5 mr-2" /> View Reel
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={handleDownloadReel}>
+                                <Download className="h-3.5 w-3.5 mr-2" /> Download Reel
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     ) : null;
                   })()}
                 </div>
