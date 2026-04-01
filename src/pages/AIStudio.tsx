@@ -927,6 +927,16 @@ const AIStudio = () => {
                   }}>
                     <Video className="h-3.5 w-3.5 mr-1.5" /> Generate All Videos
                   </Button>
+                  {(() => {
+                    const videoCount = Object.values(generatedMedia).filter(m => m.videoUrl).length;
+                    const anyGenerating = Object.values(generatedMedia).some(m => m.isGeneratingVideo);
+                    return videoCount >= 2 && !anyGenerating ? (
+                      <Button size="sm" variant="outline" onClick={handleCreateReel} disabled={isMergingVideos}>
+                        {isMergingVideos ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Film className="h-3.5 w-3.5 mr-1.5" />}
+                        {isMergingVideos ? 'Creating Reel...' : 'Create Reel'}
+                      </Button>
+                    ) : null;
+                  })()}
                 </div>
               </div>
               <StudioStoryboard
