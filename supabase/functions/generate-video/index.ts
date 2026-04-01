@@ -128,6 +128,7 @@ serve(async (req) => {
         image_url: imageUrl,
         prompt: videoPrompt,
         duration: "5",
+        aspect_ratio: aspectRatio || "9:16",
       }),
     });
 

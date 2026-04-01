@@ -12,6 +12,7 @@ const VALID_ACTIONS = [
   "generate_scene_image",
   "generate_video",
   "check_video_status",
+  "merge_videos",
   "list_projects",
   "get_project",
   "list_character_references",
@@ -177,6 +178,7 @@ serve(async (req) => {
       generate_scene_image: "generate-scene-image",
       generate_video: "generate-video",
       check_video_status: "check-video-status",
+      merge_videos: "merge-scene-videos",
     };
 
     const targetFunction = functionMap[action];
@@ -302,6 +304,14 @@ function buildDownstreamBody(action: string, body: Record<string, unknown>): Rec
         requestId: body.requestId,
         statusUrl: body.statusUrl,
         responseUrl: body.responseUrl || null,
+      };
+    }
+
+    case "merge_videos": {
+      return {
+        videoUrls: body.videoUrls,
+        aspectRatio: body.aspectRatio || "9:16",
+        projectId: body.projectId || null,
       };
     }
 
