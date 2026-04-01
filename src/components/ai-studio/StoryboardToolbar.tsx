@@ -10,7 +10,10 @@ import { ChevronDown, ChevronRight, Palette, User, Settings2, Sparkles, MapPin, 
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
-import { FolderOpen, Save, FileText, Download, HelpCircle, RotateCcw, Loader2 } from 'lucide-react';
+import { FolderOpen, Save, FileText, Download, HelpCircle, RotateCcw, Loader2, MoreHorizontal } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import SavedCharacter from './SavedCharacter';
 import SavedEnvironments from './SavedEnvironments';
 import SavedLooks from './SavedLooks';
@@ -40,7 +43,6 @@ interface StoryboardToolbarProps {
   onDownloadAll?: () => void;
   hasStoryboard?: boolean;
   onHelp?: () => void;
-  onNew?: () => void;
   onGenerateStoryboard?: () => void;
   isGeneratingStoryboard?: boolean;
 }
@@ -95,7 +97,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   productImage, setProductImage,
   showSafetyTerms, setShowSafetyTerms,
   isProcessing,
-  onProjects, onSave, isSaving, onDownloadScript, onDownloadAll, hasStoryboard, onHelp, onNew,
+  onProjects, onSave, isSaving, onDownloadScript, onDownloadAll, hasStoryboard, onHelp,
   onGenerateStoryboard, isGeneratingStoryboard
 }) => {
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -423,8 +425,8 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             </CollapsibleSection>
           </div>
 
-          {/* Generate Storyboard Button */}
-          {onGenerateStoryboard && !hasStoryboard && (
+          {/* Generate Storyboard Button — always visible */}
+          {onGenerateStoryboard && (
             <div className="px-6 py-4 border-t border-border">
               <button
                 onClick={() => { onGenerateStoryboard(); setSheetOpen(false); }}
@@ -434,10 +436,15 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                 {isGeneratingStoryboard ? (
                   <><Loader2 className="h-4 w-4 animate-spin" /> Generating Storyboard...</>
                 ) : (
-                  <><Sparkles className="h-4 w-4" /> Generate Storyboard</>
+                  <><Sparkles className="h-4 w-4" /> {hasStoryboard ? 'Generate New Storyboard' : 'Generate Storyboard'}</>
                 )}
               </button>
-              <p className="text-[10px] text-muted-foreground text-center mt-1.5">Generation can take 1–2 minutes.</p>
+              {hasStoryboard && (
+                <p className="text-[10px] text-destructive text-center mt-1.5">This will replace your current storyboard.</p>
+              )}
+              {!hasStoryboard && (
+                <p className="text-[10px] text-muted-foreground text-center mt-1.5">Generation can take 1–2 minutes.</p>
+              )}
             </div>
           )}
         </SheetContent>
@@ -452,20 +459,29 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               <button onClick={onSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 rounded-lg transition-colors disabled:opacity-50">
                 {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Save
               </button>
-              <button onClick={onDownloadScript} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors">
-                <FileText className="h-3.5 w-3.5" /> Script
-              </button>
-              <button onClick={onDownloadAll} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors">
-                <Download className="h-3.5 w-3.5" /> All
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center justify-center w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={onDownloadScript}>
+                    <FileText className="h-3.5 w-3.5 mr-2" /> Download Script
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onDownloadAll}>
+                    <Download className="h-3.5 w-3.5 mr-2" /> Download All
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onHelp}>
+                    <HelpCircle className="h-3.5 w-3.5 mr-2" /> Help
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           )}
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto">
             <button onClick={onProjects} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 border border-foreground rounded-lg transition-colors">
               <FolderOpen className="h-3.5 w-3.5" /> Projects
-            </button>
-            <button onClick={onNew} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-yellow-400 text-yellow-950 hover:bg-yellow-500 border border-yellow-500 rounded-lg transition-colors">
-              <RotateCcw className="h-3.5 w-3.5" /> New
             </button>
           </div>
         </>
