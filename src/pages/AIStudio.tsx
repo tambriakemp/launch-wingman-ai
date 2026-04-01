@@ -407,8 +407,17 @@ const AIStudio = () => {
       board.steps.forEach((_, idx) => { initialMedia[idx] = { ...DEFAULT_MEDIA }; });
       setGeneratedMedia(initialMedia);
 
-      // Text-only generation: do NOT auto-queue images.
-      // User reviews/edits scene text, then generates images manually.
+      // Auto-queue Scene 1 image generation so it becomes the character anchor
+      if (board.steps.length > 0) {
+        const scene1Task: QueueItem = {
+          id: Math.random().toString(),
+          type: 'generate',
+          index: 0,
+          step: board.steps[0],
+          config: { ...config }
+        };
+        addToQueue([scene1Task]);
+      }
     } catch (e: any) {
       toast({ title: "Error", description: getUserFriendlyErrorMessage(e), variant: "destructive" });
     } finally {
