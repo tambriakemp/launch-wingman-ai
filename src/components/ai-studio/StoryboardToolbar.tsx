@@ -532,7 +532,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
               {hasStoryboard && onSave && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center justify-center px-3 py-1.5 h-full text-xs font-medium bg-foreground/80 text-background hover:bg-foreground/70 rounded-r-lg transition-colors">
+                    <button className="flex items-center justify-center h-full text-xs font-medium bg-foreground/80 text-background hover:bg-foreground/70 rounded-r-lg transition-colors px-[14px] py-[8px]">
                       <ChevronDown className="h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
