@@ -86,7 +86,18 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel, previousScenePrompt, nextScenePrompt, previousSceneImageUrl, sceneNumber, totalScenes } = await req.json();
+    const { prompt, referenceImage, productImage, environmentImage, environmentImages, previewCharacter, config, lockedRefs, isFinalLook, isUpscale, baseImageUrl, anchorImageUrl, referenceImages, environmentLabel, previousScenePrompt, nextScenePrompt, previousSceneImageUrl, sceneNumber, totalScenes, aspectRatio } = await req.json();
+
+    // Build aspect ratio orientation instruction
+    const getOrientationInstruction = (ar: string): string => {
+      switch (ar) {
+        case '9:16': return '\nOUTPUT FORMAT (CRITICAL): Generate a PORTRAIT oriented image (9:16 aspect ratio, TALLER than wide). The image MUST be in vertical/portrait orientation.';
+        case '16:9': return '\nOUTPUT FORMAT (CRITICAL): Generate a LANDSCAPE oriented image (16:9 aspect ratio, WIDER than tall). The image MUST be in horizontal/landscape orientation.';
+        case '1:1': return '\nOUTPUT FORMAT (CRITICAL): Generate a SQUARE image (1:1 aspect ratio). The image MUST have equal width and height.';
+        default: return '';
+      }
+    };
+    const orientationInstruction = getOrientationInstruction(aspectRatio || config?.aspectRatio || '9:16');
 
     const isUrl = (img: string): boolean => /^https?:\/\//i.test(img?.trim() || "");
 
@@ -268,7 +279,8 @@ ${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmen
 ${envFidelityInstruction}
 ${continuityInstruction}
 ${carouselConsistencyInstruction}
-${config.ultraRealistic ? 'Ultra-realistic, shot on a real iPhone Pro back-facing camera, 8K resolution, natural perspective. Skin appears hyper-realistic with visible pores, natural texture, and subtle imperfections, showcasing real-world skin detail. Enhancing realism without looking overdone. Photorealistic color grading, sharp facial focus, true-to-life contrast, no artificial smoothing, no filters, no stylization. No text, logos, captions, or overlays anywhere in the image.' : ''}`;
+${config.ultraRealistic ? 'Ultra-realistic, shot on a real iPhone Pro back-facing camera, 8K resolution, natural perspective. Skin appears hyper-realistic with visible pores, natural texture, and subtle imperfections, showcasing real-world skin detail. Enhancing realism without looking overdone. Photorealistic color grading, sharp facial focus, true-to-life contrast, no artificial smoothing, no filters, no stylization. No text, logos, captions, or overlays anywhere in the image.' : ''}
+${orientationInstruction}`;
       } else {
         // GENERATE FROM SCRATCH MODE (no preview available)
         fullPrompt = `OUTPUT: Generate exactly ONE single photograph. Do NOT create collages, grids, split-screen images, or multiple panels.
@@ -292,7 +304,8 @@ ${getSceneBehaviorPrompt(prompt) || (environmentImages?.length > 0 || environmen
 ${envFidelityInstruction}
 ${continuityInstruction}
 ${carouselConsistencyInstruction}
-${config.ultraRealistic ? 'Ultra-realistic, shot on a real iPhone Pro back-facing camera, 8K resolution, natural perspective. Skin appears hyper-realistic with visible pores, natural texture, and subtle imperfections, showcasing real-world skin detail. Enhancing realism without looking overdone. Photorealistic color grading, sharp facial focus, true-to-life contrast, no artificial smoothing, no filters, no stylization. No text, logos, captions, or overlays anywhere in the image.' : ''}`;
+${config.ultraRealistic ? 'Ultra-realistic, shot on a real iPhone Pro back-facing camera, 8K resolution, natural perspective. Skin appears hyper-realistic with visible pores, natural texture, and subtle imperfections, showcasing real-world skin detail. Enhancing realism without looking overdone. Photorealistic color grading, sharp facial focus, true-to-life contrast, no artificial smoothing, no filters, no stylization. No text, logos, captions, or overlays anywhere in the image.' : ''}
+${orientationInstruction}`;
       }
 
       contentParts.push({ type: "text", text: fullPrompt });
