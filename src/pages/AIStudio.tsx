@@ -892,11 +892,6 @@ const AIStudio = () => {
                 selectionCount={getSelectionCount()}
               />
             </>
-          ) : !previewCharacterImage ? (
-            <div className="bg-card border border-border rounded-xl p-12 text-center">
-              <p className="text-muted-foreground text-sm mb-2">No storyboard yet</p>
-              <p className="text-xs text-muted-foreground">Generate a character preview, then create your storyboard.</p>
-            </div>
           ) : null}
         </main>
 
