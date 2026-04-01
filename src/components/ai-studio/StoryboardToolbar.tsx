@@ -41,6 +41,8 @@ interface StoryboardToolbarProps {
   hasStoryboard?: boolean;
   onHelp?: () => void;
   onNew?: () => void;
+  onGenerateStoryboard?: () => void;
+  isGeneratingStoryboard?: boolean;
 }
 
 const StatusDot: React.FC<{ active: boolean }> = ({ active }) => (
