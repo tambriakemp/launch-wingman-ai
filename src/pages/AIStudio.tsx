@@ -660,7 +660,7 @@ const AIStudio = () => {
       await ffmpeg.writeFile('input.webm', await fetchFile(blob));
       await ffmpeg.exec(['-i', 'input.webm', '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', 'output.mp4']);
       const mp4Data = await ffmpeg.readFile('output.mp4');
-      const mp4Blob = new Blob([mp4Data], { type: 'video/mp4' });
+      const mp4Blob = new Blob([(mp4Data as any).slice().buffer], { type: 'video/mp4' });
       console.log(`[Reel] MP4 blob size: ${(mp4Blob.size / 1024 / 1024).toFixed(1)}MB`);
 
       // Upload to storage
