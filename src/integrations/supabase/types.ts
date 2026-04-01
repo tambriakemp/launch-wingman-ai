@@ -113,6 +113,9 @@ export type Database = {
           id: string
           mode: string
           name: string
+          reel_created_at: string | null
+          reel_path: string | null
+          reel_url: string | null
           status: string
           storyboard: Json | null
           updated_at: string
@@ -127,6 +130,9 @@ export type Database = {
           id?: string
           mode?: string
           name?: string
+          reel_created_at?: string | null
+          reel_path?: string | null
+          reel_url?: string | null
           status?: string
           storyboard?: Json | null
           updated_at?: string
@@ -141,6 +147,9 @@ export type Database = {
           id?: string
           mode?: string
           name?: string
+          reel_created_at?: string | null
+          reel_path?: string | null
+          reel_url?: string | null
           status?: string
           storyboard?: Json | null
           updated_at?: string
