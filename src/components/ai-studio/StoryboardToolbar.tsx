@@ -10,7 +10,7 @@ import { ChevronDown, ChevronRight, Palette, User, Settings2, Sparkles, MapPin, 
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
-import { FolderOpen, Save, FileText, Download, HelpCircle, RotateCcw, Loader2, MoreHorizontal } from 'lucide-react';
+import { FolderOpen, Save, FileText, Download, HelpCircle, RotateCcw, Loader2, MoreHorizontal, ImageIcon, Video, Film, Eye } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
@@ -45,6 +45,15 @@ interface StoryboardToolbarProps {
   onHelp?: () => void;
   onGenerateStoryboard?: () => void;
   isGeneratingStoryboard?: boolean;
+  onGenerateAllImages?: () => void;
+  onGenerateAllVideos?: () => void;
+  onCreateReel?: () => void;
+  onViewReel?: () => void;
+  onDownloadReel?: () => void;
+  isMergingVideos?: boolean;
+  mergedReelUrl?: string | null;
+  videoCount?: number;
+  anyGeneratingVideo?: boolean;
 }
 
 const StatusDot: React.FC<{ active: boolean }> = ({ active }) => (
@@ -98,7 +107,9 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   showSafetyTerms, setShowSafetyTerms,
   isProcessing,
   onProjects, onSave, isSaving, onDownloadScript, onDownloadAll, hasStoryboard, onHelp,
-  onGenerateStoryboard, isGeneratingStoryboard
+  onGenerateStoryboard, isGeneratingStoryboard,
+  onGenerateAllImages, onGenerateAllVideos, onCreateReel, onViewReel, onDownloadReel,
+  isMergingVideos, mergedReelUrl, videoCount = 0, anyGeneratingVideo
 }) => {
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -455,10 +466,43 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
         <>
           {hasStoryboard && (
             <>
-              <Separator orientation="vertical" className="h-6 mx-1" />
-              <button onClick={onSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 rounded-lg transition-colors disabled:opacity-50">
-                {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Save
-              </button>
+              {/* Generate Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted hover:bg-muted/80 border border-border rounded-lg transition-colors">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Generate</span>
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={onGenerateAllImages}>
+                    <ImageIcon className="h-3.5 w-3.5 mr-2" /> Generate All Images
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onGenerateAllVideos}>
+                    <Video className="h-3.5 w-3.5 mr-2" /> Generate All Videos
+                  </DropdownMenuItem>
+                  {videoCount >= 2 && !anyGeneratingVideo && (
+                    <>
+                      <DropdownMenuItem onClick={onCreateReel} disabled={isMergingVideos}>
+                        <Film className="h-3.5 w-3.5 mr-2" /> {isMergingVideos ? 'Creating Reel...' : mergedReelUrl ? 'Re-generate Reel' : 'Generate Reel'}
+                      </DropdownMenuItem>
+                      {mergedReelUrl && (
+                        <>
+                          <DropdownMenuItem onClick={onViewReel}>
+                            <Eye className="h-3.5 w-3.5 mr-2" /> View Reel
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={onDownloadReel}>
+                            <Download className="h-3.5 w-3.5 mr-2" /> Download Reel
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Ellipsis overflow menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center justify-center w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-muted border border-border rounded-lg transition-colors">
@@ -477,6 +521,11 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              <Separator orientation="vertical" className="h-6 mx-1" />
+              <button onClick={onSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 rounded-lg transition-colors disabled:opacity-50">
+                {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Save
+              </button>
             </>
           )}
           <div className="ml-auto">
