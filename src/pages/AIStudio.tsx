@@ -588,6 +588,8 @@ const AIStudio = () => {
     link.click();
     document.body.removeChild(link);
   };
+
+  const generateScriptContent = () => {
     if (!storyboard) return "";
     let content = `PROJECT: ${config.creationMode === 'vlog' ? config.vlogCategory : 'UGC'}\nTOPIC: ${config.creationMode === 'vlog' ? config.vlogTopic : config.ugcPrompt}\nDATE: ${new Date().toLocaleDateString()}\n\n`;
     storyboard.steps.forEach(step => {
