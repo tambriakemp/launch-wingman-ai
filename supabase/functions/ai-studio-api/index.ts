@@ -307,6 +307,14 @@ function buildDownstreamBody(action: string, body: Record<string, unknown>): Rec
       };
     }
 
+    case "merge_videos": {
+      return {
+        videoUrls: body.videoUrls,
+        aspectRatio: body.aspectRatio || "9:16",
+        projectId: body.projectId || null,
+      };
+    }
+
     default:
       return body;
   }
