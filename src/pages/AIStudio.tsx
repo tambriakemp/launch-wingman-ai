@@ -10,7 +10,7 @@ import SavedProjectsGrid from '@/components/ai-studio/SavedProjectsGrid';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Loader2, HelpCircle, RotateCcw, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, Check, ArrowRight, X, ShieldCheck } from 'lucide-react';
-import { VLOG_CATEGORIES, TOPIC_PLACEHOLDERS } from '@/components/ai-studio/constants';
+import { VLOG_CATEGORIES } from '@/components/ai-studio/constants';
 import { toast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
 import { ProjectLayout } from '@/components/layout/ProjectLayout';
@@ -843,71 +843,7 @@ const AIStudio = () => {
             </div>
           )}
 
-          {/* Inline Vlog Topic (category moved to Create dropdown) */}
-          {config.creationMode === 'vlog' && !storyboard && (
-            <div className="bg-card border border-border rounded-xl p-4 my-3 space-y-3">
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-[10px] font-bold uppercase text-muted-foreground">Vlog Topic</label>
-                  {handleGenerateTopicIdeas && (
-                    <button onClick={handleGenerateTopicIdeas} disabled={isGeneratingTopic}
-                      className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1 disabled:opacity-50">
-                      {isGeneratingTopic ? <span className="animate-pulse">Thinking...</span> : <><Sparkles className="h-3 w-3" /> Brainstorm</>}
-                    </button>
-                  )}
-                </div>
-                <textarea
-                  placeholder={TOPIC_PLACEHOLDERS[config.vlogCategory] || "Describe your video concept..."}
-                  value={config.vlogTopic}
-                  onChange={(e) => setConfig(c => ({ ...c, vlogTopic: e.target.value }))}
-                  className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary"
-                />
-              </div>
-              <div className="pt-2 border-t border-border">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={config.useOwnScript} onChange={(e) => setConfig(c => ({ ...c, useOwnScript: e.target.checked }))}
-                    className="rounded border-border text-primary focus:ring-primary bg-muted" />
-                  <span className="text-xs font-medium text-foreground">Use own script ✍️</span>
-                </label>
-                {config.useOwnScript && (
-                  <textarea placeholder="Paste your script here..."
-                    value={config.userScript} onChange={(e) => setConfig(c => ({ ...c, userScript: e.target.value.slice(0, 5000) }))}
-                    className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] mt-2 focus:ring-1 focus:ring-primary" />
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Carousel Input */}
-          {config.creationMode === 'carousel' && !storyboard && (
-            <div className="bg-card border border-border rounded-xl p-4 my-3 space-y-3">
-              <div>
-                <div className="flex justify-between items-center">
-                  <label className="block text-[10px] font-bold uppercase text-muted-foreground">Setting / Environment</label>
-                  <button onClick={handleGenerateTopicIdeas} disabled={isGeneratingTopic}
-                    className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1 disabled:opacity-50">
-                    {isGeneratingTopic ? <span className="animate-pulse">Thinking...</span> : <><Sparkles className="h-3 w-3" /> Brainstorm</>}
-                  </button>
-                </div>
-                <textarea
-                  placeholder="Where is this carousel set? e.g. Inside a luxury Lamborghini with orange interior, parked on a sunny LA highway..."
-                  value={config.carouselVibe}
-                  onChange={(e) => setConfig(c => ({ ...c, carouselVibe: e.target.value }))}
-                  className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary mt-1.5"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-muted-foreground mb-1.5">Message / Theme</label>
-                <textarea
-                  placeholder="What's the message or story thread? e.g. Your content isn't failing — it's just painfully average..."
-                  value={config.carouselMessage}
-                  onChange={(e) => setConfig(c => ({ ...c, carouselMessage: e.target.value }))}
-                  className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[50px] focus:ring-1 focus:ring-primary"
-                />
-              </div>
-              <p className="text-[10px] text-muted-foreground/60">Aesthetic is set in the Create menu. All slides will share the same character, setting, lighting, and outfit — only the shot angle and framing will vary.</p>
-            </div>
-          )}
+          {/* Topic/Message inputs moved to Create sheet panel */}
 
           {/* Inline Character Preview Bar */}
           <div className="my-4">
