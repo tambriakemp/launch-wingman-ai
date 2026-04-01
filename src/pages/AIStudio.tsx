@@ -63,6 +63,7 @@ const AIStudio = () => {
   const [isMergingVideos, setIsMergingVideos] = useState(false);
   const [mergeProgress, setMergeProgress] = useState(0);
   const [mergedReelUrl, setMergedReelUrl] = useState<string | null>(null);
+  const [reelStoragePath, setReelStoragePath] = useState<string | null>(null);
   const [showReelDialog, setShowReelDialog] = useState(false);
 
   // Refs to avoid stale closures in the queue processor
