@@ -18,8 +18,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+// Video merge uses Canvas + MediaRecorder (no ffmpeg.wasm needed)
 import { Progress } from '@/components/ui/progress';
 
 const AIStudio = () => {
