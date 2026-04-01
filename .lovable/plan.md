@@ -1,46 +1,35 @@
 
 
-## Fix "Generate Reel" Edge Function Failure
+## Fix Z-Index Overlap & Video Orientation Issues
 
-### Root cause
-The `merge-scene-videos` edge function fails with "Failed to fetch" because:
+### Issue 1: Z-Index — Scene card icons appear on top of modals
 
-1. **Missing `config.toml` entry** — The function has no `[functions.merge-scene-videos]` block in `supabase/config.toml`, so it likely deploys with `verify_jwt = true` by default, which can cause request failures.
-2. **`getClaims` API issue** — The function uses `supabase.auth.getClaims(token)` which may not be available in the Supabase JS version used (`@supabase/supabase-js@2.57.2`). This could cause the function to crash on startup or during execution.
-3. **ffmpeg unavailability** — Edge functions run in Deno Deploy, which does not have `ffmpeg` installed. The function tries to run `Deno.Command("ffmpeg", ...)` which will fail. This is a fundamental architectural problem.
+The lock/overlay icons in `SceneCard.tsx` use `z-[60]`, which is higher than the dialog overlay's `z-50`. They bleed through modals.
 
-### Fix approach
+**Fix in `src/components/ai-studio/SceneCard.tsx`** (line 154):
+- Change `z-[60]` to `z-10` — the icons only need to be above their parent image, not above page-level modals.
 
-Since Edge Functions don't have ffmpeg, the reel merge needs to happen **client-side** (as it was originally attempted). The edge function approach won't work without a dedicated server with ffmpeg.
+### Issue 2: Video orientation — landscape videos in portrait project
 
-**Option: Revert to client-side merge using Canvas + MediaRecorder, but fix the previous issues:**
+The root cause is that **scene images are generated without any aspect ratio constraint**. The `generate-scene-image` edge function uses Gemini's image generation (`google/gemini-3-pro-image-preview`) but never specifies output dimensions or orientation. Gemini defaults to whatever it chooses (often square or landscape). When these images are fed to Kling for video generation, even though `aspect_ratio: "9:16"` is passed, the landscape source image influences Kling to produce landscape-oriented video.
 
-1. **`src/pages/AIStudio.tsx`** — Replace the edge function call in `handleCreateReel` with client-side video concatenation:
-   - Load each video into a `<video>` element
-   - Use Canvas to draw frames and MediaRecorder to capture
-   - Set canvas dimensions from `config.aspectRatio` (not from source video metadata)
-   - Output as WebM (browser-native), then upload to storage
+**Fix in two places:**
 
-2. **`supabase/functions/merge-scene-videos/index.ts`** — Remove this function (it can't work without ffmpeg).
+1. **`supabase/functions/generate-scene-image/index.ts`** — Add aspect ratio to the prompt text so Gemini generates images matching the project orientation. The function needs to receive `aspectRatio` from the client and append an instruction like:
+   - For 9:16: "OUTPUT FORMAT: Generate a PORTRAIT oriented image (9:16 aspect ratio, taller than wide)."
+   - For 16:9: "OUTPUT FORMAT: Generate a LANDSCAPE oriented image (16:9 aspect ratio, wider than tall)."
+   - For 1:1: "OUTPUT FORMAT: Generate a SQUARE image (1:1 aspect ratio)."
 
-3. **Fix orientation** — Use the project's `aspectRatio` setting to determine canvas dimensions rather than reading from the first video.
+2. **`supabase/functions/ai-studio-api/index.ts`** — Pass `aspectRatio` through in the `generate_scene_image` action mapping (currently it's not forwarded).
 
-4. **Fix download format** — Since browsers output WebM from MediaRecorder, name the download accordingly, or use a library like `mp4-mux` for true MP4 output.
+3. **`src/pages/AIStudio.tsx`** — Ensure `aspectRatio` is included in the body when calling `generate-scene-image` (check if `config.aspectRatio` is already sent; if not, add it).
 
-5. **Persist the reel** — After client-side merge, upload the blob to storage and save the URL to the project record (same storage upload logic, just done from client via Supabase storage SDK).
-
-### Changes
+### Changes summary
 
 | File | Change |
 |------|--------|
-| `src/pages/AIStudio.tsx` | Replace edge function call with client-side Canvas+MediaRecorder merge, proper aspect ratio, upload result to storage |
-| `supabase/functions/merge-scene-videos/index.ts` | Delete (ffmpeg not available in edge runtime) |
-| `supabase/config.toml` | No changes needed (function removed) |
-
-### Technical details
-- Canvas dimensions: `9:16` → 1080×1920, `16:9` → 1920×1080, `1:1` → 1080×1080
-- Each video plays sequentially on the canvas; MediaRecorder captures the stream
-- After recording completes, upload blob to `ai-studio` bucket under `reels/{userId}/{timestamp}.webm`
-- Update `ai_studio_projects.reel_url` with the public URL
-- Progress updates at each video boundary
+| `src/components/ai-studio/SceneCard.tsx` | `z-[60]` → `z-10` |
+| `supabase/functions/generate-scene-image/index.ts` | Read `aspectRatio` from request body, append orientation instruction to prompt |
+| `supabase/functions/ai-studio-api/index.ts` | Forward `aspectRatio` in `generate_scene_image` case |
+| `src/pages/AIStudio.tsx` | Verify `aspectRatio` is sent with scene image generation requests |
 
