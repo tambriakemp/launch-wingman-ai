@@ -1007,7 +1007,7 @@ const AIStudio = () => {
                 .filter(t => t.baseImageUrl && !generatedMedia[t.index]?.videoUrl);
               if (tasks.length > 0) addToQueue(tasks);
             }}
-            onCreateReel={handleCreateReel}
+            onCreateReel={() => setShowReelSettings(true)}
             onViewReel={() => setShowReelDialog(true)}
             onDownloadReel={handleDownloadReel}
             isMergingVideos={isMergingVideos}
