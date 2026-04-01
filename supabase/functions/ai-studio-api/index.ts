@@ -181,7 +181,6 @@ serve(async (req) => {
       generate_scene_image: "generate-scene-image",
       generate_video: "generate-video",
       check_video_status: "check-video-status",
-      merge_videos: "merge-scene-videos",
     };
 
     const targetFunction = functionMap[action];
