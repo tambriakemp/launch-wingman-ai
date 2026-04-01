@@ -29,8 +29,7 @@ const AIStudio = () => {
   const [environmentLabel, setEnvironmentLabel] = useState<string | null>(null);
   const [previewCharacterImage, setPreviewCharacterImage] = useState<string | null>(null);
   const [previewFinalLookImage, setPreviewFinalLookImage] = useState<string | null>(null);
-  const [isPreviewGenerating, setIsPreviewGenerating] = useState(false);
-  const [previewStep, setPreviewStep] = useState<string | null>(null);
+  // isPreviewGenerating and previewStep removed — Scene 1 serves as character anchor
   const [storyboard, setStoryboard] = useState<VlogStoryboard | null>(null);
   const [generatedMedia, setGeneratedMedia] = useState<Record<number, GeneratedMedia>>({});
   const [isProcessing, setIsProcessing] = useState(false);
