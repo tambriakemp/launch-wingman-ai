@@ -337,7 +337,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
 
             {/* Section 5: Topic / Message (last) */}
             <CollapsibleSection
-              title={config.creationMode === 'carousel' ? '💬 Setting & Message' : config.creationMode === 'ugc' ? '💬 Marketing Goal' : '💬 Topic & Script'}
+              title={config.creationMode === 'carousel' ? '🎬 Set the Scene' : config.creationMode === 'ugc' ? '💬 Marketing Goal' : '💬 Topic & Script'}
               defaultOpen
               statusActive={!!(config.vlogTopic || config.carouselVibe || config.ugcPrompt)}
             >
