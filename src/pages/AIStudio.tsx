@@ -9,7 +9,7 @@ import ImageLightbox from '@/components/ai-studio/ImageLightbox';
 import SavedProjectsGrid from '@/components/ai-studio/SavedProjectsGrid';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Loader2, HelpCircle, RotateCcw, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, X, ShieldCheck, Film } from 'lucide-react';
+import { Loader2, HelpCircle, RotateCcw, Save, FileText, Download, FolderOpen, ImageIcon, Video, Sparkles, X, ShieldCheck, Film, Eye } from 'lucide-react';
 import { VLOG_CATEGORIES } from '@/components/ai-studio/constants';
 import { toast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
@@ -18,7 +18,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-// Video merge uses Canvas + MediaRecorder (no ffmpeg.wasm needed)
 import { Progress } from '@/components/ui/progress';
 
 const AIStudio = () => {
