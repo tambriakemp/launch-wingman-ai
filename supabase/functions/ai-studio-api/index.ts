@@ -17,10 +17,6 @@ const VALID_ACTIONS = [
   "list_character_references",
   "list_environment_references",
 ] as const;
-  "get_project",
-  "list_character_references",
-  "list_environment_references",
-] as const;
 
 type Action = typeof VALID_ACTIONS[number];
 
