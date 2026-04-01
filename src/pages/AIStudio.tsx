@@ -987,7 +987,9 @@ const AIStudio = () => {
           <div className="fixed bottom-6 right-6 z-50 bg-card border border-border rounded-xl p-4 shadow-2xl w-72">
             <div className="flex items-center gap-3 mb-2">
               <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              <span className="text-sm font-medium text-foreground">Creating Reel...</span>
+              <span className="text-sm font-medium text-foreground">
+                {mergeProgress < 85 ? 'Merging scenes...' : mergeProgress < 92 ? 'Converting to MP4...' : mergeProgress < 100 ? 'Uploading...' : 'Done!'}
+              </span>
             </div>
             <Progress value={mergeProgress} className="h-2" indicatorClassName="bg-primary" />
             <p className="text-xs text-muted-foreground mt-1">{mergeProgress}% complete</p>
