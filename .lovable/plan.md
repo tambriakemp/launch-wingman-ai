@@ -1,32 +1,38 @@
 
 
-## Fix Reel Orientation — Fill Instead of Letterbox
+## Reel Duration Control — Pre-Generation Settings Dialog
 
-### Problem
-The reel merger uses aspect-**fit** scaling (`Math.min`), which places landscape source videos inside a portrait canvas with large black bars. Even though the aspect ratio fix was applied to image generation, existing videos were generated before the fix and remain landscape. The reel looks wrong because of the letterboxing.
+### Approach
+When the user clicks "Generate Reel" or "Regenerate Reel", show a **dialog** before merging starts. The dialog offers two modes:
 
-### Solution
-Two changes:
+1. **Target Duration** (simple) — Pick a total reel length (7s, 10s, 15s, 30s, or "Full Length"). The system auto-divides time across clips evenly, trimming each to fit.
+2. **Per-Clip Control** (advanced) — Shows each clip as a small thumbnail with a seconds input. User can set exact duration per clip. Defaults to each clip's full length.
 
-1. **Use aspect-fill (crop) instead of aspect-fit (letterbox)** in the reel Canvas renderer — change `Math.min` to `Math.max` so each video fills the entire canvas, cropping overflow rather than showing black bars. This makes the reel look correct regardless of source video orientation.
+A toggle or tabs switch between the two modes. "Full Length" is the default (current behavior — no trimming).
 
-2. **Add audio tracks to the reel** — Currently `vid.muted = true` means the reel has no audio. The MediaRecorder stream only captures the canvas video. To include audio, we'd need to mix audio tracks into the stream. This is a separate concern — keep muted for now.
+### How clip trimming works
+During the Canvas playback loop, instead of playing each video to completion (`vid.onended`), use a per-clip `maxDuration` value:
+- If `maxDuration` is set, start a timer on play and pause/end the video after that many seconds.
+- The clip plays from the beginning and is cut at the specified time.
+- For "Target Duration" mode: `perClipDuration = targetSeconds / numberOfClips`, capped at each clip's actual length.
 
-### Changes
+### UI Design
+The dialog includes:
+- **Mode selector**: "Target Duration" / "Per-Clip" tabs
+- **Target Duration tab**: Preset buttons (7s, 10s, 15s, 30s, Full Length) + estimated per-clip duration display
+- **Per-Clip tab**: Grid of clip thumbnails (using scene images as proxies) with a number input (seconds) beside each. A "Reset to Full" button.
+- **Generate button** at the bottom
 
-**`src/pages/AIStudio.tsx`** (line ~605)
+### Files to change
 
-Change the scaling from aspect-fit to aspect-fill:
-```js
-// Before (aspect-fit — black bars)
-const scale = Math.min(dims.w / vid.videoWidth, dims.h / vid.videoHeight);
+| File | Change |
+|------|--------|
+| `src/components/ai-studio/ReelSettingsDialog.tsx` | **New** — Dialog component with duration mode selection, thumbnail grid, and per-clip inputs |
+| `src/pages/AIStudio.tsx` | Show dialog on reel click instead of calling `handleCreateReel` directly. Pass clip durations array into `handleCreateReel`. Update the video playback loop to respect `maxDuration` per clip. |
+| `src/components/ai-studio/StoryboardToolbar.tsx` | No changes needed — `onCreateReel` callback stays the same; the dialog is triggered from `AIStudio.tsx` |
 
-// After (aspect-fill — crop to fill)
-const scale = Math.max(dims.w / vid.videoWidth, dims.h / vid.videoHeight);
-```
-
-This single-line change ensures landscape videos fill the portrait canvas (cropping sides) instead of floating in the middle with black bars.
-
-### Result
-Landscape source videos will be center-cropped to fill the portrait frame. Once the user regenerates images with the new aspect ratio fix, the cropping will be minimal or none.
+### Technical details
+- Clip trimming: In the sequential playback loop, replace `vid.onended` with a `setTimeout` that pauses the video and resolves the promise after `clipDurations[i]` seconds (or falls through to `onended` if duration >= actual length).
+- Thumbnail source: Use `generatedMedia[i].imageUrl` (the scene image) as the thumbnail preview in the dialog.
+- The dialog state lives in `AIStudio.tsx` as `showReelSettings: boolean` and `clipDurations: (number | null)[]`.
 
