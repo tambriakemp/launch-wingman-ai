@@ -121,7 +121,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
             <SheetTitle className="text-base">Creation Settings</SheetTitle>
           </SheetHeader>
 
-          <div className="px-6 py-4 space-y-1 divide-y divide-border">
+          <div className="px-6 py-4 space-y-3">
             {/* Section 1: Creation Mode */}
             <CollapsibleSection title="🎬 Creation Mode" defaultOpen statusActive={true}>
               <div className="space-y-3">
