@@ -392,7 +392,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                         placeholder="Describe the world of your carousel — location, vibe, lighting, props, e.g. 'Cozy coffee shop with warm golden light, plants on shelves, latte art on the table...'"
                         value={config.carouselVibe}
                         onChange={(e) => setConfig(c => ({ ...c, carouselVibe: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary"
+                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary"
                       />
                     </div>
                     <div>
@@ -401,7 +401,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                         placeholder="What narrative ties the slides together? e.g. 'Morning routine that changed my productivity — each slide shows a different step...'"
                         value={config.carouselMessage}
                         onChange={(e) => setConfig(c => ({ ...c, carouselMessage: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[50px] focus:ring-1 focus:ring-primary"
+                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary"
                       />
                     </div>
                     <p className="text-[10px] text-muted-foreground/60">All slides share the same character, setting, lighting, and outfit — only the shot angle and framing will vary.</p>
