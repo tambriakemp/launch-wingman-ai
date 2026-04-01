@@ -18,8 +18,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+// Video merge uses Canvas + MediaRecorder (no ffmpeg.wasm needed)
 import { Progress } from '@/components/ui/progress';
 
 const AIStudio = () => {
@@ -536,55 +535,90 @@ const AIStudio = () => {
     setIsMergingVideos(true);
     setMergeProgress(0);
     try {
-      const ffmpeg = new FFmpeg();
-      ffmpeg.on('progress', ({ progress }) => {
-        const pct = Math.round(progress * 100);
-        if (pct > 0) setMergeProgress(Math.min(95, 35 + pct * 0.6));
-      });
-      ffmpeg.on('log', ({ message }) => {
-        console.log('[ffmpeg]', message);
-      });
+      console.log('[Reel] Starting canvas-based merge for', videoUrls.length, 'videos');
 
-      setMergeProgress(5);
-      console.log('[Reel] Loading ffmpeg.wasm...');
-
-      // Load ffmpeg with explicit CDN URLs using toBlobURL for CORS
-      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-      await ffmpeg.load({
-        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-      });
-      console.log('[Reel] ffmpeg loaded successfully');
-
-      setMergeProgress(15);
-
-      // Download and write each video to ffmpeg's virtual FS
-      const fileNames: string[] = [];
+      // Fetch all videos as blobs first to avoid CORS issues during playback
+      const videoBlobs: string[] = [];
       for (let i = 0; i < videoUrls.length; i++) {
-        setMergeProgress(15 + Math.round((i / videoUrls.length) * 20));
+        setMergeProgress(Math.round((i / videoUrls.length) * 20));
         console.log(`[Reel] Fetching video ${i + 1}/${videoUrls.length}...`);
-        const fileName = `vid${i}.mp4`;
-        const data = await fetchFile(videoUrls[i]);
-        await ffmpeg.writeFile(fileName, data);
-        fileNames.push(fileName);
+        const resp = await fetch(videoUrls[i]);
+        const blob = await resp.blob();
+        videoBlobs.push(URL.createObjectURL(blob));
+      }
+      setMergeProgress(20);
+
+      // Create offscreen canvas and video element
+      const video = document.createElement('video');
+      video.muted = true;
+      video.playsInline = true;
+
+      // Get dimensions from first video
+      video.src = videoBlobs[0];
+      await new Promise<void>((resolve, reject) => {
+        video.onloadedmetadata = () => resolve();
+        video.onerror = () => reject(new Error('Failed to load video metadata'));
+      });
+      const W = video.videoWidth || 720;
+      const H = video.videoHeight || 1280;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d')!;
+
+      // Set up MediaRecorder on canvas stream
+      const stream = canvas.captureStream(30);
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+        ? 'video/webm;codecs=vp9'
+        : MediaRecorder.isTypeSupported('video/webm;codecs=vp8')
+          ? 'video/webm;codecs=vp8'
+          : 'video/webm';
+      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 5_000_000 });
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+      const recorderReady = new Promise<Blob>((resolve) => {
+        recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
+      });
+
+      recorder.start();
+
+      // Play each video sequentially, drawing frames to canvas
+      for (let i = 0; i < videoBlobs.length; i++) {
+        console.log(`[Reel] Recording scene ${i + 1}/${videoBlobs.length}...`);
+        video.src = videoBlobs[i];
+        video.currentTime = 0;
+        await new Promise<void>((resolve, reject) => {
+          video.onloadeddata = () => resolve();
+          video.onerror = () => reject(new Error(`Failed to load scene ${i + 1}`));
+        });
+        await video.play();
+
+        await new Promise<void>((resolve) => {
+          const drawFrame = () => {
+            if (video.paused || video.ended) {
+              resolve();
+              return;
+            }
+            ctx.drawImage(video, 0, 0, W, H);
+            const progress = 20 + ((i + (video.currentTime / (video.duration || 1))) / videoBlobs.length) * 75;
+            setMergeProgress(Math.min(95, Math.round(progress)));
+            requestAnimationFrame(drawFrame);
+          };
+          video.onended = () => resolve();
+          drawFrame();
+        });
+        video.pause();
       }
 
-      // Write concat list
-      const concatList = fileNames.map(f => `file '${f}'`).join('\n');
-      await ffmpeg.writeFile('list.txt', concatList);
+      recorder.stop();
+      const finalBlob = await recorderReady;
 
-      setMergeProgress(35);
-      console.log('[Reel] Starting concat...');
+      // Clean up blob URLs
+      videoBlobs.forEach(u => URL.revokeObjectURL(u));
 
-      // Concat with stream copy (fast, works if same codec)
-      await ffmpeg.exec(['-f', 'concat', '-safe', '0', '-i', 'list.txt', '-c', 'copy', 'output.mp4']);
-
-      setMergeProgress(95);
-      console.log('[Reel] Reading output...');
-
-      const outputData = await ffmpeg.readFile('output.mp4');
-      const blob = new Blob([outputData instanceof Uint8Array ? new Uint8Array(outputData.buffer, outputData.byteOffset, outputData.byteLength) as unknown as BlobPart : outputData as unknown as BlobPart], { type: 'video/mp4' });
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(finalBlob);
       setMergedReelUrl(url);
       setShowReelDialog(true);
       setMergeProgress(100);
@@ -602,7 +636,7 @@ const AIStudio = () => {
     if (!mergedReelUrl) return;
     const link = document.createElement('a');
     link.href = mergedReelUrl;
-    link.download = `reel-${Date.now()}.mp4`;
+    link.download = `reel-${Date.now()}.webm`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
