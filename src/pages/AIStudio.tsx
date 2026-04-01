@@ -534,7 +534,7 @@ const AIStudio = () => {
     addToQueue(tasks);
   };
 
-  // Create Reel — merge via backend edge function
+  // Create Reel — client-side Canvas + MediaRecorder merge
   const handleCreateReel = async () => {
     if (!storyboard) return;
     const videoUrls: string[] = [];
@@ -547,32 +547,113 @@ const AIStudio = () => {
       return;
     }
 
-    setIsMergingVideos(true);
-    setMergeProgress(10);
-    try {
-      console.log('[Reel] Sending', videoUrls.length, 'videos to backend for merge');
-      setMergeProgress(20);
+    const DIMS: Record<string, { w: number; h: number }> = {
+      "9:16": { w: 1080, h: 1920 },
+      "16:9": { w: 1920, h: 1080 },
+      "1:1": { w: 1080, h: 1080 },
+    };
+    const dims = DIMS[config.aspectRatio] || DIMS["9:16"];
 
-      const { data, error } = await supabase.functions.invoke('merge-scene-videos', {
-        body: {
-          videoUrls,
-          aspectRatio: config.aspectRatio,
-          projectId: currentProjectId || undefined,
-        },
+    setIsMergingVideos(true);
+    setMergeProgress(5);
+
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = dims.w;
+      canvas.height = dims.h;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, dims.w, dims.h);
+
+      const stream = canvas.captureStream(30);
+      const recorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm',
+        videoBitsPerSecond: 8_000_000,
+      });
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+      const reelDone = new Promise<Blob>((resolve) => {
+        recorder.onstop = () => resolve(new Blob(chunks, { type: 'video/webm' }));
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      recorder.start();
+      setMergeProgress(10);
 
-      const reelUrl = data.reelUrl;
-      const storagePath = data.storagePath;
+      // Play each video sequentially on the canvas
+      for (let i = 0; i < videoUrls.length; i++) {
+        setMergeProgress(10 + Math.round((i / videoUrls.length) * 70));
+        console.log(`[Reel] Playing video ${i + 1}/${videoUrls.length}`);
+
+        await new Promise<void>((resolve, reject) => {
+          const vid = document.createElement('video');
+          vid.crossOrigin = 'anonymous';
+          vid.muted = true;
+          vid.playsInline = true;
+          vid.preload = 'auto';
+          vid.src = videoUrls[i];
+
+          vid.onloadeddata = () => {
+            vid.play().catch(reject);
+          };
+
+          vid.onplay = () => {
+            const drawFrame = () => {
+              if (vid.paused || vid.ended) return;
+              // Draw with aspect-fit (center, black bars)
+              const scale = Math.min(dims.w / vid.videoWidth, dims.h / vid.videoHeight);
+              const dw = vid.videoWidth * scale;
+              const dh = vid.videoHeight * scale;
+              ctx.fillStyle = '#000';
+              ctx.fillRect(0, 0, dims.w, dims.h);
+              ctx.drawImage(vid, (dims.w - dw) / 2, (dims.h - dh) / 2, dw, dh);
+              requestAnimationFrame(drawFrame);
+            };
+            drawFrame();
+          };
+
+          vid.onended = () => {
+            vid.remove();
+            resolve();
+          };
+          vid.onerror = () => reject(new Error(`Failed to load video ${i + 1}`));
+        });
+      }
+
+      recorder.stop();
+      setMergeProgress(85);
+      const blob = await reelDone;
+      console.log(`[Reel] Merged blob size: ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
+
+      // Upload to storage
+      setMergeProgress(90);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const storagePath = `reels/${user.id}/${Date.now()}.webm`;
+      const { error: uploadErr } = await supabase.storage
+        .from('ai-studio')
+        .upload(storagePath, blob, { contentType: 'video/webm', upsert: true });
+      if (uploadErr) throw uploadErr;
+
+      const { data: urlData } = supabase.storage.from('ai-studio').getPublicUrl(storagePath);
+      const reelUrl = urlData.publicUrl;
+
+      // Persist to project
+      if (currentProjectId) {
+        await supabase.from('ai_studio_projects').update({
+          reel_url: reelUrl,
+          reel_path: storagePath,
+          reel_created_at: new Date().toISOString(),
+        }).eq('id', currentProjectId);
+      }
 
       setMergedReelUrl(reelUrl);
       setReelStoragePath(storagePath);
       setShowReelDialog(true);
       setMergeProgress(100);
 
-      toast({ title: "Reel created!", description: "Your scenes have been merged into one MP4 video." });
+      toast({ title: "Reel created!", description: "Your scenes have been merged into a video." });
     } catch (e: any) {
       console.error('[Reel] Merge error:', e);
       toast({ title: "Merge failed", description: e?.message || "Could not merge videos. Try again.", variant: "destructive" });
