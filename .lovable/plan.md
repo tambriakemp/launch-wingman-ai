@@ -1,32 +1,34 @@
 
 
-## Update ZIP Download Naming Convention
+## Redesign Planner List View to ClickUp-Style Task List
 
-### Problem
-The downloaded ZIP is named `carousel-slides.zip` — a generic name unrelated to the content.
+### Changes
 
-### Solution
-Use the `offer` state value (the offer/product description entered in the brief) to generate a slug for the ZIP filename. If `offer` is empty, fall back to `"carousel-slides"`.
+**`src/pages/Planner.tsx`**
+- Rename tab label from "List" to "Tasks"
+- Add a "+ Task" button in the header area (visible when on Tasks tab)
 
-### Change
+**`src/components/planner/PlannerListView.tsx`** — Major redesign:
 
-**`src/pages/CarouselBuilder.tsx`** (line 567)
+1. **Remove "All clear for today" message** (lines 93-100)
 
-Replace the hardcoded filename:
-```ts
-a.download = "carousel-slides.zip";
-```
+2. **ClickUp-style table header row** — Add a sticky header with columns: Name, Due Date, Category, Status (like ClickUp's column headers with muted text)
 
-With a slugified version of the `offer` value:
-```ts
-const slug = offer
-  .trim()
-  .toLowerCase()
-  .replace(/[^a-z0-9]+/g, "-")
-  .replace(/^-|-$/g, "")
-  .slice(0, 50) || "carousel-slides";
-a.download = `${slug}-carousel.zip`;
-```
+3. **Redesign TaskRow to be ClickUp-style:**
+   - Compact row height (~36px) with tighter padding
+   - Checkbox on left, task name inline, then columns for due date, category, status aligned in a table-like grid
+   - Hover reveals action buttons (edit, delete)
+   - Status shown as a colored badge (TO DO, IN PROGRESS, DONE)
 
-This takes the first ~50 characters of the offer description, converts to a URL-safe slug, and appends `-carousel.zip`. Individual slide filenames inside the ZIP remain `slide-01.png`, `slide-02.png`, etc.
+4. **Add "+ Add Task" row at bottom of each group** — clicking opens the task dialog (like ClickUp's inline add)
+
+5. **Group headers styled like ClickUp** — colored status dot + label + count badge, compact height
+
+### Technical approach
+- Use CSS grid or flex with fixed column widths to create the table-like layout without an actual `<table>`
+- Keep the existing grouping logic (overdue, today, this week, anytime, completed)
+- Wire the new "+ Add Task" rows to the existing `onAddTask` callback
+
+### Result
+A dense, ClickUp-inspired task list with column headers, compact rows, inline add buttons, and no empty-state filler messages.
 
