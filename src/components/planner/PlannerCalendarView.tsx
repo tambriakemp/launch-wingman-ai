@@ -278,7 +278,8 @@ export const PlannerCalendarView = ({
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(t => {
-      const cat = t.category || "business";
+      const cat = t.category;
+      if (!cat) return true;
       return activeCategories.includes(cat);
     });
   }, [tasks, activeCategories]);
