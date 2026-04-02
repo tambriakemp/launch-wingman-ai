@@ -165,7 +165,7 @@ const Planner = () => {
       return;
     }
     setEditingTask(task);
-    setDefaultTaskType(task.task_type as "task" | "event" || "task");
+    
     setDefaultDueAt(null);
     setDialogOpen(true);
   };
