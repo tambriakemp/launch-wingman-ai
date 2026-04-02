@@ -602,10 +602,289 @@ const CarouselBuilder = () => {
 
   const canGenerate = offer.trim() && audience.trim() && painPoint.trim() && framework;
 
+  // ── Brief Panel Content (shared between Sheet and full-page) ──
+  const briefContent = (
+    <div className="space-y-5">
+      {/* Pull from my offers */}
+      <div>
+        <button
+          onClick={() => setOfferPullOpen(!offerPullOpen)}
+          className="inline-flex items-center gap-1.5 text-sm text-primary font-medium hover:underline"
+        >
+          <Package className="w-4 h-4" />
+          Pull from my offers {offerPullOpen ? "↑" : "↓"}
+        </button>
+
+        {offerPullOpen && (
+          <div className="mt-3 space-y-3">
+            {projects && projects.length > 0 ? (
+              <>
+                <Select
+                  value={selectedProjectId || ""}
+                  onValueChange={setSelectedProjectId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {offers && offers.length > 0 ? (
+                  <div className="space-y-2">
+                    {offers.map((offerItem) => (
+                      <button
+                        key={offerItem.id}
+                        onClick={() => handleSelectOffer(offerItem)}
+                        className={cn(
+                          "w-full text-left px-3 py-2.5 rounded-xl border transition-colors text-sm",
+                          selectedOfferId === offerItem.id
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/30"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground flex-1 truncate">
+                            {offerItem.title || "Untitled offer"}
+                          </span>
+                          <span className="text-[10px] uppercase tracking-wide text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            {offerItem.slot_type}
+                          </span>
+                          {offerItem.price && (
+                            <span className="text-xs text-muted-foreground">
+                              ${offerItem.price}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                    {selectedOfferId && (
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-green-600 font-medium">
+                          ✓ Offer context loaded
+                        </span>
+                        <button
+                          onClick={clearOffer}
+                          className="text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : selectedProjectId ? (
+                  <p className="text-sm text-muted-foreground">
+                    No offers found for this project.
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No projects found. Fill in the details manually below.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {offerPullOpen && (
+        <div className="relative flex items-center gap-3">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            or fill in manually
+          </span>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+      )}
+
+      <div>
+        <Label>Offer description *</Label>
+        <Input value={offer} onChange={(e) => setOffer(e.target.value)} placeholder="Describe your offer in one sentence" />
+      </div>
+
+      <div>
+        <Label>Audience</Label>
+        <Input value={audience} onChange={(e) => setAudience(e.target.value)} placeholder="Who is this for? e.g. side hustlers who want passive income" />
+      </div>
+
+      <div>
+        <Label>Pain Point</Label>
+        <Textarea value={painPoint} onChange={(e) => setPainPoint(e.target.value)} placeholder="What keeps them up at night?" rows={2} />
+      </div>
+
+      <div>
+        <Label>CTA (optional)</Label>
+        <Input value={cta} onChange={(e) => setCta(e.target.value)} placeholder="e.g. DM 'READY' to grab yours" />
+      </div>
+
+      {/* Social Handle / Website */}
+      <div>
+        <Label className="flex items-center gap-1.5">
+          <Globe className="w-3.5 h-3.5 text-muted-foreground" />
+          Website or Social Handle (optional)
+        </Label>
+        <Input
+          value={socialHandle}
+          onChange={(e) => setSocialHandle(e.target.value)}
+          placeholder="e.g. @yourbrand or yourbrand.com"
+        />
+        <p className="text-[11px] text-muted-foreground mt-1">Displayed on each slide if provided</p>
+      </div>
+
+      {/* Framework dropdown */}
+      <div>
+        <Label>Framework *</Label>
+        <Select value={framework} onValueChange={setFramework}>
+          <SelectTrigger>
+            <SelectValue placeholder="Choose a framework" />
+          </SelectTrigger>
+          <SelectContent className="max-h-72">
+            {FRAMEWORKS.map((f) => (
+              <SelectItem key={f.name} value={f.name}>
+                <div className="flex flex-col">
+                  <span className="font-medium">{f.name}</span>
+                  <span className="text-xs text-muted-foreground">{f.desc}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Slide count */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <Label>Number of slides</Label>
+          <span className="text-sm font-semibold text-primary">{slideCount}</span>
+        </div>
+        <input
+          type="range"
+          min={5}
+          max={15}
+          step={1}
+          value={slideCount}
+          onChange={(e) => setSlideCount(Number(e.target.value))}
+          className="w-full accent-primary"
+        />
+      </div>
+
+      {/* Funnel stage */}
+      <div>
+        <Label className="mb-2 block">Funnel Stage</Label>
+        <div className="flex gap-2 flex-wrap">
+          {FUNNEL_STAGES.map((s) => (
+            <button
+              key={s.value}
+              onClick={() => setFunnelStage(s.value)}
+              className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${funnelStage === s.value ? "bg-primary/10 border-primary text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+            >
+              {s.value} <span className="text-muted-foreground">({s.sub})</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Buyer temp */}
+      <div>
+        <Label className="mb-2 block">Buyer Temperature</Label>
+        <div className="flex gap-2 flex-wrap">
+          {BUYER_TEMPS.map((b) => (
+            <button
+              key={b}
+              onClick={() => setBuyerTemp(b)}
+              className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${buyerTemp === b ? "bg-primary/10 border-primary text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+            >
+              {b}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Inspiration */}
+      <div>
+        <button onClick={() => setShowInspiration(!showInspiration)} className="text-xs text-primary font-medium hover:underline">
+          Inspired by a viral post? {showInspiration ? "−" : "+"}
+        </button>
+        {showInspiration && (
+          <Textarea
+            value={inspirationText}
+            onChange={(e) => setInspirationText(e.target.value)}
+            placeholder="Paste the viral carousel text or describe the format you want to remix"
+            rows={3}
+            className="mt-2"
+          />
+        )}
+      </div>
+
+      {/* ── Tone & Voice ── */}
+      <div className="border-t border-border pt-5 space-y-4">
+        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Tone & Voice</h3>
+
+        {/* Tone */}
+        <div className="space-y-2">
+          <Label className="text-xs">How should this carousel feel?</Label>
+          <div className="flex flex-wrap gap-2">
+            {TONES.map((t) => (
+              <button
+                key={t.label}
+                onClick={() => setTone(t.label)}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${tone === t.label ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+              >
+                {t.emoji} {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Voice Modifier */}
+        <div className="space-y-2">
+          <Label className="text-xs">Voice Modifier (optional)</Label>
+          <div className="flex flex-wrap gap-2">
+            {VOICE_MODIFIERS.map((v) => (
+              <button
+                key={v}
+                onClick={() => setVoiceModifier(voiceModifier === v ? "" : v)}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${voiceModifier === v ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Conversion Boost */}
+        <div className="flex items-center justify-between bg-muted/50 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Zap className="w-4 h-4 text-amber-500" />
+            <div>
+              <p className="text-sm font-medium">Conversion Boost</p>
+              <p className="text-xs text-muted-foreground">Strengthen hook, tighten CTA, add tension</p>
+            </div>
+          </div>
+          <Switch checked={conversionBoost} onCheckedChange={setConversionBoost} />
+        </div>
+      </div>
+
+      {/* Generate button */}
+      <Button
+        className="w-full gap-2"
+        disabled={!canGenerate || isGenerating}
+        onClick={handleGenerate}
+      >
+        <Sparkles className="w-4 h-4" /> {isGenerating ? "Generating..." : "Generate Carousel"}
+      </Button>
+    </div>
+  );
+
   // ── Render ──
 
-  // PHASE: GENERATING
-  if (isGenerating) {
+  // PHASE: GENERATING (full page loader)
+  if (isGenerating && !slides.length) {
     return (
       <ProjectLayout>
         <div className="min-h-[60vh] flex items-center justify-center">
@@ -624,18 +903,33 @@ const CarouselBuilder = () => {
     );
   }
 
-  // PHASE: STUDIO
+  // PHASE: STUDIO (slides generated)
   if (phase === "studio" && slides.length > 0) {
     const current = slides[selectedSlide] || slides[0];
 
     return (
       <ProjectLayout>
+        {/* Brief Sheet — slides over the studio */}
+        <Sheet open={briefOpen} onOpenChange={setBriefOpen}>
+          <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <Layers className="w-5 h-5 text-primary" />
+                Carousel Settings
+              </SheetTitle>
+            </SheetHeader>
+            <div className="mt-4">
+              {briefContent}
+            </div>
+          </SheetContent>
+        </Sheet>
+
         <div className="flex h-[calc(100vh-64px)] overflow-hidden">
           {/* LEFT — Slide list */}
           <div className="w-80 shrink-0 border-r border-border overflow-y-auto bg-card">
             <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-              <button onClick={() => { setPhase("brief"); setSlides([]); }} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                <ArrowLeft className="w-3.5 h-3.5" /> New Carousel
+              <button onClick={() => setBriefOpen(true)} className="flex items-center gap-1.5 text-xs text-primary hover:text-foreground transition-colors">
+                <FileText className="w-3.5 h-3.5" /> Edit Brief
               </button>
               <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{slides.length} slides</span>
             </div>
@@ -830,325 +1124,30 @@ const CarouselBuilder = () => {
     );
   }
 
-  // PHASE: TONE
-  if (phase === "tone") {
-    return (
-      <ProjectLayout>
-        <div className="max-w-lg mx-auto px-4 sm:px-6 py-8 space-y-6">
-          {/* Summary card */}
-          <div className="bg-card border border-border rounded-2xl p-5 space-y-1">
-            <p className="text-sm font-semibold text-foreground">{offer}</p>
-            <p className="text-xs text-muted-foreground">Framework: <span className="font-medium text-foreground">{framework}</span></p>
-            <p className="text-xs text-primary font-medium">Ready to generate</p>
-          </div>
-
-          {/* Tone */}
-          <div className="space-y-2">
-            <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">How should this carousel feel?</Label>
-            <div className="flex flex-wrap gap-2">
-              {TONES.map((t) => (
-                <button
-                  key={t.label}
-                  onClick={() => setTone(t.label)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium border transition-colors ${tone === t.label ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-                >
-                  {t.emoji} {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Voice Modifier */}
-          <div className="space-y-2">
-            <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Voice Modifier (optional)</Label>
-            <div className="flex flex-wrap gap-2">
-              {VOICE_MODIFIERS.map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setVoiceModifier(voiceModifier === v ? "" : v)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${voiceModifier === v ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Conversion Boost */}
-          <div className="flex items-center justify-between bg-card border border-border rounded-xl px-4 py-3">
-            <div className="flex items-center gap-3">
-              <Zap className="w-4 h-4 text-amber-500" />
-              <div>
-                <p className="text-sm font-medium">Conversion Boost</p>
-                <p className="text-xs text-muted-foreground">Strengthen hook, tighten CTA, add tension</p>
-              </div>
-            </div>
-            <Switch checked={conversionBoost} onCheckedChange={setConversionBoost} />
-          </div>
-
-          {/* Buttons */}
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setPhase("brief")} className="gap-1.5">
-              <ArrowLeft className="w-4 h-4" /> Back to Brief
-            </Button>
-            <Button className="flex-1 gap-2" onClick={handleGenerate} disabled={!canGenerate}>
-              <Sparkles className="w-4 h-4" /> Generate Carousel
-            </Button>
-          </div>
-        </div>
-      </ProjectLayout>
-    );
-  }
-
-  // PHASE: BRIEF (default)
+  // PHASE: BRIEF (default — full page with Sheet open)
   return (
     <ProjectLayout>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Layers className="w-6 h-6 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground">Carousel Builder</h1>
+      <Sheet open={briefOpen} onOpenChange={setBriefOpen}>
+        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Layers className="w-5 h-5 text-primary" />
+              Carousel Builder
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            {briefContent}
           </div>
-          <p className="text-sm text-muted-foreground">Create high-converting Instagram carousels using proven psychological frameworks.</p>
-        </div>
+        </SheetContent>
+      </Sheet>
 
-        <div className="lg:grid lg:grid-cols-2 lg:gap-8">
-          {/* LEFT — Brief */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-2 mb-4">
-              <FileText className="w-4 h-4 text-muted-foreground" />
-              <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">The Brief</h2>
-            </div>
-
-            {/* Pull from my offers */}
-            <div>
-              <button
-                onClick={() => setOfferPullOpen(!offerPullOpen)}
-                className="inline-flex items-center gap-1.5 text-sm text-primary font-medium hover:underline"
-              >
-                <Package className="w-4 h-4" />
-                Pull from my offers {offerPullOpen ? "↑" : "↓"}
-              </button>
-
-              {offerPullOpen && (
-                <div className="mt-3 space-y-3">
-                  {projects && projects.length > 0 ? (
-                    <>
-                      <Select
-                        value={selectedProjectId || ""}
-                        onValueChange={setSelectedProjectId}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select project" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {projects.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      {offers && offers.length > 0 ? (
-                        <div className="space-y-2">
-                          {offers.map((offer) => (
-                            <button
-                              key={offer.id}
-                              onClick={() => handleSelectOffer(offer)}
-                              className={cn(
-                                "w-full text-left px-3 py-2.5 rounded-xl border transition-colors text-sm",
-                                selectedOfferId === offer.id
-                                  ? "border-primary bg-primary/5"
-                                  : "border-border hover:border-primary/30"
-                              )}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-foreground flex-1 truncate">
-                                  {offer.title || "Untitled offer"}
-                                </span>
-                                <span className="text-[10px] uppercase tracking-wide text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                                  {offer.slot_type}
-                                </span>
-                                {offer.price && (
-                                  <span className="text-xs text-muted-foreground">
-                                    ${offer.price}
-                                  </span>
-                                )}
-                              </div>
-                            </button>
-                          ))}
-                          {selectedOfferId && (
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs text-green-600 font-medium">
-                                ✓ Offer context loaded
-                              </span>
-                              <button
-                                onClick={clearOffer}
-                                className="text-xs text-muted-foreground hover:text-foreground"
-                              >
-                                Clear
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ) : selectedProjectId ? (
-                        <p className="text-sm text-muted-foreground">
-                          No offers found for this project.
-                        </p>
-                      ) : null}
-                    </>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No projects found. Fill in the details manually below.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {offerPullOpen && (
-              <div className="relative flex items-center gap-3">
-                <div className="flex-1 h-px bg-border" />
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                  or fill in manually
-                </span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
-            )}
-
-            <div>
-              <Label>Offer description *</Label>
-              <Input value={offer} onChange={(e) => setOffer(e.target.value)} placeholder="Describe your offer in one sentence" />
-            </div>
-
-            <div>
-              <Label>Audience</Label>
-              <Input value={audience} onChange={(e) => setAudience(e.target.value)} placeholder="Who is this for? e.g. side hustlers who want passive income" />
-            </div>
-
-            <div>
-              <Label>Pain Point</Label>
-              <Textarea value={painPoint} onChange={(e) => setPainPoint(e.target.value)} placeholder="What keeps them up at night?" rows={2} />
-            </div>
-
-            <div>
-              <Label>CTA (optional)</Label>
-              <Input value={cta} onChange={(e) => setCta(e.target.value)} placeholder="e.g. DM 'READY' to grab yours" />
-            </div>
-
-            {/* Social Handle / Website */}
-            <div>
-              <Label className="flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5 text-muted-foreground" />
-                Website or Social Handle (optional)
-              </Label>
-              <Input
-                value={socialHandle}
-                onChange={(e) => setSocialHandle(e.target.value)}
-                placeholder="e.g. @yourbrand or yourbrand.com"
-              />
-              <p className="text-[11px] text-muted-foreground mt-1">Displayed on each slide if provided</p>
-            </div>
-
-            {/* Slide count */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label>Number of slides</Label>
-                <span className="text-sm font-semibold text-primary">{slideCount}</span>
-              </div>
-              <input
-                type="range"
-                min={5}
-                max={15}
-                step={1}
-                value={slideCount}
-                onChange={(e) => setSlideCount(Number(e.target.value))}
-                className="w-full accent-primary"
-              />
-            </div>
-
-            {/* Funnel stage */}
-            <div>
-              <Label className="mb-2 block">Funnel Stage</Label>
-              <div className="flex gap-2 flex-wrap">
-                {FUNNEL_STAGES.map((s) => (
-                  <button
-                    key={s.value}
-                    onClick={() => setFunnelStage(s.value)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${funnelStage === s.value ? "bg-primary/10 border-primary text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-                  >
-                    {s.value} <span className="text-muted-foreground">({s.sub})</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Buyer temp */}
-            <div>
-              <Label className="mb-2 block">Buyer Temperature</Label>
-              <div className="flex gap-2 flex-wrap">
-                {BUYER_TEMPS.map((b) => (
-                  <button
-                    key={b}
-                    onClick={() => setBuyerTemp(b)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${buyerTemp === b ? "bg-primary/10 border-primary text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-                  >
-                    {b}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Inspiration */}
-            <div>
-              <button onClick={() => setShowInspiration(!showInspiration)} className="text-xs text-primary font-medium hover:underline">
-                Inspired by a viral post? {showInspiration ? "−" : "+"}
-              </button>
-              {showInspiration && (
-                <Textarea
-                  value={inspirationText}
-                  onChange={(e) => setInspirationText(e.target.value)}
-                  placeholder="Paste the viral carousel text or describe the format you want to remix"
-                  rows={3}
-                  className="mt-2"
-                />
-              )}
-            </div>
-
-            {/* CTA button */}
-            <Button
-              className="w-full"
-              disabled={!framework}
-              onClick={() => { if (framework) setPhase("tone"); }}
-            >
-              {framework ? "Set the Tone →" : "Choose a Framework First →"}
-            </Button>
-          </div>
-
-          {/* RIGHT — Frameworks */}
-          <div className="mt-8 lg:mt-0 lg:sticky lg:top-6 lg:self-start">
-            <div className="flex items-center gap-2 mb-1">
-              <Layers className="w-4 h-4 text-muted-foreground" />
-              <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Pick Your Framework</h2>
-            </div>
-            <p className="text-xs text-muted-foreground mb-4">Each framework uses a unique psychological structure to guide your audience.</p>
-
-            <div className="grid grid-cols-2 gap-3">
-              {FRAMEWORKS.map((f) => (
-                <button
-                  key={f.name}
-                  onClick={() => setFramework(f.name)}
-                  className={`rounded-xl border-2 p-4 cursor-pointer transition-all text-left ${framework === f.name ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
-                >
-                  <p className="text-sm font-bold">{f.name}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{f.desc}</p>
-                  <p className="text-xs italic text-muted-foreground/70 mt-2">"{f.sample}"</p>
-                </button>
-              ))}
-            </div>
-          </div>
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Layers className="w-12 h-12 text-muted-foreground/30 mx-auto" />
+          <p className="text-sm text-muted-foreground">Fill in the brief to generate your carousel.</p>
+          <Button variant="outline" onClick={() => setBriefOpen(true)} className="gap-2">
+            <FileText className="w-4 h-4" /> Open Brief
+          </Button>
         </div>
       </div>
     </ProjectLayout>
