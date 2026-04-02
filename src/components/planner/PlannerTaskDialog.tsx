@@ -110,7 +110,6 @@ export const PlannerTaskDialog = ({
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [taskType, setTaskType] = useState<"task" | "event">("task");
   const [columnId, setColumnId] = useState("todo");
   const [category, setCategory] = useState("business");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
