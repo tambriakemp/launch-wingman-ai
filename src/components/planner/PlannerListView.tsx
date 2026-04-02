@@ -71,6 +71,22 @@ export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask
     Object.fromEntries(GROUP_CONFIG.map((g) => [g.key, g.defaultOpen]))
   );
 
+  const categoryMap = useMemo(() => {
+    const DEFAULT_CATEGORIES = [
+      { id: "business", name: "Work" },
+      { id: "life", name: "Personal" },
+      { id: "health", name: "Health" },
+      { id: "finance", name: "Finance" },
+    ];
+    try {
+      const stored = localStorage.getItem("planner-categories");
+      const cats = stored ? JSON.parse(stored) : DEFAULT_CATEGORIES;
+      return new Map(cats.map((c: any) => [c.id, c.name]));
+    } catch {
+      return new Map(DEFAULT_CATEGORIES.map(c => [c.id, c.name]));
+    }
+  }, [tasks]);
+
   if (isLoading) {
     return <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
   }
