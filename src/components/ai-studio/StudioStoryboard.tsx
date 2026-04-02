@@ -10,7 +10,6 @@ interface StudioStoryboardProps {
   storyboard: VlogStoryboard;
   generatedMedia: Record<number, GeneratedMedia>;
   onToggleSelect: (index: number) => void;
-  onToggleLock: (index: number, type: 'character' | 'outfit' | 'environment') => void;
   onEnlarge: (index: number) => void;
   onAddToQueue: (items: QueueItem[]) => void;
   onUpdatePrompt: (index: number, newPrompt: string) => void;
