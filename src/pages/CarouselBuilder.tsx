@@ -967,15 +967,23 @@ const CarouselBuilder = () => {
               <div className="space-y-2">
                 <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Theme Presets</span>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {THEME_PRESETS.map((t, i) => (
-                    <button
-                      key={i}
-                      onClick={() => { setThemeBg(t.bg); setThemeText(t.text); setThemeAccent(t.accent); }}
-                      className={`w-7 h-7 rounded-full border-2 transition-transform ${themeBg === t.bg && themeText === t.text ? "border-foreground scale-110" : "border-transparent"}`}
-                      style={{ backgroundColor: t.bg }}
-                      title={t.label}
-                    />
-                  ))}
+                  {THEME_PRESETS.map((t, i) => {
+                    const isActive = themeBg === t.bg && themeText === t.text;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => { setThemeBg(t.bg); setThemeText(t.text); setThemeAccent(t.accent); }}
+                        className={`w-8 h-8 rounded-full overflow-hidden transition-transform ${isActive ? "ring-2 ring-foreground ring-offset-2 ring-offset-background scale-110" : "ring-1 ring-border"}`}
+                        title={t.label}
+                      >
+                        <div className="w-full h-full relative">
+                          <div className="absolute inset-0" style={{ backgroundColor: t.bg }} />
+                          <div className="absolute bottom-0 right-0 w-1/2 h-1/2 rounded-tl-full" style={{ backgroundColor: t.accent }} />
+                          <div className="absolute top-[2px] left-[2px] w-2 h-2 rounded-full" style={{ backgroundColor: t.text }} />
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
                 <div className="flex items-center gap-4 flex-wrap">
                   <label className="flex items-center gap-2 text-xs text-muted-foreground">
