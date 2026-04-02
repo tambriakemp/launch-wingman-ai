@@ -25,7 +25,7 @@ interface SceneCardProps {
 const SceneCard: React.FC<SceneCardProps> = ({
   step, index, media, aspectRatio,
   onGenerateImage, onUpscale, onGenerateVideo,
-  onToggleSelect, onToggleLock, onEnlarge,
+  onToggleSelect, onEnlarge,
   onUpdatePrompt, onUpdateVideoPrompt,
   onUpdateScript, onUpdateAction, onUpdateDetail
 }) => {
