@@ -20,7 +20,7 @@ const Planner = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<PlannerTask | null>(null);
-  const [defaultTaskType, setDefaultTaskType] = useState<"task" | "event">("task");
+  
   const [defaultDueAt, setDefaultDueAt] = useState<Date | null>(null);
 
   const fetchTasks = useCallback(async () => {
