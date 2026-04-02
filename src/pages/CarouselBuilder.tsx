@@ -385,6 +385,7 @@ const CarouselBuilder = () => {
       setSlides(data.slides);
       setSelectedSlide(0);
       setPhase("studio");
+      setBriefOpen(false);
       // Track carousel generation for admin analytics
       if (user?.id) {
         supabase.from("carousel_generations").insert({ user_id: user.id, slide_count: data.slides.length }).then(() => {});
