@@ -54,16 +54,15 @@ const END_HOUR = 24;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
 
 const CARD_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  "event-business": { bg: "bg-blue-100 dark:bg-blue-900/50", text: "text-blue-800 dark:text-blue-200", border: "border-blue-200 dark:border-blue-700" },
-  "event-life": { bg: "bg-emerald-100 dark:bg-emerald-900/50", text: "text-emerald-800 dark:text-emerald-200", border: "border-emerald-200 dark:border-emerald-700" },
   "task-business": { bg: "bg-amber-100 dark:bg-amber-900/50", text: "text-amber-800 dark:text-amber-200", border: "border-amber-200 dark:border-amber-700" },
   "task-life": { bg: "bg-purple-100 dark:bg-purple-900/50", text: "text-purple-800 dark:text-purple-200", border: "border-purple-200 dark:border-purple-700" },
+  "task-health": { bg: "bg-rose-100 dark:bg-rose-900/50", text: "text-rose-800 dark:text-rose-200", border: "border-rose-200 dark:border-rose-700" },
+  "task-finance": { bg: "bg-violet-100 dark:bg-violet-900/50", text: "text-violet-800 dark:text-violet-200", border: "border-violet-200 dark:border-violet-700" },
 };
 
 function getCardColors(task: PlannerTask) {
-  const type = task.task_type || "task";
   const cat = task.category || "business";
-  return CARD_COLORS[`${type}-${cat}`] || CARD_COLORS["task-business"];
+  return CARD_COLORS[`task-${cat}`] || CARD_COLORS["task-business"];
 }
 
 function getTaskPosition(task: PlannerTask) {
