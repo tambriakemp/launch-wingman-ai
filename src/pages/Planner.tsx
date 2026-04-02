@@ -9,7 +9,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlannerTaskDialog, type PlannerTask } from "@/components/planner/PlannerTaskDialog";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Planner = () => {
   const { user } = useAuth();
@@ -217,12 +218,17 @@ const Planner = () => {
                   <h1 className="text-2xl font-semibold text-foreground">Calendar</h1>
                   <p className="text-sm text-muted-foreground hidden sm:block">Plan your schedule, track tasks, and stay on top of your week.</p>
                 </div>
+                {view === "list" && (
+                  <Button size="sm" className="gap-1.5" onClick={handleAddTask}>
+                    <Plus className="w-4 h-4" /> Task
+                  </Button>
+                )}
               </div>
             </div>
           </div>
           <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar")}>
             <TabsList>
-              <TabsTrigger value="list">List</TabsTrigger>
+              <TabsTrigger value="list">Tasks</TabsTrigger>
               <TabsTrigger value="calendar">Calendar</TabsTrigger>
             </TabsList>
           </Tabs>
