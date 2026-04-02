@@ -206,7 +206,7 @@ const Planner = () => {
 
   return (
     <ProjectLayout>
-      <div className="absolute inset-0 overflow-hidden flex flex-col">
+      <div className="h-[calc(100vh-3rem-48px)] overflow-hidden flex flex-col -my-4 md:-my-6">
         <div className="px-4 pt-6 pb-2">
           <div className="flex items-start gap-4 mb-4">
             <div className="p-3 bg-amber-100/50 dark:bg-amber-900/20 rounded-xl shrink-0">
