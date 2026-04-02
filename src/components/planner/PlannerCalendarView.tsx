@@ -677,17 +677,17 @@ export const PlannerCalendarView = ({
                         const pos = getTaskPosition(task);
                         if (!pos) return null;
                         const isDone = task.column_id === "done";
-                        const colors = getCardColors(task);
+                        const { style: colorStyle } = getCardColorStyle(task, categories);
                         return (
                           <button
                             key={task.id}
                             className={cn(
-                              "absolute left-1.5 right-1.5 z-10 rounded-xl px-3 py-2 text-left overflow-hidden transition-all group",
+                              "absolute left-1.5 right-1.5 z-10 rounded-xl px-3 py-2 text-left overflow-hidden transition-all group border",
                               "hover:shadow-lg hover:-translate-y-px hover:z-30",
-                              colors.bg, colors.text,
                               isDone && "opacity-50"
                             )}
                             style={{
+                              ...colorStyle,
                               top: pos.top + 1,
                               height: pos.height - 2,
                               ...(taskIdx > 0 ? { left: `${taskIdx * 8 + 6}px` } : {}),
