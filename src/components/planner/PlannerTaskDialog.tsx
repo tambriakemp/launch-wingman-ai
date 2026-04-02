@@ -129,7 +129,10 @@ export const PlannerTaskDialog = ({
       setTitle(editTask.title);
       setDescription(editTask.description || "");
       setColumnId(editTask.column_id);
-      setCategory(editTask.category || "business");
+      // Validate category exists in current list; fall back to first available
+      const editCat = editTask.category;
+      const catExists = plannerCategories.some((c: { id: string }) => c.id === editCat);
+      setCategory(catExists && editCat ? editCat : plannerCategories[0]?.id || "business");
 
       // Date: prefer start_at, fallback to due_at
       if (editTask.start_at) {

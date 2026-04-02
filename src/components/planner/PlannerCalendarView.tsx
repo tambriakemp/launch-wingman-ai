@@ -48,7 +48,7 @@ interface PlannerCalendarViewProps {
   onAddTask?: () => void;
 }
 
-const HOUR_HEIGHT = 64;
+const HOUR_HEIGHT = 72;
 const START_HOUR = 0;
 const END_HOUR = 24;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
@@ -575,14 +575,14 @@ export const PlannerCalendarView = ({
                 viewMode === "day" ? "grid-cols-[56px_1fr]" : "grid-cols-[56px_repeat(7,1fr)]"
               )}>
                 <div className="border-r border-border flex items-center justify-end pr-2">
-                  <span className="text-[10px] text-muted-foreground font-medium">All day</span>
+                  <span className="text-xs text-muted-foreground font-medium">All day</span>
                 </div>
                 {(viewMode === "day" ? [currentDate] : weekDays).map((day) => {
                   const dayAllDay = getAllDayTasksForDay(day);
                   return (
                     <div
                       key={`allday-${day.toISOString()}`}
-                      className="border-r border-border last:border-r-0 min-h-[32px] min-w-0 p-1 flex flex-col gap-0.5 cursor-pointer hover:bg-accent/10 transition-colors overflow-hidden"
+                      className="border-r border-border last:border-r-0 min-h-[40px] min-w-0 p-1.5 flex flex-col gap-1 cursor-pointer hover:bg-accent/10 transition-colors overflow-hidden"
                       onClick={() => onCreateTask?.({ due_at: day.toISOString() })}
                     >
                       {dayAllDay.map((task) => {
@@ -592,7 +592,7 @@ export const PlannerCalendarView = ({
                           <button
                             key={task.id}
                             className={cn(
-                              "text-[10px] font-medium px-2 py-0.5 rounded-md truncate w-full text-left transition-colors",
+                              "text-xs font-medium px-2.5 py-1 rounded-md truncate w-full text-left transition-colors",
                               colors.bg, colors.text,
                               isDone && "opacity-50 line-through"
                             )}
@@ -624,7 +624,7 @@ export const PlannerCalendarView = ({
                       className="absolute w-full flex items-start justify-end pr-2 -translate-y-1/2"
                       style={{ top: (h - START_HOUR) * HOUR_HEIGHT }}
                     >
-                      <span className="text-[10px] text-muted-foreground font-medium">
+                      <span className="text-xs text-muted-foreground font-medium">
                         {format(setHours(new Date(), h), "h a")}
                       </span>
                     </div>
@@ -691,14 +691,14 @@ export const PlannerCalendarView = ({
                               onEditTask(task);
                             }}
                           >
-                            <span className={cn("text-xs font-bold truncate block leading-tight", isDone && "line-through")}>
+                            <span className={cn("text-sm font-bold truncate block leading-tight", isDone && "line-through")}>
                               {task.title}
                             </span>
                             {(task.recurrence_rule || (task as any)._isVirtualRecurrence) && (
                               <span className="text-[9px] opacity-60 mt-0.5 block">↻ repeating</span>
                             )}
                             {pos.height > 40 && task.start_at && task.end_at && (
-                              <div className="text-[10px] opacity-70 mt-1">
+                              <div className="text-xs opacity-70 mt-1">
                                 {format(parseISO(task.start_at), "h:mm a")} – {format(parseISO(task.end_at), "h:mm a")}
                               </div>
                             )}
