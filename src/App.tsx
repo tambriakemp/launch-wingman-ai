@@ -65,7 +65,7 @@ import BrandingFeature from "./pages/features/BrandingFeature";
 import MessagingFeature from "./pages/features/MessagingFeature";
 import ExecuteFeature from "./pages/features/ExecuteFeature";
 import ContentVaultFeature from "./pages/features/ContentVaultFeature";
-import InsightsFeature from "./pages/features/InsightsFeature";
+
 import RelaunchFeature from "./pages/features/RelaunchFeature";
 
 // Additional public pages
