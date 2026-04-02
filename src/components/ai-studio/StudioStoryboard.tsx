@@ -27,7 +27,7 @@ interface StudioStoryboardProps {
 
 const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
   config, storyboard, generatedMedia,
-  onToggleSelect, onToggleLock, onEnlarge,
+  onToggleSelect, onEnlarge,
   onAddToQueue, onUpdatePrompt, onUpdateVideoPrompt,
   onUpdateScript, onUpdateAction, onUpdateDetail,
   onBatchRegenerate, onBatchUpscale, onBatchGenerateVideo, onBatchDelete,
