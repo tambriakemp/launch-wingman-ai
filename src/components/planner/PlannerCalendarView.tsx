@@ -48,7 +48,7 @@ interface PlannerCalendarViewProps {
   onAddTask?: () => void;
 }
 
-const HOUR_HEIGHT = 64;
+const HOUR_HEIGHT = 72;
 const START_HOUR = 0;
 const END_HOUR = 24;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
