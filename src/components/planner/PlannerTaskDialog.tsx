@@ -252,7 +252,7 @@ export const PlannerTaskDialog = ({
       await onSubmit({
         title: editTask.title,
         description: editTask.description,
-        task_type: editTask.task_type === "event" ? "task" : editTask.task_type,
+        task_type: "task",
         column_id: editTask.column_id,
         category: editTask.category,
         due_at: editTask.due_at,
