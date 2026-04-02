@@ -105,7 +105,7 @@ function CategoryManager({ categories, onSave, onClose }: {
 
   const addCategory = () => {
     if (!newName.trim()) return;
-    const id = newName.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
+    const id = newName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     setLocal(prev => [...prev, { id, name: newName.trim(), color: newColor }]);
     setNewName("");
     setNewColor(PRESET_COLORS[4]);
