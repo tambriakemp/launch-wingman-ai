@@ -141,32 +141,20 @@ const AIStudio = () => {
               const currentEnvironmentImages = environmentImagesRef.current;
               const currentStoryboard = storyboardRef.current;
 
-              // Locked refs now use URLs directly (no base64 extraction needed)
-              const lockedRefs: { type: string; base64: string }[] = [];
-              Object.values(currentGeneratedMedia).forEach((m) => {
-                if (m.imageUrl) {
-                  if (m.lockedCharacter) lockedRefs.push({ type: 'character', base64: m.imageUrl });
-                  if (m.lockedOutfit) lockedRefs.push({ type: 'outfit', base64: m.imageUrl });
-                  if (m.lockedEnvironment) lockedRefs.push({ type: 'environment', base64: m.imageUrl });
-                }
-              });
-
-              // For carousel mode: use Scene 1's generated image as anchor for slides 2+
-              // This ensures all slides share the same visual world as the first generated image
-              const isCarousel = task.config.creationMode === 'carousel';
+              // Scene 1 acts as the universal identity anchor for all subsequent scenes
               let anchorImageUrl: string | undefined;
-              if (isCarousel && task.index > 0) {
+              if (task.index > 0) {
                 const scene1Image = currentGeneratedMedia[0]?.imageUrl;
                 if (!scene1Image) {
                   // Scene 1 not ready yet — re-queue this task at the end
-                  console.log(`[Carousel] Scene ${task.index + 1} waiting for Scene 1 — re-queuing`);
+                  console.log(`[Anchor] Scene ${task.index + 1} waiting for Scene 1 — re-queuing`);
                   setQueue(prev => [...prev.slice(1), prev[0]]);
                   await new Promise(r => setTimeout(r, 2000));
                   continue;
                 }
                 anchorImageUrl = scene1Image;
               } else {
-                // Standard behavior: anchor to canonical character preview
+                // Scene 1 itself anchors to the character preview
                 const activePreviewForAnchor = task.step.is_final_look && currentPreviewFinalLook
                   ? currentPreviewFinalLook : currentPreviewCharacter;
                 anchorImageUrl = activePreviewForAnchor || undefined;
