@@ -1072,13 +1072,21 @@ const AIStudio = () => {
           {!storyboard && (
             <div className="my-4">
               <div className="bg-card border border-border rounded-xl p-6 text-center">
-                <p className="text-sm text-muted-foreground">
-                  {!referenceImage
-                    ? "Upload a character photo in the Create panel to get started."
-                    : !showSafetyTerms
-                    ? "Accept the safety terms above to continue."
-                    : "Open the Create panel, configure your settings, and generate your storyboard."}
-                </p>
+                {isGeneratingStoryboard ? (
+                  <div className="flex flex-col items-center gap-3 py-6">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm font-medium text-foreground">Generating your storyboard...</p>
+                    <p className="text-xs text-muted-foreground">This may take a moment</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {!referenceImage
+                      ? "Upload a character photo in the Create panel to get started."
+                      : !showSafetyTerms
+                      ? "Accept the safety terms above to continue."
+                      : "Open the Create panel, configure your settings, and generate your storyboard."}
+                  </p>
+                )}
               </div>
             </div>
           )}
