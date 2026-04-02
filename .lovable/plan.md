@@ -1,34 +1,45 @@
 
+Update the planner calendar time range so week/day views show the full day from 12 AM through 11 PM instead of starting at 6 AM and ending at 10 PM.
 
-## Redesign Planner List View to ClickUp-Style Task List
+What to change
 
-### Changes
+1. Expand the calendar hour window in `src/components/planner/PlannerCalendarView.tsx`
+- Change:
+  - `START_HOUR = 6` → `0`
+  - `END_HOUR = 22` → `24`
+- This will generate 24 hourly rows and allow the grid to render midnight through 11 PM.
 
-**`src/pages/Planner.tsx`**
-- Rename tab label from "List" to "Tasks"
-- Add a "+ Task" button in the header area (visible when on Tasks tab)
+2. Fix all logic tied to the old range
+- `TOTAL_HOURS` will automatically become 24.
+- `getTaskPosition()` will stop clipping early-morning and late-night events.
+- The red “current time” line logic will remain valid once the new bounds are used.
+- `hours` array will then render labels from `12 AM` through `11 PM`.
 
-**`src/components/planner/PlannerListView.tsx`** — Major redesign:
+3. Improve initial scroll behavior
+- Right now the calendar auto-scrolls to ~8 AM using:
+  - `scrollTop = (8 - START_HOUR) * HOUR_HEIGHT`
+- Keep the same “land around morning hours” behavior for week/day, but compute it against the new midnight-based range so the top of the day still exists above it.
+- This preserves usability while making 12 AM–7 AM accessible.
 
-1. **Remove "All clear for today" message** (lines 93-100)
+4. Verify day and week layouts still fit cleanly
+- The main grid height will become `24 * HOUR_HEIGHT`, so confirm:
+  - sticky day header still works
+  - internal vertical scroll remains on the calendar body
+  - time gutter labels align with rows
+  - no extra clipping at the bottom around 10–11 PM
 
-2. **ClickUp-style table header row** — Add a sticky header with columns: Name, Due Date, Category, Status (like ClickUp's column headers with muted text)
+Technical details
+- Root cause: the calendar is explicitly hardcoded to a partial-day range:
+  - `const START_HOUR = 6;`
+  - `const END_HOUR = 22;`
+- Event positioning and the now-line are both based on those constants, so changing container height alone cannot fix this.
+- Using `END_HOUR = 24` is correct here because the rendered labels are built from `hours = Array.from({ length: TOTAL_HOURS }, ...)`, which will produce `0..23`, ending at 11 PM.
 
-3. **Redesign TaskRow to be ClickUp-style:**
-   - Compact row height (~36px) with tighter padding
-   - Checkbox on left, task name inline, then columns for due date, category, status aligned in a table-like grid
-   - Hover reveals action buttons (edit, delete)
-   - Status shown as a colored badge (TO DO, IN PROGRESS, DONE)
+Files
+- `src/components/planner/PlannerCalendarView.tsx`
 
-4. **Add "+ Add Task" row at bottom of each group** — clicking opens the task dialog (like ClickUp's inline add)
-
-5. **Group headers styled like ClickUp** — colored status dot + label + count badge, compact height
-
-### Technical approach
-- Use CSS grid or flex with fixed column widths to create the table-like layout without an actual `<table>`
-- Keep the existing grouping logic (overdue, today, this week, anytime, completed)
-- Wire the new "+ Add Task" rows to the existing `onAddTask` callback
-
-### Result
-A dense, ClickUp-inspired task list with column headers, compact rows, inline add buttons, and no empty-state filler messages.
-
+Expected result
+- Week and day views start at 12 AM
+- Last visible hour is 11 PM
+- Early and late scheduled items are no longer clipped
+- Users can scroll the full day range reliably
