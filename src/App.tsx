@@ -45,7 +45,7 @@ import AITwinFormula from "./pages/AITwinFormula";
 import AITwinThankYou from "./pages/AITwinThankYou";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
-import MarketingHub from "./pages/MarketingHub";
+
 import UTMBuilder from "./pages/UTMBuilder";
 import UTMRedirect from "./pages/UTMRedirect";
 import CampaignAnalytics from "./pages/CampaignAnalytics";
@@ -541,15 +541,6 @@ const App = () => (
               element={
                 <ProtectedAdminRoute>
                   <AdminLayout><AdminVideoInstructions /></AdminLayout>
-                </ProtectedAdminRoute>
-              }
-            />
-            {/* Marketing Hub routes (admin only) */}
-            <Route
-              path="/marketing-hub"
-              element={
-                <ProtectedAdminRoute>
-                  <MarketingHub />
                 </ProtectedAdminRoute>
               }
             />

@@ -176,7 +176,7 @@ const UTMBuilder = () => {
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
           <Link
-            to="/marketing-hub"
+            to="/marketing-hub/campaigns"
             className="p-1.5 rounded-md hover:bg-muted transition-colors"
           >
             <ArrowLeft className="w-4 h-4 text-muted-foreground" />
