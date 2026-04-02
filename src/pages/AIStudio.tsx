@@ -795,7 +795,6 @@ const AIStudio = () => {
       Object.entries(generatedMedia).forEach(([idx, m]) => {
         persistMedia[idx] = {
           imageUrl: m.imageUrl, videoUrl: m.videoUrl,
-          lockedCharacter: m.lockedCharacter, lockedOutfit: m.lockedOutfit, lockedEnvironment: m.lockedEnvironment,
         };
       });
 
