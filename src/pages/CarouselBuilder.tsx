@@ -63,19 +63,19 @@ const FRAMEWORKS = [
 
 const THEME_PRESETS: { label: string; bg: string; text: string; accent: string }[] = [
   { label: "Luxury Beige", bg: "#1a1410", text: "#f5e6c8", accent: "#c9a96e" },
-  { label: "Soft Feminine", bg: "#1f1520", text: "#f7d6e0", accent: "#d4a5c0" },
+  { label: "Soft Feminine", bg: "#2a1025", text: "#f7d6e0", accent: "#e87aaf" },
   { label: "Bold Contrast", bg: "#000000", text: "#ffffff", accent: "#f5c842" },
-  { label: "Minimal B&W", bg: "#111111", text: "#eeeeee", accent: "#888888" },
-  { label: "Digital Neon", bg: "#0a0a1a", text: "#e0f0ff", accent: "#00d4ff" },
-  { label: "Midnight Purple", bg: "#0d0a1a", text: "#e8e0ff", accent: "#9b6dff" },
-  { label: "Deep Ocean", bg: "#061220", text: "#c0e8ff", accent: "#0088cc" },
-  { label: "Warm Neutral", bg: "#faf7f2", text: "#2c2016", accent: "#c9a96e" },
-  { label: "Cool Gray", bg: "#f5f5f7", text: "#1a1a2e", accent: "#6b7280" },
-  { label: "Sage Green", bg: "#f4f7f4", text: "#1a2e1a", accent: "#5a8a5a" },
-  { label: "Warm Coral", bg: "#fff8f5", text: "#2e1a14", accent: "#e06040" },
-  { label: "Soft Lavender", bg: "#f8f5ff", text: "#1a1428", accent: "#7c5cbf" },
-  { label: "Clean White", bg: "#ffffff", text: "#18181b", accent: "#f5c842" },
-  { label: "Sky Blue", bg: "#f0f8ff", text: "#0a1628", accent: "#2970cc" },
+  { label: "Minimal B&W", bg: "#1a1a1a", text: "#eeeeee", accent: "#999999" },
+  { label: "Digital Neon", bg: "#0a0a2e", text: "#e0f0ff", accent: "#00e5ff" },
+  { label: "Midnight Purple", bg: "#14082e", text: "#e8e0ff", accent: "#a855f7" },
+  { label: "Deep Ocean", bg: "#041830", text: "#c0e8ff", accent: "#1e90ff" },
+  { label: "Warm Neutral", bg: "#f5efe6", text: "#2c2016", accent: "#c9a96e" },
+  { label: "Cool Gray", bg: "#eeeef2", text: "#1a1a2e", accent: "#6366f1" },
+  { label: "Sage Green", bg: "#e8f0e8", text: "#1a2e1a", accent: "#22c55e" },
+  { label: "Warm Coral", bg: "#fdf0ea", text: "#2e1a14", accent: "#ef4444" },
+  { label: "Soft Lavender", bg: "#ece5ff", text: "#1a1428", accent: "#8b5cf6" },
+  { label: "Clean White", bg: "#ffffff", text: "#18181b", accent: "#f59e0b" },
+  { label: "Sky Blue", bg: "#e0f0ff", text: "#0a1628", accent: "#3b82f6" },
 ];
 
 const GOOGLE_FONTS = [
