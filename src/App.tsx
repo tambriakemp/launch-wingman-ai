@@ -65,7 +65,7 @@ import BrandingFeature from "./pages/features/BrandingFeature";
 import MessagingFeature from "./pages/features/MessagingFeature";
 import ExecuteFeature from "./pages/features/ExecuteFeature";
 import ContentVaultFeature from "./pages/features/ContentVaultFeature";
-import InsightsFeature from "./pages/features/InsightsFeature";
+
 import RelaunchFeature from "./pages/features/RelaunchFeature";
 
 // Additional public pages
@@ -92,7 +92,7 @@ import Library from "./pages/project/Library";
 import Relaunch from "./pages/project/Relaunch";
 import Playbook from "./pages/project/Playbook";
 import ProjectContent from "./pages/project/ProjectContent";
-import Insights from "./pages/project/Insights";
+
 import ContentVault from "./pages/ContentVault";
 import ContentVaultCategory from "./pages/ContentVaultCategory";
 import HelpSupport from "./pages/HelpSupport";
@@ -181,7 +181,7 @@ const App = () => (
             <Route path="/features/messaging" element={<MessagingFeature />} />
             <Route path="/features/execute" element={<ExecuteFeature />} />
             <Route path="/features/content-vault" element={<ContentVaultFeature />} />
-            <Route path="/features/insights" element={<InsightsFeature />} />
+            
             <Route path="/features/relaunch" element={<RelaunchFeature />} />
             
             {/* Smart redirect to last used project */}
@@ -321,15 +321,8 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            {/* Insights route */}
-            <Route
-              path="/projects/:id/insights"
-              element={
-                <ProtectedRoute>
-                  <Insights />
-                </ProtectedRoute>
-              }
-            />
+
+
             {/* Content Vault routes */}
             <Route
               path="/content-vault"
