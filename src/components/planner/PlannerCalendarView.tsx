@@ -698,7 +698,7 @@ export const PlannerCalendarView = ({
                               <span className="text-[9px] opacity-60 mt-0.5 block">↻ repeating</span>
                             )}
                             {pos.height > 40 && task.start_at && task.end_at && (
-                              <div className="text-[10px] opacity-70 mt-1">
+                              <div className="text-xs opacity-70 mt-1">
                                 {format(parseISO(task.start_at), "h:mm a")} – {format(parseISO(task.end_at), "h:mm a")}
                               </div>
                             )}
