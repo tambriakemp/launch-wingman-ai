@@ -14,7 +14,6 @@ interface SceneCardProps {
   onUpscale: () => void;
   onGenerateVideo: () => void;
   onToggleSelect: () => void;
-  onToggleLock: (type: 'character' | 'outfit' | 'environment') => void;
   onEnlarge: () => void;
   onUpdatePrompt: (newPrompt: string) => void;
   onUpdateVideoPrompt: (newPrompt: string) => void;
