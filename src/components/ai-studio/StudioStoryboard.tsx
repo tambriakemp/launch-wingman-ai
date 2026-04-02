@@ -197,7 +197,6 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
             }]);
           }}
           onToggleSelect={() => onToggleSelect(currentSceneIndex)}
-          onToggleLock={(type) => onToggleLock(currentSceneIndex, type)}
           onEnlarge={() => onEnlarge(currentSceneIndex)}
           onUpdatePrompt={(newPrompt) => onUpdatePrompt(currentSceneIndex, newPrompt)}
           onUpdateVideoPrompt={(newPrompt) => onUpdateVideoPrompt(currentSceneIndex, newPrompt)}

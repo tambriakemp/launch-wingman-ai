@@ -1095,7 +1095,6 @@ const AIStudio = () => {
                 storyboard={storyboard}
                 generatedMedia={generatedMedia}
                 onToggleSelect={handleToggleSelect}
-                onToggleLock={handleToggleLock}
                 onEnlarge={(i) => setEnlargedImageIndex(i)}
                 onAddToQueue={addToQueue}
                 onUpdatePrompt={handleUpdatePrompt}

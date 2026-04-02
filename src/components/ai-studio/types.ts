@@ -74,9 +74,6 @@ export interface GeneratedMedia {
   isGeneratingImage: boolean;
   isGeneratingVideo?: boolean;
   isUpscaling: boolean;
-  lockedCharacter: boolean;
-  lockedOutfit: boolean;
-  lockedEnvironment: boolean;
   isSelected: boolean;
 }
 
