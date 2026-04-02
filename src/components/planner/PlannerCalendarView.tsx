@@ -592,7 +592,7 @@ export const PlannerCalendarView = ({
                           <button
                             key={task.id}
                             className={cn(
-                              "text-[10px] font-medium px-2 py-0.5 rounded-md truncate w-full text-left transition-colors",
+                              "text-xs font-medium px-2.5 py-1 rounded-md truncate w-full text-left transition-colors",
                               colors.bg, colors.text,
                               isDone && "opacity-50 line-through"
                             )}
