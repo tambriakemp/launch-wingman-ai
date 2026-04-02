@@ -20,7 +20,7 @@ const Planner = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<PlannerTask | null>(null);
-  const [defaultTaskType, setDefaultTaskType] = useState<"task" | "event">("task");
+  
   const [defaultDueAt, setDefaultDueAt] = useState<Date | null>(null);
 
   const fetchTasks = useCallback(async () => {
@@ -158,28 +158,27 @@ const Planner = () => {
       const parent = tasks.find(t => t.id === parentId);
       if (parent) {
         setEditingTask(parent);
-        setDefaultTaskType(parent.task_type as "task" | "event" || "task");
+        
         setDefaultDueAt(null);
         setDialogOpen(true);
       }
       return;
     }
     setEditingTask(task);
-    setDefaultTaskType(task.task_type as "task" | "event" || "task");
+    
     setDefaultDueAt(null);
     setDialogOpen(true);
   };
 
   const handleQuickCreate = (defaults: { due_at?: string }) => {
     setEditingTask(null);
-    setDefaultTaskType("task");
     setDefaultDueAt(defaults.due_at ? new Date(defaults.due_at) : null);
     setDialogOpen(true);
   };
 
   const handleAddTask = () => {
     setEditingTask(null);
-    setDefaultTaskType("task");
+    
     setDefaultDueAt(null);
     setDialogOpen(true);
   };
@@ -263,7 +262,7 @@ const Planner = () => {
         onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditingTask(null); setDefaultDueAt(null); } }}
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
         editTask={editingTask}
-        defaultTaskType={defaultTaskType}
+        
         defaultDueAt={defaultDueAt}
       />
     </ProjectLayout>

@@ -24,7 +24,6 @@ import { expandAllRecurring } from "./recurrenceUtils";
 import {
   ChevronLeft,
   ChevronRight,
-  MapPin,
   Pencil,
   CheckCircle2,
   Circle,
@@ -55,16 +54,15 @@ const END_HOUR = 24;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
 
 const CARD_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  "event-business": { bg: "bg-blue-100 dark:bg-blue-900/50", text: "text-blue-800 dark:text-blue-200", border: "border-blue-200 dark:border-blue-700" },
-  "event-life": { bg: "bg-emerald-100 dark:bg-emerald-900/50", text: "text-emerald-800 dark:text-emerald-200", border: "border-emerald-200 dark:border-emerald-700" },
   "task-business": { bg: "bg-amber-100 dark:bg-amber-900/50", text: "text-amber-800 dark:text-amber-200", border: "border-amber-200 dark:border-amber-700" },
   "task-life": { bg: "bg-purple-100 dark:bg-purple-900/50", text: "text-purple-800 dark:text-purple-200", border: "border-purple-200 dark:border-purple-700" },
+  "task-health": { bg: "bg-rose-100 dark:bg-rose-900/50", text: "text-rose-800 dark:text-rose-200", border: "border-rose-200 dark:border-rose-700" },
+  "task-finance": { bg: "bg-violet-100 dark:bg-violet-900/50", text: "text-violet-800 dark:text-violet-200", border: "border-violet-200 dark:border-violet-700" },
 };
 
 function getCardColors(task: PlannerTask) {
-  const type = task.task_type || "task";
   const cat = task.category || "business";
-  return CARD_COLORS[`${type}-${cat}`] || CARD_COLORS["task-business"];
+  return CARD_COLORS[`task-${cat}`] || CARD_COLORS["task-business"];
 }
 
 function getTaskPosition(task: PlannerTask) {
@@ -320,10 +318,20 @@ export const PlannerCalendarView = ({
     return weekEnd;
   }, [viewMode, currentDate, weekEnd]);
 
-  const scheduledTasks = useMemo(() => {
-    const expanded = expandAllRecurring(filteredTasks, windowStart, windowEnd);
-    return expanded.filter(t => t.start_at && t.end_at);
+  const expandedTasks = useMemo(() => {
+    return expandAllRecurring(filteredTasks, windowStart, windowEnd);
   }, [filteredTasks, windowStart, windowEnd]);
+
+  const scheduledTasks = useMemo(() => {
+    return expandedTasks.filter(t => t.start_at && t.end_at);
+  }, [expandedTasks]);
+
+  const allDayTasks = useMemo(() => {
+    return expandedTasks.filter(t => t.due_at && !t.start_at && !t.end_at);
+  }, [expandedTasks]);
+
+  const getAllDayTasksForDay = (day: Date) =>
+    allDayTasks.filter((t) => t.due_at && isSameDay(parseISO(t.due_at), day));
 
   // Month
   const monthStart = startOfMonth(currentDate);
@@ -332,8 +340,11 @@ export const PlannerCalendarView = ({
   const monthCalEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
   const monthDays = eachDayOfInterval({ start: monthCalStart, end: monthCalEnd });
 
-  const getTasksForDay = (day: Date) =>
-    scheduledTasks.filter((t) => t.start_at && isSameDay(parseISO(t.start_at), day));
+  const getTasksForDay = (day: Date) => {
+    const timed = scheduledTasks.filter((t) => t.start_at && isSameDay(parseISO(t.start_at), day));
+    const allDay = getAllDayTasksForDay(day);
+    return [...allDay, ...timed];
+  };
 
   const handleSlotClick = (day: Date, hour: number) => {
     if (!onCreateTask) return;
@@ -530,7 +541,8 @@ export const PlannerCalendarView = ({
                 "grid border-b border-border bg-background sticky top-0 z-10",
                 viewMode === "day" ? "grid-cols-[56px_1fr]" : "grid-cols-[56px_repeat(7,1fr)]"
               )}>
-                <div className="border-r border-border" />
+              {/* Day headers */}
+              <div className="border-r border-border" />
                 {(viewMode === "day" ? [currentDate] : weekDays).map((day) => {
                   const isToday = isSameDay(day, now);
                   return (
@@ -549,6 +561,47 @@ export const PlannerCalendarView = ({
                       >
                         {format(day, "d")}
                       </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* All-day row */}
+              <div className={cn(
+                "grid border-b border-border bg-muted/10",
+                viewMode === "day" ? "grid-cols-[56px_1fr]" : "grid-cols-[56px_repeat(7,1fr)]"
+              )}>
+                <div className="border-r border-border flex items-center justify-end pr-2">
+                  <span className="text-[10px] text-muted-foreground font-medium">All day</span>
+                </div>
+                {(viewMode === "day" ? [currentDate] : weekDays).map((day) => {
+                  const dayAllDay = getAllDayTasksForDay(day);
+                  return (
+                    <div
+                      key={`allday-${day.toISOString()}`}
+                      className="border-r border-border last:border-r-0 min-h-[32px] p-1 flex flex-wrap gap-1 cursor-pointer hover:bg-accent/10 transition-colors"
+                      onClick={() => onCreateTask?.({ due_at: day.toISOString() })}
+                    >
+                      {dayAllDay.map((task) => {
+                        const colors = getCardColors(task);
+                        const isDone = task.column_id === "done";
+                        return (
+                          <button
+                            key={task.id}
+                            className={cn(
+                              "text-[10px] font-medium px-2 py-0.5 rounded-md truncate max-w-full transition-colors",
+                              colors.bg, colors.text,
+                              isDone && "opacity-50 line-through"
+                            )}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEditTask(task);
+                            }}
+                          >
+                            {task.title}
+                          </button>
+                        );
+                      })}
                     </div>
                   );
                 })}
@@ -644,11 +697,6 @@ export const PlannerCalendarView = ({
                             {pos.height > 40 && task.start_at && task.end_at && (
                               <div className="text-[10px] opacity-70 mt-1">
                                 {format(parseISO(task.start_at), "h:mm a")} – {format(parseISO(task.end_at), "h:mm a")}
-                              </div>
-                            )}
-                            {pos.height > 56 && task.location && (
-                              <div className="text-[10px] opacity-60 mt-0.5 flex items-center gap-0.5">
-                                <MapPin className="w-3 h-3" /> {task.location}
                               </div>
                             )}
                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">

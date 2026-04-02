@@ -73,7 +73,6 @@ interface PlannerTaskDialogProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: Partial<PlannerTask>) => Promise<void>;
   editTask?: PlannerTask | null;
-  defaultTaskType?: "task" | "event";
   defaultDueAt?: Date | null;
 }
 
@@ -82,7 +81,6 @@ export const PlannerTaskDialog = ({
   onOpenChange,
   onSubmit,
   editTask,
-  defaultTaskType = "task",
   defaultDueAt,
 }: PlannerTaskDialogProps) => {
   const DEFAULT_CATEGORIES = [
@@ -110,13 +108,12 @@ export const PlannerTaskDialog = ({
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [taskType, setTaskType] = useState<"task" | "event">("task");
   const [columnId, setColumnId] = useState("todo");
   const [category, setCategory] = useState("business");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [location, setLocation] = useState("");
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recurrenceFreq, setRecurrenceFreq] = useState<"none"|"daily"|"weekly"|"monthly"|"yearly">("none");
   const [recurrenceInterval, setRecurrenceInterval] = useState(1);
@@ -131,10 +128,8 @@ export const PlannerTaskDialog = ({
     if (editTask) {
       setTitle(editTask.title);
       setDescription(editTask.description || "");
-      setTaskType((editTask.task_type as "task" | "event") || "task");
       setColumnId(editTask.column_id);
       setCategory(editTask.category || "business");
-      setLocation(editTask.location || "");
 
       // Date: prefer start_at, fallback to due_at
       if (editTask.start_at) {
@@ -173,13 +168,11 @@ export const PlannerTaskDialog = ({
     } else {
       setTitle("");
       setDescription("");
-      setTaskType(defaultTaskType);
       setColumnId("todo");
       setCategory("business");
       setSelectedDate(defaultDueAt || undefined);
       setStartTime("");
       setEndTime("");
-      setLocation("");
       setRecurrenceFreq("none");
       setRecurrenceInterval(1);
       setRecurrenceDays([]);
@@ -187,7 +180,7 @@ export const PlannerTaskDialog = ({
       setRecurrenceEndDate(undefined);
       setRecurrenceCount(10);
     }
-  }, [editTask, open, defaultTaskType, defaultDueAt]);
+  }, [editTask, open, defaultDueAt]);
 
   /** Combine selected date + time string into ISO */
   const combineDatetime = (date: Date, time: string): string => {
@@ -201,10 +194,6 @@ export const PlannerTaskDialog = ({
     e.preventDefault();
     if (!title.trim()) {
       toast.error("Title is required");
-      return;
-    }
-    if (taskType === "event" && (!selectedDate || !startTime || !endTime)) {
-      toast.error("Events require a date with start and end times");
       return;
     }
     // Pair consistency for times
@@ -237,13 +226,13 @@ export const PlannerTaskDialog = ({
       await onSubmit({
         title: title.trim(),
         description: description.trim(),
-        task_type: taskType,
+        task_type: "task",
         column_id: columnId,
         category,
         due_at: selectedDate ? selectedDate.toISOString() : null,
         start_at: hasSchedule ? combineDatetime(selectedDate!, startTime) : null,
         end_at: hasSchedule ? combineDatetime(selectedDate!, endTime) : null,
-        location: location.trim() || null,
+        location: null,
         recurrence_rule: recurrenceRuleValue,
       });
       onOpenChange(false);
@@ -261,7 +250,7 @@ export const PlannerTaskDialog = ({
       await onSubmit({
         title: editTask.title,
         description: editTask.description,
-        task_type: editTask.task_type === "event" ? "task" : editTask.task_type,
+        task_type: "task",
         column_id: editTask.column_id,
         category: editTask.category,
         due_at: editTask.due_at,
@@ -288,7 +277,7 @@ export const PlannerTaskDialog = ({
                 <CalendarCheck className="w-5 h-5 text-primary" />
               </div>
               <SheetTitle className="text-lg">
-                {editTask ? "Edit" : "Create"} {taskType === "event" ? "Event" : "Schedule"}
+                {editTask ? "Edit" : "Create"} Task
               </SheetTitle>
             </div>
           </SheetHeader>
@@ -320,34 +309,22 @@ export const PlannerTaskDialog = ({
               />
             </div>
 
-            {/* Type + Category row */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Type</Label>
-                <Select value={taskType} onValueChange={(v) => setTaskType(v as "task" | "event")}>
-                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="task">Task</SelectItem>
-                    <SelectItem value="event">Event</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Category</Label>
-                <Select value={category} onValueChange={(v) => setCategory(v)}>
-                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {plannerCategories.map((cat: { id: string; name: string; color: string }) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full" style={{ background: cat.color }} />
-                          {cat.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Category */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Category</Label>
+              <Select value={category} onValueChange={(v) => setCategory(v)}>
+                <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {plannerCategories.map((cat: { id: string; name: string; color: string }) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ background: cat.color }} />
+                        {cat.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Status */}
@@ -507,11 +484,6 @@ export const PlannerTaskDialog = ({
               </div>
             )}
 
-            {/* Location */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Location</Label>
-              <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Optional location" className="h-10" />
-            </div>
           </div>
 
           {/* Footer */}
