@@ -544,15 +544,6 @@ const App = () => (
                 </ProtectedAdminRoute>
               }
             />
-            {/* Marketing Hub routes (admin only) */}
-            <Route
-              path="/marketing-hub"
-              element={
-                <ProtectedAdminRoute>
-                  <MarketingHub />
-                </ProtectedAdminRoute>
-              }
-            />
             <Route
               path="/marketing-hub/utm-builder"
               element={
