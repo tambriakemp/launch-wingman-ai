@@ -10,6 +10,8 @@ import {
   subMonths,
   addWeeks,
   subWeeks,
+  addDays,
+  subDays,
   startOfWeek,
   endOfWeek,
   parseISO,
@@ -18,7 +20,6 @@ import {
   setHours,
   setMinutes,
   isAfter,
-  addDays,
 } from "date-fns";
 import { expandAllRecurring } from "./recurrenceUtils";
 import {
@@ -365,9 +366,9 @@ export const PlannerCalendarView = ({
 
   const goToday = () => setCurrentDate(new Date());
   const goPrev = () =>
-    setCurrentDate(viewMode === "month" ? subMonths(currentDate, 1) : subWeeks(currentDate, 1));
+    setCurrentDate(viewMode === "month" ? subMonths(currentDate, 1) : viewMode === "day" ? subDays(currentDate, 1) : subWeeks(currentDate, 1));
   const goNext = () =>
-    setCurrentDate(viewMode === "month" ? addMonths(currentDate, 1) : addWeeks(currentDate, 1));
+    setCurrentDate(viewMode === "month" ? addMonths(currentDate, 1) : viewMode === "day" ? addDays(currentDate, 1) : addWeeks(currentDate, 1));
 
   const handleMiniDateSelect = (date: Date | undefined) => {
     if (date) setCurrentDate(date);
