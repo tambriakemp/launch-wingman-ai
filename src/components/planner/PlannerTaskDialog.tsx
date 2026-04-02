@@ -228,13 +228,13 @@ export const PlannerTaskDialog = ({
       await onSubmit({
         title: title.trim(),
         description: description.trim(),
-        task_type: taskType,
+        task_type: "task",
         column_id: columnId,
         category,
         due_at: selectedDate ? selectedDate.toISOString() : null,
         start_at: hasSchedule ? combineDatetime(selectedDate!, startTime) : null,
         end_at: hasSchedule ? combineDatetime(selectedDate!, endTime) : null,
-        location: location.trim() || null,
+        location: null,
         recurrence_rule: recurrenceRuleValue,
       });
       onOpenChange(false);
