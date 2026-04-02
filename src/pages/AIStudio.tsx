@@ -856,8 +856,7 @@ const AIStudio = () => {
             imageUrl: saved.imageUrl, videoUrl: saved.videoUrl,
             error: undefined, videoError: undefined,
             isGeneratingImage: false, isGeneratingVideo: false, isUpscaling: false,
-            lockedCharacter: saved.lockedCharacter || false, lockedOutfit: saved.lockedOutfit || false,
-            lockedEnvironment: saved.lockedEnvironment || false, isSelected: false,
+            isSelected: false,
           };
         });
       }
