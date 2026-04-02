@@ -800,22 +800,6 @@ const CarouselBuilder = () => {
         </Select>
       </div>
 
-      {/* Inspiration */}
-      <div>
-        <button onClick={() => setShowInspiration(!showInspiration)} className="text-xs text-primary font-medium hover:underline">
-          Inspired by a viral post? {showInspiration ? "−" : "+"}
-        </button>
-        {showInspiration && (
-          <Textarea
-            value={inspirationText}
-            onChange={(e) => setInspirationText(e.target.value)}
-            placeholder="Paste the viral carousel text or describe the format you want to remix"
-            rows={3}
-            className="mt-2"
-          />
-        )}
-      </div>
-
       {/* ── Tone & Voice ── */}
       <div className="border-t border-border pt-5 space-y-4">
         <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Tone & Voice</h3>
@@ -858,6 +842,25 @@ const CarouselBuilder = () => {
           </div>
           <Switch checked={conversionBoost} onCheckedChange={setConversionBoost} />
         </div>
+      </div>
+
+      {/* ── Inspiration ── */}
+      <div className="border-t border-border pt-5 space-y-3">
+        <button onClick={() => setShowInspiration(!showInspiration)} className="flex items-center justify-between w-full">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Remix a Viral Post</h3>
+          <span className="text-xs text-primary font-medium">{showInspiration ? "−" : "+"}</span>
+        </button>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Seen a carousel that crushed it? Paste the text or describe the structure and we'll remix it with your offer, audience, and voice — so you get the same scroll-stopping format without copying.
+        </p>
+        {showInspiration && (
+          <Textarea
+            value={inspirationText}
+            onChange={(e) => setInspirationText(e.target.value)}
+            placeholder="Paste the viral carousel text or describe the format you want to remix"
+            rows={3}
+          />
+        )}
       </div>
 
       {/* Generate button */}
