@@ -130,10 +130,8 @@ export const PlannerTaskDialog = ({
     if (editTask) {
       setTitle(editTask.title);
       setDescription(editTask.description || "");
-      setTaskType((editTask.task_type as "task" | "event") || "task");
       setColumnId(editTask.column_id);
       setCategory(editTask.category || "business");
-      setLocation(editTask.location || "");
 
       // Date: prefer start_at, fallback to due_at
       if (editTask.start_at) {
