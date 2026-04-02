@@ -191,7 +191,6 @@ const AIStudio = () => {
                     environmentImages: currentEnvironmentImages.length > 0 ? currentEnvironmentImages.slice(0, 3) : undefined,
                     previewCharacter: activePreview,
                     config: task.config,
-                    lockedRefs,
                     isFinalLook: task.step.is_final_look,
                     isUpscale: task.type === 'upscale',
                     baseImageUrl: task.baseImageUrl,
