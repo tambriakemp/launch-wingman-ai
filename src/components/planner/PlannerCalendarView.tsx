@@ -24,7 +24,6 @@ import { expandAllRecurring } from "./recurrenceUtils";
 import {
   ChevronLeft,
   ChevronRight,
-  MapPin,
   Pencil,
   CheckCircle2,
   Circle,
