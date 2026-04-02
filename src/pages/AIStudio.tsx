@@ -490,7 +490,7 @@ const AIStudio = () => {
     if (type === 'delete') {
       setGeneratedMedia(prev => {
         const next = { ...prev };
-        selectedIndices.forEach(i => { next[i] = { ...next[i], imageUrl: undefined, isSelected: false, lockedCharacter: false, lockedOutfit: false, lockedEnvironment: false, error: undefined }; });
+        selectedIndices.forEach(i => { next[i] = { ...next[i], imageUrl: undefined, isSelected: false, error: undefined }; });
         return next;
       });
       return;
