@@ -81,7 +81,6 @@ export const PlannerTaskDialog = ({
   onOpenChange,
   onSubmit,
   editTask,
-  defaultTaskType = "task",
   defaultDueAt,
 }: PlannerTaskDialogProps) => {
   const DEFAULT_CATEGORIES = [

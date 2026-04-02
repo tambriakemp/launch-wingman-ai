@@ -183,9 +183,6 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete }: { task: PlannerTa
           }
         </button>
         <span className={cn("text-sm truncate", isDone && "line-through text-muted-foreground")}>{task.title}</span>
-        {task.task_type === "event" && (
-          <Badge variant="outline" className="text-[9px] px-1 py-0 border-primary/30 text-primary shrink-0">Event</Badge>
-        )}
       </div>
 
       {/* Due Date */}

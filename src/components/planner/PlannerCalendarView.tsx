@@ -696,11 +696,6 @@ export const PlannerCalendarView = ({
                                 {format(parseISO(task.start_at), "h:mm a")} – {format(parseISO(task.end_at), "h:mm a")}
                               </div>
                             )}
-                            {pos.height > 56 && task.location && (
-                              <div className="text-[10px] opacity-60 mt-0.5 flex items-center gap-0.5">
-                                <MapPin className="w-3 h-3" /> {task.location}
-                              </div>
-                            )}
                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <Pencil className="w-3 h-3 opacity-50" />
                             </div>
