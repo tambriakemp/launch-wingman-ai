@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { VlogStep, AspectRatio, GeneratedMedia } from './types';
 import { Download, RefreshCw, Loader2, AlertCircle, ImageIcon, Video, ChevronDown, Copy, Pencil, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 
 interface SceneCardProps {
