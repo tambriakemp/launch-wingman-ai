@@ -624,7 +624,7 @@ export const PlannerCalendarView = ({
                       className="absolute w-full flex items-start justify-end pr-2 -translate-y-1/2"
                       style={{ top: (h - START_HOUR) * HOUR_HEIGHT }}
                     >
-                      <span className="text-[10px] text-muted-foreground font-medium">
+                      <span className="text-xs text-muted-foreground font-medium">
                         {format(setHours(new Date(), h), "h a")}
                       </span>
                     </div>
