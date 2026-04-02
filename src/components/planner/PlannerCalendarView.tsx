@@ -318,10 +318,20 @@ export const PlannerCalendarView = ({
     return weekEnd;
   }, [viewMode, currentDate, weekEnd]);
 
-  const scheduledTasks = useMemo(() => {
-    const expanded = expandAllRecurring(filteredTasks, windowStart, windowEnd);
-    return expanded.filter(t => t.start_at && t.end_at);
+  const expandedTasks = useMemo(() => {
+    return expandAllRecurring(filteredTasks, windowStart, windowEnd);
   }, [filteredTasks, windowStart, windowEnd]);
+
+  const scheduledTasks = useMemo(() => {
+    return expandedTasks.filter(t => t.start_at && t.end_at);
+  }, [expandedTasks]);
+
+  const allDayTasks = useMemo(() => {
+    return expandedTasks.filter(t => t.due_at && !t.start_at && !t.end_at);
+  }, [expandedTasks]);
+
+  const getAllDayTasksForDay = (day: Date) =>
+    allDayTasks.filter((t) => t.due_at && isSameDay(parseISO(t.due_at), day));
 
   // Month
   const monthStart = startOfMonth(currentDate);
