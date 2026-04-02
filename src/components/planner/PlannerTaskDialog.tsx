@@ -486,11 +486,6 @@ export const PlannerTaskDialog = ({
               </div>
             )}
 
-            {/* Location */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Location</Label>
-              <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Optional location" className="h-10" />
-            </div>
           </div>
 
           {/* Footer */}
