@@ -558,7 +558,7 @@ export const PlannerCalendarView = ({
                   "grid relative",
                   viewMode === "day" ? "grid-cols-[56px_1fr]" : "grid-cols-[56px_repeat(7,1fr)]"
                 )}
-                style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}
+                style={{ height: TOTAL_HOURS * HOUR_HEIGHT, marginTop: 8 }}
               >
                 {/* Time gutter */}
                 <div className="border-r border-border relative">
