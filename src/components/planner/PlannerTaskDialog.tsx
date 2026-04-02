@@ -116,7 +116,7 @@ export const PlannerTaskDialog = ({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [location, setLocation] = useState("");
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recurrenceFreq, setRecurrenceFreq] = useState<"none"|"daily"|"weekly"|"monthly"|"yearly">("none");
   const [recurrenceInterval, setRecurrenceInterval] = useState(1);
