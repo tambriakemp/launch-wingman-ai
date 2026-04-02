@@ -442,21 +442,6 @@ const AIStudio = () => {
     setGeneratedMedia(prev => ({ ...prev, [index]: { ...prev[index], isSelected: !prev[index]?.isSelected } }));
   };
 
-  const handleToggleLock = (index: number, type: 'character' | 'outfit' | 'environment') => {
-    setGeneratedMedia(prev => {
-      const next = { ...prev };
-      const key = type === 'character' ? 'lockedCharacter' : type === 'outfit' ? 'lockedOutfit' : 'lockedEnvironment';
-      const currentIsLocked = next[index]?.[key];
-      if (!currentIsLocked) {
-        Object.keys(next).forEach(k => {
-          const i = parseInt(k);
-          next[i] = { ...next[i], [key]: false };
-        });
-      }
-      next[index] = { ...next[index], [key]: !currentIsLocked };
-      return next;
-    });
-  };
 
   const handleUpdatePrompt = (index: number, newPrompt: string) => {
     if (!storyboard) return;
