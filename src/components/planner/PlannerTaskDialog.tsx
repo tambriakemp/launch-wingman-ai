@@ -198,10 +198,6 @@ export const PlannerTaskDialog = ({
       toast.error("Title is required");
       return;
     }
-    if (taskType === "event" && (!selectedDate || !startTime || !endTime)) {
-      toast.error("Events require a date with start and end times");
-      return;
-    }
     // Pair consistency for times
     if (startTime && !endTime) {
       toast.error("End time is required when start time is set");
