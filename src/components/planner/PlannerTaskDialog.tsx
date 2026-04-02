@@ -73,7 +73,6 @@ interface PlannerTaskDialogProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: Partial<PlannerTask>) => Promise<void>;
   editTask?: PlannerTask | null;
-  defaultTaskType?: "task" | "event";
   defaultDueAt?: Date | null;
 }
 
