@@ -575,7 +575,7 @@ export const PlannerCalendarView = ({
                 viewMode === "day" ? "grid-cols-[56px_1fr]" : "grid-cols-[56px_repeat(7,1fr)]"
               )}>
                 <div className="border-r border-border flex items-center justify-end pr-2">
-                  <span className="text-[10px] text-muted-foreground font-medium">All day</span>
+                  <span className="text-xs text-muted-foreground font-medium">All day</span>
                 </div>
                 {(viewMode === "day" ? [currentDate] : weekDays).map((day) => {
                   const dayAllDay = getAllDayTasksForDay(day);
