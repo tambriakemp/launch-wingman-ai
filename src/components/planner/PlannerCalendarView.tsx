@@ -340,8 +340,11 @@ export const PlannerCalendarView = ({
   const monthCalEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
   const monthDays = eachDayOfInterval({ start: monthCalStart, end: monthCalEnd });
 
-  const getTasksForDay = (day: Date) =>
-    scheduledTasks.filter((t) => t.start_at && isSameDay(parseISO(t.start_at), day));
+  const getTasksForDay = (day: Date) => {
+    const timed = scheduledTasks.filter((t) => t.start_at && isSameDay(parseISO(t.start_at), day));
+    const allDay = getAllDayTasksForDay(day);
+    return [...allDay, ...timed];
+  };
 
   const handleSlotClick = (day: Date, hour: number) => {
     if (!onCreateTask) return;
