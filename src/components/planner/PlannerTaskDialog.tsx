@@ -170,13 +170,11 @@ export const PlannerTaskDialog = ({
     } else {
       setTitle("");
       setDescription("");
-      setTaskType(defaultTaskType);
       setColumnId("todo");
       setCategory("business");
       setSelectedDate(defaultDueAt || undefined);
       setStartTime("");
       setEndTime("");
-      setLocation("");
       setRecurrenceFreq("none");
       setRecurrenceInterval(1);
       setRecurrenceDays([]);
