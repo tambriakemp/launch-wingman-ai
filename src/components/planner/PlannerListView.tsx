@@ -199,7 +199,7 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete }: { task: PlannerTa
 
       {/* Category */}
       <span className="text-xs text-muted-foreground truncate capitalize">
-        {task.category || "—"}
+        {task.category ? (categoryMap.get(task.category) || task.category) : "—"}
       </span>
 
       {/* Status */}
