@@ -846,21 +846,16 @@ const CarouselBuilder = () => {
 
       {/* ── Inspiration ── */}
       <div className="border-t border-border pt-5 space-y-3">
-        <button onClick={() => setShowInspiration(!showInspiration)} className="flex items-center justify-between w-full">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Remix a Viral Post</h3>
-          <span className="text-xs text-primary font-medium">{showInspiration ? "−" : "+"}</span>
-        </button>
+        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Remix a Viral Post <span className="font-normal normal-case tracking-normal text-muted-foreground/70">(optional)</span></h3>
         <p className="text-xs text-muted-foreground leading-relaxed">
           Seen a carousel that crushed it? Paste the text or describe the structure and we'll remix it with your offer, audience, and voice — so you get the same scroll-stopping format without copying.
         </p>
-        {showInspiration && (
-          <Textarea
-            value={inspirationText}
-            onChange={(e) => setInspirationText(e.target.value)}
-            placeholder="Paste the viral carousel text or describe the format you want to remix"
-            rows={3}
-          />
-        )}
+        <Textarea
+          value={inspirationText}
+          onChange={(e) => setInspirationText(e.target.value)}
+          placeholder="Paste the viral carousel text or describe the format you want to remix"
+          rows={3}
+        />
       </div>
 
       {/* Generate button */}
