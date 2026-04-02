@@ -249,7 +249,8 @@ const CarouselBuilder = () => {
   const { user } = useAuth();
 
   // Phase
-  const [phase, setPhase] = useState<"brief" | "tone" | "studio">("brief");
+  const [phase, setPhase] = useState<"brief" | "studio">("brief");
+  const [briefOpen, setBriefOpen] = useState(true);
 
   // Offer pull state
   const [offerPullOpen, setOfferPullOpen] = useState(false);
