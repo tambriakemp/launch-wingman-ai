@@ -263,7 +263,7 @@ const Planner = () => {
         onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditingTask(null); setDefaultDueAt(null); } }}
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
         editTask={editingTask}
-        defaultTaskType={defaultTaskType}
+        
         defaultDueAt={defaultDueAt}
       />
     </ProjectLayout>

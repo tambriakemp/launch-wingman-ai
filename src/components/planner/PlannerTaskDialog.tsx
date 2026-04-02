@@ -180,7 +180,7 @@ export const PlannerTaskDialog = ({
       setRecurrenceEndDate(undefined);
       setRecurrenceCount(10);
     }
-  }, [editTask, open, defaultTaskType, defaultDueAt]);
+  }, [editTask, open, defaultDueAt]);
 
   /** Combine selected date + time string into ISO */
   const combineDatetime = (date: Date, time: string): string => {
