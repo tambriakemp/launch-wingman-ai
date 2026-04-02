@@ -91,12 +91,22 @@ export const PlannerTaskDialog = ({
     { id: "health", name: "Health", color: "#f43f5e" },
     { id: "finance", name: "Finance", color: "#8b5cf6" },
   ];
-  const [plannerCategories] = useState(() => {
+  const [plannerCategories, setPlannerCategories] = useState(() => {
     try {
       const stored = localStorage.getItem("planner-categories");
       return stored ? JSON.parse(stored) : DEFAULT_CATEGORIES;
     } catch { return DEFAULT_CATEGORIES; }
   });
+
+  // Re-read categories from localStorage every time the dialog opens
+  useEffect(() => {
+    if (open) {
+      try {
+        const stored = localStorage.getItem("planner-categories");
+        setPlannerCategories(stored ? JSON.parse(stored) : DEFAULT_CATEGORIES);
+      } catch { setPlannerCategories(DEFAULT_CATEGORIES); }
+    }
+  }, [open]);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
