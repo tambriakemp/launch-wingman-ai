@@ -564,7 +564,13 @@ const CarouselBuilder = () => {
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "carousel-slides.zip";
+      const slug = offer
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 50) || "carousel-slides";
+      a.download = `${slug}-carousel.zip`;
       a.click();
       URL.revokeObjectURL(url);
 
