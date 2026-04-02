@@ -92,7 +92,7 @@ import Library from "./pages/project/Library";
 import Relaunch from "./pages/project/Relaunch";
 import Playbook from "./pages/project/Playbook";
 import ProjectContent from "./pages/project/ProjectContent";
-import Insights from "./pages/project/Insights";
+
 import ContentVault from "./pages/ContentVault";
 import ContentVaultCategory from "./pages/ContentVaultCategory";
 import HelpSupport from "./pages/HelpSupport";
