@@ -1,45 +1,38 @@
 
-Update the planner calendar time range so week/day views show the full day from 12 AM through 11 PM instead of starting at 6 AM and ending at 10 PM.
 
-What to change
+## Calendar: All-Day Section, Remove Event Type & Location
 
-1. Expand the calendar hour window in `src/components/planner/PlannerCalendarView.tsx`
-- Change:
-  - `START_HOUR = 6` → `0`
-  - `END_HOUR = 22` → `24`
-- This will generate 24 hourly rows and allow the grid to render midnight through 11 PM.
+### Changes
 
-2. Fix all logic tied to the old range
-- `TOTAL_HOURS` will automatically become 24.
-- `getTaskPosition()` will stop clipping early-morning and late-night events.
-- The red “current time” line logic will remain valid once the new bounds are used.
-- `hours` array will then render labels from `12 AM` through `11 PM`.
+**1. `src/components/planner/PlannerCalendarView.tsx`**
+- **Add "All day" row** above the hourly grid in week/day views. Tasks with `due_at` but no `start_at`/`end_at` (or tasks with a date but no specific time) render as chips in this row, grouped by day column — matching the ClickUp screenshot.
+- **Update `scheduledTasks` logic** to include tasks that have `due_at` but no time range, splitting them into "all-day" vs "timed" buckets.
+- **Remove location display** from calendar task cards (the `MapPin` line around line 649-653).
+- **Update `getCardColors`** to remove `event-business` and `event-life` keys, treating everything as tasks.
 
-3. Improve initial scroll behavior
-- Right now the calendar auto-scrolls to ~8 AM using:
-  - `scrollTop = (8 - START_HOUR) * HOUR_HEIGHT`
-- Keep the same “land around morning hours” behavior for week/day, but compute it against the new midnight-based range so the top of the day still exists above it.
-- This preserves usability while making 12 AM–7 AM accessible.
+**2. `src/components/planner/PlannerTaskDialog.tsx`**
+- **Remove "Event" from the Type selector** — only "Task" remains, so remove the Type dropdown entirely (it's now always "task").
+- **Remove the `location` field** (state, input, and submission).
+- **Remove event-specific validation** (the check at line 206 requiring date+times for events).
+- **Update `handleUnschedule`** to stop referencing event type.
+- **Default `task_type` to "task"** always; remove `defaultTaskType` prop.
 
-4. Verify day and week layouts still fit cleanly
-- The main grid height will become `24 * HOUR_HEIGHT`, so confirm:
-  - sticky day header still works
-  - internal vertical scroll remains on the calendar body
-  - time gutter labels align with rows
-  - no extra clipping at the bottom around 10–11 PM
+**3. `src/components/planner/PlannerListView.tsx`**
+- Remove the "Event" badge rendering (line 186-188).
 
-Technical details
-- Root cause: the calendar is explicitly hardcoded to a partial-day range:
-  - `const START_HOUR = 6;`
-  - `const END_HOUR = 22;`
-- Event positioning and the now-line are both based on those constants, so changing container height alone cannot fix this.
-- Using `END_HOUR = 24` is correct here because the rendered labels are built from `hours = Array.from({ length: TOTAL_HOURS }, ...)`, which will produce `0..23`, ending at 11 PM.
+### All-Day Section Design
+- A horizontal row between the day headers and the hourly grid, labeled "All day" in the time gutter.
+- Tasks without start/end times appear as colored chips (similar to timed task cards but compact, single-line).
+- Clicking a chip opens the edit dialog; clicking empty space in the all-day row triggers task creation for that day without a time.
+- The row auto-expands vertically if multiple all-day tasks exist on the same day.
 
-Files
+### Technical Details
+- Split filtered tasks into two groups: `allDayTasks` (have `due_at` but no `start_at`/`end_at`) and `timedTasks` (have both `start_at` and `end_at`).
+- The all-day section sits inside the scroll container but above the time grid, rendered as a sticky or static row.
+- The `PlannerTask` interface keeps `location` for backward compatibility but it won't be editable or displayed.
+
+### Files
 - `src/components/planner/PlannerCalendarView.tsx`
+- `src/components/planner/PlannerTaskDialog.tsx`
+- `src/components/planner/PlannerListView.tsx`
 
-Expected result
-- Week and day views start at 12 AM
-- Last visible hour is 11 PM
-- Early and late scheduled items are no longer clipped
-- Users can scroll the full day range reliably
