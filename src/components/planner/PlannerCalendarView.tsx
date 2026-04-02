@@ -277,12 +277,14 @@ export const PlannerCalendarView = ({
   };
 
   const filteredTasks = useMemo(() => {
-    return tasks.filter(t => {
+    const knownCategoryIds = new Set(categories.map((c: typeof DEFAULT_CATEGORIES[0]) => c.id));
+
+    return tasks.filter((t) => {
       const cat = t.category;
-      if (!cat) return true;
+      if (!cat || !knownCategoryIds.has(cat)) return true;
       return activeCategories.includes(cat);
     });
-  }, [tasks, activeCategories]);
+  }, [tasks, activeCategories, categories]);
 
   // Scroll to ~8 AM on mount
   useEffect(() => {
