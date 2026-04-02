@@ -178,7 +178,7 @@ const Planner = () => {
 
   const handleAddTask = () => {
     setEditingTask(null);
-    setDefaultTaskType("task");
+    
     setDefaultDueAt(null);
     setDialogOpen(true);
   };
