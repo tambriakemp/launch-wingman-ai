@@ -217,6 +217,11 @@ const Planner = () => {
                   <h1 className="text-2xl font-semibold text-foreground">Calendar</h1>
                   <p className="text-sm text-muted-foreground hidden sm:block">Plan your schedule, track tasks, and stay on top of your week.</p>
                 </div>
+                {view === "list" && (
+                  <Button size="sm" className="gap-1.5" onClick={handleAddTask}>
+                    <Plus className="w-4 h-4" /> Task
+                  </Button>
+                )}
               </div>
             </div>
           </div>
