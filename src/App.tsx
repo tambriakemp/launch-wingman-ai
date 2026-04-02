@@ -181,7 +181,7 @@ const App = () => (
             <Route path="/features/messaging" element={<MessagingFeature />} />
             <Route path="/features/execute" element={<ExecuteFeature />} />
             <Route path="/features/content-vault" element={<ContentVaultFeature />} />
-            <Route path="/features/insights" element={<InsightsFeature />} />
+            
             <Route path="/features/relaunch" element={<RelaunchFeature />} />
             
             {/* Smart redirect to last used project */}
