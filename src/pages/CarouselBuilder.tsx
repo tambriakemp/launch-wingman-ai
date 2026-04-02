@@ -776,34 +776,28 @@ const CarouselBuilder = () => {
 
       {/* Funnel stage */}
       <div>
-        <Label className="mb-2 block">Funnel Stage</Label>
-        <div className="flex gap-2 flex-wrap">
-          {FUNNEL_STAGES.map((s) => (
-            <button
-              key={s.value}
-              onClick={() => setFunnelStage(s.value)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${funnelStage === s.value ? "bg-primary/10 border-primary text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-            >
-              {s.value} <span className="text-muted-foreground">({s.sub})</span>
-            </button>
-          ))}
-        </div>
+        <Label>Funnel Stage</Label>
+        <Select value={funnelStage} onValueChange={setFunnelStage}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {FUNNEL_STAGES.map((s) => (
+              <SelectItem key={s.value} value={s.value}>{s.value} ({s.sub})</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Buyer temp */}
       <div>
-        <Label className="mb-2 block">Buyer Temperature</Label>
-        <div className="flex gap-2 flex-wrap">
-          {BUYER_TEMPS.map((b) => (
-            <button
-              key={b}
-              onClick={() => setBuyerTemp(b)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${buyerTemp === b ? "bg-primary/10 border-primary text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-            >
-              {b}
-            </button>
-          ))}
-        </div>
+        <Label>Buyer Temperature</Label>
+        <Select value={buyerTemp} onValueChange={setBuyerTemp}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {BUYER_TEMPS.map((b) => (
+              <SelectItem key={b} value={b}>{b}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Inspiration */}
@@ -826,36 +820,31 @@ const CarouselBuilder = () => {
       <div className="border-t border-border pt-5 space-y-4">
         <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Tone & Voice</h3>
 
-        {/* Tone */}
-        <div className="space-y-2">
-          <Label className="text-xs">How should this carousel feel?</Label>
-          <div className="flex flex-wrap gap-2">
-            {TONES.map((t) => (
-              <button
-                key={t.label}
-                onClick={() => setTone(t.label)}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${tone === t.label ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-              >
-                {t.emoji} {t.label}
-              </button>
-            ))}
-          </div>
+        {/* Carousel Feel */}
+        <div>
+          <Label className="text-xs">Carousel Feel</Label>
+          <Select value={tone} onValueChange={setTone}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {TONES.map((t) => (
+                <SelectItem key={t.label} value={t.label}>{t.emoji} {t.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Voice Modifier */}
-        <div className="space-y-2">
+        <div>
           <Label className="text-xs">Voice Modifier (optional)</Label>
-          <div className="flex flex-wrap gap-2">
-            {VOICE_MODIFIERS.map((v) => (
-              <button
-                key={v}
-                onClick={() => setVoiceModifier(voiceModifier === v ? "" : v)}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${voiceModifier === v ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
+          <Select value={voiceModifier || "_none"} onValueChange={(v) => setVoiceModifier(v === "_none" ? "" : v)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none">None</SelectItem>
+              {VOICE_MODIFIERS.map((v) => (
+                <SelectItem key={v} value={v}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Conversion Boost */}
