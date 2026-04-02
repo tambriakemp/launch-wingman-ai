@@ -279,7 +279,7 @@ export const PlannerTaskDialog = ({
                 <CalendarCheck className="w-5 h-5 text-primary" />
               </div>
               <SheetTitle className="text-lg">
-                {editTask ? "Edit" : "Create"} {taskType === "event" ? "Event" : "Schedule"}
+                {editTask ? "Edit" : "Create"} Task
               </SheetTitle>
             </div>
           </SheetHeader>
