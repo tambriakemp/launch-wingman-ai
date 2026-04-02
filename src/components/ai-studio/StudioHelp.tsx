@@ -29,22 +29,8 @@ const StudioHelp: React.FC<StudioHelpProps> = ({ open, onClose }) => {
           </section>
 
           <section>
-            <h3 className="text-lg font-bold text-foreground mb-2">2. Consistency Locks</h3>
-            <p className="text-sm mb-2">Click the icons on any generated image to use it as a "Master Reference" for others.</p>
-            <div className="grid grid-cols-3 gap-3 text-center text-xs">
-              <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
-                <span className="block font-bold text-primary mb-1">Character Lock</span>
-                Keeps face/identity consistent.
-              </div>
-              <div className="p-3 bg-accent/10 rounded-lg border border-accent/20">
-                <span className="block font-bold text-accent-foreground mb-1">Outfit Lock</span>
-                Keeps clothing consistent.
-              </div>
-              <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-                <span className="block font-bold text-green-400 mb-1">Env Lock</span>
-                Keeps background consistent.
-              </div>
-            </div>
+            <h3 className="text-lg font-bold text-foreground mb-2">2. Automatic Consistency</h3>
+            <p className="text-sm">Scene 1 automatically acts as your identity anchor. All subsequent scenes inherit the character's face, outfit, and style from Scene 1 — no manual locking needed.</p>
           </section>
 
           <section>

@@ -10,7 +10,6 @@ interface StudioStoryboardProps {
   storyboard: VlogStoryboard;
   generatedMedia: Record<number, GeneratedMedia>;
   onToggleSelect: (index: number) => void;
-  onToggleLock: (index: number, type: 'character' | 'outfit' | 'environment') => void;
   onEnlarge: (index: number) => void;
   onAddToQueue: (items: QueueItem[]) => void;
   onUpdatePrompt: (index: number, newPrompt: string) => void;
@@ -28,7 +27,7 @@ interface StudioStoryboardProps {
 
 const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
   config, storyboard, generatedMedia,
-  onToggleSelect, onToggleLock, onEnlarge,
+  onToggleSelect, onEnlarge,
   onAddToQueue, onUpdatePrompt, onUpdateVideoPrompt,
   onUpdateScript, onUpdateAction, onUpdateDetail,
   onBatchRegenerate, onBatchUpscale, onBatchGenerateVideo, onBatchDelete,
@@ -198,7 +197,6 @@ const StudioStoryboard: React.FC<StudioStoryboardProps> = ({
             }]);
           }}
           onToggleSelect={() => onToggleSelect(currentSceneIndex)}
-          onToggleLock={(type) => onToggleLock(currentSceneIndex, type)}
           onEnlarge={() => onEnlarge(currentSceneIndex)}
           onUpdatePrompt={(newPrompt) => onUpdatePrompt(currentSceneIndex, newPrompt)}
           onUpdateVideoPrompt={(newPrompt) => onUpdateVideoPrompt(currentSceneIndex, newPrompt)}

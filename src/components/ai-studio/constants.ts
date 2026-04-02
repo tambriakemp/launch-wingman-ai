@@ -164,9 +164,6 @@ export const INITIAL_CONFIG: AppConfig = {
 export const DEFAULT_MEDIA: GeneratedMedia = {
   isGeneratingImage: false,
   isUpscaling: false,
-  lockedCharacter: false,
-  lockedOutfit: false,
-  lockedEnvironment: false,
   isSelected: false,
   error: undefined
 };

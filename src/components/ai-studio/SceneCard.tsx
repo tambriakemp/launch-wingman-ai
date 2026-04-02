@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { VlogStep, AspectRatio, GeneratedMedia } from './types';
-import { Download, RefreshCw, User, ShoppingBag, Landmark, Loader2, AlertCircle, ImageIcon, Video, ChevronDown, Copy, Pencil, Check, X } from 'lucide-react';
+import { Download, RefreshCw, Loader2, AlertCircle, ImageIcon, Video, ChevronDown, Copy, Pencil, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 
 interface SceneCardProps {
@@ -14,7 +14,6 @@ interface SceneCardProps {
   onUpscale: () => void;
   onGenerateVideo: () => void;
   onToggleSelect: () => void;
-  onToggleLock: (type: 'character' | 'outfit' | 'environment') => void;
   onEnlarge: () => void;
   onUpdatePrompt: (newPrompt: string) => void;
   onUpdateVideoPrompt: (newPrompt: string) => void;
@@ -26,7 +25,7 @@ interface SceneCardProps {
 const SceneCard: React.FC<SceneCardProps> = ({
   step, index, media, aspectRatio,
   onGenerateImage, onUpscale, onGenerateVideo,
-  onToggleSelect, onToggleLock, onEnlarge,
+  onToggleSelect, onEnlarge,
   onUpdatePrompt, onUpdateVideoPrompt,
   onUpdateScript, onUpdateAction, onUpdateDetail
 }) => {
@@ -149,39 +148,6 @@ const SceneCard: React.FC<SceneCardProps> = ({
             style={{ aspectRatio: cssAspectRatio }}
             onClick={onEnlarge}
           >
-            {media.imageUrl && !isLoading && (
-              <TooltipProvider delayDuration={300}>
-                <div className="absolute top-2 right-2 flex flex-col gap-2 z-10" onClick={(e) => e.stopPropagation()}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button onClick={(e) => { e.stopPropagation(); onToggleLock('character'); }}
-                        className={`p-1.5 rounded-full border shadow-xl transition-all active:scale-95 ${media.lockedCharacter ? 'bg-primary border-primary text-primary-foreground' : 'bg-black/70 border-border text-muted-foreground hover:text-primary'}`}>
-                        <User className="w-4 h-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left"><p>Lock face as master reference for all scenes</p></TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button onClick={(e) => { e.stopPropagation(); onToggleLock('outfit'); }}
-                        className={`p-1.5 rounded-full border shadow-xl transition-all active:scale-95 ${media.lockedOutfit ? 'bg-accent border-accent text-accent-foreground' : 'bg-black/70 border-border text-muted-foreground hover:text-accent-foreground'}`}>
-                        <ShoppingBag className="w-4 h-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left"><p>Lock outfit to keep clothing consistent</p></TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button onClick={(e) => { e.stopPropagation(); onToggleLock('environment'); }}
-                        className={`p-1.5 rounded-full border shadow-xl transition-all active:scale-95 ${media.lockedEnvironment ? 'bg-green-600 border-green-400 text-white' : 'bg-black/70 border-border text-muted-foreground hover:text-green-400'}`}>
-                        <Landmark className="w-4 h-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left"><p>Lock background for scene consistency</p></TooltipContent>
-                  </Tooltip>
-                </div>
-              </TooltipProvider>
-            )}
 
             {media.imageUrl ? (
               <img src={media.imageUrl} alt={step.step_name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
