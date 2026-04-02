@@ -691,7 +691,7 @@ export const PlannerCalendarView = ({
                               onEditTask(task);
                             }}
                           >
-                            <span className={cn("text-xs font-bold truncate block leading-tight", isDone && "line-through")}>
+                            <span className={cn("text-sm font-bold truncate block leading-tight", isDone && "line-through")}>
                               {task.title}
                             </span>
                             {(task.recurrence_rule || (task as any)._isVirtualRecurrence) && (
