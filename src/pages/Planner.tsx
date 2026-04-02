@@ -158,7 +158,7 @@ const Planner = () => {
       const parent = tasks.find(t => t.id === parentId);
       if (parent) {
         setEditingTask(parent);
-        setDefaultTaskType(parent.task_type as "task" | "event" || "task");
+        
         setDefaultDueAt(null);
         setDialogOpen(true);
       }
