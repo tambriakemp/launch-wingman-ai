@@ -294,8 +294,8 @@ export const PlannerCalendarView = ({
 
   // Scroll to ~8 AM on mount
   useEffect(() => {
-    if (scrollRef.current && viewMode === "week") {
-      scrollRef.current.scrollTop = (8 - START_HOUR) * HOUR_HEIGHT;
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
     }
   }, [viewMode]);
 
