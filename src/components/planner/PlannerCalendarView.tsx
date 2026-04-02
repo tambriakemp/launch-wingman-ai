@@ -592,16 +592,16 @@ export const PlannerCalendarView = ({
                       onClick={() => onCreateTask?.({ due_at: day.toISOString() })}
                     >
                       {dayAllDay.map((task) => {
-                        const colors = getCardColors(task);
+                        const { style: colorStyle } = getCardColorStyle(task, categories);
                         const isDone = task.column_id === "done";
                         return (
                           <button
                             key={task.id}
                             className={cn(
-                              "text-xs font-medium px-2.5 py-1 rounded-md truncate w-full text-left transition-colors",
-                              colors.bg, colors.text,
+                              "text-xs font-medium px-2.5 py-1 rounded-md truncate w-full text-left transition-colors border",
                               isDone && "opacity-50 line-through"
                             )}
+                            style={colorStyle}
                             onClick={(e) => {
                               e.stopPropagation();
                               onEditTask(task);
