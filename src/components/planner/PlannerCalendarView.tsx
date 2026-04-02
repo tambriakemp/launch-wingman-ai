@@ -579,7 +579,7 @@ export const PlannerCalendarView = ({
                   return (
                     <div
                       key={`allday-${day.toISOString()}`}
-                      className="border-r border-border last:border-r-0 min-h-[32px] p-1 flex flex-wrap gap-1 cursor-pointer hover:bg-accent/10 transition-colors"
+                      className="border-r border-border last:border-r-0 min-h-[32px] min-w-0 p-1 flex flex-col gap-0.5 cursor-pointer hover:bg-accent/10 transition-colors overflow-hidden"
                       onClick={() => onCreateTask?.({ due_at: day.toISOString() })}
                     >
                       {dayAllDay.map((task) => {
@@ -589,7 +589,7 @@ export const PlannerCalendarView = ({
                           <button
                             key={task.id}
                             className={cn(
-                              "text-[10px] font-medium px-2 py-0.5 rounded-md truncate max-w-full transition-colors",
+                              "text-[10px] font-medium px-2 py-0.5 rounded-md truncate w-full text-left transition-colors",
                               colors.bg, colors.text,
                               isDone && "opacity-50 line-through"
                             )}
