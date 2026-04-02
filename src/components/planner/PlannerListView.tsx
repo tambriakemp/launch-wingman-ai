@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { format, parseISO, isPast, isToday, startOfWeek, endOfWeek, isBefore, isAfter } from "date-fns";
-import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Circle, Calendar, MapPin, ChevronDown, ChevronRight, MoreHorizontal, Pencil, Trash2, CalendarCheck, Clock, Plus } from "lucide-react";
+import { CheckCircle2, Circle, ChevronDown, ChevronRight, MoreHorizontal, Pencil, Trash2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,12 +23,12 @@ interface PlannerListViewProps {
 
 type GroupKey = "overdue" | "today" | "this_week" | "anytime" | "completed";
 
-const GROUP_CONFIG: { key: GroupKey; label: string; defaultOpen: boolean }[] = [
-  { key: "overdue", label: "Overdue", defaultOpen: true },
-  { key: "today", label: "Today", defaultOpen: true },
-  { key: "this_week", label: "This Week", defaultOpen: true },
-  { key: "anytime", label: "Anytime", defaultOpen: true },
-  { key: "completed", label: "Completed", defaultOpen: false },
+const GROUP_CONFIG: { key: GroupKey; label: string; defaultOpen: boolean; color: string }[] = [
+  { key: "overdue", label: "OVERDUE", defaultOpen: true, color: "bg-destructive" },
+  { key: "today", label: "TODAY", defaultOpen: true, color: "bg-blue-500" },
+  { key: "this_week", label: "THIS WEEK", defaultOpen: true, color: "bg-amber-500" },
+  { key: "anytime", label: "ANYTIME", defaultOpen: true, color: "bg-muted-foreground" },
+  { key: "completed", label: "DONE", defaultOpen: false, color: "bg-emerald-500" },
 ];
 
 function groupTasks(tasks: PlannerTask[]): Record<GroupKey, PlannerTask[]> {
@@ -38,36 +37,33 @@ function groupTasks(tasks: PlannerTask[]): Record<GroupKey, PlannerTask[]> {
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
 
   const groups: Record<GroupKey, PlannerTask[]> = {
-    overdue: [],
-    today: [],
-    this_week: [],
-    anytime: [],
-    completed: [],
+    overdue: [], today: [], this_week: [], anytime: [], completed: [],
   };
 
   for (const task of tasks) {
-    if (task.column_id === "done") {
-      groups.completed.push(task);
-      continue;
-    }
-
+    if (task.column_id === "done") { groups.completed.push(task); continue; }
     const due = task.due_at ? parseISO(task.due_at) : null;
     if (due) {
-      if (isToday(due)) {
-        groups.today.push(task);
-      } else if (isPast(due)) {
-        groups.overdue.push(task);
-      } else if (!isBefore(due, weekStart) && !isAfter(due, weekEnd)) {
-        groups.this_week.push(task);
-      } else {
-        groups.anytime.push(task);
-      }
+      if (isToday(due)) groups.today.push(task);
+      else if (isPast(due)) groups.overdue.push(task);
+      else if (!isBefore(due, weekStart) && !isAfter(due, weekEnd)) groups.this_week.push(task);
+      else groups.anytime.push(task);
     } else {
       groups.anytime.push(task);
     }
   }
-
   return groups;
+}
+
+function getStatusBadge(columnId: string) {
+  switch (columnId) {
+    case "done":
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">Done</span>;
+    case "in_progress":
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-blue-500/15 text-blue-600 dark:text-blue-400">In Progress</span>;
+    default:
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-muted text-muted-foreground">To Do</span>;
+  }
 }
 
 export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask, onDeleteTask, onAddTask }: PlannerListViewProps) => {
@@ -80,65 +76,67 @@ export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask
   }
 
   const grouped = groupTasks(tasks);
-
-  const toggleGroup = (key: string) => {
-    setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const hasAnyTasks = tasks.length > 0;
-  const hasTodayTasks = grouped.today.length > 0;
+  const toggleGroup = (key: string) => setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
 
   return (
-    <div className="space-y-3">
-      {/* "All clear" for today when there are tasks but none due today */}
-      {hasAnyTasks && !hasTodayTasks && grouped.overdue.length === 0 && (
-        <div className="rounded-lg border border-border bg-card p-4 text-center">
-          <CalendarCheck className="w-8 h-8 mx-auto mb-2 text-primary/50" />
-          <p className="text-sm font-medium text-foreground">All clear for today!</p>
-          <p className="text-xs text-muted-foreground mt-0.5">No tasks due or overdue.</p>
-        </div>
-      )}
+    <div className="px-4 pb-4">
+      {/* Column headers */}
+      <div className="grid grid-cols-[minmax(0,1fr)_100px_100px_90px_36px] gap-2 items-center px-4 py-1.5 border-b border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground select-none sticky top-0 bg-background z-10">
+        <span className="pl-8">Name</span>
+        <span>Due Date</span>
+        <span>Category</span>
+        <span>Status</span>
+        <span />
+      </div>
 
-      {GROUP_CONFIG.map(({ key, label }) => {
+      {GROUP_CONFIG.map(({ key, label, color }) => {
         const items = grouped[key];
         if (items.length === 0) return null;
         const isOpen = expandedGroups[key];
 
         return (
-          <div key={key} className="border border-border rounded-lg overflow-hidden">
+          <div key={key} className="mt-1">
+            {/* Group header */}
             <button
               type="button"
-              className="w-full flex items-center gap-2 px-4 py-2.5 bg-muted/30 hover:bg-muted/50 transition-colors text-left"
+              className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 transition-colors text-left rounded-sm"
               onClick={() => toggleGroup(key)}
             >
-              {isOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-              <span className={cn("font-medium text-sm", key === "overdue" && "text-destructive")}>{label}</span>
-              <Badge variant="secondary" className="ml-auto text-xs">{items.length}</Badge>
+              {isOpen ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+              <span className={cn("w-2 h-2 rounded-full shrink-0", color)} />
+              <span className="text-xs font-semibold tracking-wide text-foreground">{label}</span>
+              <span className="text-[10px] text-muted-foreground ml-1">{items.length}</span>
             </button>
-            <AnimatePresence>
-              {isOpen && (
-                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
-                  <div className="divide-y divide-border">
-                    {items.map((task) => (
-                      <TaskRow key={task.id} task={task} onToggleComplete={onToggleComplete} onEdit={onEditTask} onDelete={onDeleteTask} />
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+
+            {isOpen && (
+              <div>
+                {items.map((task) => (
+                  <TaskRow key={task.id} task={task} onToggleComplete={onToggleComplete} onEdit={onEditTask} onDelete={onDeleteTask} />
+                ))}
+                {/* Add task row */}
+                {onAddTask && (
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-2 px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors pl-12"
+                    onClick={onAddTask}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Task</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         );
       })}
 
-      {!hasAnyTasks && (
-        <div className="text-center py-12 text-muted-foreground">
-          <CalendarCheck className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm font-medium">No planner items yet</p>
-          <p className="text-xs mt-1 mb-4">Get started by adding your first task or event.</p>
+      {tasks.length === 0 && (
+        <div className="text-center py-16 text-muted-foreground">
+          <p className="text-sm font-medium">No tasks yet</p>
+          <p className="text-xs mt-1 mb-4">Get started by adding your first task.</p>
           {onAddTask && (
             <Button size="sm" className="gap-1.5" onClick={onAddTask}>
-              <Plus className="w-4 h-4" />
-              Add your first task
+              <Plus className="w-4 h-4" /> Add Task
             </Button>
           )}
         </div>
@@ -149,66 +147,53 @@ export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask
 
 function TaskRow({ task, onToggleComplete, onEdit, onDelete }: { task: PlannerTask; onToggleComplete: (t: PlannerTask) => void; onEdit: (t: PlannerTask) => void; onDelete: (id: string) => void }) {
   const isDone = task.column_id === "done";
-  const isEvent = task.task_type === "event";
-  const isUnscheduled = !task.start_at && !task.end_at;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/30 transition-colors group cursor-pointer" onClick={() => onEdit(task)}>
-      <button
-        type="button"
-        className="shrink-0"
-        onClick={(e) => { e.stopPropagation(); onToggleComplete(task); }}
-      >
-        {isDone ? <CheckCircle2 className="w-5 h-5 text-primary" /> : <Circle className="w-5 h-5 text-muted-foreground hover:text-primary transition-colors" />}
-      </button>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className={cn("text-sm font-medium truncate", isDone && "line-through text-muted-foreground")}>{task.title}</span>
-          {isEvent && <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/30 text-primary">Event</Badge>}
-        </div>
-        <div className="flex items-center gap-2 mt-0.5">
-          {task.category && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0">{task.category}</Badge>
-          )}
-          {task.due_at && (
-            <span className={cn("text-[10px] flex items-center gap-0.5", isPast(parseISO(task.due_at)) && !isToday(parseISO(task.due_at)) && task.column_id !== "done" ? "text-destructive" : "text-muted-foreground")}>
-              <Calendar className="w-3 h-3" />
-              {format(parseISO(task.due_at), "MMM d")}
-            </span>
-          )}
-          {task.start_at && (
-            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-              <Calendar className="w-3 h-3" />
-              {format(parseISO(task.start_at), "MMM d, h:mm a")}
-            </span>
-          )}
-          {task.location && (
-            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-              <MapPin className="w-3 h-3" />
-              {task.location}
-            </span>
-          )}
-        </div>
+    <div
+      className="grid grid-cols-[minmax(0,1fr)_100px_100px_90px_36px] gap-2 items-center px-4 h-9 hover:bg-accent/40 transition-colors cursor-pointer group border-b border-border/50"
+      onClick={() => onEdit(task)}
+    >
+      {/* Name */}
+      <div className="flex items-center gap-2 min-w-0">
+        <button
+          type="button"
+          className="shrink-0"
+          onClick={(e) => { e.stopPropagation(); onToggleComplete(task); }}
+        >
+          {isDone
+            ? <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            : <Circle className="w-4 h-4 text-muted-foreground/50 hover:text-primary transition-colors" />
+          }
+        </button>
+        <span className={cn("text-sm truncate", isDone && "line-through text-muted-foreground")}>{task.title}</span>
+        {task.task_type === "event" && (
+          <Badge variant="outline" className="text-[9px] px-1 py-0 border-primary/30 text-primary shrink-0">Event</Badge>
+        )}
       </div>
 
-      {/* Schedule hint for unscheduled tasks */}
-      {isUnscheduled && !isDone && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary"
-          title="Schedule this task"
-          onClick={(e) => { e.stopPropagation(); onEdit(task); }}
-        >
-          <Clock className="w-4 h-4" />
-        </Button>
-      )}
+      {/* Due Date */}
+      <span className={cn(
+        "text-xs truncate",
+        task.due_at && isPast(parseISO(task.due_at)) && !isToday(parseISO(task.due_at)) && !isDone
+          ? "text-destructive"
+          : "text-muted-foreground"
+      )}>
+        {task.due_at ? format(parseISO(task.due_at), "MMM d") : "—"}
+      </span>
 
+      {/* Category */}
+      <span className="text-xs text-muted-foreground truncate capitalize">
+        {task.category || "—"}
+      </span>
+
+      {/* Status */}
+      {getStatusBadge(task.column_id)}
+
+      {/* Actions */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
-            <MoreHorizontal className="w-4 h-4" />
+          <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+            <MoreHorizontal className="w-3.5 h-3.5" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">

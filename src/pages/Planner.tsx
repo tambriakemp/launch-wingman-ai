@@ -222,7 +222,7 @@ const Planner = () => {
           </div>
           <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar")}>
             <TabsList>
-              <TabsTrigger value="list">List</TabsTrigger>
+              <TabsTrigger value="list">Tasks</TabsTrigger>
               <TabsTrigger value="calendar">Calendar</TabsTrigger>
             </TabsList>
           </Tabs>
