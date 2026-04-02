@@ -321,15 +321,8 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            {/* Insights route */}
-            <Route
-              path="/projects/:id/insights"
-              element={
-                <ProtectedRoute>
-                  <Insights />
-                </ProtectedRoute>
-              }
-            />
+
+
             {/* Content Vault routes */}
             <Route
               path="/content-vault"
