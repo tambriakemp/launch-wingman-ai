@@ -164,6 +164,20 @@ export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask
 function TaskRow({ task, onToggleComplete, onEdit, onDelete }: { task: PlannerTask; onToggleComplete: (t: PlannerTask) => void; onEdit: (t: PlannerTask) => void; onDelete: (id: string) => void }) {
   const isDone = task.column_id === "done";
 
+  const getCategoryName = (id: string | null | undefined) => {
+    if (!id) return "—";
+    const DEFAULT_CATEGORIES: Record<string, string> = { business: "Work", life: "Personal", health: "Health", finance: "Finance" };
+    try {
+      const stored = localStorage.getItem("planner-categories");
+      if (stored) {
+        const cats = JSON.parse(stored);
+        const found = cats.find((c: any) => c.id === id);
+        if (found) return found.name;
+      }
+    } catch {}
+    return DEFAULT_CATEGORIES[id] || id;
+  };
+
   return (
     <div
       className="grid grid-cols-[minmax(0,1fr)_100px_100px_90px_36px] gap-2 items-center px-4 h-9 hover:bg-accent/40 transition-colors cursor-pointer group border-b border-border/50"
