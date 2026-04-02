@@ -172,7 +172,6 @@ const Planner = () => {
 
   const handleQuickCreate = (defaults: { due_at?: string }) => {
     setEditingTask(null);
-    setDefaultTaskType("task");
     setDefaultDueAt(defaults.due_at ? new Date(defaults.due_at) : null);
     setDialogOpen(true);
   };
