@@ -93,6 +93,7 @@ const createSections = (projectId?: string): Section[] => [
       { id: "ideas", label: "Ideas Bank", icon: Lightbulb, href: "/ideas", isAdvancedOnly: true },
       { id: "sales-page", label: "Sales Page Writer", icon: FileText, href: "/app/ai-studio/sales-page", isAdvancedOnly: true },
       { id: "email-sequence", label: "Email Sequence", icon: Mail, href: "/app/ai-studio/email-sequence", isAdvancedOnly: true },
+      { id: "outfit-swap", label: "Outfit Swap", icon: Shirt, href: "/app/ai-studio/outfit-swap", isAdvancedOnly: true },
       
     ],
   },
