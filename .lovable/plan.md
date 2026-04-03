@@ -1,26 +1,63 @@
 
 
-## Calendar Breathing Room + Category Fix
+## Outfit Swap Tool — New AI Studio Feature
 
-### 1. Increase spacing and font sizes in calendar tasks
+A standalone tool at `/app/ai-studio/outfit-swap` where users upload two images: (1) their character/avatar in an environment, and (2) a reference outfit photo (on a model or flat-lay). The AI replaces only the outfit while keeping the character's face, body, and environment completely locked.
 
-**`src/components/planner/PlannerCalendarView.tsx`**
+### How it works
 
-- **All-day chips**: Change `text-[10px]` → `text-xs`, `px-2 py-0.5` → `px-2.5 py-1`, `gap-0.5` → `gap-1`, `min-h-[32px]` → `min-h-[40px]`
-- **Timed task cards**: Change `px-3 py-2` → `px-3 py-2.5`, font from `text-xs` → `text-sm` for title
-- **Hour row height**: Increase `HOUR_HEIGHT` from `64` → `72` for more breathing room between time slots
-- **Time labels**: Change `text-[10px]` → `text-xs`
+1. User uploads a **character photo** (the person in their environment)
+2. User uploads an **outfit reference** (photo of outfit on a model, mannequin, or flat-lay like the examples you shared)
+3. Optionally types a short instruction (e.g., "only change the shirt", "swap entire outfit")
+4. Clicks "Swap Outfit" — calls a new edge function that sends both images to Gemini with a carefully crafted prompt that locks the character identity and environment while transplanting the outfit
+5. Result displays side-by-side with the original; user can download or retry
 
-### 2. Fix custom categories not showing in task edit dialog
+### Files to create/modify
 
-**`src/components/planner/PlannerTaskDialog.tsx`**
+**New files:**
+- `src/pages/OutfitSwap.tsx` — Page component with two upload zones (character + outfit reference), optional text instruction, generate button, and result display
+- `supabase/functions/swap-outfit/index.ts` — Edge function that receives both image URLs, constructs a prompt emphasizing identity/environment lock + outfit transfer, calls Gemini image generation, uploads result to storage
 
-The Select component silently fails when the task's `category` value doesn't match any `SelectItem` value. This happens when a task was saved with an old/mismatched category ID.
+**Modified files:**
+- `src/App.tsx` — Add route `/app/ai-studio/outfit-swap`
+- `src/components/ai-studio/types.ts` — No changes needed; this is a standalone tool
 
-- When setting the category from `editTask.category`, validate it exists in `plannerCategories`. If not found, fall back to the first available category.
-- Ensure the `useEffect` that reads categories runs before the one that sets the edit values (move category loading above edit-population, or combine them).
+### Edge function prompt strategy
 
-### Files
-- `src/components/planner/PlannerCalendarView.tsx`
-- `src/components/planner/PlannerTaskDialog.tsx`
+The prompt will:
+- Place the character image first as the "ground truth" for identity and environment
+- Place the outfit reference second with explicit instructions: "Extract ONLY the clothing/outfit from this reference image"
+- Emphasize: do NOT change face, hair, skin, body proportions, pose, background, lighting, or environment
+- Support partial swaps via the optional user instruction field (e.g., "only change the top")
+
+### UI layout
+
+```text
+┌──────────────────────────────────────────┐
+│  ← Back to AI Studio    OUTFIT SWAP      │
+├──────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐       │
+│  │  Character   │  │   Outfit    │       │
+│  │   Photo      │  │  Reference  │       │
+│  │  (upload)    │  │  (upload)   │       │
+│  └─────────────┘  └─────────────┘       │
+│                                          │
+│  [ Optional instruction text field     ] │
+│  [ "Only change the shirt"             ] │
+│                                          │
+│  [        Swap Outfit ✨        ]        │
+│                                          │
+│  ┌──────────────────────────────┐       │
+│  │        Result Image          │       │
+│  │     (download / retry)       │       │
+│  └──────────────────────────────┘       │
+└──────────────────────────────────────────┘
+```
+
+### Technical details
+
+- Both images are uploaded to storage first (using existing `uploadFileToStorage`), then URLs are passed to the edge function — no base64 in payloads
+- Uses `google/gemini-3-pro-image-preview` model (same as character preview) for best quality
+- Result is uploaded to `ai-studio` bucket under `{userId}/outfit-swap-{timestamp}.png`
+- No video, no storyboard, no extra complexity — just a clean single-image transformation tool
 
