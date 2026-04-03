@@ -99,6 +99,7 @@ import HelpSupport from "./pages/HelpSupport";
 import HelpSupportTicket from "./pages/HelpSupportTicket";
 import Onboarding from "./pages/Onboarding";
 import AIStudio from "./pages/AIStudio";
+import OutfitSwap from "./pages/OutfitSwap";
 import Planner from "./pages/Planner";
 import PlannerHub from "./pages/PlannerHub";
 import HabitTracker from "./pages/HabitTracker";
@@ -578,6 +579,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AIStudio />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/app/ai-studio/outfit-swap"
+              element={
+                <ProtectedRoute>
+                  <OutfitSwap />
                 </ProtectedRoute>
               }
             />
