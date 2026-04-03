@@ -582,6 +582,14 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/app/ai-studio/outfit-swap"
+              element={
+                <ProtectedRoute>
+                  <OutfitSwap />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Planner */}
             <Route
