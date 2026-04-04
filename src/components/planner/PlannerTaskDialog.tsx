@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { format } from "date-fns";
+import { format, addDays, addWeeks, nextSaturday, startOfDay } from "date-fns";
 import {
   CalendarCheck,
   CalendarIcon,
   CalendarOff,
   ChevronLeft,
   CircleDot,
-  FolderOpen,
   Tag,
   RefreshCw,
   Plus,
@@ -15,6 +14,8 @@ import {
   CheckSquare,
   Square,
   ListChecks,
+  Flag,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,7 @@ export interface PlannerTask {
   recurrence_rule: any | null;
   recurrence_parent_id: string | null;
   recurrence_exception_dates: string[] | null;
+  priority?: string;
 }
 
 interface Subtask {
@@ -99,10 +101,12 @@ const STATUSES = [
   { id: "done", label: "Done" },
 ];
 
-function isoToLocalTime(iso: string): string {
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
+const PRIORITIES = [
+  { id: "urgent", label: "Urgent", color: "text-red-500" },
+  { id: "high", label: "High", color: "text-orange-500" },
+  { id: "normal", label: "Normal", color: "text-blue-500" },
+  { id: "low", label: "Low", color: "text-muted-foreground" },
+];
 
 interface PlannerTaskDialogProps {
   open: boolean;
@@ -130,11 +134,10 @@ export const PlannerTaskDialog = ({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [columnId, setColumnId] = useState("todo");
+  const [priority, setPriority] = useState("normal");
   const [category, setCategory] = useState("");
-  const [spaceId, setSpaceId] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recurrenceFreq, setRecurrenceFreq] = useState<"none"|"daily"|"weekly"|"monthly"|"yearly">("none");
   const [recurrenceInterval, setRecurrenceInterval] = useState(1);
@@ -142,6 +145,8 @@ export const PlannerTaskDialog = ({
   const [recurrenceEndType, setRecurrenceEndType] = useState<"never"|"on_date"|"after_n">("never");
   const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date | undefined>(undefined);
   const [recurrenceCount, setRecurrenceCount] = useState(10);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [showRepeat, setShowRepeat] = useState(false);
 
   // Subtasks state
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
@@ -151,8 +156,8 @@ export const PlannerTaskDialog = ({
   const [subtaskDescription, setSubtaskDescription] = useState("");
   const [subtaskSaving, setSubtaskSaving] = useState(false);
 
-  const spaceCats = spaceId
-    ? allCategories.filter(c => c.space_id === spaceId)
+  const spaceCats = selectedSpaceId
+    ? allCategories.filter(c => c.space_id === selectedSpaceId)
     : categories;
 
   const isScheduled = editTask && (editTask.start_at || editTask.end_at);
@@ -170,30 +175,27 @@ export const PlannerTaskDialog = ({
   useEffect(() => {
     if (!open) {
       setActiveSubtask(null);
+      setShowRepeat(false);
       return;
     }
     if (editTask) {
       setTitle(editTask.title);
       setDescription(editTask.description || "");
       setColumnId(editTask.column_id);
-      setSpaceId((editTask as any).space_id || selectedSpaceId);
+      setPriority((editTask as any).priority || "normal");
 
       const editCat = editTask.category;
       const catExists = spaceCats.some(c => c.id === editCat);
       setCategory(catExists && editCat ? editCat : spaceCats[0]?.id || "");
 
       if (editTask.start_at) {
-        setSelectedDate(new Date(editTask.start_at));
-        setStartTime(isoToLocalTime(editTask.start_at));
+        setStartDate(new Date(editTask.start_at));
       } else if (editTask.due_at) {
-        setSelectedDate(new Date(editTask.due_at));
-        setStartTime("");
+        setStartDate(new Date(editTask.due_at));
       } else {
-        setSelectedDate(undefined);
-        setStartTime("");
+        setStartDate(undefined);
       }
-
-      setEndTime(editTask.end_at ? isoToLocalTime(editTask.end_at) : "");
+      setEndDate(editTask.end_at ? new Date(editTask.end_at) : undefined);
 
       if (editTask.recurrence_rule) {
         const r = editTask.recurrence_rule;
@@ -203,6 +205,7 @@ export const PlannerTaskDialog = ({
         setRecurrenceEndType(r.end_type || "never");
         setRecurrenceEndDate(r.end_date ? new Date(r.end_date) : undefined);
         setRecurrenceCount(r.count || 10);
+        setShowRepeat(true);
       } else {
         setRecurrenceFreq("none");
         setRecurrenceInterval(1);
@@ -210,17 +213,17 @@ export const PlannerTaskDialog = ({
         setRecurrenceEndType("never");
         setRecurrenceEndDate(undefined);
         setRecurrenceCount(10);
+        setShowRepeat(false);
       }
       fetchSubtasks(editTask.id);
     } else {
       setTitle("");
       setDescription("");
       setColumnId("todo");
-      setSpaceId(selectedSpaceId);
+      setPriority("normal");
       setCategory(spaceCats[0]?.id || "");
-      setSelectedDate(defaultDueAt || undefined);
-      setStartTime("");
-      setEndTime("");
+      setStartDate(defaultDueAt || undefined);
+      setEndDate(undefined);
       setRecurrenceFreq("none");
       setRecurrenceInterval(1);
       setRecurrenceDays([]);
@@ -228,35 +231,14 @@ export const PlannerTaskDialog = ({
       setRecurrenceEndDate(undefined);
       setRecurrenceCount(10);
       setSubtasks([]);
+      setShowRepeat(false);
     }
   }, [editTask, open, defaultDueAt, selectedSpaceId]);
-
-  useEffect(() => {
-    if (!open) return;
-    const newCats = spaceId
-      ? allCategories.filter(c => c.space_id === spaceId)
-      : categories;
-    const currentValid = newCats.some(c => c.id === category);
-    if (!currentValid && newCats.length > 0) {
-      setCategory(newCats[0].id);
-    }
-  }, [spaceId]);
-
-  const combineDatetime = (date: Date, time: string): string => {
-    const [h, m] = time.split(":").map(Number);
-    const combined = new Date(date);
-    combined.setHours(h, m, 0, 0);
-    return combined.toISOString();
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) { toast.error("Title is required"); return; }
-    if (startTime && !endTime) { toast.error("End time is required when start time is set"); return; }
-    if (endTime && !startTime) { toast.error("Start time is required when end time is set"); return; }
-    if (startTime && endTime && startTime >= endTime) { toast.error("End time must be after start time"); return; }
 
-    const hasSchedule = selectedDate && startTime && endTime;
     setIsSubmitting(true);
 
     const recurrenceRuleValue = recurrenceFreq === "none" ? null : {
@@ -274,13 +256,14 @@ export const PlannerTaskDialog = ({
         description: description.trim(),
         task_type: "task",
         column_id: columnId,
+        priority,
         category: category || null,
-        due_at: selectedDate ? selectedDate.toISOString() : null,
-        start_at: hasSchedule ? combineDatetime(selectedDate!, startTime) : null,
-        end_at: hasSchedule ? combineDatetime(selectedDate!, endTime) : null,
+        due_at: startDate ? startDate.toISOString() : null,
+        start_at: startDate ? startDate.toISOString() : null,
+        end_at: endDate ? endDate.toISOString() : null,
         location: null,
         recurrence_rule: recurrenceRuleValue,
-        ...(({ space_id: spaceId }) as any),
+        ...(({ space_id: selectedSpaceId }) as any),
       });
       onOpenChange(false);
     } catch {} finally {
@@ -297,12 +280,13 @@ export const PlannerTaskDialog = ({
         description: editTask.description,
         task_type: "task",
         column_id: editTask.column_id,
+        priority: (editTask as any).priority || "normal",
         category: editTask.category,
-        due_at: editTask.due_at,
+        due_at: null,
         start_at: null,
         end_at: null,
         location: null,
-        ...(({ space_id: spaceId }) as any),
+        ...(({ space_id: selectedSpaceId }) as any),
       });
       onOpenChange(false);
     } catch {} finally {
@@ -358,6 +342,20 @@ export const PlannerTaskDialog = ({
   const completedCount = subtasks.filter(s => s.completed).length;
   const progressPct = subtasks.length > 0 ? (completedCount / subtasks.length) * 100 : 0;
 
+  // Date quick-pick helpers
+  const today = startOfDay(new Date());
+  const quickDates = [
+    { label: "Today", sub: format(today, "EEE"), date: today },
+    { label: "Later", sub: format(today, "h:mm a"), date: today },
+    { label: "Tomorrow", sub: format(addDays(today, 1), "EEE"), date: addDays(today, 1) },
+    { label: "Next week", sub: format(addDays(today, 7), "MMM d"), date: addDays(today, 7) },
+    { label: "Next weekend", sub: format(nextSaturday(today), "MMM d"), date: nextSaturday(today) },
+    { label: "2 weeks", sub: format(addWeeks(today, 2), "MMM d"), date: addWeeks(today, 2) },
+    { label: "4 weeks", sub: format(addWeeks(today, 4), "MMM d"), date: addWeeks(today, 4) },
+  ];
+
+  const priorityInfo = PRIORITIES.find(p => p.id === priority) || PRIORITIES[2];
+
   // --- Subtask Detail View ---
   if (activeSubtask) {
     return (
@@ -376,7 +374,6 @@ export const PlannerTaskDialog = ({
           </SheetHeader>
 
           <div className="px-6 space-y-5 pb-6">
-            {/* Completed toggle */}
             <div className="flex items-center gap-3">
               <Checkbox
                 checked={activeSubtask.completed}
@@ -390,19 +387,16 @@ export const PlannerTaskDialog = ({
               </span>
             </div>
 
-            {/* Title */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Title</Label>
               <Input value={subtaskTitle} onChange={e => setSubtaskTitle(e.target.value)} className="h-10 text-base font-medium" />
             </div>
 
-            {/* Description */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Description</Label>
               <Textarea value={subtaskDescription} onChange={e => setSubtaskDescription(e.target.value)} placeholder="Add details about this subtask..." rows={4} className="resize-none" />
             </div>
 
-            {/* Meta */}
             <div className="text-xs text-muted-foreground">
               Created {format(new Date(activeSubtask.created_at), "PPP 'at' p")}
             </div>
@@ -445,7 +439,7 @@ export const PlannerTaskDialog = ({
 
             {/* ClickUp-style property grid */}
             <div className="rounded-xl border border-border bg-muted/20 divide-y divide-border">
-              {/* Row: Status + Space */}
+              {/* Row 1: Status + Priority */}
               <div className="grid grid-cols-2 divide-x divide-border">
                 <PropertyRow icon={CircleDot} label="Status">
                   <Select value={columnId} onValueChange={setColumnId}>
@@ -460,47 +454,26 @@ export const PlannerTaskDialog = ({
                   </Select>
                 </PropertyRow>
 
-                {spaces.length > 0 ? (
-                  <PropertyRow icon={FolderOpen} label="Space">
-                    <Select value={spaceId || "none"} onValueChange={(v) => setSpaceId(v === "none" ? null : v)}>
-                      <SelectTrigger className="h-8 border-none shadow-none bg-transparent text-sm px-2 w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No space</SelectItem>
-                        {spaces.map(s => (
-                          <SelectItem key={s.id} value={s.id}>
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full" style={{ background: s.color }} />
-                              {s.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </PropertyRow>
-                ) : (
-                  <PropertyRow icon={FolderOpen} label="Space">
-                    <span className="text-sm text-muted-foreground px-2">—</span>
-                  </PropertyRow>
-                )}
+                <PropertyRow icon={Flag} label="Priority">
+                  <Select value={priority} onValueChange={setPriority}>
+                    <SelectTrigger className="h-8 border-none shadow-none bg-transparent text-sm px-2 w-full">
+                      <SelectValue>
+                        <span className={priorityInfo.color}>{priorityInfo.label}</span>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRIORITIES.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          <span className={p.color}>{p.label}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </PropertyRow>
               </div>
 
-              {/* Row: Date + Category */}
+              {/* Row 2: Category + Dates */}
               <div className="grid grid-cols-2 divide-x divide-border">
-                <PropertyRow icon={CalendarIcon} label="Date">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button type="button" className={cn("text-sm px-2 py-1 rounded hover:bg-accent/50 text-left truncate", !selectedDate && "text-muted-foreground")}>
-                        {selectedDate ? format(selectedDate, "MMM d, yyyy") : "None"}
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus className="p-3 pointer-events-auto" />
-                    </PopoverContent>
-                  </Popover>
-                </PropertyRow>
-
                 {spaceCats.length > 0 ? (
                   <PropertyRow icon={Tag} label="Category">
                     <Select value={category} onValueChange={setCategory}>
@@ -524,107 +497,63 @@ export const PlannerTaskDialog = ({
                     <span className="text-sm text-muted-foreground px-2">—</span>
                   </PropertyRow>
                 )}
-              </div>
 
-              {/* Row: Start/End Time + Repeat */}
-              <div className="grid grid-cols-2 divide-x divide-border">
-                <PropertyRow icon={CalendarCheck} label="Time">
-                  <div className="flex items-center gap-1 px-1">
-                    <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="h-7 w-[5.5rem] text-xs border-none shadow-none bg-transparent px-1" />
-                    <span className="text-muted-foreground text-xs">→</span>
-                    <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="h-7 w-[5.5rem] text-xs border-none shadow-none bg-transparent px-1" />
-                  </div>
-                </PropertyRow>
-
-                <PropertyRow icon={RefreshCw} label="Repeat">
-                  <Select value={recurrenceFreq} onValueChange={(v) => setRecurrenceFreq(v as any)}>
-                    <SelectTrigger className="h-8 border-none shadow-none bg-transparent text-sm px-2 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <PropertyRow icon={CalendarIcon} label="Dates">
+                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                    <PopoverTrigger asChild>
+                      <button type="button" className={cn("text-sm px-2 py-1 rounded hover:bg-accent/50 text-left truncate w-full", !startDate && !endDate && "text-muted-foreground")}>
+                        {startDate && endDate
+                          ? `${format(startDate, "MMM d")} → ${format(endDate, "MMM d")}`
+                          : startDate
+                            ? format(startDate, "MMM d, yyyy")
+                            : "Set dates"}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start" side="bottom">
+                      <DatePickerPanel
+                        startDate={startDate}
+                        endDate={endDate}
+                        onStartDateChange={setStartDate}
+                        onEndDateChange={setEndDate}
+                        quickDates={quickDates}
+                        showRepeat={showRepeat}
+                        setShowRepeat={setShowRepeat}
+                        recurrenceFreq={recurrenceFreq}
+                        setRecurrenceFreq={setRecurrenceFreq}
+                        recurrenceInterval={recurrenceInterval}
+                        setRecurrenceInterval={setRecurrenceInterval}
+                        recurrenceDays={recurrenceDays}
+                        setRecurrenceDays={setRecurrenceDays}
+                        recurrenceEndType={recurrenceEndType}
+                        setRecurrenceEndType={setRecurrenceEndType}
+                        recurrenceEndDate={recurrenceEndDate}
+                        setRecurrenceEndDate={setRecurrenceEndDate}
+                        recurrenceCount={recurrenceCount}
+                        setRecurrenceCount={setRecurrenceCount}
+                        onClose={() => setDatePickerOpen(false)}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </PropertyRow>
               </div>
             </div>
 
-            {/* Recurrence detail panel */}
-            {recurrenceFreq !== "none" && (
-              <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-4">
-                <div className="flex items-center gap-3">
-                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Every</Label>
-                  <Input type="number" min={1} max={99} value={recurrenceInterval} onChange={e => setRecurrenceInterval(Number(e.target.value))} className="h-8 w-16 text-center" />
-                  <span className="text-xs text-muted-foreground">
-                    {recurrenceFreq === "daily" ? "day(s)" : recurrenceFreq === "weekly" ? "week(s)" : recurrenceFreq === "monthly" ? "month(s)" : "year(s)"}
-                  </span>
-                </div>
-
-                {recurrenceFreq === "weekly" && (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">On days</Label>
-                    <div className="flex gap-1.5">
-                      {[["SU","S"],["MO","M"],["TU","T"],["WE","W"],["TH","T"],["FR","F"],["SA","S"]].map(([val, label]) => (
-                        <button key={val} type="button"
-                          onClick={() => setRecurrenceDays(prev => prev.includes(val) ? prev.filter(d => d !== val) : [...prev, val])}
-                          className={cn("w-8 h-8 rounded-full text-xs font-semibold border transition-colors",
-                            recurrenceDays.includes(val) ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:border-primary/50"
-                          )}
-                        >{label}</button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Ends</Label>
-                  <div className="space-y-2">
-                    {[
-                      { val: "never", label: "Never" },
-                      { val: "on_date", label: "On date" },
-                      { val: "after_n", label: "After" },
-                    ].map(opt => (
-                      <label key={opt.val} className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="recurrence-end" value={opt.val} checked={recurrenceEndType === opt.val} onChange={() => setRecurrenceEndType(opt.val as any)} className="accent-primary" />
-                        <span className="text-sm">{opt.label}</span>
-                        {opt.val === "on_date" && recurrenceEndType === "on_date" && (
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" size="sm" className="h-7 text-xs ml-1">
-                                {recurrenceEndDate ? format(recurrenceEndDate, "MMM d, yyyy") : "Pick date"}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar mode="single" selected={recurrenceEndDate} onSelect={setRecurrenceEndDate} className="p-3 pointer-events-auto" />
-                            </PopoverContent>
-                          </Popover>
-                        )}
-                        {opt.val === "after_n" && recurrenceEndType === "after_n" && (
-                          <div className="flex items-center gap-1.5 ml-1">
-                            <Input type="number" min={1} max={999} value={recurrenceCount} onChange={e => setRecurrenceCount(Number(e.target.value))} className="h-7 w-14 text-center text-xs" />
-                            <span className="text-xs text-muted-foreground">occurrences</span>
-                          </div>
-                        )}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Description */}
+            {/* Description — longer */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Description</Label>
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Add a description..." rows={3} maxLength={1000} className="resize-none" />
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Add a description, notes, or details..."
+                rows={6}
+                maxLength={2000}
+                className="resize-none"
+              />
             </div>
 
-            {/* Subtasks — only when editing */}
+            {/* Subtasks — only when editing, with more spacing */}
             {editTask && (
-              <div className="space-y-3">
+              <div className="space-y-3 pt-4 border-t border-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <ListChecks className="h-4 w-4 text-muted-foreground" />
@@ -636,7 +565,7 @@ export const PlannerTaskDialog = ({
                 </div>
 
                 {subtasks.length > 0 && (
-                  <Progress value={progressPct} className="h-1.5" indicatorClassName="bg-primary" />
+                  <Progress value={progressPct} className="h-1.5" />
                 )}
 
                 <div className="space-y-1">
@@ -672,7 +601,6 @@ export const PlannerTaskDialog = ({
                   ))}
                 </div>
 
-                {/* Add subtask input */}
                 <div className="flex items-center gap-2">
                   <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
                   <Input
@@ -713,6 +641,180 @@ function PropertyRow({ icon: Icon, label, children }: { icon: any; label: string
       <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
       <span className="text-xs text-muted-foreground w-16 shrink-0">{label}</span>
       <div className="flex-1 min-w-0">{children}</div>
+    </div>
+  );
+}
+
+// --- ClickUp-style Date Picker Panel ---
+interface DatePickerPanelProps {
+  startDate: Date | undefined;
+  endDate: Date | undefined;
+  onStartDateChange: (d: Date | undefined) => void;
+  onEndDateChange: (d: Date | undefined) => void;
+  quickDates: { label: string; sub: string; date: Date }[];
+  showRepeat: boolean;
+  setShowRepeat: (v: boolean) => void;
+  recurrenceFreq: string;
+  setRecurrenceFreq: (v: any) => void;
+  recurrenceInterval: number;
+  setRecurrenceInterval: (v: number) => void;
+  recurrenceDays: string[];
+  setRecurrenceDays: (v: string[] | ((prev: string[]) => string[])) => void;
+  recurrenceEndType: string;
+  setRecurrenceEndType: (v: any) => void;
+  recurrenceEndDate: Date | undefined;
+  setRecurrenceEndDate: (v: Date | undefined) => void;
+  recurrenceCount: number;
+  setRecurrenceCount: (v: number) => void;
+  onClose: () => void;
+}
+
+function DatePickerPanel({
+  startDate, endDate, onStartDateChange, onEndDateChange,
+  quickDates, showRepeat, setShowRepeat,
+  recurrenceFreq, setRecurrenceFreq,
+  recurrenceInterval, setRecurrenceInterval,
+  recurrenceDays, setRecurrenceDays,
+  recurrenceEndType, setRecurrenceEndType,
+  recurrenceEndDate, setRecurrenceEndDate,
+  recurrenceCount, setRecurrenceCount,
+  onClose,
+}: DatePickerPanelProps) {
+  const [activePicker, setActivePicker] = useState<"start" | "due">("start");
+
+  return (
+    <div className="flex">
+      {/* Left: Quick picks + Set Recurring */}
+      <div className="w-44 border-r border-border py-2">
+        {quickDates.map(q => (
+          <button
+            key={q.label}
+            type="button"
+            className="flex items-center justify-between w-full px-3 py-1.5 text-sm hover:bg-accent/50 text-left"
+            onClick={() => {
+              if (activePicker === "start") onStartDateChange(q.date);
+              else onEndDateChange(q.date);
+            }}
+          >
+            <span>{q.label}</span>
+            <span className="text-xs text-muted-foreground">{q.sub}</span>
+          </button>
+        ))}
+        <div className="border-t border-border my-1" />
+        <button
+          type="button"
+          className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent/50 text-left"
+          onClick={() => setShowRepeat(!showRepeat)}
+        >
+          <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+          <span>Set Recurring</span>
+        </button>
+      </div>
+
+      {/* Right: Calendar + tabs */}
+      <div className="p-3 space-y-3">
+        {/* Start / Due tabs */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setActivePicker("start")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border transition-colors",
+              activePicker === "start" ? "border-primary bg-primary/5" : "border-border hover:bg-accent/50"
+            )}
+          >
+            <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-muted-foreground text-xs">Start</span>
+            <span className="text-xs font-medium ml-auto">{startDate ? format(startDate, "MMM d") : "—"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActivePicker("due")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border transition-colors",
+              activePicker === "due" ? "border-primary bg-primary/5" : "border-border hover:bg-accent/50"
+            )}
+          >
+            <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-muted-foreground text-xs">Due</span>
+            <span className="text-xs font-medium ml-auto">{endDate ? format(endDate, "MMM d") : "—"}</span>
+          </button>
+        </div>
+
+        <Calendar
+          mode="single"
+          selected={activePicker === "start" ? startDate : endDate}
+          onSelect={(d) => {
+            if (activePicker === "start") onStartDateChange(d);
+            else onEndDateChange(d);
+          }}
+          className="p-0 pointer-events-auto"
+        />
+
+        {/* Repeat section */}
+        {showRepeat && (
+          <div className="border-t border-border pt-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-medium">Repeat</span>
+            </div>
+            <Select value={recurrenceFreq} onValueChange={(v) => setRecurrenceFreq(v)}>
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="yearly">Yearly</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {recurrenceFreq !== "none" && (
+              <>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground">Every</Label>
+                  <Input type="number" min={1} max={99} value={recurrenceInterval} onChange={e => setRecurrenceInterval(Number(e.target.value))} className="h-7 w-14 text-center text-xs" />
+                  <span className="text-xs text-muted-foreground">
+                    {recurrenceFreq === "daily" ? "day(s)" : recurrenceFreq === "weekly" ? "week(s)" : recurrenceFreq === "monthly" ? "month(s)" : "year(s)"}
+                  </span>
+                </div>
+
+                {recurrenceFreq === "weekly" && (
+                  <div className="flex gap-1">
+                    {[["SU","S"],["MO","M"],["TU","T"],["WE","W"],["TH","T"],["FR","F"],["SA","S"]].map(([val, label]) => (
+                      <button key={val} type="button"
+                        onClick={() => setRecurrenceDays(prev => prev.includes(val) ? prev.filter(d => d !== val) : [...prev, val])}
+                        className={cn("w-7 h-7 rounded-full text-xs font-semibold border transition-colors",
+                          recurrenceDays.includes(val) ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                        )}
+                      >{label}</button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Ends</Label>
+                  {[
+                    { val: "never", label: "Never" },
+                    { val: "on_date", label: "On date" },
+                    { val: "after_n", label: "After" },
+                  ].map(opt => (
+                    <label key={opt.val} className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="recurrence-end-dp" value={opt.val} checked={recurrenceEndType === opt.val} onChange={() => setRecurrenceEndType(opt.val)} className="accent-primary" />
+                      <span className="text-xs">{opt.label}</span>
+                      {opt.val === "after_n" && recurrenceEndType === "after_n" && (
+                        <Input type="number" min={1} max={999} value={recurrenceCount} onChange={e => setRecurrenceCount(Number(e.target.value))} className="h-6 w-12 text-center text-xs ml-1" />
+                      )}
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
