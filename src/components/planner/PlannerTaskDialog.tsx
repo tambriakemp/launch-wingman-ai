@@ -118,6 +118,7 @@ interface PlannerTaskDialogProps {
   categories?: SpaceCategory[];
   allCategories?: SpaceCategory[];
   selectedSpaceId?: string | null;
+  onCreateCategory?: (spaceId: string, name: string) => Promise<SpaceCategory | null>;
 }
 
 export const PlannerTaskDialog = ({
