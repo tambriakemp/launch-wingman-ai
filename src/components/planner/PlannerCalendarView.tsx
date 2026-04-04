@@ -596,9 +596,11 @@ export const PlannerCalendarView = ({
                             style={colorStyle}
                             onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
                           >
-                            {task.start_at && (
-                              <span className="font-bold">{format(parseISO(task.start_at), "h:mm")} </span>
-                            )}
+                            {task.start_at && (() => {
+                              const s = parseISO(task.start_at);
+                              if (s.getHours() === 0 && s.getMinutes() === 0) return null;
+                              return <span className="font-bold">{format(s, "h:mm")} </span>;
+                            })()}
                             {task.title}
                             {(task.recurrence_rule || (task as any)._isVirtualRecurrence) && (
                               <span className="opacity-50"> ↻</span>
