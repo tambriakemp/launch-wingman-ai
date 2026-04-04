@@ -259,11 +259,6 @@ export const PlannerCalendarView = ({
     if (date) setCurrentDate(date);
   };
 
-  const toggleSpaceFilter = (id: string) => {
-    setSpaceFilter(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
-  };
 
   return (
     <div className="flex h-full overflow-hidden">
