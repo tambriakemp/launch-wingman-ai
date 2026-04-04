@@ -3209,6 +3209,7 @@ export type Database = {
           location: string | null
           phase: string | null
           position: number
+          priority: string
           project_id: string
           recurrence_exception_dates: string[] | null
           recurrence_parent_id: string | null
@@ -3237,6 +3238,7 @@ export type Database = {
           location?: string | null
           phase?: string | null
           position?: number
+          priority?: string
           project_id: string
           recurrence_exception_dates?: string[] | null
           recurrence_parent_id?: string | null
@@ -3265,6 +3267,7 @@ export type Database = {
           location?: string | null
           phase?: string | null
           position?: number
+          priority?: string
           project_id?: string
           recurrence_exception_dates?: string[] | null
           recurrence_parent_id?: string | null
