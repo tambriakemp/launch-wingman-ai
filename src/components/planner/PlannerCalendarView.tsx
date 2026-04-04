@@ -30,7 +30,6 @@ import {
   Circle,
   Flame,
   Target,
-  Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
