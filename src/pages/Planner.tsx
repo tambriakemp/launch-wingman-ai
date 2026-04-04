@@ -322,6 +322,14 @@ const Planner = () => {
                 onDeleteTask={handleDeleteTask}
                 onAddTask={handleAddTask}
                 categories={activeCategories}
+                spaces={spaces}
+                onBulkMoveSpace={handleBulkMoveSpace}
+                onBulkDelete={handleBulkDelete}
+                onBulkUpdateCategory={handleBulkUpdateCategory}
+                onBulkUpdateStatus={handleBulkUpdateStatus}
+                onCreateCategory={createCategory}
+                selectedSpaceId={selectedSpaceId}
+                allCategories={categories}
               />
             )}
           </div>
