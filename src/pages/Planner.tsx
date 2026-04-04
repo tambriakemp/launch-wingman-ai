@@ -346,6 +346,7 @@ const Planner = () => {
         categories={activeCategories}
         allCategories={categories}
         selectedSpaceId={selectedSpaceId}
+        onCreateCategory={createCategory}
       />
     </ProjectLayout>
   );
