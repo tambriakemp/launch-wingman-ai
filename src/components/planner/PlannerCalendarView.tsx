@@ -359,30 +359,6 @@ export const PlannerCalendarView = ({
           )}
         </div>
 
-        {/* Space filter */}
-        {spaces.length > 0 && (
-          <div className="p-4 border-t border-border">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-3">Filter by Space</span>
-            <div className="space-y-1">
-              {spaces.map(space => (
-                <button
-                  key={space.id}
-                  className={cn(
-                    "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-accent/50 text-left",
-                    spaceFilter.length > 0 && !spaceFilter.includes(space.id) && "opacity-40"
-                  )}
-                  onClick={() => toggleSpaceFilter(space.id)}
-                >
-                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: space.color }} />
-                  <span className="flex-1 truncate">{space.name}</span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {allTasks.filter(t => (t as any).space_id === space.id).length}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ===== MAIN CALENDAR AREA ===== */}
