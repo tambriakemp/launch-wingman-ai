@@ -262,7 +262,7 @@ export const PlannerTaskDialog = ({
         category: category || null,
         due_at: startDate ? startDate.toISOString() : null,
         start_at: startDate ? startDate.toISOString() : null,
-        end_at: endDate ? endDate.toISOString() : null,
+        end_at: endDate ? endDate.toISOString() : (startDate ? startDate.toISOString() : null),
         location: null,
         recurrence_rule: recurrenceRuleValue,
         ...(({ space_id: selectedSpaceId }) as any),
