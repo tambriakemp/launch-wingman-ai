@@ -2397,6 +2397,36 @@ export type Database = {
         }
         Relationships: []
       }
+      planner_spaces: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_templates: {
         Row: {
           created_at: string
@@ -2845,6 +2875,44 @@ export type Database = {
         }
         Relationships: []
       }
+      space_categories: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          position: number
+          space_id: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          space_id: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          space_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_categories_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "planner_spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subtasks: {
         Row: {
           completed: boolean
@@ -3142,6 +3210,7 @@ export type Database = {
           recurrence_exception_dates: string[] | null
           recurrence_parent_id: string | null
           recurrence_rule: Json | null
+          space_id: string | null
           start_at: string | null
           task_origin: string
           task_scope: string
@@ -3169,6 +3238,7 @@ export type Database = {
           recurrence_exception_dates?: string[] | null
           recurrence_parent_id?: string | null
           recurrence_rule?: Json | null
+          space_id?: string | null
           start_at?: string | null
           task_origin?: string
           task_scope?: string
@@ -3196,6 +3266,7 @@ export type Database = {
           recurrence_exception_dates?: string[] | null
           recurrence_parent_id?: string | null
           recurrence_rule?: Json | null
+          space_id?: string | null
           start_at?: string | null
           task_origin?: string
           task_scope?: string
@@ -3217,6 +3288,13 @@ export type Database = {
             columns: ["recurrence_parent_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "planner_spaces"
             referencedColumns: ["id"]
           },
         ]
