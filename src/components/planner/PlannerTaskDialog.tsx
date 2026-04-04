@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
 
 export interface PlannerTask {
   id: string;
@@ -62,7 +63,6 @@ const STATUSES = [
   { id: "done", label: "Done" },
 ];
 
-/** Extract HH:MM from an ISO string in local time */
 function isoToLocalTime(iso: string): string {
   const d = new Date(iso);
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -74,6 +74,10 @@ interface PlannerTaskDialogProps {
   onSubmit: (data: Partial<PlannerTask>) => Promise<void>;
   editTask?: PlannerTask | null;
   defaultDueAt?: Date | null;
+  spaces?: PlannerSpace[];
+  categories?: SpaceCategory[];
+  allCategories?: SpaceCategory[];
+  selectedSpaceId?: string | null;
 }
 
 export const PlannerTaskDialog = ({
@@ -82,38 +86,19 @@ export const PlannerTaskDialog = ({
   onSubmit,
   editTask,
   defaultDueAt,
+  spaces = [],
+  categories = [],
+  allCategories = [],
+  selectedSpaceId = null,
 }: PlannerTaskDialogProps) => {
-  const DEFAULT_CATEGORIES = [
-    { id: "business", name: "Work", color: "#f5c842" },
-    { id: "life", name: "Personal", color: "#0ea572" },
-    { id: "health", name: "Health", color: "#f43f5e" },
-    { id: "finance", name: "Finance", color: "#8b5cf6" },
-  ];
-  const [plannerCategories, setPlannerCategories] = useState(() => {
-    try {
-      const stored = localStorage.getItem("planner-categories");
-      return stored ? JSON.parse(stored) : DEFAULT_CATEGORIES;
-    } catch { return DEFAULT_CATEGORIES; }
-  });
-
-  // Re-read categories from localStorage every time the dialog opens
-  useEffect(() => {
-    if (open) {
-      try {
-        const stored = localStorage.getItem("planner-categories");
-        setPlannerCategories(stored ? JSON.parse(stored) : DEFAULT_CATEGORIES);
-      } catch { setPlannerCategories(DEFAULT_CATEGORIES); }
-    }
-  }, [open]);
-
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [columnId, setColumnId] = useState("todo");
-  const [category, setCategory] = useState("business");
+  const [category, setCategory] = useState("");
+  const [spaceId, setSpaceId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recurrenceFreq, setRecurrenceFreq] = useState<"none"|"daily"|"weekly"|"monthly"|"yearly">("none");
   const [recurrenceInterval, setRecurrenceInterval] = useState(1);
@@ -122,19 +107,26 @@ export const PlannerTaskDialog = ({
   const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date | undefined>(undefined);
   const [recurrenceCount, setRecurrenceCount] = useState(10);
 
+  // Get categories for the selected space
+  const spaceCats = spaceId
+    ? allCategories.filter(c => c.space_id === spaceId)
+    : categories;
+
   const isScheduled = editTask && (editTask.start_at || editTask.end_at);
 
   useEffect(() => {
+    if (!open) return;
     if (editTask) {
       setTitle(editTask.title);
       setDescription(editTask.description || "");
       setColumnId(editTask.column_id);
-      // Validate category exists in current list; fall back to first available
-      const editCat = editTask.category;
-      const catExists = plannerCategories.some((c: { id: string }) => c.id === editCat);
-      setCategory(catExists && editCat ? editCat : plannerCategories[0]?.id || "business");
+      setSpaceId((editTask as any).space_id || selectedSpaceId);
 
-      // Date: prefer start_at, fallback to due_at
+      // Resolve category — validate it exists
+      const editCat = editTask.category;
+      const catExists = spaceCats.some(c => c.id === editCat);
+      setCategory(catExists && editCat ? editCat : spaceCats[0]?.id || "");
+
       if (editTask.start_at) {
         setSelectedDate(new Date(editTask.start_at));
         setStartTime(isoToLocalTime(editTask.start_at));
@@ -146,11 +138,7 @@ export const PlannerTaskDialog = ({
         setStartTime("");
       }
 
-      if (editTask.end_at) {
-        setEndTime(isoToLocalTime(editTask.end_at));
-      } else {
-        setEndTime("");
-      }
+      setEndTime(editTask.end_at ? isoToLocalTime(editTask.end_at) : "");
 
       if (editTask.recurrence_rule) {
         const r = editTask.recurrence_rule;
@@ -172,7 +160,8 @@ export const PlannerTaskDialog = ({
       setTitle("");
       setDescription("");
       setColumnId("todo");
-      setCategory("business");
+      setSpaceId(selectedSpaceId);
+      setCategory(spaceCats[0]?.id || "");
       setSelectedDate(defaultDueAt || undefined);
       setStartTime("");
       setEndTime("");
@@ -183,9 +172,20 @@ export const PlannerTaskDialog = ({
       setRecurrenceEndDate(undefined);
       setRecurrenceCount(10);
     }
-  }, [editTask, open, defaultDueAt]);
+  }, [editTask, open, defaultDueAt, selectedSpaceId]);
 
-  /** Combine selected date + time string into ISO */
+  // Update category when space changes
+  useEffect(() => {
+    if (!open) return;
+    const newCats = spaceId
+      ? allCategories.filter(c => c.space_id === spaceId)
+      : categories;
+    const currentValid = newCats.some(c => c.id === category);
+    if (!currentValid && newCats.length > 0) {
+      setCategory(newCats[0].id);
+    }
+  }, [spaceId]);
+
   const combineDatetime = (date: Date, time: string): string => {
     const [h, m] = time.split(":").map(Number);
     const combined = new Date(date);
@@ -195,28 +195,14 @@ export const PlannerTaskDialog = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      toast.error("Title is required");
-      return;
-    }
-    // Pair consistency for times
-    if (startTime && !endTime) {
-      toast.error("End time is required when start time is set");
-      return;
-    }
-    if (endTime && !startTime) {
-      toast.error("Start time is required when end time is set");
-      return;
-    }
-    // end >= start
-    if (startTime && endTime && startTime >= endTime) {
-      toast.error("End time must be after start time");
-      return;
-    }
+    if (!title.trim()) { toast.error("Title is required"); return; }
+    if (startTime && !endTime) { toast.error("End time is required when start time is set"); return; }
+    if (endTime && !startTime) { toast.error("Start time is required when end time is set"); return; }
+    if (startTime && endTime && startTime >= endTime) { toast.error("End time must be after start time"); return; }
 
     const hasSchedule = selectedDate && startTime && endTime;
-
     setIsSubmitting(true);
+
     const recurrenceRuleValue = recurrenceFreq === "none" ? null : {
       freq: recurrenceFreq,
       interval: recurrenceInterval,
@@ -225,23 +211,23 @@ export const PlannerTaskDialog = ({
       end_date: recurrenceEndDate ? recurrenceEndDate.toISOString().split("T")[0] : null,
       count: recurrenceCount,
     };
+
     try {
       await onSubmit({
         title: title.trim(),
         description: description.trim(),
         task_type: "task",
         column_id: columnId,
-        category,
+        category: category || null,
         due_at: selectedDate ? selectedDate.toISOString() : null,
         start_at: hasSchedule ? combineDatetime(selectedDate!, startTime) : null,
         end_at: hasSchedule ? combineDatetime(selectedDate!, endTime) : null,
         location: null,
         recurrence_rule: recurrenceRuleValue,
+        ...(({ space_id: spaceId }) as any),
       });
       onOpenChange(false);
-    } catch {
-      // handled upstream
-    } finally {
+    } catch {} finally {
       setIsSubmitting(false);
     }
   };
@@ -260,11 +246,10 @@ export const PlannerTaskDialog = ({
         start_at: null,
         end_at: null,
         location: null,
+        ...(({ space_id: spaceId }) as any),
       });
       onOpenChange(false);
-    } catch {
-      // handled upstream
-    } finally {
+    } catch {} finally {
       setIsSubmitting(false);
     }
   };
@@ -273,7 +258,6 @@ export const PlannerTaskDialog = ({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-[480px] overflow-y-auto p-0">
         <form onSubmit={handleSubmit}>
-          {/* Header with icon */}
           <SheetHeader className="px-6 pt-6 pb-4 space-y-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -289,46 +273,55 @@ export const PlannerTaskDialog = ({
             {/* Title */}
             <div className="space-y-1.5">
               <Label htmlFor="planner-title" className="text-xs font-medium text-muted-foreground">Title *</Label>
-              <Input
-                id="planner-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter title"
-                maxLength={200}
-                className="h-10"
-              />
+              <Input id="planner-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter title" maxLength={200} className="h-10" />
             </div>
 
             {/* Description */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Description</Label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Optional description"
-                rows={2}
-                maxLength={1000}
-                className="resize-none"
-              />
+              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" rows={2} maxLength={1000} className="resize-none" />
             </div>
 
+            {/* Space */}
+            {spaces.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Space</Label>
+                <Select value={spaceId || "none"} onValueChange={(v) => setSpaceId(v === "none" ? null : v)}>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No space</SelectItem>
+                    {spaces.map(s => (
+                      <SelectItem key={s.id} value={s.id}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full" style={{ background: s.color }} />
+                          {s.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             {/* Category */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Category</Label>
-              <Select value={category} onValueChange={(v) => setCategory(v)}>
-                <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {plannerCategories.map((cat: { id: string; name: string; color: string }) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full" style={{ background: cat.color }} />
-                        {cat.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {spaceCats.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">Category</Label>
+                <Select value={category} onValueChange={(v) => setCategory(v)}>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {spaceCats.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full" style={{ background: cat.color }} />
+                          {cat.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Status */}
             <div className="space-y-1.5">
@@ -354,18 +347,12 @@ export const PlannerTaskDialog = ({
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
+                  <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus className={cn("p-3 pointer-events-auto")} />
                 </PopoverContent>
               </Popover>
             </div>
 
-            {/* Start / End time — always visible */}
+            {/* Start / End time */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Start Time</Label>
@@ -394,23 +381,14 @@ export const PlannerTaskDialog = ({
 
             {recurrenceFreq !== "none" && (
               <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-4">
-                {/* Interval */}
                 <div className="flex items-center gap-3">
                   <Label className="text-xs text-muted-foreground whitespace-nowrap">Every</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={99}
-                    value={recurrenceInterval}
-                    onChange={e => setRecurrenceInterval(Number(e.target.value))}
-                    className="h-8 w-16 text-center"
-                  />
+                  <Input type="number" min={1} max={99} value={recurrenceInterval} onChange={e => setRecurrenceInterval(Number(e.target.value))} className="h-8 w-16 text-center" />
                   <span className="text-xs text-muted-foreground">
                     {recurrenceFreq === "daily" ? "day(s)" : recurrenceFreq === "weekly" ? "week(s)" : recurrenceFreq === "monthly" ? "month(s)" : "year(s)"}
                   </span>
                 </div>
 
-                {/* Day picker for weekly */}
                 {recurrenceFreq === "weekly" && (
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">On days</Label>
@@ -419,14 +397,10 @@ export const PlannerTaskDialog = ({
                         <button
                           key={val}
                           type="button"
-                          onClick={() => setRecurrenceDays(prev =>
-                            prev.includes(val) ? prev.filter(d => d !== val) : [...prev, val]
-                          )}
+                          onClick={() => setRecurrenceDays(prev => prev.includes(val) ? prev.filter(d => d !== val) : [...prev, val])}
                           className={cn(
                             "w-8 h-8 rounded-full text-xs font-semibold border transition-colors",
-                            recurrenceDays.includes(val)
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                            recurrenceDays.includes(val) ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:border-primary/50"
                           )}
                         >
                           {label}
@@ -436,7 +410,6 @@ export const PlannerTaskDialog = ({
                   </div>
                 )}
 
-                {/* End condition */}
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">Ends</Label>
                   <div className="space-y-2">
@@ -446,14 +419,7 @@ export const PlannerTaskDialog = ({
                       { val: "after_n", label: "After" },
                     ].map(opt => (
                       <label key={opt.val} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="recurrence-end"
-                          value={opt.val}
-                          checked={recurrenceEndType === opt.val}
-                          onChange={() => setRecurrenceEndType(opt.val as any)}
-                          className="accent-primary"
-                        />
+                        <input type="radio" name="recurrence-end" value={opt.val} checked={recurrenceEndType === opt.val} onChange={() => setRecurrenceEndType(opt.val as any)} className="accent-primary" />
                         <span className="text-sm">{opt.label}</span>
                         {opt.val === "on_date" && recurrenceEndType === "on_date" && (
                           <Popover>
@@ -469,14 +435,7 @@ export const PlannerTaskDialog = ({
                         )}
                         {opt.val === "after_n" && recurrenceEndType === "after_n" && (
                           <div className="flex items-center gap-1.5 ml-1">
-                            <Input
-                              type="number"
-                              min={1}
-                              max={999}
-                              value={recurrenceCount}
-                              onChange={e => setRecurrenceCount(Number(e.target.value))}
-                              className="h-7 w-14 text-center text-xs"
-                            />
+                            <Input type="number" min={1} max={999} value={recurrenceCount} onChange={e => setRecurrenceCount(Number(e.target.value))} className="h-7 w-14 text-center text-xs" />
                             <span className="text-xs text-muted-foreground">occurrences</span>
                           </div>
                         )}
@@ -486,20 +445,11 @@ export const PlannerTaskDialog = ({
                 </div>
               </div>
             )}
-
           </div>
 
-          {/* Footer */}
           <SheetFooter className="px-6 py-4 border-t border-border flex-col sm:flex-row gap-2">
             {editTask && isScheduled && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 text-muted-foreground mr-auto"
-                onClick={handleUnschedule}
-                disabled={isSubmitting}
-              >
+              <Button type="button" variant="ghost" size="sm" className="gap-1.5 text-muted-foreground mr-auto" onClick={handleUnschedule} disabled={isSubmitting}>
                 <CalendarOff className="w-4 h-4" />
                 Unschedule
               </Button>

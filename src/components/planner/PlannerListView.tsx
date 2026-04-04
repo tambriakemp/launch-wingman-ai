@@ -2,7 +2,6 @@ import { useState } from "react";
 import { format, parseISO, isPast, isToday, startOfWeek, endOfWeek, isBefore, isAfter } from "date-fns";
 import { CheckCircle2, Circle, ChevronDown, ChevronRight, MoreHorizontal, Pencil, Trash2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { PlannerTask } from "./PlannerTaskDialog";
+import type { SpaceCategory } from "@/hooks/usePlannerSpaces";
 
 interface PlannerListViewProps {
   tasks: PlannerTask[];
@@ -19,6 +19,7 @@ interface PlannerListViewProps {
   onEditTask: (task: PlannerTask) => void;
   onDeleteTask: (taskId: string) => void;
   onAddTask?: () => void;
+  categories?: SpaceCategory[];
 }
 
 type GroupKey = "overdue" | "today" | "this_week" | "anytime" | "completed";
@@ -35,10 +36,7 @@ function groupTasks(tasks: PlannerTask[]): Record<GroupKey, PlannerTask[]> {
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-
-  const groups: Record<GroupKey, PlannerTask[]> = {
-    overdue: [], today: [], this_week: [], anytime: [], completed: [],
-  };
+  const groups: Record<GroupKey, PlannerTask[]> = { overdue: [], today: [], this_week: [], anytime: [], completed: [] };
 
   for (const task of tasks) {
     if (task.column_id === "done") { groups.completed.push(task); continue; }
@@ -66,13 +64,10 @@ function getStatusBadge(columnId: string) {
   }
 }
 
-export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask, onDeleteTask, onAddTask }: PlannerListViewProps) => {
+export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask, onDeleteTask, onAddTask, categories = [] }: PlannerListViewProps) => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(GROUP_CONFIG.map((g) => [g.key, g.defaultOpen]))
   );
-
-
-
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
@@ -83,7 +78,6 @@ export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask
 
   return (
     <div className="px-4 pb-4">
-      {/* Column headers */}
       <div className="grid grid-cols-[minmax(0,1fr)_100px_100px_90px_36px] gap-2 items-center px-4 py-1.5 border-b border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground select-none sticky top-0 bg-background z-10">
         <span className="pl-8">Name</span>
         <span>Due Date</span>
@@ -99,7 +93,6 @@ export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask
 
         return (
           <div key={key} className="mt-1">
-            {/* Group header */}
             <button
               type="button"
               className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 transition-colors text-left rounded-sm"
@@ -114,9 +107,8 @@ export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask
             {isOpen && (
               <div>
                 {items.map((task) => (
-                  <TaskRow key={task.id} task={task} onToggleComplete={onToggleComplete} onEdit={onEditTask} onDelete={onDeleteTask} />
+                  <TaskRow key={task.id} task={task} onToggleComplete={onToggleComplete} onEdit={onEditTask} onDelete={onDeleteTask} categories={categories} />
                 ))}
-                {/* Add task row */}
                 {onAddTask && (
                   <button
                     type="button"
@@ -148,21 +140,20 @@ export const PlannerListView = ({ tasks, isLoading, onToggleComplete, onEditTask
   );
 };
 
-function TaskRow({ task, onToggleComplete, onEdit, onDelete }: { task: PlannerTask; onToggleComplete: (t: PlannerTask) => void; onEdit: (t: PlannerTask) => void; onDelete: (id: string) => void }) {
+function TaskRow({ task, onToggleComplete, onEdit, onDelete, categories }: {
+  task: PlannerTask;
+  onToggleComplete: (t: PlannerTask) => void;
+  onEdit: (t: PlannerTask) => void;
+  onDelete: (id: string) => void;
+  categories: SpaceCategory[];
+}) {
   const isDone = task.column_id === "done";
 
   const getCategoryName = (id: string | null | undefined) => {
     if (!id) return "—";
-    const DEFAULT_CATEGORIES: Record<string, string> = { business: "Work", life: "Personal", health: "Health", finance: "Finance" };
-    try {
-      const stored = localStorage.getItem("planner-categories");
-      if (stored) {
-        const cats = JSON.parse(stored);
-        const found = cats.find((c: any) => c.id === id);
-        if (found) return found.name;
-      }
-    } catch {}
-    return DEFAULT_CATEGORIES[id] || id;
+    const found = categories.find(c => c.id === id);
+    if (found) return found.name;
+    return id;
   };
 
   return (
@@ -170,40 +161,21 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete }: { task: PlannerTa
       className="grid grid-cols-[minmax(0,1fr)_100px_100px_90px_36px] gap-2 items-center px-4 h-9 hover:bg-accent/40 transition-colors cursor-pointer group border-b border-border/50"
       onClick={() => onEdit(task)}
     >
-      {/* Name */}
       <div className="flex items-center gap-2 min-w-0">
-        <button
-          type="button"
-          className="shrink-0"
-          onClick={(e) => { e.stopPropagation(); onToggleComplete(task); }}
-        >
-          {isDone
-            ? <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-            : <Circle className="w-4 h-4 text-muted-foreground/50 hover:text-primary transition-colors" />
-          }
+        <button type="button" className="shrink-0" onClick={(e) => { e.stopPropagation(); onToggleComplete(task); }}>
+          {isDone ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Circle className="w-4 h-4 text-muted-foreground/50 hover:text-primary transition-colors" />}
         </button>
         <span className={cn("text-sm truncate", isDone && "line-through text-muted-foreground")}>{task.title}</span>
       </div>
 
-      {/* Due Date */}
-      <span className={cn(
-        "text-xs truncate",
-        task.due_at && isPast(parseISO(task.due_at)) && !isToday(parseISO(task.due_at)) && !isDone
-          ? "text-destructive"
-          : "text-muted-foreground"
-      )}>
+      <span className={cn("text-xs truncate", task.due_at && isPast(parseISO(task.due_at)) && !isToday(parseISO(task.due_at)) && !isDone ? "text-destructive" : "text-muted-foreground")}>
         {task.due_at ? format(parseISO(task.due_at), "MMM d") : "—"}
       </span>
 
-      {/* Category */}
-      <span className="text-xs text-muted-foreground truncate capitalize">
-        {getCategoryName(task.category)}
-      </span>
+      <span className="text-xs text-muted-foreground truncate capitalize">{getCategoryName(task.category)}</span>
 
-      {/* Status */}
       {getStatusBadge(task.column_id)}
 
-      {/* Actions */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
