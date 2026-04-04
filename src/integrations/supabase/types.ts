@@ -2917,6 +2917,7 @@ export type Database = {
         Row: {
           completed: boolean
           created_at: string
+          description: string | null
           id: string
           position: number
           task_id: string
@@ -2927,6 +2928,7 @@ export type Database = {
         Insert: {
           completed?: boolean
           created_at?: string
+          description?: string | null
           id?: string
           position?: number
           task_id: string
@@ -2937,6 +2939,7 @@ export type Database = {
         Update: {
           completed?: boolean
           created_at?: string
+          description?: string | null
           id?: string
           position?: number
           task_id?: string

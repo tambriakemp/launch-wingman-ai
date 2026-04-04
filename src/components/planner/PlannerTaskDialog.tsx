@@ -1,6 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
-import { CalendarCheck, CalendarIcon, CalendarOff } from "lucide-react";
+import {
+  CalendarCheck,
+  CalendarIcon,
+  CalendarOff,
+  ChevronLeft,
+  CircleDot,
+  FolderOpen,
+  Tag,
+  RefreshCw,
+  Plus,
+  Trash2,
+  MoreHorizontal,
+  CheckSquare,
+  Square,
+  ListChecks,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +41,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
 
 export interface PlannerTask {
@@ -55,6 +79,18 @@ export interface PlannerTask {
   recurrence_rule: any | null;
   recurrence_parent_id: string | null;
   recurrence_exception_dates: string[] | null;
+}
+
+interface Subtask {
+  id: string;
+  task_id: string;
+  user_id: string;
+  title: string;
+  completed: boolean;
+  position: number;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 const STATUSES = [
@@ -107,22 +143,41 @@ export const PlannerTaskDialog = ({
   const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date | undefined>(undefined);
   const [recurrenceCount, setRecurrenceCount] = useState(10);
 
-  // Get categories for the selected space
+  // Subtasks state
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [activeSubtask, setActiveSubtask] = useState<Subtask | null>(null);
+  const [subtaskTitle, setSubtaskTitle] = useState("");
+  const [subtaskDescription, setSubtaskDescription] = useState("");
+  const [subtaskSaving, setSubtaskSaving] = useState(false);
+
   const spaceCats = spaceId
     ? allCategories.filter(c => c.space_id === spaceId)
     : categories;
 
   const isScheduled = editTask && (editTask.start_at || editTask.end_at);
 
+  // Fetch subtasks
+  const fetchSubtasks = useCallback(async (taskId: string) => {
+    const { data } = await supabase
+      .from("subtasks")
+      .select("*")
+      .eq("task_id", taskId)
+      .order("position", { ascending: true });
+    if (data) setSubtasks(data as unknown as Subtask[]);
+  }, []);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setActiveSubtask(null);
+      return;
+    }
     if (editTask) {
       setTitle(editTask.title);
       setDescription(editTask.description || "");
       setColumnId(editTask.column_id);
       setSpaceId((editTask as any).space_id || selectedSpaceId);
 
-      // Resolve category — validate it exists
       const editCat = editTask.category;
       const catExists = spaceCats.some(c => c.id === editCat);
       setCategory(catExists && editCat ? editCat : spaceCats[0]?.id || "");
@@ -156,6 +211,7 @@ export const PlannerTaskDialog = ({
         setRecurrenceEndDate(undefined);
         setRecurrenceCount(10);
       }
+      fetchSubtasks(editTask.id);
     } else {
       setTitle("");
       setDescription("");
@@ -171,10 +227,10 @@ export const PlannerTaskDialog = ({
       setRecurrenceEndType("never");
       setRecurrenceEndDate(undefined);
       setRecurrenceCount(10);
+      setSubtasks([]);
     }
   }, [editTask, open, defaultDueAt, selectedSpaceId]);
 
-  // Update category when space changes
   useEffect(() => {
     if (!open) return;
     const newCats = spaceId
@@ -254,11 +310,119 @@ export const PlannerTaskDialog = ({
     }
   };
 
+  // --- Subtask CRUD ---
+  const addSubtask = async () => {
+    if (!editTask || !newSubtaskTitle.trim()) return;
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return;
+    const { error } = await supabase.from("subtasks").insert({
+      task_id: editTask.id,
+      user_id: userData.user.id,
+      title: newSubtaskTitle.trim(),
+      position: subtasks.length,
+    });
+    if (error) { toast.error("Failed to add subtask"); return; }
+    setNewSubtaskTitle("");
+    fetchSubtasks(editTask.id);
+  };
+
+  const toggleSubtask = async (st: Subtask) => {
+    await supabase.from("subtasks").update({ completed: !st.completed }).eq("id", st.id);
+    setSubtasks(prev => prev.map(s => s.id === st.id ? { ...s, completed: !s.completed } : s));
+  };
+
+  const deleteSubtask = async (id: string) => {
+    await supabase.from("subtasks").delete().eq("id", id);
+    if (editTask) fetchSubtasks(editTask.id);
+  };
+
+  const openSubtaskDetail = (st: Subtask) => {
+    setActiveSubtask(st);
+    setSubtaskTitle(st.title);
+    setSubtaskDescription((st as any).description || "");
+  };
+
+  const saveSubtaskDetail = async () => {
+    if (!activeSubtask) return;
+    setSubtaskSaving(true);
+    await supabase.from("subtasks").update({
+      title: subtaskTitle.trim(),
+      description: subtaskDescription.trim() || null,
+    } as any).eq("id", activeSubtask.id);
+    setSubtaskSaving(false);
+    if (editTask) fetchSubtasks(editTask.id);
+    setActiveSubtask(null);
+    toast.success("Subtask updated");
+  };
+
+  const completedCount = subtasks.filter(s => s.completed).length;
+  const progressPct = subtasks.length > 0 ? (completedCount / subtasks.length) * 100 : 0;
+
+  // --- Subtask Detail View ---
+  if (activeSubtask) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="w-full sm:max-w-[720px] overflow-y-auto p-0">
+          <SheetHeader className="px-6 pt-6 pb-4">
+            <div className="flex items-center gap-3">
+              <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setActiveSubtask(null)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <ListChecks className="w-4 h-4 text-primary" />
+              </div>
+              <SheetTitle className="text-lg">Subtask Details</SheetTitle>
+            </div>
+          </SheetHeader>
+
+          <div className="px-6 space-y-5 pb-6">
+            {/* Completed toggle */}
+            <div className="flex items-center gap-3">
+              <Checkbox
+                checked={activeSubtask.completed}
+                onCheckedChange={() => {
+                  toggleSubtask(activeSubtask);
+                  setActiveSubtask({ ...activeSubtask, completed: !activeSubtask.completed });
+                }}
+              />
+              <span className={cn("text-sm", activeSubtask.completed && "line-through text-muted-foreground")}>
+                {activeSubtask.completed ? "Completed" : "Not completed"}
+              </span>
+            </div>
+
+            {/* Title */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Title</Label>
+              <Input value={subtaskTitle} onChange={e => setSubtaskTitle(e.target.value)} className="h-10 text-base font-medium" />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Description</Label>
+              <Textarea value={subtaskDescription} onChange={e => setSubtaskDescription(e.target.value)} placeholder="Add details about this subtask..." rows={4} className="resize-none" />
+            </div>
+
+            {/* Meta */}
+            <div className="text-xs text-muted-foreground">
+              Created {format(new Date(activeSubtask.created_at), "PPP 'at' p")}
+            </div>
+          </div>
+
+          <SheetFooter className="px-6 py-4 border-t border-border">
+            <Button type="button" variant="outline" onClick={() => setActiveSubtask(null)}>Cancel</Button>
+            <Button onClick={saveSubtaskDetail} disabled={subtaskSaving}>{subtaskSaving ? "Saving..." : "Save"}</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  // --- Main Task View ---
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-[480px] overflow-y-auto p-0">
+      <SheetContent className="w-full sm:max-w-[720px] overflow-y-auto p-0">
         <form onSubmit={handleSubmit}>
-          <SheetHeader className="px-6 pt-6 pb-4 space-y-3">
+          <SheetHeader className="px-6 pt-6 pb-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                 <CalendarCheck className="w-5 h-5 text-primary" />
@@ -269,116 +433,127 @@ export const PlannerTaskDialog = ({
             </div>
           </SheetHeader>
 
-          <div className="px-6 space-y-4 pb-2">
-            {/* Title */}
-            <div className="space-y-1.5">
-              <Label htmlFor="planner-title" className="text-xs font-medium text-muted-foreground">Title *</Label>
-              <Input id="planner-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter title" maxLength={200} className="h-10" />
-            </div>
+          <div className="px-6 space-y-5 pb-2">
+            {/* Title — large input */}
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Task name"
+              maxLength={200}
+              className="h-12 text-lg font-semibold border-none shadow-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50"
+            />
 
-            {/* Description */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Description</Label>
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" rows={2} maxLength={1000} className="resize-none" />
-            </div>
+            {/* ClickUp-style property grid */}
+            <div className="rounded-xl border border-border bg-muted/20 divide-y divide-border">
+              {/* Row: Status + Space */}
+              <div className="grid grid-cols-2 divide-x divide-border">
+                <PropertyRow icon={CircleDot} label="Status">
+                  <Select value={columnId} onValueChange={setColumnId}>
+                    <SelectTrigger className="h-8 border-none shadow-none bg-transparent text-sm px-2 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUSES.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </PropertyRow>
 
-            {/* Space */}
-            {spaces.length > 0 && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Space</Label>
-                <Select value={spaceId || "none"} onValueChange={(v) => setSpaceId(v === "none" ? null : v)}>
-                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No space</SelectItem>
-                    {spaces.map(s => (
-                      <SelectItem key={s.id} value={s.id}>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full" style={{ background: s.color }} />
-                          {s.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {spaces.length > 0 ? (
+                  <PropertyRow icon={FolderOpen} label="Space">
+                    <Select value={spaceId || "none"} onValueChange={(v) => setSpaceId(v === "none" ? null : v)}>
+                      <SelectTrigger className="h-8 border-none shadow-none bg-transparent text-sm px-2 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No space</SelectItem>
+                        {spaces.map(s => (
+                          <SelectItem key={s.id} value={s.id}>
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full" style={{ background: s.color }} />
+                              {s.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </PropertyRow>
+                ) : (
+                  <PropertyRow icon={FolderOpen} label="Space">
+                    <span className="text-sm text-muted-foreground px-2">—</span>
+                  </PropertyRow>
+                )}
               </div>
-            )}
 
-            {/* Category */}
-            {spaceCats.length > 0 && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Category</Label>
-                <Select value={category} onValueChange={(v) => setCategory(v)}>
-                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {spaceCats.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full" style={{ background: cat.color }} />
-                          {cat.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Row: Date + Category */}
+              <div className="grid grid-cols-2 divide-x divide-border">
+                <PropertyRow icon={CalendarIcon} label="Date">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button type="button" className={cn("text-sm px-2 py-1 rounded hover:bg-accent/50 text-left truncate", !selectedDate && "text-muted-foreground")}>
+                        {selectedDate ? format(selectedDate, "MMM d, yyyy") : "None"}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus className="p-3 pointer-events-auto" />
+                    </PopoverContent>
+                  </Popover>
+                </PropertyRow>
+
+                {spaceCats.length > 0 ? (
+                  <PropertyRow icon={Tag} label="Category">
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger className="h-8 border-none shadow-none bg-transparent text-sm px-2 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {spaceCats.map(cat => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full" style={{ background: cat.color }} />
+                              {cat.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </PropertyRow>
+                ) : (
+                  <PropertyRow icon={Tag} label="Category">
+                    <span className="text-sm text-muted-foreground px-2">—</span>
+                  </PropertyRow>
+                )}
               </div>
-            )}
 
-            {/* Status */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Status</Label>
-              <Select value={columnId} onValueChange={setColumnId}>
-                <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {STATUSES.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              {/* Row: Start/End Time + Repeat */}
+              <div className="grid grid-cols-2 divide-x divide-border">
+                <PropertyRow icon={CalendarCheck} label="Time">
+                  <div className="flex items-center gap-1 px-1">
+                    <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="h-7 w-[5.5rem] text-xs border-none shadow-none bg-transparent px-1" />
+                    <span className="text-muted-foreground text-xs">→</span>
+                    <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="h-7 w-[5.5rem] text-xs border-none shadow-none bg-transparent px-1" />
+                  </div>
+                </PropertyRow>
 
-            {/* Date picker */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-10", !selectedDate && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus className={cn("p-3 pointer-events-auto")} />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Start / End time */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">Start Time</Label>
-                <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="h-10" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">End Time</Label>
-                <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="h-10" />
+                <PropertyRow icon={RefreshCw} label="Repeat">
+                  <Select value={recurrenceFreq} onValueChange={(v) => setRecurrenceFreq(v as any)}>
+                    <SelectTrigger className="h-8 border-none shadow-none bg-transparent text-sm px-2 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="yearly">Yearly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </PropertyRow>
               </div>
             </div>
 
-            {/* Recurrence */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Repeat</Label>
-              <Select value={recurrenceFreq} onValueChange={(v) => setRecurrenceFreq(v as any)}>
-                <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Does not repeat</SelectItem>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="yearly">Yearly</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
+            {/* Recurrence detail panel */}
             {recurrenceFreq !== "none" && (
               <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-4">
                 <div className="flex items-center gap-3">
@@ -394,17 +569,12 @@ export const PlannerTaskDialog = ({
                     <Label className="text-xs text-muted-foreground">On days</Label>
                     <div className="flex gap-1.5">
                       {[["SU","S"],["MO","M"],["TU","T"],["WE","W"],["TH","T"],["FR","F"],["SA","S"]].map(([val, label]) => (
-                        <button
-                          key={val}
-                          type="button"
+                        <button key={val} type="button"
                           onClick={() => setRecurrenceDays(prev => prev.includes(val) ? prev.filter(d => d !== val) : [...prev, val])}
-                          className={cn(
-                            "w-8 h-8 rounded-full text-xs font-semibold border transition-colors",
+                          className={cn("w-8 h-8 rounded-full text-xs font-semibold border transition-colors",
                             recurrenceDays.includes(val) ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:border-primary/50"
                           )}
-                        >
-                          {label}
-                        </button>
+                        >{label}</button>
                       ))}
                     </div>
                   </div>
@@ -445,6 +615,79 @@ export const PlannerTaskDialog = ({
                 </div>
               </div>
             )}
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Description</Label>
+              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Add a description..." rows={3} maxLength={1000} className="resize-none" />
+            </div>
+
+            {/* Subtasks — only when editing */}
+            {editTask && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ListChecks className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Subtasks</span>
+                    {subtasks.length > 0 && (
+                      <span className="text-xs text-muted-foreground">({completedCount}/{subtasks.length})</span>
+                    )}
+                  </div>
+                </div>
+
+                {subtasks.length > 0 && (
+                  <Progress value={progressPct} className="h-1.5" indicatorClassName="bg-primary" />
+                )}
+
+                <div className="space-y-1">
+                  {subtasks.map(st => (
+                    <div key={st.id} className="group flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-muted/50 transition-colors">
+                      <Checkbox
+                        checked={st.completed}
+                        onCheckedChange={() => toggleSubtask(st)}
+                        className="shrink-0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => openSubtaskDetail(st)}
+                        className={cn(
+                          "flex-1 text-left text-sm truncate",
+                          st.completed && "line-through text-muted-foreground"
+                        )}
+                      >
+                        {st.title}
+                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button type="button" variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <MoreHorizontal className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openSubtaskDetail(st)}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => deleteSubtask(st.id)}>Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add subtask input */}
+                <div className="flex items-center gap-2">
+                  <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <Input
+                    value={newSubtaskTitle}
+                    onChange={e => setNewSubtaskTitle(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addSubtask(); } }}
+                    placeholder="Add a subtask..."
+                    className="h-8 text-sm border-none shadow-none bg-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  />
+                  {newSubtaskTitle.trim() && (
+                    <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={addSubtask}>Add</Button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <SheetFooter className="px-6 py-4 border-t border-border flex-col sm:flex-row gap-2">
@@ -462,3 +705,14 @@ export const PlannerTaskDialog = ({
     </Sheet>
   );
 };
+
+// --- Helper: Property Row ---
+function PropertyRow({ icon: Icon, label, children }: { icon: any; label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 min-h-[40px]">
+      <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+      <span className="text-xs text-muted-foreground w-16 shrink-0">{label}</span>
+      <div className="flex-1 min-w-0">{children}</div>
+    </div>
+  );
+}
