@@ -215,7 +215,7 @@ export const PlannerCalendarView = ({
 
   const expandedTasks = useMemo(() => {
     return expandAllRecurring(tasks, windowStart, windowEnd);
-  }, [displayTasks, windowStart, windowEnd]);
+  }, [tasks, windowStart, windowEnd]);
 
   const scheduledTasks = useMemo(() => {
     return expandedTasks.filter(t => t.start_at && t.end_at);
