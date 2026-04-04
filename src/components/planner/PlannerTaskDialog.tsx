@@ -751,7 +751,7 @@ function DatePickerPanel({
   const [activePicker, setActivePicker] = useState<"start" | "due">("start");
 
   return (
-    <div className="flex">
+    <div className="flex pointer-events-auto">
       {/* Left: Quick picks + Set Recurring */}
       <div className="w-44 border-r border-border py-2">
         {quickDates.map(q => (
