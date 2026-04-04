@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -11,6 +11,8 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { CalendarDays, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SpacesSidebar } from "@/components/planner/SpacesSidebar";
+import { usePlannerSpaces } from "@/hooks/usePlannerSpaces";
 
 const Planner = () => {
   const { user } = useAuth();
@@ -20,8 +22,20 @@ const Planner = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<PlannerTask | null>(null);
-  
   const [defaultDueAt, setDefaultDueAt] = useState<Date | null>(null);
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+
+  const {
+    spaces,
+    categories,
+    isLoading: spacesLoading,
+    createSpace,
+    updateSpace,
+    deleteSpace,
+    createCategory,
+    deleteCategory,
+    getCategoriesForSpace,
+  } = usePlannerSpaces();
 
   const fetchTasks = useCallback(async () => {
     if (!user) return;
@@ -45,6 +59,17 @@ const Planner = () => {
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
+
+  // Filter tasks by selected space
+  const filteredTasks = useMemo(() => {
+    if (!selectedSpaceId) return tasks;
+    return tasks.filter(t => (t as any).space_id === selectedSpaceId);
+  }, [tasks, selectedSpaceId]);
+
+  // Get categories for the current context
+  const activeCategories = useMemo(() => {
+    return getCategoriesForSpace(selectedSpaceId);
+  }, [selectedSpaceId, categories, getCategoriesForSpace]);
 
   const handleCreateTask = async (data: Partial<PlannerTask>) => {
     if (!user) return;
@@ -78,13 +103,14 @@ const Planner = () => {
       task_origin: "user",
       task_scope: "planner",
       task_type: data.task_type || "task",
-      category: data.category || "business",
+      category: data.category || null,
       due_at: data.due_at || null,
       start_at: data.start_at || null,
       end_at: data.end_at || null,
       location: data.location || null,
       position: 0,
       recurrence_rule: data.recurrence_rule || null,
+      space_id: (data as any).space_id || selectedSpaceId || null,
     } as any);
 
     if (error) {
@@ -113,6 +139,7 @@ const Planner = () => {
         end_at: data.end_at || null,
         location: data.location || null,
         recurrence_rule: data.recurrence_rule !== undefined ? data.recurrence_rule : editingTask.recurrence_rule,
+        space_id: (data as any).space_id !== undefined ? (data as any).space_id : (editingTask as any).space_id,
       } as any)
       .eq("id", editingTask.id);
 
@@ -152,20 +179,17 @@ const Planner = () => {
   };
 
   const handleEditTask = (task: PlannerTask) => {
-    // If it's a virtual recurrence instance, find the parent task
     if ((task as any)._isVirtualRecurrence) {
       const parentId = (task as any)._parentId;
       const parent = tasks.find(t => t.id === parentId);
       if (parent) {
         setEditingTask(parent);
-        
         setDefaultDueAt(null);
         setDialogOpen(true);
       }
       return;
     }
     setEditingTask(task);
-    
     setDefaultDueAt(null);
     setDialogOpen(true);
   };
@@ -178,12 +202,11 @@ const Planner = () => {
 
   const handleAddTask = () => {
     setEditingTask(null);
-    
     setDefaultDueAt(null);
     setDialogOpen(true);
   };
 
-  if (accessLoading) {
+  if (accessLoading || spacesLoading) {
     return (
       <ProjectLayout>
         <div className="h-[calc(100vh-3.5rem)] flex items-center justify-center">
@@ -232,28 +255,46 @@ const Planner = () => {
             </TabsList>
           </Tabs>
         </div>
-        <div className="flex-1 overflow-hidden">
-          {view === "calendar" && (
-            <PlannerCalendarView
-              tasks={tasks}
-              isLoading={isLoading}
-              onEditTask={handleEditTask}
-              onCreateTask={handleQuickCreate}
-              onToggleComplete={handleToggleComplete}
-              onDeleteTask={handleDeleteTask}
-              onAddTask={handleAddTask}
-            />
-          )}
-          {view === "list" && (
-            <PlannerListView
-              tasks={tasks}
-              isLoading={isLoading}
-              onEditTask={handleEditTask}
-              onToggleComplete={handleToggleComplete}
-              onDeleteTask={handleDeleteTask}
-              onAddTask={handleAddTask}
-            />
-          )}
+        <div className="flex-1 overflow-hidden flex">
+          <SpacesSidebar
+            spaces={spaces}
+            categories={categories}
+            tasks={tasks}
+            selectedSpaceId={selectedSpaceId}
+            onSelectSpace={setSelectedSpaceId}
+            onCreateSpace={createSpace}
+            onUpdateSpace={updateSpace}
+            onDeleteSpace={deleteSpace}
+            onCreateCategory={createCategory}
+            onDeleteCategory={deleteCategory}
+          />
+          <div className="flex-1 overflow-hidden">
+            {view === "calendar" && (
+              <PlannerCalendarView
+                tasks={filteredTasks}
+                isLoading={isLoading}
+                onEditTask={handleEditTask}
+                onCreateTask={handleQuickCreate}
+                onToggleComplete={handleToggleComplete}
+                onDeleteTask={handleDeleteTask}
+                onAddTask={handleAddTask}
+                categories={activeCategories}
+                spaces={spaces}
+                allTasks={tasks}
+              />
+            )}
+            {view === "list" && (
+              <PlannerListView
+                tasks={filteredTasks}
+                isLoading={isLoading}
+                onEditTask={handleEditTask}
+                onToggleComplete={handleToggleComplete}
+                onDeleteTask={handleDeleteTask}
+                onAddTask={handleAddTask}
+                categories={activeCategories}
+              />
+            )}
+          </div>
         </div>
       </div>
 
@@ -262,8 +303,11 @@ const Planner = () => {
         onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditingTask(null); setDefaultDueAt(null); } }}
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
         editTask={editingTask}
-        
         defaultDueAt={defaultDueAt}
+        spaces={spaces}
+        categories={activeCategories}
+        allCategories={categories}
+        selectedSpaceId={selectedSpaceId}
       />
     </ProjectLayout>
   );
