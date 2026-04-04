@@ -387,36 +387,6 @@ export const PlannerCalendarView = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Mobile space filter */}
-            {spaces.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 gap-1.5 lg:hidden">
-                    <Filter className="w-3.5 h-3.5" />
-                    Spaces
-                    {spaceFilter.length > 0 && (
-                      <span className="ml-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center">
-                        {spaceFilter.length}
-                      </span>
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {spaces.map(space => (
-                    <DropdownMenuCheckboxItem
-                      key={space.id}
-                      checked={spaceFilter.includes(space.id)}
-                      onCheckedChange={() => toggleSpaceFilter(space.id)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: space.color }} />
-                        {space.name}
-                      </div>
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goPrev}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
