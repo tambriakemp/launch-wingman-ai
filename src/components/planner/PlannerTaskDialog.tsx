@@ -118,6 +118,7 @@ interface PlannerTaskDialogProps {
   categories?: SpaceCategory[];
   allCategories?: SpaceCategory[];
   selectedSpaceId?: string | null;
+  onCreateCategory?: (spaceId: string, name: string) => Promise<SpaceCategory | null>;
 }
 
 export const PlannerTaskDialog = ({
@@ -130,6 +131,7 @@ export const PlannerTaskDialog = ({
   categories = [],
   allCategories = [],
   selectedSpaceId = null,
+  onCreateCategory,
 }: PlannerTaskDialogProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -474,29 +476,20 @@ export const PlannerTaskDialog = ({
 
               {/* Row 2: Category + Dates */}
               <div className="grid grid-cols-2 divide-x divide-border">
-                {spaceCats.length > 0 ? (
-                  <PropertyRow icon={Tag} label="Category">
-                    <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger className="h-8 border-none shadow-none bg-transparent text-sm px-2 w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {spaceCats.map(cat => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full" style={{ background: cat.color }} />
-                              {cat.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </PropertyRow>
-                ) : (
-                  <PropertyRow icon={Tag} label="Category">
-                    <span className="text-sm text-muted-foreground px-2">—</span>
-                  </PropertyRow>
-                )}
+                {(() => {
+                  const selectedCat = spaceCats.find(c => c.id === category);
+                  return (
+                    <PropertyRow icon={Tag} label="Category">
+                      <CategoryCombobox
+                        categories={spaceCats}
+                        value={category}
+                        onChange={setCategory}
+                        selectedSpaceId={selectedSpaceId}
+                        onCreateCategory={onCreateCategory}
+                      />
+                    </PropertyRow>
+                  );
+                })()}
 
                 <PropertyRow icon={CalendarIcon} label="Dates">
                   <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
@@ -642,6 +635,81 @@ function PropertyRow({ icon: Icon, label, children }: { icon: any; label: string
       <span className="text-xs text-muted-foreground w-16 shrink-0">{label}</span>
       <div className="flex-1 min-w-0">{children}</div>
     </div>
+  );
+}
+
+// --- Category Combobox ---
+function CategoryCombobox({
+  categories, value, onChange, selectedSpaceId, onCreateCategory,
+}: {
+  categories: SpaceCategory[];
+  value: string;
+  onChange: (v: string) => void;
+  selectedSpaceId?: string | null;
+  onCreateCategory?: (spaceId: string, name: string) => Promise<SpaceCategory | null>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filtered = search.trim()
+    ? categories.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
+    : categories;
+
+  const exactMatch = categories.some(c => c.name.toLowerCase() === search.trim().toLowerCase());
+  const selected = categories.find(c => c.id === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" className="flex items-center gap-2 text-sm px-2 py-1 rounded hover:bg-accent/50 text-left truncate w-full">
+          {selected ? (
+            <>
+              <div className="w-2 h-2 rounded-full shrink-0" style={{ background: selected.color }} />
+              {selected.name}
+            </>
+          ) : (
+            <span className="text-muted-foreground">Select...</span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-52 p-2" align="start">
+        <Input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search or create..."
+          className="h-8 text-sm mb-2"
+          autoFocus
+        />
+        <div className="max-h-40 overflow-y-auto space-y-0.5">
+          {filtered.map(c => (
+            <button
+              key={c.id}
+              type="button"
+              className={cn("w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm hover:bg-accent/50 text-left", c.id === value && "bg-accent")}
+              onClick={() => { onChange(c.id); setOpen(false); setSearch(""); }}
+            >
+              <div className="w-2 h-2 rounded-full shrink-0" style={{ background: c.color }} />
+              {c.name}
+            </button>
+          ))}
+          {search.trim() && !exactMatch && selectedSpaceId && onCreateCategory && (
+            <button
+              type="button"
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm hover:bg-accent/50 text-left text-primary"
+              onClick={async () => {
+                const cat = await onCreateCategory(selectedSpaceId, search.trim());
+                if (cat) { onChange(cat.id); setOpen(false); setSearch(""); }
+              }}
+            >
+              <Plus className="w-3.5 h-3.5" /> Create "{search.trim()}"
+            </button>
+          )}
+          {categories.length === 0 && !search.trim() && (
+            <p className="text-xs text-muted-foreground px-2 py-1">No categories</p>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 

@@ -180,6 +180,34 @@ const Planner = () => {
     fetchTasks();
   };
 
+  const handleBulkDelete = async (ids: string[]) => {
+    const { error } = await supabase.from("tasks").delete().in("id", ids);
+    if (error) { toast.error("Failed to delete tasks"); return; }
+    toast.success(`${ids.length} task(s) deleted`);
+    fetchTasks();
+  };
+
+  const handleBulkMoveSpace = async (ids: string[], spaceId: string) => {
+    const { error } = await supabase.from("tasks").update({ space_id: spaceId } as any).in("id", ids);
+    if (error) { toast.error("Failed to move tasks"); return; }
+    toast.success(`${ids.length} task(s) moved`);
+    fetchTasks();
+  };
+
+  const handleBulkUpdateCategory = async (ids: string[], categoryId: string) => {
+    const { error } = await supabase.from("tasks").update({ category: categoryId } as any).in("id", ids);
+    if (error) { toast.error("Failed to update category"); return; }
+    toast.success(`Category updated for ${ids.length} task(s)`);
+    fetchTasks();
+  };
+
+  const handleBulkUpdateStatus = async (ids: string[], status: string) => {
+    const { error } = await supabase.from("tasks").update({ column_id: status } as any).in("id", ids);
+    if (error) { toast.error("Failed to update status"); return; }
+    toast.success(`Status updated for ${ids.length} task(s)`);
+    fetchTasks();
+  };
+
   const handleEditTask = (task: PlannerTask) => {
     if ((task as any)._isVirtualRecurrence) {
       const parentId = (task as any)._parentId;
@@ -294,6 +322,14 @@ const Planner = () => {
                 onDeleteTask={handleDeleteTask}
                 onAddTask={handleAddTask}
                 categories={activeCategories}
+                spaces={spaces}
+                onBulkMoveSpace={handleBulkMoveSpace}
+                onBulkDelete={handleBulkDelete}
+                onBulkUpdateCategory={handleBulkUpdateCategory}
+                onBulkUpdateStatus={handleBulkUpdateStatus}
+                onCreateCategory={createCategory}
+                selectedSpaceId={selectedSpaceId}
+                allCategories={categories}
               />
             )}
           </div>
@@ -310,6 +346,7 @@ const Planner = () => {
         categories={activeCategories}
         allCategories={categories}
         selectedSpaceId={selectedSpaceId}
+        onCreateCategory={createCategory}
       />
     </ProjectLayout>
   );
