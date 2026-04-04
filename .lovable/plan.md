@@ -1,66 +1,56 @@
 
 
-## Subtasks + ClickUp-Style Task Panel Redesign
+## Multi-Select Tasks + Category Search/Create
 
-### Overview
-Redesign the `PlannerTaskDialog` slide-out panel to match ClickUp's layout: wider panel, two-column field grid at the top, large title + description area, and a subtasks section with full CRUD. Clicking a subtask opens its own detail panel.
+### 1. Multi-select checkboxes in PlannerListView
 
-### Changes
+**`src/components/planner/PlannerListView.tsx`**
 
-**1. Widen the Sheet panel**
-- `PlannerTaskDialog.tsx`: Change `sm:max-w-[480px]` → `sm:max-w-[720px]`
+Add selection state and a floating action bar:
 
-**2. ClickUp-style two-column field layout**
-Replace the current stacked single-column fields with a compact two-column grid inspired by the uploaded screenshots:
+- Add `selectedIds: Set<string>` state to `PlannerListView`
+- Each `TaskRow` gets a checkbox that is invisible by default, shows on hover (`opacity-0 group-hover:opacity-100`), and stays visible when checked
+- The checkbox replaces the current completion circle on the left when hovered/selected — or sits to its left
+- When `selectedIds.size > 0`, render a fixed bottom action bar (like ClickUp's screenshot) with:
+  - "N tasks selected" label + "×" to clear
+  - **Move to Space** — dropdown listing all spaces, on click calls bulk update
+  - **Category** — dropdown with category search/create (see below)
+  - **Delete** — bulk delete with confirmation
+  - **Status** — quick status change
+- New props needed: `spaces`, `onBulkMoveSpace`, `onBulkDelete`, `onBulkUpdateCategory`, `onBulkUpdateStatus`
 
-```text
-┌─────────────────────────────────────────────────┐
-│  [Task Title - large, editable]                 │
-│                                                 │
-│  ┌─────────────────┬───────────────────────┐    │
-│  │ ⊙ Status   Open │ 📁 Space    Personal  │    │
-│  │ 📅 Dates  Start→Due │ 🏷 Category  Work  │    │
-│  │ 🔄 Repeat  None │                       │    │
-│  └─────────────────┴───────────────────────┘    │
-│                                                 │
-│  [Description - textarea, "Add description..."] │
-│                                                 │
-│  ── Subtasks (2/5) ─────────────────── [+] ──── │
-│  ☑ Subtask one                          ⋯      │
-│  ☐ Subtask two                          ⋯      │
-│  [+ Add subtask input]                          │
-│                                                 │
-│  ─────────────────── Footer ─────────────────── │
-│  [Unschedule]              [Cancel] [Save]      │
-└─────────────────────────────────────────────────┘
-```
+### 2. Bulk action handlers in Planner.tsx
 
-Fields rendered as inline rows (icon + label + value) in a `grid-cols-2` layout, similar to ClickUp's property grid.
+**`src/pages/Planner.tsx`**
 
-**3. Add Subtasks section**
-Reuse the existing `subtasks` database table (already has RLS). Add to `PlannerTaskDialog`:
-- Fetch subtasks when editing a task (`supabase.from("subtasks").select("*").eq("task_id", editTask.id)`)
-- Display as a checklist with toggle, inline edit, delete via `...` menu
-- "Add subtask" input at bottom with Enter to submit
-- Show progress indicator: "Subtasks (completed/total)"
-- Only show subtasks section when editing (not creating — need a task ID first)
+Add handler functions:
 
-**4. Subtask detail panel**
-When a subtask title is clicked, open a nested Sheet (or replace the current content with a "drill-down" view):
-- Show subtask title (editable), completed toggle, created date
-- Back button to return to parent task
-- Keep it simple — title, status, and a description field (add `description` column to subtasks table via migration)
+- `handleBulkDelete(ids: string[])` — delete multiple tasks
+- `handleBulkMoveSpace(ids: string[], spaceId: string)` — update `space_id` for multiple tasks
+- `handleBulkUpdateCategory(ids: string[], categoryId: string)` — update `category` for multiple tasks  
+- `handleBulkUpdateStatus(ids: string[], status: string)` — update `column_id` for multiple tasks
+- Pass these + `spaces` to `PlannerListView`
 
-**5. Database migration**
-Add `description` column to `subtasks` table:
-```sql
-ALTER TABLE public.subtasks ADD COLUMN description TEXT DEFAULT NULL;
-```
+### 3. Category search/create (combobox-style)
+
+**`src/components/planner/PlannerTaskDialog.tsx`** and the bulk action bar:
+
+Replace the category `<Select>` with a searchable input (Popover + Input + filtered list):
+
+- Text input filters categories by name
+- If no match, show "Create [typed name]" option at bottom
+- Clicking "Create" calls `createCategory(spaceId, name)` then selects it
+- Works both in the task dialog and in the bulk action bar's category dropdown
+- New prop on `PlannerTaskDialog`: `onCreateCategory: (spaceId: string, name: string) => Promise<SpaceCategory>`
 
 ### Files to modify
-- `src/components/planner/PlannerTaskDialog.tsx` — Major redesign: wider panel, two-column fields, subtasks section, subtask detail drill-down
-- Database migration for `subtasks.description` column
+- `src/components/planner/PlannerListView.tsx` — selection state, hover checkboxes, floating action bar
+- `src/pages/Planner.tsx` — bulk action handlers, pass new props
+- `src/components/planner/PlannerTaskDialog.tsx` — replace category Select with searchable combobox + create option
 
-### Files to create
-- None — all changes contained in the existing dialog component (subtask detail is a nested view within the same Sheet)
+### Technical details
+- Bulk updates use `supabase.from("tasks").update({...}).in("id", ids)` for efficiency
+- Selection clears when space changes or after a bulk action completes
+- The action bar is `fixed bottom-0` with a backdrop blur, similar to ClickUp's "N Task selected" bar
+- Category creation in the combobox reuses the existing `createCategory` function from `usePlannerSpaces`
 
