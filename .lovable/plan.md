@@ -1,88 +1,66 @@
 
 
-## Spaces System for Planner
+## Subtasks + ClickUp-Style Task Panel Redesign
 
-This introduces "Spaces" as a top-level organizational concept (replacing "Categories"), with each Space having its own categories. The Tasks list view gets a collapsible sidebar showing all Spaces, and the Calendar gets a Space filter.
+### Overview
+Redesign the `PlannerTaskDialog` slide-out panel to match ClickUp's layout: wider panel, two-column field grid at the top, large title + description area, and a subtasks section with full CRUD. Clicking a subtask opens its own detail panel.
 
-### Database
+### Changes
 
-**New `planner_spaces` table:**
-- `id` (uuid, PK)
-- `user_id` (uuid, references auth.users, not null)
-- `name` (text, not null)
-- `color` (text, default `#3b82f6`)
-- `position` (int, default 0)
-- `created_at`, `updated_at` (timestamptz)
-- RLS: users can only CRUD their own spaces
+**1. Widen the Sheet panel**
+- `PlannerTaskDialog.tsx`: Change `sm:max-w-[480px]` → `sm:max-w-[720px]`
 
-**New `space_categories` table:**
-- `id` (uuid, PK)
-- `space_id` (uuid, references planner_spaces on delete cascade)
-- `user_id` (uuid, references auth.users)
-- `name` (text, not null)
-- `color` (text, default `#f5c842`)
-- `position` (int, default 0)
-- `created_at` (timestamptz)
-- RLS: users can only CRUD their own
-
-**Modify `tasks` table:**
-- Add `space_id` (uuid, nullable, references planner_spaces on delete set null) — nullable for backward compatibility
-
-### Architecture
+**2. ClickUp-style two-column field layout**
+Replace the current stacked single-column fields with a compact two-column grid inspired by the uploaded screenshots:
 
 ```text
 ┌─────────────────────────────────────────────────┐
-│  Planner Page                                   │
-│  ┌──────────┬──────────────────────────────────┐│
-│  │ Spaces   │  Tasks List / Calendar           ││
-│  │ Sidebar  │                                  ││
-│  │          │  (filtered by selected space)     ││
-│  │ + Add    │                                  ││
-│  │ Space A  │                                  ││
-│  │ Space B  │                                  ││
-│  │ Space C  │                                  ││
-│  └──────────┴──────────────────────────────────┘│
+│  [Task Title - large, editable]                 │
+│                                                 │
+│  ┌─────────────────┬───────────────────────┐    │
+│  │ ⊙ Status   Open │ 📁 Space    Personal  │    │
+│  │ 📅 Dates  Start→Due │ 🏷 Category  Work  │    │
+│  │ 🔄 Repeat  None │                       │    │
+│  └─────────────────┴───────────────────────┘    │
+│                                                 │
+│  [Description - textarea, "Add description..."] │
+│                                                 │
+│  ── Subtasks (2/5) ─────────────────── [+] ──── │
+│  ☑ Subtask one                          ⋯      │
+│  ☐ Subtask two                          ⋯      │
+│  [+ Add subtask input]                          │
+│                                                 │
+│  ─────────────────── Footer ─────────────────── │
+│  [Unschedule]              [Cancel] [Save]      │
 └─────────────────────────────────────────────────┘
 ```
 
-### Files to Create
+Fields rendered as inline rows (icon + label + value) in a `grid-cols-2` layout, similar to ClickUp's property grid.
 
-1. **`src/hooks/usePlannerSpaces.ts`** — Hook for CRUD operations on `planner_spaces` and `space_categories` tables. Fetches spaces + categories, provides create/update/delete functions. Replaces localStorage-based category management.
+**3. Add Subtasks section**
+Reuse the existing `subtasks` database table (already has RLS). Add to `PlannerTaskDialog`:
+- Fetch subtasks when editing a task (`supabase.from("subtasks").select("*").eq("task_id", editTask.id)`)
+- Display as a checklist with toggle, inline edit, delete via `...` menu
+- "Add subtask" input at bottom with Enter to submit
+- Show progress indicator: "Subtasks (completed/total)"
+- Only show subtasks section when editing (not creating — need a task ID first)
 
-2. **`src/components/planner/SpacesSidebar.tsx`** — Collapsible left panel listing all spaces with colored dots. Includes:
-   - "All Spaces" option at top (shows all tasks)
-   - Each space name with task count
-   - `+` button to add a new space (inline input)
-   - Right-click or `...` menu for edit/delete on each space
-   - "Manage Categories" option per space (opens category editor scoped to that space)
-   - Collapsible via a toggle button
+**4. Subtask detail panel**
+When a subtask title is clicked, open a nested Sheet (or replace the current content with a "drill-down" view):
+- Show subtask title (editable), completed toggle, created date
+- Back button to return to parent task
+- Keep it simple — title, status, and a description field (add `description` column to subtasks table via migration)
 
-### Files to Modify
+**5. Database migration**
+Add `description` column to `subtasks` table:
+```sql
+ALTER TABLE public.subtasks ADD COLUMN description TEXT DEFAULT NULL;
+```
 
-3. **`src/pages/Planner.tsx`** — Add `usePlannerSpaces` hook. Pass `selectedSpaceId` state. Filter tasks by `space_id` before passing to list/calendar views. Wrap the content area in a flex layout with `SpacesSidebar` on the left. Pass `spaceId` when creating tasks.
+### Files to modify
+- `src/components/planner/PlannerTaskDialog.tsx` — Major redesign: wider panel, two-column fields, subtasks section, subtask detail drill-down
+- Database migration for `subtasks.description` column
 
-4. **`src/components/planner/PlannerTaskDialog.tsx`**:
-   - Replace localStorage categories with categories from the selected space (passed as prop)
-   - Add a Space selector dropdown (so user can assign/move tasks between spaces)
-   - Rename "Category" label; categories are now space-scoped
-   - Submit includes `space_id` in the task data
-
-5. **`src/components/planner/PlannerListView.tsx`** — Receive `categories` as prop instead of reading from localStorage. Update `getCategoryName` to use prop data.
-
-6. **`src/components/planner/PlannerCalendarView.tsx`**:
-   - Remove the `CategoryManager` component (moved to SpacesSidebar)
-   - Receive `categories` as prop
-   - Add a Space filter dropdown in the calendar header (multi-select checkboxes to show/hide spaces)
-   - Remove "Manage Categories" gear icon from calendar header
-   - Categories passed as prop from parent based on all spaces or selected space
-
-7. **`src/pages/Planner.tsx` task creation/update** — Include `space_id` in insert/update calls. Default new tasks to the currently selected space.
-
-### Behavior
-
-- **"All Spaces"** selected: Tasks list shows all planner tasks, calendar shows all tasks. Category colors resolve across all spaces.
-- **Specific space selected**: Tasks list filters to that space. Calendar still shows all by default but has a filter dropdown.
-- **Calendar filter**: Multi-select dropdown with space names + colors. Persists in component state.
-- **Backward compatibility**: Existing tasks with `space_id = null` show under "All Spaces" and can be assigned to a space via edit.
-- **Default space**: On first load, if user has no spaces, auto-create one called "Personal" with the default categories (Work, Personal, Health, Finance migrated as categories under it).
+### Files to create
+- None — all changes contained in the existing dialog component (subtask detail is a nested view within the same Sheet)
 
