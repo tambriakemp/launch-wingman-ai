@@ -110,21 +110,10 @@ export const PlannerCalendarView = ({
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"month" | "week" | "day">("week");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [spaceFilter, setSpaceFilter] = useState<string[]>([]);
-
   const { user } = useAuth();
   const todayStr = format(new Date(), "yyyy-MM-dd");
 
   const categories = propCategories;
-
-  // Space filtering for calendar
-  const displayTasks = useMemo(() => {
-    if (spaceFilter.length === 0) return tasks;
-    return tasks.filter(t => {
-      const sid = (t as any).space_id;
-      return spaceFilter.includes(sid) || (!sid && spaceFilter.includes("unassigned"));
-    });
-  }, [tasks, spaceFilter]);
 
   // --- Today's Priorities ---
   const [dailyPage, setDailyPage] = useState<any>(null);
