@@ -751,7 +751,7 @@ function DatePickerPanel({
   const [activePicker, setActivePicker] = useState<"start" | "due">("start");
 
   return (
-    <div className="flex">
+    <div className="flex pointer-events-auto">
       {/* Left: Quick picks + Set Recurring */}
       <div className="w-44 border-r border-border py-2">
         {quickDates.map(q => (
@@ -772,7 +772,16 @@ function DatePickerPanel({
         <button
           type="button"
           className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent/50 text-left"
-          onClick={() => setShowRepeat(!showRepeat)}
+          onClick={() => {
+            if (showRepeat) {
+              setRecurrenceFreq("none");
+              setRecurrenceInterval(1);
+              setRecurrenceEndType("never");
+              setRecurrenceEndDate(undefined);
+              setRecurrenceCount(10);
+            }
+            setShowRepeat(!showRepeat);
+          }}
         >
           <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
           <span>Set Recurring</span>

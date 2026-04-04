@@ -237,13 +237,15 @@ export const PlannerListView = ({
             </DropdownMenu>
           )}
 
-          {/* Category */}
-          <BulkCategoryPicker
-            categories={allCategories.length > 0 ? allCategories : categories}
-            selectedSpaceId={selectedSpaceId}
-            onSelect={(catId) => handleBulkAction(() => onBulkUpdateCategory?.(selectedArray, catId))}
-            onCreateCategory={onCreateCategory}
-          />
+          {/* Category — only when inside a specific space */}
+          {selectedSpaceId && (
+            <BulkCategoryPicker
+              categories={allCategories.length > 0 ? allCategories : categories}
+              selectedSpaceId={selectedSpaceId}
+              onSelect={(catId) => handleBulkAction(() => onBulkUpdateCategory?.(selectedArray, catId))}
+              onCreateCategory={onCreateCategory}
+            />
+          )}
 
           {/* Delete */}
           <Button
