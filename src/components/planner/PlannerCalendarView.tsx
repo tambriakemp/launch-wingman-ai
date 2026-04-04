@@ -30,6 +30,7 @@ import {
   Circle,
   Flame,
   Target,
+  Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { PlannerTask } from "./PlannerTaskDialog";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
 
 interface PlannerCalendarViewProps {
   tasks: PlannerTask[];
@@ -58,7 +65,6 @@ const START_HOUR = 0;
 const END_HOUR = 24;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
 
-/** Build inline style-based colors from category hex for dynamic category support */
 function getCardColorStyle(task: PlannerTask, categories: { id: string; color: string }[]): { style: React.CSSProperties; isDark: boolean } {
   const cat = categories.find(c => c.id === task.category);
   const hex = cat?.color || "#f5c842";
@@ -89,107 +95,6 @@ function getTaskPosition(task: PlannerTask) {
   return { top, height };
 }
 
-const DEFAULT_CATEGORIES = [
-  { id: "business", name: "Work", color: "#f5c842" },
-  { id: "life", name: "Personal", color: "#0ea572" },
-  { id: "health", name: "Health", color: "#f43f5e" },
-  { id: "finance", name: "Finance", color: "#8b5cf6" },
-];
-
-const PRESET_COLORS = [
-  "#f5c842", "#0ea572", "#f43f5e", "#8b5cf6",
-  "#3b82f6", "#f97316", "#06b6d4", "#ec4899",
-  "#84cc16", "#6366f1", "#14b8a6", "#ef4444",
-];
-
-function CategoryManager({ categories, onSave, onClose }: {
-  categories: { id: string; name: string; color: string }[];
-  onSave: (cats: { id: string; name: string; color: string }[]) => void;
-  onClose: () => void;
-}) {
-  const [local, setLocal] = useState(categories);
-  const [newName, setNewName] = useState("");
-  const [newColor, setNewColor] = useState(PRESET_COLORS[4]);
-
-  const addCategory = () => {
-    if (!newName.trim()) return;
-    const id = newName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    setLocal(prev => [...prev, { id, name: newName.trim(), color: newColor }]);
-    setNewName("");
-    setNewColor(PRESET_COLORS[4]);
-  };
-
-  const removeCategory = (id: string) => {
-    setLocal(prev => prev.filter(c => c.id !== id));
-  };
-
-  const save = () => {
-    localStorage.setItem("planner-categories", JSON.stringify(local));
-    onSave(local);
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-background border border-border rounded-2xl shadow-xl w-[400px] max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h3 className="font-semibold text-base">Manage Categories</h3>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">✕</button>
-        </div>
-        <div className="p-6 space-y-4">
-          <div className="space-y-2">
-            {local.map(cat => (
-              <div key={cat.id} className="flex items-center gap-3 py-2 px-3 rounded-lg border border-border">
-                <div className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color }} />
-                <span className="flex-1 text-sm">{cat.name}</span>
-                <button
-                  onClick={() => removeCategory(cat.id)}
-                  className="text-muted-foreground hover:text-destructive transition-colors text-xs"
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-          </div>
-          <div className="border-t border-border pt-4 space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Add Category</p>
-            <input
-              className="w-full h-9 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="Category name"
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && addCategory()}
-            />
-            <div>
-              <p className="text-xs text-muted-foreground mb-2">Color</p>
-              <div className="flex flex-wrap gap-2">
-                {PRESET_COLORS.map(c => (
-                  <button
-                    key={c}
-                    className={cn("w-6 h-6 rounded-full border-2 transition-transform hover:scale-110", newColor === c ? "border-foreground" : "border-transparent")}
-                    style={{ background: c }}
-                    onClick={() => setNewColor(c)}
-                  />
-                ))}
-              </div>
-            </div>
-            <button
-              className="w-full h-9 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-              onClick={addCategory}
-            >
-              Add Category
-            </button>
-          </div>
-        </div>
-        <div className="flex gap-2 px-6 py-4 border-t border-border">
-          <button onClick={onClose} className="flex-1 h-9 rounded-lg border border-border text-sm hover:bg-accent transition-colors">Cancel</button>
-          <button onClick={save} className="flex-1 h-9 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">Save</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export const PlannerCalendarView = ({
   tasks,
   isLoading,
@@ -198,13 +103,28 @@ export const PlannerCalendarView = ({
   onToggleComplete,
   onDeleteTask,
   onAddTask,
+  categories: propCategories = [],
+  spaces = [],
+  allTasks = [],
 }: PlannerCalendarViewProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"month" | "week" | "day">("week");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [spaceFilter, setSpaceFilter] = useState<string[]>([]);
 
   const { user } = useAuth();
   const todayStr = format(new Date(), "yyyy-MM-dd");
+
+  const categories = propCategories;
+
+  // Space filtering for calendar
+  const displayTasks = useMemo(() => {
+    if (spaceFilter.length === 0) return tasks;
+    return tasks.filter(t => {
+      const sid = (t as any).space_id;
+      return spaceFilter.includes(sid) || (!sid && spaceFilter.includes("unassigned"));
+    });
+  }, [tasks, spaceFilter]);
 
   // --- Today's Priorities ---
   const [dailyPage, setDailyPage] = useState<any>(null);
@@ -269,34 +189,7 @@ export const PlannerCalendarView = ({
     }
   };
 
-  const [categories, setCategories] = useState(() => {
-    try {
-      const stored = localStorage.getItem("planner-categories");
-      return stored ? JSON.parse(stored) : DEFAULT_CATEGORIES;
-    } catch { return DEFAULT_CATEGORIES; }
-  });
-  const [activeCategories, setActiveCategories] = useState<string[]>(() =>
-    categories.map((c: typeof DEFAULT_CATEGORIES[0]) => c.id)
-  );
-  const [showCategoryManager, setShowCategoryManager] = useState(false);
-
-  const toggleCategory = (id: string) => {
-    setActiveCategories(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
-  };
-
-  const filteredTasks = useMemo(() => {
-    const knownCategoryIds = new Set(categories.map((c: typeof DEFAULT_CATEGORIES[0]) => c.id));
-
-    return tasks.filter((t) => {
-      const cat = t.category;
-      if (!cat || !knownCategoryIds.has(cat)) return true;
-      return activeCategories.includes(cat);
-    });
-  }, [tasks, activeCategories, categories]);
-
-  // Scroll to ~8 AM on mount
+  // Scroll to top on mount
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = 0;
@@ -332,8 +225,8 @@ export const PlannerCalendarView = ({
   }, [viewMode, currentDate, weekEnd]);
 
   const expandedTasks = useMemo(() => {
-    return expandAllRecurring(filteredTasks, windowStart, windowEnd);
-  }, [filteredTasks, windowStart, windowEnd]);
+    return expandAllRecurring(displayTasks, windowStart, windowEnd);
+  }, [displayTasks, windowStart, windowEnd]);
 
   const scheduledTasks = useMemo(() => {
     return expandedTasks.filter(t => t.start_at && t.end_at);
@@ -377,6 +270,12 @@ export const PlannerCalendarView = ({
     if (date) setCurrentDate(date);
   };
 
+  const toggleSpaceFilter = (id: string) => {
+    setSpaceFilter(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
   return (
     <div className="flex h-full overflow-hidden">
       {/* ===== LEFT SIDEBAR ===== */}
@@ -385,12 +284,12 @@ export const PlannerCalendarView = ({
         <div className="p-4">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-3">Upcoming</span>
           <div className="space-y-1">
-            {tasks
+            {allTasks
               .filter(t => t.column_id !== "done" && t.due_at && isAfter(parseISO(t.due_at), new Date()))
               .sort((a, b) => parseISO(a.due_at!).getTime() - parseISO(b.due_at!).getTime())
               .slice(0, 8)
               .map(task => {
-                const cat = categories.find((c: typeof DEFAULT_CATEGORIES[0]) => c.id === task.category);
+                const cat = categories.find(c => c.id === task.category);
                 return (
                   <button
                     key={task.id}
@@ -407,7 +306,7 @@ export const PlannerCalendarView = ({
                   </button>
                 );
               })}
-            {tasks.filter(t => t.column_id !== "done" && t.due_at && isAfter(parseISO(t.due_at), new Date())).length === 0 && (
+            {allTasks.filter(t => t.column_id !== "done" && t.due_at && isAfter(parseISO(t.due_at), new Date())).length === 0 && (
               <p className="text-xs text-muted-foreground px-2">Nothing upcoming</p>
             )}
           </div>
@@ -476,36 +375,30 @@ export const PlannerCalendarView = ({
           )}
         </div>
 
-        {/* Categories section */}
-        <div className="p-4 border-t border-border">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categories</span>
-            <button
-              className="text-[11px] text-primary hover:underline"
-              onClick={() => setShowCategoryManager(true)}
-            >
-              Manage
-            </button>
+        {/* Space filter */}
+        {spaces.length > 0 && (
+          <div className="p-4 border-t border-border">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-3">Filter by Space</span>
+            <div className="space-y-1">
+              {spaces.map(space => (
+                <button
+                  key={space.id}
+                  className={cn(
+                    "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-accent/50 text-left",
+                    spaceFilter.length > 0 && !spaceFilter.includes(space.id) && "opacity-40"
+                  )}
+                  onClick={() => toggleSpaceFilter(space.id)}
+                >
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: space.color }} />
+                  <span className="flex-1 truncate">{space.name}</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {allTasks.filter(t => (t as any).space_id === space.id).length}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="space-y-1">
-            {categories.map((cat: typeof DEFAULT_CATEGORIES[0]) => (
-              <button
-                key={cat.id}
-                className={cn(
-                  "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-accent/50 text-left",
-                  !activeCategories.includes(cat.id) && "opacity-40"
-                )}
-                onClick={() => toggleCategory(cat.id)}
-              >
-                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: cat.color }} />
-                <span className="flex-1 truncate">{cat.name}</span>
-                <span className="text-[10px] text-muted-foreground">
-                  {tasks.filter(t => t.category === cat.id).length}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
+        )}
       </div>
 
       {/* ===== MAIN CALENDAR AREA ===== */}
@@ -534,6 +427,36 @@ export const PlannerCalendarView = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Mobile space filter */}
+            {spaces.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 gap-1.5 lg:hidden">
+                    <Filter className="w-3.5 h-3.5" />
+                    Spaces
+                    {spaceFilter.length > 0 && (
+                      <span className="ml-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center">
+                        {spaceFilter.length}
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {spaces.map(space => (
+                    <DropdownMenuCheckboxItem
+                      key={space.id}
+                      checked={spaceFilter.includes(space.id)}
+                      onCheckedChange={() => toggleSpaceFilter(space.id)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: space.color }} />
+                        {space.name}
+                      </div>
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goPrev}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
@@ -547,31 +470,24 @@ export const PlannerCalendarView = ({
         </div>
 
         {viewMode === "week" || viewMode === "day" ? (
-          /* ========== WEEKLY / DAY VIEW ========== */
           <div className="flex-1 flex flex-col overflow-hidden">
             <div ref={scrollRef} className="overflow-y-auto flex-1">
               <div className={cn(
                 "grid border-b border-border bg-background sticky top-0 z-10",
                 viewMode === "day" ? "grid-cols-[56px_1fr]" : "grid-cols-[56px_repeat(7,1fr)]"
               )}>
-              {/* Day headers */}
-              <div className="border-r border-border" />
+                <div className="border-r border-border" />
                 {(viewMode === "day" ? [currentDate] : weekDays).map((day) => {
                   const isToday = isSameDay(day, now);
                   return (
-                    <div
-                      key={day.toISOString()}
-                      className="text-center py-3 border-r border-border last:border-r-0"
-                    >
+                    <div key={day.toISOString()} className="text-center py-3 border-r border-border last:border-r-0">
                       <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                         {format(day, "EEE")}
                       </div>
-                      <div
-                        className={cn(
-                          "text-xl font-bold mt-1 w-10 h-10 flex items-center justify-center mx-auto rounded-full transition-colors",
-                          isToday ? "bg-primary text-primary-foreground" : "text-foreground"
-                        )}
-                      >
+                      <div className={cn(
+                        "text-xl font-bold mt-1 w-10 h-10 flex items-center justify-center mx-auto rounded-full transition-colors",
+                        isToday ? "bg-primary text-primary-foreground" : "text-foreground"
+                      )}>
                         {format(day, "d")}
                       </div>
                     </div>
@@ -606,10 +522,7 @@ export const PlannerCalendarView = ({
                               isDone && "opacity-50 line-through"
                             )}
                             style={colorStyle}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEditTask(task);
-                            }}
+                            onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
                           >
                             {task.title}
                           </button>
@@ -619,6 +532,7 @@ export const PlannerCalendarView = ({
                   );
                 })}
               </div>
+
               <div
                 className={cn(
                   "grid relative",
@@ -657,19 +571,13 @@ export const PlannerCalendarView = ({
                         <div
                           key={h}
                           className="absolute w-full border-t border-border/40 cursor-pointer hover:bg-accent/10 transition-colors"
-                          style={{
-                            top: (h - START_HOUR) * HOUR_HEIGHT,
-                            height: HOUR_HEIGHT,
-                          }}
+                          style={{ top: (h - START_HOUR) * HOUR_HEIGHT, height: HOUR_HEIGHT }}
                           onClick={() => handleSlotClick(day, h)}
                         />
                       ))}
 
                       {isToday && showNowLine && (
-                        <div
-                          className="absolute left-0 right-0 z-20 pointer-events-none"
-                          style={{ top: nowTop }}
-                        >
+                        <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: nowTop }}>
                           <div className="flex items-center">
                             <div className="w-2.5 h-2.5 rounded-full bg-destructive -ml-1 shrink-0 shadow-sm" />
                             <div className="h-[2px] bg-destructive flex-1" />
@@ -696,10 +604,7 @@ export const PlannerCalendarView = ({
                               height: pos.height - 2,
                               ...(taskIdx > 0 ? { left: `${taskIdx * 8 + 6}px` } : {}),
                             }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEditTask(task);
-                            }}
+                            onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
                           >
                             <span className={cn("text-sm font-bold truncate block leading-tight", isDone && "line-through")}>
                               {task.title}
@@ -725,14 +630,11 @@ export const PlannerCalendarView = ({
             </div>
           </div>
         ) : (
-          /* ========== MONTHLY VIEW ========== */
+          /* Monthly view */
           <div className="flex-1 overflow-auto p-3">
             <div className="grid grid-cols-7 gap-px bg-border rounded-xl overflow-hidden">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-                <div
-                  key={d}
-                  className="text-center text-[11px] font-medium text-muted-foreground py-2.5 bg-muted/30"
-                >
+                <div key={d} className="text-center text-[11px] font-medium text-muted-foreground py-2.5 bg-muted/30">
                   {d}
                 </div>
               ))}
@@ -749,12 +651,10 @@ export const PlannerCalendarView = ({
                     )}
                     onClick={() => onCreateTask?.({ due_at: day.toISOString() })}
                   >
-                    <div
-                      className={cn(
-                        "text-xs font-medium mb-1.5 w-7 h-7 flex items-center justify-center rounded-full",
-                        isCurrentDay && "bg-primary text-primary-foreground font-bold"
-                      )}
-                    >
+                    <div className={cn(
+                      "text-xs font-medium mb-1.5 w-7 h-7 flex items-center justify-center rounded-full",
+                      isCurrentDay && "bg-primary text-primary-foreground font-bold"
+                    )}>
                       {format(day, "d")}
                     </div>
                     <div className="space-y-1">
@@ -763,19 +663,12 @@ export const PlannerCalendarView = ({
                         return (
                           <button
                             key={task.id}
-                            className={cn(
-                              "w-full text-left text-[10px] px-2 py-1 rounded-lg truncate transition-colors font-medium border"
-                            )}
+                            className="w-full text-left text-[10px] px-2 py-1 rounded-lg truncate transition-colors font-medium border"
                             style={colorStyle}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEditTask(task);
-                            }}
+                            onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
                           >
                             {task.start_at && (
-                              <span className="font-bold">
-                                {format(parseISO(task.start_at), "h:mm")}{" "}
-                              </span>
+                              <span className="font-bold">{format(parseISO(task.start_at), "h:mm")} </span>
                             )}
                             {task.title}
                             {(task.recurrence_rule || (task as any)._isVirtualRecurrence) && (
@@ -797,14 +690,6 @@ export const PlannerCalendarView = ({
           </div>
         )}
       </div>
-
-      {showCategoryManager && (
-        <CategoryManager
-          categories={categories}
-          onSave={setCategories}
-          onClose={() => setShowCategoryManager(false)}
-        />
-      )}
     </div>
   );
 };
