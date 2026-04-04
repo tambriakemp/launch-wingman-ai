@@ -474,23 +474,8 @@ export const PlannerTaskDialog = ({
                 </PropertyRow>
               </div>
 
-              {/* Row 2: Category + Dates */}
+              {/* Row 2: Dates + Category */}
               <div className="grid grid-cols-2 divide-x divide-border">
-                {(() => {
-                  const selectedCat = spaceCats.find(c => c.id === category);
-                  return (
-                    <PropertyRow icon={Tag} label="Category">
-                      <CategoryCombobox
-                        categories={spaceCats}
-                        value={category}
-                        onChange={setCategory}
-                        selectedSpaceId={selectedSpaceId}
-                        onCreateCategory={onCreateCategory}
-                      />
-                    </PropertyRow>
-                  );
-                })()}
-
                 <PropertyRow icon={CalendarIcon} label="Dates">
                   <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                     <PopoverTrigger asChild>
@@ -528,6 +513,21 @@ export const PlannerTaskDialog = ({
                     </PopoverContent>
                   </Popover>
                 </PropertyRow>
+
+                {(() => {
+                  const selectedCat = spaceCats.find(c => c.id === category);
+                  return (
+                    <PropertyRow icon={Tag} label="Category">
+                      <CategoryCombobox
+                        categories={spaceCats}
+                        value={category}
+                        onChange={setCategory}
+                        selectedSpaceId={selectedSpaceId}
+                        onCreateCategory={onCreateCategory}
+                      />
+                    </PropertyRow>
+                  );
+                })()}
               </div>
             </div>
 
