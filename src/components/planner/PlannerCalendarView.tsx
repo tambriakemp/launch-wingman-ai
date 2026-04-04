@@ -30,7 +30,6 @@ import {
   Circle,
   Flame,
   Target,
-  Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -40,12 +39,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { PlannerTask } from "./PlannerTaskDialog";
 import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  DropdownMenuCheckboxItem,
-} from "@/components/ui/dropdown-menu";
 
 interface PlannerCalendarViewProps {
   tasks: PlannerTask[];
@@ -110,21 +103,10 @@ export const PlannerCalendarView = ({
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"month" | "week" | "day">("week");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [spaceFilter, setSpaceFilter] = useState<string[]>([]);
-
   const { user } = useAuth();
   const todayStr = format(new Date(), "yyyy-MM-dd");
 
   const categories = propCategories;
-
-  // Space filtering for calendar
-  const displayTasks = useMemo(() => {
-    if (spaceFilter.length === 0) return tasks;
-    return tasks.filter(t => {
-      const sid = (t as any).space_id;
-      return spaceFilter.includes(sid) || (!sid && spaceFilter.includes("unassigned"));
-    });
-  }, [tasks, spaceFilter]);
 
   // --- Today's Priorities ---
   const [dailyPage, setDailyPage] = useState<any>(null);
@@ -225,8 +207,8 @@ export const PlannerCalendarView = ({
   }, [viewMode, currentDate, weekEnd]);
 
   const expandedTasks = useMemo(() => {
-    return expandAllRecurring(displayTasks, windowStart, windowEnd);
-  }, [displayTasks, windowStart, windowEnd]);
+    return expandAllRecurring(tasks, windowStart, windowEnd);
+  }, [tasks, windowStart, windowEnd]);
 
   const scheduledTasks = useMemo(() => {
     return expandedTasks.filter(t => t.start_at && t.end_at);
@@ -270,11 +252,6 @@ export const PlannerCalendarView = ({
     if (date) setCurrentDate(date);
   };
 
-  const toggleSpaceFilter = (id: string) => {
-    setSpaceFilter(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
-  };
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -375,30 +352,6 @@ export const PlannerCalendarView = ({
           )}
         </div>
 
-        {/* Space filter */}
-        {spaces.length > 0 && (
-          <div className="p-4 border-t border-border">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-3">Filter by Space</span>
-            <div className="space-y-1">
-              {spaces.map(space => (
-                <button
-                  key={space.id}
-                  className={cn(
-                    "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-accent/50 text-left",
-                    spaceFilter.length > 0 && !spaceFilter.includes(space.id) && "opacity-40"
-                  )}
-                  onClick={() => toggleSpaceFilter(space.id)}
-                >
-                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: space.color }} />
-                  <span className="flex-1 truncate">{space.name}</span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {allTasks.filter(t => (t as any).space_id === space.id).length}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ===== MAIN CALENDAR AREA ===== */}
@@ -427,36 +380,6 @@ export const PlannerCalendarView = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Mobile space filter */}
-            {spaces.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 gap-1.5 lg:hidden">
-                    <Filter className="w-3.5 h-3.5" />
-                    Spaces
-                    {spaceFilter.length > 0 && (
-                      <span className="ml-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center">
-                        {spaceFilter.length}
-                      </span>
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {spaces.map(space => (
-                    <DropdownMenuCheckboxItem
-                      key={space.id}
-                      checked={spaceFilter.includes(space.id)}
-                      onCheckedChange={() => toggleSpaceFilter(space.id)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: space.color }} />
-                        {space.name}
-                      </div>
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goPrev}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
