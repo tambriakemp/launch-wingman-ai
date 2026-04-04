@@ -535,10 +535,16 @@ export const PlannerCalendarView = ({
                             {(task.recurrence_rule || (task as any)._isVirtualRecurrence) && (
                               <span className="text-[9px] opacity-60 mt-0.5 block">↻ repeating</span>
                             )}
-                            {pos.height > 40 && task.start_at && task.end_at && (
-                              <div className="text-xs opacity-70 mt-1">
-                                {format(parseISO(task.start_at), "h:mm a")} – {format(parseISO(task.end_at), "h:mm a")}
-                              </div>
+                            {pos.height > 40 && task.start_at && task.end_at && (() => {
+                              const s = parseISO(task.start_at);
+                              const e = parseISO(task.end_at);
+                              if (s.getHours() === 0 && s.getMinutes() === 0 && e.getHours() === 0 && e.getMinutes() === 0) return null;
+                              return (
+                                <div className="text-xs opacity-70 mt-1">
+                                  {format(s, "h:mm a")} – {format(e, "h:mm a")}
+                                </div>
+                              );
+                            })(
                             )}
                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <Pencil className="w-3 h-3 opacity-50" />
