@@ -544,8 +544,7 @@ export const PlannerCalendarView = ({
                                   {format(s, "h:mm a")} – {format(e, "h:mm a")}
                                 </div>
                               );
-                            })(
-                            )}
+                            })()}
                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <Pencil className="w-3 h-3 opacity-50" />
                             </div>
