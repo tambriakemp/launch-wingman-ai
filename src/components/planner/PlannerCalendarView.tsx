@@ -38,6 +38,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { PlannerTask } from "./PlannerTaskDialog";
+import type { PlannerSpace, SpaceCategory } from "@/hooks/usePlannerSpaces";
 
 interface PlannerCalendarViewProps {
   tasks: PlannerTask[];
@@ -47,6 +48,9 @@ interface PlannerCalendarViewProps {
   onToggleComplete?: (task: PlannerTask) => void;
   onDeleteTask?: (taskId: string) => void;
   onAddTask?: () => void;
+  categories?: SpaceCategory[];
+  spaces?: PlannerSpace[];
+  allTasks?: PlannerTask[];
 }
 
 const HOUR_HEIGHT = 72;
