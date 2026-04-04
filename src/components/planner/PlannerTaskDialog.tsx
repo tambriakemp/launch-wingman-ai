@@ -476,29 +476,20 @@ export const PlannerTaskDialog = ({
 
               {/* Row 2: Category + Dates */}
               <div className="grid grid-cols-2 divide-x divide-border">
-                {spaceCats.length > 0 ? (
-                  <PropertyRow icon={Tag} label="Category">
-                    <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger className="h-8 border-none shadow-none bg-transparent text-sm px-2 w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {spaceCats.map(cat => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full" style={{ background: cat.color }} />
-                              {cat.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </PropertyRow>
-                ) : (
-                  <PropertyRow icon={Tag} label="Category">
-                    <span className="text-sm text-muted-foreground px-2">—</span>
-                  </PropertyRow>
-                )}
+                {(() => {
+                  const selectedCat = spaceCats.find(c => c.id === category);
+                  return (
+                    <PropertyRow icon={Tag} label="Category">
+                      <CategoryCombobox
+                        categories={spaceCats}
+                        value={category}
+                        onChange={setCategory}
+                        selectedSpaceId={selectedSpaceId}
+                        onCreateCategory={onCreateCategory}
+                      />
+                    </PropertyRow>
+                  );
+                })()}
 
                 <PropertyRow icon={CalendarIcon} label="Dates">
                   <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
