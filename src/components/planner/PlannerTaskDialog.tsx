@@ -131,6 +131,7 @@ export const PlannerTaskDialog = ({
   categories = [],
   allCategories = [],
   selectedSpaceId = null,
+  onCreateCategory,
 }: PlannerTaskDialogProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
