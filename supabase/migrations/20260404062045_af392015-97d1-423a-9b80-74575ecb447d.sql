@@ -1,0 +1,1 @@
+ALTER TABLE public.subtasks ADD COLUMN description TEXT DEFAULT NULL;
