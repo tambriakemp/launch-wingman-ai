@@ -1,56 +1,29 @@
 
 
-## Multi-Select Tasks + Category Search/Create
+## Fix: Date Picker, Calendar Time Display, and Bulk Category
 
-### 1. Multi-select checkboxes in PlannerListView
+### Bug 1: "12:00" showing in task title on calendar
+**Root cause**: `PlannerCalendarView.tsx` line 593-595 prepends `format(parseISO(task.start_at), "h:mm")` before the title in the month view. Since tasks are saved with `startOfDay` (midnight), it always shows "12:00".
 
-**`src/components/planner/PlannerListView.tsx`**
+**Fix**: Only show the time prefix when the task has explicit start/end times that aren't midnight. Check if hours or minutes are non-zero before rendering the time span. Apply the same logic in the weekly/day view time display (line 540).
 
-Add selection state and a floating action bar:
+### Bug 2: Quick date picks (Today, Tomorrow, etc.) not clickable
+**Root cause**: The `DatePickerPanel` renders inside a `PopoverContent` but the left sidebar buttons likely lack `pointer-events-auto`. The calendar has it but the surrounding panel does not.
 
-- Add `selectedIds: Set<string>` state to `PlannerListView`
-- Each `TaskRow` gets a checkbox that is invisible by default, shows on hover (`opacity-0 group-hover:opacity-100`), and stays visible when checked
-- The checkbox replaces the current completion circle on the left when hovered/selected — or sits to its left
-- When `selectedIds.size > 0`, render a fixed bottom action bar (like ClickUp's screenshot) with:
-  - "N tasks selected" label + "×" to clear
-  - **Move to Space** — dropdown listing all spaces, on click calls bulk update
-  - **Category** — dropdown with category search/create (see below)
-  - **Delete** — bulk delete with confirmation
-  - **Status** — quick status change
-- New props needed: `spaces`, `onBulkMoveSpace`, `onBulkDelete`, `onBulkUpdateCategory`, `onBulkUpdateStatus`
+**Fix**: Add `pointer-events-auto` to the `DatePickerPanel` root `<div className="flex">` wrapper, or to the `PopoverContent` itself.
 
-### 2. Bulk action handlers in Planner.tsx
+### Bug 3: Defaulting to recurring even when turned off
+**Root cause**: The `showRepeat` state controls visibility of the repeat section but doesn't reset `recurrenceFreq` when repeat is toggled off. When `showRepeat` is true, whatever `recurrenceFreq` was set persists. Additionally, clicking "Set Recurring" toggles `showRepeat` but doesn't clear `recurrenceFreq` to `"none"` when hiding.
 
-**`src/pages/Planner.tsx`**
+**Fix**: When `setShowRepeat(false)`, also reset `recurrenceFreq` to `"none"` and clear related fields. Ensure the submit handler only builds a recurrence rule when `recurrenceFreq !== "none"` (already done, but the freq might not be reset).
 
-Add handler functions:
+### Bug 4: Category option showing in bulk action bar under "All Spaces"
+**Root cause**: The `BulkCategoryPicker` always renders in the floating action bar regardless of `selectedSpaceId`.
 
-- `handleBulkDelete(ids: string[])` — delete multiple tasks
-- `handleBulkMoveSpace(ids: string[], spaceId: string)` — update `space_id` for multiple tasks
-- `handleBulkUpdateCategory(ids: string[], categoryId: string)` — update `category` for multiple tasks  
-- `handleBulkUpdateStatus(ids: string[], status: string)` — update `column_id` for multiple tasks
-- Pass these + `spaces` to `PlannerListView`
-
-### 3. Category search/create (combobox-style)
-
-**`src/components/planner/PlannerTaskDialog.tsx`** and the bulk action bar:
-
-Replace the category `<Select>` with a searchable input (Popover + Input + filtered list):
-
-- Text input filters categories by name
-- If no match, show "Create [typed name]" option at bottom
-- Clicking "Create" calls `createCategory(spaceId, name)` then selects it
-- Works both in the task dialog and in the bulk action bar's category dropdown
-- New prop on `PlannerTaskDialog`: `onCreateCategory: (spaceId: string, name: string) => Promise<SpaceCategory>`
+**Fix**: In `PlannerListView.tsx`, conditionally render the `BulkCategoryPicker` only when `selectedSpaceId` is not null (i.e., user is inside a specific space).
 
 ### Files to modify
-- `src/components/planner/PlannerListView.tsx` — selection state, hover checkboxes, floating action bar
-- `src/pages/Planner.tsx` — bulk action handlers, pass new props
-- `src/components/planner/PlannerTaskDialog.tsx` — replace category Select with searchable combobox + create option
-
-### Technical details
-- Bulk updates use `supabase.from("tasks").update({...}).in("id", ids)` for efficiency
-- Selection clears when space changes or after a bulk action completes
-- The action bar is `fixed bottom-0` with a backdrop blur, similar to ClickUp's "N Task selected" bar
-- Category creation in the combobox reuses the existing `createCategory` function from `usePlannerSpaces`
+- `src/components/planner/PlannerCalendarView.tsx` — remove time prefix for midnight times
+- `src/components/planner/PlannerTaskDialog.tsx` — add `pointer-events-auto` to date picker panel, reset recurrence when toggling repeat off
+- `src/components/planner/PlannerListView.tsx` — hide category bulk action when `selectedSpaceId` is null
 
