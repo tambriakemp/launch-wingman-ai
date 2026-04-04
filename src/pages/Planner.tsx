@@ -104,6 +104,7 @@ const Planner = () => {
       task_scope: "planner",
       task_type: data.task_type || "task",
       category: data.category || null,
+      priority: (data as any).priority || "normal",
       due_at: data.due_at || null,
       start_at: data.start_at || null,
       end_at: data.end_at || null,
