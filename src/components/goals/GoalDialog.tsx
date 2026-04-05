@@ -146,10 +146,7 @@ export function GoalDialog({
                     <Button
                       type="button"
                       variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal h-11 border-0 border-b border-border rounded-none px-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0",
-                        !targetDate && "text-muted-foreground"
-                      )}
+                    className="w-full justify-start text-left font-normal h-11 border-0 border-b border-border rounded-none px-0 hover:bg-transparent hover:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 text-muted-foreground"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {targetDate
