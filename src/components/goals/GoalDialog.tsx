@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/popover";
 import { format, parseISO } from "date-fns";
 import { CalendarIcon, Trophy, X } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
 import type { Goal, GoalTarget } from "@/pages/Goals";
 
@@ -88,9 +87,9 @@ export function GoalDialog({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col border-l border-border">
+      <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col border-l border-border [&>button]:hidden">
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
-          {/* Close button */}
+          {/* Single close button */}
           <div className="flex justify-end p-4 pb-0">
             <button
               type="button"
@@ -142,16 +141,17 @@ export function GoalDialog({
               <div>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button
+                    <button
                       type="button"
-                      variant="outline"
-                    className="w-full justify-start text-left font-normal h-11 border-0 border-b border-border rounded-none px-0 hover:bg-transparent hover:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 text-sm text-foreground"
+                      className="w-full flex items-center text-left h-11 border-0 border-b border-border bg-transparent px-0 text-sm text-foreground"
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {targetDate
-                        ? format(targetDate, "MMM d, yyyy")
-                        : "Pick a date..."}
-                    </Button>
+                      <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <span className={targetDate ? "text-foreground" : "text-muted-foreground"}>
+                        {targetDate
+                          ? format(targetDate, "MMM d, yyyy")
+                          : "Pick a date..."}
+                      </span>
+                    </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
