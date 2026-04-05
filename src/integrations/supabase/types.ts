@@ -1489,6 +1489,30 @@ export type Database = {
           },
         ]
       }
+      goal_folders: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       goal_milestones: {
         Row: {
           created_at: string
@@ -1627,6 +1651,7 @@ export type Database = {
           color: string
           created_at: string
           description: string | null
+          folder_id: string | null
           id: string
           status: string
           target_date: string | null
@@ -1640,6 +1665,7 @@ export type Database = {
           color?: string
           created_at?: string
           description?: string | null
+          folder_id?: string | null
           id?: string
           status?: string
           target_date?: string | null
@@ -1653,6 +1679,7 @@ export type Database = {
           color?: string
           created_at?: string
           description?: string | null
+          folder_id?: string | null
           id?: string
           status?: string
           target_date?: string | null
@@ -1661,7 +1688,15 @@ export type Database = {
           user_id?: string
           why_statement?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "goals_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "goal_folders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       habit_completions: {
         Row: {
