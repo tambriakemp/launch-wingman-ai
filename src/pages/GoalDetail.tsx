@@ -15,7 +15,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  ArrowLeft,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Target,
   CalendarDays,
   Plus,
@@ -26,6 +31,11 @@ import {
   ToggleLeft,
   ListChecks,
   Hash,
+  ChevronRight,
+  Folder,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays } from "date-fns";
@@ -38,19 +48,17 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
   tasks: ListChecks,
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  number: "Number",
-  currency: "Currency",
-  true_false: "True / False",
-  tasks: "Tasks",
-};
-
 const TARGET_TYPES = [
   { id: "number", label: "Number" },
   { id: "currency", label: "Currency" },
   { id: "true_false", label: "True / False" },
   { id: "tasks", label: "Tasks" },
 ];
+
+interface GoalFolder {
+  id: string;
+  name: string;
+}
 
 const GoalDetail = () => {
   const { goalId } = useParams<{ goalId: string }>();
@@ -60,15 +68,14 @@ const GoalDetail = () => {
   const [goal, setGoal] = useState<Goal | null>(null);
   const [targets, setTargets] = useState<GoalTarget[]>([]);
   const [updates, setUpdates] = useState<GoalTargetUpdate[]>([]);
+  const [folder, setFolder] = useState<GoalFolder | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Update form state per target
   const [expandedTarget, setExpandedTarget] = useState<string | null>(null);
   const [updateValue, setUpdateValue] = useState("");
   const [updateNote, setUpdateNote] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Add target form state
   const [showAddTarget, setShowAddTarget] = useState(false);
   const [newTargetName, setNewTargetName] = useState("");
   const [newTargetType, setNewTargetType] = useState("number");
@@ -76,6 +83,10 @@ const GoalDetail = () => {
   const [newTargetStart, setNewTargetStart] = useState("0");
   const [newTargetValue, setNewTargetValue] = useState("");
   const [isAddingTarget, setIsAddingTarget] = useState(false);
+
+  // Description editing
+  const [descriptionValue, setDescriptionValue] = useState("");
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
 
   const fetchGoal = useCallback(async () => {
     if (!user || !goalId) return;
@@ -85,7 +96,20 @@ const GoalDetail = () => {
       .eq("id", goalId)
       .eq("user_id", user.id)
       .single();
-    setGoal((data as unknown as Goal) || null);
+    const g = (data as unknown as Goal) || null;
+    setGoal(g);
+    if (g) setDescriptionValue(g.description || "");
+    // Fetch folder if goal has folder_id
+    if (g && (g as any).folder_id) {
+      const { data: folderData } = await supabase
+        .from("goal_folders" as any)
+        .select("id, name")
+        .eq("id", (g as any).folder_id)
+        .single();
+      setFolder((folderData as unknown as GoalFolder) || null);
+    } else {
+      setFolder(null);
+    }
   }, [user, goalId]);
 
   const fetchTargets = useCallback(async () => {
@@ -101,7 +125,6 @@ const GoalDetail = () => {
 
   const fetchUpdates = useCallback(async () => {
     if (!user || !goalId) return;
-    // Get all target ids for this goal first
     const { data: targetData } = await supabase
       .from("goal_targets" as any)
       .select("id")
@@ -129,10 +152,19 @@ const GoalDetail = () => {
     load();
   }, [fetchGoal, fetchTargets, fetchUpdates]);
 
+  const handleSaveDescription = async () => {
+    if (!goal || !user) return;
+    await supabase
+      .from("goals" as any)
+      .update({ description: descriptionValue.trim() || null, updated_at: new Date().toISOString() })
+      .eq("id", goal.id);
+    setIsEditingDescription(false);
+    fetchGoal();
+  };
+
   const handleLogUpdate = async (target: GoalTarget) => {
     if (!user) return;
     setIsUpdating(true);
-
     let newValue: number;
     if (target.target_type === "true_false") {
       newValue = target.current_value >= 1 ? 0 : 1;
@@ -144,10 +176,7 @@ const GoalDetail = () => {
         return;
       }
     }
-
     const previousValue = Number(target.current_value);
-
-    // Insert update log
     await supabase.from("goal_target_updates" as any).insert({
       target_id: target.id,
       user_id: user.id,
@@ -155,14 +184,11 @@ const GoalDetail = () => {
       new_value: newValue,
       note: updateNote.trim() || null,
     });
-
-    // Update target current_value + is_done
     const isDone = newValue >= Number(target.target_value);
     await supabase
       .from("goal_targets" as any)
       .update({ current_value: newValue, is_done: isDone })
       .eq("id", target.id);
-
     toast.success("Progress updated");
     setUpdateValue("");
     setUpdateNote("");
@@ -202,6 +228,14 @@ const GoalDetail = () => {
     setIsAddingTarget(false);
   };
 
+  const handleDeleteTarget = async (targetId: string) => {
+    await supabase.from("goal_target_updates" as any).delete().eq("target_id", targetId);
+    await supabase.from("goal_targets" as any).delete().eq("id", targetId);
+    toast.success("Target removed");
+    fetchTargets();
+    fetchUpdates();
+  };
+
   if (isLoading) {
     return (
       <ProjectLayout>
@@ -235,92 +269,148 @@ const GoalDetail = () => {
     : null;
   const isOverdue = daysLeft !== null && daysLeft < 0 && goal.status === "active";
 
+  const circumference = 2 * Math.PI * 52;
+  const strokeDash = (overallProgress / 100) * circumference;
+
   return (
     <ProjectLayout>
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
           {/* Breadcrumb */}
-          <button
-            onClick={() => navigate("/goals")}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Goals
-          </button>
+          <div className="flex items-center gap-2 text-sm">
+            <button
+              onClick={() => navigate("/goals")}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              All Goals
+            </button>
+            {folder && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                <button
+                  onClick={() => navigate(`/goals/folder/${folder.id}`)}
+                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Folder className="w-3.5 h-3.5" />
+                  {folder.name}
+                </button>
+              </>
+            )}
+            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="font-medium text-foreground truncate">{goal.title}</span>
+          </div>
 
-          {/* Goal header */}
+          {/* Goal header card — ClickUp style */}
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="h-1.5" style={{ backgroundColor: goal.color }} />
-            <div className="p-6 space-y-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-xl font-semibold text-foreground">
-                      {goal.title}
-                    </h1>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">
-                      {goal.category}
-                    </span>
-                    {goal.status === "completed" && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                        Completed ✓
-                      </span>
-                    )}
+            <div className="p-6">
+              {/* Target date */}
+              {goal.target_date && (
+                <div className={cn(
+                  "flex items-center gap-1.5 text-xs mb-4",
+                  isOverdue ? "text-destructive" : "text-muted-foreground"
+                )}>
+                  <CalendarDays className="w-3.5 h-3.5" />
+                  {format(parseISO(goal.target_date), "MMM d, yyyy")}
+                  {isOverdue
+                    ? ` · ${Math.abs(daysLeft!)}d overdue`
+                    : daysLeft === 0
+                    ? " · Due today"
+                    : ` · ${daysLeft}d left`}
+                </div>
+              )}
+
+              <div className="flex items-start gap-6">
+                {/* Large progress ring */}
+                <div className="relative w-28 h-28 shrink-0">
+                  <svg className="w-28 h-28 -rotate-90" viewBox="0 0 120 120">
+                    <circle
+                      cx="60"
+                      cy="60"
+                      r="52"
+                      fill="none"
+                      stroke="hsl(var(--muted))"
+                      strokeWidth="8"
+                    />
+                    <circle
+                      cx="60"
+                      cy="60"
+                      r="52"
+                      fill="none"
+                      stroke={goal.color}
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray={`${strokeDash} ${circumference}`}
+                      className="transition-all duration-500"
+                    />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-xl font-bold text-foreground">
+                    {overallProgress}%
+                  </span>
+                </div>
+
+                {/* Title + meta */}
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h1 className="text-xl font-semibold text-foreground">{goal.title}</h1>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">
+                          {goal.category}
+                        </span>
+                        {goal.status === "completed" && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                            Completed ✓
+                          </span>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          {doneTargets}/{totalTargets} targets
+                        </span>
+                      </div>
+                    </div>
                   </div>
+
                   {goal.why_statement && (
                     <p className="text-sm text-muted-foreground italic">
                       "{goal.why_statement}"
                     </p>
                   )}
-                </div>
 
-                {/* Progress ring */}
-                <div className="relative w-14 h-14 shrink-0">
-                  <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
-                    <circle
-                      cx="28"
-                      cy="28"
-                      r="24"
-                      fill="none"
-                      stroke="hsl(var(--muted))"
-                      strokeWidth="4"
-                    />
-                    <circle
-                      cx="28"
-                      cy="28"
-                      r="24"
-                      fill="none"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      strokeDasharray={`${overallProgress * 1.508} 150.8`}
-                    />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-foreground">
-                    {overallProgress}%
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span>
-                  {doneTargets}/{totalTargets} targets complete
-                </span>
-                {daysLeft !== null && (
-                  <span
-                    className={cn(
-                      "flex items-center gap-1",
-                      isOverdue && "text-destructive"
+                  {/* Description area */}
+                  <div className="pt-2">
+                    {isEditingDescription ? (
+                      <div className="space-y-2">
+                        <Textarea
+                          autoFocus
+                          value={descriptionValue}
+                          onChange={(e) => setDescriptionValue(e.target.value)}
+                          placeholder="Add notes or description..."
+                          rows={4}
+                          className="resize-none text-sm"
+                          maxLength={2000}
+                        />
+                        <div className="flex gap-2">
+                          <Button size="sm" className="h-7 text-xs" onClick={handleSaveDescription}>
+                            Save
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => {
+                            setIsEditingDescription(false);
+                            setDescriptionValue(goal.description || "");
+                          }}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setIsEditingDescription(true)}
+                        className="w-full text-left text-sm text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-muted/50 min-h-[40px]"
+                      >
+                        {goal.description || "Add a description..."}
+                      </button>
                     )}
-                  >
-                    <CalendarDays className="w-3 h-3" />
-                    {isOverdue
-                      ? `${Math.abs(daysLeft)}d overdue`
-                      : daysLeft === 0
-                      ? "Due today"
-                      : `${daysLeft}d left`}
-                  </span>
-                )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -338,11 +428,10 @@ const GoalDetail = () => {
                 onClick={() => setShowAddTarget(!showAddTarget)}
                 className="gap-1.5 h-8 text-xs"
               >
-                <Plus className="w-3 h-3" /> Add Target
+                <Plus className="w-3 h-3" /> Add
               </Button>
             </div>
 
-            {/* Add target inline form */}
             {showAddTarget && (
               <div className="rounded-xl border border-dashed border-border bg-card p-4 space-y-3">
                 <div className="grid grid-cols-2 gap-2">
@@ -433,62 +522,73 @@ const GoalDetail = () => {
               return (
                 <div
                   key={target.id}
-                  className="rounded-xl border border-border bg-card overflow-hidden"
+                  className="rounded-xl border border-border bg-card overflow-hidden group"
                 >
-                  <button
-                    onClick={() =>
-                      setExpandedTarget(isExpanded ? null : target.id)
-                    }
-                    className="w-full text-left p-4 flex items-center gap-3 hover:bg-muted/30 transition-colors"
-                  >
-                    {target.is_done ? (
-                      <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
-                    ) : (
-                      <Circle className="w-5 h-5 text-muted-foreground/40 shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
+                  <div className="flex items-center gap-3 p-4">
+                    <button
+                      onClick={() => setExpandedTarget(isExpanded ? null : target.id)}
+                      className="flex-1 flex items-center gap-3 text-left hover:bg-muted/30 transition-colors rounded-lg -m-1 p-1"
+                    >
+                      {target.is_done ? (
+                        <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
+                      ) : (
+                        <Circle className="w-5 h-5 text-muted-foreground/40 shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                          <span className={cn(
                             "font-medium text-sm",
-                            target.is_done &&
-                              "line-through text-muted-foreground"
-                          )}
-                        >
-                          {target.name}
-                        </span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground flex items-center gap-1">
-                          <Icon className="w-2.5 h-2.5" />
-                          {TYPE_LABELS[target.target_type]}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <div className="w-full max-w-[200px] h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={cn(
-                              "h-full rounded-full transition-all",
-                              target.is_done ? "bg-primary" : "bg-primary/60"
-                            )}
-                            style={{ width: `${pct}%` }}
-                          />
+                            target.is_done && "line-through text-muted-foreground"
+                          )}>
+                            {target.name}
+                          </span>
                         </div>
-                        <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
-                          {target.target_type === "true_false" ? (
-                            target.is_done ? "Done" : "Not done"
-                          ) : (
-                            <>
-                              {target.target_type === "currency" ? "$" : ""}
-                              {Number(target.current_value).toLocaleString()}
-                              {target.unit ? ` ${target.unit}` : ""} /{" "}
-                              {target.target_type === "currency" ? "$" : ""}
-                              {Number(target.target_value).toLocaleString()}
-                            </>
-                          )}
-                        </span>
                       </div>
+                    </button>
+
+                    {/* Progress fraction */}
+                    <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
+                      {target.target_type === "true_false" ? (
+                        target.is_done ? "1/1" : "0/1"
+                      ) : (
+                        <>
+                          {target.target_type === "currency" ? "$" : ""}
+                          {Number(target.current_value).toLocaleString()}
+                          /{target.target_type === "currency" ? "$" : ""}
+                          {Number(target.target_value).toLocaleString()}
+                        </>
+                      )}
+                    </span>
+
+                    {/* Progress bar */}
+                    <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden shrink-0">
+                      <div
+                        className={cn(
+                          "h-full rounded-full transition-all",
+                          target.is_done ? "bg-primary" : "bg-primary/60"
+                        )}
+                        style={{ width: `${pct}%` }}
+                      />
                     </div>
-                    <TrendingUp className="w-4 h-4 text-muted-foreground shrink-0" />
-                  </button>
+
+                    {/* Actions */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground opacity-0 group-hover:opacity-100">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setExpandedTarget(isExpanded ? null : target.id)}>
+                          <TrendingUp className="w-3.5 h-3.5 mr-2" /> Log Progress
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDeleteTarget(target.id)} className="text-destructive">
+                          <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
 
                   {/* Expanded update form */}
                   {isExpanded && (
