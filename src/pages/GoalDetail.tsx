@@ -71,12 +71,6 @@ const GoalDetail = () => {
   const [isUpdating, setIsUpdating] = useState(false);
 
   const [showAddTarget, setShowAddTarget] = useState(false);
-  const [newTargetName, setNewTargetName] = useState("");
-  const [newTargetType, setNewTargetType] = useState("number");
-  const [newTargetUnit, setNewTargetUnit] = useState("");
-  const [newTargetStart, setNewTargetStart] = useState("0");
-  const [newTargetValue, setNewTargetValue] = useState("");
-  const [isAddingTarget, setIsAddingTarget] = useState(false);
 
   // Description editing
   const [descriptionValue, setDescriptionValue] = useState("");
