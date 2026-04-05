@@ -1,14 +1,26 @@
 import { useNavigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
+import { MoreHorizontal, Pencil, FolderInput, Archive, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { Goal, GoalTarget } from "@/pages/Goals";
 
 interface GoalGridCardProps {
   goal: Goal;
   targets: GoalTarget[];
+  folders?: { id: string; name: string }[];
+  onRename?: (goal: Goal) => void;
+  onMoveToFolder?: (goalId: string, folderId: string | null) => void;
+  onArchive?: (goalId: string) => void;
+  onDelete?: (goalId: string) => void;
 }
 
-export function GoalGridCard({ goal, targets }: GoalGridCardProps) {
+export function GoalGridCard({ goal, targets, folders, onRename, onMoveToFolder, onArchive, onDelete }: GoalGridCardProps) {
   const navigate = useNavigate();
 
   const doneTargets = targets.filter((t) => t.is_done).length;
@@ -16,6 +28,7 @@ export function GoalGridCard({ goal, targets }: GoalGridCardProps) {
   const progress =
     totalTargets > 0 ? Math.round((doneTargets / totalTargets) * 100) : 0;
   const isCompleted = goal.status === "completed";
+  const isArchived = goal.status === "archived";
 
   const circumference = 2 * Math.PI * 40;
   const strokeDash = (progress / 100) * circumference;
@@ -24,14 +37,64 @@ export function GoalGridCard({ goal, targets }: GoalGridCardProps) {
     <div
       onClick={() => navigate(`/goals/${goal.id}`)}
       className={cn(
-        "rounded-xl border bg-card overflow-hidden cursor-pointer group transition-all",
-        isCompleted
+        "rounded-xl border bg-card overflow-hidden cursor-pointer group transition-all relative",
+        isCompleted || isArchived
           ? "border-border/50 opacity-70"
           : "border-border hover:shadow-md hover:border-primary/20"
       )}
     >
       {/* Color bar */}
       <div className="h-1.5" style={{ backgroundColor: goal.color }} />
+
+      {/* Options menu */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            onClick={(e) => e.stopPropagation()}
+            className="absolute top-4 right-3 p-1 rounded-lg hover:bg-muted transition-colors text-muted-foreground opacity-0 group-hover:opacity-100 z-10"
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          {onRename && (
+            <DropdownMenuItem onClick={() => onRename(goal)}>
+              <Pencil className="w-3.5 h-3.5 mr-2" /> Rename
+            </DropdownMenuItem>
+          )}
+          {onMoveToFolder && folders && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <FolderInput className="w-3.5 h-3.5 mr-2" /> Move to Folder
+                </DropdownMenuItem>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" align="start">
+                {goal.folder_id && (
+                  <DropdownMenuItem onClick={() => onMoveToFolder(goal.id, null)}>
+                    — Remove from folder
+                  </DropdownMenuItem>
+                )}
+                {folders.filter(f => f.id !== goal.folder_id).map((f) => (
+                  <DropdownMenuItem key={f.id} onClick={() => onMoveToFolder(goal.id, f.id)}>
+                    {f.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          {onArchive && (
+            <DropdownMenuItem onClick={() => onArchive(goal.id)}>
+              <Archive className="w-3.5 h-3.5 mr-2" /> {isArchived ? "Unarchive" : "Archive"}
+            </DropdownMenuItem>
+          )}
+          {onDelete && (
+            <DropdownMenuItem onClick={() => onDelete(goal.id)} className="text-destructive">
+              <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <div className="p-5 flex flex-col items-center gap-4">
         {/* Progress ring */}
@@ -73,11 +136,9 @@ export function GoalGridCard({ goal, targets }: GoalGridCardProps) {
         </h3>
 
         {/* Targets link */}
-        {totalTargets > 0 && (
-          <p className="text-xs text-primary font-medium">
-            {totalTargets} target{totalTargets !== 1 ? "s" : ""}
-          </p>
-        )}
+        <p className="text-xs text-primary font-medium">
+          {totalTargets} target{totalTargets !== 1 ? "s" : ""}
+        </p>
 
         {/* Footer */}
         <div className="w-full flex items-center justify-between text-[10px] text-muted-foreground pt-2 border-t border-border">

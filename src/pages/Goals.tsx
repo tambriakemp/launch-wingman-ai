@@ -376,21 +376,21 @@ const Goals = () => {
             </div>
           )}
 
-          {/* Unfiled / All Goals grid */}
+          {/* Goals grid */}
           {goalsToShow.length > 0 && (
-            <div>
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                {showFolders ? "Unfiled Goals" : "All Goals"}
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {goalsToShow.map((goal) => (
-                  <GoalGridCard
-                    key={goal.id}
-                    goal={goal}
-                    targets={targets.filter((t) => t.goal_id === goal.id)}
-                  />
-                ))}
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {goalsToShow.map((goal) => (
+                <GoalGridCard
+                  key={goal.id}
+                  goal={goal}
+                  targets={targets.filter((t) => t.goal_id === goal.id)}
+                  folders={folders}
+                  onRename={(g) => { setEditingGoal(g); setDialogOpen(true); }}
+                  onMoveToFolder={handleMoveGoalToFolder}
+                  onArchive={handleArchiveGoal}
+                  onDelete={handleDeleteGoal}
+                />
+              ))}
             </div>
           )}
 
