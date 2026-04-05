@@ -139,7 +139,7 @@ export const PlannerListView = ({
 
   return (
     <div className="px-4 pb-4 relative">
-      {activeSpace && onUpdateSpace && (
+      {activeSpace && onUpdateSpace && activeSpace.description_pinned && (
         <SpaceNotesSection space={activeSpace} onUpdateSpace={onUpdateSpace} />
       )}
       <div className="grid grid-cols-[minmax(0,1fr)_100px_100px_90px_36px] gap-2 items-center px-4 py-1.5 border-b border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground select-none sticky top-0 bg-background z-10">
@@ -147,7 +147,31 @@ export const PlannerListView = ({
         <span>Due Date</span>
         <span>Category</span>
         <span>Status</span>
-        <span />
+        <span>
+          {activeSpace && onUpdateSpace && (
+            <SettingsPopover>
+              <SettingsPopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <Settings2 className="w-3.5 h-3.5" />
+                </Button>
+              </SettingsPopoverTrigger>
+              <SettingsPopoverContent align="end" className="w-64 p-0">
+                <div className="px-4 py-3 border-b border-border">
+                  <span className="text-sm font-medium text-foreground">Layout options</span>
+                </div>
+                <div className="p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-foreground">Pin description</span>
+                    <Switch
+                      checked={activeSpace.description_pinned ?? false}
+                      onCheckedChange={(checked) => onUpdateSpace(activeSpace.id, { description_pinned: checked })}
+                    />
+                  </div>
+                </div>
+              </SettingsPopoverContent>
+            </SettingsPopover>
+          )}
+        </span>
       </div>
 
       {GROUP_CONFIG.map(({ key, label, color }) => {
