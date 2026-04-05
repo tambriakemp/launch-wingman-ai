@@ -5,7 +5,6 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -102,7 +101,7 @@ export function GoalDialog({
             </button>
           </div>
 
-          <div className="px-8 pb-8 pt-2 space-y-10 flex-1 overflow-y-auto">
+          <div className="px-8 pb-8 pt-2 space-y-14 flex-1 overflow-y-auto">
             {/* Goal Name */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -117,11 +116,11 @@ export function GoalDialog({
                 </div>
               </div>
               <div>
-                <Input
+                <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Enter goal name..."
-                  className="h-11 border-0 border-b border-border rounded-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary text-base"
+                  className="w-full h-11 border-0 border-b border-border bg-transparent px-0 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                   maxLength={200}
                 />
               </div>
@@ -146,10 +145,7 @@ export function GoalDialog({
                     <Button
                       type="button"
                       variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal h-11 border-0 border-b border-border rounded-none px-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0",
-                        !targetDate && "text-muted-foreground"
-                      )}
+                    className="w-full justify-start text-left font-normal h-11 border-0 border-b border-border rounded-none px-0 hover:bg-transparent hover:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 text-muted-foreground"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {targetDate
@@ -189,7 +185,7 @@ export function GoalDialog({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Add a description..."
-                  minRows={2}
+                  minRows={6}
                   className="border-0 border-b border-border rounded-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary text-sm"
                   maxLength={1000}
                 />
