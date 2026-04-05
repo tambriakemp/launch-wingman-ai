@@ -393,6 +393,11 @@ const Goals = () => {
                         setFolderDialogOpen(true);
                       }}
                       onDelete={() => handleDeleteFolder(f.id)}
+                      onCreateGoal={() => {
+                        setCreateInFolderId(f.id);
+                        setEditingGoal(null);
+                        setDialogOpen(true);
+                      }}
                     />
                   );
                 })}
