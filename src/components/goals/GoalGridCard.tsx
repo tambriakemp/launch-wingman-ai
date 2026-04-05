@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
-import { MoreHorizontal, Pencil, FolderInput, Archive, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, FolderInput, FolderMinus, Archive, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
