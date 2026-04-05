@@ -687,6 +687,14 @@ const App = () => (
               }
             />
             <Route
+              path="/goals/folder/:folderId"
+              element={
+                <ProtectedRoute>
+                  <GoalFolderDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/goals/:goalId"
               element={
                 <ProtectedRoute>
