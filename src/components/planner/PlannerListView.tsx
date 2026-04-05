@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { format, parseISO, isPast, isToday, startOfWeek, endOfWeek, isBefore, isAfter } from "date-fns";
 import { CheckCircle2, Circle, ChevronDown, ChevronRight, MoreHorizontal, Pencil, Trash2, Plus, X, FolderOpen, Tag, CircleDot, Square, CheckSquare } from "lucide-react";
+import { SpaceNotesSection } from "./SpaceNotesSection";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
