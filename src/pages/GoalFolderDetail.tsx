@@ -48,6 +48,7 @@ const GoalFolderDetail = () => {
   const [folder, setFolder] = useState<GoalFolder | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [targets, setTargets] = useState<GoalTarget[]>([]);
+  const [allFolders, setAllFolders] = useState<GoalFolder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
