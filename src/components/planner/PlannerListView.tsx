@@ -129,8 +129,13 @@ export const PlannerListView = ({
 
   const selectedArray = Array.from(selectedIds);
 
+  const activeSpace = selectedSpaceId ? spaces.find(s => s.id === selectedSpaceId) : null;
+
   return (
     <div className="px-4 pb-4 relative">
+      {activeSpace && onUpdateSpace && (
+        <SpaceNotesSection space={activeSpace} onUpdateSpace={onUpdateSpace} />
+      )}
       <div className="grid grid-cols-[minmax(0,1fr)_100px_100px_90px_36px] gap-2 items-center px-4 py-1.5 border-b border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground select-none sticky top-0 bg-background z-10">
         <span className="pl-8">Name</span>
         <span>Due Date</span>
