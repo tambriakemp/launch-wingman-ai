@@ -120,7 +120,7 @@ export function GoalDialog({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Enter goal name..."
-                  className="w-full h-11 border-0 border-b border-border bg-transparent px-0 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+                  className="w-full h-11 border-0 border-b border-border bg-transparent px-0 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                   maxLength={200}
                 />
               </div>
