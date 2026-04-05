@@ -140,7 +140,7 @@ export function usePlannerSpaces() {
     return space;
   };
 
-  const updateSpace = async (id: string, updates: { name?: string; color?: string }) => {
+  const updateSpace = async (id: string, updates: { name?: string; color?: string; description?: string; description_pinned?: boolean }) => {
     const { error } = await supabase
       .from("planner_spaces")
       .update(updates as any)
