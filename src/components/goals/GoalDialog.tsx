@@ -117,11 +117,11 @@ export function GoalDialog({
                 </div>
               </div>
               <div>
-                <Input
+                <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Enter goal name..."
-                  className="h-11 border-0 border-b border-border rounded-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary text-base"
+                  className="w-full h-11 border-0 border-b border-border bg-transparent px-0 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                   maxLength={200}
                 />
               </div>
