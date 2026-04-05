@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { format, parseISO, isPast, isToday, startOfWeek, endOfWeek, isBefore, isAfter } from "date-fns";
 import { CheckCircle2, Circle, ChevronDown, ChevronRight, MoreHorizontal, Pencil, Trash2, Plus, X, FolderOpen, Tag, CircleDot, Square, CheckSquare } from "lucide-react";
+import { SpaceNotesSection } from "./SpaceNotesSection";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,7 @@ interface PlannerListViewProps {
   onCreateCategory?: (spaceId: string, name: string) => Promise<SpaceCategory | null>;
   selectedSpaceId?: string | null;
   allCategories?: SpaceCategory[];
+  onUpdateSpace?: (id: string, updates: { description?: string; description_pinned?: boolean }) => Promise<void>;
 }
 
 type GroupKey = "overdue" | "today" | "this_week" | "anytime" | "completed";
@@ -90,6 +92,7 @@ export const PlannerListView = ({
   categories = [], spaces = [],
   onBulkMoveSpace, onBulkDelete, onBulkUpdateCategory, onBulkUpdateStatus,
   onCreateCategory, selectedSpaceId, allCategories = [],
+  onUpdateSpace,
 }: PlannerListViewProps) => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(GROUP_CONFIG.map((g) => [g.key, g.defaultOpen]))
@@ -126,8 +129,13 @@ export const PlannerListView = ({
 
   const selectedArray = Array.from(selectedIds);
 
+  const activeSpace = selectedSpaceId ? spaces.find(s => s.id === selectedSpaceId) : null;
+
   return (
     <div className="px-4 pb-4 relative">
+      {activeSpace && onUpdateSpace && (
+        <SpaceNotesSection space={activeSpace} onUpdateSpace={onUpdateSpace} />
+      )}
       <div className="grid grid-cols-[minmax(0,1fr)_100px_100px_90px_36px] gap-2 items-center px-4 py-1.5 border-b border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground select-none sticky top-0 bg-background z-10">
         <span className="pl-8">Name</span>
         <span>Due Date</span>

@@ -330,6 +330,7 @@ const Planner = () => {
                 onCreateCategory={createCategory}
                 selectedSpaceId={selectedSpaceId}
                 allCategories={categories}
+                onUpdateSpace={updateSpace}
               />
             )}
           </div>
