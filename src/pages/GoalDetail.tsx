@@ -43,6 +43,18 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
 };
 
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "$", EUR: "€", GBP: "£", JPY: "¥", CAD: "CA$", AUD: "A$",
+  CHF: "CHF", CNY: "¥", INR: "₹", MXN: "MX$", BRL: "R$", KRW: "₩",
+  SGD: "S$", HKD: "HK$", NOK: "kr", SEK: "kr", DKK: "kr", NZD: "NZ$",
+  ZAR: "R", RUB: "₽", TRY: "₺", AED: "د.إ", SAR: "﷼", PLN: "zł",
+  THB: "฿", IDR: "Rp", PHP: "₱", COP: "COL$", NGN: "₦", EGP: "E£",
+};
+
+function getCurrencySymbol(unit: string | null): string {
+  if (!unit) return "$";
+  return CURRENCY_SYMBOLS[unit] || unit;
+}
 
 interface GoalFolder {
   id: string;
