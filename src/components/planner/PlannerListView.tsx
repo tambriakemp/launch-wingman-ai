@@ -35,6 +35,7 @@ interface PlannerListViewProps {
   onCreateCategory?: (spaceId: string, name: string) => Promise<SpaceCategory | null>;
   selectedSpaceId?: string | null;
   allCategories?: SpaceCategory[];
+  onUpdateSpace?: (id: string, updates: { description?: string; description_pinned?: boolean }) => Promise<void>;
 }
 
 type GroupKey = "overdue" | "today" | "this_week" | "anytime" | "completed";
