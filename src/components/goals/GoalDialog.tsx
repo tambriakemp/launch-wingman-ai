@@ -186,7 +186,7 @@ export function GoalDialog({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Add a description..."
-                  minRows={2}
+                  minRows={6}
                   className="border-0 border-b border-border rounded-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary text-sm"
                   maxLength={1000}
                 />
