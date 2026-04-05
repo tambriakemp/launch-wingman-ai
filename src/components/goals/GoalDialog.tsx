@@ -120,7 +120,7 @@ export function GoalDialog({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Enter goal name..."
-                  className="w-full h-11 border-0 border-b border-border bg-transparent px-0 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+                  className="w-full h-11 border-0 border-b border-border bg-transparent px-0 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                   maxLength={200}
                 />
               </div>
@@ -145,7 +145,7 @@ export function GoalDialog({
                     <Button
                       type="button"
                       variant="outline"
-                    className="w-full justify-start text-left font-normal h-11 border-0 border-b border-border rounded-none px-0 hover:bg-transparent hover:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 text-muted-foreground"
+                    className="w-full justify-start text-left font-normal h-11 border-0 border-b border-border rounded-none px-0 hover:bg-transparent hover:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 text-sm text-foreground"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {targetDate
@@ -186,7 +186,7 @@ export function GoalDialog({
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Add a description..."
                   minRows={6}
-                  className="border-0 border-b border-border rounded-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary text-sm"
+                  className="border-0 border-b border-border rounded-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-primary text-sm text-foreground"
                   maxLength={1000}
                 />
               </div>
