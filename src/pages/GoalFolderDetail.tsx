@@ -48,6 +48,7 @@ const GoalFolderDetail = () => {
   const [folder, setFolder] = useState<GoalFolder | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [targets, setTargets] = useState<GoalTarget[]>([]);
+  const [allFolders, setAllFolders] = useState<GoalFolder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -89,11 +90,22 @@ const GoalFolderDetail = () => {
     setTargets((data as unknown as GoalTarget[]) || []);
   }, [user]);
 
+  const fetchAllFolders = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("goal_folders" as any)
+      .select("*")
+      .eq("user_id", user.id)
+      .order("position", { ascending: true });
+    setAllFolders((data as unknown as GoalFolder[]) || []);
+  }, [user]);
+
   useEffect(() => {
     fetchFolder();
     fetchGoals();
     fetchTargets();
-  }, [fetchFolder, fetchGoals, fetchTargets]);
+    fetchAllFolders();
+  }, [fetchFolder, fetchGoals, fetchTargets, fetchAllFolders]);
 
   const handleCreateGoal = async (
     data: Partial<Goal>,
@@ -206,6 +218,34 @@ const GoalFolderDetail = () => {
       .eq("id", folder.id);
     toast.success("Folder deleted");
     navigate("/goals");
+  };
+
+  const handleMoveGoalToFolder = async (goalId: string, newFolderId: string | null) => {
+    await supabase
+      .from("goals" as any)
+      .update({ folder_id: newFolderId })
+      .eq("id", goalId);
+    toast.success(newFolderId ? "Goal moved to folder" : "Goal removed from folder");
+    fetchGoals();
+  };
+
+  const handleArchiveGoal = async (goalId: string) => {
+    const goal = goals.find(g => g.id === goalId);
+    const newStatus = goal?.status === "archived" ? "active" : "archived";
+    await supabase
+      .from("goals" as any)
+      .update({ status: newStatus })
+      .eq("id", goalId);
+    toast.success(newStatus === "archived" ? "Goal archived" : "Goal unarchived");
+    fetchGoals();
+  };
+
+  const handleDeleteGoal = async (goalId: string) => {
+    await supabase.from("goal_targets" as any).delete().eq("goal_id", goalId);
+    await supabase.from("goals" as any).delete().eq("id", goalId);
+    toast.success("Goal deleted");
+    fetchGoals();
+    fetchTargets();
   };
 
   const filteredGoals = useMemo(() => {
@@ -348,6 +388,11 @@ const GoalFolderDetail = () => {
                   key={goal.id}
                   goal={goal}
                   targets={targets.filter((t) => t.goal_id === goal.id)}
+                  folders={allFolders}
+                  onRename={(g) => { setEditingGoal(g); setDialogOpen(true); }}
+                  onMoveToFolder={handleMoveGoalToFolder}
+                  onArchive={handleArchiveGoal}
+                  onDelete={handleDeleteGoal}
                 />
               ))}
             </div>

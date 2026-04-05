@@ -95,6 +95,7 @@ const Goals = () => {
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [showFolders, setShowFolders] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
+  const [createInFolderId, setCreateInFolderId] = useState<string | null>(null);
 
   // Folder create/rename dialog
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
@@ -155,6 +156,7 @@ const Goals = () => {
         why_statement: data.why_statement || null,
         target_date: data.target_date || null,
         status: "active",
+        folder_id: createInFolderId || null,
       })
       .select()
       .single();
@@ -178,6 +180,7 @@ const Goals = () => {
       );
     }
     toast.success("Goal created");
+    setCreateInFolderId(null);
     fetchGoals();
     fetchTargets();
   };
@@ -390,6 +393,11 @@ const Goals = () => {
                         setFolderDialogOpen(true);
                       }}
                       onDelete={() => handleDeleteFolder(f.id)}
+                      onCreateGoal={() => {
+                        setCreateInFolderId(f.id);
+                        setEditingGoal(null);
+                        setDialogOpen(true);
+                      }}
                     />
                   );
                 })}
@@ -478,7 +486,7 @@ const Goals = () => {
         open={dialogOpen}
         onOpenChange={(open) => {
           setDialogOpen(open);
-          if (!open) setEditingGoal(null);
+          if (!open) { setEditingGoal(null); setCreateInFolderId(null); }
         }}
         onSubmit={editingGoal ? handleUpdateGoal : handleCreateGoal}
         editGoal={editingGoal}

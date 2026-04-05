@@ -43,6 +43,18 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
 };
 
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "$", EUR: "€", GBP: "£", JPY: "¥", CAD: "CA$", AUD: "A$",
+  CHF: "CHF", CNY: "¥", INR: "₹", MXN: "MX$", BRL: "R$", KRW: "₩",
+  SGD: "S$", HKD: "HK$", NOK: "kr", SEK: "kr", DKK: "kr", NZD: "NZ$",
+  ZAR: "R", RUB: "₽", TRY: "₺", AED: "د.إ", SAR: "﷼", PLN: "zł",
+  THB: "฿", IDR: "Rp", PHP: "₱", COP: "COL$", NGN: "₦", EGP: "E£",
+};
+
+function getCurrencySymbol(unit: string | null): string {
+  if (!unit) return "$";
+  return CURRENCY_SYMBOLS[unit] || unit;
+}
 
 interface GoalFolder {
   id: string;
@@ -465,9 +477,9 @@ const GoalDetail = () => {
                         target.is_done ? "1/1" : "0/1"
                       ) : (
                         <>
-                          {target.target_type === "currency" ? "$" : ""}
+                          {target.target_type === "currency" && target.unit ? getCurrencySymbol(target.unit) : ""}
                           {Number(target.current_value).toLocaleString()}
-                          /{target.target_type === "currency" ? "$" : ""}
+                          /{target.target_type === "currency" && target.unit ? getCurrencySymbol(target.unit) : ""}
                           {Number(target.target_value).toLocaleString()}
                         </>
                       )}
@@ -586,7 +598,7 @@ const GoalDetail = () => {
                           </span>{" "}
                           updated to{" "}
                           <span className="font-mono font-medium">
-                            {target?.target_type === "currency" ? "$" : ""}
+                            {target?.target_type === "currency" ? getCurrencySymbol(target?.unit ?? null) : ""}
                             {Number(update.new_value).toLocaleString()}
                           </span>
                         </p>

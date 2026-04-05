@@ -1,4 +1,4 @@
-import { Folder, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Folder, MoreHorizontal, Pencil, Trash2, Plus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +13,7 @@ interface GoalFolderCardProps {
   onClick: () => void;
   onRename: () => void;
   onDelete: () => void;
+  onCreateGoal?: () => void;
 }
 
 export function GoalFolderCard({
@@ -21,6 +22,7 @@ export function GoalFolderCard({
   onClick,
   onRename,
   onDelete,
+  onCreateGoal,
 }: GoalFolderCardProps) {
   return (
     <div
@@ -37,6 +39,11 @@ export function GoalFolderCard({
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          {onCreateGoal && (
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCreateGoal(); }}>
+              <Plus className="w-3.5 h-3.5 mr-2" /> New Goal
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRename(); }}>
             <Pencil className="w-3.5 h-3.5 mr-2" /> Rename
           </DropdownMenuItem>
