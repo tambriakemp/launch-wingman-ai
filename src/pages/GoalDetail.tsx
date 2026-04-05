@@ -30,6 +30,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays } from "date-fns";
@@ -41,6 +42,12 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
   true_false: ToggleLeft,
   tasks: ListChecks,
 };
+
+interface TaskProgress {
+  total: number;
+  done: number;
+  spaceNames: string[];
+}
 
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
