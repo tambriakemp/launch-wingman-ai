@@ -62,7 +62,7 @@ export function GoalGridCard({ goal, targets, folders, onRename, onMoveToFolder,
               <Pencil className="w-3.5 h-3.5 mr-2" /> Rename
             </DropdownMenuItem>
           )}
-          {onMoveToFolder && folders && (
+          {onMoveToFolder && folders && folders.filter(f => f.id !== goal.folder_id).length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
@@ -70,11 +70,6 @@ export function GoalGridCard({ goal, targets, folders, onRename, onMoveToFolder,
                 </DropdownMenuItem>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="right" align="start">
-                {goal.folder_id && (
-                  <DropdownMenuItem onClick={() => onMoveToFolder(goal.id, null)}>
-                    — Remove from folder
-                  </DropdownMenuItem>
-                )}
                 {folders.filter(f => f.id !== goal.folder_id).map((f) => (
                   <DropdownMenuItem key={f.id} onClick={() => onMoveToFolder(goal.id, f.id)}>
                     {f.name}
@@ -86,6 +81,11 @@ export function GoalGridCard({ goal, targets, folders, onRename, onMoveToFolder,
           {onArchive && (
             <DropdownMenuItem onClick={() => onArchive(goal.id)}>
               <Archive className="w-3.5 h-3.5 mr-2" /> {isArchived ? "Unarchive" : "Archive"}
+            </DropdownMenuItem>
+          )}
+          {onMoveToFolder && goal.folder_id && (
+            <DropdownMenuItem onClick={() => onMoveToFolder(goal.id, null)}>
+              <FolderMinus className="w-3.5 h-3.5 mr-2" /> Remove from Folder
             </DropdownMenuItem>
           )}
           {onDelete && (
