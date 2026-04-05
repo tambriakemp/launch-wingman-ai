@@ -90,11 +90,22 @@ const GoalFolderDetail = () => {
     setTargets((data as unknown as GoalTarget[]) || []);
   }, [user]);
 
+  const fetchAllFolders = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("goal_folders" as any)
+      .select("*")
+      .eq("user_id", user.id)
+      .order("position", { ascending: true });
+    setAllFolders((data as unknown as GoalFolder[]) || []);
+  }, [user]);
+
   useEffect(() => {
     fetchFolder();
     fetchGoals();
     fetchTargets();
-  }, [fetchFolder, fetchGoals, fetchTargets]);
+    fetchAllFolders();
+  }, [fetchFolder, fetchGoals, fetchTargets, fetchAllFolders]);
 
   const handleCreateGoal = async (
     data: Partial<Goal>,
