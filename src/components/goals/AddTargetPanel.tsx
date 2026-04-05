@@ -53,7 +53,8 @@ const CURRENCIES = [
 interface PlannerTask {
   id: string;
   title: string;
-  space_name?: string;
+  space_id: string | null;
+  column_id: string;
 }
 
 interface PlannerSpace {
@@ -94,6 +95,7 @@ export function AddTargetPanel({ open, onOpenChange, onSave }: AddTargetPanelPro
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [selectedSpaceIds, setSelectedSpaceIds] = useState<string[]>([]);
   const [taskTab, setTaskTab] = useState<"tasks" | "spaces">("tasks");
+  const [spacesTaskCounts, setSpacesTaskCounts] = useState<Record<string, number>>({});
 
   const selectedCurrency = CURRENCIES.find(c => c.code === currency) || CURRENCIES[0];
   const filteredCurrencies = CURRENCIES.filter(c =>
@@ -104,12 +106,14 @@ export function AddTargetPanel({ open, onOpenChange, onSave }: AddTargetPanelPro
 
   const fetchTasks = useCallback(async () => {
     if (!user) return;
+    // Fetch from the tasks table (planner tasks across all spaces)
     const { data } = await supabase
-      .from("content_planner" as any)
-      .select("id, title")
+      .from("tasks")
+      .select("id, title, space_id, column_id")
       .eq("user_id", user.id)
+      .eq("task_scope", "planner")
       .order("created_at", { ascending: false })
-      .limit(200);
+      .limit(500);
     setTasks((data as unknown as PlannerTask[]) || []);
   }, [user]);
 
@@ -120,7 +124,23 @@ export function AddTargetPanel({ open, onOpenChange, onSave }: AddTargetPanelPro
       .select("id, name")
       .eq("user_id", user.id)
       .order("position", { ascending: true });
-    setSpaces((data as unknown as PlannerSpace[]) || []);
+    const spaceList = (data as unknown as PlannerSpace[]) || [];
+    setSpaces(spaceList);
+
+    // Get task counts per space
+    if (spaceList.length > 0) {
+      const counts: Record<string, number> = {};
+      for (const space of spaceList) {
+        const { count } = await supabase
+          .from("tasks")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("task_scope", "planner")
+          .eq("space_id", space.id);
+        counts[space.id] = count || 0;
+      }
+      setSpacesTaskCounts(counts);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -129,6 +149,13 @@ export function AddTargetPanel({ open, onOpenChange, onSave }: AddTargetPanelPro
       fetchSpaces();
     }
   }, [open, targetType, fetchTasks, fetchSpaces]);
+
+  // Get space name for a task
+  const getSpaceName = (spaceId: string | null) => {
+    if (!spaceId) return "";
+    const space = spaces.find(s => s.id === spaceId);
+    return space ? space.name : "";
+  };
 
   const filteredTasks = tasks.filter(t =>
     taskSearch === "" || t.title.toLowerCase().includes(taskSearch.toLowerCase())
@@ -151,6 +178,7 @@ export function AddTargetPanel({ open, onOpenChange, onSave }: AddTargetPanelPro
     setSelectedTaskIds([]);
     setSelectedSpaceIds([]);
     setTaskTab("tasks");
+    setSpacesTaskCounts({});
   };
 
   const handleSave = async () => {
@@ -159,13 +187,24 @@ export function AddTargetPanel({ open, onOpenChange, onSave }: AddTargetPanelPro
     const isTF = targetType === "true_false";
     const isCurrency = targetType === "currency";
     const isTasks = targetType === "tasks";
+
+    let taskTargetValue = 0;
+    if (isTasks) {
+      // Count: individual tasks + total tasks in selected spaces
+      taskTargetValue = selectedTaskIds.length;
+      for (const spaceId of selectedSpaceIds) {
+        taskTargetValue += spacesTaskCounts[spaceId] || 0;
+      }
+      if (taskTargetValue === 0) taskTargetValue = 1;
+    }
+
     try {
       await onSave({
         name: name.trim(),
         target_type: targetType,
         unit: isTF ? "" : isCurrency ? currency : isTasks ? JSON.stringify({ taskIds: selectedTaskIds, spaceIds: selectedSpaceIds }) : unit.trim(),
         start_value: isTF ? 0 : Number(startValue) || 0,
-        target_value: isTF ? 1 : isTasks ? (selectedTaskIds.length + selectedSpaceIds.length) || 1 : Number(targetValue) || 1,
+        target_value: isTF ? 1 : isTasks ? taskTargetValue : Number(targetValue) || 1,
       });
       resetForm();
       onOpenChange(false);
@@ -403,7 +442,7 @@ export function AddTargetPanel({ open, onOpenChange, onSave }: AddTargetPanelPro
                       taskTab === "spaces" ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/40"
                     }`}
                   >
-                    + Add Space
+                    + Add List
                   </button>
                 </div>
 
@@ -413,38 +452,49 @@ export function AddTargetPanel({ open, onOpenChange, onSave }: AddTargetPanelPro
                   <Input
                     value={taskSearch}
                     onChange={(e) => setTaskSearch(e.target.value)}
-                    placeholder={taskTab === "tasks" ? "Search tasks..." : "Search spaces..."}
+                    placeholder={taskTab === "tasks" ? "Search tasks..." : "Search lists..."}
                     className="pl-9 h-9 text-sm"
                   />
                 </div>
 
                 {/* List */}
-                <div className="max-h-48 overflow-y-auto border border-border rounded-lg divide-y divide-border">
+                <div className="max-h-56 overflow-y-auto border border-border rounded-lg divide-y divide-border">
                   {taskTab === "tasks" ? (
                     filteredTasks.length === 0 ? (
                       <p className="text-xs text-muted-foreground p-3 text-center">No tasks found</p>
                     ) : (
-                      filteredTasks.map(task => (
-                        <button
-                          key={task.id}
-                          type="button"
-                          onClick={() => toggleTask(task.id)}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors ${
-                            selectedTaskIds.includes(task.id) ? "bg-primary/5" : ""
-                          }`}
-                        >
-                          <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                            selectedTaskIds.includes(task.id) ? "bg-primary border-primary" : "border-border"
-                          }`}>
-                            {selectedTaskIds.includes(task.id) && <Check className="w-3 h-3 text-primary-foreground" />}
-                          </div>
-                          <span className="truncate text-foreground">{task.title}</span>
-                        </button>
-                      ))
+                      filteredTasks.map(task => {
+                        const spaceName = getSpaceName(task.space_id);
+                        return (
+                          <button
+                            key={task.id}
+                            type="button"
+                            onClick={() => toggleTask(task.id)}
+                            className={`w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors ${
+                              selectedTaskIds.includes(task.id) ? "bg-primary/5" : ""
+                            }`}
+                          >
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                              selectedTaskIds.includes(task.id) ? "bg-primary border-primary" : "border-border"
+                            }`}>
+                              {selectedTaskIds.includes(task.id) && <Check className="w-3 h-3 text-primary-foreground" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <span className="truncate text-foreground block">{task.title}</span>
+                              {spaceName && (
+                                <span className="text-[10px] text-muted-foreground">{spaceName}</span>
+                              )}
+                            </div>
+                            {task.column_id === "done" && (
+                              <span className="text-[10px] text-primary font-medium">Done</span>
+                            )}
+                          </button>
+                        );
+                      })
                     )
                   ) : (
                     filteredSpaces.length === 0 ? (
-                      <p className="text-xs text-muted-foreground p-3 text-center">No spaces found</p>
+                      <p className="text-xs text-muted-foreground p-3 text-center">No lists found</p>
                     ) : (
                       filteredSpaces.map(space => (
                         <button
@@ -460,7 +510,12 @@ export function AddTargetPanel({ open, onOpenChange, onSave }: AddTargetPanelPro
                           }`}>
                             {selectedSpaceIds.includes(space.id) && <Check className="w-3 h-3 text-primary-foreground" />}
                           </div>
-                          <span className="truncate text-foreground">{space.name}</span>
+                          <div className="flex-1 min-w-0">
+                            <span className="truncate text-foreground block">{space.name}</span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {spacesTaskCounts[space.id] ?? "..."} tasks
+                            </span>
+                          </div>
                         </button>
                       ))
                     )
@@ -470,7 +525,7 @@ export function AddTargetPanel({ open, onOpenChange, onSave }: AddTargetPanelPro
                 {/* Selected summary */}
                 {(selectedTaskIds.length > 0 || selectedSpaceIds.length > 0) && (
                   <p className="text-xs text-primary font-medium">
-                    {selectedTaskIds.length} task{selectedTaskIds.length !== 1 ? "s" : ""}, {selectedSpaceIds.length} space{selectedSpaceIds.length !== 1 ? "s" : ""} selected
+                    {selectedTaskIds.length} task{selectedTaskIds.length !== 1 ? "s" : ""}, {selectedSpaceIds.length} list{selectedSpaceIds.length !== 1 ? "s" : ""} selected
                   </p>
                 )}
               </div>

@@ -30,6 +30,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays } from "date-fns";
@@ -41,6 +42,12 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
   true_false: ToggleLeft,
   tasks: ListChecks,
 };
+
+interface TaskProgress {
+  total: number;
+  done: number;
+  spaceNames: string[];
+}
 
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -71,6 +78,7 @@ const GoalDetail = () => {
   const [updates, setUpdates] = useState<GoalTargetUpdate[]>([]);
   const [folder, setFolder] = useState<GoalFolder | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [taskProgressMap, setTaskProgressMap] = useState<Record<string, TaskProgress>>({});
 
   const [expandedTarget, setExpandedTarget] = useState<string | null>(null);
   const [updateValue, setUpdateValue] = useState("");
@@ -138,6 +146,69 @@ const GoalDetail = () => {
     setUpdates((data as unknown as GoalTargetUpdate[]) || []);
   }, [user, goalId]);
 
+  // Compute dynamic progress for task-type targets
+  const fetchTaskProgress = useCallback(async () => {
+    if (!user || targets.length === 0) return;
+    const taskTargets = targets.filter(t => t.target_type === "tasks" && t.unit);
+    if (taskTargets.length === 0) return;
+
+    const progressMap: Record<string, TaskProgress> = {};
+
+    for (const target of taskTargets) {
+      let parsed: { taskIds?: string[]; spaceIds?: string[] } = {};
+      try { parsed = JSON.parse(target.unit || "{}"); } catch { continue; }
+      const { taskIds = [], spaceIds = [] } = parsed;
+
+      let totalCount = 0;
+      let doneCount = 0;
+      const spaceNames: string[] = [];
+
+      // Count individual tasks
+      if (taskIds.length > 0) {
+        const { data: taskData } = await supabase
+          .from("tasks")
+          .select("id, column_id")
+          .in("id", taskIds);
+        if (taskData) {
+          totalCount += taskData.length;
+          doneCount += taskData.filter((t: any) => t.column_id === "done").length;
+        }
+      }
+
+      // Count tasks in spaces
+      for (const spaceId of spaceIds) {
+        const { data: spaceName } = await supabase
+          .from("planner_spaces" as any)
+          .select("name")
+          .eq("id", spaceId)
+          .single();
+        if (spaceName) spaceNames.push((spaceName as any).name);
+
+        const { data: spaceTasks } = await supabase
+          .from("tasks")
+          .select("id, column_id")
+          .eq("space_id", spaceId)
+          .eq("user_id", user.id)
+          .eq("task_scope", "planner");
+        if (spaceTasks) {
+          totalCount += spaceTasks.length;
+          doneCount += spaceTasks.filter((t: any) => t.column_id === "done").length;
+        }
+      }
+
+      progressMap[target.id] = { total: totalCount || 1, done: doneCount, spaceNames };
+
+      // Update the target's current_value and target_value in the database
+      const isDone = doneCount >= totalCount && totalCount > 0;
+      await supabase
+        .from("goal_targets" as any)
+        .update({ current_value: doneCount, target_value: totalCount || 1, is_done: isDone })
+        .eq("id", target.id);
+    }
+
+    setTaskProgressMap(progressMap);
+  }, [user, targets]);
+
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
@@ -146,6 +217,12 @@ const GoalDetail = () => {
     };
     load();
   }, [fetchGoal, fetchTargets, fetchUpdates]);
+
+  useEffect(() => {
+    if (targets.length > 0) {
+      fetchTaskProgress();
+    }
+  }, [targets, fetchTaskProgress]);
 
   const handleSaveDescription = async () => {
     if (!goal || !user) return;
@@ -433,8 +510,12 @@ const GoalDetail = () => {
 
             {targets.map((target) => {
               const Icon = TYPE_ICONS[target.target_type] || Hash;
-              const range = Number(target.target_value) - Number(target.start_value);
-              const current = Number(target.current_value) - Number(target.start_value);
+              const isTaskTarget = target.target_type === "tasks";
+              const taskProgress = isTaskTarget ? taskProgressMap[target.id] : null;
+              const displayCurrent = isTaskTarget && taskProgress ? taskProgress.done : Number(target.current_value);
+              const displayTotal = isTaskTarget && taskProgress ? taskProgress.total : Number(target.target_value);
+              const range = displayTotal - Number(target.start_value);
+              const current = displayCurrent - Number(target.start_value);
               const pct =
                 range > 0
                   ? Math.min(100, Math.round((current / range) * 100))
@@ -442,6 +523,12 @@ const GoalDetail = () => {
                   ? 100
                   : 0;
               const isExpanded = expandedTarget === target.id;
+
+              // Parse space IDs for clickable links
+              let parsedUnit: { taskIds?: string[]; spaceIds?: string[] } | null = null;
+              if (isTaskTarget && target.unit) {
+                try { parsedUnit = JSON.parse(target.unit); } catch {}
+              }
 
               return (
                 <div
@@ -467,7 +554,32 @@ const GoalDetail = () => {
                           )}>
                             {target.name}
                           </span>
+                          {/* Show space/list count badge */}
+                          {isTaskTarget && taskProgress && taskProgress.spaceNames.length > 0 && (
+                            <span className="text-[10px] text-primary font-medium">
+                              {taskProgress.spaceNames.length} List{taskProgress.spaceNames.length !== 1 ? "s" : ""}
+                            </span>
+                          )}
                         </div>
+                        {/* Clickable space links */}
+                        {isTaskTarget && taskProgress && taskProgress.spaceNames.length > 0 && parsedUnit?.spaceIds && (
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {parsedUnit.spaceIds.map((spaceId, idx) => (
+                              <button
+                                key={spaceId}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/planner?space=${spaceId}`);
+                                }}
+                                className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline"
+                              >
+                                <ExternalLink className="w-2.5 h-2.5" />
+                                {taskProgress.spaceNames[idx] || "List"}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </button>
 
@@ -475,6 +587,10 @@ const GoalDetail = () => {
                     <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
                       {target.target_type === "true_false" ? (
                         target.is_done ? "1/1" : "0/1"
+                      ) : isTaskTarget ? (
+                        <>
+                          {displayCurrent}/{displayTotal}
+                        </>
                       ) : (
                         <>
                           {target.target_type === "currency" && target.unit ? getCurrencySymbol(target.unit) : ""}
