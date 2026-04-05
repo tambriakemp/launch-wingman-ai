@@ -465,9 +465,9 @@ const GoalDetail = () => {
                         target.is_done ? "1/1" : "0/1"
                       ) : (
                         <>
-                          {target.target_type === "currency" ? "$" : ""}
+                          {target.target_type === "currency" && target.unit ? getCurrencySymbol(target.unit) : ""}
                           {Number(target.current_value).toLocaleString()}
-                          /{target.target_type === "currency" ? "$" : ""}
+                          /{target.target_type === "currency" && target.unit ? getCurrencySymbol(target.unit) : ""}
                           {Number(target.target_value).toLocaleString()}
                         </>
                       )}
