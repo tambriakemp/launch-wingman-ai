@@ -42,12 +42,7 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
   tasks: ListChecks,
 };
 
-const TARGET_TYPES = [
-  { id: "number", label: "Number" },
-  { id: "currency", label: "Currency" },
-  { id: "true_false", label: "True / False" },
-  { id: "tasks", label: "Tasks" },
-];
+
 
 interface GoalFolder {
   id: string;
