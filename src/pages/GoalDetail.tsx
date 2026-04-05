@@ -598,7 +598,7 @@ const GoalDetail = () => {
                           </span>{" "}
                           updated to{" "}
                           <span className="font-mono font-medium">
-                            {target?.target_type === "currency" ? "$" : ""}
+                            {target?.target_type === "currency" ? getCurrencySymbol(target?.unit ?? null) : ""}
                             {Number(update.new_value).toLocaleString()}
                           </span>
                         </p>
