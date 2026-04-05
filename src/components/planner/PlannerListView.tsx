@@ -377,13 +377,10 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete, categories, isSelec
           }
         </button>
 
-        {/* Completion circle: hidden when checkbox visible via hover/selection */}
+        {/* Completion circle: always visible */}
         <button
           type="button"
-          className={cn(
-            "shrink-0 transition-opacity",
-            isSelected || hasSelection ? "hidden" : "block group-hover:hidden"
-          )}
+          className="shrink-0"
           onClick={(e) => { e.stopPropagation(); onToggleComplete(task); }}
         >
           {isDone ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Circle className="w-4 h-4 text-muted-foreground/50 hover:text-primary transition-colors" />}
