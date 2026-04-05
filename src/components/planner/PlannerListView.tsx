@@ -92,6 +92,7 @@ export const PlannerListView = ({
   categories = [], spaces = [],
   onBulkMoveSpace, onBulkDelete, onBulkUpdateCategory, onBulkUpdateStatus,
   onCreateCategory, selectedSpaceId, allCategories = [],
+  onUpdateSpace,
 }: PlannerListViewProps) => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(GROUP_CONFIG.map((g) => [g.key, g.defaultOpen]))
