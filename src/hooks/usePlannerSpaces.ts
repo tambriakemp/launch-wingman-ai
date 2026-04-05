@@ -9,6 +9,8 @@ export interface PlannerSpace {
   name: string;
   color: string;
   position: number;
+  description: string;
+  description_pinned: boolean;
   created_at: string;
   updated_at: string;
 }
