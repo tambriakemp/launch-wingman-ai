@@ -265,7 +265,35 @@ const Goals = () => {
     fetchGoals();
   };
 
-  // When showing folders, only show unfiled goals in the flat grid below
+  const handleMoveGoalToFolder = async (goalId: string, folderId: string | null) => {
+    await supabase
+      .from("goals" as any)
+      .update({ folder_id: folderId })
+      .eq("id", goalId);
+    toast.success(folderId ? "Goal moved to folder" : "Goal removed from folder");
+    fetchGoals();
+  };
+
+  const handleArchiveGoal = async (goalId: string) => {
+    const goal = goals.find(g => g.id === goalId);
+    const newStatus = goal?.status === "archived" ? "active" : "archived";
+    await supabase
+      .from("goals" as any)
+      .update({ status: newStatus })
+      .eq("id", goalId);
+    toast.success(newStatus === "archived" ? "Goal archived" : "Goal unarchived");
+    fetchGoals();
+  };
+
+  const handleDeleteGoal = async (goalId: string) => {
+    await supabase.from("goal_targets" as any).delete().eq("goal_id", goalId);
+    await supabase.from("goals" as any).delete().eq("id", goalId);
+    toast.success("Goal deleted");
+    fetchGoals();
+    fetchTargets();
+  };
+
+
   const unfiledGoals = useMemo(() => {
     return goals.filter((g) => {
       if (!showArchived && g.status === "archived") return false;
@@ -376,21 +404,21 @@ const Goals = () => {
             </div>
           )}
 
-          {/* Unfiled / All Goals grid */}
+          {/* Goals grid */}
           {goalsToShow.length > 0 && (
-            <div>
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                {showFolders ? "Unfiled Goals" : "All Goals"}
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {goalsToShow.map((goal) => (
-                  <GoalGridCard
-                    key={goal.id}
-                    goal={goal}
-                    targets={targets.filter((t) => t.goal_id === goal.id)}
-                  />
-                ))}
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {goalsToShow.map((goal) => (
+                <GoalGridCard
+                  key={goal.id}
+                  goal={goal}
+                  targets={targets.filter((t) => t.goal_id === goal.id)}
+                  folders={folders}
+                  onRename={(g) => { setEditingGoal(g); setDialogOpen(true); }}
+                  onMoveToFolder={handleMoveGoalToFolder}
+                  onArchive={handleArchiveGoal}
+                  onDelete={handleDeleteGoal}
+                />
+              ))}
             </div>
           )}
 
