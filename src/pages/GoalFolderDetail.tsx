@@ -388,6 +388,11 @@ const GoalFolderDetail = () => {
                   key={goal.id}
                   goal={goal}
                   targets={targets.filter((t) => t.goal_id === goal.id)}
+                  folders={allFolders}
+                  onRename={(g) => { setEditingGoal(g); setDialogOpen(true); }}
+                  onMoveToFolder={handleMoveGoalToFolder}
+                  onArchive={handleArchiveGoal}
+                  onDelete={handleDeleteGoal}
                 />
               ))}
             </div>
