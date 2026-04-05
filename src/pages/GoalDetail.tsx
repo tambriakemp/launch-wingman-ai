@@ -587,6 +587,10 @@ const GoalDetail = () => {
                     <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
                       {target.target_type === "true_false" ? (
                         target.is_done ? "1/1" : "0/1"
+                      ) : isTaskTarget ? (
+                        <>
+                          {displayCurrent}/{displayTotal}
+                        </>
                       ) : (
                         <>
                           {target.target_type === "currency" && target.unit ? getCurrencySymbol(target.unit) : ""}
