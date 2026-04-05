@@ -486,7 +486,7 @@ const Goals = () => {
         open={dialogOpen}
         onOpenChange={(open) => {
           setDialogOpen(open);
-          if (!open) setEditingGoal(null);
+          if (!open) { setEditingGoal(null); setCreateInFolderId(null); }
         }}
         onSubmit={editingGoal ? handleUpdateGoal : handleCreateGoal}
         editGoal={editingGoal}
