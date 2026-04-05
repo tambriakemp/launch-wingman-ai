@@ -510,8 +510,12 @@ const GoalDetail = () => {
 
             {targets.map((target) => {
               const Icon = TYPE_ICONS[target.target_type] || Hash;
-              const range = Number(target.target_value) - Number(target.start_value);
-              const current = Number(target.current_value) - Number(target.start_value);
+              const isTaskTarget = target.target_type === "tasks";
+              const taskProgress = isTaskTarget ? taskProgressMap[target.id] : null;
+              const displayCurrent = isTaskTarget && taskProgress ? taskProgress.done : Number(target.current_value);
+              const displayTotal = isTaskTarget && taskProgress ? taskProgress.total : Number(target.target_value);
+              const range = displayTotal - Number(target.start_value);
+              const current = displayCurrent - Number(target.start_value);
               const pct =
                 range > 0
                   ? Math.min(100, Math.round((current / range) * 100))
@@ -519,6 +523,12 @@ const GoalDetail = () => {
                   ? 100
                   : 0;
               const isExpanded = expandedTarget === target.id;
+
+              // Parse space IDs for clickable links
+              let parsedUnit: { taskIds?: string[]; spaceIds?: string[] } | null = null;
+              if (isTaskTarget && target.unit) {
+                try { parsedUnit = JSON.parse(target.unit); } catch {}
+              }
 
               return (
                 <div
@@ -544,7 +554,32 @@ const GoalDetail = () => {
                           )}>
                             {target.name}
                           </span>
+                          {/* Show space/list count badge */}
+                          {isTaskTarget && taskProgress && taskProgress.spaceNames.length > 0 && (
+                            <span className="text-[10px] text-primary font-medium">
+                              {taskProgress.spaceNames.length} List{taskProgress.spaceNames.length !== 1 ? "s" : ""}
+                            </span>
+                          )}
                         </div>
+                        {/* Clickable space links */}
+                        {isTaskTarget && taskProgress && taskProgress.spaceNames.length > 0 && parsedUnit?.spaceIds && (
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {parsedUnit.spaceIds.map((spaceId, idx) => (
+                              <button
+                                key={spaceId}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/planner?space=${spaceId}`);
+                                }}
+                                className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline"
+                              >
+                                <ExternalLink className="w-2.5 h-2.5" />
+                                {taskProgress.spaceNames[idx] || "List"}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </button>
 
