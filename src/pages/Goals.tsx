@@ -1,12 +1,22 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
-import { GoalCard } from "@/components/goals/GoalCard";
+import { GoalFolderCard, NewFolderCard } from "@/components/goals/GoalFolderCard";
+import { GoalGridCard } from "@/components/goals/GoalGridCard";
 import { GoalDialog } from "@/components/goals/GoalDialog";
-import { Plus, Target, Trophy, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Target, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface Goal {
@@ -20,6 +30,7 @@ export interface Goal {
   target_date: string | null;
   status: string;
   created_at: string;
+  folder_id: string | null;
 }
 
 export interface GoalTarget {
@@ -27,7 +38,7 @@ export interface GoalTarget {
   goal_id: string;
   user_id: string;
   name: string;
-  target_type: string; // 'number' | 'currency' | 'true_false' | 'tasks'
+  target_type: string;
   unit: string | null;
   start_value: number;
   target_value: number;
@@ -47,7 +58,6 @@ export interface GoalTargetUpdate {
   created_at: string;
 }
 
-// Keep for backward compat imports
 export interface GoalMilestone {
   id: string;
   goal_id: string;
@@ -55,6 +65,14 @@ export interface GoalMilestone {
   is_done: boolean;
   due_date: string | null;
   position: number;
+}
+
+interface GoalFolder {
+  id: string;
+  user_id: string;
+  name: string;
+  position: number;
+  created_at: string;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -67,14 +85,22 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 const Goals = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [targets, setTargets] = useState<GoalTarget[]>([]);
+  const [folders, setFolders] = useState<GoalFolder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
-  const [filterCategory, setFilterCategory] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("active");
+  const [showFolders, setShowFolders] = useState(true);
+  const [showArchived, setShowArchived] = useState(false);
+
+  // Folder create/rename dialog
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false);
+  const [folderDialogMode, setFolderDialogMode] = useState<"create" | "rename">("create");
+  const [folderName, setFolderName] = useState("");
+  const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
 
   const fetchGoals = useCallback(async () => {
     if (!user) return;
@@ -97,10 +123,21 @@ const Goals = () => {
     setTargets((data as unknown as GoalTarget[]) || []);
   }, [user]);
 
+  const fetchFolders = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("goal_folders" as any)
+      .select("*")
+      .eq("user_id", user.id)
+      .order("position", { ascending: true });
+    setFolders((data as unknown as GoalFolder[]) || []);
+  }, [user]);
+
   useEffect(() => {
     fetchGoals();
     fetchTargets();
-  }, [fetchGoals, fetchTargets]);
+    fetchFolders();
+  }, [fetchGoals, fetchTargets, fetchFolders]);
 
   const handleCreateGoal = async (
     data: Partial<Goal>,
@@ -156,14 +193,12 @@ const Goals = () => {
         title: data.title,
         description: data.description || null,
         category: data.category,
-        color:
-          CATEGORY_COLORS[data.category || "business"] || editingGoal.color,
+        color: CATEGORY_COLORS[data.category || "business"] || editingGoal.color,
         why_statement: data.why_statement || null,
         target_date: data.target_date || null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", editingGoal.id);
-    // Delete old targets and re-insert
     await supabase
       .from("goal_targets" as any)
       .delete()
@@ -190,39 +225,69 @@ const Goals = () => {
     fetchTargets();
   };
 
-  const handleCompleteGoal = async (goalId: string) => {
+  const handleCreateFolder = async () => {
+    if (!user || !folderName.trim()) return;
+    await supabase.from("goal_folders" as any).insert({
+      user_id: user.id,
+      name: folderName.trim(),
+      position: folders.length,
+    });
+    toast.success("Folder created");
+    setFolderDialogOpen(false);
+    setFolderName("");
+    fetchFolders();
+  };
+
+  const handleRenameFolder = async () => {
+    if (!renamingFolderId || !folderName.trim()) return;
+    await supabase
+      .from("goal_folders" as any)
+      .update({ name: folderName.trim() })
+      .eq("id", renamingFolderId);
+    toast.success("Folder renamed");
+    setFolderDialogOpen(false);
+    setFolderName("");
+    setRenamingFolderId(null);
+    fetchFolders();
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
     await supabase
       .from("goals" as any)
-      .update({ status: "completed", updated_at: new Date().toISOString() })
-      .eq("id", goalId);
-    toast.success("🎉 Goal completed!");
+      .update({ folder_id: null })
+      .eq("folder_id", folderId);
+    await supabase
+      .from("goal_folders" as any)
+      .delete()
+      .eq("id", folderId);
+    toast.success("Folder deleted");
+    fetchFolders();
     fetchGoals();
   };
 
-  const handleArchiveGoal = async (goalId: string) => {
-    await supabase
-      .from("goals" as any)
-      .update({ status: "archived" })
-      .eq("id", goalId);
-    fetchGoals();
-  };
-
-  const filteredGoals = useMemo(() => {
+  // When showing folders, only show unfiled goals in the flat grid below
+  const unfiledGoals = useMemo(() => {
     return goals.filter((g) => {
-      if (filterStatus !== "all" && g.status !== filterStatus) return false;
-      if (filterCategory !== "all" && g.category !== filterCategory)
-        return false;
+      if (!showArchived && g.status === "archived") return false;
+      if (showArchived && g.status !== "archived") return false;
+      return !g.folder_id;
+    });
+  }, [goals, showArchived]);
+
+  const allFilteredGoals = useMemo(() => {
+    return goals.filter((g) => {
+      if (!showArchived && g.status === "archived") return false;
+      if (showArchived && g.status !== "archived") return false;
       return true;
     });
-  }, [goals, filterCategory, filterStatus]);
+  }, [goals, showArchived]);
 
-  const activeGoals = goals.filter((g) => g.status === "active").length;
-  const completedGoals = goals.filter((g) => g.status === "completed").length;
+  const goalsToShow = showFolders ? unfiledGoals : allFilteredGoals;
 
   return (
     <ProjectLayout>
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        <div className="max-w-7xl mx-auto px-2.5 md:px-6 py-8 space-y-6">
           {/* Header */}
           <div className="flex items-start gap-4">
             <div className="p-3 bg-violet-100/50 dark:bg-violet-900/20 rounded-xl shrink-0">
@@ -231,18 +296,13 @@ const Goals = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-semibold text-foreground">
-                    Goals
-                  </h1>
+                  <h1 className="text-2xl font-semibold text-foreground">Goals</h1>
                   <p className="text-sm text-muted-foreground hidden sm:block">
-                    Set measurable targets and track progress.
+                    Organize your goals into folders and track measurable progress.
                   </p>
                 </div>
                 <Button
-                  onClick={() => {
-                    setEditingGoal(null);
-                    setDialogOpen(true);
-                  }}
+                  onClick={() => { setEditingGoal(null); setDialogOpen(true); }}
                   className="gap-2 shrink-0"
                 >
                   <Plus className="w-4 h-4" /> New Goal
@@ -251,124 +311,140 @@ const Goals = () => {
             </div>
           </div>
 
-          {/* Stats */}
-          {goals.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Target className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Active</p>
-                  <p className="text-lg font-semibold text-foreground">
-                    {activeGoals} goal{activeGoals !== 1 ? "s" : ""}
-                  </p>
-                </div>
-              </div>
-              <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Trophy className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Completed</p>
-                  <p className="text-lg font-semibold text-foreground">
-                    {completedGoals} goal{completedGoals !== 1 ? "s" : ""}
-                  </p>
-                </div>
-              </div>
-              <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Total Targets</p>
-                  <p className="text-lg font-semibold text-foreground">
-                    {targets.length}
-                  </p>
-                </div>
+          {/* Toolbar */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              onClick={() => setShowFolders(!showFolders)}
+              className={cn(
+                "text-xs px-3 py-1.5 rounded-full border transition-colors",
+                showFolders
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border text-muted-foreground hover:border-primary/40"
+              )}
+            >
+              Folders: {showFolders ? "Show" : "Hide"}
+            </button>
+            <button
+              onClick={() => setShowArchived(!showArchived)}
+              className={cn(
+                "text-xs px-3 py-1.5 rounded-full border transition-colors",
+                showArchived
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border text-muted-foreground hover:border-primary/40"
+              )}
+            >
+              Archived: {showArchived ? "Show" : "Hide"}
+            </button>
+          </div>
+
+          {/* Folders grid */}
+          {showFolders && folders.length >= 0 && (
+            <div>
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                Folders
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {folders.map((f) => {
+                  const folderGoalCount = goals.filter(
+                    (g) => g.folder_id === f.id && g.status !== "archived"
+                  ).length;
+                  return (
+                    <GoalFolderCard
+                      key={f.id}
+                      id={f.id}
+                      name={f.name}
+                      goalCount={folderGoalCount}
+                      onClick={() => navigate(`/goals/folder/${f.id}`)}
+                      onRename={() => {
+                        setFolderDialogMode("rename");
+                        setRenamingFolderId(f.id);
+                        setFolderName(f.name);
+                        setFolderDialogOpen(true);
+                      }}
+                      onDelete={() => handleDeleteFolder(f.id)}
+                    />
+                  );
+                })}
+                <NewFolderCard
+                  onClick={() => {
+                    setFolderDialogMode("create");
+                    setFolderName("");
+                    setFolderDialogOpen(true);
+                  }}
+                />
               </div>
             </div>
           )}
 
-          {/* Filters */}
-          {goals.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              {["active", "completed", "all"].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setFilterStatus(s)}
-                  className={cn(
-                    "text-xs px-2.5 py-1 rounded-full border transition-colors capitalize",
-                    filterStatus === s
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border text-muted-foreground hover:border-primary/40"
-                  )}
-                >
-                  {s === "all" ? "All" : s}
-                </button>
-              ))}
-              <div className="w-px h-4 bg-border mx-1" />
-              {[
-                "all",
-                "business",
-                "personal",
-                "health",
-                "finance",
-                "mindset",
-              ].map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setFilterCategory(c)}
-                  className={cn(
-                    "text-xs px-2.5 py-1 rounded-full border transition-colors capitalize",
-                    filterCategory === c
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border text-muted-foreground hover:border-primary/40"
-                  )}
-                >
-                  {c === "all" ? "All Categories" : c}
-                </button>
-              ))}
+          {/* Unfiled / All Goals grid */}
+          {goalsToShow.length > 0 && (
+            <div>
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                {showFolders ? "Unfiled Goals" : "All Goals"}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {goalsToShow.map((goal) => (
+                  <GoalGridCard
+                    key={goal.id}
+                    goal={goal}
+                    targets={targets.filter((t) => t.goal_id === goal.id)}
+                  />
+                ))}
+              </div>
             </div>
           )}
 
           {/* Empty state */}
-          {goals.length === 0 && !isLoading && (
+          {goals.length === 0 && folders.length === 0 && !isLoading && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                 <Target className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground">
-                No goals yet
-              </h3>
+              <h3 className="text-lg font-semibold text-foreground">No goals yet</h3>
               <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                Set your first goal with measurable targets and track your
-                progress over time.
+                Set your first goal with measurable targets and track your progress over time.
               </p>
               <Button onClick={() => setDialogOpen(true)} className="gap-2 mt-4">
                 <Plus className="w-4 h-4" /> Create First Goal
               </Button>
             </div>
           )}
-
-          {/* Goal cards */}
-          <div className="space-y-4">
-            {filteredGoals.map((goal) => (
-              <GoalCard
-                key={goal.id}
-                goal={goal}
-                targets={targets.filter((t) => t.goal_id === goal.id)}
-                onEdit={() => {
-                  setEditingGoal(goal);
-                  setDialogOpen(true);
-                }}
-                onComplete={() => handleCompleteGoal(goal.id)}
-                onArchive={() => handleArchiveGoal(goal.id)}
-              />
-            ))}
-          </div>
         </div>
       </div>
+
+      {/* Folder create/rename dialog */}
+      <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {folderDialogMode === "create" ? "New Folder" : "Rename Folder"}
+            </DialogTitle>
+          </DialogHeader>
+          <Input
+            autoFocus
+            value={folderName}
+            onChange={(e) => setFolderName(e.target.value)}
+            placeholder="Folder name..."
+            maxLength={100}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                folderDialogMode === "create" ? handleCreateFolder() : handleRenameFolder();
+              }
+            }}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFolderDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={folderDialogMode === "create" ? handleCreateFolder : handleRenameFolder}
+              disabled={!folderName.trim()}
+            >
+              {folderDialogMode === "create" ? "Create" : "Rename"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <GoalDialog
         open={dialogOpen}
@@ -379,9 +455,7 @@ const Goals = () => {
         onSubmit={editingGoal ? handleUpdateGoal : handleCreateGoal}
         editGoal={editingGoal}
         existingTargets={
-          editingGoal
-            ? targets.filter((t) => t.goal_id === editingGoal.id)
-            : []
+          editingGoal ? targets.filter((t) => t.goal_id === editingGoal.id) : []
         }
       />
     </ProjectLayout>

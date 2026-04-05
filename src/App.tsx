@@ -106,6 +106,7 @@ import HabitTracker from "./pages/HabitTracker";
 import DailyPage from "./pages/DailyPage";
 import Goals from "./pages/Goals";
 import GoalDetail from "./pages/GoalDetail";
+import GoalFolderDetail from "./pages/GoalFolderDetail";
 import BrainDump from "./pages/BrainDump";
 import WeeklyReview from "./pages/WeeklyReview";
 import LinkInBio from "./pages/LinkInBio";
@@ -682,6 +683,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Goals />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/goals/folder/:folderId"
+              element={
+                <ProtectedRoute>
+                  <GoalFolderDetail />
                 </ProtectedRoute>
               }
             />
