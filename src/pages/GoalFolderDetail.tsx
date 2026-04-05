@@ -220,6 +220,34 @@ const GoalFolderDetail = () => {
     navigate("/goals");
   };
 
+  const handleMoveGoalToFolder = async (goalId: string, newFolderId: string | null) => {
+    await supabase
+      .from("goals" as any)
+      .update({ folder_id: newFolderId })
+      .eq("id", goalId);
+    toast.success(newFolderId ? "Goal moved to folder" : "Goal removed from folder");
+    fetchGoals();
+  };
+
+  const handleArchiveGoal = async (goalId: string) => {
+    const goal = goals.find(g => g.id === goalId);
+    const newStatus = goal?.status === "archived" ? "active" : "archived";
+    await supabase
+      .from("goals" as any)
+      .update({ status: newStatus })
+      .eq("id", goalId);
+    toast.success(newStatus === "archived" ? "Goal archived" : "Goal unarchived");
+    fetchGoals();
+  };
+
+  const handleDeleteGoal = async (goalId: string) => {
+    await supabase.from("goal_targets" as any).delete().eq("goal_id", goalId);
+    await supabase.from("goals" as any).delete().eq("id", goalId);
+    toast.success("Goal deleted");
+    fetchGoals();
+    fetchTargets();
+  };
+
   const filteredGoals = useMemo(() => {
     let filtered = goals.filter((g) =>
       showArchived ? g.status === "archived" : g.status !== "archived"
