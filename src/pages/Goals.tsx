@@ -180,6 +180,7 @@ const Goals = () => {
       );
     }
     toast.success("Goal created");
+    setCreateInFolderId(null);
     fetchGoals();
     fetchTargets();
   };
