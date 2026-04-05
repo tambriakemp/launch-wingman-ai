@@ -78,6 +78,7 @@ const GoalDetail = () => {
   const [updates, setUpdates] = useState<GoalTargetUpdate[]>([]);
   const [folder, setFolder] = useState<GoalFolder | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [taskProgressMap, setTaskProgressMap] = useState<Record<string, TaskProgress>>({});
 
   const [expandedTarget, setExpandedTarget] = useState<string | null>(null);
   const [updateValue, setUpdateValue] = useState("");
