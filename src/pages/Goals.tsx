@@ -156,6 +156,7 @@ const Goals = () => {
         why_statement: data.why_statement || null,
         target_date: data.target_date || null,
         status: "active",
+        folder_id: createInFolderId || null,
       })
       .select()
       .single();
