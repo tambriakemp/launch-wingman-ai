@@ -146,6 +146,69 @@ const GoalDetail = () => {
     setUpdates((data as unknown as GoalTargetUpdate[]) || []);
   }, [user, goalId]);
 
+  // Compute dynamic progress for task-type targets
+  const fetchTaskProgress = useCallback(async () => {
+    if (!user || targets.length === 0) return;
+    const taskTargets = targets.filter(t => t.target_type === "tasks" && t.unit);
+    if (taskTargets.length === 0) return;
+
+    const progressMap: Record<string, TaskProgress> = {};
+
+    for (const target of taskTargets) {
+      let parsed: { taskIds?: string[]; spaceIds?: string[] } = {};
+      try { parsed = JSON.parse(target.unit || "{}"); } catch { continue; }
+      const { taskIds = [], spaceIds = [] } = parsed;
+
+      let totalCount = 0;
+      let doneCount = 0;
+      const spaceNames: string[] = [];
+
+      // Count individual tasks
+      if (taskIds.length > 0) {
+        const { data: taskData } = await supabase
+          .from("tasks")
+          .select("id, column_id")
+          .in("id", taskIds);
+        if (taskData) {
+          totalCount += taskData.length;
+          doneCount += taskData.filter((t: any) => t.column_id === "done").length;
+        }
+      }
+
+      // Count tasks in spaces
+      for (const spaceId of spaceIds) {
+        const { data: spaceName } = await supabase
+          .from("planner_spaces" as any)
+          .select("name")
+          .eq("id", spaceId)
+          .single();
+        if (spaceName) spaceNames.push((spaceName as any).name);
+
+        const { data: spaceTasks } = await supabase
+          .from("tasks")
+          .select("id, column_id")
+          .eq("space_id", spaceId)
+          .eq("user_id", user.id)
+          .eq("task_scope", "planner");
+        if (spaceTasks) {
+          totalCount += spaceTasks.length;
+          doneCount += spaceTasks.filter((t: any) => t.column_id === "done").length;
+        }
+      }
+
+      progressMap[target.id] = { total: totalCount || 1, done: doneCount, spaceNames };
+
+      // Update the target's current_value and target_value in the database
+      const isDone = doneCount >= totalCount && totalCount > 0;
+      await supabase
+        .from("goal_targets" as any)
+        .update({ current_value: doneCount, target_value: totalCount || 1, is_done: isDone })
+        .eq("id", target.id);
+    }
+
+    setTaskProgressMap(progressMap);
+  }, [user, targets]);
+
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
@@ -154,6 +217,12 @@ const GoalDetail = () => {
     };
     load();
   }, [fetchGoal, fetchTargets, fetchUpdates]);
+
+  useEffect(() => {
+    if (targets.length > 0) {
+      fetchTaskProgress();
+    }
+  }, [targets, fetchTaskProgress]);
 
   const handleSaveDescription = async () => {
     if (!goal || !user) return;
