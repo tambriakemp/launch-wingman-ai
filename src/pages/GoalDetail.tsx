@@ -7,13 +7,7 @@ import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { AddTargetPanel } from "@/components/goals/AddTargetPanel";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,12 +42,7 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
   tasks: ListChecks,
 };
 
-const TARGET_TYPES = [
-  { id: "number", label: "Number" },
-  { id: "currency", label: "Currency" },
-  { id: "true_false", label: "True / False" },
-  { id: "tasks", label: "Tasks" },
-];
+
 
 interface GoalFolder {
   id: string;
@@ -77,12 +66,6 @@ const GoalDetail = () => {
   const [isUpdating, setIsUpdating] = useState(false);
 
   const [showAddTarget, setShowAddTarget] = useState(false);
-  const [newTargetName, setNewTargetName] = useState("");
-  const [newTargetType, setNewTargetType] = useState("number");
-  const [newTargetUnit, setNewTargetUnit] = useState("");
-  const [newTargetStart, setNewTargetStart] = useState("0");
-  const [newTargetValue, setNewTargetValue] = useState("");
-  const [isAddingTarget, setIsAddingTarget] = useState(false);
 
   // Description editing
   const [descriptionValue, setDescriptionValue] = useState("");
@@ -198,35 +181,7 @@ const GoalDetail = () => {
     fetchUpdates();
   };
 
-  const handleAddTarget = async () => {
-    if (!user || !goalId || !newTargetName.trim()) return;
-    setIsAddingTarget(true);
-    const isTrueFalse = newTargetType === "true_false";
-    const { error } = await supabase.from("goal_targets" as any).insert({
-      goal_id: goalId,
-      user_id: user.id,
-      name: newTargetName.trim(),
-      target_type: newTargetType,
-      unit: isTrueFalse ? null : newTargetUnit.trim() || null,
-      start_value: isTrueFalse ? 0 : Number(newTargetStart) || 0,
-      target_value: isTrueFalse ? 1 : Number(newTargetValue) || 1,
-      current_value: isTrueFalse ? 0 : Number(newTargetStart) || 0,
-      position: targets.length,
-    });
-    if (error) {
-      toast.error("Failed to add target");
-    } else {
-      toast.success("Target added");
-      setNewTargetName("");
-      setNewTargetType("number");
-      setNewTargetUnit("");
-      setNewTargetStart("0");
-      setNewTargetValue("");
-      setShowAddTarget(false);
-      fetchTargets();
-    }
-    setIsAddingTarget(false);
-  };
+
 
   const handleDeleteTarget = async (targetId: string) => {
     await supabase.from("goal_target_updates" as any).delete().eq("target_id", targetId);
@@ -425,81 +380,38 @@ const GoalDetail = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowAddTarget(!showAddTarget)}
+                onClick={() => setShowAddTarget(true)}
                 className="gap-1.5 h-8 text-xs"
               >
                 <Plus className="w-3 h-3" /> Add
               </Button>
             </div>
 
-            {showAddTarget && (
-              <div className="rounded-xl border border-dashed border-border bg-card p-4 space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    value={newTargetName}
-                    onChange={(e) => setNewTargetName(e.target.value)}
-                    placeholder="Target name..."
-                    className="h-9 text-sm"
-                    maxLength={200}
-                  />
-                  <Select value={newTargetType} onValueChange={setNewTargetType}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TARGET_TYPES.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {t.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {newTargetType !== "true_false" && (
-                  <div className="grid grid-cols-3 gap-2">
-                    <Input
-                      type="number"
-                      value={newTargetStart}
-                      onChange={(e) => setNewTargetStart(e.target.value)}
-                      placeholder="Start"
-                      className="h-9 text-sm"
-                    />
-                    <Input
-                      type="number"
-                      value={newTargetValue}
-                      onChange={(e) => setNewTargetValue(e.target.value)}
-                      placeholder="Target"
-                      className="h-9 text-sm"
-                    />
-                    <Input
-                      value={newTargetUnit}
-                      onChange={(e) => setNewTargetUnit(e.target.value)}
-                      placeholder="Unit (opt)"
-                      className="h-9 text-sm"
-                      maxLength={30}
-                    />
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={handleAddTarget}
-                    disabled={!newTargetName.trim() || isAddingTarget}
-                    className="h-8 text-xs"
-                  >
-                    {isAddingTarget ? "Adding..." : "Save Target"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setShowAddTarget(false)}
-                    className="h-8 text-xs"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
+            <AddTargetPanel
+              open={showAddTarget}
+              onOpenChange={setShowAddTarget}
+              onSave={async (t) => {
+                if (!user || !goalId) return;
+                const isTF = t.target_type === "true_false";
+                const { error } = await supabase.from("goal_targets" as any).insert({
+                  goal_id: goalId,
+                  user_id: user.id,
+                  name: t.name,
+                  target_type: t.target_type,
+                  unit: isTF ? null : t.unit || null,
+                  start_value: t.start_value,
+                  target_value: t.target_value,
+                  current_value: t.start_value,
+                  position: targets.length,
+                });
+                if (error) {
+                  toast.error("Failed to add target");
+                } else {
+                  toast.success("Target added");
+                  fetchTargets();
+                }
+              }}
+            />
 
             {targets.length === 0 && !showAddTarget && (
               <p className="text-sm text-muted-foreground py-4 text-center">
