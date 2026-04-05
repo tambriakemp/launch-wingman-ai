@@ -102,7 +102,7 @@ export function GoalDialog({
             </button>
           </div>
 
-          <div className="px-8 pb-8 pt-2 space-y-10 flex-1 overflow-y-auto">
+          <div className="px-8 pb-8 pt-2 space-y-14 flex-1 overflow-y-auto">
             {/* Goal Name */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
