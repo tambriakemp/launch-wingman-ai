@@ -95,6 +95,7 @@ const Goals = () => {
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [showFolders, setShowFolders] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
+  const [createInFolderId, setCreateInFolderId] = useState<string | null>(null);
 
   // Folder create/rename dialog
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
