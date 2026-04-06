@@ -339,6 +339,17 @@ const GoalDetail = () => {
     fetchGoal();
   };
 
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [pendingDeleteAction, setPendingDeleteAction] = useState<(() => void) | null>(null);
+  const [deleteConfirmTitle, setDeleteConfirmTitle] = useState("");
+
+  const confirmDelete = (title: string, action: () => void) => {
+    setDeleteConfirmTitle(title);
+    setPendingDeleteAction(() => action);
+    setDeleteConfirmOpen(true);
+  };
+
   const toggleExpanded = (targetId: string) => {
     setExpandedTargets(prev => {
       const next = new Set(prev);
