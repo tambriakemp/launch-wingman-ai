@@ -54,7 +54,7 @@ const valueItems = [
   { title: "A/B Prompt Technique Library", sub: "Plug-and-play prompt templates for consistent AI twin imagery", price: "$47" },
   { title: "Brand Bible Worksheet", sub: "Fill-in-the-blank persona builder — name, voice, story arc, pillars", price: "$27" },
   { title: "30-Day Content Calendar Template", sub: "Pre-mapped story arc and weekly batch workflow", price: "$37" },
-  { title: "Launchely AI Studio Deep-Dive Module", sub: "Full walkthrough of VLOG creation, character setup, and look presets", price: "$67" },
+  { title: "Launchely AI Avatar Studio Deep-Dive Module", sub: "Full walkthrough of VLOG creation, character setup, and look presets", price: "$67" },
   { title: "90-Day Monetization Roadmap", sub: "5 income channels + real revenue math for digital product funnels", price: "$47" },
   { title: "Free Skool Community Access", sub: "Connect with other AI twin creators, share wins, get feedback", price: "$97/yr" },
 ];
