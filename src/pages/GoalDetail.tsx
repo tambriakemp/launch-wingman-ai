@@ -327,6 +327,7 @@ const GoalDetail = () => {
     fetchTargets();
   };
 
+  const handleDeleteTarget = async (targetId: string) => {
     await supabase.from("goal_target_updates" as any).delete().eq("target_id", targetId);
     await supabase.from("goal_targets" as any).delete().eq("id", targetId);
     toast.success("Target removed");
