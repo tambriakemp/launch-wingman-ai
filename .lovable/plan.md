@@ -1,56 +1,64 @@
 
 
-## Plan: Sync Recurring Task Occurrences to Google Tasks
+## Plan: Add New Task Statuses (Blocked, In Review, Abandoned) with Visibility Settings
 
-### Problem
-Recurring tasks are stored as a single parent record with a `recurrence_rule` JSON field. The client expands them into virtual instances for display, but `bulk-sync-calendar` and `sync-calendar-event` only see the one parent row. Result: only one Google Task is created instead of one per occurrence.
+### Summary
+Add three new task statuses -- **Blocked**, **In Review**, and **Abandoned** -- across the entire Planner suite. Blocked and Abandoned tasks will be hidden from the calendar and collapsed by default on the kanban board (ClickUp-style). A settings popover will let users toggle which statuses are visible across all three views.
 
-### Approach
-Port the recurrence expansion logic (currently in `src/components/planner/recurrenceUtils.ts`) into the edge functions so they can generate individual Google Tasks for each occurrence within a reasonable window (e.g., 90 days ahead).
+### Technical Details
 
-### Implementation
+**1. Update Status Definitions (3 files)**
 
-**File: `supabase/functions/sync-calendar-event/index.ts`**
+Add the new statuses to the `STATUSES` arrays in:
+- `PlannerTaskDialog.tsx` (line ~99): Add `{ id: "blocked", label: "Blocked" }`, `{ id: "in-review", label: "In Review" }`, `{ id: "abandoned", label: "Abandoned" }`
+- `PlannerListView.tsx` (line ~93): Same additions
+- `PlannerKanbanView.tsx` (line ~21, `COLUMNS` array): Add three new column definitions with appropriate colors (red for blocked, purple for in-review, gray for abandoned)
 
-1. Add a server-side `expandRecurrences(task, windowStart, windowEnd)` function (simplified port of `recurrenceUtils.ts` logic) that:
-   - Reads `recurrence_rule` (freq, interval, days, end_type, end_date, count)
-   - Reads `recurrence_exception_dates` to skip exceptions
-   - Generates occurrence dates within the window
-   - Returns an array of `{ occurrenceDate, virtualId }` objects
+Update `getStatusBadge()` in `PlannerListView.tsx` to render badges for the new statuses.
 
-2. Modify the main handler: when the task has a `recurrence_rule`, expand it into occurrences. For each occurrence:
-   - Use a composite mapping key: `task_id::YYYY-MM-DD` in `calendar_sync_mappings`
-   - Build a Google Task with the occurrence date as `due`
-   - Create/update/delete each occurrence independently
+**2. Kanban Board -- Collapsed Columns (PlannerKanbanView.tsx)**
 
-3. For `action === "delete"` on a recurring parent: delete ALL mappings with `task_id` prefix match
+- Add a `collapsedColumns` state tracking which columns are collapsed (default: `blocked` and `abandoned` collapsed)
+- When collapsed, render the column as a narrow vertical bar showing only the status name rotated 90 degrees and a task count badge (matching the ClickUp screenshot)
+- Clicking the collapsed bar expands it to a full column
+- Add a collapse toggle button in the column header
 
-**File: `supabase/functions/bulk-sync-calendar/index.ts`**
+**3. Calendar View -- Hide Blocked/Abandoned (PlannerCalendarView.tsx)**
 
-1. When fetching tasks, also select `recurrence_rule, recurrence_exception_dates, title` columns
-2. For recurring tasks, expand occurrences server-side (next 90 days from today)
-3. Sync each occurrence as a separate call with a virtual task ID (`taskId::YYYY-MM-DD`)
+- Filter out tasks with `column_id` of `blocked` or `abandoned` from calendar rendering by default
+- This filtering will be controlled by the new visibility settings (see step 5)
 
-**New helper: recurrence expansion (inside sync-calendar-event)**
+**4. List View -- Group Blocked/Abandoned (PlannerListView.tsx)**
 
-Simplified Deno-compatible version — no date-fns dependency, uses native `Date`:
-- `addDays`, `addWeeks`, `addMonths`, `addYears` as simple date arithmetic functions
-- Weekly frequency with specific days (e.g., MO, WE, FR) handled separately
-- Respects `end_type` (never, on_date, after_n) and `recurrence_exception_dates`
+- Add `blocked` and `abandoned` as new `GroupKey` values
+- Add them to `GROUP_CONFIG` with `defaultOpen: false` so they appear collapsed like the "Done" group
+- Update `groupTasks()` to route tasks with these statuses into their respective groups
 
-**Calendar sync mappings changes**
+**5. Status Visibility Settings (New Component + State)**
 
-The `task_id` field in `calendar_sync_mappings` currently references `tasks.id` (UUID). For virtual occurrences, we'll store the composite ID `parentTaskId::2026-04-07` as a text identifier. Need to verify the column type supports this — if it's a UUID foreign key, we'll need a migration to change it to `text` or add a separate `occurrence_date` column.
+- Create `src/components/planner/StatusVisibilitySettings.tsx` -- a popover triggered by a `Settings2` (ellipsis/gear) icon
+- Contains a list of all statuses with toggle switches to show/hide each one
+- Store preferences in `localStorage` (key: `planner_status_visibility`) as a simple `Record<string, boolean>`
+- Create a shared hook `useStatusVisibility()` that provides the visibility map and a toggle function
+- Pass visibility state into all three views (Calendar, List, Board) via the `Planner.tsx` parent
 
-### Migration (if needed)
-- Add `occurrence_date` column (text, nullable) to `calendar_sync_mappings`
-- Keep `task_id` as the parent UUID reference
-- Use `(task_id, occurrence_date, calendar_connection_id)` as the unique key for recurring mappings
+**6. Wire Up in Planner.tsx**
 
-### Technical details
-- Expansion window: today to +90 days (configurable)
-- Max 500 occurrences per task to prevent runaway loops
-- Each occurrence syncs as an independent Google Task with title including the parent task's title
-- Exception dates are respected (skipped)
-- Non-recurring tasks continue to work exactly as before
+- Import and use the `useStatusVisibility` hook
+- Render the `StatusVisibilitySettings` popover next to the view tabs
+- Filter `filteredTasks` through the visibility settings before passing to child views
+- Update `handleMoveTask` to accept new status IDs
+
+### Files to Create
+- `src/hooks/useStatusVisibility.ts`
+- `src/components/planner/StatusVisibilitySettings.tsx`
+
+### Files to Modify
+- `src/components/planner/PlannerTaskDialog.tsx` -- add statuses to STATUSES array
+- `src/components/planner/PlannerKanbanView.tsx` -- add columns, collapsed state, collapsed UI
+- `src/components/planner/PlannerCalendarView.tsx` -- respect visibility filter
+- `src/components/planner/PlannerListView.tsx` -- add status badges, groups, STATUSES
+- `src/pages/Planner.tsx` -- add settings button, wire visibility hook
+
+No database changes required -- `column_id` is already a free-text string field.
 
