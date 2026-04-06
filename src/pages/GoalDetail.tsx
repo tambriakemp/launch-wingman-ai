@@ -80,6 +80,11 @@ interface GoalFolder {
   name: string;
 }
 
+interface AllFolder {
+  id: string;
+  name: string;
+}
+
 const GoalDetail = () => {
   const { goalId } = useParams<{ goalId: string }>();
   const navigate = useNavigate();
