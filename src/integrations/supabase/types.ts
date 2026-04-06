@@ -568,6 +568,7 @@ export type Database = {
           external_event_id: string
           id: string
           last_synced_at: string
+          occurrence_date: string | null
           provider: string
           task_id: string
           user_id: string
@@ -578,6 +579,7 @@ export type Database = {
           external_event_id: string
           id?: string
           last_synced_at?: string
+          occurrence_date?: string | null
           provider: string
           task_id: string
           user_id: string
@@ -588,6 +590,7 @@ export type Database = {
           external_event_id?: string
           id?: string
           last_synced_at?: string
+          occurrence_date?: string | null
           provider?: string
           task_id?: string
           user_id?: string

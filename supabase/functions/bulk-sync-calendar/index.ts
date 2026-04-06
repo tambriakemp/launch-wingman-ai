@@ -32,10 +32,10 @@ serve(async (req) => {
       });
     }
 
-    // Get all planner tasks WITH dates (not done)
+    // Get all planner tasks WITH dates (not done), including recurrence fields
     const { data: tasks, error: tasksError } = await supabase
       .from("tasks")
-      .select("id, start_at, end_at, due_at")
+      .select("id, start_at, end_at, due_at, title, recurrence_rule, recurrence_exception_dates")
       .eq("user_id", user.id)
       .eq("task_scope", "planner")
       .neq("column_id", "done");
@@ -46,33 +46,37 @@ serve(async (req) => {
       });
     }
 
-    // Get existing sync mappings to determine create vs update
+    // Get existing sync mappings
     const { data: existingMappings } = await supabase
       .from("calendar_sync_mappings")
-      .select("task_id")
+      .select("task_id, occurrence_date")
       .eq("user_id", user.id);
 
-    const syncedTaskIds = new Set((existingMappings || []).map((m: any) => m.task_id));
+    const syncedKeys = new Set(
+      (existingMappings || []).map((m: any) => m.occurrence_date ? `${m.task_id}::${m.occurrence_date}` : m.task_id)
+    );
 
-    // Only sync tasks that have at least one date
-    const datedTasks = tasks.filter((t: any) => t.start_at || t.end_at || t.due_at);
-    console.log(`[bulk-sync] Found ${tasks.length} total tasks, ${datedTasks.length} with dates, ${syncedTaskIds.size} already mapped`);
+    // Only sync tasks that have at least one date OR have a recurrence rule
+    const syncableTasks = tasks.filter((t: any) => t.start_at || t.end_at || t.due_at || t.recurrence_rule);
+    console.log(`[bulk-sync] Found ${tasks.length} total tasks, ${syncableTasks.length} syncable, ${syncedKeys.size} already mapped`);
 
-    if (datedTasks.length === 0) {
+    if (syncableTasks.length === 0) {
       return new Response(JSON.stringify({ success: true, synced: 0, updated: 0, message: "No dated tasks to sync" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Call sync-calendar-event for each dated task — update if already mapped, create if new
     let created = 0;
     let updated = 0;
     let failed = 0;
 
-    for (const task of datedTasks) {
+    for (const task of syncableTasks) {
       try {
-        const action = syncedTaskIds.has(task.id) ? "update" : "create";
-        console.log(`[bulk-sync] Syncing task=${task.id} action=${action} due=${task.due_at} start=${task.start_at}`);
+        // For recurring tasks, sync-calendar-event will handle expansion internally
+        const isAlreadySynced = syncedKeys.has(task.id);
+        const action = isAlreadySynced ? "update" : "create";
+        
+        console.log(`[bulk-sync] Syncing task=${task.id} recurring=${!!task.recurrence_rule} action=${action}`);
         const res = await fetch(`${SUPABASE_URL}/functions/v1/sync-calendar-event`, {
           method: "POST",
           headers: {
@@ -84,23 +88,16 @@ serve(async (req) => {
         });
 
         const responseBody = await res.text();
-        console.log(`[bulk-sync] Response for task=${task.id}: status=${res.status} body=${responseBody}`);
-        
         if (res.ok) {
           try {
             const result = JSON.parse(responseBody);
             if (result.success) {
-              if (action === "update") updated++;
-              else created++;
-            } else {
-              failed++;
-            }
-          } catch {
-            failed++;
-          }
-        } else {
-          failed++;
-        }
+              const syncedCount = result.synced || 0;
+              if (action === "update") updated += syncedCount || 1;
+              else created += syncedCount || 1;
+            } else { failed++; }
+          } catch { failed++; }
+        } else { failed++; }
       } catch (err) {
         console.error(`[bulk-sync] Exception for task=${task.id}:`, err);
         failed++;
@@ -114,12 +111,7 @@ serve(async (req) => {
     if (failed > 0) parts.push(`${failed} failed`);
 
     return new Response(JSON.stringify({ 
-      success: true, 
-      synced: total,
-      created,
-      updated,
-      failed, 
-      total: datedTasks.length,
+      success: true, synced: total, created, updated, failed, total: syncableTasks.length,
       message: total > 0 ? `Synced ${parts.join(", ")} task(s)` : "All tasks up to date" + (failed > 0 ? ` (${failed} failed)` : ""),
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
