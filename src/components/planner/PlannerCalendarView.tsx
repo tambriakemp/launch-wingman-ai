@@ -623,7 +623,7 @@ export const PlannerCalendarView = ({
                             style={colorStyle}
                             onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
                           >
-                            {task.start_at && (() => {
+                            {task.start_at && !allDayTasks.some(t => t.id === task.id) && (() => {
                               const s = parseISO(task.start_at);
                               if (s.getHours() === 0 && s.getMinutes() === 0) return null;
                               return <span className="font-bold">{format(s, "h:mm")} </span>;
