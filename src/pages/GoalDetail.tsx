@@ -290,8 +290,43 @@ const GoalDetail = () => {
   };
 
 
+  const toggleExpanded = (targetId: string) => {
+    setExpandedTargets(prev => {
+      const next = new Set(prev);
+      if (next.has(targetId)) next.delete(targetId);
+      else next.add(targetId);
+      return next;
+    });
+  };
 
-  const handleDeleteTarget = async (targetId: string) => {
+  const handleRemoveTaskFromTarget = async (target: GoalTarget, taskIdToRemove: string) => {
+    if (!target.unit) return;
+    let parsed: { taskIds?: string[]; spaceIds?: string[] } = {};
+    try { parsed = JSON.parse(target.unit); } catch { return; }
+    const newTaskIds = (parsed.taskIds || []).filter(id => id !== taskIdToRemove);
+    const newUnit = JSON.stringify({ taskIds: newTaskIds, spaceIds: parsed.spaceIds || [] });
+    await supabase
+      .from("goal_targets" as any)
+      .update({ unit: newUnit })
+      .eq("id", target.id);
+    toast.success("Task removed from target");
+    fetchTargets();
+  };
+
+  const handleRemoveSpaceFromTarget = async (target: GoalTarget, spaceIdToRemove: string) => {
+    if (!target.unit) return;
+    let parsed: { taskIds?: string[]; spaceIds?: string[] } = {};
+    try { parsed = JSON.parse(target.unit); } catch { return; }
+    const newSpaceIds = (parsed.spaceIds || []).filter(id => id !== spaceIdToRemove);
+    const newUnit = JSON.stringify({ taskIds: parsed.taskIds || [], spaceIds: newSpaceIds });
+    await supabase
+      .from("goal_targets" as any)
+      .update({ unit: newUnit })
+      .eq("id", target.id);
+    toast.success("List removed from target");
+    fetchTargets();
+  };
+
     await supabase.from("goal_target_updates" as any).delete().eq("target_id", targetId);
     await supabase.from("goal_targets" as any).delete().eq("id", targetId);
     toast.success("Target removed");
