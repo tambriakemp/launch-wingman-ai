@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { PlannerCalendarView } from "@/components/planner/PlannerCalendarView";
 import { PlannerListView } from "@/components/planner/PlannerListView";
+import { PlannerKanbanView } from "@/components/planner/PlannerKanbanView";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlannerTaskDialog, type PlannerTask } from "@/components/planner/PlannerTaskDialog";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
