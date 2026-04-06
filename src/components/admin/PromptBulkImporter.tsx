@@ -54,7 +54,7 @@ export const PromptBulkImporter = () => {
         .filter((s) => s.length > 10);
 
       if (splits.length === 0) {
-        toast({ title: "No prompts found", description: "Try separating prompts with blank lines or ---", variant: "destructive" });
+        toast({ title: "No prompts found", description: "Separate prompts with --- on its own line", variant: "destructive" });
         return;
       }
 
