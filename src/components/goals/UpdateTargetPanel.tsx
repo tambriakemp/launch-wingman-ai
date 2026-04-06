@@ -96,7 +96,7 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
           </div>
 
           {/* Progress bar */}
-          <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+          <div className="w-full h-3 bg-border rounded-full overflow-hidden">
             <div
               className="h-full rounded-full bg-primary transition-all duration-300"
               style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
