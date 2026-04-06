@@ -93,9 +93,7 @@ const GoalDetail = () => {
   const [taskProgressMap, setTaskProgressMap] = useState<Record<string, TaskProgress>>({});
 
   const [expandedTargets, setExpandedTargets] = useState<Set<string>>(new Set());
-  const [updateValue, setUpdateValue] = useState("");
-  const [updateNote, setUpdateNote] = useState("");
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [updatePanelTarget, setUpdatePanelTarget] = useState<GoalTarget | null>(null);
 
   const [showAddTarget, setShowAddTarget] = useState(false);
 
