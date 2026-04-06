@@ -371,6 +371,7 @@ const Planner = () => {
                 onEditTask={handleEditTask}
                 onToggleComplete={handleToggleComplete}
                 onAddTask={handleAddTask}
+                onMoveTask={handleMoveTask}
                 categories={activeCategories}
                 spaces={spaces}
               />
