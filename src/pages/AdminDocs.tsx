@@ -1227,6 +1227,203 @@ const AdminComponent = () => {
                       </AccordionContent>
                     </AccordionItem>
 
+                    <AccordionItem value="google-calendar">
+                      <AccordionTrigger className="text-left">
+                        <div className="flex items-center gap-2">
+                          <Activity className="h-4 w-4 text-primary" />
+                          Google Calendar Integration
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-4">
+                        <h4 className="font-semibold mb-4">Overview</h4>
+                        <p className="text-muted-foreground mb-4">
+                          Google Calendar integration syncs Launchely tasks to <strong>Google Tasks</strong> (not Calendar Events).
+                          Tasks appear as checklist items in the user's default Google Tasks list with due dates.
+                          Recurring tasks are expanded server-side into individual occurrences (90-day window).
+                        </p>
+
+                        <h4 className="font-semibold mb-4 mt-6">Google Cloud Console</h4>
+                        <div className="space-y-2 mb-6">
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-sm font-medium">Project</p>
+                            <p className="text-xs text-muted-foreground">Google Cloud Console → APIs & Services</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-sm font-medium">Enabled APIs</p>
+                            <p className="text-xs text-muted-foreground">Google Tasks API, Google Calendar API, Google People API</p>
+                          </div>
+                        </div>
+
+                        <h4 className="font-semibold mb-4 mt-6">OAuth Credentials</h4>
+                        <div className="space-y-2 mb-6">
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-sm font-medium">Authorized Redirect URI</p>
+                            <code className="text-xs text-primary break-all">
+                              https://ydhagqgurqhlguxkkppb.supabase.co/functions/v1/google-calendar-auth-callback
+                            </code>
+                          </div>
+                        </div>
+
+                        <h4 className="font-semibold mb-4 mt-6">Required Scopes</h4>
+                        <div className="space-y-2 mb-6">
+                          <div className="p-3 bg-muted/50 rounded-lg font-mono text-xs">https://www.googleapis.com/auth/calendar</div>
+                          <div className="p-3 bg-muted/50 rounded-lg font-mono text-xs">https://www.googleapis.com/auth/tasks</div>
+                          <div className="p-3 bg-muted/50 rounded-lg font-mono text-xs">https://www.googleapis.com/auth/userinfo.email</div>
+                        </div>
+
+                        <h4 className="font-semibold mb-4 mt-6">Edge Function Secrets</h4>
+                        <div className="space-y-2 mb-6">
+                          <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm">
+                            <span className="text-muted-foreground">GOOGLE_CALENDAR_CLIENT_ID</span>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm">
+                            <span className="text-muted-foreground">GOOGLE_CALENDAR_CLIENT_SECRET</span>
+                          </div>
+                        </div>
+
+                        <h4 className="font-semibold mb-4 mt-6">Edge Functions</h4>
+                        <div className="grid grid-cols-1 gap-3 mb-6">
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <code className="text-sm font-mono text-primary">google-calendar-auth-start</code>
+                            <p className="text-xs text-muted-foreground mt-1">Generates the Google OAuth URL with state containing user_id</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <code className="text-sm font-mono text-primary">google-calendar-auth-callback</code>
+                            <p className="text-xs text-muted-foreground mt-1">Exchanges auth code for tokens, encrypts & stores in calendar_connections</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <code className="text-sm font-mono text-primary">sync-calendar-event</code>
+                            <p className="text-xs text-muted-foreground mt-1">Syncs individual task CRUD to Google Tasks (shared with Microsoft)</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <code className="text-sm font-mono text-primary">bulk-sync-calendar</code>
+                            <p className="text-xs text-muted-foreground mt-1">Re-syncs all tasks for a user; handles recurrence expansion</p>
+                          </div>
+                        </div>
+
+                        <h4 className="font-semibold mb-4 mt-6">OAuth Flow</h4>
+                        <CodeBlock title="Authentication Flow">{`1. User clicks "Connect Google Calendar" in Settings
+2. Frontend calls google-calendar-auth-start edge function
+3. Function returns Google OAuth URL with state (user_id)
+4. User consents in Google
+5. Google redirects to google-calendar-auth-callback
+6. Callback exchanges code → tokens, encrypts, upserts calendar_connections
+7. User redirected to /settings?gcal_connected=true`}</CodeBlock>
+
+                        <h4 className="font-semibold mb-4 mt-6">Sync Behavior</h4>
+                        <ul className="list-disc list-inside text-sm text-muted-foreground space-y-2 mb-6">
+                          <li>Tasks sync to Google Tasks API (not Calendar Events)</li>
+                          <li>Due dates formatted as RFC 3339 midnight UTC: <code>YYYY-MM-DDT00:00:00.000Z</code></li>
+                          <li>Tasks without any date are excluded from sync</li>
+                          <li>Recurring tasks expanded server-side (90-day window, max 500 occurrences)</li>
+                          <li>Occurrence mappings use <code>(task_id, occurrence_date, calendar_connection_id)</code></li>
+                          <li>Disconnect deletes all external tasks and removes calendar_connections entry</li>
+                        </ul>
+
+                        <h4 className="font-semibold mb-4 mt-6">Production Verification</h4>
+                        <Callout type="warning">
+                          <strong>Google OAuth Consent Screen</strong> must be set to <strong>Production</strong> mode 
+                          in Google Cloud Console → APIs & Services → OAuth consent screen. Without this, only 
+                          test users can connect. Full verification requires domain ownership of launchely.com 
+                          via Google Search Console and scope justification videos for sensitive scopes.
+                        </Callout>
+
+                        <h4 className="font-semibold mb-4 mt-6">Useful Links</h4>
+                        <div className="space-y-2">
+                          <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="block p-3 bg-muted/50 rounded-lg text-sm text-primary underline">
+                            Google Cloud Console — Credentials ↗
+                          </a>
+                          <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener noreferrer" className="block p-3 bg-muted/50 rounded-lg text-sm text-primary underline">
+                            OAuth Consent Screen ↗
+                          </a>
+                          <a href="https://developers.google.com/tasks/reference/rest" target="_blank" rel="noopener noreferrer" className="block p-3 bg-muted/50 rounded-lg text-sm text-primary underline">
+                            Google Tasks API Reference ↗
+                          </a>
+                          <a href="https://developers.google.com/identity/protocols/oauth2/web-server" target="_blank" rel="noopener noreferrer" className="block p-3 bg-muted/50 rounded-lg text-sm text-primary underline">
+                            Google OAuth 2.0 Web Server Flow ↗
+                          </a>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    <AccordionItem value="apple-calendar">
+                      <AccordionTrigger className="text-left">
+                        <div className="flex items-center gap-2">
+                          <Activity className="h-4 w-4 text-primary" />
+                          Apple Calendar Integration (iCal Feed)
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-4">
+                        <h4 className="font-semibold mb-4">Overview</h4>
+                        <p className="text-muted-foreground mb-4">
+                          Apple Calendar integration uses a <strong>read-only iCal (.ics) feed</strong>. 
+                          There is no OAuth flow — instead, a unique feed URL is generated per user and 
+                          subscribed to in Apple Calendar (or any iCal-compatible app like Outlook desktop).
+                        </p>
+
+                        <Callout type="info">
+                          <strong>One-way sync:</strong> The iCal feed is read-only. Changes made in Apple 
+                          Calendar are not pushed back to Launchely. Task changes in Launchely are reflected 
+                          when Apple Calendar re-fetches the feed (typically every 15 min – 24 hours depending 
+                          on the client).
+                        </Callout>
+
+                        <h4 className="font-semibold mb-4 mt-6">How It Works</h4>
+                        <CodeBlock title="Feed URL Pattern">{`https://ydhagqgurqhlguxkkppb.supabase.co/functions/v1/calendar-feed?token=<feed_token>`}</CodeBlock>
+                        <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-2 mb-6">
+                          <li>When a user enables the iCal feed, a unique <code>feed_token</code> is generated and stored on their <code>calendar_connections</code> row (provider = "ical" or stored on existing connection)</li>
+                          <li>The user copies the feed URL and subscribes in Apple Calendar (or any iCal client)</li>
+                          <li>Apple Calendar periodically fetches the .ics file from the <code>calendar-feed</code> edge function</li>
+                          <li>The function looks up the user by <code>feed_token</code>, fetches their tasks, and returns a valid VCALENDAR</li>
+                        </ol>
+
+                        <h4 className="font-semibold mb-4 mt-6">Edge Function</h4>
+                        <div className="p-3 bg-muted/50 rounded-lg mb-6">
+                          <code className="text-sm font-mono text-primary">calendar-feed</code>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Returns an ICS file. Accepts <code>?token=</code> query param. No auth header required — 
+                            authentication is via the unique feed token.
+                          </p>
+                        </div>
+
+                        <h4 className="font-semibold mb-4 mt-6">ICS Output Details</h4>
+                        <ul className="list-disc list-inside text-sm text-muted-foreground space-y-2 mb-6">
+                          <li>Timed events: tasks with <code>start_at</code> + <code>end_at</code> → <code>DTSTART/DTEND</code> datetime</li>
+                          <li>All-day events: tasks with only <code>due_at</code> or <code>due_date</code> → <code>VALUE=DATE</code></li>
+                          <li>Completed tasks (column_id = "done") are excluded</li>
+                          <li>Calendar name: <strong>Launchely Tasks</strong></li>
+                          <li>UID format: <code>taskId@launchely.com</code></li>
+                        </ul>
+
+                        <h4 className="font-semibold mb-4 mt-6">Database</h4>
+                        <div className="space-y-2 mb-6">
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-sm font-medium">calendar_connections.feed_token</p>
+                            <p className="text-xs text-muted-foreground">Unique token per user used to authenticate iCal feed requests</p>
+                          </div>
+                        </div>
+
+                        <h4 className="font-semibold mb-4 mt-6">No Secrets Required</h4>
+                        <Callout type="tip">
+                          The Apple Calendar / iCal feed does not require any external API keys or OAuth credentials. 
+                          It's a simple HTTP endpoint serving a .ics file, authenticated by the feed token.
+                        </Callout>
+
+                        <h4 className="font-semibold mb-4 mt-6">Subscribing in Apple Calendar</h4>
+                        <CodeBlock title="User Steps">{`1. Go to Settings → Calendar Sync in Launchely
+2. Enable "iCal Feed" and copy the feed URL
+3. Open Apple Calendar → File → New Calendar Subscription
+4. Paste the feed URL
+5. Set auto-refresh interval (every 15 minutes recommended)
+6. Click Subscribe`}</CodeBlock>
+
+                        <Callout type="info">
+                          <strong>Refresh rate:</strong> Apple Calendar's minimum refresh interval is 5 minutes 
+                          on macOS, but defaults to daily on iOS. Users can adjust in subscription settings.
+                        </Callout>
+                      </AccordionContent>
+                    </AccordionItem>
+
                     <AccordionItem value="secrets">
                       <AccordionTrigger className="text-left">
                         <div className="flex items-center gap-2">
