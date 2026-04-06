@@ -53,7 +53,10 @@ serve(async (req) => {
       .eq("user_id", user.id);
 
     const syncedTaskIds = new Set((existingMappings || []).map((m: any) => m.task_id));
-    const unsyncedTasks = tasks.filter((t: any) => !syncedTaskIds.has(t.id));
+    // Only sync tasks that have at least one date AND aren't already synced
+    const unsyncedTasks = tasks
+      .filter((t: any) => t.start_at || t.end_at || t.due_at)
+      .filter((t: any) => !syncedTaskIds.has(t.id));
 
     if (unsyncedTasks.length === 0) {
       return new Response(JSON.stringify({ success: true, synced: 0, message: "All tasks already synced" }), {
