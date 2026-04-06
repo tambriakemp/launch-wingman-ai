@@ -519,6 +519,93 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_connections: {
+        Row: {
+          access_token: string | null
+          account_email: string | null
+          calendar_id: string | null
+          created_at: string
+          id: string
+          provider: string
+          refresh_token: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          account_email?: string | null
+          calendar_id?: string | null
+          created_at?: string
+          id?: string
+          provider: string
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          account_email?: string | null
+          calendar_id?: string | null
+          created_at?: string
+          id?: string
+          provider?: string
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      calendar_sync_mappings: {
+        Row: {
+          calendar_connection_id: string
+          created_at: string
+          external_event_id: string
+          id: string
+          last_synced_at: string
+          provider: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          calendar_connection_id: string
+          created_at?: string
+          external_event_id: string
+          id?: string
+          last_synced_at?: string
+          provider: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          calendar_connection_id?: string
+          created_at?: string
+          external_event_id?: string
+          id?: string
+          last_synced_at?: string
+          provider?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_sync_mappings_calendar_connection_id_fkey"
+            columns: ["calendar_connection_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_sync_mappings_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_conversions: {
         Row: {
           campaign_id: string
