@@ -27,7 +27,6 @@ export interface SpaceCategory {
 
 const DEFAULT_CATEGORIES = [
   { name: "Work", color: "#f5c842" },
-  { name: "Personal", color: "#0ea572" },
   { name: "Health", color: "#f43f5e" },
   { name: "Finance", color: "#8b5cf6" },
 ];
