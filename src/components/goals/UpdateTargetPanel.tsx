@@ -4,8 +4,7 @@ import {
   SheetContent,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { X, Minus, Plus, Target } from "lucide-react";
+import { X, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { GoalTarget } from "@/pages/Goals";
 
@@ -34,7 +33,7 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
   const [startValue, setStartValue] = useState(0);
   const [targetValue, setTargetValue] = useState(0);
   const [adjustAmount, setAdjustAmount] = useState("1");
-  const [note, setNote] = useState("");
+  const [mode, setMode] = useState<"increase" | "decrease">("increase");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -43,7 +42,7 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
       setStartValue(Number(target.start_value));
       setTargetValue(Number(target.target_value));
       setAdjustAmount("1");
-      setNote("");
+      setMode("increase");
     }
   }, [target, open]);
 
@@ -51,24 +50,20 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
 
   const isCurrency = target.target_type === "currency";
   const symbol = isCurrency ? getCurrencySymbol(target.unit) : "";
+  const unitLabel = !isCurrency && target.unit ? target.unit.toUpperCase() : "";
   const range = targetValue - startValue;
   const progress = range > 0 ? Math.min(100, Math.round(((currentValue - startValue) / range) * 100)) : 0;
 
-  const handleDecrease = () => {
+  const handleApply = () => {
     const amt = Number(adjustAmount) || 1;
-    setCurrentValue(prev => prev - amt);
-  };
-
-  const handleIncrease = () => {
-    const amt = Number(adjustAmount) || 1;
-    setCurrentValue(prev => prev + amt);
+    setCurrentValue(prev => mode === "increase" ? prev + amt : prev - amt);
   };
 
   const handleSave = async () => {
     if (!target) return;
     setIsSaving(true);
     try {
-      await onSave(target.id, currentValue, startValue, targetValue, note.trim());
+      await onSave(target.id, currentValue, startValue, targetValue, "");
       onOpenChange(false);
     } finally {
       setIsSaving(false);
@@ -90,7 +85,7 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
         </div>
 
         <div className="px-8 pb-8 pt-2 space-y-8 flex-1 overflow-y-auto">
-          {/* Target name */}
+          {/* Target name + % */}
           <div className="text-center space-y-1">
             <div className="mx-auto w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-3">
               <Target className="w-5 h-5 text-primary" />
@@ -120,10 +115,18 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
             </div>
             <div className="space-y-1 text-center">
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Current</p>
-              <div className="inline-flex items-center gap-1 bg-primary/10 rounded-full px-4 py-1.5">
-                <span className="text-sm font-bold text-primary">
-                  {symbol}{currentValue.toLocaleString()}
-                </span>
+              <div className="inline-flex items-center gap-1.5 bg-primary/10 rounded-full px-4 py-1.5">
+                <input
+                  type="number"
+                  value={currentValue}
+                  onChange={(e) => setCurrentValue(Number(e.target.value) || 0)}
+                  className="w-16 text-center text-sm font-bold text-primary bg-transparent border-0 focus:outline-none"
+                />
+                {(unitLabel || isCurrency) && (
+                  <span className="text-[10px] font-semibold text-primary/70 uppercase tracking-wider">
+                    {isCurrency ? target.unit : unitLabel}
+                  </span>
+                )}
               </div>
             </div>
             <div className="space-y-1 text-center">
@@ -137,48 +140,47 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
             </div>
           </div>
 
-          {/* Increase / Decrease buttons */}
-          <div className="flex gap-3">
-            <Button
+          {/* Decrease / Increase toggle */}
+          <div className="flex rounded-lg border border-border overflow-hidden">
+            <button
               type="button"
-              variant="outline"
-              className="flex-1 gap-2"
-              onClick={handleDecrease}
+              onClick={() => setMode("decrease")}
+              className={cn(
+                "flex-1 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-1.5",
+                mode === "decrease"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
             >
-              <Minus className="w-4 h-4" /> Decrease
-            </Button>
-            <Button
+              Decrease
+            </button>
+            <button
               type="button"
-              className="flex-1 gap-2"
-              onClick={handleIncrease}
+              onClick={() => setMode("increase")}
+              className={cn(
+                "flex-1 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-1.5",
+                mode === "increase"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
             >
-              <Plus className="w-4 h-4" /> Increase
-            </Button>
+              Increase
+            </button>
           </div>
 
-          {/* Adjust amount */}
-          <div className="space-y-1.5">
-            <p className="text-xs text-muted-foreground">#</p>
+          {/* # amount — inline */}
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground font-medium">#</span>
             <input
               type="number"
               value={adjustAmount}
               onChange={(e) => setAdjustAmount(e.target.value)}
               placeholder="1"
-              className="w-full h-11 border-0 border-b border-border bg-transparent px-0 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+              className="flex-1 h-10 border-0 border-b border-border bg-transparent px-0 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
             />
-          </div>
-
-          {/* Note */}
-          <div className="space-y-1.5">
-            <p className="text-xs text-muted-foreground">Note (optional)</p>
-            <Textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Add a note about this update..."
-              rows={3}
-              className="resize-none text-sm"
-              maxLength={500}
-            />
+            <Button size="sm" variant="outline" className="h-9 text-xs" onClick={handleApply}>
+              Apply
+            </Button>
           </div>
 
           {/* Save */}
