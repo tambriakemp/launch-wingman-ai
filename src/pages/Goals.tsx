@@ -436,7 +436,7 @@ const Goals = () => {
                   onRename={(g) => { setEditingGoal(g); setDialogOpen(true); }}
                   onMoveToFolder={handleMoveGoalToFolder}
                   onArchive={handleArchiveGoal}
-                  onDelete={handleDeleteGoal}
+                  onDelete={(goalId) => confirmDelete("Delete this goal?", () => handleDeleteGoal(goalId))}
                 />
               ))}
             </div>
