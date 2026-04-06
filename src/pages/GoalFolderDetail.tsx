@@ -340,7 +340,7 @@ const GoalFolderDetail = () => {
                   <DropdownMenuItem onClick={() => { setRenameValue(folder.name); setIsRenaming(true); }}>
                     <Pencil className="w-3.5 h-3.5 mr-2" /> Rename
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleDeleteFolder} className="text-destructive">
+                  <DropdownMenuItem onClick={() => confirmDelete("Delete this folder?", handleDeleteFolder)} className="text-destructive">
                     <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>
