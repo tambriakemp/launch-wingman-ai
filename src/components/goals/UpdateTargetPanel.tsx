@@ -54,16 +54,17 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
   const range = targetValue - startValue;
   const progress = range > 0 ? Math.min(100, Math.round(((currentValue - startValue) / range) * 100)) : 0;
 
-  const handleApply = () => {
-    const amt = Number(adjustAmount) || 1;
-    setCurrentValue(prev => mode === "increase" ? prev + amt : prev - amt);
-  };
-
   const handleSave = async () => {
     if (!target) return;
     setIsSaving(true);
     try {
-      await onSave(target.id, currentValue, startValue, targetValue, "");
+      // Apply the adjustment amount based on mode before saving
+      let finalValue = currentValue;
+      const amt = Number(adjustAmount);
+      if (amt && amt > 0) {
+        finalValue = mode === "increase" ? currentValue + amt : currentValue - amt;
+      }
+      await onSave(target.id, finalValue, startValue, targetValue, "");
       onOpenChange(false);
     } finally {
       setIsSaving(false);
