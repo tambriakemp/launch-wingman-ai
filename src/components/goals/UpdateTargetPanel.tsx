@@ -142,15 +142,15 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
           </div>
 
           {/* Decrease / Increase toggle */}
-          <div className="flex rounded-lg border border-border overflow-hidden">
+          <div className="flex rounded-lg overflow-hidden border border-border">
             <button
               type="button"
               onClick={() => setMode("decrease")}
               className={cn(
-                "flex-1 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-1.5",
+                "flex-1 py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
                 mode === "decrease"
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "bg-destructive/15 text-destructive border-r border-destructive/20"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border-r border-border"
               )}
             >
               Decrease
@@ -159,9 +159,9 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
               type="button"
               onClick={() => setMode("increase")}
               className={cn(
-                "flex-1 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-1.5",
+                "flex-1 py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
                 mode === "increase"
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-primary/15 text-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
