@@ -159,6 +159,7 @@ const SceneCard: React.FC<SceneCardProps> = ({
                     <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onGenerateImage(); }}>
                       Generate Image
                     </Button>
+                    <p className="text-[9px] text-muted-foreground mt-2">May take 1–3 minutes</p>
                   </>
                 )}
               </div>
