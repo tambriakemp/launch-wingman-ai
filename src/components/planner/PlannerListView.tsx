@@ -64,10 +64,13 @@ function groupTasks(tasks: PlannerTask[]): Record<GroupKey, PlannerTask[]> {
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-  const groups: Record<GroupKey, PlannerTask[]> = { overdue: [], today: [], this_week: [], anytime: [], completed: [] };
+  const groups: Record<GroupKey, PlannerTask[]> = { overdue: [], today: [], this_week: [], anytime: [], completed: [], in_review: [], blocked: [], abandoned: [] };
 
   for (const task of tasks) {
     if (task.column_id === "done") { groups.completed.push(task); continue; }
+    if (task.column_id === "in-review") { groups.in_review.push(task); continue; }
+    if (task.column_id === "blocked") { groups.blocked.push(task); continue; }
+    if (task.column_id === "abandoned") { groups.abandoned.push(task); continue; }
     const due = task.due_at ? parseISO(task.due_at) : null;
     if (due) {
       if (isToday(due)) groups.today.push(task);
