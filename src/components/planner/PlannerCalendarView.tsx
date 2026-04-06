@@ -241,39 +241,17 @@ export const PlannerCalendarView = ({
   }, [tasks, windowStart, windowEnd]);
 
   const scheduledTasks = useMemo(() => {
-    return expandedTasks.filter((t) => {
-      if (!t.start_at || !t.end_at) return false;
-      const s = parseISO(t.start_at);
-      const e = parseISO(t.end_at);
-      const sH = getHours(s) + getMinutes(s) / 60;
-      const eH = getHours(e) + getMinutes(e) / 60;
-      return sH !== eH;
-    });
+    return expandedTasks.filter((t) => !isAllDayTask(t) && t.start_at && t.end_at);
   }, [expandedTasks]);
 
   const allDayTasks = useMemo(() => {
-    return expandedTasks.filter(t => {
-      // No start/end but has due_at → all-day
-      if (t.due_at && !t.start_at && !t.end_at) return true;
-      // Has start+end at same time → treat as all-day
-      if (t.start_at && t.end_at) {
-        const s = parseISO(t.start_at);
-        const e = parseISO(t.end_at);
-        const sH = getHours(s) + getMinutes(s) / 60;
-        const eH = getHours(e) + getMinutes(e) / 60;
-        if (sH === eH) return true;
-      }
-      return false;
-    });
+    return expandedTasks.filter(t => isAllDayTask(t));
   }, [expandedTasks]);
 
-  const getAllDayTasksForDay = (day: Date) =>
-    allDayTasks.filter((t) => {
-      const dateStr = t.due_at || t.start_at;
-      if (!dateStr) return false;
-      const [year, month, date] = dateStr.slice(0, 10).split("-").map(Number);
-      return isSameDay(new Date(year, month - 1, date, 12), day);
-    });
+  const getAllDayTasksForDay = (day: Date) => {
+    const dayKey = format(day, "yyyy-MM-dd");
+    return allDayTasks.filter((t) => getTaskDateKey(t) === dayKey);
+  };
 
   // Month
   const monthStart = startOfMonth(currentDate);
