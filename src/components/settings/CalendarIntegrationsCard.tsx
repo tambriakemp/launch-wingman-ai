@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { CalendarDays, Loader2, Link2, Unlink, Apple, Copy, Check, ExternalLink } from "lucide-react";
+import { CalendarDays, Loader2, Link2, Unlink, Apple, Copy, Check, ExternalLink, RefreshCw } from "lucide-react";
 
 interface CalendarConnection {
   id: string;
@@ -62,6 +62,7 @@ export const CalendarIntegrationsCard = () => {
   const [feedUrl, setFeedUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [generatingFeed, setGeneratingFeed] = useState(false);
+  const [bulkSyncing, setBulkSyncing] = useState(false);
 
   const { data: connections = [], isLoading } = useQuery({
     queryKey: ["calendar-connections"],
@@ -167,6 +168,40 @@ export const CalendarIntegrationsCard = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleBulkSync = async () => {
+    setBulkSyncing(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.access_token) {
+        toast.error("Please sign in first");
+        return;
+      }
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/bulk-sync-calendar`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.session.access_token}`,
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
+      const result = await res.json();
+      if (result.success) {
+        toast.success(result.message || `Synced ${result.synced} task(s)`);
+      } else {
+        toast.error(result.error || "Sync failed");
+      }
+    } catch (err) {
+      console.error("Bulk sync error:", err);
+      toast.error("Failed to sync tasks");
+    } finally {
+      setBulkSyncing(false);
+    }
+  };
+
   const handleDisconnect = async (provider: string) => {
     if (!user) return;
     setDisconnectingProvider(provider);
@@ -251,6 +286,26 @@ export const CalendarIntegrationsCard = () => {
               );
             })}
           </div>
+          {connections.length > 0 && (
+            <div className="mt-4 pt-4 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkSync}
+                disabled={bulkSyncing}
+                className="w-full"
+              >
+                {bulkSyncing ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Syncing existing tasks…</>
+                ) : (
+                  <><RefreshCw className="w-4 h-4 mr-2" />Sync all existing tasks</>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Push all current planner tasks to your connected calendars
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
