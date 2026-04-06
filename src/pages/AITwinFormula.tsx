@@ -9,7 +9,7 @@ const faqData = [
   },
   {
     q: "What AI tools will I need? Are they free?",
-    a: "We cover a full range of tools — many with free tiers (Gemini, DALL-E via ChatGPT free, CapCut). The Bonus Module breaks down every tool with pricing so you can choose what fits your budget. Launchely AI Studio has a $7/month Content Vault tier that unlocks the vlog creation features covered in Module 05.",
+    a: "We cover a full range of tools — many with free tiers (Gemini, DALL-E via ChatGPT free, CapCut). The Bonus Module breaks down every tool with pricing so you can choose what fits your budget. Launchely AI Avatar Studio has a $7/month Content Vault tier that unlocks the vlog creation features covered in Module 05.",
   },
   {
     q: "Is my AI twin's face based on my real face?",
