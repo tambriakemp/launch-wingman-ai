@@ -72,7 +72,7 @@ const advancedFeatures = [
   "Campaigns manager",
   "Social Planner",
   "Ideas Bank",
-  "AI Studio",
+  "AI Avatar Studio",
   "Marketing Analytics",
   "Advanced marketing tools",
 ];

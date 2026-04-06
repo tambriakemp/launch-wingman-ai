@@ -9,7 +9,7 @@ const faqData = [
   },
   {
     q: "What AI tools will I need? Are they free?",
-    a: "We cover a full range of tools — many with free tiers (Gemini, DALL-E via ChatGPT free, CapCut). The Bonus Module breaks down every tool with pricing so you can choose what fits your budget. Launchely AI Studio has a $7/month Content Vault tier that unlocks the vlog creation features covered in Module 05.",
+    a: "We cover a full range of tools — many with free tiers (Gemini, DALL-E via ChatGPT free, CapCut). The Bonus Module breaks down every tool with pricing so you can choose what fits your budget. Launchely AI Avatar Studio has a $7/month Content Vault tier that unlocks the vlog creation features covered in Module 05.",
   },
   {
     q: "Is my AI twin's face based on my real face?",
@@ -25,7 +25,7 @@ const faqData = [
   },
   {
     q: "What if I've never made a Reel before?",
-    a: "Perfect — this was designed with you in mind. Module 07 covers the full CapCut assembly process, and Module 05 shows you how Launchely AI Studio generates vlog-style videos you can post directly. You don't need editing experience.",
+    a: "Perfect — this was designed with you in mind. Module 07 covers the full CapCut assembly process, and Module 05 shows you how Launchely AI Avatar Studio generates vlog-style videos you can post directly. You don't need editing experience.",
   },
   {
     q: "Can I really make money with a faceless AI twin account?",
@@ -43,7 +43,7 @@ const modules = [
   { num: "Module 02", title: "Perfect the Look", desc: "Outfits, environments, and face consistency across your entire image library. The Clothing Change Prompt Formula + a 3×4 content grid system.", tag: "Visual Identity" },
   { num: "Module 03", title: "Give Your Twin a Persona", desc: "Name, origin story, content pillars, voice, and story arc. Build a full Brand Bible worksheet so your twin feels real — not robotic.", tag: "Brand Strategy" },
   { num: "Module 04", title: "Animate with OpenArt", desc: "Upload your AI image and bring her to life — talking head clips, lifestyle b-roll, and lip-sync videos. Assemble in CapCut for Reels.", tag: "Video Creation" },
-  { num: "Module 05", title: "Create AI Vlogs with Launchely", desc: "Full walkthrough of Launchely AI Studio — upload your 3 reference photos, set your environments, configure your Look, and generate full AI vlogs.", tag: "Launchely AI Studio" },
+  { num: "Module 05", title: "Create AI Vlogs with Launchely", desc: "Full walkthrough of Launchely AI Avatar Studio — upload your 3 reference photos, set your environments, configure your Look, and generate full AI vlogs.", tag: "Launchely AI Avatar Studio" },
   { num: "Module 06", title: "Script Your Twin's Story", desc: "4 story types, AI-powered script prompts, hook formulas, and a 30-day narrative arc template. Your audience will actually want to follow along.", tag: "Content Writing" },
   { num: "Module 07", title: "Batch 30 Days of Content", desc: "The 4-hour batch session — scripts to vlogs to edited Reels to scheduled posts. A weekly content calendar pattern that keeps you consistent.", tag: "Content System" },
   { num: "Module 08", title: "Monetize Through Your Twin", desc: "5 income channels: digital products, funnel, affiliate, services, and brand deals. A 90-day monetization roadmap with real math.", tag: "Revenue Strategy" },
@@ -54,7 +54,7 @@ const valueItems = [
   { title: "A/B Prompt Technique Library", sub: "Plug-and-play prompt templates for consistent AI twin imagery", price: "$47" },
   { title: "Brand Bible Worksheet", sub: "Fill-in-the-blank persona builder — name, voice, story arc, pillars", price: "$27" },
   { title: "30-Day Content Calendar Template", sub: "Pre-mapped story arc and weekly batch workflow", price: "$37" },
-  { title: "Launchely AI Studio Deep-Dive Module", sub: "Full walkthrough of VLOG creation, character setup, and look presets", price: "$67" },
+  { title: "Launchely AI Avatar Studio Deep-Dive Module", sub: "Full walkthrough of VLOG creation, character setup, and look presets", price: "$67" },
   { title: "90-Day Monetization Roadmap", sub: "5 income channels + real revenue math for digital product funnels", price: "$47" },
   { title: "Free Skool Community Access", sub: "Connect with other AI twin creators, share wins, get feedback", price: "$97/yr" },
 ];
@@ -63,7 +63,7 @@ const bridgeSteps = [
   { title: "Design your AI twin with the A/B Prompt Technique", desc: "Create a photorealistic, consistent avatar using Gemini, DALL-E, or Midjourney — no design skills needed." },
   { title: "Give her a face, a wardrobe, and a world", desc: "Master outfits, environments, and look consistency across dozens of images — building a full content library." },
   { title: "Build a persona with a Brand Bible", desc: "Name, story arc, content pillars, and voice — so your twin feels like a real, relatable person online." },
-  { title: "Animate with OpenArt & create vlogs with Launchely AI Studio", desc: "Turn still images into moving content — talking heads, lifestyle clips, and full AI vlogs ready for Reels." },
+  { title: "Animate with OpenArt & create vlogs with Launchely AI Avatar Studio", desc: "Turn still images into moving content — talking heads, lifestyle clips, and full AI vlogs ready for Reels." },
   { title: "Script a 30-day content arc", desc: "Use AI to write hooks, stories, and scripts that build connection — without burnout or blank-page syndrome." },
   { title: "Batch 30 days of content in one afternoon", desc: "The exact 4-hour workflow to produce a full month of Reels, schedule it, and walk away." },
   { title: "Monetize through your twin", desc: "Digital products, affiliate income, brand deals — 5 income channels mapped to a 90-day roadmap." },
@@ -98,7 +98,7 @@ const pricingIncludes = [
   "A/B Prompt Technique Library with sample prompts",
   "Brand Bible worksheet — your twin's full persona",
   "30-day content calendar + weekly batch workflow",
-  "Launchely AI Studio walkthrough module",
+  "Launchely AI Avatar Studio walkthrough module",
   "90-day monetization roadmap",
   "Free Skool community (lifetime access)",
   "🎁 Bonus: Full tool stack guide + Launchely comparison",
