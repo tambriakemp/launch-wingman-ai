@@ -293,7 +293,25 @@ const Settings = () => {
       const error = searchParams.get('error');
       toast.error(`Failed to connect TikTok: ${error}`);
     }
-  }, [searchParams, checkSubscription, refetchConnections]);
+
+    // Handle Google Calendar OAuth callback
+    if (searchParams.get('gcal_connected') === 'true') {
+      toast.success("Google Calendar connected successfully!");
+      queryClient.invalidateQueries({ queryKey: ["calendar-connections"] });
+    } else if (searchParams.get('gcal_error')) {
+      const error = searchParams.get('gcal_error');
+      toast.error(`Failed to connect Google Calendar: ${error}`);
+    }
+
+    // Handle Microsoft Calendar OAuth callback
+    if (searchParams.get('mscal_connected') === 'true') {
+      toast.success("Outlook Calendar connected successfully!");
+      queryClient.invalidateQueries({ queryKey: ["calendar-connections"] });
+    } else if (searchParams.get('mscal_error')) {
+      const error = searchParams.get('mscal_error');
+      toast.error(`Failed to connect Outlook Calendar: ${error}`);
+    }
+  }, [searchParams, checkSubscription, refetchConnections, queryClient]);
 
   const handleSaveProfile = async () => {
     if (!user) return;
