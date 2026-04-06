@@ -99,6 +99,11 @@ async function getAccessToken(supabase: any, connection: any): Promise<string | 
   return decrypted;
 }
 
+function isAllDayTime(isoStr: string): boolean {
+  const d = new Date(isoStr);
+  return d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0;
+}
+
 function buildEventBody(task: any) {
   const title = task.title || "Untitled";
   const description = task.description || "";
@@ -110,10 +115,24 @@ function buildEventBody(task: any) {
   if (task.start_at && task.end_at) {
     start = task.start_at;
     end = task.end_at;
+    // If both times are midnight, treat as all-day event
+    if (isAllDayTime(task.start_at) && isAllDayTime(task.end_at)) {
+      allDay = true;
+    }
+  } else if (task.start_at) {
+    start = task.start_at;
+    end = task.start_at;
+    // Single date with midnight = all-day
+    if (isAllDayTime(task.start_at)) {
+      allDay = true;
+    }
   } else if (task.due_at) {
     start = task.due_at;
     end = task.due_at;
-    allDay = true;
+    // due_at without specific time = all-day
+    if (isAllDayTime(task.due_at)) {
+      allDay = true;
+    }
   } else {
     // No date info — skip syncing
     return null;

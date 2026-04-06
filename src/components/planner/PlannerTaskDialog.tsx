@@ -275,7 +275,7 @@ export const PlannerTaskDialog = ({
         category: category || null,
         due_at: startDate ? startDate.toISOString() : null,
         start_at: startDate ? startDate.toISOString() : null,
-        end_at: endDate ? endDate.toISOString() : (startDate ? startDate.toISOString() : null),
+        end_at: endDate ? endDate.toISOString() : null,
         location: null,
         recurrence_rule: recurrenceRuleValue,
         ...(({ space_id: taskSpaceId || selectedSpaceId }) as any),
@@ -848,9 +848,19 @@ function DatePickerPanel({
               activePicker === "due" ? "border-primary bg-primary/5" : "border-border hover:bg-accent/50"
             )}
           >
-            <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+           <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-muted-foreground text-xs">Due</span>
             <span className="text-xs font-medium ml-auto">{endDate ? format(endDate, "MMM d") : "—"}</span>
+            {endDate && (
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-foreground ml-1"
+                onClick={(e) => { e.stopPropagation(); onEndDateChange(undefined); }}
+                title="Clear due date"
+              >
+                <CalendarOff className="h-3 w-3" />
+              </button>
+            )}
           </button>
         </div>
 
