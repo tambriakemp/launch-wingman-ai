@@ -342,17 +342,17 @@ const AIStudio = () => {
   const handleGenerateTopicIdeas = async () => {
     if (config.creationMode !== 'carousel' && !config.vlogCategory) return;
     setIsGeneratingTopic(true);
+    setBrainstormIdeas([]);
     try {
       const { data, error } = await supabase.functions.invoke('generate-storyboard', {
-        body: { action: 'brainstorm', config, characterProfile: selectedCharacter || undefined }
+        body: { action: 'brainstorm', config }
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      if (config.creationMode === 'carousel' && data.ideas) {
-        const firstIdea = data.ideas[0] || '';
-        setConfig(prev => ({ ...prev, carouselVibe: firstIdea }));
-      } else {
+      if (data.ideas) {
+        setBrainstormIdeas(data.ideas);
+      } else if (data.topic) {
         setConfig(prev => ({ ...prev, vlogTopic: data.topic }));
       }
     } catch (e: any) {
