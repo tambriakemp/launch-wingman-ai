@@ -165,6 +165,7 @@ const Planner = () => {
     }
 
     toast.success("Task updated");
+    syncTask(editingTask.id, "update");
     setEditingTask(null);
     fetchTasks();
   };
