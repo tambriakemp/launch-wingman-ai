@@ -343,7 +343,7 @@ const AIStudio = () => {
     setIsGeneratingTopic(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-storyboard', {
-        body: { action: 'brainstorm', config }
+        body: { action: 'brainstorm', config, characterProfile: selectedCharacter || undefined }
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
