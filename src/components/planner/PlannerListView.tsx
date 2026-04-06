@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format, parseISO, isPast, isToday, startOfWeek, endOfWeek, isBefore, isAfter } from "date-fns";
-import { CheckCircle2, Circle, ChevronDown, ChevronRight, MoreHorizontal, Pencil, Trash2, Plus, X, FolderOpen, Tag, CircleDot, Square, CheckSquare, Settings2 } from "lucide-react";
+import { CheckCircle2, Circle, ChevronDown, ChevronRight, MoreHorizontal, Pencil, Trash2, Plus, X, FolderOpen, Tag, CircleDot, Square, CheckSquare, Settings2, ArrowRightLeft } from "lucide-react";
 import { SpaceNotesSection } from "./SpaceNotesSection";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -16,6 +16,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import {
   Popover,
@@ -201,6 +204,7 @@ export const PlannerListView = ({
                     onToggleComplete={onToggleComplete}
                     onEdit={onEditTask}
                     onDelete={onDeleteTask}
+                    onUpdateStatus={onBulkUpdateStatus}
                     categories={categories}
                     isSelected={selectedIds.has(task.id)}
                     onToggleSelect={toggleSelect}
@@ -372,11 +376,12 @@ function BulkCategoryPicker({
 }
 
 // --- Task Row ---
-function TaskRow({ task, onToggleComplete, onEdit, onDelete, categories, isSelected, onToggleSelect, hasSelection }: {
+function TaskRow({ task, onToggleComplete, onEdit, onDelete, onUpdateStatus, categories, isSelected, onToggleSelect, hasSelection }: {
   task: PlannerTask;
   onToggleComplete: (t: PlannerTask) => void;
   onEdit: (t: PlannerTask) => void;
   onDelete: (id: string) => void;
+  onUpdateStatus?: (ids: string[], status: string) => void;
   categories: SpaceCategory[];
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
@@ -445,6 +450,24 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete, categories, isSelec
           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(task); }}>
             <Pencil className="w-4 h-4 mr-2" /> Edit
           </DropdownMenuItem>
+          {onUpdateStatus && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger onClick={(e) => e.stopPropagation()}>
+                <ArrowRightLeft className="w-4 h-4 mr-2" /> Move to list
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {[
+                  { id: "todo", label: "To Do" },
+                  { id: "in_progress", label: "In Progress" },
+                  { id: "done", label: "Done" },
+                ].filter(s => s.id !== task.column_id).map(s => (
+                  <DropdownMenuItem key={s.id} onClick={(e) => { e.stopPropagation(); onUpdateStatus([task.id], s.id); }}>
+                    {s.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
           <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}>
             <Trash2 className="w-4 h-4 mr-2" /> Delete
           </DropdownMenuItem>
