@@ -43,6 +43,7 @@ const EditableField = ({
   </div>
 );
 
+interface SceneCardProps {
   step: VlogStep;
   index: number;
   media: GeneratedMedia;
