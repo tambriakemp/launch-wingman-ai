@@ -137,21 +137,24 @@ serve(async (req) => {
       const accessToken = await getAccessToken(supabase, connection);
       
       if (accessToken) {
+        // For Google, find the Launchely calendar
+        let googleCalendarId = "primary";
+        if (connection.provider === "google") {
+          const listRes = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          if (listRes.ok) {
+            const listData = await listRes.json();
+            const launchely = (listData.items || []).find((c: any) => c.summary === "Launchely");
+            if (launchely) googleCalendarId = launchely.id;
+          }
+        }
+
         for (const mapping of mappings) {
           try {
             let url: string;
             if (connection.provider === "google") {
-              // Try to find the Launchely calendar first, fall back to primary
-              let calendarId = "primary";
-              const listRes = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList", {
-                headers: { Authorization: `Bearer ${accessToken}` },
-              });
-              if (listRes.ok) {
-                const listData = await listRes.json();
-                const launchely = (listData.items || []).find((c: any) => c.summary === "Launchely");
-                if (launchely) calendarId = launchely.id;
-              }
-              url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${mapping.external_event_id}`;
+              url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleCalendarId)}/events/${mapping.external_event_id}`;
             } else {
               url = `https://graph.microsoft.com/v1.0/me/events/${mapping.external_event_id}`;
             }
@@ -168,6 +171,19 @@ serve(async (req) => {
             }
           } catch {
             failed++;
+          }
+        }
+
+        // Delete the Launchely calendar itself from Google
+        if (connection.provider === "google" && googleCalendarId !== "primary") {
+          try {
+            await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleCalendarId)}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            console.log("Deleted Launchely calendar from Google");
+          } catch (e) {
+            console.error("Failed to delete Launchely calendar:", e);
           }
         }
       }
