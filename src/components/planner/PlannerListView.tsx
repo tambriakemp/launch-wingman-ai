@@ -91,6 +91,12 @@ function getStatusBadge(columnId: string) {
     case "in_progress":
     case "in-progress":
       return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-blue-500/15 text-blue-600 dark:text-blue-400">In Progress</span>;
+    case "in-review":
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-purple-500/15 text-purple-600 dark:text-purple-400">In Review</span>;
+    case "blocked":
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-red-500/15 text-red-600 dark:text-red-400">Blocked</span>;
+    case "abandoned":
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-zinc-400/15 text-zinc-500 dark:text-zinc-400">Abandoned</span>;
     default:
       return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-muted text-muted-foreground">To Do</span>;
   }
