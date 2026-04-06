@@ -43,10 +43,19 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
   tasks: ListChecks,
 };
 
+interface TaskInfo {
+  id: string;
+  title: string;
+  column_id: string;
+  space_id: string | null;
+}
+
 interface TaskProgress {
   total: number;
   done: number;
   spaceNames: string[];
+  individualTasks: TaskInfo[];
+  spaceTasks: Record<string, TaskInfo[]>;
 }
 
 
