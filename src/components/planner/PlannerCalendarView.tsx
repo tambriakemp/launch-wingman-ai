@@ -441,7 +441,7 @@ export const PlannerCalendarView = ({
                       onClick={() => onCreateTask?.({ due_at: day.toISOString() })}
                     >
                       {dayAllDay.map((task) => {
-                        const { style: colorStyle } = getCardColorStyle(task, categories);
+                        const { style: colorStyle } = getCardColorStyle(task, categories, spaces);
                         const isDone = task.column_id === "done";
                         return (
                           <button
@@ -518,7 +518,7 @@ export const PlannerCalendarView = ({
                         const pos = getTaskPosition(task);
                         if (!pos) return null;
                         const isDone = task.column_id === "done";
-                        const { style: colorStyle } = getCardColorStyle(task, categories);
+                        const { style: colorStyle } = getCardColorStyle(task, categories, spaces);
                         return (
                           <button
                             key={task.id}
@@ -593,7 +593,7 @@ export const PlannerCalendarView = ({
                     </div>
                     <div className="space-y-1">
                       {dayTasks.slice(0, 2).map((task) => {
-                        const { style: colorStyle } = getCardColorStyle(task, categories);
+                        const { style: colorStyle } = getCardColorStyle(task, categories, spaces);
                         return (
                           <button
                             key={task.id}
