@@ -152,13 +152,15 @@ export const PlannerKanbanView = ({
                   {col.label}
                 </span>
                 <span className="text-xs text-muted-foreground/60 ml-1">{colTasks.length}</span>
-                <button
-                  className="ml-auto opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity"
-                  onClick={() => toggleCollapse(col.id)}
-                  title={`Collapse ${col.label}`}
-                >
-                  <ChevronsLeft className="w-3.5 h-3.5 text-muted-foreground" />
-                </button>
+                {col.defaultCollapsed !== undefined && (
+                  <button
+                    className="ml-auto opacity-60 hover:opacity-100 transition-opacity"
+                    onClick={() => toggleCollapse(col.id)}
+                    title={`Collapse ${col.label}`}
+                  >
+                    <ChevronsLeft className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                )}
               </div>
 
               {/* Droppable column */}
