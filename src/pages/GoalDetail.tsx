@@ -483,7 +483,7 @@ const GoalDetail = () => {
                     ) : (
                       <button
                         onClick={() => setIsEditingDescription(true)}
-                        className="w-full text-left text-sm text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-muted/50 min-h-[40px]"
+                        className="w-full text-left text-sm text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-muted/50 min-h-[40px] whitespace-pre-wrap"
                       >
                         {goal.description || "Add a description..."}
                       </button>
