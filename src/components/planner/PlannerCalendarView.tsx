@@ -58,6 +58,28 @@ const START_HOUR = 0;
 const END_HOUR = 24;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
 
+/** Shared helper: is this task an all-day item? */
+function isAllDayTask(task: PlannerTask): boolean {
+  // Due-only (no start/end) → all-day
+  if (task.due_at && !task.start_at && !task.end_at) return true;
+  // Has start+end at same time → treat as all-day
+  if (task.start_at && task.end_at) {
+    const s = parseISO(task.start_at);
+    const e = parseISO(task.end_at);
+    const sH = getHours(s) + getMinutes(s) / 60;
+    const eH = getHours(e) + getMinutes(e) / 60;
+    if (sH === eH) return true;
+  }
+  return false;
+}
+
+/** Get the display date string for an all-day/due-only task */
+function getTaskDateKey(task: PlannerTask): string | null {
+  const dateStr = task.due_at || task.start_at;
+  if (!dateStr) return null;
+  return dateStr.slice(0, 10);
+}
+
 function getCardColorStyle(task: PlannerTask, categories: { id: string; color: string }[], spaces: PlannerSpace[] = []): { style: React.CSSProperties; isDark: boolean } {
   const space = spaces.find(s => s.id === (task as any).space_id);
   const hex = space?.color || "#3b82f6";
@@ -70,7 +92,7 @@ function getCardColorStyle(task: PlannerTask, categories: { id: string; color: s
   const textB = Math.round(b * 0.35);
   return {
     style: {
-      backgroundColor: `rgba(${r},${g},${b},0.18)`,
+      backgroundColor: `rgba(${r},${g},${b},0.28)`,
       borderColor: `rgba(${r},${g},${b},0.4)`,
       borderLeftWidth: '3px',
       borderLeftColor: hex,
