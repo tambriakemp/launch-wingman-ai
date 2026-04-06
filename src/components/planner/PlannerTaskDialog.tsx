@@ -194,14 +194,20 @@ export const PlannerTaskDialog = ({
       const catExists = spaceCats.some(c => c.id === editCat);
       setCategory(catExists && editCat ? editCat : "");
 
+      // Hydrate start/due correctly: due-only tasks go into endDate (Due field)
       if (editTask.start_at) {
         setStartDate(new Date(editTask.start_at));
-      } else if (editTask.due_at) {
-        setStartDate(new Date(editTask.due_at));
       } else {
         setStartDate(undefined);
       }
-      setEndDate(editTask.end_at ? new Date(editTask.end_at) : undefined);
+      if (editTask.end_at) {
+        setEndDate(new Date(editTask.end_at));
+      } else if (!editTask.start_at && editTask.due_at) {
+        // Due-only task: show in Due field, not Start
+        setEndDate(new Date(editTask.due_at));
+      } else {
+        setEndDate(undefined);
+      }
 
       if (editTask.recurrence_rule) {
         const r = editTask.recurrence_rule;
