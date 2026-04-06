@@ -459,13 +459,13 @@ const GoalDetail = () => {
                   <div className="pt-2">
                     {isEditingDescription ? (
                       <div className="space-y-2">
-                        <Textarea
+                        <AutoResizeTextarea
                           autoFocus
                           value={descriptionValue}
                           onChange={(e) => setDescriptionValue(e.target.value)}
                           placeholder="Add notes or description..."
                           className="text-sm whitespace-pre-wrap"
-                          style={{ minHeight: '6rem', height: 'auto', overflow: 'hidden', resize: 'none', fieldSizing: 'content' } as React.CSSProperties}
+                          minRows={4}
                           maxLength={2000}
                         />
                         <div className="flex gap-2">
