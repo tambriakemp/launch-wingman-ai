@@ -272,15 +272,19 @@ ${sceneNum === 1 ? 'This is the ANCHOR slide — establish the look.' : `This is
         // EDIT MODE: The character preview is the base image — instruct the model to modify it
         fullPrompt = `OUTPUT: Generate exactly ONE single photograph. Do NOT create collages, grids, split-screen images, or multiple panels.
 
-EDIT THIS IMAGE: Keep the person's face, body, and identity EXACTLY the same. Change ONLY the following:
+EDIT THIS IMAGE: Keep the person's face, body, and identity EXACTLY the same.
 
-1. SCENE: Place this person in the following setting — ${prompt}
-2. OUTFIT: Change their clothing to — ${currentOutfit}
+${config.creationMode === 'carousel' ? `SCENE (THIS IS THE MOST IMPORTANT PART — this is what makes each carousel slide unique):
+"${prompt}"
+Compose the image around this SPECIFIC scene description. The environment, props, lighting, and background elements described above are the PRIMARY FOCUS of this slide. The person should be INTEGRATED into this scene naturally — interacting with the setting, not just standing in front of it.
+
+OUTFIT (LOCKED — do NOT change from anchor): Keep wearing exactly "${currentOutfit}" — same garment, color, fit, fabric as the anchor image.` : `1. SCENE: Place this person in the following setting — ${prompt}
+2. OUTFIT: Change their clothing to — ${currentOutfit}`}
 3. STYLE: Hair: ${hair}, Makeup: ${makeup}, Skin tone: ${skin}, Nails: ${nails}
 
 CRITICAL RULES:
 - The person's face, bone structure, skin tone, body type, and age must remain IDENTICAL to the provided image.
-- Only change pose, clothing, and background as described above.
+${config.creationMode === 'carousel' ? '- The SCENE DESCRIPTION above defines what makes this slide unique. Show the described environment prominently.' : '- Only change pose, clothing, and background as described above.'}
 ${lockInstructions}
 ${config.exactMatch ? '- STRICT MODE: This person must be immediately recognizable as the same individual.' : ''}
 ${config.creationMode === 'ugc' ? '- Feature the product prominently in the scene.' : ''}
