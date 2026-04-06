@@ -316,13 +316,16 @@ const Planner = () => {
               </div>
             </div>
           </div>
-          <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar" | "kanban")}>
-            <TabsList>
-              <TabsTrigger value="list">Tasks</TabsTrigger>
-              <TabsTrigger value="calendar">Calendar</TabsTrigger>
-              <TabsTrigger value="kanban">Board</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center gap-2">
+            <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar" | "kanban")}>
+              <TabsList>
+                <TabsTrigger value="list">Tasks</TabsTrigger>
+                <TabsTrigger value="calendar">Calendar</TabsTrigger>
+                <TabsTrigger value="kanban">Board</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <StatusVisibilitySettings visibility={visibility} onToggle={toggleVisibility} />
+          </div>
         </div>
         <div className="flex-1 overflow-hidden flex">
           <SpacesSidebar
