@@ -390,6 +390,20 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                         className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary"
                       />
                     </div>
+                    {brainstormIdeas && brainstormIdeas.length > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-bold uppercase text-muted-foreground">Tap an idea to use it</p>
+                        {brainstormIdeas.map((idea, i) => (
+                          <button
+                            key={i}
+                            onClick={() => { if (onSelectIdea) onSelectIdea(idea); }}
+                            className="w-full text-left px-3 py-2 rounded-lg bg-muted hover:bg-primary/10 hover:border-primary border border-border text-xs text-foreground transition-colors leading-relaxed"
+                          >
+                            {idea}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <div className="pt-2 border-t border-border">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={config.useOwnScript} onChange={(e) => setConfig(c => ({ ...c, useOwnScript: e.target.checked }))}
