@@ -266,6 +266,8 @@ export const PlannerTaskDialog = ({
     };
 
     try {
+      const startIso = startDate ? startDate.toISOString() : null;
+      const endIso = endDate ? endDate.toISOString() : (startIso || null);
       await onSubmit({
         title: title.trim(),
         description: description.trim(),
@@ -273,9 +275,9 @@ export const PlannerTaskDialog = ({
         column_id: columnId,
         priority,
         category: category || null,
-        due_at: startDate ? startDate.toISOString() : null,
-        start_at: startDate ? startDate.toISOString() : null,
-        end_at: endDate ? endDate.toISOString() : null,
+        due_at: startIso,
+        start_at: startIso,
+        end_at: endIso,
         location: null,
         recurrence_rule: recurrenceRuleValue,
         ...(({ space_id: taskSpaceId || selectedSpaceId }) as any),
