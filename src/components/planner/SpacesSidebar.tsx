@@ -66,8 +66,8 @@ export const SpacesSidebar = ({
   const [newCatColor, setNewCatColor] = useState(PRESET_COLORS[1]);
 
   const getTaskCount = (spaceId: string | null) => {
-    if (!spaceId) return tasks.length;
-    return tasks.filter(t => (t as any).space_id === spaceId).length;
+    const filtered = spaceId ? tasks.filter(t => (t as any).space_id === spaceId) : tasks;
+    return filtered.filter(t => t.column_id !== "done").length;
   };
 
   const handleAdd = async () => {

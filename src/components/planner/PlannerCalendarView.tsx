@@ -625,10 +625,14 @@ export const PlannerCalendarView = ({
                     <div className="space-y-1">
                       {dayTasks.slice(0, 2).map((task) => {
                         const { style: colorStyle } = getCardColorStyle(task, categories, spaces);
+                        const isDone = task.column_id === "done";
                         return (
                           <button
                             key={task.id}
-                            className="w-full text-left text-[10px] px-2 py-1 rounded-lg truncate transition-colors font-medium border"
+                            className={cn(
+                              "w-full text-left text-[10px] px-2 py-1 rounded-lg truncate transition-colors font-medium border",
+                              isDone && "opacity-50 line-through"
+                            )}
                             style={colorStyle}
                             onClick={(e) => { e.stopPropagation(); onEditTask(task); }}
                           >
