@@ -594,6 +594,14 @@ const App = () => (
               }
             />
             <Route
+              path="/app/ai-studio/characters"
+              element={
+                <ProtectedRoute>
+                  <AIStudioCharacters />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/app/ai-studio/outfit-swap"
               element={
                 <ProtectedRoute>
