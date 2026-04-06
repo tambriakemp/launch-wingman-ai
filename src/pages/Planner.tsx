@@ -358,6 +358,17 @@ const Planner = () => {
                 onUpdateSpace={updateSpace}
               />
             )}
+            {view === "kanban" && (
+              <PlannerKanbanView
+                tasks={filteredTasks}
+                isLoading={isLoading}
+                onEditTask={handleEditTask}
+                onToggleComplete={handleToggleComplete}
+                onAddTask={handleAddTask}
+                categories={activeCategories}
+                spaces={spaces}
+              />
+            )}
           </div>
         </div>
       </div>
