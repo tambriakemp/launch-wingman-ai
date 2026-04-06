@@ -26,11 +26,13 @@ import {
   ListChecks,
   Hash,
   ChevronRight,
+  ChevronDown,
   Folder,
   MoreHorizontal,
   Pencil,
   Trash2,
   ExternalLink,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays } from "date-fns";
@@ -43,10 +45,19 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
   tasks: ListChecks,
 };
 
+interface TaskInfo {
+  id: string;
+  title: string;
+  column_id: string;
+  space_id: string | null;
+}
+
 interface TaskProgress {
   total: number;
   done: number;
   spaceNames: string[];
+  individualTasks: TaskInfo[];
+  spaceTasks: Record<string, TaskInfo[]>;
 }
 
 
@@ -80,7 +91,7 @@ const GoalDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [taskProgressMap, setTaskProgressMap] = useState<Record<string, TaskProgress>>({});
 
-  const [expandedTarget, setExpandedTarget] = useState<string | null>(null);
+  const [expandedTargets, setExpandedTargets] = useState<Set<string>>(new Set());
   const [updateValue, setUpdateValue] = useState("");
   const [updateNote, setUpdateNote] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
@@ -162,20 +173,25 @@ const GoalDetail = () => {
       let totalCount = 0;
       let doneCount = 0;
       const spaceNames: string[] = [];
+      const individualTasks: TaskInfo[] = [];
+      const spaceTasks: Record<string, TaskInfo[]> = {};
 
-      // Count individual tasks
+      // Fetch individual tasks
       if (taskIds.length > 0) {
         const { data: taskData } = await supabase
           .from("tasks")
-          .select("id, column_id")
+          .select("id, title, column_id, space_id")
           .in("id", taskIds);
         if (taskData) {
+          for (const t of taskData as any[]) {
+            individualTasks.push({ id: t.id, title: t.title, column_id: t.column_id, space_id: t.space_id });
+          }
           totalCount += taskData.length;
           doneCount += taskData.filter((t: any) => t.column_id === "done").length;
         }
       }
 
-      // Count tasks in spaces
+      // Fetch tasks in spaces
       for (const spaceId of spaceIds) {
         const { data: spaceName } = await supabase
           .from("planner_spaces" as any)
@@ -184,19 +200,22 @@ const GoalDetail = () => {
           .single();
         if (spaceName) spaceNames.push((spaceName as any).name);
 
-        const { data: spaceTasks } = await supabase
+        const { data: sTaskData } = await supabase
           .from("tasks")
-          .select("id, column_id")
+          .select("id, title, column_id, space_id")
           .eq("space_id", spaceId)
           .eq("user_id", user.id)
           .eq("task_scope", "planner");
-        if (spaceTasks) {
-          totalCount += spaceTasks.length;
-          doneCount += spaceTasks.filter((t: any) => t.column_id === "done").length;
+        if (sTaskData) {
+          spaceTasks[spaceId] = (sTaskData as any[]).map((t: any) => ({
+            id: t.id, title: t.title, column_id: t.column_id, space_id: t.space_id,
+          }));
+          totalCount += sTaskData.length;
+          doneCount += sTaskData.filter((t: any) => t.column_id === "done").length;
         }
       }
 
-      progressMap[target.id] = { total: totalCount || 1, done: doneCount, spaceNames };
+      progressMap[target.id] = { total: totalCount || 1, done: doneCount, spaceNames, individualTasks, spaceTasks };
 
       // Update the target's current_value and target_value in the database
       const isDone = doneCount >= totalCount && totalCount > 0;
@@ -264,13 +283,49 @@ const GoalDetail = () => {
     toast.success("Progress updated");
     setUpdateValue("");
     setUpdateNote("");
-    setExpandedTarget(null);
+    setExpandedTargets(new Set());
     setIsUpdating(false);
     fetchTargets();
     fetchUpdates();
   };
 
 
+  const toggleExpanded = (targetId: string) => {
+    setExpandedTargets(prev => {
+      const next = new Set(prev);
+      if (next.has(targetId)) next.delete(targetId);
+      else next.add(targetId);
+      return next;
+    });
+  };
+
+  const handleRemoveTaskFromTarget = async (target: GoalTarget, taskIdToRemove: string) => {
+    if (!target.unit) return;
+    let parsed: { taskIds?: string[]; spaceIds?: string[] } = {};
+    try { parsed = JSON.parse(target.unit); } catch { return; }
+    const newTaskIds = (parsed.taskIds || []).filter(id => id !== taskIdToRemove);
+    const newUnit = JSON.stringify({ taskIds: newTaskIds, spaceIds: parsed.spaceIds || [] });
+    await supabase
+      .from("goal_targets" as any)
+      .update({ unit: newUnit })
+      .eq("id", target.id);
+    toast.success("Task removed from target");
+    fetchTargets();
+  };
+
+  const handleRemoveSpaceFromTarget = async (target: GoalTarget, spaceIdToRemove: string) => {
+    if (!target.unit) return;
+    let parsed: { taskIds?: string[]; spaceIds?: string[] } = {};
+    try { parsed = JSON.parse(target.unit); } catch { return; }
+    const newSpaceIds = (parsed.spaceIds || []).filter(id => id !== spaceIdToRemove);
+    const newUnit = JSON.stringify({ taskIds: parsed.taskIds || [], spaceIds: newSpaceIds });
+    await supabase
+      .from("goal_targets" as any)
+      .update({ unit: newUnit })
+      .eq("id", target.id);
+    toast.success("List removed from target");
+    fetchTargets();
+  };
 
   const handleDeleteTarget = async (targetId: string) => {
     await supabase.from("goal_target_updates" as any).delete().eq("target_id", targetId);
@@ -522,22 +577,26 @@ const GoalDetail = () => {
                   : target.is_done
                   ? 100
                   : 0;
-              const isExpanded = expandedTarget === target.id;
+              const isExpanded = expandedTargets.has(target.id);
 
-              // Parse space IDs for clickable links
+              // Parse unit for task targets
               let parsedUnit: { taskIds?: string[]; spaceIds?: string[] } | null = null;
               if (isTaskTarget && target.unit) {
                 try { parsedUnit = JSON.parse(target.unit); } catch {}
               }
+
+              const individualTaskCount = parsedUnit?.taskIds?.length || 0;
+              const spaceCount = parsedUnit?.spaceIds?.length || 0;
 
               return (
                 <div
                   key={target.id}
                   className="rounded-xl border border-border bg-card overflow-hidden group"
                 >
+                  {/* Header row */}
                   <div className="flex items-center gap-3 p-4">
                     <button
-                      onClick={() => setExpandedTarget(isExpanded ? null : target.id)}
+                      onClick={() => toggleExpanded(target.id)}
                       className="flex-1 flex items-center gap-3 text-left hover:bg-muted/30 transition-colors rounded-lg -m-1 p-1"
                     >
                       {target.is_done ? (
@@ -554,43 +613,26 @@ const GoalDetail = () => {
                           )}>
                             {target.name}
                           </span>
-                          {/* Show space/list count badge */}
-                          {isTaskTarget && taskProgress && taskProgress.spaceNames.length > 0 && (
+                          {isTaskTarget && (
                             <span className="text-[10px] text-primary font-medium">
-                              {taskProgress.spaceNames.length} List{taskProgress.spaceNames.length !== 1 ? "s" : ""}
+                              {spaceCount > 0 && `${spaceCount} List${spaceCount !== 1 ? "s" : ""}`}
+                              {spaceCount > 0 && individualTaskCount > 0 && " · "}
+                              {individualTaskCount > 0 && `${individualTaskCount} task${individualTaskCount !== 1 ? "s" : ""}`}
                             </span>
                           )}
+                          {isTaskTarget && (
+                            <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground transition-transform", isExpanded && "rotate-180")} />
+                          )}
                         </div>
-                        {/* Clickable space links */}
-                        {isTaskTarget && taskProgress && taskProgress.spaceNames.length > 0 && parsedUnit?.spaceIds && (
-                          <div className="flex flex-wrap gap-1.5 mt-1">
-                            {parsedUnit.spaceIds.map((spaceId, idx) => (
-                              <button
-                                key={spaceId}
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/planner?space=${spaceId}`);
-                                }}
-                                className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline"
-                              >
-                                <ExternalLink className="w-2.5 h-2.5" />
-                                {taskProgress.spaceNames[idx] || "List"}
-                              </button>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     </button>
 
-                    {/* Progress fraction */}
+                    {/* Progress label */}
                     <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
                       {target.target_type === "true_false" ? (
                         target.is_done ? "1/1" : "0/1"
                       ) : isTaskTarget ? (
-                        <>
-                          {displayCurrent}/{displayTotal}
-                        </>
+                        `${displayCurrent}/${displayTotal}`
                       ) : (
                         <>
                           {target.target_type === "currency" && target.unit ? getCurrencySymbol(target.unit) : ""}
@@ -620,9 +662,11 @@ const GoalDetail = () => {
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setExpandedTarget(isExpanded ? null : target.id)}>
-                          <TrendingUp className="w-3.5 h-3.5 mr-2" /> Log Progress
-                        </DropdownMenuItem>
+                        {!isTaskTarget && (
+                          <DropdownMenuItem onClick={() => toggleExpanded(target.id)}>
+                            <TrendingUp className="w-3.5 h-3.5 mr-2" /> Log Progress
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => handleDeleteTarget(target.id)} className="text-destructive">
                           <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
                         </DropdownMenuItem>
@@ -630,8 +674,101 @@ const GoalDetail = () => {
                     </DropdownMenu>
                   </div>
 
-                  {/* Expanded update form */}
-                  {isExpanded && (
+                  {/* Expanded content for TASK targets — show tasks & lists */}
+                  {isExpanded && isTaskTarget && taskProgress && (
+                    <div className="border-t border-border bg-muted/5">
+                      {/* Lists (Spaces) */}
+                      {parsedUnit?.spaceIds && parsedUnit.spaceIds.length > 0 && parsedUnit.spaceIds.map((spaceId, idx) => {
+                        const spaceName = taskProgress.spaceNames[idx] || "List";
+                        const sTasks = taskProgress.spaceTasks[spaceId] || [];
+                        const sDone = sTasks.filter(t => t.column_id === "done").length;
+                        return (
+                          <div key={spaceId} className="border-b border-border last:border-b-0">
+                            <div className="flex items-center gap-3 px-4 py-3">
+                              <ListChecks className="w-4 h-4 text-muted-foreground shrink-0" />
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/planner?space=${spaceId}`)}
+                                className="font-medium text-sm text-foreground hover:text-primary transition-colors flex items-center gap-1.5"
+                              >
+                                {spaceName}
+                                <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                              </button>
+                              <span className="text-xs text-muted-foreground ml-auto font-mono">
+                                tasks {sDone}/{sTasks.length}
+                              </span>
+                              <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden shrink-0">
+                                <div
+                                  className="h-full rounded-full bg-primary/60 transition-all"
+                                  style={{ width: `${sTasks.length > 0 ? Math.round((sDone / sTasks.length) * 100) : 0}%` }}
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveSpaceFromTarget(target, spaceId)}
+                                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-destructive transition-colors"
+                                title="Remove list from target"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            {/* Show tasks inside the space */}
+                            {sTasks.length > 0 && (
+                              <div className="pl-11 pr-4 pb-2 space-y-0.5">
+                                {sTasks.map(task => (
+                                  <div key={task.id} className="flex items-center gap-2 py-1 text-sm">
+                                    {task.column_id === "done" ? (
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                                    ) : (
+                                      <Circle className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
+                                    )}
+                                    <span className={cn(
+                                      "text-foreground",
+                                      task.column_id === "done" && "line-through text-muted-foreground"
+                                    )}>
+                                      {task.title}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Individual tasks */}
+                      {taskProgress.individualTasks.length > 0 && (
+                        <div className="px-4 py-2 space-y-0.5">
+                          {taskProgress.individualTasks.map(task => (
+                            <div key={task.id} className="flex items-center gap-2 py-1.5 group/task">
+                              {task.column_id === "done" ? (
+                                <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                              ) : (
+                                <Circle className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
+                              )}
+                              <span className={cn(
+                                "text-sm flex-1",
+                                task.column_id === "done" && "line-through text-muted-foreground"
+                              )}>
+                                {task.title}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveTaskFromTarget(target, task.id)}
+                                className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover/task:opacity-100"
+                                title="Remove task from target"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Expanded update form for NON-task targets */}
+                  {isExpanded && !isTaskTarget && (
                     <div className="border-t border-border p-4 space-y-3 bg-muted/10">
                       <p className="text-xs font-medium text-muted-foreground">
                         Log Progress
