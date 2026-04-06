@@ -506,6 +506,12 @@ const Goals = () => {
           editingGoal ? targets.filter((t) => t.goal_id === editingGoal.id) : []
         }
       />
+      <DeleteConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        onConfirm={() => { pendingDeleteAction?.(); }}
+        title={deleteConfirmTitle}
+      />
     </ProjectLayout>
   );
 };
