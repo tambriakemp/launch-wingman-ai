@@ -635,6 +635,127 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    // ===== 5. GOAL PROGRESS REMINDERS (End of Month) =====
+    // Send one email per user with active goal targets during last 2 days of month
+    const dayOfMonth = now.getDate();
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const isEndOfMonth = dayOfMonth >= lastDayOfMonth - 1;
+
+    if (isEndOfMonth) {
+      console.log("Processing end-of-month goal progress reminders...");
+
+      // Get all goal_targets joined with goals to find users with active targets
+      const { data: allTargets, error: targetsError } = await supabase
+        .from("goal_targets")
+        .select("user_id, goal_id, start_value, current_value, target_value, is_done, goals!inner(title, status)");
+
+      if (targetsError) {
+        console.error("Error fetching goal targets:", targetsError);
+        results.errors.push("Failed to fetch goal targets");
+      } else if (allTargets && allTargets.length > 0) {
+        // Group targets by user, then by goal
+        const userGoalsMap = new Map<string, Map<string, { title: string; targets: any[] }>>();
+
+        for (const t of allTargets) {
+          const goal = (t as any).goals;
+          if (goal?.status === 'archived') continue; // skip archived goals
+
+          if (!userGoalsMap.has(t.user_id)) {
+            userGoalsMap.set(t.user_id, new Map());
+          }
+          const goalsMap = userGoalsMap.get(t.user_id)!;
+          if (!goalsMap.has(t.goal_id)) {
+            goalsMap.set(t.goal_id, { title: goal?.title || 'Untitled Goal', targets: [] });
+          }
+          goalsMap.get(t.goal_id)!.targets.push(t);
+        }
+
+        for (const [userId, goalsMap] of userGoalsMap) {
+          try {
+            // Check email preferences
+            const { data: emailPref } = await supabase
+              .from("email_preferences")
+              .select("check_in_emails_enabled")
+              .eq("user_id", userId)
+              .maybeSingle();
+
+            if (emailPref?.check_in_emails_enabled === false) {
+              console.log(`Skipping goal progress for ${userId}: opted out`);
+              continue;
+            }
+
+            // Rate limit check
+            const weekAgo = new Date(now);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+
+            const { count: recentEmails } = await supabase
+              .from("email_logs")
+              .select("*", { count: "exact", head: true })
+              .eq("user_id", userId)
+              .in("email_type", ["check_in_reminder", "relaunch_invitation", "playbook_ready", "paused_project_reminder", "goal_progress_reminder"])
+              .gte("sent_at", weekAgo.toISOString());
+
+            if ((recentEmails || 0) > 0) {
+              console.log(`Skipping goal progress for ${userId}: rate limited`);
+              continue;
+            }
+
+            // Check if already sent this month
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const { count: sentThisMonth } = await supabase
+              .from("email_logs")
+              .select("*", { count: "exact", head: true })
+              .eq("user_id", userId)
+              .eq("email_type", "goal_progress_reminder")
+              .gte("sent_at", monthStart.toISOString());
+
+            if ((sentThisMonth || 0) > 0) {
+              console.log(`Skipping goal progress for ${userId}: already sent this month`);
+              continue;
+            }
+
+            // Calculate progress per goal
+            const goalsSummary = Array.from(goalsMap.values()).map(({ title, targets }) => {
+              const progress = targets.length > 0
+                ? Math.round(
+                    targets.reduce((sum: number, t: any) => {
+                      const range = Number(t.target_value) - Number(t.start_value);
+                      const current = Number(t.current_value) - Number(t.start_value);
+                      const p = range > 0 ? Math.min(100, (current / range) * 100) : (t.is_done ? 100 : 0);
+                      return sum + p;
+                    }, 0) / targets.length
+                  )
+                : 0;
+              return { title, progress, targetsCount: targets.length };
+            });
+
+            // Send via send-notification-email
+            await supabase.functions.invoke("send-notification-email", {
+              body: {
+                email_type: "goal_progress_reminder",
+                user_id: userId,
+                data: { goals: goalsSummary },
+              },
+            });
+
+            await supabase.from("email_logs").insert({
+              user_id: userId,
+              email_type: "goal_progress_reminder",
+              metadata: { goals_count: goalsSummary.length },
+            });
+
+            console.log(`Sent goal progress reminder to ${userId}`);
+            results.goalProgressReminders++;
+          } catch (err) {
+            console.error("Goal progress reminder error:", err);
+            results.errors.push(`Goal progress failed for ${userId}`);
+          }
+        }
+      }
+    } else {
+      console.log(`Skipping goal progress reminders: day ${dayOfMonth} of ${lastDayOfMonth}`);
+    }
+
     console.log("Scheduled email job complete:", results);
 
     return new Response(JSON.stringify(results), {
