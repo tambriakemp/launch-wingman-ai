@@ -745,6 +745,48 @@ export type Database = {
         }
         Relationships: []
       }
+      characters: {
+        Row: {
+          aesthetic: string | null
+          brand_colors: string | null
+          created_at: string
+          id: string
+          name: string
+          niche: string | null
+          personality_traits: string | null
+          photo_urls: Json | null
+          target_audience: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aesthetic?: string | null
+          brand_colors?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          niche?: string | null
+          personality_traits?: string | null
+          photo_urls?: Json | null
+          target_audience?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aesthetic?: string | null
+          brand_colors?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          niche?: string | null
+          personality_traits?: string | null
+          photo_urls?: Json | null
+          target_audience?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       check_in_preferences: {
         Row: {
           cadence: string

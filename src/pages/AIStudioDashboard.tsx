@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
-import { Sparkles, Film, Shirt } from "lucide-react";
+import { Sparkles, Film, Shirt, UserCircle } from "lucide-react";
 
 const tools = [
   {
@@ -16,6 +16,13 @@ const tools = [
     description: "Swap clothing on your character using a reference photo.",
     icon: Shirt,
     href: "/app/ai-studio/outfit-swap",
+  },
+  {
+    id: "characters",
+    title: "Character Builder",
+    description: "Create and manage character profiles for personalized AI content.",
+    icon: UserCircle,
+    href: "/app/ai-studio/characters",
   },
 ];
 

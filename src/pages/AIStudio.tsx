@@ -32,6 +32,7 @@ const AIStudio = () => {
   const [environmentImage, setEnvironmentImage] = useState<string | null>(null);
   const [environmentImages, setEnvironmentImages] = useState<string[]>([]);
   const [environmentLabel, setEnvironmentLabel] = useState<string | null>(null);
+  const [selectedCharacter, setSelectedCharacter] = useState<any>(null);
   const [previewCharacterImage, setPreviewCharacterImage] = useState<string | null>(null);
   const [previewFinalLookImage, setPreviewFinalLookImage] = useState<string | null>(null);
   // isPreviewGenerating and previewStep removed — Scene 1 serves as character anchor
@@ -342,7 +343,7 @@ const AIStudio = () => {
     setIsGeneratingTopic(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-storyboard', {
-        body: { action: 'brainstorm', config }
+        body: { action: 'brainstorm', config, characterProfile: selectedCharacter || undefined }
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -1011,6 +1012,7 @@ const AIStudio = () => {
             setEnvironmentImage={setEnvironmentImage}
             setEnvironmentImages={setEnvironmentImages}
             setEnvironmentLabel={setEnvironmentLabel}
+            onCharacterSelect={setSelectedCharacter}
             productImage={productImage}
             setProductImage={setProductImage}
             isProcessing={isProcessing}

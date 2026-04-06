@@ -14,6 +14,7 @@ serve(async (req) => {
 
     const body = await req.json();
     const { action, config } = body;
+    const characterProfile = body.characterProfile || null;
 
     // Accept URLs (new) or fall back to legacy base64 fields
     const referenceImageUrl = body.referenceImageUrl || null;
@@ -24,16 +25,32 @@ serve(async (req) => {
     // Topic brainstorming
     if (action === "brainstorm") {
       const isBrainstormCarousel = config.creationMode === 'carousel';
+      
+      // Build character context for personalized brainstorming
+      let characterContext = "";
+      if (characterProfile) {
+        const parts: string[] = [];
+        if (characterProfile.niche) parts.push(`Niche: ${characterProfile.niche}`);
+        if (characterProfile.aesthetic) parts.push(`Aesthetic/Vibe: ${characterProfile.aesthetic}`);
+        if (characterProfile.personality_traits) parts.push(`Personality: ${characterProfile.personality_traits}`);
+        if (characterProfile.target_audience) parts.push(`Target Audience: ${characterProfile.target_audience}`);
+        if (characterProfile.brand_colors) parts.push(`Brand Colors: ${characterProfile.brand_colors}`);
+        if (parts.length > 0) {
+          characterContext = `\n\nCHARACTER PROFILE:\n${parts.join("\n")}\n\nUse this character profile to generate ideas that are specifically relevant to their niche, aesthetic, audience, and personality. The ideas should feel personalized and on-brand for this creator.`;
+        }
+      }
+
       const brainstormPrompt = isBrainstormCarousel
-        ? `Generate 5 creative carousel ideas for Instagram. Each idea is a "Setting + Message" combination — a specific visual environment paired with a bold content theme. Format: one idea per line, "Setting — Message". No numbers, no bullets, no labels. Example format: "Inside a luxury car with orange leather seats — Your standards are the problem, not your talent". Target audience: Gen Z / Millennial creators and entrepreneurs. Make them bold, specific, and visually interesting.`
-        : `Generate a specific, engaging, and creative vlog topic idea for the category: "${config.vlogCategory}". Target audience: Gen Z / Millennials. Format: A specific scenario or activity. Length: Under 15 words. Output: JUST the topic text. No labels, no quotes.`;
+        ? `Generate 5 creative carousel ideas for Instagram. Each idea is a "Setting + Message" combination — a specific visual environment paired with a bold content theme. Format: one idea per line, "Setting — Message". No numbers, no bullets, no labels. Example format: "Inside a luxury car with orange leather seats — Your standards are the problem, not your talent". Make them bold, specific, and visually interesting. Never repeat ideas from previous requests — always generate fresh, unique combinations.${characterContext}`
+        : `Generate a specific, engaging, and creative vlog topic idea for the category: "${config.vlogCategory}". Format: A specific scenario or activity. Length: Under 15 words. Output: JUST the topic text. No labels, no quotes. Never repeat the same idea twice — be fresh and unique.${characterContext}`;
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
-          messages: [{ role: "user", content: brainstormPrompt }]
+          messages: [{ role: "user", content: brainstormPrompt }],
+          temperature: 1.0,
         }),
       });
       if (!response.ok) {
