@@ -48,7 +48,7 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
 
   if (!target) return null;
 
-  const isBooleanTarget = target.target_type === "boolean";
+  const isBooleanTarget = target.target_type === "boolean" || target.target_type === "true_false";
   const isCurrency = target.target_type === "currency";
   const symbol = isCurrency ? getCurrencySymbol(target.unit) : "";
   const unitLabel = !isCurrency && target.unit ? target.unit.toUpperCase() : "";
