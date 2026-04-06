@@ -150,6 +150,7 @@ export const PlannerTaskDialog = ({
   const [recurrenceCount, setRecurrenceCount] = useState(10);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [showRepeat, setShowRepeat] = useState(false);
+  const [taskSpaceId, setTaskSpaceId] = useState<string>("");
 
   // Subtasks state
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
