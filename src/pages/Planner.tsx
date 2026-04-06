@@ -29,6 +29,7 @@ const Planner = () => {
   const [defaultDueAt, setDefaultDueAt] = useState<Date | null>(null);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
   const { syncTask } = useCalendarSync();
+  const { visibility, toggle: toggleVisibility, isVisible } = useStatusVisibility();
 
   const {
     spaces,
