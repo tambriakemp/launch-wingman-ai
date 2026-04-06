@@ -188,6 +188,7 @@ export const PlannerTaskDialog = ({
       setDescription(editTask.description || "");
       setColumnId(editTask.column_id);
       setPriority((editTask as any).priority || "normal");
+      setTaskSpaceId((editTask as any).space_id || "");
 
       const editCat = editTask.category;
       const catExists = spaceCats.some(c => c.id === editCat);
