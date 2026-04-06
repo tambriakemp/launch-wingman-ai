@@ -13,6 +13,7 @@ import { CalendarDays, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SpacesSidebar } from "@/components/planner/SpacesSidebar";
 import { usePlannerSpaces } from "@/hooks/usePlannerSpaces";
+import { useCalendarSync } from "@/hooks/useCalendarSync";
 
 const Planner = () => {
   const { user } = useAuth();
@@ -24,6 +25,7 @@ const Planner = () => {
   const [editingTask, setEditingTask] = useState<PlannerTask | null>(null);
   const [defaultDueAt, setDefaultDueAt] = useState<Date | null>(null);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+  const { syncTask } = useCalendarSync();
 
   const {
     spaces,
@@ -121,6 +123,17 @@ const Planner = () => {
     }
 
     toast.success("Task created");
+    // Fetch tasks first to get the new task ID, then sync
+    const { data: latestTasks } = await supabase
+      .from("tasks")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("task_scope", "planner")
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (latestTasks?.[0]?.id) {
+      syncTask(latestTasks[0].id, "create");
+    }
     fetchTasks();
   };
 
@@ -152,6 +165,7 @@ const Planner = () => {
     }
 
     toast.success("Task updated");
+    syncTask(editingTask.id, "update");
     setEditingTask(null);
     fetchTasks();
   };
@@ -167,6 +181,7 @@ const Planner = () => {
       toast.error("Failed to update task");
       return;
     }
+    syncTask(task.id, "update");
     fetchTasks();
   };
 
@@ -176,6 +191,7 @@ const Planner = () => {
       toast.error("Failed to delete task");
       return;
     }
+    syncTask(taskId, "delete");
     toast.success("Task deleted");
     fetchTasks();
   };
