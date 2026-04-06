@@ -1,29 +1,31 @@
 
 
-## Plan: Remove Hardcoded Brainstorm Limits + Smarter Prompts
+## Plan: Upgrade Brainstorm with Character Vibe & Clickable Ideas
 
-### Problem
-The brainstorm prompt says "Generate 5" and the response is capped with `.slice(0, 5)`. Ideas also repeat because the prompt lacks date/seasonal context.
+### Changes across 4 files + 1 edge function
 
-### Changes
+**1. `src/components/ai-studio/types.ts`**
+- Add `characterVibe: string` to `AppConfig` after `avatarDescription`
 
-**File: `supabase/functions/generate-storyboard/index.ts`**
+**2. `src/components/ai-studio/constants.ts`**
+- Add `characterVibe: ""` to `INITIAL_CONFIG` after `avatarDescription`
 
-1. **Carousel brainstorm prompt** — Replace "Generate 5 creative carousel ideas" with a richer prompt:
-   - Generate 8–12 ideas (not a fixed number)
-   - Inject `new Date().toISOString()` so the AI considers current season, holidays, trending moments
-   - Mix aspirational, relatable, humorous, educational angles
-   - If character profile exists, tailor to their niche/audience; otherwise generate broadly appealing lifestyle content
-   - Explicit instruction: "Every call must produce completely unique ideas — never repeat"
+**3. `src/components/ai-studio/StoryboardToolbar.tsx`**
+- Add `brainstormIdeas?: string[]` and `onSelectIdea?: (idea: string) => void` to props interface
+- Add Character Vibe textarea in the Character section (after SavedCharacter + Upload Reference, before closing `</div>`)
+- Add clickable ideas list after the vlog topic textarea (before "Use own script")
+- Add clickable ideas list after the carousel scene description textarea (before the "All slides share..." note)
 
-2. **Remove `.slice(0, 5)`** — return all generated ideas without truncation
+**4. `src/pages/AIStudio.tsx`**
+- Add `brainstormIdeas` state: `useState<string[]>([])`
+- Replace `handleGenerateTopicIdeas` to populate `brainstormIdeas` array instead of auto-setting first idea
+- Pass `brainstormIdeas` and `onSelectIdea` props to `StoryboardToolbar` — on select, set the appropriate config field and clear ideas
 
-3. **Vlog brainstorm prompt** — Same seasonal/trending awareness and character-optional logic
-
-4. **Remove "Story / Caption Theme"** from carousel generation prompt — merge into single `carouselVibe` field
-
-**File: `src/components/ai-studio/StoryboardToolbar.tsx`**
-
-5. Remove the "Story / Caption Theme" textarea for carousel mode
-6. Update "Scene Description" placeholder to be more descriptive: *"Describe your scene — location, vibe, lighting, props, and the story or message. e.g. 'Cozy coffee shop, warm golden light, latte art — morning routine that changed my productivity'"*
+**5. `supabase/functions/generate-storyboard/index.ts`**
+- Replace the entire brainstorm block with new prompts that:
+  - Read `config.characterVibe` plus outfit/hair/makeup/skin for character context (no longer depends solely on `characterProfile`)
+  - Carousel: generates 6 "Setting — Message" ideas with trending/lifestyle awareness
+  - Vlog: generates 6 emoji + scenario ideas with trending awareness
+  - Uses safe JSON parsing (`.text()` then `JSON.parse()`)
+  - Temperature 0.9
 
