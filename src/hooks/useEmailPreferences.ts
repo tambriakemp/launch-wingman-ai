@@ -7,6 +7,7 @@ interface EmailPreferences {
   product_emails_enabled: boolean;
   check_in_emails_enabled: boolean;
   relaunch_emails_enabled: boolean;
+  goal_reminder_emails_enabled: boolean;
 }
 
 export function useEmailPreferences() {
