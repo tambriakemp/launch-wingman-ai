@@ -6,15 +6,15 @@ import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { CalendarDays, Loader2, Link2, Unlink, Apple } from "lucide-react";
+import { CalendarDays, Loader2, Link2, Unlink, Apple, Copy, Check, ExternalLink } from "lucide-react";
 
 interface CalendarConnection {
   id: string;
   provider: string;
   account_email: string | null;
+  feed_token: string | null;
   created_at: string;
 }
 
@@ -22,6 +22,7 @@ const PROVIDERS = [
   {
     id: "google",
     name: "Google Calendar",
+    description: "Connect via Google account",
     color: "#4285F4",
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
@@ -35,6 +36,7 @@ const PROVIDERS = [
   {
     id: "microsoft",
     name: "Outlook Calendar",
+    description: "Connect via Microsoft account",
     color: "#0078D4",
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
@@ -45,6 +47,7 @@ const PROVIDERS = [
   {
     id: "apple",
     name: "Apple Calendar",
+    description: "Subscribe via calendar feed",
     color: "#333",
     icon: <Apple className="w-5 h-5" />,
   },
@@ -56,9 +59,9 @@ export const CalendarIntegrationsCard = () => {
   const [connectingProvider, setConnectingProvider] = useState<string | null>(null);
   const [disconnectingProvider, setDisconnectingProvider] = useState<string | null>(null);
   const [appleDialogOpen, setAppleDialogOpen] = useState(false);
-  const [appleEmail, setAppleEmail] = useState("");
-  const [applePassword, setApplePassword] = useState("");
-  const [savingApple, setSavingApple] = useState(false);
+  const [feedUrl, setFeedUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [generatingFeed, setGeneratingFeed] = useState(false);
 
   const { data: connections = [], isLoading } = useQuery({
     queryKey: ["calendar-connections"],
@@ -66,7 +69,7 @@ export const CalendarIntegrationsCard = () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from("calendar_connections")
-        .select("id, provider, account_email, created_at")
+        .select("id, provider, account_email, feed_token, created_at")
         .eq("user_id", user.id);
       if (error) throw error;
       return (data || []) as CalendarConnection[];
@@ -78,7 +81,15 @@ export const CalendarIntegrationsCard = () => {
 
   const handleConnect = async (provider: string) => {
     if (provider === "apple") {
+      const existing = getConnection("apple");
+      if (existing?.feed_token) {
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        setFeedUrl(`https://${projectId}.supabase.co/functions/v1/calendar-feed?token=${existing.feed_token}`);
+      }
       setAppleDialogOpen(true);
+      if (!existing?.feed_token) {
+        await generateAppleFeed();
+      }
       return;
     }
 
@@ -118,29 +129,18 @@ export const CalendarIntegrationsCard = () => {
     }
   };
 
-  const handleSaveApple = async () => {
-    if (!appleEmail || !applePassword) {
-      toast.error("Please enter both your Apple ID and app-specific password");
-      return;
-    }
+  const generateAppleFeed = async () => {
     if (!user) return;
-
-    setSavingApple(true);
+    setGeneratingFeed(true);
     try {
-      // Encrypt the password via RPC and store
-      const { data: encryptedPassword, error: encryptError } = await supabase.rpc(
-        "encrypt_token" as any,
-        { plain_token: applePassword }
-      );
-      if (encryptError) throw encryptError;
+      const feedToken = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
 
       const { error } = await supabase.from("calendar_connections").upsert(
         {
           user_id: user.id,
           provider: "apple",
-          access_token: encryptedPassword,
-          account_email: appleEmail,
-          calendar_id: `/${appleEmail}/calendars/home/`,
+          feed_token: feedToken,
+          account_email: user.email || null,
           updated_at: new Date().toISOString(),
         } as any,
         { onConflict: "user_id,provider" }
@@ -148,24 +148,29 @@ export const CalendarIntegrationsCard = () => {
 
       if (error) throw error;
 
-      toast.success("Apple Calendar connected");
-      setAppleDialogOpen(false);
-      setAppleEmail("");
-      setApplePassword("");
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      setFeedUrl(`https://${projectId}.supabase.co/functions/v1/calendar-feed?token=${feedToken}`);
       queryClient.invalidateQueries({ queryKey: ["calendar-connections"] });
     } catch (err) {
-      console.error("Apple save error:", err);
-      toast.error("Failed to save Apple Calendar credentials");
+      console.error("Feed generation error:", err);
+      toast.error("Failed to generate calendar feed");
     } finally {
-      setSavingApple(false);
+      setGeneratingFeed(false);
     }
+  };
+
+  const handleCopyFeedUrl = async () => {
+    if (!feedUrl) return;
+    await navigator.clipboard.writeText(feedUrl);
+    setCopied(true);
+    toast.success("Feed URL copied to clipboard");
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleDisconnect = async (provider: string) => {
     if (!user) return;
     setDisconnectingProvider(provider);
     try {
-      // Delete sync mappings first
       const conn = getConnection(provider);
       if (conn) {
         await supabase.from("calendar_sync_mappings").delete().eq("calendar_connection_id", conn.id);
@@ -173,6 +178,9 @@ export const CalendarIntegrationsCard = () => {
       await supabase.from("calendar_connections").delete().eq("user_id", user.id).eq("provider", provider);
       toast.success(`${provider === "google" ? "Google" : provider === "microsoft" ? "Outlook" : "Apple"} Calendar disconnected`);
       queryClient.invalidateQueries({ queryKey: ["calendar-connections"] });
+      if (provider === "apple") {
+        setFeedUrl(null);
+      }
     } catch (err) {
       toast.error("Failed to disconnect");
     } finally {
@@ -190,7 +198,7 @@ export const CalendarIntegrationsCard = () => {
             </div>
             <div>
               <CardTitle>Calendar Sync</CardTitle>
-              <CardDescription>Sync your planner tasks to external calendars (one-way push)</CardDescription>
+              <CardDescription>Sync your planner tasks to external calendars</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -211,10 +219,10 @@ export const CalendarIntegrationsCard = () => {
                       <p className="font-medium text-foreground">{provider.name}</p>
                       {conn ? (
                         <p className="text-sm text-muted-foreground">
-                          Connected{conn.account_email ? ` as ${conn.account_email}` : ""}
+                          {provider.id === "apple" ? "Subscribed via feed" : `Connected${conn.account_email ? ` as ${conn.account_email}` : ""}`}
                         </p>
                       ) : (
-                        <p className="text-sm text-muted-foreground">Not connected</p>
+                        <p className="text-sm text-muted-foreground">{provider.description}</p>
                       )}
                     </div>
                   </div>
@@ -230,7 +238,13 @@ export const CalendarIntegrationsCard = () => {
                     </Button>
                   ) : (
                     <Button size="sm" onClick={() => handleConnect(provider.id)} disabled={isConnecting}>
-                      {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Link2 className="w-4 h-4 mr-1" />Connect</>}
+                      {isConnecting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : provider.id === "apple" ? (
+                        <><CalendarDays className="w-4 h-4 mr-1" />Subscribe</>
+                      ) : (
+                        <><Link2 className="w-4 h-4 mr-1" />Connect</>
+                      )}
                     </Button>
                   )}
                 </div>
@@ -240,46 +254,63 @@ export const CalendarIntegrationsCard = () => {
         </CardContent>
       </Card>
 
+      {/* Apple Calendar Subscribe Dialog */}
       <Dialog open={appleDialogOpen} onOpenChange={setAppleDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Connect Apple Calendar</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Apple className="w-5 h-5" />
+              Subscribe to Calendar Feed
+            </DialogTitle>
             <DialogDescription>
-              Enter your Apple ID email and an app-specific password. You can generate one at{" "}
-              <a href="https://appleid.apple.com/account/manage" target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                appleid.apple.com
-              </a>{" "}
-              → Sign-In and Security → App-Specific Passwords.
+              Add your Launchely tasks to Apple Calendar by subscribing to this feed URL. Your calendar will automatically stay up to date.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="apple-email">Apple ID Email</Label>
-              <Input
-                id="apple-email"
-                type="email"
-                placeholder="you@icloud.com"
-                value={appleEmail}
-                onChange={(e) => setAppleEmail(e.target.value)}
-              />
+
+          {generatingFeed ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
-            <div>
-              <Label htmlFor="apple-password">App-Specific Password</Label>
-              <Input
-                id="apple-password"
-                type="password"
-                placeholder="xxxx-xxxx-xxxx-xxxx"
-                value={applePassword}
-                onChange={(e) => setApplePassword(e.target.value)}
-              />
+          ) : feedUrl ? (
+            <div className="space-y-4">
+              {/* Feed URL */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">Your feed URL</p>
+                <div className="flex gap-2">
+                  <Input value={feedUrl} readOnly className="font-mono text-xs" />
+                  <Button variant="outline" size="icon" onClick={handleCopyFeedUrl} className="shrink-0">
+                    {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
+                <p className="text-sm font-medium text-foreground">How to subscribe:</p>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex gap-2">
+                    <span className="font-semibold text-foreground shrink-0">Mac:</span>
+                    <span>Open Calendar app → File → New Calendar Subscription → paste the URL</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="font-semibold text-foreground shrink-0">iPhone:</span>
+                    <span>Settings → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar → paste the URL</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="font-semibold text-foreground shrink-0">iPad:</span>
+                    <span>Same as iPhone steps above</span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Your calendar will refresh automatically (typically every 15–30 minutes depending on your device).
+              </p>
             </div>
-          </div>
+          ) : null}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAppleDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveApple} disabled={savingApple}>
-              {savingApple ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Connect
-            </Button>
+            <Button variant="outline" onClick={() => setAppleDialogOpen(false)}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

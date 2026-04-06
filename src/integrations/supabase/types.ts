@@ -525,6 +525,7 @@ export type Database = {
           account_email: string | null
           calendar_id: string | null
           created_at: string
+          feed_token: string | null
           id: string
           provider: string
           refresh_token: string | null
@@ -537,6 +538,7 @@ export type Database = {
           account_email?: string | null
           calendar_id?: string | null
           created_at?: string
+          feed_token?: string | null
           id?: string
           provider: string
           refresh_token?: string | null
@@ -549,6 +551,7 @@ export type Database = {
           account_email?: string | null
           calendar_id?: string | null
           created_at?: string
+          feed_token?: string | null
           id?: string
           provider?: string
           refresh_token?: string | null
