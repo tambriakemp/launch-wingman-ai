@@ -176,12 +176,8 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
               type="number"
               value={adjustAmount}
               onChange={(e) => setAdjustAmount(e.target.value)}
-              placeholder="1"
-              className="flex-1 h-10 border-0 border-b border-border bg-transparent px-0 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+              className="flex-1 h-10 border-0 border-b border-border bg-transparent px-0 text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
             />
-            <Button size="sm" variant="outline" className="h-9 text-xs" onClick={handleApply}>
-              Apply
-            </Button>
           </div>
 
           {/* Save */}

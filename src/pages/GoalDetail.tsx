@@ -634,11 +634,11 @@ const GoalDetail = () => {
                     </span>
 
                     {/* Progress bar */}
-                    <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden shrink-0">
+                    <div className="w-24 h-2 bg-muted rounded-full overflow-hidden shrink-0">
                       <div
                         className={cn(
                           "h-full rounded-full transition-all",
-                          target.is_done ? "bg-primary" : "bg-primary/60"
+                          target.is_done ? "bg-primary" : "bg-primary"
                         )}
                         style={{ width: `${pct}%` }}
                       />
