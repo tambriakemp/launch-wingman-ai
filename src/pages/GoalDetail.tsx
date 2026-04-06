@@ -568,7 +568,7 @@ const GoalDetail = () => {
                             <FolderMinus className="w-3.5 h-3.5 mr-2" /> Remove from Folder
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem onClick={handleDeleteGoal} className="text-destructive">
+                        <DropdownMenuItem onClick={() => confirmDelete("Delete this goal?", handleDeleteGoal)} className="text-destructive">
                           <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
