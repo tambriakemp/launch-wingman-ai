@@ -455,7 +455,7 @@ const GoalDetail = () => {
                     </p>
                   )}
 
-                  {/* Description area */}
+                   {/* Description area */}
                   <div className="pt-2">
                     {isEditingDescription ? (
                       <div className="space-y-2">
@@ -464,8 +464,8 @@ const GoalDetail = () => {
                           value={descriptionValue}
                           onChange={(e) => setDescriptionValue(e.target.value)}
                           placeholder="Add notes or description..."
-                          rows={4}
-                          className="resize-none text-sm"
+                          className="text-sm whitespace-pre-wrap"
+                          style={{ minHeight: '6rem', height: 'auto', overflow: 'hidden', resize: 'none', fieldSizing: 'content' } as React.CSSProperties}
                           maxLength={2000}
                         />
                         <div className="flex gap-2">
