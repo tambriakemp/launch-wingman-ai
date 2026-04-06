@@ -47,14 +47,14 @@ export const PromptBulkImporter = () => {
     if (!rawText.trim()) return;
     setIsParsing(true);
     try {
-      // Split locally by --- or double newlines
+      // Split locally by --- separator only
       const splits = rawText
-        .split(/(?:\r?\n){2,}|---/)
+        .split(/---/)
         .map((s) => s.trim())
         .filter((s) => s.length > 10);
 
       if (splits.length === 0) {
-        toast({ title: "No prompts found", description: "Try separating prompts with blank lines or ---", variant: "destructive" });
+        toast({ title: "No prompts found", description: "Separate prompts with --- on its own line", variant: "destructive" });
         return;
       }
 
@@ -234,7 +234,7 @@ export const PromptBulkImporter = () => {
 
             <TabsContent value="paste" className="space-y-3 mt-3">
               <Textarea
-                placeholder="Paste prompts here, separated by blank lines or ---&#10;&#10;Example:&#10;A cinematic portrait of a woman...&#10;&#10;---&#10;&#10;A moody street photography scene..."
+                placeholder="Paste prompts here, separated by ---&#10;&#10;Example:&#10;A cinematic portrait of a woman...&#10;---&#10;A moody street photography scene..."
                 value={rawText}
                 onChange={(e) => setRawText(e.target.value)}
                 className="min-h-[200px] font-mono text-xs"
