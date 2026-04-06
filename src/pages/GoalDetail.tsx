@@ -281,7 +281,7 @@ const GoalDetail = () => {
     toast.success("Progress updated");
     setUpdateValue("");
     setUpdateNote("");
-    setExpandedTarget(null);
+    setExpandedTargets(new Set());
     setIsUpdating(false);
     fetchTargets();
     fetchUpdates();
