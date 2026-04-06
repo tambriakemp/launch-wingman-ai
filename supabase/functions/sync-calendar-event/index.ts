@@ -277,6 +277,7 @@ async function syncToApple(connection: any, supabase: any, task: any, action: st
   }
 
   const ev = buildEventBody(task);
+  if (!ev) return { success: false, eventId: null };
   const now = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
 
   let dtStart: string, dtEnd: string;
