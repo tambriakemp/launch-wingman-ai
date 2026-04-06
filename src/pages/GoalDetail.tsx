@@ -26,11 +26,13 @@ import {
   ListChecks,
   Hash,
   ChevronRight,
+  ChevronDown,
   Folder,
   MoreHorizontal,
   Pencil,
   Trash2,
   ExternalLink,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays } from "date-fns";
