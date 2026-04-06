@@ -158,51 +158,14 @@ function buildEventBody(task: any) {
   return { title, description, start, end, allDay, location: task.location || "" };
 }
 
-async function getOrCreateLaunchelyCalendar(accessToken: string): Promise<string> {
-  const headers = {
-    Authorization: `Bearer ${accessToken}`,
-    "Content-Type": "application/json",
-  };
-
-  // Check if "Launchely" calendar already exists
-  const listRes = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList", { headers });
-  if (listRes.ok) {
-    const listData = await listRes.json();
-    const existing = (listData.items || []).find((c: any) => c.summary === "Launchely");
-    if (existing) {
-      console.log("Found existing Launchely calendar:", existing.id);
-      return existing.id;
-    }
-  } else {
-    console.error("Failed to list calendars:", listRes.status, await listRes.text());
-  }
-
-  // Create the calendar
-  console.log("Creating Launchely calendar...");
-  const createRes = await fetch("https://www.googleapis.com/calendar/v3/calendars", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ summary: "Launchely", description: "Tasks synced from Launchely", timeZone: "UTC" }),
-  });
-
-  if (createRes.ok) {
-    const created = await createRes.json();
-    console.log("Created Launchely calendar:", created.id);
-    return created.id;
-  }
-
-  console.error("Failed to create Launchely calendar:", createRes.status, await createRes.text());
-  // Fallback to primary
-  return "primary";
-}
-
 async function syncToGoogle(accessToken: string, task: any, action: string, existingEventId: string | null) {
-  const calendarId = await getOrCreateLaunchelyCalendar(accessToken);
-  const baseUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`;
   const headers = {
     Authorization: `Bearer ${accessToken}`,
     "Content-Type": "application/json",
   };
+
+  const taskListId = "@default";
+  const baseUrl = `https://tasks.googleapis.com/tasks/v1/lists/${taskListId}/tasks`;
 
   if (action === "delete" && existingEventId) {
     const res = await fetch(`${baseUrl}/${existingEventId}`, { method: "DELETE", headers });
@@ -212,46 +175,18 @@ async function syncToGoogle(accessToken: string, task: any, action: string, exis
   const ev = buildEventBody(task);
   if (!ev) return { success: false, eventId: null };
 
+  // Google Tasks uses RFC 3339 for due date — must be midnight UTC on the target date
+  const dateStr = ev.start.substring(0, 10); // "YYYY-MM-DD"
+  const dueDateTime = `${dateStr}T00:00:00.000Z`;
+
   const body: any = {
-    summary: ev.title,
-    description: ev.description,
-    location: ev.location,
+    title: ev.title,
+    notes: ev.description || undefined,
+    due: dueDateTime,
+    status: task.column_id === "done" || task.status === "completed" ? "completed" : "needsAction",
   };
 
-  if (ev.allDay) {
-    const dateStr = ev.start.substring(0, 10);
-    body.start = { date: dateStr };
-    const endDate = new Date(dateStr + "T00:00:00Z");
-    endDate.setUTCDate(endDate.getUTCDate() + 1);
-    body.end = { date: endDate.toISOString().substring(0, 10) };
-  } else {
-    body.start = { dateTime: ev.start, timeZone: "UTC" };
-    body.end = { dateTime: ev.end, timeZone: "UTC" };
-  }
-
-  // For updates: check if existing event is timed but should now be all-day (or vice versa)
-  // Google doesn't reliably convert between timed and all-day via PATCH, so delete + recreate
   if (action === "update" && existingEventId) {
-    const checkRes = await fetch(`${baseUrl}/${existingEventId}`, { headers });
-    if (checkRes.ok) {
-      const existing = await checkRes.json();
-      const existingIsAllDay = !!(existing.start?.date && !existing.start?.dateTime);
-      if (existingIsAllDay !== ev.allDay) {
-        // Type mismatch — delete and recreate
-        await fetch(`${baseUrl}/${existingEventId}`, { method: "DELETE", headers });
-        const createRes = await fetch(baseUrl, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(body),
-        });
-        const created = await createRes.json();
-        return { success: createRes.ok, eventId: created.id || null };
-      }
-    } else {
-      await checkRes.text(); // consume body
-    }
-
-    // Same type — safe to patch
     const res = await fetch(`${baseUrl}/${existingEventId}`, {
       method: "PATCH",
       headers,
