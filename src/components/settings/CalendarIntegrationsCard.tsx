@@ -202,6 +202,7 @@ export const CalendarIntegrationsCard = () => {
     }
   };
 
+  const handleDisconnect = async (provider: string) => {
     if (!user) return;
     setDisconnectingProvider(provider);
     try {
