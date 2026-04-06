@@ -244,6 +244,8 @@ export const PlannerTaskDialog = ({
       setRecurrenceCount(10);
       setSubtasks([]);
       setShowRepeat(false);
+      // Default to first space if no space selected (All Spaces view)
+      setTaskSpaceId(!selectedSpaceId && spaces.length > 0 ? spaces[0].id : (selectedSpaceId || ""));
     }
   }, [editTask, open, defaultDueAt, selectedSpaceId]);
 
