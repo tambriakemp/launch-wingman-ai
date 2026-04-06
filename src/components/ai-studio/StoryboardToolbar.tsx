@@ -226,6 +226,16 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                     </div>
                   </>
                 )}
+                <div>
+                  <Label label="Character Vibe / Lifestyle" />
+                  <textarea
+                    placeholder="e.g. Luxury soft life, drives a BMW, Erewhon runs, always glam, NY/Miami, entrepreneur energy..."
+                    value={config.characterVibe}
+                    onChange={(e) => setConfig(c => ({ ...c, characterVibe: e.target.value }))}
+                    className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[60px] focus:ring-1 focus:ring-primary"
+                  />
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">This is used to personalize brainstorm ideas to your character's specific world.</p>
+                </div>
               </div>
             </CollapsibleSection>
 
