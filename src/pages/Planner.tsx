@@ -190,6 +190,7 @@ const Planner = () => {
       toast.error("Failed to delete task");
       return;
     }
+    syncTask(taskId, "delete");
     toast.success("Task deleted");
     fetchTasks();
   };
