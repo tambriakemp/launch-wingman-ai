@@ -234,7 +234,7 @@ export const PromptBulkImporter = () => {
 
             <TabsContent value="paste" className="space-y-3 mt-3">
               <Textarea
-                placeholder="Paste prompts here, separated by blank lines or ---&#10;&#10;Example:&#10;A cinematic portrait of a woman...&#10;&#10;---&#10;&#10;A moody street photography scene..."
+                placeholder="Paste prompts here, separated by ---&#10;&#10;Example:&#10;A cinematic portrait of a woman...&#10;---&#10;A moody street photography scene..."
                 value={rawText}
                 onChange={(e) => setRawText(e.target.value)}
                 className="min-h-[200px] font-mono text-xs"
