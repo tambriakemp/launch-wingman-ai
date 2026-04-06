@@ -560,7 +560,7 @@ async function canSendProductEmail(
   emailType: EmailType
 ): Promise<boolean> {
   // Onboarding and state-change emails always go through
-  const alwaysAllowed: EmailType[] = ["welcome", "project_created", "launch_completed", "project_completed", "playbook_ready"];
+  const alwaysAllowed: EmailType[] = ["welcome", "project_created", "launch_completed", "project_completed", "playbook_ready", "goal_progress_reminder"];
   if (alwaysAllowed.includes(emailType)) return true;
 
   // Check last product email sent (excluding always-allowed emails)
