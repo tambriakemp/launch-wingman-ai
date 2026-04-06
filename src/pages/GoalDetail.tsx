@@ -171,20 +171,25 @@ const GoalDetail = () => {
       let totalCount = 0;
       let doneCount = 0;
       const spaceNames: string[] = [];
+      const individualTasks: TaskInfo[] = [];
+      const spaceTasks: Record<string, TaskInfo[]> = {};
 
-      // Count individual tasks
+      // Fetch individual tasks
       if (taskIds.length > 0) {
         const { data: taskData } = await supabase
           .from("tasks")
-          .select("id, column_id")
+          .select("id, title, column_id, space_id")
           .in("id", taskIds);
         if (taskData) {
+          for (const t of taskData as any[]) {
+            individualTasks.push({ id: t.id, title: t.title, column_id: t.column_id, space_id: t.space_id });
+          }
           totalCount += taskData.length;
           doneCount += taskData.filter((t: any) => t.column_id === "done").length;
         }
       }
 
-      // Count tasks in spaces
+      // Fetch tasks in spaces
       for (const spaceId of spaceIds) {
         const { data: spaceName } = await supabase
           .from("planner_spaces" as any)
@@ -193,19 +198,22 @@ const GoalDetail = () => {
           .single();
         if (spaceName) spaceNames.push((spaceName as any).name);
 
-        const { data: spaceTasks } = await supabase
+        const { data: sTaskData } = await supabase
           .from("tasks")
-          .select("id, column_id")
+          .select("id, title, column_id, space_id")
           .eq("space_id", spaceId)
           .eq("user_id", user.id)
           .eq("task_scope", "planner");
-        if (spaceTasks) {
-          totalCount += spaceTasks.length;
-          doneCount += spaceTasks.filter((t: any) => t.column_id === "done").length;
+        if (sTaskData) {
+          spaceTasks[spaceId] = (sTaskData as any[]).map((t: any) => ({
+            id: t.id, title: t.title, column_id: t.column_id, space_id: t.space_id,
+          }));
+          totalCount += sTaskData.length;
+          doneCount += sTaskData.filter((t: any) => t.column_id === "done").length;
         }
       }
 
-      progressMap[target.id] = { total: totalCount || 1, done: doneCount, spaceNames };
+      progressMap[target.id] = { total: totalCount || 1, done: doneCount, spaceNames, individualTasks, spaceTasks };
 
       // Update the target's current_value and target_value in the database
       const isDone = doneCount >= totalCount && totalCount > 0;
