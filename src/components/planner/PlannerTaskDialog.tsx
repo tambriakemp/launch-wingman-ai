@@ -278,7 +278,7 @@ export const PlannerTaskDialog = ({
         end_at: endDate ? endDate.toISOString() : (startDate ? startDate.toISOString() : null),
         location: null,
         recurrence_rule: recurrenceRuleValue,
-        ...(({ space_id: selectedSpaceId }) as any),
+        ...(({ space_id: taskSpaceId || selectedSpaceId }) as any),
       });
       onOpenChange(false);
     } catch {} finally {
