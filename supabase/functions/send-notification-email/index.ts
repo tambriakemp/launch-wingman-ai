@@ -607,7 +607,7 @@ async function checkEmailPreferences(
   if (!prefs) return true;
 
   // Check preference based on email type
-  if (emailType === "check_in_reminder") {
+  if (emailType === "check_in_reminder" || emailType === "goal_progress_reminder") {
     return prefs.check_in_emails_enabled !== false;
   }
   
