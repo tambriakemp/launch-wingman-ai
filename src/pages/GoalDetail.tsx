@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Textarea } from "@/components/ui/textarea";
 import { AddTargetPanel } from "@/components/goals/AddTargetPanel";
 import { UpdateTargetPanel } from "@/components/goals/UpdateTargetPanel";
