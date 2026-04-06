@@ -85,8 +85,10 @@ function getTaskPosition(task: PlannerTask) {
   const start = parseISO(task.start_at);
   const end = parseISO(task.end_at);
   const startH = getHours(start) + getMinutes(start) / 60;
-  const clampedStart = Math.max(startH, START_HOUR);
   const endH = getHours(end) + getMinutes(end) / 60;
+  // Same start/end at midnight = all-day task, don't position on time grid
+  if (startH === endH) return null;
+  const clampedStart = Math.max(startH, START_HOUR);
   const clampedEnd = Math.min(endH, END_HOUR);
   if (clampedEnd <= clampedStart) return null;
   const top = (clampedStart - START_HOUR) * HOUR_HEIGHT;
