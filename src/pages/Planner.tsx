@@ -140,6 +140,13 @@ const Planner = () => {
   const handleUpdateTask = async (data: Partial<PlannerTask>) => {
     if (!editingTask) return;
 
+    // Defensive normalization: end_at cannot exist without start_at
+    let finalStartAt = data.start_at !== undefined ? (data.start_at || null) : null;
+    let finalEndAt = data.end_at !== undefined ? (data.end_at || null) : null;
+    if (finalEndAt && !finalStartAt) {
+      finalEndAt = null;
+    }
+
     const { error } = await supabase
       .from("tasks")
       .update({
@@ -150,8 +157,8 @@ const Planner = () => {
         category: data.category || null,
         priority: (data as any).priority || "normal",
         due_at: data.due_at !== undefined ? (data.due_at || null) : null,
-        start_at: data.start_at !== undefined ? (data.start_at || null) : null,
-        end_at: data.end_at !== undefined ? (data.end_at || null) : null,
+        start_at: finalStartAt,
+        end_at: finalEndAt,
         location: data.location || null,
         recurrence_rule: data.recurrence_rule !== undefined ? data.recurrence_rule : editingTask.recurrence_rule,
         space_id: (data as any).space_id !== undefined ? (data as any).space_id : (editingTask as any).space_id,

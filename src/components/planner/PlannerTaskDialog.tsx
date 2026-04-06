@@ -194,14 +194,20 @@ export const PlannerTaskDialog = ({
       const catExists = spaceCats.some(c => c.id === editCat);
       setCategory(catExists && editCat ? editCat : "");
 
+      // Hydrate start/due correctly: due-only tasks go into endDate (Due field)
       if (editTask.start_at) {
         setStartDate(new Date(editTask.start_at));
-      } else if (editTask.due_at) {
-        setStartDate(new Date(editTask.due_at));
       } else {
         setStartDate(undefined);
       }
-      setEndDate(editTask.end_at ? new Date(editTask.end_at) : undefined);
+      if (editTask.end_at) {
+        setEndDate(new Date(editTask.end_at));
+      } else if (!editTask.start_at && editTask.due_at) {
+        // Due-only task: show in Due field, not Start
+        setEndDate(new Date(editTask.due_at));
+      } else {
+        setEndDate(undefined);
+      }
 
       if (editTask.recurrence_rule) {
         const r = editTask.recurrence_rule;
@@ -266,10 +272,31 @@ export const PlannerTaskDialog = ({
     };
 
     try {
-      const startIso = startDate ? startDate.toISOString() : null;
-      const endIso = endDate ? endDate.toISOString() : (startIso || null);
-      // due_at should reflect the earliest meaningful date (start or due/end)
-      const dueIso = startIso || endIso;
+      const hasStart = !!startDate;
+      const hasDue = !!endDate;
+      
+      let startIso: string | null = null;
+      let endIso: string | null = null;
+      let dueIso: string | null = null;
+
+      if (hasStart && hasDue) {
+        // Timed/scheduled task: both start_at and end_at set
+        startIso = startDate!.toISOString();
+        endIso = endDate!.toISOString();
+        dueIso = startIso;
+      } else if (hasStart && !hasDue) {
+        // Start-only: treat as all-day scheduled, end_at = start_at
+        startIso = startDate!.toISOString();
+        endIso = startIso;
+        dueIso = startIso;
+      } else if (!hasStart && hasDue) {
+        // Due-only: no schedule, just a due date
+        startIso = null;
+        endIso = null;
+        dueIso = endDate!.toISOString();
+      }
+      // else: no dates at all — all null
+
       await onSubmit({
         title: title.trim(),
         description: description.trim(),
