@@ -8,7 +8,7 @@ export const AIStudioMockup = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold text-foreground">AI Studio</h3>
+            <h3 className="text-base font-semibold text-foreground">AI Avatar Studio</h3>
             <p className="text-xs text-muted-foreground">Create talking-head videos from a script</p>
           </div>
           <div className="bg-accent text-accent-foreground px-2.5 py-1 rounded-md text-xs font-medium">

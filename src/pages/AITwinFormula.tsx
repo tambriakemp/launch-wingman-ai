@@ -98,7 +98,7 @@ const pricingIncludes = [
   "A/B Prompt Technique Library with sample prompts",
   "Brand Bible worksheet — your twin's full persona",
   "30-day content calendar + weekly batch workflow",
-  "Launchely AI Studio walkthrough module",
+  "Launchely AI Avatar Studio walkthrough module",
   "90-day monetization roadmap",
   "Free Skool community (lifetime access)",
   "🎁 Bonus: Full tool stack guide + Launchely comparison",

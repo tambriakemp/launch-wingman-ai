@@ -31,7 +31,7 @@ const AIStudioDashboard = () => {
             <Sparkles className="w-6 h-6 text-rose-600 dark:text-rose-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">AI Studio</h1>
+            <h1 className="text-2xl font-semibold text-foreground">AI Avatar Studio</h1>
             <p className="text-sm text-muted-foreground">Create AI-powered content for your brand.</p>
           </div>
         </div>
