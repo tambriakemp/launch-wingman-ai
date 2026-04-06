@@ -32,7 +32,7 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
   const [currentValue, setCurrentValue] = useState(0);
   const [startValue, setStartValue] = useState(0);
   const [targetValue, setTargetValue] = useState(0);
-  const [adjustAmount, setAdjustAmount] = useState("1");
+  const [adjustAmount, setAdjustAmount] = useState("");
   const [mode, setMode] = useState<"increase" | "decrease">("increase");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -41,7 +41,7 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
       setCurrentValue(Number(target.current_value));
       setStartValue(Number(target.start_value));
       setTargetValue(Number(target.target_value));
-      setAdjustAmount("1");
+      setAdjustAmount("");
       setMode("increase");
     }
   }, [target, open]);
@@ -54,16 +54,17 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
   const range = targetValue - startValue;
   const progress = range > 0 ? Math.min(100, Math.round(((currentValue - startValue) / range) * 100)) : 0;
 
-  const handleApply = () => {
-    const amt = Number(adjustAmount) || 1;
-    setCurrentValue(prev => mode === "increase" ? prev + amt : prev - amt);
-  };
-
   const handleSave = async () => {
     if (!target) return;
     setIsSaving(true);
     try {
-      await onSave(target.id, currentValue, startValue, targetValue, "");
+      // Apply the adjustment amount based on mode before saving
+      let finalValue = currentValue;
+      const amt = Number(adjustAmount);
+      if (amt && amt > 0) {
+        finalValue = mode === "increase" ? currentValue + amt : currentValue - amt;
+      }
+      await onSave(target.id, finalValue, startValue, targetValue, "");
       onOpenChange(false);
     } finally {
       setIsSaving(false);
@@ -95,7 +96,7 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
           </div>
 
           {/* Progress bar */}
-          <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
+          <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
             <div
               className="h-full rounded-full bg-primary transition-all duration-300"
               style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
@@ -141,15 +142,15 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
           </div>
 
           {/* Decrease / Increase toggle */}
-          <div className="flex rounded-lg border border-border overflow-hidden">
+          <div className="flex rounded-lg overflow-hidden border border-border">
             <button
               type="button"
               onClick={() => setMode("decrease")}
               className={cn(
-                "flex-1 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-1.5",
+                "flex-1 py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
                 mode === "decrease"
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "bg-destructive/15 text-destructive border-r border-destructive/20"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border-r border-border"
               )}
             >
               Decrease
@@ -158,9 +159,9 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
               type="button"
               onClick={() => setMode("increase")}
               className={cn(
-                "flex-1 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-1.5",
+                "flex-1 py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-1.5",
                 mode === "increase"
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-primary/15 text-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
@@ -175,12 +176,8 @@ export function UpdateTargetPanel({ open, onOpenChange, target, onSave }: Update
               type="number"
               value={adjustAmount}
               onChange={(e) => setAdjustAmount(e.target.value)}
-              placeholder="1"
-              className="flex-1 h-10 border-0 border-b border-border bg-transparent px-0 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+              className="flex-1 h-10 border-0 border-b border-border bg-transparent px-0 text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
             />
-            <Button size="sm" variant="outline" className="h-9 text-xs" onClick={handleApply}>
-              Apply
-            </Button>
           </div>
 
           {/* Save */}

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { Button } from "@/components/ui/button";
 
-import { Textarea } from "@/components/ui/textarea";
+import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
 import { AddTargetPanel } from "@/components/goals/AddTargetPanel";
 import { UpdateTargetPanel } from "@/components/goals/UpdateTargetPanel";
 import {
@@ -439,19 +439,13 @@ const GoalDetail = () => {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h1 className="text-xl font-semibold text-foreground">{goal.title}</h1>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">
-                          {goal.category}
-                        </span>
-                        {goal.status === "completed" && (
+                      {goal.status === "completed" && (
+                        <div className="flex items-center gap-2 mt-1">
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
                             Completed ✓
                           </span>
-                        )}
-                        <span className="text-xs text-muted-foreground">
-                          {doneTargets}/{totalTargets} targets
-                        </span>
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -461,17 +455,17 @@ const GoalDetail = () => {
                     </p>
                   )}
 
-                  {/* Description area */}
+                   {/* Description area */}
                   <div className="pt-2">
                     {isEditingDescription ? (
                       <div className="space-y-2">
-                        <Textarea
+                        <AutoResizeTextarea
                           autoFocus
                           value={descriptionValue}
                           onChange={(e) => setDescriptionValue(e.target.value)}
                           placeholder="Add notes or description..."
-                          rows={4}
-                          className="resize-none text-sm"
+                          className="text-sm whitespace-pre-wrap"
+                          minRows={4}
                           maxLength={2000}
                         />
                         <div className="flex gap-2">
@@ -489,7 +483,7 @@ const GoalDetail = () => {
                     ) : (
                       <button
                         onClick={() => setIsEditingDescription(true)}
-                        className="w-full text-left text-sm text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-muted/50 min-h-[40px]"
+                        className="w-full text-left text-sm text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-muted/50 min-h-[40px] whitespace-pre-wrap"
                       >
                         {goal.description || "Add a description..."}
                       </button>
@@ -640,11 +634,11 @@ const GoalDetail = () => {
                     </span>
 
                     {/* Progress bar */}
-                    <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden shrink-0">
+                    <div className="w-24 h-2 bg-muted rounded-full overflow-hidden shrink-0">
                       <div
                         className={cn(
                           "h-full rounded-full transition-all",
-                          target.is_done ? "bg-primary" : "bg-primary/60"
+                          target.is_done ? "bg-primary" : "bg-primary"
                         )}
                         style={{ width: `${pct}%` }}
                       />
