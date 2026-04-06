@@ -181,6 +181,7 @@ const Planner = () => {
       toast.error("Failed to update task");
       return;
     }
+    syncTask(task.id, "update");
     fetchTasks();
   };
 
