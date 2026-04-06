@@ -1,72 +1,29 @@
 
 
-## Plan: AI-Powered Brainstorm + Character Profile Feature
+## Plan: Remove Hardcoded Brainstorm Limits + Smarter Prompts
 
 ### Problem
-1. Brainstorm generates generic ideas — no personalization based on the user's character/brand
-2. Currently only stores 3 photos in storage with no metadata (name, niche, aesthetic, personality)
-3. Only one "saved character" exists per user — no way to manage multiple characters
+The brainstorm prompt says "Generate 5" and the response is capped with `.slice(0, 5)`. Ideas also repeat because the prompt lacks date/seasonal context.
 
-### Solution
+### Changes
 
-#### 1. New "Characters" database table
+**File: `supabase/functions/generate-storyboard/index.ts`**
 
-Create a `characters` table to store character profiles:
-- `id`, `user_id`, `name`, `niche` (e.g., "fitness coach", "tech reviewer"), `aesthetic` (e.g., "minimalist", "bold"), `personality_traits` (text), `target_audience` (text), `brand_colors` (text)
-- `photo_urls` (JSONB array of up to 3 image URLs)
-- `created_at`, `updated_at`
-- RLS: users can only CRUD their own characters
+1. **Carousel brainstorm prompt** — Replace "Generate 5 creative carousel ideas" with a richer prompt:
+   - Generate 8–12 ideas (not a fixed number)
+   - Inject `new Date().toISOString()` so the AI considers current season, holidays, trending moments
+   - Mix aspirational, relatable, humorous, educational angles
+   - If character profile exists, tailor to their niche/audience; otherwise generate broadly appealing lifestyle content
+   - Explicit instruction: "Every call must produce completely unique ideas — never repeat"
 
-#### 2. New "Character" page under AI Avatar Studio
+2. **Remove `.slice(0, 5)`** — return all generated ideas without truncation
 
-Route: `/app/ai-studio/characters`
+3. **Vlog brainstorm prompt** — Same seasonal/trending awareness and character-optional logic
 
-- Dashboard card alongside Storyboard Creator and Outfit Swap
-- Character Builder form: upload 3 photos (face, profile, full body) + fill in profile fields (name, niche, aesthetic, personality, target audience)
-- List of saved characters with edit/delete
-- Each character card shows thumbnail + name + niche
+4. **Remove "Story / Caption Theme"** from carousel generation prompt — merge into single `carouselVibe` field
 
-#### 3. Update SavedCharacter component
+**File: `src/components/ai-studio/StoryboardToolbar.tsx`**
 
-- Instead of reading raw files from storage, fetch from `characters` table
-- Show a dropdown/list of saved characters to pick from
-- Selected character loads its photos AND profile data into the studio
-
-#### 4. AI-Powered Brainstorm using character context
-
-Update the `generate-storyboard` edge function's brainstorm action:
-- Accept character profile data (niche, aesthetic, personality, target audience) in the prompt
-- Generate personalized, varied ideas based on who the character is
-- For carousel: "Generate 5 creative carousel ideas specifically for a [niche] creator with a [aesthetic] vibe targeting [audience]..."
-- For vlog: similar personalization
-- No more repetitive generic output — each brainstorm call produces unique, character-relevant ideas
-
-### Files to create/edit
-
-| File | Change |
-|------|--------|
-| **Migration** | Create `characters` table with RLS |
-| `src/pages/AIStudioCharacters.tsx` | New character builder page |
-| `src/pages/AIStudio.tsx` | Add Characters card to dashboard, pass character data to brainstorm |
-| `src/components/ai-studio/SavedCharacter.tsx` | Refactor to list characters from DB |
-| `supabase/functions/generate-storyboard/index.ts` | Enrich brainstorm prompt with character profile |
-| `src/App.tsx` | Add route for `/app/ai-studio/characters` |
-
-### UI Flow
-
-```text
-AI Avatar Studio Dashboard
-├── Storyboard Creator
-├── Avatar Outfit Swap
-└── Character Builder  ← NEW
-    ├── + Create Character
-    │   ├── Upload 3 photos (face, profile, full body)
-    │   ├── Name, Niche, Aesthetic, Personality, Target Audience
-    │   └── Save
-    └── List of saved characters (edit / delete)
-
-In Storyboard Creator:
-  Character section → "Select Character" dropdown → picks from saved characters
-  Brainstorm button → sends character profile as context → personalized ideas
-```
+5. Remove the "Story / Caption Theme" textarea for carousel mode
+6. Update "Scene Description" placeholder to be more descriptive: *"Describe your scene — location, vibe, lighting, props, and the story or message. e.g. 'Cozy coffee shop, warm golden light, latte art — morning routine that changed my productivity'"*
 
