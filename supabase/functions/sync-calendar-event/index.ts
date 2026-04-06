@@ -99,18 +99,26 @@ async function getAccessToken(supabase: any, connection: any): Promise<string | 
   return decrypted;
 }
 
+function isAllDayTime(isoStr: string): boolean {
+  if (!isoStr) return false;
+  // Date-only format "YYYY-MM-DD" — always all-day
+  if (/^\d{4}-\d{2}-\d{2}$/.test(isoStr)) return true;
+  // Datetime ending in T00:00:00 (with or without Z/ms) — treat as all-day
+  if (/T00:00:00/.test(isoStr)) return true;
+  return false;
+}
+
 function isSemanticAllDay(task: any): boolean {
   // Due-only (no start/end) → always all-day
   if (task.due_at && !task.start_at && !task.end_at) return true;
   // Same start+end timestamp → treat as all-day
   if (task.start_at && task.end_at && task.start_at === task.end_at) return true;
-  // Both timestamps at same hour+minute → all-day (covers midnight in any TZ)
+  // Check individual timestamps for midnight / date-only
   if (task.start_at && task.end_at) {
-    const s = new Date(task.start_at);
-    const e = new Date(task.end_at);
-    if (s.getUTCHours() === e.getUTCHours() && s.getUTCMinutes() === e.getUTCMinutes() &&
-        s.getUTCHours() === 0 && s.getUTCMinutes() === 0) return true;
+    if (isAllDayTime(task.start_at) && isAllDayTime(task.end_at)) return true;
   }
+  if (task.start_at && !task.end_at && isAllDayTime(task.start_at)) return true;
+  if (task.due_at && isAllDayTime(task.due_at)) return true;
   return false;
 }
 
@@ -213,15 +221,37 @@ async function syncToGoogle(accessToken: string, task: any, action: string, exis
   if (ev.allDay) {
     const dateStr = ev.start.substring(0, 10);
     body.start = { date: dateStr };
-    const endDate = new Date(dateStr);
-    endDate.setDate(endDate.getDate() + 1);
+    const endDate = new Date(dateStr + "T00:00:00Z");
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
     body.end = { date: endDate.toISOString().substring(0, 10) };
   } else {
-    body.start = { dateTime: ev.start };
-    body.end = { dateTime: ev.end };
+    body.start = { dateTime: ev.start, timeZone: "UTC" };
+    body.end = { dateTime: ev.end, timeZone: "UTC" };
   }
 
+  // For updates: check if existing event is timed but should now be all-day (or vice versa)
+  // Google doesn't reliably convert between timed and all-day via PATCH, so delete + recreate
   if (action === "update" && existingEventId) {
+    const checkRes = await fetch(`${baseUrl}/${existingEventId}`, { headers });
+    if (checkRes.ok) {
+      const existing = await checkRes.json();
+      const existingIsAllDay = !!(existing.start?.date && !existing.start?.dateTime);
+      if (existingIsAllDay !== ev.allDay) {
+        // Type mismatch — delete and recreate
+        await fetch(`${baseUrl}/${existingEventId}`, { method: "DELETE", headers });
+        const createRes = await fetch(baseUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+        });
+        const created = await createRes.json();
+        return { success: createRes.ok, eventId: created.id || null };
+      }
+    } else {
+      await checkRes.text(); // consume body
+    }
+
+    // Same type — safe to patch
     const res = await fetch(`${baseUrl}/${existingEventId}`, {
       method: "PATCH",
       headers,
