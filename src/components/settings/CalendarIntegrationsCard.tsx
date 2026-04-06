@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { CalendarDays, Loader2, Link2, Unlink, Apple, Copy, Check, ExternalLink } from "lucide-react";
+import { CalendarDays, Loader2, Link2, Unlink, Apple, Copy, Check, ExternalLink, RefreshCw } from "lucide-react";
 
 interface CalendarConnection {
   id: string;
