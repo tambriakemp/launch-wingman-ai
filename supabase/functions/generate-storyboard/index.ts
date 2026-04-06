@@ -77,7 +77,7 @@ Format: A specific scenario or activity. Length: Under 15 words. Output: JUST th
       const rawText = brainstormData.choices?.[0]?.message?.content?.trim() || "";
 
       if (isBrainstormCarousel) {
-        const ideas = rawText.split('\n').filter((line: string) => line.trim().length > 0).slice(0, 5);
+        const ideas = rawText.split('\n').filter((line: string) => line.trim().length > 0);
         return new Response(JSON.stringify({ ideas }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       } else {
         const topic = rawText || "Day in my life";
