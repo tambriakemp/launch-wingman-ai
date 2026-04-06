@@ -207,12 +207,33 @@ export const CalendarIntegrationsCard = () => {
     setDisconnectingProvider(provider);
     try {
       const conn = getConnection(provider);
-      if (conn) {
-        await supabase.from("calendar_sync_mappings").delete().eq("calendar_connection_id", conn.id);
+      if (!conn) return;
+
+      // Call edge function to delete external events and clean up
+      const { data: session } = await supabase.auth.getSession();
+      if (session?.session?.access_token) {
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const res = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/disconnect-calendar`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.session.access_token}`,
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({ connection_id: conn.id }),
+          }
+        );
+        const result = await res.json();
+        if (!result.success) {
+          console.error("Disconnect error:", result);
+        }
       }
-      await supabase.from("calendar_connections").delete().eq("user_id", user.id).eq("provider", provider);
+
       toast.success(`${provider === "google" ? "Google" : provider === "microsoft" ? "Outlook" : "Apple"} Calendar disconnected`);
       queryClient.invalidateQueries({ queryKey: ["calendar-connections"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-connections-exist"] });
       if (provider === "apple") {
         setFeedUrl(null);
       }
