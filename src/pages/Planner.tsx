@@ -68,9 +68,14 @@ const Planner = () => {
 
   // Filter tasks by selected space
   const filteredTasks = useMemo(() => {
-    if (!selectedSpaceId) return tasks;
-    return tasks.filter(t => (t as any).space_id === selectedSpaceId);
-  }, [tasks, selectedSpaceId]);
+    let result = tasks;
+    if (selectedSpaceId) {
+      result = result.filter(t => (t as any).space_id === selectedSpaceId);
+    }
+    // Apply status visibility filter
+    result = result.filter(t => isVisible(t.column_id === "in_progress" ? "in-progress" : (t.column_id || "todo")));
+    return result;
+  }, [tasks, selectedSpaceId, isVisible]);
 
   // Get categories for the current context
   const activeCategories = useMemo(() => {
