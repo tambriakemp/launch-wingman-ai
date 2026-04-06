@@ -783,7 +783,7 @@ const GoalDetail = () => {
                             <TrendingUp className="w-3.5 h-3.5 mr-2" /> Log Progress
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem onClick={() => handleDeleteTarget(target.id)} className="text-destructive">
+                        <DropdownMenuItem onClick={() => confirmDelete("Delete this target?", () => handleDeleteTarget(target.id))} className="text-destructive">
                           <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
