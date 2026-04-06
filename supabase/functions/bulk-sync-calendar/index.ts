@@ -56,6 +56,7 @@ serve(async (req) => {
 
     // Only sync tasks that have at least one date
     const datedTasks = tasks.filter((t: any) => t.start_at || t.end_at || t.due_at);
+    console.log(`[bulk-sync] Found ${tasks.length} total tasks, ${datedTasks.length} with dates, ${syncedTaskIds.size} already mapped`);
 
     if (datedTasks.length === 0) {
       return new Response(JSON.stringify({ success: true, synced: 0, updated: 0, message: "No dated tasks to sync" }), {
@@ -71,6 +72,7 @@ serve(async (req) => {
     for (const task of datedTasks) {
       try {
         const action = syncedTaskIds.has(task.id) ? "update" : "create";
+        console.log(`[bulk-sync] Syncing task=${task.id} action=${action} due=${task.due_at} start=${task.start_at}`);
         const res = await fetch(`${SUPABASE_URL}/functions/v1/sync-calendar-event`, {
           method: "POST",
           headers: {
@@ -81,19 +83,26 @@ serve(async (req) => {
           body: JSON.stringify({ task_id: task.id, action }),
         });
 
+        const responseBody = await res.text();
+        console.log(`[bulk-sync] Response for task=${task.id}: status=${res.status} body=${responseBody}`);
+        
         if (res.ok) {
-          const result = await res.json();
-          if (result.success) {
-            if (action === "update") updated++;
-            else created++;
-          } else {
+          try {
+            const result = JSON.parse(responseBody);
+            if (result.success) {
+              if (action === "update") updated++;
+              else created++;
+            } else {
+              failed++;
+            }
+          } catch {
             failed++;
           }
         } else {
-          await res.text(); // consume body
           failed++;
         }
-      } catch {
+      } catch (err) {
+        console.error(`[bulk-sync] Exception for task=${task.id}:`, err);
         failed++;
       }
     }

@@ -401,8 +401,11 @@ serve(async (req) => {
 
     const results: any[] = [];
 
+    console.log(`[sync-calendar-event] Processing ${connections.length} connection(s) for task=${task_id}, action=${action}`);
+
     for (const conn of connections) {
       try {
+        console.log(`[sync-calendar-event] Connection: provider=${conn.provider}, id=${conn.id}, email=${conn.account_email}`);
         // Get existing mapping
         const { data: mapping } = await supabase
           .from("calendar_sync_mappings")
@@ -412,14 +415,16 @@ serve(async (req) => {
           .maybeSingle();
 
         const existingEventId = mapping?.external_event_id || null;
+        console.log(`[sync-calendar-event] Existing mapping: eventId=${existingEventId}`);
 
         // Get access token (with auto-refresh)
         const accessToken = await getAccessToken(supabase, conn);
         if (!accessToken && conn.provider !== "apple") {
-          console.error(`Failed to get access token for ${conn.provider}`);
+          console.error(`[sync-calendar-event] Failed to get access token for ${conn.provider}`);
           results.push({ provider: conn.provider, success: false, error: "Token refresh failed" });
           continue;
         }
+        console.log(`[sync-calendar-event] Got access token for ${conn.provider}: ${accessToken ? 'yes' : 'NO'}`);
 
         let result: { success: boolean; eventId: string | null };
 
