@@ -58,17 +58,23 @@ const START_HOUR = 0;
 const END_HOUR = 24;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
 
-function getCardColorStyle(task: PlannerTask, categories: { id: string; color: string }[]): { style: React.CSSProperties; isDark: boolean } {
-  const cat = categories.find(c => c.id === task.category);
-  const hex = cat?.color || "#f5c842";
+function getCardColorStyle(task: PlannerTask, categories: { id: string; color: string }[], spaces: PlannerSpace[] = []): { style: React.CSSProperties; isDark: boolean } {
+  const space = spaces.find(s => s.id === (task as any).space_id);
+  const hex = space?.color || "#3b82f6";
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
+  // Darken the color for text to ensure readability against the light background
+  const textR = Math.round(r * 0.35);
+  const textG = Math.round(g * 0.35);
+  const textB = Math.round(b * 0.35);
   return {
     style: {
-      backgroundColor: `rgba(${r},${g},${b},0.15)`,
-      borderColor: `rgba(${r},${g},${b},0.35)`,
-      color: hex,
+      backgroundColor: `rgba(${r},${g},${b},0.18)`,
+      borderColor: `rgba(${r},${g},${b},0.4)`,
+      borderLeftWidth: '3px',
+      borderLeftColor: hex,
+      color: `rgb(${textR},${textG},${textB})`,
     },
     isDark: false,
   };
@@ -435,7 +441,7 @@ export const PlannerCalendarView = ({
                       onClick={() => onCreateTask?.({ due_at: day.toISOString() })}
                     >
                       {dayAllDay.map((task) => {
-                        const { style: colorStyle } = getCardColorStyle(task, categories);
+                        const { style: colorStyle } = getCardColorStyle(task, categories, spaces);
                         const isDone = task.column_id === "done";
                         return (
                           <button
@@ -512,7 +518,7 @@ export const PlannerCalendarView = ({
                         const pos = getTaskPosition(task);
                         if (!pos) return null;
                         const isDone = task.column_id === "done";
-                        const { style: colorStyle } = getCardColorStyle(task, categories);
+                        const { style: colorStyle } = getCardColorStyle(task, categories, spaces);
                         return (
                           <button
                             key={task.id}
@@ -587,7 +593,7 @@ export const PlannerCalendarView = ({
                     </div>
                     <div className="space-y-1">
                       {dayTasks.slice(0, 2).map((task) => {
-                        const { style: colorStyle } = getCardColorStyle(task, categories);
+                        const { style: colorStyle } = getCardColorStyle(task, categories, spaces);
                         return (
                           <button
                             key={task.id}
