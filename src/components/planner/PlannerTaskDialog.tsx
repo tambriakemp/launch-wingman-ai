@@ -160,8 +160,9 @@ export const PlannerTaskDialog = ({
   const [subtaskDescription, setSubtaskDescription] = useState("");
   const [subtaskSaving, setSubtaskSaving] = useState(false);
 
-  const spaceCats = selectedSpaceId
-    ? allCategories.filter(c => c.space_id === selectedSpaceId)
+  const effectiveSpaceId = taskSpaceId || selectedSpaceId;
+  const spaceCats = effectiveSpaceId
+    ? allCategories.filter(c => c.space_id === effectiveSpaceId)
     : categories;
 
   const isScheduled = editTask && (editTask.start_at || editTask.end_at);
