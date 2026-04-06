@@ -1,22 +1,56 @@
 
 
-## Fix: Enable Google Tasks API in Google Cloud Console
+## Plan: Sync Recurring Task Occurrences to Google Tasks
 
-### Root Cause
-The Google Tasks API is **not enabled** in your Google Cloud project (project ID: 1076349754654). The sync function is working correctly and sending the right data, but Google is rejecting all requests with a 403 "SERVICE_DISABLED" error.
+### Problem
+Recurring tasks are stored as a single parent record with a `recurrence_rule` JSON field. The client expands them into virtual instances for display, but `bulk-sync-calendar` and `sync-calendar-event` only see the one parent row. Result: only one Google Task is created instead of one per occurrence.
 
-### What You Need to Do (no code changes needed)
+### Approach
+Port the recurrence expansion logic (currently in `src/components/planner/recurrenceUtils.ts`) into the edge functions so they can generate individual Google Tasks for each occurrence within a reasonable window (e.g., 90 days ahead).
 
-1. Go to [Google Cloud Console - Tasks API](https://console.developers.google.com/apis/api/tasks.googleapis.com/overview?project=1076349754654)
-2. Click **"Enable"** to activate the Google Tasks API for your project
-3. Wait 1-2 minutes for it to propagate
-4. Go back to Settings and click **"Re-sync all calendar tasks"**
+### Implementation
 
-That's it. The code is already correct — it's successfully authenticating, building the right payload, and calling the right endpoint. Google is just blocking it because the Tasks API hasn't been turned on yet.
+**File: `supabase/functions/sync-calendar-event/index.ts`**
 
-### Why the bulk sync showed "synced: 16" earlier
-The bulk-sync function was counting responses from sync-calendar-event that returned HTTP 200 with `success: true` at the top level, even though individual provider results showed `success: false`. This is a reporting quirk but not a code bug — the tasks genuinely failed to sync.
+1. Add a server-side `expandRecurrences(task, windowStart, windowEnd)` function (simplified port of `recurrenceUtils.ts` logic) that:
+   - Reads `recurrence_rule` (freq, interval, days, end_type, end_date, count)
+   - Reads `recurrence_exception_dates` to skip exceptions
+   - Generates occurrence dates within the window
+   - Returns an array of `{ occurrenceDate, virtualId }` objects
 
-### No code changes required
-Everything works once the API is enabled in Google Cloud Console.
+2. Modify the main handler: when the task has a `recurrence_rule`, expand it into occurrences. For each occurrence:
+   - Use a composite mapping key: `task_id::YYYY-MM-DD` in `calendar_sync_mappings`
+   - Build a Google Task with the occurrence date as `due`
+   - Create/update/delete each occurrence independently
+
+3. For `action === "delete"` on a recurring parent: delete ALL mappings with `task_id` prefix match
+
+**File: `supabase/functions/bulk-sync-calendar/index.ts`**
+
+1. When fetching tasks, also select `recurrence_rule, recurrence_exception_dates, title` columns
+2. For recurring tasks, expand occurrences server-side (next 90 days from today)
+3. Sync each occurrence as a separate call with a virtual task ID (`taskId::YYYY-MM-DD`)
+
+**New helper: recurrence expansion (inside sync-calendar-event)**
+
+Simplified Deno-compatible version — no date-fns dependency, uses native `Date`:
+- `addDays`, `addWeeks`, `addMonths`, `addYears` as simple date arithmetic functions
+- Weekly frequency with specific days (e.g., MO, WE, FR) handled separately
+- Respects `end_type` (never, on_date, after_n) and `recurrence_exception_dates`
+
+**Calendar sync mappings changes**
+
+The `task_id` field in `calendar_sync_mappings` currently references `tasks.id` (UUID). For virtual occurrences, we'll store the composite ID `parentTaskId::2026-04-07` as a text identifier. Need to verify the column type supports this — if it's a UUID foreign key, we'll need a migration to change it to `text` or add a separate `occurrence_date` column.
+
+### Migration (if needed)
+- Add `occurrence_date` column (text, nullable) to `calendar_sync_mappings`
+- Keep `task_id` as the parent UUID reference
+- Use `(task_id, occurrence_date, calendar_connection_id)` as the unique key for recurring mappings
+
+### Technical details
+- Expansion window: today to +90 days (configurable)
+- Max 500 occurrences per task to prevent runaway loops
+- Each occurrence syncs as an independent Google Task with title including the parent task's title
+- Exception dates are respected (skipped)
+- Non-recurring tasks continue to work exactly as before
 
