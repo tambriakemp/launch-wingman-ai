@@ -497,10 +497,22 @@ const GoalDetail = () => {
                 </div>
 
                 {/* Title + meta */}
-                <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h1 className="text-xl font-semibold text-foreground">{goal.title}</h1>
+                    <div className="flex-1">
+                      {isRenamingGoal ? (
+                        <form onSubmit={(e) => { e.preventDefault(); handleRenameGoal(); }} className="flex items-center gap-2">
+                          <input
+                            autoFocus
+                            value={renameGoalValue}
+                            onChange={(e) => setRenameGoalValue(e.target.value)}
+                            onBlur={() => setIsRenamingGoal(false)}
+                            className="text-2xl font-semibold text-foreground bg-transparent border-b border-border focus:border-primary focus:outline-none w-full"
+                          />
+                        </form>
+                      ) : (
+                        <h1 className="text-2xl font-semibold text-foreground">{goal.title}</h1>
+                      )}
                       {goal.status === "completed" && (
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
@@ -509,16 +521,56 @@ const GoalDetail = () => {
                         </div>
                       )}
                     </div>
+                    {/* Ellipsis menu */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
+                          <MoreHorizontal className="w-5 h-5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => { setRenameGoalValue(goal.title); setIsRenamingGoal(true); }}>
+                          <Pencil className="w-3.5 h-3.5 mr-2" /> Rename
+                        </DropdownMenuItem>
+                        {allFolders.filter(f => f.id !== (goal as any).folder_id).length > 0 && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <FolderInput className="w-3.5 h-3.5 mr-2" /> Move to Folder
+                              </DropdownMenuItem>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent side="right" align="start">
+                              {allFolders.filter(f => f.id !== (goal as any).folder_id).map((f) => (
+                                <DropdownMenuItem key={f.id} onClick={() => handleMoveGoalToFolder(f.id)}>
+                                  {f.name}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                        <DropdownMenuItem onClick={handleArchiveGoal}>
+                          <Archive className="w-3.5 h-3.5 mr-2" /> {goal.status === "archived" ? "Unarchive" : "Archive"}
+                        </DropdownMenuItem>
+                        {(goal as any).folder_id && (
+                          <DropdownMenuItem onClick={() => handleMoveGoalToFolder(null)}>
+                            <FolderMinus className="w-3.5 h-3.5 mr-2" /> Remove from Folder
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={handleDeleteGoal} className="text-destructive">
+                          <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
 
                   {goal.why_statement && (
-                    <p className="text-sm text-muted-foreground italic">
+                    <p className="text-sm text-muted-foreground italic mt-1">
                       "{goal.why_statement}"
                     </p>
                   )}
 
                    {/* Description area */}
-                  <div className="pt-2">
+                  <div className="mt-2 rounded-lg bg-muted/40 p-3">
                     {isEditingDescription ? (
                       <div className="space-y-2">
                         <AutoResizeTextarea
@@ -526,7 +578,7 @@ const GoalDetail = () => {
                           value={descriptionValue}
                           onChange={(e) => setDescriptionValue(e.target.value)}
                           placeholder="Add notes or description..."
-                          className="text-sm whitespace-pre-wrap"
+                          className="text-sm whitespace-pre-wrap bg-transparent border-0 focus-visible:ring-0 p-0 min-h-0"
                           minRows={4}
                           maxLength={2000}
                         />
@@ -545,7 +597,7 @@ const GoalDetail = () => {
                     ) : (
                       <button
                         onClick={() => setIsEditingDescription(true)}
-                        className="w-full text-left text-sm text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-muted/50 min-h-[40px] whitespace-pre-wrap"
+                        className="w-full text-left text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[40px] whitespace-pre-wrap"
                       >
                         {goal.description || "Add a description..."}
                       </button>
