@@ -47,9 +47,9 @@ export const PromptBulkImporter = () => {
     if (!rawText.trim()) return;
     setIsParsing(true);
     try {
-      // Split locally by --- or double newlines
+      // Split locally by --- separator only
       const splits = rawText
-        .split(/(?:\r?\n){2,}|---/)
+        .split(/---/)
         .map((s) => s.trim())
         .filter((s) => s.length > 10);
 
