@@ -115,11 +115,8 @@ function buildEventBody(task: any) {
     end = task.due_at;
     allDay = true;
   } else {
-    // No date info, use today
-    const today = new Date().toISOString().split("T")[0];
-    start = today;
-    end = today;
-    allDay = true;
+    // No date info — skip syncing
+    return null;
   }
 
   return { title, description, start, end, allDay, location: task.location || "" };
