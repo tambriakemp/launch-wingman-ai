@@ -241,16 +241,28 @@ serve(async (req) => {
       let continuityInstruction = "";
       if (previousSceneImageUrl) {
         if (config.creationMode === 'carousel') {
-          continuityInstruction = `\nCAROUSEL SLIDE CONTINUITY: The previous slide's image has been provided. This is part of a COHESIVE carousel set. Maintain EXACT visual continuity — the subject's hair (style, position, flow), ALL accessories (rings, bracelets, necklaces, earrings), nail color, outfit details, and every visible element MUST be IDENTICAL to the previous slide. Only the SHOT ANGLE and FRAMING should change. Do NOT add, remove, or modify any detail.`;
+          continuityInstruction = `\nCAROUSEL SLIDE CONTINUITY: The previous slide's image has been provided. This is part of a COHESIVE carousel set.
+LOCK THESE DETAILS (must be PIXEL-PERFECT identical to the anchor/previous image):
+- Exact outfit, fabric, color, fit, neckline, sleeves — NO changes whatsoever
+- Hair style, length, color, position (down/up/ponytail/parting)
+- ALL accessories: rings, bracelets, necklaces, earrings, watches
+- Nail color, makeup, skin tone
+CHANGE ONLY: The SCENE/SETTING, camera angle, framing, pose, and composition as described in the scene prompt below.
+Do NOT add, remove, or modify ANY clothing or accessory detail.`;
         } else {
           continuityInstruction = `\nSCENE CONTINUITY: A previous scene image from this sequence has been provided. Maintain visual continuity — similar lighting, time of day, and spatial awareness. The person should appear to be continuing naturally from the previous scene. However, keep identity anchored to the canonical character preview. Create a DISTINCT composition and pose that matches THIS scene's description, NOT a copy of the previous scene.`;
         }
       }
 
-      // Carousel-specific consistency block
+      // Carousel-specific consistency + scene differentiation block
       let carouselConsistencyInstruction = "";
       if (config.creationMode === 'carousel') {
-        carouselConsistencyInstruction = `\nCAROUSEL CONSISTENCY (CRITICAL): This image is part of a cohesive carousel set. The subject's hair (exact style, length, position — down, up, ponytail, etc.), ALL accessories (rings, bracelets, necklaces, earrings, watches), nail color, jewelry, and every visible detail MUST remain IDENTICAL to the reference/anchor image. Do NOT add, remove, or change ANY accessories, hairstyle, or detail between slides. If the anchor shows hair down with no rings, EVERY slide must show hair down with no rings. Only the shot angle, framing, and composition should differ.`;
+        const sceneNum = sceneNumber || 1;
+        const total = totalScenes || 4;
+        carouselConsistencyInstruction = `\nCAROUSEL SCENE AWARENESS (CRITICAL): This is slide ${sceneNum} of ${total}. Each slide MUST show a VISUALLY DISTINCT composition.
+OUTFIT LOCK: The subject's clothing must be EXACTLY the same as the anchor image — same garment, same color, same fit, same fabric. If the anchor shows a yellow/gold dress, EVERY slide shows that exact yellow/gold dress. Do NOT change, recolor, or substitute the outfit.
+SCENE DIFFERENTIATION: Each slide must have a DIFFERENT camera angle, body positioning, background framing, and interaction with the environment. Slide ${sceneNum} must look clearly different from all other slides — vary the pose, crop (wide vs close-up vs medium), viewing angle (front, side, over-shoulder, from below), and how the subject interacts with the scene elements described below.
+${sceneNum === 1 ? 'This is the ANCHOR slide — establish the look.' : `This is NOT slide 1. You MUST create a composition that is clearly different from the anchor image while keeping the outfit and appearance identical.`}`;
       }
 
       // Build prompt as EDIT instruction when preview exists, otherwise generate from scratch
