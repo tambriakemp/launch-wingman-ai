@@ -201,6 +201,7 @@ export const PlannerListView = ({
                     onToggleComplete={onToggleComplete}
                     onEdit={onEditTask}
                     onDelete={onDeleteTask}
+                    onUpdateStatus={onBulkUpdateStatus}
                     categories={categories}
                     isSelected={selectedIds.has(task.id)}
                     onToggleSelect={toggleSelect}
