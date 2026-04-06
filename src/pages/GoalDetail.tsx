@@ -34,6 +34,9 @@ import {
   Trash2,
   ExternalLink,
   X,
+  FolderInput,
+  FolderMinus,
+  Archive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays } from "date-fns";
