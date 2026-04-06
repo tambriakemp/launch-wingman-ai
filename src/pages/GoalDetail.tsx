@@ -34,6 +34,9 @@ import {
   Trash2,
   ExternalLink,
   X,
+  FolderInput,
+  FolderMinus,
+  Archive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, differenceInDays } from "date-fns";
@@ -80,6 +83,11 @@ interface GoalFolder {
   name: string;
 }
 
+interface AllFolder {
+  id: string;
+  name: string;
+}
+
 const GoalDetail = () => {
   const { goalId } = useParams<{ goalId: string }>();
   const navigate = useNavigate();
@@ -90,6 +98,7 @@ const GoalDetail = () => {
   const [updates, setUpdates] = useState<GoalTargetUpdate[]>([]);
   const [folder, setFolder] = useState<GoalFolder | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [allFolders, setAllFolders] = useState<AllFolder[]>([]);
   const [taskProgressMap, setTaskProgressMap] = useState<Record<string, TaskProgress>>({});
 
   const [expandedTargets, setExpandedTargets] = useState<Set<string>>(new Set());
@@ -227,14 +236,24 @@ const GoalDetail = () => {
     setTaskProgressMap(progressMap);
   }, [user, targets]);
 
+  const fetchAllFolders = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("goal_folders" as any)
+      .select("id, name")
+      .eq("user_id", user.id)
+      .order("position", { ascending: true });
+    setAllFolders((data as unknown as AllFolder[]) || []);
+  }, [user]);
+
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
-      await Promise.all([fetchGoal(), fetchTargets(), fetchUpdates()]);
+      await Promise.all([fetchGoal(), fetchTargets(), fetchUpdates(), fetchAllFolders()]);
       setIsLoading(false);
     };
     load();
-  }, [fetchGoal, fetchTargets, fetchUpdates]);
+  }, [fetchGoal, fetchTargets, fetchUpdates, fetchAllFolders]);
 
   useEffect(() => {
     if (targets.length > 0) {
@@ -275,6 +294,49 @@ const GoalDetail = () => {
     fetchUpdates();
   };
 
+  // Goal-level actions
+  const handleMoveGoalToFolder = async (newFolderId: string | null) => {
+    if (!goal) return;
+    await supabase
+      .from("goals" as any)
+      .update({ folder_id: newFolderId })
+      .eq("id", goal.id);
+    toast.success(newFolderId ? "Goal moved to folder" : "Goal removed from folder");
+    fetchGoal();
+  };
+
+  const handleArchiveGoal = async () => {
+    if (!goal) return;
+    const newStatus = goal.status === "archived" ? "active" : "archived";
+    await supabase
+      .from("goals" as any)
+      .update({ status: newStatus })
+      .eq("id", goal.id);
+    toast.success(newStatus === "archived" ? "Goal archived" : "Goal unarchived");
+    fetchGoal();
+  };
+
+  const handleDeleteGoal = async () => {
+    if (!goal) return;
+    await supabase.from("goal_targets" as any).delete().eq("goal_id", goal.id);
+    await supabase.from("goals" as any).delete().eq("id", goal.id);
+    toast.success("Goal deleted");
+    navigate("/goals");
+  };
+
+  const [isRenamingGoal, setIsRenamingGoal] = useState(false);
+  const [renameGoalValue, setRenameGoalValue] = useState("");
+
+  const handleRenameGoal = async () => {
+    if (!goal || !renameGoalValue.trim()) return;
+    await supabase
+      .from("goals" as any)
+      .update({ title: renameGoalValue.trim(), updated_at: new Date().toISOString() })
+      .eq("id", goal.id);
+    toast.success("Goal renamed");
+    setIsRenamingGoal(false);
+    fetchGoal();
+  };
 
   const toggleExpanded = (targetId: string) => {
     setExpandedTargets(prev => {
@@ -435,10 +497,22 @@ const GoalDetail = () => {
                 </div>
 
                 {/* Title + meta */}
-                <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h1 className="text-xl font-semibold text-foreground">{goal.title}</h1>
+                    <div className="flex-1">
+                      {isRenamingGoal ? (
+                        <form onSubmit={(e) => { e.preventDefault(); handleRenameGoal(); }} className="flex items-center gap-2">
+                          <input
+                            autoFocus
+                            value={renameGoalValue}
+                            onChange={(e) => setRenameGoalValue(e.target.value)}
+                            onBlur={() => setIsRenamingGoal(false)}
+                            className="text-2xl font-semibold text-foreground bg-transparent border-b border-border focus:border-primary focus:outline-none w-full"
+                          />
+                        </form>
+                      ) : (
+                        <h1 className="text-2xl font-semibold text-foreground">{goal.title}</h1>
+                      )}
                       {goal.status === "completed" && (
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
@@ -447,16 +521,56 @@ const GoalDetail = () => {
                         </div>
                       )}
                     </div>
+                    {/* Ellipsis menu */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
+                          <MoreHorizontal className="w-5 h-5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => { setRenameGoalValue(goal.title); setIsRenamingGoal(true); }}>
+                          <Pencil className="w-3.5 h-3.5 mr-2" /> Rename
+                        </DropdownMenuItem>
+                        {allFolders.filter(f => f.id !== (goal as any).folder_id).length > 0 && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <FolderInput className="w-3.5 h-3.5 mr-2" /> Move to Folder
+                              </DropdownMenuItem>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent side="right" align="start">
+                              {allFolders.filter(f => f.id !== (goal as any).folder_id).map((f) => (
+                                <DropdownMenuItem key={f.id} onClick={() => handleMoveGoalToFolder(f.id)}>
+                                  {f.name}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                        <DropdownMenuItem onClick={handleArchiveGoal}>
+                          <Archive className="w-3.5 h-3.5 mr-2" /> {goal.status === "archived" ? "Unarchive" : "Archive"}
+                        </DropdownMenuItem>
+                        {(goal as any).folder_id && (
+                          <DropdownMenuItem onClick={() => handleMoveGoalToFolder(null)}>
+                            <FolderMinus className="w-3.5 h-3.5 mr-2" /> Remove from Folder
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={handleDeleteGoal} className="text-destructive">
+                          <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
 
                   {goal.why_statement && (
-                    <p className="text-sm text-muted-foreground italic">
+                    <p className="text-sm text-muted-foreground italic mt-1">
                       "{goal.why_statement}"
                     </p>
                   )}
 
                    {/* Description area */}
-                  <div className="pt-2">
+                  <div className="mt-2 rounded-lg bg-muted/40 p-3">
                     {isEditingDescription ? (
                       <div className="space-y-2">
                         <AutoResizeTextarea
@@ -464,7 +578,7 @@ const GoalDetail = () => {
                           value={descriptionValue}
                           onChange={(e) => setDescriptionValue(e.target.value)}
                           placeholder="Add notes or description..."
-                          className="text-sm whitespace-pre-wrap"
+                          className="text-sm whitespace-pre-wrap bg-transparent border-0 focus-visible:ring-0 p-0 min-h-0"
                           minRows={4}
                           maxLength={2000}
                         />
@@ -483,7 +597,7 @@ const GoalDetail = () => {
                     ) : (
                       <button
                         onClick={() => setIsEditingDescription(true)}
-                        className="w-full text-left text-sm text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-muted/50 min-h-[40px] whitespace-pre-wrap"
+                        className="w-full text-left text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[40px] whitespace-pre-wrap"
                       >
                         {goal.description || "Add a description..."}
                       </button>
@@ -611,6 +725,9 @@ const GoalDetail = () => {
                             <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground transition-transform", isExpanded && "rotate-180")} />
                           )}
                         </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {format(parseISO(target.created_at), "MMM d, yyyy 'at' h:mm a")}
+                        </p>
                       </div>
                     </button>
 
@@ -634,12 +751,9 @@ const GoalDetail = () => {
                     </span>
 
                     {/* Progress bar */}
-                    <div className="w-24 h-2 bg-muted rounded-full overflow-hidden shrink-0">
+                    <div className="w-24 h-2 bg-border rounded-full overflow-hidden shrink-0">
                       <div
-                        className={cn(
-                          "h-full rounded-full transition-all",
-                          target.is_done ? "bg-primary" : "bg-primary"
-                        )}
+                        className="h-full rounded-full bg-primary transition-all"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -774,6 +888,20 @@ const GoalDetail = () => {
                   const target = targets.find((t) => t.id === update.target_id);
                   const diff = Number(update.new_value) - Number(update.previous_value);
                   const isPositive = diff >= 0;
+                  const absDiff = Math.abs(diff);
+                  const unitPrefix = target?.target_type === "currency" ? getCurrencySymbol(target?.unit ?? null) : "";
+                  const unitSuffix = target?.target_type === "number" && target?.unit ? ` ${target.unit}` : "";
+
+                  // Build descriptive action text
+                  let actionText = "";
+                  if (diff === 0) {
+                    actionText = `set to ${unitPrefix}${Number(update.new_value).toLocaleString()}${unitSuffix}`;
+                  } else if (isPositive) {
+                    actionText = `increased by ${unitPrefix}${absDiff.toLocaleString()}${unitSuffix} → ${unitPrefix}${Number(update.new_value).toLocaleString()}${unitSuffix}`;
+                  } else {
+                    actionText = `decreased by ${unitPrefix}${absDiff.toLocaleString()}${unitSuffix} → ${unitPrefix}${Number(update.new_value).toLocaleString()}${unitSuffix}`;
+                  }
+
                   return (
                     <div
                       key={update.id}
@@ -794,11 +922,7 @@ const GoalDetail = () => {
                           <span className="font-medium">
                             {target?.name || "Target"}
                           </span>{" "}
-                          updated to{" "}
-                          <span className="font-mono font-medium">
-                            {target?.target_type === "currency" ? getCurrencySymbol(target?.unit ?? null) : ""}
-                            {Number(update.new_value).toLocaleString()}
-                          </span>
+                          {actionText}
                         </p>
                         {update.note && (
                           <p className="text-xs text-muted-foreground mt-0.5">
