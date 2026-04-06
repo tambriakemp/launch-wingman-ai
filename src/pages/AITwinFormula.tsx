@@ -25,7 +25,7 @@ const faqData = [
   },
   {
     q: "What if I've never made a Reel before?",
-    a: "Perfect — this was designed with you in mind. Module 07 covers the full CapCut assembly process, and Module 05 shows you how Launchely AI Studio generates vlog-style videos you can post directly. You don't need editing experience.",
+    a: "Perfect — this was designed with you in mind. Module 07 covers the full CapCut assembly process, and Module 05 shows you how Launchely AI Avatar Studio generates vlog-style videos you can post directly. You don't need editing experience.",
   },
   {
     q: "Can I really make money with a faceless AI twin account?",
