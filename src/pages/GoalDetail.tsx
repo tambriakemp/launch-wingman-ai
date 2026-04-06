@@ -649,7 +649,7 @@ const GoalDetail = () => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         {!isTaskTarget && (
-                          <DropdownMenuItem onClick={() => toggleExpanded(target.id)}>
+                          <DropdownMenuItem onClick={() => setUpdatePanelTarget(target)}>
                             <TrendingUp className="w-3.5 h-3.5 mr-2" /> Log Progress
                           </DropdownMenuItem>
                         )}
