@@ -163,22 +163,26 @@ async function syncToGoogle(accessToken: string, task: any, action: string, exis
     Authorization: `Bearer ${accessToken}`,
     "Content-Type": "application/json",
   };
-
   const taskListId = "@default";
   const baseUrl = `https://tasks.googleapis.com/tasks/v1/lists/${taskListId}/tasks`;
 
   if (action === "delete" && existingEventId) {
     const res = await fetch(`${baseUrl}/${existingEventId}`, { method: "DELETE", headers });
+    if (!res.ok && res.status !== 404) {
+      const calRes = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${existingEventId}`,
+        { method: "DELETE", headers }
+      );
+      return { success: calRes.ok || calRes.status === 404 || calRes.status === 410, eventId: null };
+    }
     return { success: res.ok || res.status === 404, eventId: null };
   }
 
   const ev = buildEventBody(task);
   if (!ev) return { success: false, eventId: null };
 
-  // Google Tasks uses RFC 3339 for due date — must be midnight UTC on the target date
-  const dateStr = ev.start.substring(0, 10); // "YYYY-MM-DD"
+  const dateStr = ev.start.substring(0, 10);
   const dueDateTime = `${dateStr}T00:00:00.000Z`;
-
   const body: any = {
     title: ev.title,
     notes: ev.description || undefined,
@@ -192,15 +196,17 @@ async function syncToGoogle(accessToken: string, task: any, action: string, exis
       headers,
       body: JSON.stringify(body),
     });
+    if (res.status === 404 || res.status === 400) {
+      console.log(`[Google Tasks] Stale mapping — creating fresh task`);
+      const createRes = await fetch(baseUrl, { method: "POST", headers, body: JSON.stringify(body) });
+      const createData = await createRes.json();
+      return { success: createRes.ok, eventId: createData.id || null };
+    }
     const data = await res.json();
     return { success: res.ok, eventId: data.id || existingEventId };
   }
 
-  const res = await fetch(baseUrl, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
+  const res = await fetch(baseUrl, { method: "POST", headers, body: JSON.stringify(body) });
   const data = await res.json();
   return { success: res.ok, eventId: data.id || null };
 }
