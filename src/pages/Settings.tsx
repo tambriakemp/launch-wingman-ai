@@ -25,6 +25,7 @@ import { ApiKeysCard } from "@/components/settings/ApiKeysCard";
 import { ExportMyDataDialog } from "@/components/settings/ExportMyDataDialog";
 import { DeleteMyAccountDialog } from "@/components/settings/DeleteMyAccountDialog";
 import { FacebookPageSelector } from "@/components/settings/FacebookPageSelector";
+import { CalendarIntegrationsCard } from "@/components/settings/CalendarIntegrationsCard";
 import { usePinterestEnvironmentSetting } from "@/hooks/usePinterestEnvironmentSetting";
 import { usePinterestSandboxToken } from "@/hooks/usePinterestSandboxToken";
 import { useIsMobile } from "@/hooks/use-mobile";
