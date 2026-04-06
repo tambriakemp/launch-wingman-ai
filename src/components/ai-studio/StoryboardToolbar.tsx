@@ -107,7 +107,7 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
   referenceImage, setReferenceImage, setReferenceImages,
   environmentImage, setEnvironmentImage, setEnvironmentImages, setEnvironmentLabel,
   productImage, setProductImage,
-  showSafetyTerms, onCharacterSelect, setShowSafetyTerms,
+  showSafetyTerms, onCharacterSelect, brainstormIdeas, onSelectIdea, setShowSafetyTerms,
   isProcessing,
   onProjects, onSave, isSaving, onDownloadScript, onDownloadAll, hasStoryboard, onHelp,
   onGenerateStoryboard, isGeneratingStoryboard,
