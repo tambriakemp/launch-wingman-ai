@@ -210,11 +210,13 @@ export const PlannerListView = ({
                     onToggleComplete={onToggleComplete}
                     onEdit={onEditTask}
                     onDelete={onDeleteTask}
-                    onUpdateStatus={onBulkUpdateStatus}
+                    onMoveToSpace={onBulkMoveSpace}
                     categories={categories}
+                    spaces={spaces}
                     isSelected={selectedIds.has(task.id)}
                     onToggleSelect={toggleSelect}
                     hasSelection={selectedIds.size > 0}
+                    showSpaceColumn={!selectedSpaceId}
                   />
                 ))}
                 {onAddTask && (
