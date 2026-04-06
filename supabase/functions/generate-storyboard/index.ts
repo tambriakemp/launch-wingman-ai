@@ -24,38 +24,81 @@ serve(async (req) => {
 
     // Topic brainstorming
     if (action === "brainstorm") {
-      const isBrainstormCarousel = config.creationMode === 'carousel';
-      
-      // Build character context for personalized brainstorming
-      let characterContext = "";
+      const isCarousel = config.creationMode === 'carousel';
+
+      // Build character context from all available profile info
+      const outfit = config.outfitType === 'Custom Outfit' ? config.outfitDetails : config.outfitType;
+      const hair = config.hairstyle?.includes('Custom') ? config.customHairstyle : config.hairstyle;
+      const makeup = config.makeup === 'Custom' ? config.customMakeup : config.makeup;
+      const skin = config.skinComplexion === 'Custom' ? config.customSkinComplexion : config.skinComplexion;
+      const characterVibe = config.characterVibe || '';
+      const hasCharacterContext = !!(characterVibe || (outfit && outfit !== 'Default Outfit') || hair);
+
+      const characterBlock = hasCharacterContext ? `
+CHARACTER PROFILE:
+${characterVibe ? `- Vibe / Lifestyle: ${characterVibe}` : ''}
+${outfit && outfit !== 'Default Outfit' ? `- Typical outfit: ${outfit}` : ''}
+${hair ? `- Hair: ${hair}` : ''}
+${makeup && makeup !== 'Bare Face / No Makeup' ? `- Makeup: ${makeup}` : ''}
+${skin ? `- Skin: ${skin}` : ''}
+`.trim() : '';
+
+      // Also include character profile from DB if available
       if (characterProfile) {
         const parts: string[] = [];
-        if (characterProfile.niche) parts.push(`Niche: ${characterProfile.niche}`);
-        if (characterProfile.aesthetic) parts.push(`Aesthetic/Vibe: ${characterProfile.aesthetic}`);
-        if (characterProfile.personality_traits) parts.push(`Personality: ${characterProfile.personality_traits}`);
-        if (characterProfile.target_audience) parts.push(`Target Audience: ${characterProfile.target_audience}`);
-        if (characterProfile.brand_colors) parts.push(`Brand Colors: ${characterProfile.brand_colors}`);
-        if (parts.length > 0) {
-          characterContext = `\n\nCHARACTER PROFILE:\n${parts.join("\n")}\n\nUse this character profile to generate ideas that are specifically relevant to their niche, aesthetic, audience, and personality. The ideas should feel personalized and on-brand for this creator.`;
-        }
+        if (characterProfile.niche) parts.push(`- Niche: ${characterProfile.niche}`);
+        if (characterProfile.aesthetic) parts.push(`- Aesthetic: ${characterProfile.aesthetic}`);
+        if (characterProfile.personality_traits) parts.push(`- Personality: ${characterProfile.personality_traits}`);
+        if (characterProfile.target_audience) parts.push(`- Target Audience: ${characterProfile.target_audience}`);
       }
 
-      const todayDate = new Date().toISOString().split('T')[0];
+      let brainstormPrompt: string;
 
-      const brainstormPrompt = isBrainstormCarousel
-        ? `Today's date is ${todayDate}. Generate 8 to 12 fresh, creative Instagram carousel ideas. Each idea combines a specific, realistic visual setting with a bold message or story theme.
+      if (isCarousel) {
+        brainstormPrompt = `You are a creative director for Instagram lifestyle content.
 
-Consider the current season, upcoming holidays, trending lifestyle topics, relatable day-to-day moments, and cultural moments happening right now. Mix different angles: aspirational, educational, humorous, vulnerable, motivational, behind-the-scenes, and authentic.
+Generate 6 carousel ideas. Each is a "Setting — Message" pair: a specific visual environment + a bold content hook.
 
-Format: one idea per line, "Setting — Message". No numbers, no bullets, no labels.
-Example: "Inside a luxury car with orange leather seats — Your standards are the problem, not your talent"
+${characterBlock}
 
-Every call MUST produce completely unique, never-before-seen ideas. Surprise the user. Be specific and visually interesting.${characterContext}`
-        : `Today's date is ${todayDate}. Generate a specific, engaging, and creative vlog topic idea for the category: "${config.vlogCategory}".
+RULES:
+- Each idea must be visually specific — name the actual location, car, object, time of day
+- The message should be bold and scroll-stopping — something that would make someone save it
+- Vary the settings across: car/driving, hotel/travel, restaurant/brunch, apartment/bedroom, outdoor/street, luxury location
+- Match the character's vibe if provided — don't suggest settings that clash with their aesthetic
+- Think about what's currently trending on Instagram: soft life content, luxury lifestyle, "the algorithm can tell" style hooks, expectation vs reality, silent success content
 
-Consider the current season, upcoming holidays, trending topics, and relatable day-to-day moments. Make it feel timely and fresh.
+FORMAT: One idea per line. Format exactly: "Setting description — Bold message hook"
+No numbers. No bullets. No extra text. Just 6 lines.`;
+      } else {
+        const category = config.vlogCategory || 'Lifestyle';
+        brainstormPrompt = `You are a creative director for Instagram and TikTok lifestyle content.
 
-Format: A specific scenario or activity. Length: Under 15 words. Output: JUST the topic text. No labels, no quotes. Every call must produce a completely unique idea.${characterContext}`;
+Generate 6 specific, highly visual vlog ideas for this character. Each idea should feel like a real post someone with this aesthetic would actually make.
+
+${characterBlock ? characterBlock : `CATEGORY: ${category}`}
+${characterBlock && category !== 'Custom' ? `CONTENT FOCUS: ${category}` : ''}
+
+THINK ABOUT WHAT'S TRENDING RIGHT NOW:
+- Soft life vlogs (Erewhon runs, luxury hotel stays, spa days, silk sheets, matcha mornings)
+- Aesthetic day-in-my-life (productive morning, city walks, outfit changes, night drives)
+- GRWM for specific events (dinner, date, photoshoot, birthday, traveling)
+- Mirror selfie sessions (bathroom mirror, hotel room, changing room)
+- Luxury car content (driving, Erewhon pickup, airport runs, music playing)
+- Night out prep (hotel bathroom glam, going out from a high-rise, rooftop bar)
+- Cozy/intimate moments (hotel room in pajamas, doing lashes on bed, skincare routine)
+- "A day in my life as a [persona]" style vlogs
+
+RULES:
+- Each idea must be a specific scenario — not generic
+- Vary the energy: some glamorous, some casual, some intimate, some active
+- Each should paint a clear picture of exactly what the video looks like
+- If character vibe is provided, make ideas feel native to that person's world
+- Ideas should be aspirational but believable — real lifestyle, not fantasy
+
+FORMAT: One idea per line. Each idea = emoji + specific scenario in under 25 words.
+No numbers. No extra text. Just 6 lines.`;
+      }
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -63,9 +106,10 @@ Format: A specific scenario or activity. Length: Under 15 words. Output: JUST th
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: [{ role: "user", content: brainstormPrompt }],
-          temperature: 1.0,
+          temperature: 0.9,
         }),
       });
+
       if (!response.ok) {
         const t = await response.text();
         console.error("AI gateway error:", response.status, t);
@@ -73,16 +117,24 @@ Format: A specific scenario or activity. Length: Under 15 words. Output: JUST th
         if (response.status === 402) return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         throw new Error("AI gateway error");
       }
-      const brainstormData = await response.json();
-      const rawText = brainstormData.choices?.[0]?.message?.content?.trim() || "";
 
-      if (isBrainstormCarousel) {
-        const ideas = rawText.split('\n').filter((line: string) => line.trim().length > 0);
-        return new Response(JSON.stringify({ ideas }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      } else {
-        const topic = rawText || "Day in my life";
-        return new Response(JSON.stringify({ topic }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const responseText = await response.text();
+      let brainstormData;
+      try {
+        brainstormData = JSON.parse(responseText);
+      } catch {
+        console.error("Failed to parse brainstorm response:", responseText.slice(0, 200));
+        throw new Error("Invalid response from AI");
       }
+
+      const rawText = brainstormData.choices?.[0]?.message?.content?.trim() || "";
+      const ideas = rawText
+        .split('\n')
+        .map((line: string) => line.trim())
+        .filter((line: string) => line.length > 5)
+        .slice(0, 6);
+
+      return new Response(JSON.stringify({ ideas }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Full storyboard generation

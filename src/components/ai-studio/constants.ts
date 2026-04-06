@@ -130,6 +130,7 @@ export const INITIAL_CONFIG: AppConfig = {
   userScript: "",
   creationMode: 'vlog',
   avatarDescription: "",
+  characterVibe: "",
   productDescription: "",
   ugcPrompt: "",
   carouselVibe: "",

@@ -1001,6 +1001,20 @@ const AIStudio = () => {
             setConfig={setConfig}
             isGeneratingTopic={isGeneratingTopic}
             onGenerateTopicIdeas={handleGenerateTopicIdeas}
+            brainstormIdeas={brainstormIdeas}
+            onSelectIdea={(idea) => {
+              if (config.creationMode === 'carousel') {
+                const parts = idea.split(' — ');
+                if (parts.length >= 2) {
+                  setConfig(prev => ({ ...prev, carouselVibe: parts[0].trim(), carouselMessage: parts.slice(1).join(' — ').trim() }));
+                } else {
+                  setConfig(prev => ({ ...prev, carouselVibe: idea }));
+                }
+              } else {
+                setConfig(prev => ({ ...prev, vlogTopic: idea }));
+              }
+              setBrainstormIdeas([]);
+            }}
             referenceImage={referenceImage}
             setReferenceImage={setReferenceImage}
             setReferenceImages={setReferenceImages}
