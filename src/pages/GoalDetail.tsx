@@ -252,38 +252,25 @@ const GoalDetail = () => {
     fetchGoal();
   };
 
-  const handleLogUpdate = async (target: GoalTarget) => {
+  const handleUpdateTargetSave = async (targetId: string, newCurrentValue: number, newStartValue: number, newTargetValue: number, note: string) => {
     if (!user) return;
-    setIsUpdating(true);
-    let newValue: number;
-    if (target.target_type === "true_false") {
-      newValue = target.current_value >= 1 ? 0 : 1;
-    } else {
-      newValue = Number(updateValue);
-      if (isNaN(newValue)) {
-        toast.error("Please enter a valid number");
-        setIsUpdating(false);
-        return;
-      }
-    }
+    const target = targets.find(t => t.id === targetId);
+    if (!target) return;
     const previousValue = Number(target.current_value);
     await supabase.from("goal_target_updates" as any).insert({
-      target_id: target.id,
+      target_id: targetId,
       user_id: user.id,
       previous_value: previousValue,
-      new_value: newValue,
-      note: updateNote.trim() || null,
+      new_value: newCurrentValue,
+      note: note || null,
     });
-    const isDone = newValue >= Number(target.target_value);
+    const isDone = newCurrentValue >= newTargetValue;
     await supabase
       .from("goal_targets" as any)
-      .update({ current_value: newValue, is_done: isDone })
-      .eq("id", target.id);
+      .update({ current_value: newCurrentValue, start_value: newStartValue, target_value: newTargetValue, is_done: isDone })
+      .eq("id", targetId);
     toast.success("Progress updated");
-    setUpdateValue("");
-    setUpdateNote("");
-    setExpandedTargets(new Set());
-    setIsUpdating(false);
+    setUpdatePanelTarget(null);
     fetchTargets();
     fetchUpdates();
   };
