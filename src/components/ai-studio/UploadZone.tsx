@@ -84,6 +84,7 @@ const UploadZone: React.FC<UploadZoneProps> = ({
           preview ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 bg-muted/20'
         }`}
         onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
         onDrop={handleDrop}
         onClick={() => !preview && !uploading && fileInputRef.current?.click()}
       >
