@@ -34,8 +34,8 @@ const ProjectExecute = () => {
             <ListTodo className="w-6 h-6 text-orange-600 dark:text-orange-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Tasks</h1>
-            <p className="text-muted-foreground">Manage and track your project tasks.</p>
+            <h1 className="text-2xl font-semibold text-foreground">Launch Tasks</h1>
+            <p className="text-muted-foreground">Manage and track your launch tasks.</p>
           </div>
         </div>
         <TasksBoard projectId={id} projectType={projectType} />
