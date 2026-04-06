@@ -406,18 +406,9 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                         )}
                       </div>
                       <textarea
-                        placeholder="Describe the world of your carousel — location, vibe, lighting, props, e.g. 'Cozy coffee shop with warm golden light, plants on shelves, latte art on the table...'"
+                        placeholder="Describe your scene — location, vibe, lighting, props, and the story or message. e.g. 'Cozy coffee shop, warm golden light, latte art — morning routine that changed my productivity'"
                         value={config.carouselVibe}
                         onChange={(e) => setConfig(c => ({ ...c, carouselVibe: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary"
-                      />
-                    </div>
-                    <div>
-                      <Label label="Story / Caption Theme" />
-                      <textarea
-                        placeholder="What narrative ties the slides together? e.g. 'Morning routine that changed my productivity — each slide shows a different step...'"
-                        value={config.carouselMessage}
-                        onChange={(e) => setConfig(c => ({ ...c, carouselMessage: e.target.value }))}
                         className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary"
                       />
                     </div>
