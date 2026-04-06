@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { SpacesSidebar } from "@/components/planner/SpacesSidebar";
 import { usePlannerSpaces } from "@/hooks/usePlannerSpaces";
 import { useCalendarSync } from "@/hooks/useCalendarSync";
+import { useStatusVisibility } from "@/hooks/useStatusVisibility";
+import { StatusVisibilitySettings } from "@/components/planner/StatusVisibilitySettings";
 
 const Planner = () => {
   const { user } = useAuth();
