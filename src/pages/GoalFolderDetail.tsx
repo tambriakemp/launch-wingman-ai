@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { ProjectLayout } from "@/components/layout/ProjectLayout";
 import { GoalGridCard } from "@/components/goals/GoalGridCard";
 import { GoalDialog } from "@/components/goals/GoalDialog";
