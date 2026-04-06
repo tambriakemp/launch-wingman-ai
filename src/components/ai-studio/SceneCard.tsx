@@ -5,7 +5,44 @@ import { Button } from '@/components/ui/button';
 
 import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 
-interface SceneCardProps {
+const EditableField = ({
+  label, value, editedValue, isFieldEditing, colorClass,
+  onEdit, onSave, onCancel, onChange
+}: {
+  label: string; value: string; editedValue: string; isFieldEditing: boolean; colorClass?: string;
+  onEdit: () => void; onSave: () => void; onCancel: () => void; onChange: (v: string) => void;
+}) => (
+  <div>
+    <div className="flex justify-between items-center mb-0.5">
+      <span className={`text-[10px] uppercase font-bold ${colorClass || 'text-primary'}`}>{label}</span>
+      {!isFieldEditing ? (
+        <button onClick={onEdit} className="text-[10px] text-muted-foreground hover:text-foreground uppercase font-bold flex items-center gap-1">
+          <Pencil className="h-3 w-3" /> Edit
+        </button>
+      ) : (
+        <div className="flex gap-1">
+          <button onClick={onSave} className="text-[10px] text-primary hover:text-foreground uppercase font-bold flex items-center gap-1">
+            <Check className="h-3 w-3" /> Save
+          </button>
+          <button onClick={onCancel} className="text-[10px] text-muted-foreground hover:text-foreground uppercase font-bold flex items-center gap-1">
+            <X className="h-3 w-3" /> Cancel
+          </button>
+        </div>
+      )}
+    </div>
+    {isFieldEditing ? (
+      <AutoResizeTextarea
+        value={editedValue}
+        onChange={(e) => onChange(e.target.value)}
+        className="text-sm bg-background border-primary"
+        minRows={2}
+      />
+    ) : (
+      <p className="text-sm text-foreground/80 leading-relaxed">{value || <span className="italic text-muted-foreground">Empty</span>}</p>
+    )}
+  </div>
+);
+
   step: VlogStep;
   index: number;
   media: GeneratedMedia;
