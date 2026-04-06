@@ -1,75 +1,55 @@
 
-Goal: fix the real remaining issue in outbound calendar sync so due-only/all-day planner tasks re-sync correctly as all-day events in Google/Outlook/Apple, with no greyed-out “12am” entries.
 
-What I found
-- This is not a dev-vs-production problem. It should work in preview/dev too.
-- Your task data is now saving correctly:
-  - due-only tasks are stored as `due_at` set
-  - `start_at = null`
-  - `end_at = null`
-- The uploaded screenshot is from Google Calendar, and the current failure is in the sync layer, not the task editor.
-- The latest bulk sync request returned:
-  - `{"success":true,"synced":0,"message":"All tasks already synced"}`
-- That happens because `bulk-sync-calendar` currently skips every task that already has a sync mapping, so it does not rewrite previously-synced events after a bug fix.
+## Plan: Fix Google Tasks Sync Not Working After Reconnection
 
-Why the external calendar still shows “12am” and greyed out
-1. `supabase/functions/sync-calendar-event/index.ts`
-   - all-day detection uses `isAllDayTime()` which only treats `00:00:00Z` as all-day
-   - but your due-only tasks are stored like `2026-04-06T05:00:00+00:00` (local midnight converted to UTC), so they fail that check
-   - result: the function sends them as timed `dateTime` events instead of all-day `date` events
-2. Google month view displays midnight timed events as faint/grey entries with a `12am` prefix
-3. `supabase/functions/bulk-sync-calendar/index.ts`
-   - only syncs unsynced tasks
-   - so existing bad calendar events never get corrected when you click “Sync all existing tasks”
+### What I found
 
-Implementation plan
+1. **Sync mappings table is completely empty** — no tasks have been successfully synced to Google Tasks
+2. **Edge function logs show only boot messages** — the sync-calendar-event function is being called (many boots during bulk sync) but produces zero application-level logs, meaning errors are being swallowed silently
+3. **Old Calendar API remnants in logs** — at 09:13 the logs show "Found existing Launchely calendar" from the old Calendar Events code, confirming the old version was running before redeployment
+4. **Task data is valid** — there are dated planner tasks ready to sync (e.g., "500 Photos of Styl" due 2026-04-11, "Finish Data Annotation" due 2026-04-03)
+5. **Google connection exists** — reconnected at 09:18:30 with `blukollallc@gmail.com`
 
-1. Fix all-day classification in `supabase/functions/sync-calendar-event/index.ts`
-- Replace the UTC-midnight-only logic with task-semantic logic:
-  - due-only (`due_at` with no `start_at`/`end_at`) = all-day
-  - same-instant `start_at` + `end_at` = all-day
-  - real start/end range = timed
-- Build all-day provider payloads from the task’s date portion (`YYYY-MM-DD`), not from a UTC-midnight test
-- Keep timed tasks unchanged
+### Root cause
 
-2. Make bulk sync actually re-sync existing events in `supabase/functions/bulk-sync-calendar/index.ts`
-- Stop filtering out tasks that already have mappings
-- For every dated planner task:
-  - if mapping exists, call `sync-calendar-event` with `action: "update"`
-  - if no mapping exists, it can still create the event
-- Keep excluding undated tasks and done tasks
+The `syncToGoogle` function has no error logging. When the Google Tasks API returns an error (likely a 403 permission denied because the Tasks API may not be enabled in the Google Cloud project, or a scope issue), the function silently returns `{ success: false }` and the bulk sync counts it as "failed" but the response never surfaces why.
 
-3. Improve the settings action so the behavior matches the button label
-- Update `src/components/settings/CalendarIntegrationsCard.tsx` so the action/message reflects a true re-sync
-- Optional copy tweak:
-  - from “Sync all existing tasks”
-  - to “Re-sync all calendar tasks”
-- Success toast should report updated/created counts, not imply a no-op when mappings already exist
+### Implementation
 
-4. Preserve provider-specific correct behavior
-- Google: send all-day events using `start.date` / `end.date`
-- Outlook: send `isAllDay: true` with date-only day boundaries
-- Apple: generate `VALUE=DATE` ICS entries for all-day items
-- This fix should apply across all connected providers because they all use the same shared event-body logic
+**File: `supabase/functions/sync-calendar-event/index.ts`**
 
-5. Verify end-to-end in preview/dev
-- Create or edit a due-only task for today
-- Click the re-sync action
-- Confirm in Google Calendar month view:
-  - no `12am` prefix
-  - event appears as an all-day bar, not a faded timed entry
-- Also verify:
-  - true timed tasks still show times
-  - existing previously-synced bad events get corrected after re-sync
-  - no production-only setup is required
+Add detailed console.log/error statements throughout `syncToGoogle`:
+- Log the Google Tasks API response status and body on every call (create, update, delete)
+- Log when `buildEventBody` returns null
+- Log the access token prefix to confirm it's non-null
+- Log the exact request body being sent
 
-Files to update
-- `supabase/functions/sync-calendar-event/index.ts`
-- `supabase/functions/bulk-sync-calendar/index.ts`
-- `src/components/settings/CalendarIntegrationsCard.tsx`
+This will let us see the actual Google Tasks API error in the edge function logs after the next sync attempt.
 
-Expected result
-- Re-syncing will actually update already-synced calendar events
-- Due-only / all-day tasks will appear as true all-day events externally
-- Google Calendar will stop showing those items as grey `12am` entries
-- The fix will work in dev/preview and production the same way
+**Specific logging points:**
+1. At the start of `syncToGoogle`: log action, existingEventId, and whether task data exists
+2. After every `fetch` to Google Tasks API: log `res.status` and response body text on failure
+3. In the main handler loop: log when `getAccessToken` returns null vs a valid token
+4. Log the full results array before returning the response
+
+**File: `supabase/functions/bulk-sync-calendar/index.ts`**
+
+Add logging for:
+- Number of dated tasks found
+- Each individual sync result (including the response body from sync-calendar-event)
+- Final summary with created/updated/failed counts
+
+### Expected result
+
+After deployment and a re-sync attempt, the edge function logs will show the exact Google Tasks API error, which will point to either:
+- Tasks API not enabled in Google Cloud Console (needs user action)
+- Missing `tasks` scope on the token (needs re-auth)
+- API quota/rate limit issue
+
+We can then address the specific root cause.
+
+### Technical details
+- 2 edge function files edited for logging
+- No schema changes
+- Redeploy both `sync-calendar-event` and `bulk-sync-calendar`
+
