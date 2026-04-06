@@ -62,6 +62,7 @@ export const CalendarIntegrationsCard = () => {
   const [feedUrl, setFeedUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [generatingFeed, setGeneratingFeed] = useState(false);
+  const [bulkSyncing, setBulkSyncing] = useState(false);
 
   const { data: connections = [], isLoading } = useQuery({
     queryKey: ["calendar-connections"],
