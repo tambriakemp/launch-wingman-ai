@@ -291,8 +291,51 @@ const GoalDetail = () => {
     fetchUpdates();
   };
 
+  // Goal-level actions
+  const handleMoveGoalToFolder = async (newFolderId: string | null) => {
+    if (!goal) return;
+    await supabase
+      .from("goals" as any)
+      .update({ folder_id: newFolderId })
+      .eq("id", goal.id);
+    toast.success(newFolderId ? "Goal moved to folder" : "Goal removed from folder");
+    fetchGoal();
+  };
 
-  const toggleExpanded = (targetId: string) => {
+  const handleArchiveGoal = async () => {
+    if (!goal) return;
+    const newStatus = goal.status === "archived" ? "active" : "archived";
+    await supabase
+      .from("goals" as any)
+      .update({ status: newStatus })
+      .eq("id", goal.id);
+    toast.success(newStatus === "archived" ? "Goal archived" : "Goal unarchived");
+    fetchGoal();
+  };
+
+  const handleDeleteGoal = async () => {
+    if (!goal) return;
+    await supabase.from("goal_targets" as any).delete().eq("goal_id", goal.id);
+    await supabase.from("goals" as any).delete().eq("id", goal.id);
+    toast.success("Goal deleted");
+    navigate("/goals");
+  };
+
+  const [isRenamingGoal, setIsRenamingGoal] = useState(false);
+  const [renameGoalValue, setRenameGoalValue] = useState("");
+
+  const handleRenameGoal = async () => {
+    if (!goal || !renameGoalValue.trim()) return;
+    await supabase
+      .from("goals" as any)
+      .update({ title: renameGoalValue.trim(), updated_at: new Date().toISOString() })
+      .eq("id", goal.id);
+    toast.success("Goal renamed");
+    setIsRenamingGoal(false);
+    fetchGoal();
+  };
+
+
     setExpandedTargets(prev => {
       const next = new Set(prev);
       if (next.has(targetId)) next.delete(targetId);
