@@ -217,6 +217,7 @@ async function syncToMicrosoft(accessToken: string, task: any, action: string, e
   }
 
   const ev = buildEventBody(task);
+  if (!ev) return { success: false, eventId: null };
   const body: any = {
     subject: ev.title,
     body: { contentType: "Text", content: ev.description },
