@@ -50,6 +50,7 @@ const AIStudio = () => {
   };
   const [showHelp, setShowHelp] = useState(false);
   const [isGeneratingTopic, setIsGeneratingTopic] = useState(false);
+  const [brainstormIdeas, setBrainstormIdeas] = useState<string[]>([]);
   const [enlargedImageIndex, setEnlargedImageIndex] = useState<number | null>(null);
   const [previewLightbox, setPreviewLightbox] = useState<string | null>(null);
   const [queue, setQueue] = useState<QueueItem[]>([]);
@@ -341,17 +342,17 @@ const AIStudio = () => {
   const handleGenerateTopicIdeas = async () => {
     if (config.creationMode !== 'carousel' && !config.vlogCategory) return;
     setIsGeneratingTopic(true);
+    setBrainstormIdeas([]);
     try {
       const { data, error } = await supabase.functions.invoke('generate-storyboard', {
-        body: { action: 'brainstorm', config, characterProfile: selectedCharacter || undefined }
+        body: { action: 'brainstorm', config }
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      if (config.creationMode === 'carousel' && data.ideas) {
-        const firstIdea = data.ideas[0] || '';
-        setConfig(prev => ({ ...prev, carouselVibe: firstIdea }));
-      } else {
+      if (data.ideas) {
+        setBrainstormIdeas(data.ideas);
+      } else if (data.topic) {
         setConfig(prev => ({ ...prev, vlogTopic: data.topic }));
       }
     } catch (e: any) {
@@ -1000,6 +1001,20 @@ const AIStudio = () => {
             setConfig={setConfig}
             isGeneratingTopic={isGeneratingTopic}
             onGenerateTopicIdeas={handleGenerateTopicIdeas}
+            brainstormIdeas={brainstormIdeas}
+            onSelectIdea={(idea) => {
+              if (config.creationMode === 'carousel') {
+                const parts = idea.split(' — ');
+                if (parts.length >= 2) {
+                  setConfig(prev => ({ ...prev, carouselVibe: parts[0].trim(), carouselMessage: parts.slice(1).join(' — ').trim() }));
+                } else {
+                  setConfig(prev => ({ ...prev, carouselVibe: idea }));
+                }
+              } else {
+                setConfig(prev => ({ ...prev, vlogTopic: idea }));
+              }
+              setBrainstormIdeas([]);
+            }}
             referenceImage={referenceImage}
             setReferenceImage={setReferenceImage}
             setReferenceImages={setReferenceImages}

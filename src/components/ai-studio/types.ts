@@ -35,6 +35,7 @@ export interface AppConfig {
   userScript: string;
   creationMode: CreationMode;
   avatarDescription: string;
+  characterVibe: string;
   ugcPrompt: string;
   carouselVibe: string;
   carouselMessage: string;
