@@ -77,7 +77,7 @@ serve(async (req) => {
       let systemPrompt: string;
 
       if (config.creationMode === 'carousel') {
-        const carouselSlideCount = config.carouselSlideCount || 6;
+        const carouselSlideCount = config.sceneCount || config.carouselSlideCount || 6;
         const getStyleDescription = () => {
           const baseOutfit = config.outfitType === 'Custom Outfit' ? config.outfitDetails : config.outfitType;
           let outfit = config.outfitAdditionalInfo ? `${baseOutfit} (${config.outfitAdditionalInfo})` : baseOutfit;

@@ -230,5 +230,10 @@ export const getUserFriendlyErrorMessage = (error: any, context: 'image' | 'vide
     if (context === 'video') return "⏱️ Video generation timed out. This can happen with complex scenes — please retry.";
     return "⏱️ The request timed out. Please try again.";
   }
+  // Pass through the actual error message so users can report it
+  const rawMsg = (error?.message || error || "").toString();
+  if (rawMsg && rawMsg !== "Unknown error" && rawMsg.length > 5) {
+    return `Something went wrong: ${rawMsg}`;
+  }
   return "👾 Something went wrong. Please try again.";
 };
