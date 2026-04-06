@@ -372,11 +372,12 @@ function BulkCategoryPicker({
 }
 
 // --- Task Row ---
-function TaskRow({ task, onToggleComplete, onEdit, onDelete, categories, isSelected, onToggleSelect, hasSelection }: {
+function TaskRow({ task, onToggleComplete, onEdit, onDelete, onUpdateStatus, categories, isSelected, onToggleSelect, hasSelection }: {
   task: PlannerTask;
   onToggleComplete: (t: PlannerTask) => void;
   onEdit: (t: PlannerTask) => void;
   onDelete: (id: string) => void;
+  onUpdateStatus?: (ids: string[], status: string) => void;
   categories: SpaceCategory[];
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
