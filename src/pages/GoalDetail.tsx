@@ -439,19 +439,13 @@ const GoalDetail = () => {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h1 className="text-xl font-semibold text-foreground">{goal.title}</h1>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">
-                          {goal.category}
-                        </span>
-                        {goal.status === "completed" && (
+                      {goal.status === "completed" && (
+                        <div className="flex items-center gap-2 mt-1">
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
                             Completed ✓
                           </span>
-                        )}
-                        <span className="text-xs text-muted-foreground">
-                          {doneTargets}/{totalTargets} targets
-                        </span>
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
