@@ -589,7 +589,7 @@ const GoalDetail = () => {
                   {/* Header row */}
                   <div className="flex items-center gap-3 p-4">
                     <button
-                      onClick={() => toggleExpanded(target.id)}
+                      onClick={() => isTaskTarget ? toggleExpanded(target.id) : setUpdatePanelTarget(target)}
                       className="flex-1 flex items-center gap-3 text-left hover:bg-muted/30 transition-colors rounded-lg -m-1 p-1"
                     >
                       {target.is_done ? (
