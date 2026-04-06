@@ -888,6 +888,20 @@ const GoalDetail = () => {
                   const target = targets.find((t) => t.id === update.target_id);
                   const diff = Number(update.new_value) - Number(update.previous_value);
                   const isPositive = diff >= 0;
+                  const absDiff = Math.abs(diff);
+                  const unitPrefix = target?.target_type === "currency" ? getCurrencySymbol(target?.unit ?? null) : "";
+                  const unitSuffix = target?.target_type === "number" && target?.unit ? ` ${target.unit}` : "";
+
+                  // Build descriptive action text
+                  let actionText = "";
+                  if (diff === 0) {
+                    actionText = `set to ${unitPrefix}${Number(update.new_value).toLocaleString()}${unitSuffix}`;
+                  } else if (isPositive) {
+                    actionText = `increased by ${unitPrefix}${absDiff.toLocaleString()}${unitSuffix} → ${unitPrefix}${Number(update.new_value).toLocaleString()}${unitSuffix}`;
+                  } else {
+                    actionText = `decreased by ${unitPrefix}${absDiff.toLocaleString()}${unitSuffix} → ${unitPrefix}${Number(update.new_value).toLocaleString()}${unitSuffix}`;
+                  }
+
                   return (
                     <div
                       key={update.id}
@@ -908,11 +922,7 @@ const GoalDetail = () => {
                           <span className="font-medium">
                             {target?.name || "Target"}
                           </span>{" "}
-                          updated to{" "}
-                          <span className="font-mono font-medium">
-                            {target?.target_type === "currency" ? getCurrencySymbol(target?.unit ?? null) : ""}
-                            {Number(update.new_value).toLocaleString()}
-                          </span>
+                          {actionText}
                         </p>
                         {update.note && (
                           <p className="text-xs text-muted-foreground mt-0.5">
