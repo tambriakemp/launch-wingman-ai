@@ -953,6 +953,12 @@ const GoalDetail = () => {
           )}
         </div>
       </div>
+      <DeleteConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        onConfirm={() => { pendingDeleteAction?.(); }}
+        title={deleteConfirmTitle}
+      />
     </ProjectLayout>
   );
 };
