@@ -1,81 +1,29 @@
 
-Fix the remaining due-date-only update bug in the planner by aligning the dialog’s date model with the database rules.
 
-### What’s actually broken
-The update request is still sending:
-```text
-due_at = set
-start_at = null
-end_at = set
-```
-The database rejects that with:
-```text
-start_at required when end_at is set
-```
+## Plan: Fix Calendar All-Day Task Display
 
-From the current code:
-- `PlannerTaskDialog` uses `startDate` for Start and `endDate` for Due
-- On edit, if a task only has `due_at`, it hydrates that value into `startDate`
-- But the UI still allows a “due-only” state via the Due tab
-- On submit, `end_at` is always derived from `endDate`, even when there is no real scheduled start, which creates an invalid payload
+### Issues
+1. **"12 AM" time prefix**: Tasks set to midnight show "12:00 AM" or similar time prefix in month view instead of displaying cleanly as all-day events
+2. **Grayed-out past days**: Days earlier in the current month appear dimmed even though they're in the current month — only non-current-month days should be dimmed
 
-### Files to update
+### Changes — `src/components/planner/PlannerCalendarView.tsx`
 
-#### 1. `src/components/planner/PlannerTaskDialog.tsx`
-Adjust the submit logic so the payload follows one of these valid shapes only:
+**Fix 1: Remove midnight time prefix in month view (lines 626-630)**
+- The current check `s.getHours() === 0 && s.getMinutes() === 0` only catches exact UTC midnight
+- Replace with a broader check: if the task is in the `allDayTasks` list, skip the time prefix entirely
+- Alternatively, also skip the time when the formatted time is "12:00 AM" (local midnight)
 
-- Unscheduled due-only task:
-  - `due_at = selected date`
-  - `start_at = null`
-  - `end_at = null`
+**Fix 2: Stop graying current-month past days (line 606)**
+- Currently `!isCurrentMonth && "opacity-35"` — this is correct for non-current-month days
+- Verify no additional opacity/graying is applied to past days within the current month
+- If the user's tasks appear grayed because they're due-date-only with `start_at = null` and falling through to timed rendering with faded styling, ensure they route to the all-day row properly
 
-- All-day scheduled task:
-  - `due_at = selected date`
-  - `start_at = selected date`
-  - `end_at = same selected date`
+**Fix 3: Ensure due-only tasks render in all-day section without time labels**
+- In the all-day row (line 478), task titles already render without time — no change needed
+- In month view, add a guard: if task has no `start_at` (due-only), skip the time prefix block entirely
 
-- Timed task:
-  - `due_at = start or due date`
-  - `start_at` and `end_at` both set
+### Summary
+- 1 file changed
+- Month view: skip time prefix for all-day/midnight/due-only tasks
+- No opacity changes to current-month days regardless of whether they're in the past
 
-Implementation plan:
-- Normalize dates before `onSubmit`
-- Detect whether the user truly has a start date vs only a due date
-- Stop using `endDate` as `end_at` when no `startDate` exists
-- Prefer explicit logic like:
-  - if only due exists → `due_at = due`, `start_at = null`, `end_at = null`
-  - if only start exists → `due_at = start`, `start_at = start`, `end_at = start`
-  - if both exist → keep both, but ensure `end_at >= start_at`
-
-Also adjust edit-state initialization:
-- For tasks that only have `due_at` and no `start_at`, hydrate the value into the Due field, not the Start field
-- This keeps the UI consistent with the stored task type and prevents accidental conversion into a scheduled task
-
-#### 2. `src/pages/Planner.tsx`
-Make update handling preserve nullability correctly during edits:
-- avoid forcing date fields into invalid combinations
-- keep the update payload consistent with the normalized output from the dialog
-- if needed, add a small defensive normalization before `.update(...)` so `end_at` cannot be sent without `start_at`
-
-### Why this fixes it
-Right now the dialog treats the “Due” field like database `end_at`, but the database trigger treats `end_at` as the end of a scheduled event. A due date is not the same thing as an event end time. The fix is to separate:
-- due date = `due_at`
-- schedule start = `start_at`
-- schedule end = `end_at`
-
-### Technical notes
-- The calendar and upcoming widget logic already supports:
-  - `due_at` with no `start_at/end_at` as all-day
-  - same-time `start_at/end_at` as all-day
-- So this bug is mainly a submit/hydration mismatch, not a calendar rendering problem
-- The console/network logs confirm the exact invalid payload currently being sent:
-```text
-start_at: null
-end_at: "2026-04-06T05:00:00.000Z"
-```
-
-### Expected result after implementation
-- Updating a task with only a due date succeeds
-- Due-only tasks keep showing as all-day/upcoming
-- Editing an existing due-only task shows the date in the Due slot, not as a Start date
-- No more `start_at required when end_at is set` errors for due-date-only updates
