@@ -16,6 +16,7 @@ import {
   ListChecks,
   Flag,
   Clock,
+  FolderOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -149,6 +150,7 @@ export const PlannerTaskDialog = ({
   const [recurrenceCount, setRecurrenceCount] = useState(10);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [showRepeat, setShowRepeat] = useState(false);
+  const [taskSpaceId, setTaskSpaceId] = useState<string>("");
 
   // Subtasks state
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
@@ -158,8 +160,9 @@ export const PlannerTaskDialog = ({
   const [subtaskDescription, setSubtaskDescription] = useState("");
   const [subtaskSaving, setSubtaskSaving] = useState(false);
 
-  const spaceCats = selectedSpaceId
-    ? allCategories.filter(c => c.space_id === selectedSpaceId)
+  const effectiveSpaceId = taskSpaceId || selectedSpaceId;
+  const spaceCats = effectiveSpaceId
+    ? allCategories.filter(c => c.space_id === effectiveSpaceId)
     : categories;
 
   const isScheduled = editTask && (editTask.start_at || editTask.end_at);
@@ -185,6 +188,7 @@ export const PlannerTaskDialog = ({
       setDescription(editTask.description || "");
       setColumnId(editTask.column_id);
       setPriority((editTask as any).priority || "normal");
+      setTaskSpaceId((editTask as any).space_id || "");
 
       const editCat = editTask.category;
       const catExists = spaceCats.some(c => c.id === editCat);
@@ -241,6 +245,8 @@ export const PlannerTaskDialog = ({
       setRecurrenceCount(10);
       setSubtasks([]);
       setShowRepeat(false);
+      // Default to first space if no space selected (All Spaces view)
+      setTaskSpaceId(!selectedSpaceId && spaces.length > 0 ? spaces[0].id : (selectedSpaceId || ""));
     }
   }, [editTask, open, defaultDueAt, selectedSpaceId]);
 
@@ -272,7 +278,7 @@ export const PlannerTaskDialog = ({
         end_at: endDate ? endDate.toISOString() : (startDate ? startDate.toISOString() : null),
         location: null,
         recurrence_rule: recurrenceRuleValue,
-        ...(({ space_id: selectedSpaceId }) as any),
+        ...(({ space_id: taskSpaceId || selectedSpaceId }) as any),
       });
       onOpenChange(false);
     } catch {} finally {
@@ -295,7 +301,7 @@ export const PlannerTaskDialog = ({
         start_at: null,
         end_at: null,
         location: null,
-        ...(({ space_id: selectedSpaceId }) as any),
+        ...(({ space_id: taskSpaceId || selectedSpaceId }) as any),
       });
       onOpenChange(false);
     } catch {} finally {
@@ -522,20 +528,43 @@ export const PlannerTaskDialog = ({
                 </PropertyRow>
 
                 {(() => {
-                  const selectedCat = spaceCats.find(c => c.id === category);
                   return (
                     <PropertyRow icon={Tag} label="Category">
                       <CategoryCombobox
                         categories={spaceCats}
                         value={category}
                         onChange={setCategory}
-                        selectedSpaceId={selectedSpaceId}
+                        selectedSpaceId={taskSpaceId || selectedSpaceId}
                         onCreateCategory={onCreateCategory}
                       />
                     </PropertyRow>
                   );
                 })()}
               </div>
+
+              {/* Row 3: Space selector — only when in All Spaces view and creating */}
+              {!selectedSpaceId && spaces.length > 0 && (
+                <div className="grid grid-cols-2 divide-x divide-border">
+                  <PropertyRow icon={FolderOpen} label="Space">
+                    <Select value={taskSpaceId} onValueChange={setTaskSpaceId}>
+                      <SelectTrigger className="h-8 border-none shadow-none bg-transparent text-sm px-2 w-full">
+                        <SelectValue placeholder="Select space" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {spaces.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full" style={{ background: s.color }} />
+                              {s.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </PropertyRow>
+                  <div />
+                </div>
+              )}
             </div>
 
             {/* Description — longer */}

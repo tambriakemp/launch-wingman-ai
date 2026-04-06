@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format, parseISO, isPast, isToday, startOfWeek, endOfWeek, isBefore, isAfter } from "date-fns";
-import { CheckCircle2, Circle, ChevronDown, ChevronRight, MoreHorizontal, Pencil, Trash2, Plus, X, FolderOpen, Tag, CircleDot, Square, CheckSquare, Settings2, ArrowRightLeft } from "lucide-react";
+import { CheckCircle2, Circle, ChevronDown, ChevronRight, MoreHorizontal, Pencil, Trash2, Plus, X, FolderOpen, Tag, CircleDot, Square, CheckSquare, Settings2 } from "lucide-react";
 import { SpaceNotesSection } from "./SpaceNotesSection";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -145,9 +145,15 @@ export const PlannerListView = ({
       {activeSpace && onUpdateSpace && activeSpace.description_pinned && (
         <SpaceNotesSection space={activeSpace} onUpdateSpace={onUpdateSpace} />
       )}
-      <div className="grid grid-cols-[minmax(0,1fr)_100px_100px_90px_36px] gap-2 items-center px-4 py-1.5 border-b border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground select-none sticky top-0 bg-background z-10">
+      <div className={cn(
+        "gap-2 items-center px-4 py-1.5 border-b border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground select-none sticky top-0 bg-background z-10 grid",
+        !selectedSpaceId
+          ? "grid-cols-[minmax(0,1fr)_100px_100px_100px_90px_36px]"
+          : "grid-cols-[minmax(0,1fr)_100px_100px_90px_36px]"
+      )}>
         <span className="pl-8">Name</span>
         <span>Due Date</span>
+        {!selectedSpaceId && <span>Space</span>}
         <span>Category</span>
         <span>Status</span>
         <span>
@@ -204,11 +210,13 @@ export const PlannerListView = ({
                     onToggleComplete={onToggleComplete}
                     onEdit={onEditTask}
                     onDelete={onDeleteTask}
-                    onUpdateStatus={onBulkUpdateStatus}
+                    onMoveToSpace={onBulkMoveSpace}
                     categories={categories}
+                    spaces={spaces}
                     isSelected={selectedIds.has(task.id)}
                     onToggleSelect={toggleSelect}
                     hasSelection={selectedIds.size > 0}
+                    showSpaceColumn={!selectedSpaceId}
                   />
                 ))}
                 {onAddTask && (
@@ -376,16 +384,18 @@ function BulkCategoryPicker({
 }
 
 // --- Task Row ---
-function TaskRow({ task, onToggleComplete, onEdit, onDelete, onUpdateStatus, categories, isSelected, onToggleSelect, hasSelection }: {
+function TaskRow({ task, onToggleComplete, onEdit, onDelete, onMoveToSpace, categories, spaces, isSelected, onToggleSelect, hasSelection, showSpaceColumn }: {
   task: PlannerTask;
   onToggleComplete: (t: PlannerTask) => void;
   onEdit: (t: PlannerTask) => void;
   onDelete: (id: string) => void;
-  onUpdateStatus?: (ids: string[], status: string) => void;
+  onMoveToSpace?: (ids: string[], spaceId: string) => void;
   categories: SpaceCategory[];
+  spaces: PlannerSpace[];
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
   hasSelection: boolean;
+  showSpaceColumn: boolean;
 }) {
   const isDone = task.column_id === "done";
 
@@ -396,16 +406,32 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete, onUpdateStatus, cat
     return id;
   };
 
+  const getSpaceName = () => {
+    const spaceId = (task as any).space_id;
+    if (!spaceId) return "—";
+    const found = spaces.find(s => s.id === spaceId);
+    return found ? found.name : "—";
+  };
+
+  const getSpaceColor = () => {
+    const spaceId = (task as any).space_id;
+    if (!spaceId) return undefined;
+    const found = spaces.find(s => s.id === spaceId);
+    return found?.color;
+  };
+
   return (
     <div
       className={cn(
-        "grid grid-cols-[minmax(0,1fr)_100px_100px_90px_36px] gap-2 items-center px-4 h-9 hover:bg-accent/40 transition-colors cursor-pointer group border-b border-border/50",
+        "gap-2 items-center px-4 h-9 hover:bg-accent/40 transition-colors cursor-pointer group border-b border-border/50 grid",
+        showSpaceColumn
+          ? "grid-cols-[minmax(0,1fr)_100px_100px_100px_90px_36px]"
+          : "grid-cols-[minmax(0,1fr)_100px_100px_90px_36px]",
         isSelected && "bg-primary/5"
       )}
       onClick={() => onEdit(task)}
     >
       <div className="flex items-center gap-2 min-w-0">
-        {/* Checkbox: visible on hover or when selected or when any selection active */}
         <button
           type="button"
           className={cn(
@@ -420,7 +446,6 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete, onUpdateStatus, cat
           }
         </button>
 
-        {/* Completion circle: always visible */}
         <button
           type="button"
           className="shrink-0"
@@ -436,6 +461,13 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete, onUpdateStatus, cat
         {task.due_at ? format(parseISO(task.due_at), "MMM d") : "—"}
       </span>
 
+      {showSpaceColumn && (
+        <span className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
+          {getSpaceColor() && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getSpaceColor() }} />}
+          {getSpaceName()}
+        </span>
+      )}
+
       <span className="text-xs text-muted-foreground truncate capitalize">{getCategoryName(task.category)}</span>
 
       {getStatusBadge(task.column_id)}
@@ -450,19 +482,16 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete, onUpdateStatus, cat
           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(task); }}>
             <Pencil className="w-4 h-4 mr-2" /> Edit
           </DropdownMenuItem>
-          {onUpdateStatus && (
+          {onMoveToSpace && spaces.length > 0 && (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger onClick={(e) => e.stopPropagation()}>
-                <ArrowRightLeft className="w-4 h-4 mr-2" /> Move to list
+                <FolderOpen className="w-4 h-4 mr-2" /> Move to space
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
-                {[
-                  { id: "todo", label: "To Do" },
-                  { id: "in_progress", label: "In Progress" },
-                  { id: "done", label: "Done" },
-                ].filter(s => s.id !== task.column_id).map(s => (
-                  <DropdownMenuItem key={s.id} onClick={(e) => { e.stopPropagation(); onUpdateStatus([task.id], s.id); }}>
-                    {s.label}
+                {spaces.filter(s => s.id !== (task as any).space_id).map(s => (
+                  <DropdownMenuItem key={s.id} onClick={(e) => { e.stopPropagation(); onMoveToSpace([task.id], s.id); }}>
+                    <div className="w-2 h-2 rounded-full mr-2" style={{ background: s.color }} />
+                    {s.name}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuSubContent>
