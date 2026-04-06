@@ -418,10 +418,16 @@ const GoalDetail = () => {
     );
   }
 
-  const doneTargets = targets.filter((t) => t.is_done).length;
   const totalTargets = targets.length;
-  const overallProgress =
-    totalTargets > 0 ? Math.round((doneTargets / totalTargets) * 100) : 0;
+  const overallProgress = totalTargets > 0
+    ? Math.round(
+        targets.reduce((sum, t) => {
+          const range = Number(t.target_value) - Number(t.start_value);
+          const current = Number(t.current_value) - Number(t.start_value);
+          return sum + (range > 0 ? Math.min(100, (current / range) * 100) : t.is_done ? 100 : 0);
+        }, 0) / totalTargets
+      )
+    : 0;
 
   const daysLeft = goal.target_date
     ? differenceInDays(parseISO(goal.target_date), new Date())

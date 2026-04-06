@@ -23,10 +23,16 @@ interface GoalGridCardProps {
 export function GoalGridCard({ goal, targets, folders, onRename, onMoveToFolder, onArchive, onDelete }: GoalGridCardProps) {
   const navigate = useNavigate();
 
-  const doneTargets = targets.filter((t) => t.is_done).length;
   const totalTargets = targets.length;
-  const progress =
-    totalTargets > 0 ? Math.round((doneTargets / totalTargets) * 100) : 0;
+  const progress = totalTargets > 0
+    ? Math.round(
+        targets.reduce((sum, t) => {
+          const range = Number(t.target_value) - Number(t.start_value);
+          const current = Number(t.current_value) - Number(t.start_value);
+          return sum + (range > 0 ? Math.min(100, (current / range) * 100) : t.is_done ? 100 : 0);
+        }, 0) / totalTargets
+      )
+    : 0;
   const isCompleted = goal.status === "completed";
   const isArchived = goal.status === "archived";
 
