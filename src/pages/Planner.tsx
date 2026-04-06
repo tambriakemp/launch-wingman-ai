@@ -13,6 +13,7 @@ import { CalendarDays, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SpacesSidebar } from "@/components/planner/SpacesSidebar";
 import { usePlannerSpaces } from "@/hooks/usePlannerSpaces";
+import { useCalendarSync } from "@/hooks/useCalendarSync";
 
 const Planner = () => {
   const { user } = useAuth();
