@@ -301,7 +301,7 @@ export const PlannerTaskDialog = ({
         start_at: null,
         end_at: null,
         location: null,
-        ...(({ space_id: selectedSpaceId }) as any),
+        ...(({ space_id: taskSpaceId || selectedSpaceId }) as any),
       });
       onOpenChange(false);
     } catch {} finally {
