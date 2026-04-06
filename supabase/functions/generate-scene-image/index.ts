@@ -329,7 +329,17 @@ ${orientationInstruction}`;
       throw new Error(`Image generation failed: ${response.status}`);
     }
 
-    const data = await response.json();
+    const responseText = await response.text();
+    if (!responseText || responseText.trim().length === 0) {
+      throw new Error("Image generation returned an empty response. Please try again.");
+    }
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseErr) {
+      console.error("Failed to parse AI response:", responseText.substring(0, 500));
+      throw new Error("Image generation returned an invalid response. Please try again.");
+    }
 
     const finishReason = data.choices?.[0]?.native_finish_reason || data.choices?.[0]?.finish_reason;
     if (finishReason === "IMAGE_SAFETY") {
