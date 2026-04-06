@@ -1,0 +1,1 @@
+ALTER TABLE public.email_preferences ADD COLUMN goal_reminder_emails_enabled BOOLEAN NOT NULL DEFAULT true;

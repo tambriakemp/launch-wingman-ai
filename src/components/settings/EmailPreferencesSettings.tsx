@@ -88,6 +88,21 @@ export function EmailPreferencesSettings() {
           />
         </div>
 
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label htmlFor="goal-reminder-emails" className="text-base">Monthly goal reminders</Label>
+            <p className="text-sm text-muted-foreground">
+              End-of-month summary of your goal progress
+            </p>
+          </div>
+          <Switch
+            id="goal-reminder-emails"
+            checked={preferences.goal_reminder_emails_enabled}
+            onCheckedChange={(checked) => handleToggle("goal_reminder_emails_enabled", checked)}
+            disabled={isUpdating}
+          />
+        </div>
+
         <p className="text-xs text-muted-foreground pt-2 border-t">
           Billing and account-related emails are always sent regardless of these settings.
         </p>

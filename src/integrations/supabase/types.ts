@@ -1275,6 +1275,7 @@ export type Database = {
         Row: {
           check_in_emails_enabled: boolean
           created_at: string
+          goal_reminder_emails_enabled: boolean
           id: string
           product_emails_enabled: boolean
           relaunch_emails_enabled: boolean
@@ -1284,6 +1285,7 @@ export type Database = {
         Insert: {
           check_in_emails_enabled?: boolean
           created_at?: string
+          goal_reminder_emails_enabled?: boolean
           id?: string
           product_emails_enabled?: boolean
           relaunch_emails_enabled?: boolean
@@ -1293,6 +1295,7 @@ export type Database = {
         Update: {
           check_in_emails_enabled?: boolean
           created_at?: string
+          goal_reminder_emails_enabled?: boolean
           id?: string
           product_emails_enabled?: boolean
           relaunch_emails_enabled?: boolean
