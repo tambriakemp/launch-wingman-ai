@@ -426,6 +426,69 @@ const getEmailContent = (
         `,
       };
 
+    case "goal_progress_reminder": {
+      const goals = data?.goals || [];
+      const goalRows = goals.map((g: any) => {
+        const progress = Math.min(100, Math.max(0, g.progress || 0));
+        const barColor = progress >= 75 ? '#22c55e' : progress >= 40 ? '#eab308' : '#ef4444';
+        return `
+          <tr>
+            <td style="padding: 12px 0; border-bottom: 1px solid #f0f0f0;">
+              <div style="font-size: 15px; font-weight: 500; color: #333; margin-bottom: 8px;">${g.title}</div>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="flex: 1; background: #e5e7eb; border-radius: 999px; height: 8px; overflow: hidden;">
+                  <div style="width: ${progress}%; background: ${barColor}; height: 100%; border-radius: 999px;"></div>
+                </div>
+                <span style="font-size: 13px; color: #666; white-space: nowrap; min-width: 40px; text-align: right;">${progress}%</span>
+              </div>
+              <div style="font-size: 12px; color: #999; margin-top: 4px;">${g.targetsCount || 0} target${(g.targetsCount || 0) !== 1 ? 's' : ''}</div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      return {
+        subject: "Your monthly goal check-in",
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333;">
+            <p style="font-size: 16px; line-height: 1.6;">Hi ${firstName},</p>
+            
+            <p style="font-size: 16px; line-height: 1.6;">
+              It's the end of the month — a good moment to glance at how your goals are tracking.
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6;">
+              Here's a snapshot of where things stand:
+            </p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
+              ${goalRows}
+            </table>
+            
+            <p style="font-size: 16px; line-height: 1.6;">
+              Whether you're ahead, behind, or somewhere in between — there's no judgment here. Just a chance to check in with yourself.
+            </p>
+            
+            <p style="margin: 30px 0;">
+              <a href="${appUrl}/goals" 
+                 style="display: inline-block; background: #333; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">
+                Review Your Goals →
+              </a>
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6; color: #666;">
+              Keep going at your own pace.
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">
+              —<br/>
+              Launchely
+            </p>
+          </div>
+        `,
+      };
+    }
+
     case "pro_upgrade":
       return {
         subject: "If you want to go a little deeper",
