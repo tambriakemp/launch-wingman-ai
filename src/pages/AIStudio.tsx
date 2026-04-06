@@ -32,6 +32,7 @@ const AIStudio = () => {
   const [environmentImage, setEnvironmentImage] = useState<string | null>(null);
   const [environmentImages, setEnvironmentImages] = useState<string[]>([]);
   const [environmentLabel, setEnvironmentLabel] = useState<string | null>(null);
+  const [selectedCharacter, setSelectedCharacter] = useState<any>(null);
   const [previewCharacterImage, setPreviewCharacterImage] = useState<string | null>(null);
   const [previewFinalLookImage, setPreviewFinalLookImage] = useState<string | null>(null);
   // isPreviewGenerating and previewStep removed — Scene 1 serves as character anchor
