@@ -20,7 +20,8 @@ type EmailType =
   | "check_in_reminder"
   | "playbook_ready"
   | "paused_project_reminder"
-  | "pro_upgrade";
+  | "pro_upgrade"
+  | "goal_progress_reminder";
 
 interface EmailRequest {
   email_type: EmailType;
