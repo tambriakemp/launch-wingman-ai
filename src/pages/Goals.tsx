@@ -404,7 +404,7 @@ const Goals = () => {
                         setFolderName(f.name);
                         setFolderDialogOpen(true);
                       }}
-                      onDelete={() => handleDeleteFolder(f.id)}
+                      onDelete={() => confirmDelete("Delete this folder?", () => handleDeleteFolder(f.id))}
                       onCreateGoal={() => {
                         setCreateInFolderId(f.id);
                         setEditingGoal(null);
