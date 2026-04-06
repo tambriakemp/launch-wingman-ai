@@ -104,8 +104,7 @@ Format: A specific scenario or activity. Length: Under 15 words. Output: JUST th
         systemPrompt = `You are an expert Instagram content director specializing in cohesive carousel creation.
 
 CAROUSEL BRIEF:
-- Setting / Environment: ${config.carouselVibe}
-- Message / Theme: ${config.carouselMessage || 'No specific message — focus on visual storytelling'}
+- Scene Description: ${config.carouselVibe}
 - Aesthetic / Mood: ${config.carouselAesthetic}
 - Character Style: ${getStyleDescription()}
 - Number of slides: ${carouselSlideCount}

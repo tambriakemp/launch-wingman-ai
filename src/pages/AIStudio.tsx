@@ -350,12 +350,7 @@ const AIStudio = () => {
 
       if (config.creationMode === 'carousel' && data.ideas) {
         const firstIdea = data.ideas[0] || '';
-        const parts = firstIdea.split(' — ');
-        if (parts.length >= 2) {
-          setConfig(prev => ({ ...prev, carouselVibe: parts[0].trim(), carouselMessage: parts.slice(1).join(' — ').trim() }));
-        } else {
-          setConfig(prev => ({ ...prev, carouselVibe: firstIdea }));
-        }
+        setConfig(prev => ({ ...prev, carouselVibe: firstIdea }));
       } else {
         setConfig(prev => ({ ...prev, vlogTopic: data.topic }));
       }

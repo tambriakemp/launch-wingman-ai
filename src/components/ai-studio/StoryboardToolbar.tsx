@@ -412,15 +412,6 @@ const StoryboardToolbar: React.FC<StoryboardToolbarProps> = ({
                         className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary"
                       />
                     </div>
-                    <div>
-                      <Label label="Story / Caption Theme" />
-                      <textarea
-                        placeholder="What narrative ties the slides together? e.g. 'Morning routine that changed my productivity — each slide shows a different step...'"
-                        value={config.carouselMessage}
-                        onChange={(e) => setConfig(c => ({ ...c, carouselMessage: e.target.value }))}
-                        className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-foreground outline-none min-h-[140px] focus:ring-1 focus:ring-primary"
-                      />
-                    </div>
                     <p className="text-[10px] text-muted-foreground/60">All slides share the same character, setting, lighting, and outfit — only the shot angle and framing will vary.</p>
                   </>
                 )}
