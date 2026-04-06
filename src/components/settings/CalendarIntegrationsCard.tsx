@@ -286,6 +286,26 @@ export const CalendarIntegrationsCard = () => {
               );
             })}
           </div>
+          {connections.length > 0 && (
+            <div className="mt-4 pt-4 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkSync}
+                disabled={bulkSyncing}
+                className="w-full"
+              >
+                {bulkSyncing ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Syncing existing tasks…</>
+                ) : (
+                  <><RefreshCw className="w-4 h-4 mr-2" />Sync all existing tasks</>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Push all current planner tasks to your connected calendars
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
