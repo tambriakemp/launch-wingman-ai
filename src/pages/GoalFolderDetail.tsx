@@ -57,6 +57,15 @@ const GoalFolderDetail = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [pendingDeleteAction, setPendingDeleteAction] = useState<(() => void) | null>(null);
+  const [deleteConfirmTitle, setDeleteConfirmTitle] = useState("");
+
+  const confirmDelete = (title: string, action: () => void) => {
+    setDeleteConfirmTitle(title);
+    setPendingDeleteAction(() => action);
+    setDeleteConfirmOpen(true);
+  };
 
   const fetchFolder = useCallback(async () => {
     if (!user || !folderId) return;
