@@ -443,7 +443,7 @@ export const PlannerTaskDialog = ({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Task name"
               maxLength={200}
-              className="h-12 text-lg font-semibold border-none shadow-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50"
+              className="h-12 text-lg font-semibold border-none shadow-none px-2 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50"
             />
 
             {/* ClickUp-style property grid */}
