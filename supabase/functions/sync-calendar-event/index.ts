@@ -133,10 +133,16 @@ async function getOrCreateLaunchelyCalendar(accessToken: string): Promise<string
   if (listRes.ok) {
     const listData = await listRes.json();
     const existing = (listData.items || []).find((c: any) => c.summary === "Launchely");
-    if (existing) return existing.id;
+    if (existing) {
+      console.log("Found existing Launchely calendar:", existing.id);
+      return existing.id;
+    }
+  } else {
+    console.error("Failed to list calendars:", listRes.status, await listRes.text());
   }
 
   // Create the calendar
+  console.log("Creating Launchely calendar...");
   const createRes = await fetch("https://www.googleapis.com/calendar/v3/calendars", {
     method: "POST",
     headers,
@@ -145,9 +151,11 @@ async function getOrCreateLaunchelyCalendar(accessToken: string): Promise<string
 
   if (createRes.ok) {
     const created = await createRes.json();
+    console.log("Created Launchely calendar:", created.id);
     return created.id;
   }
 
+  console.error("Failed to create Launchely calendar:", createRes.status, await createRes.text());
   // Fallback to primary
   return "primary";
 }
