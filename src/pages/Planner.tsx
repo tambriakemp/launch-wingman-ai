@@ -19,7 +19,7 @@ import { useCalendarSync } from "@/hooks/useCalendarSync";
 const Planner = () => {
   const { user } = useAuth();
   const { hasAccess, isLoading: accessLoading } = useFeatureAccess();
-  const [view, setView] = useState<"list" | "calendar">("calendar");
+  const [view, setView] = useState<"list" | "calendar" | "kanban">("calendar");
   const [tasks, setTasks] = useState<PlannerTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
