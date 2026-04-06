@@ -335,7 +335,7 @@ const GoalDetail = () => {
     fetchGoal();
   };
 
-
+  const toggleExpanded = (targetId: string) => {
     setExpandedTargets(prev => {
       const next = new Set(prev);
       if (next.has(targetId)) next.delete(targetId);
