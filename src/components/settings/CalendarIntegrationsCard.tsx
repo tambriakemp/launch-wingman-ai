@@ -168,7 +168,40 @@ export const CalendarIntegrationsCard = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDisconnect = async (provider: string) => {
+  const handleBulkSync = async () => {
+    setBulkSyncing(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.access_token) {
+        toast.error("Please sign in first");
+        return;
+      }
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/bulk-sync-calendar`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.session.access_token}`,
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
+      const result = await res.json();
+      if (result.success) {
+        toast.success(result.message || `Synced ${result.synced} task(s)`);
+      } else {
+        toast.error(result.error || "Sync failed");
+      }
+    } catch (err) {
+      console.error("Bulk sync error:", err);
+      toast.error("Failed to sync tasks");
+    } finally {
+      setBulkSyncing(false);
+    }
+  };
+
     if (!user) return;
     setDisconnectingProvider(provider);
     try {
