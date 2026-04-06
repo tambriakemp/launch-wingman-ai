@@ -47,14 +47,17 @@ interface PlannerListViewProps {
   onUpdateSpace?: (id: string, updates: { description?: string; description_pinned?: boolean }) => Promise<void>;
 }
 
-type GroupKey = "overdue" | "today" | "this_week" | "anytime" | "completed";
+type GroupKey = "overdue" | "today" | "this_week" | "anytime" | "completed" | "in_review" | "blocked" | "abandoned";
 
 const GROUP_CONFIG: { key: GroupKey; label: string; defaultOpen: boolean; color: string }[] = [
   { key: "overdue", label: "OVERDUE", defaultOpen: true, color: "bg-destructive" },
   { key: "today", label: "TODAY", defaultOpen: true, color: "bg-blue-500" },
   { key: "this_week", label: "THIS WEEK", defaultOpen: true, color: "bg-amber-500" },
   { key: "anytime", label: "ANYTIME", defaultOpen: true, color: "bg-muted-foreground" },
+  { key: "in_review", label: "IN REVIEW", defaultOpen: true, color: "bg-purple-500" },
   { key: "completed", label: "DONE", defaultOpen: false, color: "bg-emerald-500" },
+  { key: "blocked", label: "BLOCKED", defaultOpen: false, color: "bg-red-500" },
+  { key: "abandoned", label: "ABANDONED", defaultOpen: false, color: "bg-zinc-400" },
 ];
 
 function groupTasks(tasks: PlannerTask[]): Record<GroupKey, PlannerTask[]> {
