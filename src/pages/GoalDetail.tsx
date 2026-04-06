@@ -753,51 +753,6 @@ const GoalDetail = () => {
                     </div>
                   )}
 
-                  {/* Expanded update form for NON-task targets */}
-                  {isExpanded && !isTaskTarget && (
-                    <div className="border-t border-border p-4 space-y-3 bg-muted/10">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Log Progress
-                      </p>
-                      {target.target_type === "true_false" ? (
-                        <Button
-                          size="sm"
-                          variant={target.is_done ? "outline" : "default"}
-                          onClick={() => handleLogUpdate(target)}
-                          disabled={isUpdating}
-                          className="gap-2"
-                        >
-                          {target.is_done ? "Mark Incomplete" : "Mark Complete"}
-                        </Button>
-                      ) : (
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            value={updateValue}
-                            onChange={(e) => setUpdateValue(e.target.value)}
-                            placeholder={`New value (current: ${Number(target.current_value).toLocaleString()})`}
-                            className="h-9 text-sm flex-1"
-                          />
-                          <Button
-                            size="sm"
-                            onClick={() => handleLogUpdate(target)}
-                            disabled={isUpdating || !updateValue}
-                            className="h-9"
-                          >
-                            Update
-                          </Button>
-                        </div>
-                      )}
-                      <Textarea
-                        value={updateNote}
-                        onChange={(e) => setUpdateNote(e.target.value)}
-                        placeholder="Add a note (optional)..."
-                        rows={2}
-                        className="resize-none text-sm"
-                        maxLength={500}
-                      />
-                    </div>
-                  )}
                 </div>
               );
             })}
