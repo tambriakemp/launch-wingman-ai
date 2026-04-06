@@ -232,6 +232,12 @@ const Planner = () => {
     fetchTasks();
   };
 
+  const handleMoveTask = async (taskId: string, newColumnId: string) => {
+    const { error } = await supabase.from("tasks").update({ column_id: newColumnId } as any).eq("id", taskId);
+    if (error) { toast.error("Failed to move task"); return; }
+    fetchTasks();
+  };
+
   const handleEditTask = (task: PlannerTask) => {
     if ((task as any)._isVirtualRecurrence) {
       const parentId = (task as any)._parentId;
