@@ -451,13 +451,11 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete, onUpdateStatus, cat
             <Pencil className="w-4 h-4 mr-2" /> Edit
           </DropdownMenuItem>
           {onUpdateStatus && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={(e) => e.stopPropagation()}>
-                  <ArrowRightLeft className="w-4 h-4 mr-2" /> Move to list
-                </DropdownMenuItem>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="left" align="start">
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger onClick={(e) => e.stopPropagation()}>
+                <ArrowRightLeft className="w-4 h-4 mr-2" /> Move to list
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
                 {[
                   { id: "todo", label: "To Do" },
                   { id: "in_progress", label: "In Progress" },
@@ -467,8 +465,8 @@ function TaskRow({ task, onToggleComplete, onEdit, onDelete, onUpdateStatus, cat
                     {s.label}
                   </DropdownMenuItem>
                 ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
           )}
           <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}>
             <Trash2 className="w-4 h-4 mr-2" /> Delete
